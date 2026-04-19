@@ -93,18 +93,20 @@ Known fix captured in this PR: `Llama3TransformerBlock.forward_attn_res` called 
 
 ## Phase 3–4 plan (PR #2 preview)
 
-Per a survey of torchtitan's PP surface, `torch.distributed.pipelining`'s P2P is schedule-internal; there are no op-level send/recv hooks we can control without forking PyTorch. The tractable insertion point is **wrapping the stage submodule** at [`torchtitan/distributed/pipeline_parallel.py:159`](../torchtitan/torchtitan/distributed/pipeline_parallel.py#L159):
-
-```python
-stages[i].submod = CrossStageCacheAdapter(parallelized_model)
-```
+Per a survey of torchtitan's PP surface, `torch.distributed.pipelining`'s P2P is schedule-internal; there are no op-level send/recv hooks we can control without forking PyTorch. The tractable insertion point is **wrapping the stage submodule** via `ModelSpec.pipelining_fn` — the same integration path `experiments/transformers_modeling_backend` uses. Our custom `pipeline_llm_with_cache_adapter` calls core `pipeline_llm` unchanged, then walks `schedule._stages` and wraps each `stage.submod` with `CrossStageCacheAdapter`. **Zero modifications to core torchtitan.**
 
 The adapter implements Kimi's "把收到的 block 与适配器中缓存的 block 进行拼接" pattern at the Python level:
 
 - **Forward**: on entering stage `N+1`, receive `(partial_block, incoming_blocks)` from P2P, **concat** `incoming_blocks` with the adapter's cached blocks from earlier microbatches, run the wrapped model, push the resulting blocks into the cache keyed by microbatch id.
 - **Backward**: register autograd hooks on output tensors to **accumulate per-block grads** across microbatches; when the stage sends backward, send `partial_block.grad` plus the accumulated per-block grad buffers.
 
-We will validate numerics first on single-GPU **fake process group** `PP=4` (`torch.distributed.init_process_group(backend="fake", ...)`), comparing against the single-GPU reference loss curve, before burning multi-GPU time. The real benchmark target is `8 × RTX 5090 PCIe, PP=8, VP=2, FSDP inner, Llama3 1.5-2B dense, 20B tokens, interleaved 1F1B`. Reported numbers: step-time overhead (<5% target), per-layer memory (5.5 d vs 3 d baseline, paper Table 1), MFU, and an NCCL comm trace showing cross-stage AttnRes send/recv hidden in steady-state.
+The adapter is env-flagged (`TORCHTITAN_ATTNRES_CACHE=1`) so naive full-stack PP and adapter-cached PP run from the same binary for A/B comparison.
+
+Benchmark plan on `8 × RTX 5090 PCIe` (intentionally PCIe, not NVLink — the cheap/wide-deployment regime):
+
+1. **Naive PP sanity** (500 steps, `PP=8, VP=2, FSDP inner, Llama3 150M`): confirm loss curve aligns with single-GPU Phase 2 reference, measure per-stage send size grow linearly in stage id. This catches most integration bugs in < 1 h.
+2. **Adapter A/B** (same 500 steps, flag on): loss must match naive within bf16 tolerance; per-stage send size becomes constant.
+3. **Scale-up headline run**: `Llama3 1.5-2B dense, 20B tokens, PP=8 VP=2 interleaved 1F1B`. Reported: step-time overhead (<5% target vs matched baseline), per-layer memory (paper predicts 5.5 d vs 3 d), MFU, NCCL comm trace showing AttnRes cross-stage send/recv hidden in steady-state.
 
 ## Open design questions (for maintainers)
 

@@ -11,28 +11,37 @@ correctness — Phase 2's `AttnResLlama3Model.forward` already returns the
 right tuple at middle stages and PyTorch's `_PipelineSchedule` unpacks
 tuples automatically.
 
-## Staging (cheap → expensive, do in order)
+## Staging (direct 8-GPU path)
 
-1. **Fake-PG smoke** (single GPU, free): build the AttnRes 150M model under
-   a 4-stage fake process group, run 10 steps, compare loss to a reference
-   single-GPU run. Pure correctness.
-2. **Real 8-GPU naive PP** (rental, ~2 h): `PP=8, VP=2, FSDP inner`,
-   Llama3-150M AttnRes, 500 steps. No caching adapter yet — every stage
-   sends the full growing `stacked_blocks`. Measure step time + NCCL comm
-   volume to get the "before" number.
-3. **Enable adapter** (same 8 GPUs): flip the adapter on via flag, repeat
-   the 500-step run, measure step time + NCCL comm volume. The adapter
-   target: per-stage forward send/recv size becomes constant in stage id.
+1. **8-GPU prep** (rental, ~15 min): env + tokenizer + C4 shard prefetch
+   (`prefetch_c4.py`) so long runs don't depend on HF streaming.
+2. **8-GPU naive PP smoke** (~20 min): `PP=8, VP=2, FSDP inner,
+   Llama3-150M AttnRes, 500 steps, adapter OFF`. Proves the PP path
+   boots end-to-end on real NCCL; baselines the per-stage send size
+   (expected to grow linearly in stage id).
+3. **8-GPU adapter smoke** (~20 min): same config, `TORCHTITAN_ATTNRES_CACHE=1`,
+   adapter ON. Loss must match naive within bf16 tolerance; per-stage
+   send size becomes constant. A/B the comm trace (`nsys profile` or
+   `torch.profiler`).
 4. **Scale run** (full PR #2 headline): 1.5–2 B dense AttnRes, `PP=8,
-   VP=2`, 20B tokens, full config. Produce the money plot.
+   VP=2`, 20B tokens. Produces the money plot.
+
+The `go_8gpu.sh` orchestrator runs steps 1-3 end-to-end so on a fresh
+rental box you do:
+
+```bash
+bash phase3/go_8gpu.sh
+```
 
 ## Files in this folder
 
 | File | Role |
 | --- | --- |
-| [`fake_pg_test.py`](./fake_pg_test.py) | Single-GPU `PP=4` fake-process-group smoke. Verifies the tuple-return pattern round-trips and AttnRes numerics match single-GPU to within rtol=1e-4. |
+| [`go_8gpu.sh`](./go_8gpu.sh) | **Orchestrator**. Env check → install → tokenizer → C4 prefetch → unit tests → naive PP → adapter PP → compare. Run this first on a fresh rental box. |
+| [`prefetch_c4.py`](./prefetch_c4.py) | Parallel C4 shard download into HF cache. Default 150 shards (~45 GB, ~22B tokens). Addresses the streaming httpx crash we hit on Phase 2 N=12. |
+| [`fake_pg_test.py`](./fake_pg_test.py) | **Optional** single-GPU `PP=4` fake-process-group smoke. Useful when debugging numerics locally; not required for the 8-GPU path. |
 | [`launch_8gpu_naive.sh`](./launch_8gpu_naive.sh) | `PP=8, VP=2` launcher for the naive path. Uses existing `--module attn_res` configs. Sets `LOG_RANK=0` so only rank 0 tees to `train.log`. |
-| [`launch_8gpu_adapter.sh`](./launch_8gpu_adapter.sh) | Same as above but exports `TORCHTITAN_ATTNRES_CACHE=1` to switch on the adapter (see `adapter.py`). |
+| [`launch_8gpu_adapter.sh`](./launch_8gpu_adapter.sh) | Same as above but exports `TORCHTITAN_ATTNRES_CACHE=1` to switch on the adapter (wiring in `torchtitan/experiments/attn_res/pipeline_adapter.py`). |
 | [`adapter_design.md`](./adapter_design.md) | State machine + invariants for the adapter. Read before debugging: it enumerates the five open unknowns the design rests on (microbatch keying, VP chunk order, backward hook reliability, activation-checkpoint interaction, FSDP reshard composition). The adapter itself now lives in-experiment at [`torchtitan/experiments/attn_res/pipeline_adapter.py`](../torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py). |
 | [`compare_pp_vs_single.py`](./compare_pp_vs_single.py) | After 2+3 above finish, extract first-N-step loss arrays from each run's TB events and print max-abs diff; sanity check that PP didn't silently break numerics. |
 
