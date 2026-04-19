@@ -52,8 +52,11 @@ fi
 GIT_SHA=$(cd "${TORCHTITAN_DIR}" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 mkdir -p "${OUT_ROOT}"
 
-# Build the chained command: for each variant, run torchtitan training
-# to completion, only then move to the next. Log each to its own file.
+# Build an unconditional chain: each variant runs whether or not the
+# previous succeeded. Each segment captures its torchrun exit code into
+# a per-variant STATUS file so you can tell after the fact which ones
+# finished and which failed. Chaining is via `;` (not `&&`) precisely so
+# a mid-run crash of variant N does NOT prevent variant N+1 from starting.
 chain_cmd=""
 for variant in ${VARIANTS}; do
     run_dir="${OUT_ROOT}/${variant}"
@@ -61,8 +64,8 @@ for variant in ${VARIANTS}; do
     echo "${GIT_SHA}" > "${run_dir}/GIT_SHA"
 
     train_cmd=$(cat <<EOF
-echo "[ablation] === starting ${variant} (steps=${STEPS}) ==="
-cd ${TORCHTITAN_DIR} && \\
+echo "[ablation] === starting ${variant} (steps=${STEPS}) ==="; \\
+cd ${TORCHTITAN_DIR}; \\
 PYTORCH_ALLOC_CONF="expandable_segments:True" \\
 torchrun --nproc_per_node=${NGPU} --rdzv_backend c10d \\
     --rdzv_endpoint="localhost:0" \\
@@ -75,20 +78,29 @@ torchrun --nproc_per_node=${NGPU} --rdzv_backend c10d \\
     --training.global_batch_size ${GLOBAL_BS} \\
     --dump_folder ${run_dir} \\
     --metrics.save_tb_folder tb \\
-    2>&1 | tee ${run_dir}/train.log && \\
-echo "[ablation] === ${variant} DONE ===" && \\
-touch ${run_dir}/DONE
+    > >(tee ${run_dir}/train.log) 2>&1; \\
+RC=\$?; \\
+echo "[ablation] === ${variant} exited rc=\$RC ==="; \\
+echo "\$RC" > ${run_dir}/STATUS; \\
+if [ \$RC -eq 0 ]; then touch ${run_dir}/DONE; fi
 EOF
 )
     if [ -z "${chain_cmd}" ]; then
         chain_cmd="${train_cmd}"
     else
-        chain_cmd="${chain_cmd} && ${train_cmd}"
+        chain_cmd="${chain_cmd} ; ${train_cmd}"
     fi
 done
+# Append a final marker so you can grep for 'ablation: all done' in the
+# session output to know the whole sweep finished (even if individual
+# variants failed).
+chain_cmd="${chain_cmd} ; echo '[ablation: all variants attempted; see STATUS files]' ; touch ${OUT_ROOT}/SWEEP_DONE"
 
 tmux new-session -d -s "${SESSION}" -n sweep
-tmux send-keys -t "${SESSION}:sweep" "${ACTIVATE} && ${chain_cmd}" C-m
+# Use bash -c so the tmux window runs our chain inside a single shell,
+# and set +e so one variant's crash does not exit the shell before the
+# next variant's segment runs.
+tmux send-keys -t "${SESSION}:sweep" "${ACTIVATE} && bash -c 'set +e; ${chain_cmd}'" C-m
 
 tmux new-window -t "${SESSION}" -n monitor
 tmux send-keys -t "${SESSION}:monitor" "watch -n 2 nvidia-smi" C-m
