@@ -1,0 +1,49 @@
+# The torchtitan fork is its own git repo (pushed separately to QIU023/torchtitan).
+# Do NOT commit it as a subdirectory — it would nest a repo inside a repo and
+# all prior history disappears from this workspace view.
+torchtitan/
+
+# Kimi's reference implementation is a separate upstream repo; don't vendor it.
+# Clone alongside this workspace if needed.
+Attention-Residuals/
+
+# Claude Code project cache (hooks, memory, sessions). Not useful to others.
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Run artifacts we do NOT want in git history
+phase2/runs/**/tb/
+phase2/runs/**/checkpoint/
+phase2/runs/**/comm_traces/
+phase2/runs/**/DONE
+phase2/runs/**/GIT_SHA
+
+phase3/runs/**/tb/
+phase3/runs/**/checkpoint/
+phase3/runs/**/comm_traces/
+
+# Keep: train.log tails (for provenance) and comparison.png (the money shot).
+# Explicit un-ignore:
+!phase2/runs/**/comparison.png
+!phase2/runs/**/train.log
+
+# Backup archives
+*.tar.gz
+*.tgz
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1843 @@
+[rank0]:[titan] 2026-04-18 21:13:25,318 - root - INFO - torchtitan version: 0.2.2 (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-04-18 21:13:25,559 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-04-18 21:13:25,562 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-04-18 21:13:25,562 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-04-18 21:13:25,867 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-04-18 21:13:26,205 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-04-18 21:13:26,218 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:26,491 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-18 21:13:27,285 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-18 21:13:27,651 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:28,173 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-18 21:13:28,518 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:28,866 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:29,237 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:29,505 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:29,884 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-18 21:13:29,981 - root - INFO - Building llama3 150M with {
+[rank0]:  "param_init": null,
+[rank0]:  "dim": 768,
+[rank0]:  "vocab_size": 128256,
+[rank0]:  "output": {
+[rank0]:    "param_init": {
+[rank0]:      "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.03608439182435161, a=-0.10825317547305482, b=0.10825317547305482)",
+[rank0]:      "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:    },
+[rank0]:    "in_features": 768,
+[rank0]:    "out_features": 128256,
+[rank0]:    "bias": false
+[rank0]:  },
+[rank0]:  "tok_embeddings": {
+[rank0]:    "param_init": {
+[rank0]:      "weight": "<function skip_param_init at 0x7fe57728d1c0>"
+[rank0]:    },
+[rank0]:    "num_embeddings": 128256,
+[rank0]:    "embedding_dim": 768
+[rank0]:  },
+[rank0]:  "norm": {
+[rank0]:    "param_init": {
+[rank0]:      "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:    },
+[rank0]:    "normalized_shape": 768,
+[rank0]:    "eps": 1e-05,
+[rank0]:    "elementwise_affine": true
+[rank0]:  },
+[rank0]:  "rope": {
+[rank0]:    "param_init": null,
+[rank0]:    "dim": 64,
+[rank0]:    "max_seq_len": 2048,
+[rank0]:    "theta": 500000,
+[rank0]:    "backend": "complex",
+[rank0]:    "scaling": "llama",
+[rank0]:    "scaling_factor": 8.0,
+[rank0]:    "low_freq_factor": 1.0,
+[rank0]:    "high_freq_factor": 4.0,
+[rank0]:    "original_max_position_embeddings": 8192,
+[rank0]:    "rope_factor": 1.0,
+[rank0]:    "beta_fast": 32.0,
+[rank0]:    "beta_slow": 1.0,
+[rank0]:    "original_seq_len": 4096,
+[rank0]:    "mscale": 0.0
+[rank0]:  },
+[rank0]:  "layers": [
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.014142135623730949)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.014142135623730949)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.014142135623730949)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.01)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.01)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.01)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.008164965809277261)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.008164965809277261)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.008164965809277261)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.0070710678118654745)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.0070710678118654745)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.0070710678118654745)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.006324555320336759)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.006324555320336759)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.006324555320336759)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005773502691896258)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005773502691896258)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005773502691896258)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005345224838248488)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005345224838248488)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005345224838248488)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.005)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.0047140452079103175)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.0047140452079103175)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.0047140452079103175)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004472135954999579)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004472135954999579)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004472135954999579)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004264014327112209)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004264014327112209)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004264014327112209)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    },
+[rank0]:    {
+[rank0]:      "param_init": null,
+[rank0]:      "attention": {
+[rank0]:        "param_init": null,
+[rank0]:        "n_heads": 12,
+[rank0]:        "inner_attention": {
+[rank0]:          "param_init": null
+[rank0]:        },
+[rank0]:        "mask_type": "causal",
+[rank0]:        "dim": 768,
+[rank0]:        "wq": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wkv": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 256,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "wo": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004082482904638631)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "qk_norm": null,
+[rank0]:        "n_kv_heads": 4,
+[rank0]:        "head_dim": null,
+[rank0]:        "use_rope": true,
+[rank0]:        "rope_backend": "complex"
+[rank0]:      },
+[rank0]:      "feed_forward": {
+[rank0]:        "param_init": null,
+[rank0]:        "w1": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.02)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w2": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004082482904638631)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 2048,
+[rank0]:          "out_features": 768,
+[rank0]:          "bias": false
+[rank0]:        },
+[rank0]:        "w3": {
+[rank0]:          "param_init": {
+[rank0]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fe7e0b58680>, std=0.004082482904638631)",
+[rank0]:            "bias": "<function zeros_ at 0x7fe7e0b58860>"
+[rank0]:          },
+[rank0]:          "in_features": 768,
+[rank0]:          "out_features": 2048,
+[rank0]:          "bias": false
+[rank0]:        }
+[rank0]:      },
+[rank0]:      "moe": null,
+[rank0]:      "attention_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "ffn_norm": {
+[rank0]:        "param_init": {
+[rank0]:          "weight": "<function ones_ at 0x7fe7e0b587c0>"
+[rank0]:        },
+[rank0]:        "normalized_shape": 768,
+[rank0]:        "eps": 1e-05,
+[rank0]:        "elementwise_affine": true
+[rank0]:      },
+[rank0]:      "attn_res_proj": null,
+[rank0]:      "mlp_res_proj": null,
+[rank0]:      "attn_res_norm": null,
+[rank0]:      "mlp_res_norm": null
+[rank0]:    }
+[rank0]:  ],
+[rank0]:  "attn_res": null,
+[rank0]:  "final_attn_res_proj": null,
+[rank0]:  "final_attn_res_norm": null,
+[rank0]:  "enable_weight_tying": true
+[rank0]:}
+[rank0]:[titan] 2026-04-18 21:13:29,998 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attn_res/phase2/runs/baseline/tb/20260418-2113
+[rank0]:[titan] 2026-04-18 21:13:29,999 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank0]:[titan] 2026-04-18 21:13:30,000 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-04-18 21:13:30,000 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-04-18 21:13:30,000 - root - INFO - [34mModel llama3 150M [31msize: 75,516,672 total parameters[39m
+[rank0]:[titan] 2026-04-18 21:13:30,009 - root - INFO - Applied selective activation checkpointing to the model
+[rank0]:[titan] 2026-04-18 21:13:30,009 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-04-18 21:13:30,014 - root - INFO - Successfully created meshes with active dimensions: []
+[rank0]:[titan] 2026-04-18 21:13:30,047 - root - INFO - Applied fully_shard to the model
+[rank0]:[titan] 2026-04-18 21:13:30,688 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-04-18 21:13:30,688 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-04-18 21:13:30,688 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-04-18 21:13:30,688 - root - INFO - CUDA memory usage for model: 1.04GiB(3.30%)
+[rank0]:[titan] 2026-04-18 21:13:30,689 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./assets/hf/Llama-3.1-8B/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-04-18 21:13:30,698 - root - INFO - Trainer is initialized with local batch size 8, global batch size 16, gradient accumulation steps 2, sequence length 2048, total steps 2500 (warmup 500)
+[rank0]:[titan] 2026-04-18 21:13:30,698 - root - INFO - Training starts at step 1
+[rank0]:[titan] 2026-04-18 21:13:31,006 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:31,923 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:32,500 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-18 21:13:32,783 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:13:32,858 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211332Z&X-Amz-Expires=3600&X-Amz-Signature=5a11665d07c3c0a3482b495960a4ddf59a3bbbbe70b692d86501e69638ce88ac&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550412&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDQxMn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=kFC53im-Ew0K7bYsoqjnb2TjF6Y1NSPrk%7E-LSZqcVj7EoSUKw8n05o1OckXiXPL-xAPAbA4dec8lZZeT4bcOqCsjdAPZV7tZAKllDpKfu7alYj3JQ3AQQvqEWqijW%7Eenr0eiHG7lUOMuMSovPsLsyrU08NSB5%7ECoxxKOVDgXnpsaP8DXGCz9RQOnPZiygpqltKxy9zDv3oXxLwO6bu94Zy91MP0bPnJHVPeErAq7n2y%7ERo%7EqWs5n8Y0ULOLc1-gfw28xuYarf4R9h7yQcrGBHrfIpkn6p-%7ESfmU9XunhQFXRlNPEWruojVDEe6Qhj11hAwd2So97YvnxuZSFKAFxVg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:13:34,872 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:13:34,872 - root - INFO - [31mstep:  1  [32mloss: 12.23106  [38;2;180;60;0mgrad_norm: 11.5628  [38;2;54;234;195mmemory: 27.83GiB(88.75%)  [34mtps: 6,727  [36mtflops: 4.57  [35mmfu: 1.47%[39m
+[rank0]:[titan] 2026-04-18 21:13:34,873 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-04-18 21:13:38,989 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:13:38,990 - root - INFO - [31mstep: 10  [32mloss: 11.63459  [38;2;180;60;0mgrad_norm: 10.4704  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,634  [36mtflops: 48.68  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:13:43,599 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:13:43,600 - root - INFO - [31mstep: 20  [32mloss: 10.66875  [38;2;180;60;0mgrad_norm:  4.2336  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,101  [36mtflops: 48.32  [35mmfu: 15.49%[39m
+[rank0]:[titan] 2026-04-18 21:13:48,173 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:13:48,174 - root - INFO - [31mstep: 30  [32mloss: 10.15498  [38;2;180;60;0mgrad_norm:  2.0705  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,655  [36mtflops: 48.70  [35mmfu: 15.61%[39m
+[rank0]:[titan] 2026-04-18 21:13:52,744 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:13:52,744 - root - INFO - [31mstep: 40  [32mloss: 10.03033  [38;2;180;60;0mgrad_norm:  1.6680  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,708  [36mtflops: 48.73  [35mmfu: 15.62%[39m
+[rank0]:[titan] 2026-04-18 21:13:56,847 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:13:57,355 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:13:57,355 - root - INFO - [31mstep: 50  [32mloss:  9.79060  [38;2;180;60;0mgrad_norm:  1.4188  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,076  [36mtflops: 48.30  [35mmfu: 15.48%[39m
+[rank0]:[titan] 2026-04-18 21:14:01,936 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:01,937 - root - INFO - [31mstep: 60  [32mloss:  9.43490  [38;2;180;60;0mgrad_norm:  1.3030  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,538  [36mtflops: 48.62  [35mmfu: 15.58%[39m
+[rank0]:[titan] 2026-04-18 21:14:04,067 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:14:04,129 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211403Z&X-Amz-Expires=3600&X-Amz-Signature=fba978eacd55cafe61676b9b7c82a6b1c36a58085208bd272bbb55613c6715c1&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550443&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDQ0M319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=MhvyStyuLX5ruj3QBtuSpleVRvD8N%7E8%7EzegCgsEpvJJeFsbWXGAkjAApyAPpTq919IoObTiLk1xLwh30aa5UTiLSzy8LUUzzHCQuV4PPMPr-tfU8ToYvQ96zRwBR%7E9SRGokdjCpuzhPb1MfSW8xwnmEBt9iWyUB6wJWVaAS1VHPeJVZrGroeB8asq7PmexGhWrZs7JD6nbm43MysCfNPQEBHNwbPBWzbIWY5h7LhbVXM0dkTvW6laWKHHcFI8yrfsQZ48nebewFrmH8AibYbS9PvdxswbmFwLqYCUx%7E%7EtmYHoliqM%7ECuPYF%7E5-b%7Ef-qMYlwzy1W94K4O-Oop6exhOA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:14:07,085 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:07,086 - root - INFO - [31mstep: 70  [32mloss:  8.97220  [38;2;180;60;0mgrad_norm:  1.4215  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,667  [36mtflops: 43.27  [35mmfu: 13.87%[39m
+[rank0]:[titan] 2026-04-18 21:14:11,712 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:11,713 - root - INFO - [31mstep: 80  [32mloss:  8.82656  [38;2;180;60;0mgrad_norm:  1.8507  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,835  [36mtflops: 48.14  [35mmfu: 15.43%[39m
+[rank0]:[titan] 2026-04-18 21:14:16,359 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:16,360 - root - INFO - [31mstep: 90  [32mloss:  8.35931  [38;2;180;60;0mgrad_norm:  1.3267  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,530  [36mtflops: 47.93  [35mmfu: 15.36%[39m
+[rank0]:[titan] 2026-04-18 21:14:20,487 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:14:21,006 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:21,006 - root - INFO - [31mstep: 100  [32mloss:  7.96584  [38;2;180;60;0mgrad_norm:  1.1488  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,535  [36mtflops: 47.93  [35mmfu: 15.36%[39m
+[rank0]:[titan] 2026-04-18 21:14:25,614 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:25,615 - root - INFO - [31mstep: 110  [32mloss:  7.84173  [38;2;180;60;0mgrad_norm:  1.0535  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,121  [36mtflops: 48.33  [35mmfu: 15.49%[39m
+[rank0]:[titan] 2026-04-18 21:14:30,227 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:30,227 - root - INFO - [31mstep: 120  [32mloss:  7.62532  [38;2;180;60;0mgrad_norm:  0.8764  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,058  [36mtflops: 48.29  [35mmfu: 15.48%[39m
+[rank0]:[titan] 2026-04-18 21:14:33,886 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:14:33,959 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211433Z&X-Amz-Expires=3600&X-Amz-Signature=85525a34b19d09994ca12a7adc620fa0c3df188d03736703f9e3c044659eb1e8&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550473&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDQ3M319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=MGLQxRh4MwkMfb5wtJziE6g--Vj0DHethMdZiS3Fc2N3tg4T%7EW9djO3PCtomlloRoNY1XsgqqSQ2AFv%7EllhgKLTip1U7Bq3ZiI0HA%7EtU-9cwId%7E7izmJ%7EYQty3jBFLOu62jYm%7EE39QAXpODSCplaJT6udlRPiOc6wqQEMULI0rMTzDNwCO91u5LgWl4-EugdN38ptyMni3pheIHQZli3iJfbbgfYA2gCClsfkCma1sRCSF36zfqLVLEDhvc64jWyKG4c2pl4YmtigLaaO5TGyze9VMXAdhoJuqKVDCyBrsiZI9K3xvRHbSNhjUPSj1G0hVgW0RzXAkZO%7EoFz4VDkgA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:14:35,486 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:35,487 - root - INFO - [31mstep: 130  [32mloss:  7.38294  [38;2;180;60;0mgrad_norm:  0.9353  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 62,319  [36mtflops: 42.35  [35mmfu: 13.57%[39m
+[rank0]:[titan] 2026-04-18 21:14:40,088 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:40,089 - root - INFO - [31mstep: 140  [32mloss:  7.32740  [38;2;180;60;0mgrad_norm:  1.0340  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,221  [36mtflops: 48.40  [35mmfu: 15.51%[39m
+[rank0]:[titan] 2026-04-18 21:14:44,190 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:14:44,712 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:44,713 - root - INFO - [31mstep: 150  [32mloss:  7.00400  [38;2;180;60;0mgrad_norm:  1.1708  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,875  [36mtflops: 48.17  [35mmfu: 15.44%[39m
+[rank0]:[titan] 2026-04-18 21:14:49,276 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:49,276 - root - INFO - [31mstep: 160  [32mloss:  7.12342  [38;2;180;60;0mgrad_norm:  1.2155  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,820  [36mtflops: 48.81  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:14:53,852 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:53,852 - root - INFO - [31mstep: 170  [32mloss:  7.06118  [38;2;180;60;0mgrad_norm:  0.9810  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,621  [36mtflops: 48.67  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:14:58,406 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:14:58,407 - root - INFO - [31mstep: 180  [32mloss:  7.07589  [38;2;180;60;0mgrad_norm:  0.9999  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,955  [36mtflops: 48.90  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:15:02,972 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:02,972 - root - INFO - [31mstep: 190  [32mloss:  7.11437  [38;2;180;60;0mgrad_norm:  0.7807  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,801  [36mtflops: 48.80  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:15:04,313 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:15:04,374 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211504Z&X-Amz-Expires=3600&X-Amz-Signature=1861500f0f9446be4318fcc258160c30d840417e33afdab54e7f6f4ddc7c3cd1&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550504&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDUwNH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=bPfMX44ymB0MjQ40dZw9dlDlXGXlKKzSZTX-M8mjFJexwvrwzIHdcKQDLSOE69aY4iYjb4nPyaelvGYaYaAfiVIaJRqN3%7Eh-iDmbPFrnNhKcKs1KemXfA4XkTi8RJZeleEzUlzvgZx7Ymzkc02Vvbrf%7E%7EwTg7zNc1dWdFn7bi%7ECEOQQwn0CDvuiHAZjX4UM664ekJH6lwTtxFReCtFRXFKk0BblrVa%7EAWoZOXiy0R3aiXxr98XbS1fvKZ2%7EaY7iMSQlSP3Df3qH2Z1d-HOZ%7EshESGDFULxgLu1uqJ5maiJA8DAQTXGPmo8dhIUc%7EJLfcC%7ENTjPcWFiCgssoN5mWoqw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:15:07,743 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:15:08,264 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:08,264 - root - INFO - [31mstep: 200  [32mloss:  7.00649  [38;2;180;60;0mgrad_norm:  1.0790  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 61,932  [36mtflops: 42.09  [35mmfu: 13.49%[39m
+[rank0]:[titan] 2026-04-18 21:15:12,868 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:12,869 - root - INFO - [31mstep: 210  [32mloss:  6.97136  [38;2;180;60;0mgrad_norm:  0.7397  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,181  [36mtflops: 48.37  [35mmfu: 15.50%[39m
+[rank0]:[titan] 2026-04-18 21:15:17,436 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:17,437 - root - INFO - [31mstep: 220  [32mloss:  6.85490  [38;2;180;60;0mgrad_norm:  1.0388  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,749  [36mtflops: 48.76  [35mmfu: 15.63%[39m
+[rank0]:[titan] 2026-04-18 21:15:21,994 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:21,995 - root - INFO - [31mstep: 230  [32mloss:  6.78432  [38;2;180;60;0mgrad_norm:  0.8885  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,903  [36mtflops: 48.86  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:15:26,553 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:26,553 - root - INFO - [31mstep: 240  [32mloss:  6.97697  [38;2;180;60;0mgrad_norm:  0.9582  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,896  [36mtflops: 48.86  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:15:30,649 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:15:31,176 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:31,177 - root - INFO - [31mstep: 250  [32mloss:  6.82310  [38;2;180;60;0mgrad_norm:  0.9442  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,888  [36mtflops: 48.18  [35mmfu: 15.44%[39m
+[rank0]:[titan] 2026-04-18 21:15:35,825 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:35,825 - root - INFO - [31mstep: 260  [32mloss:  6.86833  [38;2;180;60;0mgrad_norm:  0.9703  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,500  [36mtflops: 47.91  [35mmfu: 15.36%[39m
+[rank0]:[titan] 2026-04-18 21:15:40,426 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:40,427 - root - INFO - [31mstep: 270  [32mloss:  6.61022  [38;2;180;60;0mgrad_norm:  0.9204  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,233  [36mtflops: 48.41  [35mmfu: 15.52%[39m
+[rank0]:[titan] 2026-04-18 21:15:45,001 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:45,001 - root - INFO - [31mstep: 280  [32mloss:  6.67188  [38;2;180;60;0mgrad_norm:  0.9468  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,642  [36mtflops: 48.69  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:15:49,569 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:49,569 - root - INFO - [31mstep: 290  [32mloss:  6.57282  [38;2;180;60;0mgrad_norm:  0.8684  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,758  [36mtflops: 48.77  [35mmfu: 15.63%[39m
+[rank0]:[titan] 2026-04-18 21:15:53,669 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:15:54,189 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:54,190 - root - INFO - [31mstep: 300  [32mloss:  6.44950  [38;2;180;60;0mgrad_norm:  0.7373  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,932  [36mtflops: 48.21  [35mmfu: 15.45%[39m
+[rank0]:[titan] 2026-04-18 21:15:58,752 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:15:58,753 - root - INFO - [31mstep: 310  [32mloss:  6.76099  [38;2;180;60;0mgrad_norm:  1.2094  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,821  [36mtflops: 48.81  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:16:03,330 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:03,330 - root - INFO - [31mstep: 320  [32mloss:  6.61966  [38;2;180;60;0mgrad_norm:  0.9236  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,603  [36mtflops: 48.66  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:16:03,733 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:16:03,806 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211603Z&X-Amz-Expires=3600&X-Amz-Signature=160e44e85629257eb1afc8f657286fa63102fa601c720eb169e2ae8f9670bc22&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550563&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDU2M319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=R--LcTEK-IOOnSa8z4T0NBx9Rv%7EbrnizaUU4c36L0A%7EiXzbu3zPhn1A79MCzwWk-02jzOjnrjzUvEj%7ErMDaqlIxispn%7ES7x4PHNDRbEW4ADWr0Oy2XD0VVlabM8t-8KsdQ2p4Z6FNWB2E5WIGurKkn3rpD-dubYoXZJXTuZs0f9btXRC1U6Q2X92NhZfFPD0KQbeYp3nrFB7GeMfLfkH0wD4R4a5RCoPwXlgHQdiB4JTviHBtUMfQsx1q2vCQ9QAlQ5yiqSRytARNU9n72WqlE2Pb78B9Kc9zcqKIYSeIM8tfjIx3-EucXNnjfItu-GL10C1KlqvU7%7EumSa48A57GA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:16:08,493 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:08,494 - root - INFO - [31mstep: 330  [32mloss:  6.32785  [38;2;180;60;0mgrad_norm:  0.7623  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,472  [36mtflops: 43.14  [35mmfu: 13.83%[39m
+[rank0]:[titan] 2026-04-18 21:16:13,089 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:13,090 - root - INFO - [31mstep: 340  [32mloss:  6.49629  [38;2;180;60;0mgrad_norm:  0.8778  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,318  [36mtflops: 48.47  [35mmfu: 15.53%[39m
+[rank0]:[titan] 2026-04-18 21:16:17,201 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:16:17,719 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:17,719 - root - INFO - [31mstep: 350  [32mloss:  6.29341  [38;2;180;60;0mgrad_norm:  0.8695  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,796  [36mtflops: 48.11  [35mmfu: 15.42%[39m
+[rank0]:[titan] 2026-04-18 21:16:22,300 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:22,300 - root - INFO - [31mstep: 360  [32mloss:  6.26504  [38;2;180;60;0mgrad_norm:  0.8602  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,544  [36mtflops: 48.62  [35mmfu: 15.58%[39m
+[rank0]:[titan] 2026-04-18 21:16:26,853 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:26,854 - root - INFO - [31mstep: 370  [32mloss:  6.25448  [38;2;180;60;0mgrad_norm:  1.1143  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,973  [36mtflops: 48.91  [35mmfu: 15.68%[39m
+[rank0]:[titan] 2026-04-18 21:16:31,419 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:31,420 - root - INFO - [31mstep: 380  [32mloss:  6.49527  [38;2;180;60;0mgrad_norm:  0.8475  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,783  [36mtflops: 48.78  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:16:33,620 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:16:33,720 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211633Z&X-Amz-Expires=3600&X-Amz-Signature=19fabd9d6f9294d3fbb755402a5a40404c4cbb7a8c5c85ebdbe5ea19847fc0f1&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550593&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDU5M319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=HP589z6l8x1xIR1guGid8W1SvzggNE7h0X2WQBlrM6R3G%7EiKIlAv2Vc9lPawWoN3d7Hoc1wn9d8GdPdALWfGnqacgtnb0l554S45zCXGVzCDGfJrbhBWQJbsieW%7ET0N5R9J20s-HFYsC6eHH87o2FkNknC0HnQQOK8z6mz6WQ4Kx9L%7Ez9mKntzh9LUwWpSxZOWLyjxSlIW8XXpz%7ELXUp4%7ENM7rMSZwDi8GR-BN6YblD1bVL3D48alp58z4tEAWibE0-LluwKs7g8Xivg0vBSNHXjCMr5wZ2X4aRJ4mBEl5hoOOtR7Dcw99p9peX32LnG39SZe9%7EV3zMDML2WQn-ihw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:16:36,624 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:36,624 - root - INFO - [31mstep: 390  [32mloss:  6.35105  [38;2;180;60;0mgrad_norm:  0.7158  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 62,972  [36mtflops: 42.80  [35mmfu: 13.72%[39m
+[rank0]:[titan] 2026-04-18 21:16:40,726 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:16:41,245 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:41,245 - root - INFO - [31mstep: 400  [32mloss:  6.19861  [38;2;180;60;0mgrad_norm:  0.7481  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,919  [36mtflops: 48.20  [35mmfu: 15.45%[39m
+[rank0]:[titan] 2026-04-18 21:16:45,824 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:45,824 - root - INFO - [31mstep: 410  [32mloss:  6.18912  [38;2;180;60;0mgrad_norm:  0.7459  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,574  [36mtflops: 48.64  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:16:50,387 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:50,387 - root - INFO - [31mstep: 420  [32mloss:  6.21936  [38;2;180;60;0mgrad_norm:  0.8489  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,823  [36mtflops: 48.81  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:16:54,967 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:54,967 - root - INFO - [31mstep: 430  [32mloss:  6.17396  [38;2;180;60;0mgrad_norm:  0.9427  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,560  [36mtflops: 48.63  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:16:59,541 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:16:59,541 - root - INFO - [31mstep: 440  [32mloss:  6.27183  [38;2;180;60;0mgrad_norm:  1.0270  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,650  [36mtflops: 48.69  [35mmfu: 15.61%[39m
+[rank0]:[titan] 2026-04-18 21:17:03,571 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:17:03,640 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211703Z&X-Amz-Expires=3600&X-Amz-Signature=7ca90483b035b041079f40c49703173a3e6f1f64bf3567906bb5c726b1283c46&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550623&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDYyM319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=TLH9kEvbFQNOpqEEZj2Mh-ys31TX%7ELAo7UpKHFj368KQWJdM9xldAxLeuOLETtcPnDNLzxj6BqmD5wGl0tlIPFfX9MFbuwsjXNZTPbmuTrh8MOjpJ9v%7EgATcOq2YR99MsIfX2r7kuXXat1mAvsIz1dI9ejt6aYEyhm1TVlKifLhA8biWUGOIn6LYXdTatyHcEXRtI-BZ2uMKgrMOx5gtVwMLjmASW9uuM2JULA6JuTMVKkA31uO0PmCMcs5D3QcwUIfCjM1C76yRuKz0BDHBbdXy9VdJs3MufW9iwMcav9HMa0x8z1TaBfc22v0rWx98pYXGVeABYJ0NAgXzUNCiQQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:17:04,240 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:17:04,758 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:04,758 - root - INFO - [31mstep: 450  [32mloss:  6.01649  [38;2;180;60;0mgrad_norm:  0.8335  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 62,821  [36mtflops: 42.69  [35mmfu: 13.68%[39m
+[rank0]:[titan] 2026-04-18 21:17:09,330 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:09,330 - root - INFO - [31mstep: 460  [32mloss:  6.11005  [38;2;180;60;0mgrad_norm:  0.7546  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,688  [36mtflops: 48.72  [35mmfu: 15.61%[39m
+[rank0]:[titan] 2026-04-18 21:17:13,904 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:13,905 - root - INFO - [31mstep: 470  [32mloss:  6.27240  [38;2;180;60;0mgrad_norm:  0.8587  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,638  [36mtflops: 48.68  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:17:18,479 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:18,480 - root - INFO - [31mstep: 480  [32mloss:  6.18656  [38;2;180;60;0mgrad_norm:  1.1055  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,635  [36mtflops: 48.68  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:17:23,066 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:23,066 - root - INFO - [31mstep: 490  [32mloss:  6.09780  [38;2;180;60;0mgrad_norm:  0.7569  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,458  [36mtflops: 48.56  [35mmfu: 15.56%[39m
+[rank0]:[titan] 2026-04-18 21:17:27,176 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:17:27,694 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:27,694 - root - INFO - [31mstep: 500  [32mloss:  6.13998  [38;2;180;60;0mgrad_norm:  0.8391  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,818  [36mtflops: 48.13  [35mmfu: 15.43%[39m
+[rank0]:[titan] 2026-04-18 21:17:32,257 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:32,257 - root - INFO - [31mstep: 510  [32mloss:  6.12961  [38;2;180;60;0mgrad_norm:  0.9768  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,820  [36mtflops: 48.81  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:17:36,889 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:36,890 - root - INFO - [31mstep: 520  [32mloss:  5.85291  [38;2;180;60;0mgrad_norm:  1.0985  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,745  [36mtflops: 48.08  [35mmfu: 15.41%[39m
+[rank0]:[titan] 2026-04-18 21:17:41,448 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:41,449 - root - INFO - [31mstep: 530  [32mloss:  5.98126  [38;2;180;60;0mgrad_norm:  1.0716  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,893  [36mtflops: 48.86  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:17:46,228 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:46,228 - root - INFO - [31mstep: 540  [32mloss:  6.22659  [38;2;180;60;0mgrad_norm:  0.8261  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,575  [36mtflops: 46.60  [35mmfu: 14.94%[39m
+[rank0]:[titan] 2026-04-18 21:17:50,738 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-04-18 21:17:51,290 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:51,291 - root - INFO - [31mstep: 550  [32mloss:  5.94914  [38;2;180;60;0mgrad_norm:  0.7112  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 64,739  [36mtflops: 44.00  [35mmfu: 14.10%[39m
+[rank0]:[titan] 2026-04-18 21:17:56,240 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:17:56,240 - root - INFO - [31mstep: 560  [32mloss:  5.68901  [38;2;180;60;0mgrad_norm:  0.8474  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 66,232  [36mtflops: 45.01  [35mmfu: 14.43%[39m
+[rank0]:[titan] 2026-04-18 21:18:01,153 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:01,154 - root - INFO - [31mstep: 570  [32mloss:  5.87149  [38;2;180;60;0mgrad_norm:  0.6824  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 66,708  [36mtflops: 45.33  [35mmfu: 14.53%[39m
+[rank0]:[titan] 2026-04-18 21:18:04,275 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:18:04,341 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211804Z&X-Amz-Expires=3600&X-Amz-Signature=d7316747133f6f041eb097a4634ed9c7e7d1e32e7ede38b5be259109d734b005&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550684&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDY4NH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=XwqwTCIYHnUVKTDuLF4v5cmxxeInoC1kEtKDGDh5g4ihR3aphqzPDWIQ1OlOE78%7EJBRdKfeuz4pn4Fy5jnCTbKe9lDL4z1CgbQ%7EzJgj54fr0raDaCDKbeAdrFu5jGmh0Y%7EHtT%7Ez1aC4KmOhkh9oNg6KuTt%7E%7E2lm8nxQnRgkfsOwox%7E0vsiLVQ4qiocPz9wLVRlZ8mMm-tXpuHuC7cepJVXLvd45Bg64aoOxnFJxRQxAoVb4I2vMMFTXjZKgyPUKqWZ-BI-qshP8-uiJOeDFVsTCn2PqwDpf9ALgPwY9gtgmnzWScgzfZHxmiLqhpgj4IouYuuuH2ED8nlDXy3nRhBw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:18:06,325 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:06,326 - root - INFO - [31mstep: 580  [32mloss:  6.15459  [38;2;180;60;0mgrad_norm:  0.7540  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,372  [36mtflops: 43.07  [35mmfu: 13.80%[39m
+[rank0]:[titan] 2026-04-18 21:18:10,905 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:10,905 - root - INFO - [31mstep: 590  [32mloss:  5.81374  [38;2;180;60;0mgrad_norm:  0.9464  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,572  [36mtflops: 48.64  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:18:15,054 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:18:15,580 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:15,580 - root - INFO - [31mstep: 600  [32mloss:  5.99646  [38;2;180;60;0mgrad_norm:  0.7902  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,101  [36mtflops: 47.64  [35mmfu: 15.27%[39m
+[rank0]:[titan] 2026-04-18 21:18:20,288 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:20,289 - root - INFO - [31mstep: 610  [32mloss:  6.04770  [38;2;180;60;0mgrad_norm:  0.6841  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,620  [36mtflops: 47.31  [35mmfu: 15.16%[39m
+[rank0]:[titan] 2026-04-18 21:18:25,050 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:25,051 - root - INFO - [31mstep: 620  [32mloss:  6.01128  [38;2;180;60;0mgrad_norm:  1.2157  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,833  [36mtflops: 46.78  [35mmfu: 14.99%[39m
+[rank0]:[titan] 2026-04-18 21:18:29,781 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:29,782 - root - INFO - [31mstep: 630  [32mloss:  5.85582  [38;2;180;60;0mgrad_norm:  0.7976  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,286  [36mtflops: 47.09  [35mmfu: 15.09%[39m
+[rank0]:[titan] 2026-04-18 21:18:34,499 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:34,499 - root - INFO - [31mstep: 640  [32mloss:  5.82179  [38;2;180;60;0mgrad_norm:  0.8675  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,477  [36mtflops: 47.22  [35mmfu: 15.13%[39m
+[rank0]:[titan] 2026-04-18 21:18:35,316 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:18:35,379 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211835Z&X-Amz-Expires=3600&X-Amz-Signature=085adb2bca66fa581845926fc4afc0822592e4c0262e2bfc4043865d42162cd5&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550715&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDcxNX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=A3MhH3ErPyrGk6ZNpRip84LNHSdFkHmSe-reuUUdMQDahD505LpJ4XHkRknmSRxyBAD8%7E%7E98lcc55xepweOfzrEbOQujYkMFzVYdIq5rZZ0%7EhI4zgGA1XjkhG%7EbRF9BQKuXn1fU7EKuel8g9apRCZclFn6yyf4%7Eq1TghNwu-WVUIj74fK7t9A1kIkWa-TiSDgG0jXmpQK06S97ERJZ7sKTTt-R85YWh4jJ9U05nBKPQifZtAri3nnNG1%7E-e-wPVmjfUTr12GwslRLd3KcQMInmEIFJErcAZloYPvzC81FGePSef0wAS1Pe9a8jLsp3erGQ4upxWjp2pKwFqEvfzzJQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:18:39,307 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:18:39,841 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:39,841 - root - INFO - [31mstep: 650  [32mloss:  5.84505  [38;2;180;60;0mgrad_norm:  0.6275  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 61,356  [36mtflops: 41.70  [35mmfu: 13.36%[39m
+[rank0]:[titan] 2026-04-18 21:18:44,486 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:44,487 - root - INFO - [31mstep: 660  [32mloss:  5.70495  [38;2;180;60;0mgrad_norm:  0.6524  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,558  [36mtflops: 47.95  [35mmfu: 15.37%[39m
+[rank0]:[titan] 2026-04-18 21:18:49,176 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:49,177 - root - INFO - [31mstep: 670  [32mloss:  5.89694  [38;2;180;60;0mgrad_norm:  0.6737  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,901  [36mtflops: 47.50  [35mmfu: 15.23%[39m
+[rank0]:[titan] 2026-04-18 21:18:53,968 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:53,969 - root - INFO - [31mstep: 680  [32mloss:  5.86854  [38;2;180;60;0mgrad_norm:  0.7241  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,396  [36mtflops: 46.48  [35mmfu: 14.90%[39m
+[rank0]:[titan] 2026-04-18 21:18:58,692 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:18:58,692 - root - INFO - [31mstep: 690  [32mloss:  5.57944  [38;2;180;60;0mgrad_norm:  0.6562  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,399  [36mtflops: 47.16  [35mmfu: 15.12%[39m
+[rank0]:[titan] 2026-04-18 21:19:03,009 - root - INFO - [GC] Performing periodic GC collection took 0.10 seconds
+[rank0]:[titan] 2026-04-18 21:19:03,539 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:03,540 - root - INFO - [31mstep: 700  [32mloss:  6.49588  [38;2;180;60;0mgrad_norm:  1.4726  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 67,611  [36mtflops: 45.95  [35mmfu: 14.73%[39m
+[rank0]:[titan] 2026-04-18 21:19:06,265 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:19:06,333 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T211906Z&X-Amz-Expires=3600&X-Amz-Signature=fc0213526567a0d40927c0a07f90ca8a7f2ddf6c1c7fc578a3c0985ed4180d76&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550746&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDc0Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=gG9EKmcQUiazV8W8rMR5j9L9zeW7O5eVkYsIe5LUGIu1yYmW9KRhkjfGsS7skeGh-O6%7EBYL-0CrJsJLXO0CASqy-pMcy6yujuNnrbw-vPLoBsrmbxFHZJpzG%7E1ubr5sNp4P8o5rpKrDDjjZ0NRftIeZUG60KlV2z05JPn4Pe2gN0Xv%7EM6lDCYb3cF1JRH4yOyZFvyun7E%7ETxf4kkb9FNkdKdQQlOzc8l6YlSQF6IXKKjJnmV-mHj%7Ej1CMAXywEgPflJEDo0GCj1ovTqxRSlUD1k1MRY9ppR9taQ%7EzLkaKOLMerBnFJIvOm5RJ2756UbWMVbEeIjOo44KIFnB1et0QQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:19:08,978 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:08,978 - root - INFO - [31mstep: 710  [32mloss:  5.75486  [38;2;180;60;0mgrad_norm:  0.6564  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 60,271  [36mtflops: 40.96  [35mmfu: 13.13%[39m
+[rank0]:[titan] 2026-04-18 21:19:13,681 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:13,681 - root - INFO - [31mstep: 720  [32mloss:  5.59139  [38;2;180;60;0mgrad_norm:  0.6851  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,691  [36mtflops: 47.36  [35mmfu: 15.18%[39m
+[rank0]:[titan] 2026-04-18 21:19:18,335 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:18,336 - root - INFO - [31mstep: 730  [32mloss:  5.45796  [38;2;180;60;0mgrad_norm:  0.6424  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,429  [36mtflops: 47.86  [35mmfu: 15.34%[39m
+[rank0]:[titan] 2026-04-18 21:19:23,047 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:23,048 - root - INFO - [31mstep: 740  [32mloss:  5.60177  [38;2;180;60;0mgrad_norm:  0.6922  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,568  [36mtflops: 47.28  [35mmfu: 15.15%[39m
+[rank0]:[titan] 2026-04-18 21:19:27,333 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:19:27,879 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:27,880 - root - INFO - [31mstep: 750  [32mloss:  5.80694  [38;2;180;60;0mgrad_norm:  0.7094  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 67,829  [36mtflops: 46.10  [35mmfu: 14.77%[39m
+[rank0]:[titan] 2026-04-18 21:19:32,676 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:32,676 - root - INFO - [31mstep: 760  [32mloss:  5.47627  [38;2;180;60;0mgrad_norm:  0.6740  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,336  [36mtflops: 46.44  [35mmfu: 14.88%[39m
+[rank0]:[titan] 2026-04-18 21:19:37,393 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:37,394 - root - INFO - [31mstep: 770  [32mloss:  5.98479  [38;2;180;60;0mgrad_norm:  0.9774  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,475  [36mtflops: 47.21  [35mmfu: 15.13%[39m
+[rank0]:[titan] 2026-04-18 21:19:41,996 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:41,997 - root - INFO - [31mstep: 780  [32mloss:  5.86353  [38;2;180;60;0mgrad_norm:  0.6510  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,211  [36mtflops: 48.39  [35mmfu: 15.51%[39m
+[rank0]:[titan] 2026-04-18 21:19:46,592 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:46,593 - root - INFO - [31mstep: 790  [32mloss:  5.65591  [38;2;180;60;0mgrad_norm:  0.7030  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,323  [36mtflops: 48.47  [35mmfu: 15.54%[39m
+[rank0]:[titan] 2026-04-18 21:19:50,777 - root - INFO - [GC] Performing periodic GC collection took 0.09 seconds
+[rank0]:[titan] 2026-04-18 21:19:51,290 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:51,291 - root - INFO - [31mstep: 800  [32mloss:  5.56202  [38;2;180;60;0mgrad_norm:  0.6299  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,759  [36mtflops: 47.41  [35mmfu: 15.19%[39m
+[rank0]:[titan] 2026-04-18 21:19:55,892 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:19:55,892 - root - INFO - [31mstep: 810  [32mloss:  5.65436  [38;2;180;60;0mgrad_norm:  0.6758  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,221  [36mtflops: 48.40  [35mmfu: 15.51%[39m
+[rank0]:[titan] 2026-04-18 21:20:00,482 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:00,482 - root - INFO - [31mstep: 820  [32mloss:  5.43321  [38;2;180;60;0mgrad_norm:  0.6404  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,409  [36mtflops: 48.53  [35mmfu: 15.55%[39m
+[rank0]:[titan] 2026-04-18 21:20:05,065 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:05,066 - root - INFO - [31mstep: 830  [32mloss:  5.60847  [38;2;180;60;0mgrad_norm:  0.8127  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,500  [36mtflops: 48.59  [35mmfu: 15.57%[39m
+[rank0]:[titan] 2026-04-18 21:20:06,828 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:20:06,904 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212006Z&X-Amz-Expires=3600&X-Amz-Signature=ff33c8313346856cc3a90e9cf59ae1de0b59c35ae224b312b08dd8633e6ea0d1&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550806&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDgwNn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=bdLg6KsYnW0ngpftFVWCiGYmx3fFW4iDXyOa3nqKRsT5Yp2k8PeQuB90zrlM66hyitiHS42zwdXpfFB5zSxbOTKBQPJn8CIZhKHX0fQ9Btvz3K8kkBw2qbsMd3tn7Mnab6vDPvvxR-%7E6IMpC%7E-Y%7Ea9zaMh7fCUdEgsytRy8zUALyKGDNhaEiJ94GeUzsFpfaqX8OLYl9tUF0Miock7fGX7LmJXZeKxKRTbM0IROsvs6pfRr1cRm8L9wez95B-3X%7EnjbXVkEJkGlfO5bEYWDGa2U%7E3Aibb07cq3I5unACqoXuWvcnZ1QUswRQ8cQSWdJCx9rn3yFMA1ohrioYVcpnOA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:20:10,259 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:10,259 - root - INFO - [31mstep: 840  [32mloss:  5.65075  [38;2;180;60;0mgrad_norm:  2.8336  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,109  [36mtflops: 42.89  [35mmfu: 13.75%[39m
+[rank0]:[titan] 2026-04-18 21:20:14,373 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:20:14,884 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:14,885 - root - INFO - [31mstep: 850  [32mloss:  5.40396  [38;2;180;60;0mgrad_norm:  3.4649  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,854  [36mtflops: 48.15  [35mmfu: 15.43%[39m
+[rank0]:[titan] 2026-04-18 21:20:19,463 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:19,464 - root - INFO - [31mstep: 860  [32mloss:  5.52440  [38;2;180;60;0mgrad_norm:  0.6740  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,573  [36mtflops: 48.64  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:20:24,041 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:24,042 - root - INFO - [31mstep: 870  [32mloss:  5.39762  [38;2;180;60;0mgrad_norm:  0.6663  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,589  [36mtflops: 48.65  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:20:28,607 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:28,607 - root - INFO - [31mstep: 880  [32mloss:  5.43798  [38;2;180;60;0mgrad_norm:  0.7168  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,788  [36mtflops: 48.79  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:20:33,182 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:33,182 - root - INFO - [31mstep: 890  [32mloss:  5.56370  [38;2;180;60;0mgrad_norm:  0.6773  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,632  [36mtflops: 48.68  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:20:36,746 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:20:36,821 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212036Z&X-Amz-Expires=3600&X-Amz-Signature=a40df8f408ad133bd2f956b76d483a2c320b1cdd374e7739f5f6596644fab0c1&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550836&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDgzNn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=tVzAKJxuAKDNuGreStYyFAwBZlM4z4allW2RGuYKVq5pTWEXp9FacrUsfARfFrCHE9PIdEAT2erqoKMHkyL7YTswq28ZXhJPt0uccj72-P4g2Jw4uw2IcOno3xHz88HbyZNQcTCykFlbeekR7T5xDY4PauWMSugCNzbgH74xYXeIrcuenanDTGt3dyKlPV8zZp3qcNmOXKz8GHicuWTla%7EyC0ydkByAsLjLm13%7EOtaq5hVdoWoJFIC45yIWnK%7EhuUtz8C4kMatNejsrWnuRRd3frk2tD%7EYpoj1667mZGRWTbCLJaCbe%7Ensjb3ATdgh%7EBIKvBEX5C6p39U1V-gpXf4A__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:20:37,862 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:20:38,370 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:38,370 - root - INFO - [31mstep: 900  [32mloss:  5.73086  [38;2;180;60;0mgrad_norm:  0.8193  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,171  [36mtflops: 42.93  [35mmfu: 13.76%[39m
+[rank0]:[titan] 2026-04-18 21:20:42,938 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:42,938 - root - INFO - [31mstep: 910  [32mloss:  5.38284  [38;2;180;60;0mgrad_norm:  0.8182  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,750  [36mtflops: 48.76  [35mmfu: 15.63%[39m
+[rank0]:[titan] 2026-04-18 21:20:47,502 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:47,503 - root - INFO - [31mstep: 920  [32mloss:  5.34438  [38;2;180;60;0mgrad_norm:  0.6747  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,800  [36mtflops: 48.79  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:20:52,082 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:52,082 - root - INFO - [31mstep: 930  [32mloss:  5.62973  [38;2;180;60;0mgrad_norm:  0.6126  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,566  [36mtflops: 48.64  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:20:56,658 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:20:56,659 - root - INFO - [31mstep: 940  [32mloss:  5.48623  [38;2;180;60;0mgrad_norm:  0.6105  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,621  [36mtflops: 48.67  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:21:00,788 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:21:01,310 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:01,311 - root - INFO - [31mstep: 950  [32mloss:  5.61037  [38;2;180;60;0mgrad_norm:  0.6600  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,449  [36mtflops: 47.88  [35mmfu: 15.35%[39m
+[rank0]:[titan] 2026-04-18 21:21:05,877 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:05,877 - root - INFO - [31mstep: 960  [32mloss:  5.60632  [38;2;180;60;0mgrad_norm:  0.6124  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,773  [36mtflops: 48.78  [35mmfu: 15.63%[39m
+[rank0]:[titan] 2026-04-18 21:21:06,775 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:21:06,839 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212106Z&X-Amz-Expires=3600&X-Amz-Signature=16c764a005161da8bb360bbbabe7e07054515acd82d2c707c6a310b6f4eb4728&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550866&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDg2Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=jNAVazpSJ2Jd6I7LpDwmBNwHEmrwaUoBKIzynrCnlRrn2FX3CgstL3hEyh7MM9S%7E8GvVLbcvdikXv-J3PxyitIZvgjVZe1eyXaanlenAK%7EPUQQQ46zBoH3RFGVScRx1UKPR2z8YTGcNI1MPHP%7EzG9zYMZj9sdrsttJp00iW5AegCMWILLRHpT1GNpewFe0BjljKU5t-g1%7E0wmVkaq%7ETkKhN3Ny9qe9fLcVwTR2WkVW49fj14KjCqah6y-rgvtXcXOA6DztXPDDUK26yePDb0V4EXHCdYNfrRjXZ5gcdyhdD7eVOCEo7mrAiDSDs5AD2wRm3vHCaMBF%7EuimikI-kCCg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:21:11,096 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:11,097 - root - INFO - [31mstep: 970  [32mloss:  5.53274  [38;2;180;60;0mgrad_norm:  0.6644  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 62,797  [36mtflops: 42.68  [35mmfu: 13.68%[39m
+[rank0]:[titan] 2026-04-18 21:21:15,743 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:15,744 - root - INFO - [31mstep: 980  [32mloss:  5.36129  [38;2;180;60;0mgrad_norm:  0.8727  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,527  [36mtflops: 47.93  [35mmfu: 15.36%[39m
+[rank0]:[titan] 2026-04-18 21:21:20,326 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:20,327 - root - INFO - [31mstep: 990  [32mloss:  5.26113  [38;2;180;60;0mgrad_norm:  0.7013  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,519  [36mtflops: 48.60  [35mmfu: 15.58%[39m
+[rank0]:[titan] 2026-04-18 21:21:24,433 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:21:24,946 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:24,947 - root - INFO - [31mstep: 1000  [32mloss:  5.39427  [38;2;180;60;0mgrad_norm:  0.6276  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,934  [36mtflops: 48.21  [35mmfu: 15.45%[39m
+[rank0]:[titan] 2026-04-18 21:21:29,528 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:29,528 - root - INFO - [31mstep: 1010  [32mloss:  5.36505  [38;2;180;60;0mgrad_norm:  0.6219  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,537  [36mtflops: 48.62  [35mmfu: 15.58%[39m
+[rank0]:[titan] 2026-04-18 21:21:34,109 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:34,110 - root - INFO - [31mstep: 1020  [32mloss:  5.55046  [38;2;180;60;0mgrad_norm:  0.7206  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,535  [36mtflops: 48.61  [35mmfu: 15.58%[39m
+[rank0]:[titan] 2026-04-18 21:21:38,760 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:38,760 - root - INFO - [31mstep: 1030  [32mloss:  5.74459  [38;2;180;60;0mgrad_norm:  8.2748  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,479  [36mtflops: 47.90  [35mmfu: 15.35%[39m
+[rank0]:[titan] 2026-04-18 21:21:43,358 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:43,359 - root - INFO - [31mstep: 1040  [32mloss:  5.71615  [38;2;180;60;0mgrad_norm:  5.3139  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,271  [36mtflops: 48.43  [35mmfu: 15.52%[39m
+[rank0]:[titan] 2026-04-18 21:21:47,443 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:21:47,978 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:47,978 - root - INFO - [31mstep: 1050  [32mloss:  5.27214  [38;2;180;60;0mgrad_norm:  0.7456  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,951  [36mtflops: 48.22  [35mmfu: 15.45%[39m
+[rank0]:[titan] 2026-04-18 21:21:52,504 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:52,505 - root - INFO - [31mstep: 1060  [32mloss:  5.41384  [38;2;180;60;0mgrad_norm:  0.5944  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,399  [36mtflops: 49.20  [35mmfu: 15.77%[39m
+[rank0]:[titan] 2026-04-18 21:21:57,093 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:21:57,094 - root - INFO - [31mstep: 1070  [32mloss:  5.39018  [38;2;180;60;0mgrad_norm:  0.8467  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,424  [36mtflops: 48.54  [35mmfu: 15.56%[39m
+[rank0]:[titan] 2026-04-18 21:22:01,677 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:01,677 - root - INFO - [31mstep: 1080  [32mloss:  5.45181  [38;2;180;60;0mgrad_norm:  0.6573  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,500  [36mtflops: 48.59  [35mmfu: 15.57%[39m
+[rank0]:[titan] 2026-04-18 21:22:06,246 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:06,246 - root - INFO - [31mstep: 1090  [32mloss:  5.33805  [38;2;180;60;0mgrad_norm:  0.6444  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,728  [36mtflops: 48.75  [35mmfu: 15.62%[39m
+[rank0]:[titan] 2026-04-18 21:22:07,005 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:22:07,075 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212206Z&X-Amz-Expires=3600&X-Amz-Signature=4972b00548f81f12141bd213589b4d81f8fc5808c9b41498a4e6d9c5d5dbbd8f&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550926&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDkyNn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=XrM2ajOA4H5nwLJSw3E2u7iE1PRv3NPrz9DIo8xxtUbzQKOQh-9qxaitt9NMQxf7PBZ30tDB2XwaQxkcYGsAtKDy9DpZznO-XIxZhpqOOY8MkaPdzDOXqadLxhoVhXS3oxQvebXONBuNnrCn796OCiCA1EWBfSP6G0ZdI-VZ6urDsVMN1cDL35AWQkierwtyKm-uMwOJ5HZWu%7EUvSvYwmKTBBXup1XbDqCC3bSze%7EqPh9W1T7utdTMOdlgiD3pO-SDJVG8sEM72OivwTXh%7EoQj0GNepymnMfdg9p5jAULykC50OGD5nr5eo%7EAoiwpPo50kal-Kfp6RtHyJkA1WXQAQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:22:10,904 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:22:11,420 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:11,420 - root - INFO - [31mstep: 1100  [32mloss:  5.33510  [38;2;180;60;0mgrad_norm:  0.5682  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,340  [36mtflops: 43.05  [35mmfu: 13.80%[39m
+[rank0]:[titan] 2026-04-18 21:22:15,977 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:15,978 - root - INFO - [31mstep: 1110  [32mloss:  5.28554  [38;2;180;60;0mgrad_norm:  0.5604  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,907  [36mtflops: 48.87  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:22:20,541 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:20,542 - root - INFO - [31mstep: 1120  [32mloss:  5.27789  [38;2;180;60;0mgrad_norm:  0.6732  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,811  [36mtflops: 48.80  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:22:25,096 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:25,096 - root - INFO - [31mstep: 1130  [32mloss:  5.46066  [38;2;180;60;0mgrad_norm:  0.5888  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,960  [36mtflops: 48.90  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:22:29,649 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:29,649 - root - INFO - [31mstep: 1140  [32mloss:  5.33977  [38;2;180;60;0mgrad_norm:  0.5920  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,978  [36mtflops: 48.92  [35mmfu: 15.68%[39m
+[rank0]:[titan] 2026-04-18 21:22:33,732 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:22:34,244 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:34,244 - root - INFO - [31mstep: 1150  [32mloss:  5.25599  [38;2;180;60;0mgrad_norm:  0.8687  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,324  [36mtflops: 48.47  [35mmfu: 15.54%[39m
+[rank0]:[titan] 2026-04-18 21:22:36,412 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:22:36,470 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212236Z&X-Amz-Expires=3600&X-Amz-Signature=407cf75f43df8fb8fcd4effad41e8f764b6c908c746ad4e3c262c8e983c4e70c&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550956&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDk1Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=gRMD56a%7EwmgaGEmlgyMRxqJrsR7a7et9Al3%7E9XoBW8kd-MWVR%7E9Io4lOFh1HC-9FabentCH32EaG9mYtjBdfP5ULpoqgn%7EXbriobHGJfKoZv18CfNYYN6kmZ3aC8sill-fVl9mshziwHRGUS%7E2WrXWfLvTQNFtwzJ0T8gFY47RWKZABq%7EIGQbj-lBytMvGuISktzEQqJp1ygpI8DJFSmMFHJ5kgPTdz6UR9vVeQ5IG95KianDxppGMODUD-cS9SVi0djfJYqB8D225f7rb0uKuovShMKFw0pvCMH0pBqOp1RBL4BIOAfmjnh8MzemyDEpPzWARh-cvkQXwoQX5h4Eg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:22:39,335 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:39,335 - root - INFO - [31mstep: 1160  [32mloss:  5.34484  [38;2;180;60;0mgrad_norm:  0.5667  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 64,374  [36mtflops: 43.75  [35mmfu: 14.02%[39m
+[rank0]:[titan] 2026-04-18 21:22:43,896 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:43,897 - root - INFO - [31mstep: 1170  [32mloss:  5.09487  [38;2;180;60;0mgrad_norm:  0.5622  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,852  [36mtflops: 48.83  [35mmfu: 15.65%[39m
+[rank0]:[titan] 2026-04-18 21:22:48,456 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:48,457 - root - INFO - [31mstep: 1180  [32mloss:  5.20605  [38;2;180;60;0mgrad_norm:  0.5906  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,867  [36mtflops: 48.84  [35mmfu: 15.65%[39m
+[rank0]:[titan] 2026-04-18 21:22:53,016 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:53,017 - root - INFO - [31mstep: 1190  [32mloss:  5.08273  [38;2;180;60;0mgrad_norm:  0.6225  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,878  [36mtflops: 48.85  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:22:57,099 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:22:57,611 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:22:57,612 - root - INFO - [31mstep: 1200  [32mloss:  5.24869  [38;2;180;60;0mgrad_norm:  0.5864  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,332  [36mtflops: 48.48  [35mmfu: 15.54%[39m
+[rank0]:[titan] 2026-04-18 21:23:02,167 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:02,168 - root - INFO - [31mstep: 1210  [32mloss:  5.20799  [38;2;180;60;0mgrad_norm:  0.6096  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,940  [36mtflops: 48.89  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:23:06,173 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:23:06,245 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212206Z&X-Amz-Expires=3600&X-Amz-Signature=4972b00548f81f12141bd213589b4d81f8fc5808c9b41498a4e6d9c5d5dbbd8f&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550926&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDkyNn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=XrM2ajOA4H5nwLJSw3E2u7iE1PRv3NPrz9DIo8xxtUbzQKOQh-9qxaitt9NMQxf7PBZ30tDB2XwaQxkcYGsAtKDy9DpZznO-XIxZhpqOOY8MkaPdzDOXqadLxhoVhXS3oxQvebXONBuNnrCn796OCiCA1EWBfSP6G0ZdI-VZ6urDsVMN1cDL35AWQkierwtyKm-uMwOJ5HZWu%7EUvSvYwmKTBBXup1XbDqCC3bSze%7EqPh9W1T7utdTMOdlgiD3pO-SDJVG8sEM72OivwTXh%7EoQj0GNepymnMfdg9p5jAULykC50OGD5nr5eo%7EAoiwpPo50kal-Kfp6RtHyJkA1WXQAQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:23:07,309 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:07,310 - root - INFO - [31mstep: 1220  [32mloss:  5.08376  [38;2;180;60;0mgrad_norm:  0.6358  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,741  [36mtflops: 43.32  [35mmfu: 13.88%[39m
+[rank0]:[titan] 2026-04-18 21:23:11,870 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:11,871 - root - INFO - [31mstep: 1230  [32mloss:  5.22715  [38;2;180;60;0mgrad_norm:  0.8686  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,855  [36mtflops: 48.83  [35mmfu: 15.65%[39m
+[rank0]:[titan] 2026-04-18 21:23:16,391 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:16,391 - root - INFO - [31mstep: 1240  [32mloss:  5.08446  [38;2;180;60;0mgrad_norm:  0.6207  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,498  [36mtflops: 49.27  [35mmfu: 15.79%[39m
+[rank0]:[titan] 2026-04-18 21:23:20,481 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:23:20,994 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:20,994 - root - INFO - [31mstep: 1250  [32mloss:  5.06840  [38;2;180;60;0mgrad_norm:  0.7863  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,203  [36mtflops: 48.39  [35mmfu: 15.51%[39m
+[rank0]:[titan] 2026-04-18 21:23:25,567 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:25,567 - root - INFO - [31mstep: 1260  [32mloss:  5.29763  [38;2;180;60;0mgrad_norm:  0.6644  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,674  [36mtflops: 48.71  [35mmfu: 15.61%[39m
+[rank0]:[titan] 2026-04-18 21:23:30,147 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:30,147 - root - INFO - [31mstep: 1270  [32mloss:  5.47136  [38;2;180;60;0mgrad_norm:  0.7522  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,558  [36mtflops: 48.63  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:23:34,743 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:34,744 - root - INFO - [31mstep: 1280  [32mloss:  5.31684  [38;2;180;60;0mgrad_norm:  0.5950  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,298  [36mtflops: 48.45  [35mmfu: 15.53%[39m
+[rank0]:[titan] 2026-04-18 21:23:39,419 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:39,419 - root - INFO - [31mstep: 1290  [32mloss:  5.22519  [38;2;180;60;0mgrad_norm:  0.6488  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,094  [36mtflops: 47.64  [35mmfu: 15.27%[39m
+[rank0]:[titan] 2026-04-18 21:23:43,544 - root - INFO - [GC] Performing periodic GC collection took 0.05 seconds
+[rank0]:[titan] 2026-04-18 21:23:44,076 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:44,076 - root - INFO - [31mstep: 1300  [32mloss:  5.23320  [38;2;180;60;0mgrad_norm:  0.6341  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,375  [36mtflops: 47.83  [35mmfu: 15.33%[39m
+[rank0]:[titan] 2026-04-18 21:23:48,737 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:48,737 - root - INFO - [31mstep: 1310  [32mloss:  5.21127  [38;2;180;60;0mgrad_norm:  0.6983  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,317  [36mtflops: 47.79  [35mmfu: 15.32%[39m
+[rank0]:[titan] 2026-04-18 21:23:53,385 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:53,385 - root - INFO - [31mstep: 1320  [32mloss:  5.01868  [38;2;180;60;0mgrad_norm:  0.6035  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,503  [36mtflops: 47.91  [35mmfu: 15.36%[39m
+[rank0]:[titan] 2026-04-18 21:23:57,984 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:23:57,984 - root - INFO - [31mstep: 1330  [32mloss:  5.06947  [38;2;180;60;0mgrad_norm:  0.5944  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,263  [36mtflops: 48.43  [35mmfu: 15.52%[39m
+[rank0]:[titan] 2026-04-18 21:24:02,523 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:02,523 - root - INFO - [31mstep: 1340  [32mloss:  5.29032  [38;2;180;60;0mgrad_norm:  0.6044  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,208  [36mtflops: 49.07  [35mmfu: 15.73%[39m
+[rank0]:[titan] 2026-04-18 21:24:06,016 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:24:06,079 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212405Z&X-Amz-Expires=3600&X-Amz-Signature=2b93712df3e0b3adce58ef28ffc3a3fdb64b3976d0ec381c8eefb28fe4484e26&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551045&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTA0NX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=La8%7E3cH6R5Fg%7EfSRMKAE4rgV%7E-J9PS3p1-b8jVef7cHr4HazhjOtH8nrrW7N90LcM6UG%7Eh1X%7EE559DwhLTZhcA2StIUbBmaLYAfN-ywMYjV3YUro4zM5wZq9K1FEPUwhvfurR2OInVP68a4D%7EcxWLzzplVXypT20uXkPNutmJLttJF1Ye-kh1kjy6-D68wwxJwnUrMq1jLi-h8kF5f4OdvhMlwJySUy8r0YfaEgo1GLqGp3eN%7EEwCl2A2vf3enfbP8Hu2u4puopsEv-py5K5bx53UgX3sDC14hCMaPzoKDw-vOsPNiejG2aHUV6uvY8WmpE1ZHuo%7ETmgisK-eS--wg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:24:07,215 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:24:07,709 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:07,709 - root - INFO - [31mstep: 1350  [32mloss:  4.85603  [38;2;180;60;0mgrad_norm:  0.8235  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,190  [36mtflops: 42.94  [35mmfu: 13.76%[39m
+[rank0]:[titan] 2026-04-18 21:24:12,318 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:12,319 - root - INFO - [31mstep: 1360  [32mloss:  5.00053  [38;2;180;60;0mgrad_norm:  0.6611  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,103  [36mtflops: 48.32  [35mmfu: 15.49%[39m
+[rank0]:[titan] 2026-04-18 21:24:16,955 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:16,956 - root - INFO - [31mstep: 1370  [32mloss:  5.25234  [38;2;180;60;0mgrad_norm:  0.7008  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,684  [36mtflops: 48.04  [35mmfu: 15.40%[39m
+[rank0]:[titan] 2026-04-18 21:24:21,556 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:21,557 - root - INFO - [31mstep: 1380  [32mloss:  5.25747  [38;2;180;60;0mgrad_norm:  0.6885  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,244  [36mtflops: 48.42  [35mmfu: 15.52%[39m
+[rank0]:[titan] 2026-04-18 21:24:26,196 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:26,197 - root - INFO - [31mstep: 1390  [32mloss:  5.61123  [38;2;180;60;0mgrad_norm:  3.1532  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,631  [36mtflops: 48.00  [35mmfu: 15.38%[39m
+[rank0]:[titan] 2026-04-18 21:24:30,335 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:24:30,848 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:30,848 - root - INFO - [31mstep: 1400  [32mloss:  5.17286  [38;2;180;60;0mgrad_norm:  0.6278  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,463  [36mtflops: 47.89  [35mmfu: 15.35%[39m
+[rank0]:[titan] 2026-04-18 21:24:35,455 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:35,456 - root - INFO - [31mstep: 1410  [32mloss:  5.23569  [38;2;180;60;0mgrad_norm:  0.6296  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,130  [36mtflops: 48.34  [35mmfu: 15.49%[39m
+[rank0]:[titan] 2026-04-18 21:24:36,366 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:24:36,465 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212436Z&X-Amz-Expires=3600&X-Amz-Signature=8b6c059a28617423b8bd65d5d42e53c612e26f206a4bcbf04f55a231209188b3&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551076&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTA3Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=hGaVecheLbT5jlxrKatY0lW7TtXPL5tvhlUOHDccWyR8wGIV7R1KyVIhjAB-nQZsboSWts6Fr21Tf0Bn9LjZngzoDUMuQdV0RAzERQG-1pAnqlf%7EwkLuw9XhB0mZ0AYqok4rwB3wo31fLhUPSBssYysAEZ4QxPnLpmzlV4x2D-EGJaGjXDexu9Ulp78Tj5vgmUv2UO1ZgyTJGSfWzz17YAb4F3D3XyhkdvcALT7oNxNkIMIwJ5dahzthcio-ndy4zw0uPkXWyeKM5H9lJLIU7YiLXkDHLdGNr6TFn3p7r-E4aU5N1tE7lqkKjAJQYeEPJ0l3VRVTuqXpC4or3a-axQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:24:40,800 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:40,800 - root - INFO - [31mstep: 1420  [32mloss:  5.16634  [38;2;180;60;0mgrad_norm:  0.5503  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 61,326  [36mtflops: 41.68  [35mmfu: 13.36%[39m
+[rank0]:[titan] 2026-04-18 21:24:45,454 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:45,455 - root - INFO - [31mstep: 1430  [32mloss:  5.11113  [38;2;180;60;0mgrad_norm:  0.6368  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,420  [36mtflops: 47.86  [35mmfu: 15.34%[39m
+[rank0]:[titan] 2026-04-18 21:24:50,152 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:50,153 - root - INFO - [31mstep: 1440  [32mloss:  5.05270  [38;2;180;60;0mgrad_norm:  0.7772  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,794  [36mtflops: 47.43  [35mmfu: 15.20%[39m
+[rank0]:[titan] 2026-04-18 21:24:54,400 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:24:54,928 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:54,928 - root - INFO - [31mstep: 1450  [32mloss:  5.16305  [38;2;180;60;0mgrad_norm:  0.6247  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,636  [36mtflops: 46.64  [35mmfu: 14.95%[39m
+[rank0]:[titan] 2026-04-18 21:24:59,613 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:24:59,613 - root - INFO - [31mstep: 1460  [32mloss:  5.27152  [38;2;180;60;0mgrad_norm:  0.6087  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,963  [36mtflops: 47.55  [35mmfu: 15.24%[39m
+[rank0]:[titan] 2026-04-18 21:25:04,373 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:04,383 - root - INFO - [31mstep: 1470  [32mloss:  5.04056  [38;2;180;60;0mgrad_norm:  0.5506  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,855  [36mtflops: 46.79  [35mmfu: 15.00%[39m
+[rank0]:[titan] 2026-04-18 21:25:07,110 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:25:07,172 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212506Z&X-Amz-Expires=3600&X-Amz-Signature=8862065c15f8f50b2840f5b1a21de25ac67397f23bd628c943dfbf7671df2010&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551106&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTEwNn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=CN2xUzUtxii5aH8xofBIJDkHtY6veBK2ccr8g0fNnUK0dNjjuKQCpO%7EV1lux5pZGgbVimsOFB%7EfffdQR7X0obzx5HavbRyODlmoVPUA5l5Lt4HmkxaVf-IEue2t43rkPG74uPLLJxTHm2Ox-dWeI4Ur9J5N644ysfi5QwuJ-BQDEW0Qpo6R2bVnHiIbaN8deuW6B8KzxF5EhCSy34iTtM1unGjS-165L4Lh0EquFttcOYsPuRSOUEQ9DQZFcrDSOu0yesu6OInPEXda3Fqrv0GVkURn3atftnn69pBAaKI4AzUrYMUNSN1YT3Uzm1keK8HAmdVy8NqqYAKxHVMAoyg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:25:09,677 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:09,678 - root - INFO - [31mstep: 1480  [32mloss:  4.99381  [38;2;180;60;0mgrad_norm:  0.6119  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 61,906  [36mtflops: 42.07  [35mmfu: 13.48%[39m
+[rank0]:[titan] 2026-04-18 21:25:14,325 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:14,326 - root - INFO - [31mstep: 1490  [32mloss:  5.07684  [38;2;180;60;0mgrad_norm:  0.9674  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,526  [36mtflops: 47.93  [35mmfu: 15.36%[39m
+[rank0]:[titan] 2026-04-18 21:25:18,498 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:25:19,023 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:19,023 - root - INFO - [31mstep: 1500  [32mloss:  5.04816  [38;2;180;60;0mgrad_norm:  0.6090  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,777  [36mtflops: 47.42  [35mmfu: 15.20%[39m
+[rank0]:[titan] 2026-04-18 21:25:23,641 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:23,642 - root - INFO - [31mstep: 1510  [32mloss:  5.22387  [38;2;180;60;0mgrad_norm:  0.5887  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,968  [36mtflops: 48.23  [35mmfu: 15.46%[39m
+[rank0]:[titan] 2026-04-18 21:25:28,272 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:28,272 - root - INFO - [31mstep: 1520  [32mloss:  5.15374  [38;2;180;60;0mgrad_norm:  0.6301  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,779  [36mtflops: 48.10  [35mmfu: 15.42%[39m
+[rank0]:[titan] 2026-04-18 21:25:32,880 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:32,880 - root - INFO - [31mstep: 1530  [32mloss:  5.02840  [38;2;180;60;0mgrad_norm:  0.6354  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,126  [36mtflops: 48.34  [35mmfu: 15.49%[39m
+[rank0]:[titan] 2026-04-18 21:25:37,435 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:25:37,532 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212106Z&X-Amz-Expires=3600&X-Amz-Signature=16c764a005161da8bb360bbbabe7e07054515acd82d2c707c6a310b6f4eb4728&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776550866&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MDg2Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=jNAVazpSJ2Jd6I7LpDwmBNwHEmrwaUoBKIzynrCnlRrn2FX3CgstL3hEyh7MM9S%7E8GvVLbcvdikXv-J3PxyitIZvgjVZe1eyXaanlenAK%7EPUQQQ46zBoH3RFGVScRx1UKPR2z8YTGcNI1MPHP%7EzG9zYMZj9sdrsttJp00iW5AegCMWILLRHpT1GNpewFe0BjljKU5t-g1%7E0wmVkaq%7ETkKhN3Ny9qe9fLcVwTR2WkVW49fj14KjCqah6y-rgvtXcXOA6DztXPDDUK26yePDb0V4EXHCdYNfrRjXZ5gcdyhdD7eVOCEo7mrAiDSDs5AD2wRm3vHCaMBF%7EuimikI-kCCg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:25:38,138 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:38,138 - root - INFO - [31mstep: 1540  [32mloss:  4.93081  [38;2;180;60;0mgrad_norm:  0.5918  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 62,337  [36mtflops: 42.36  [35mmfu: 13.58%[39m
+[rank0]:[titan] 2026-04-18 21:25:42,322 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:25:42,853 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:42,854 - root - INFO - [31mstep: 1550  [32mloss:  5.01686  [38;2;180;60;0mgrad_norm:  0.6797  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,504  [36mtflops: 47.23  [35mmfu: 15.14%[39m
+[rank0]:[titan] 2026-04-18 21:25:47,467 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:47,468 - root - INFO - [31mstep: 1560  [32mloss:  4.85814  [38;2;180;60;0mgrad_norm:  0.5707  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,032  [36mtflops: 48.27  [35mmfu: 15.47%[39m
+[rank0]:[titan] 2026-04-18 21:25:52,142 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:52,142 - root - INFO - [31mstep: 1570  [32mloss:  5.19622  [38;2;180;60;0mgrad_norm:  0.8315  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,122  [36mtflops: 47.65  [35mmfu: 15.27%[39m
+[rank0]:[titan] 2026-04-18 21:25:56,799 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:25:56,800 - root - INFO - [31mstep: 1580  [32mloss:  5.09053  [38;2;180;60;0mgrad_norm:  0.6672  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,371  [36mtflops: 47.82  [35mmfu: 15.33%[39m
+[rank0]:[titan] 2026-04-18 21:26:01,464 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:01,465 - root - INFO - [31mstep: 1590  [32mloss:  5.19259  [38;2;180;60;0mgrad_norm:  0.7670  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,257  [36mtflops: 47.75  [35mmfu: 15.30%[39m
+[rank0]:[titan] 2026-04-18 21:26:05,678 - root - INFO - [GC] Performing periodic GC collection took 0.09 seconds
+[rank0]:[titan] 2026-04-18 21:26:06,199 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:06,200 - root - INFO - [31mstep: 1600  [32mloss:  5.09349  [38;2;180;60;0mgrad_norm:  0.6922  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,220  [36mtflops: 47.04  [35mmfu: 15.08%[39m
+[rank0]:[titan] 2026-04-18 21:26:10,882 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:10,883 - root - INFO - [31mstep: 1610  [32mloss:  5.04214  [38;2;180;60;0mgrad_norm:  0.6210  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,989  [36mtflops: 47.56  [35mmfu: 15.24%[39m
+[rank0]:[titan] 2026-04-18 21:26:15,486 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:15,487 - root - INFO - [31mstep: 1620  [32mloss:  5.01402  [38;2;180;60;0mgrad_norm:  0.6061  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,189  [36mtflops: 48.38  [35mmfu: 15.51%[39m
+[rank0]:[titan] 2026-04-18 21:26:20,100 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:20,101 - root - INFO - [31mstep: 1630  [32mloss:  5.16787  [38;2;180;60;0mgrad_norm:  0.6020  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,034  [36mtflops: 48.27  [35mmfu: 15.47%[39m
+[rank0]:[titan] 2026-04-18 21:26:24,691 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:24,691 - root - INFO - [31mstep: 1640  [32mloss:  5.05150  [38;2;180;60;0mgrad_norm:  0.6928  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,393  [36mtflops: 48.52  [35mmfu: 15.55%[39m
+[rank0]:[titan] 2026-04-18 21:26:28,811 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:26:29,325 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:29,325 - root - INFO - [31mstep: 1650  [32mloss:  4.85236  [38;2;180;60;0mgrad_norm:  0.5944  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,726  [36mtflops: 48.06  [35mmfu: 15.41%[39m
+[rank0]:[titan] 2026-04-18 21:26:33,922 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:33,922 - root - INFO - [31mstep: 1660  [32mloss:  4.99249  [38;2;180;60;0mgrad_norm:  0.5881  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,296  [36mtflops: 48.45  [35mmfu: 15.53%[39m
+[rank0]:[titan] 2026-04-18 21:26:37,821 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:26:37,889 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212637Z&X-Amz-Expires=3600&X-Amz-Signature=a39520c42d949dd787790666463bd87196b417c65c3ced1b2a0b38215856cd37&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551197&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTE5N319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=CPcpZx6gR%7En68ESjRADBqGF8056GD0%7ED0gZlfFjhHf40NA7tR4q61m9U7BX6HjKOHBywhIVq1gYlTCA%7Er3lZFnDVdBnp8D1v1Rexa%7EDKaIL6I-dlx4jHPrSBsJucSfzP58t0Z3n7k0CXS3CS%7EZwgY8-E7RsGMtEtv-c0HwutKIlOpcnjcoQaxy3I1V%7EBaQtdoRo2cKO93%7EaXM6p0zBlKu08-VQdKajbWkKoKKyzqtCNAxLfHpmrLuh2G6DnzfeUQ7WT7knjBWmZdO9IelIWNB0zVCEedBRm04uWAtkWL8BoqF7dA0e8xpWZLgvYoNw2nL2rvu7JHFrKiPfsPwi2Ovg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:26:39,019 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:39,019 - root - INFO - [31mstep: 1670  [32mloss:  5.07978  [38;2;180;60;0mgrad_norm:  0.5770  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 64,297  [36mtflops: 43.70  [35mmfu: 14.01%[39m
+[rank0]:[titan] 2026-04-18 21:26:43,578 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:43,578 - root - INFO - [31mstep: 1680  [32mloss:  4.96366  [38;2;180;60;0mgrad_norm:  0.5594  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,892  [36mtflops: 48.86  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:26:48,135 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:48,136 - root - INFO - [31mstep: 1690  [32mloss:  5.18506  [38;2;180;60;0mgrad_norm:  0.6835  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,905  [36mtflops: 48.87  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:26:52,226 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:26:52,738 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:52,738 - root - INFO - [31mstep: 1700  [32mloss:  5.06978  [38;2;180;60;0mgrad_norm:  0.7343  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,209  [36mtflops: 48.39  [35mmfu: 15.51%[39m
+[rank0]:[titan] 2026-04-18 21:26:57,289 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:26:57,289 - root - INFO - [31mstep: 1710  [32mloss:  4.93550  [38;2;180;60;0mgrad_norm:  0.6188  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,012  [36mtflops: 48.94  [35mmfu: 15.69%[39m
+[rank0]:[titan] 2026-04-18 21:27:01,845 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:01,846 - root - INFO - [31mstep: 1720  [32mloss:  4.83224  [38;2;180;60;0mgrad_norm:  0.6394  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,926  [36mtflops: 48.88  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:27:06,386 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:06,386 - root - INFO - [31mstep: 1730  [32mloss:  4.95296  [38;2;180;60;0mgrad_norm:  0.7213  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,177  [36mtflops: 49.05  [35mmfu: 15.72%[39m
+[rank0]:[titan] 2026-04-18 21:27:07,643 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:27:07,709 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212707Z&X-Amz-Expires=3600&X-Amz-Signature=df1168fd279df49c99966b15ba7234e8c998de31487f4ec327d1c8c8bf22a628&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551227&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTIyN319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=AjnPES6nmFN7MOJGtRbrc8IYROK9caf6buu%7EqFNH4i9iFD%7Eme54%7E1ufi5c-EcrlIE6xaB%7EWJfEar0kQ2hFJQY34VgbU4shQWrszlJIfNAvDc0lEEVDNIXUVI7Gr1UixV4yq2Tqq-WVUXA2B42fD23xkfh-I703Hs-ev-fZiUQQd1KUoVJitJ-kA5hWXPyvpaUaNyGBnGjS8f2o01as6lbIX4Ow%7ETHVmQ4-sUVCRa8AcRleyWmELwL-gkFyj5jTczQ3E2AYk5xF-3ZdgPKXYMCCRPOelAHBO1cxZ7EEIX306VDekyYKsc4LbG6rcHJc6Z1uxFl1WtfV5m9DRSIGfqJg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:27:11,501 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:11,501 - root - INFO - [31mstep: 1740  [32mloss:  4.82852  [38;2;180;60;0mgrad_norm:  0.6221  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 64,078  [36mtflops: 43.55  [35mmfu: 13.96%[39m
+[rank0]:[titan] 2026-04-18 21:27:15,624 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:27:16,142 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:16,142 - root - INFO - [31mstep: 1750  [32mloss:  5.13020  [38;2;180;60;0mgrad_norm:  0.5869  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,621  [36mtflops: 47.99  [35mmfu: 15.38%[39m
+[rank0]:[titan] 2026-04-18 21:27:20,724 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:20,725 - root - INFO - [31mstep: 1760  [32mloss:  4.85876  [38;2;180;60;0mgrad_norm:  0.5716  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,523  [36mtflops: 48.61  [35mmfu: 15.58%[39m
+[rank0]:[titan] 2026-04-18 21:27:25,316 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:25,317 - root - INFO - [31mstep: 1770  [32mloss:  4.96539  [38;2;180;60;0mgrad_norm:  0.6521  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,368  [36mtflops: 48.50  [35mmfu: 15.55%[39m
+[rank0]:[titan] 2026-04-18 21:27:29,882 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:29,882 - root - INFO - [31mstep: 1780  [32mloss:  5.05945  [38;2;180;60;0mgrad_norm:  0.6046  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,788  [36mtflops: 48.79  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:27:34,438 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:34,439 - root - INFO - [31mstep: 1790  [32mloss:  5.04910  [38;2;180;60;0mgrad_norm:  0.5903  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,934  [36mtflops: 48.89  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:27:37,482 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:27:37,539 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212737Z&X-Amz-Expires=3600&X-Amz-Signature=9f5325b68e11ceef9fc4e3dba0f3db2c59efef9fc991ab0a52d5d8730be445e9&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551257&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTI1N319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=dvgvLXyaK%7E4kqGK8iO7P3dLKf6gmzFjeCQVdhZvbBW-z6ndu8sPdv07AHOEN9a-AdqSOg644iUQ9T1zuZ8GvkHJcIm68fJ5h5230EBWAOkQ2ztlnODuXCBBlDVkUKudhrkJUNR3K7wXqG4TAlxomplxuAjuSUczY6OZfOTszuM%7E1XTW-1ovWwqa0MgMVM-2pnU4rSEQIGT%7E5jw9jwg7PO0oXQYnqXkeg6hmZXx5%7EJfgj3yEYtjzCn3Pr4FkJ0QvA9BY%7ErT3fETgX0KY2ygv1ILVGVQm1xcvtefVSKfKiRDYeTzeArYPmBpuHUbhPYYFqbKL%7EJOhb8s6h-pWEPCt4wQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:27:39,135 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:27:39,668 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:39,669 - root - INFO - [31mstep: 1800  [32mloss:  4.84085  [38;2;180;60;0mgrad_norm:  0.6492  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 62,664  [36mtflops: 42.59  [35mmfu: 13.65%[39m
+[rank0]:[titan] 2026-04-18 21:27:44,332 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:44,333 - root - INFO - [31mstep: 1810  [32mloss:  5.32007  [38;2;180;60;0mgrad_norm:  0.7230  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,283  [36mtflops: 47.76  [35mmfu: 15.31%[39m
+[rank0]:[titan] 2026-04-18 21:27:49,132 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:49,134 - root - INFO - [31mstep: 1820  [32mloss:  5.03681  [38;2;180;60;0mgrad_norm:  0.5854  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,325  [36mtflops: 46.43  [35mmfu: 14.88%[39m
+[rank0]:[titan] 2026-04-18 21:27:53,814 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:53,814 - root - INFO - [31mstep: 1830  [32mloss:  4.93315  [38;2;180;60;0mgrad_norm:  0.7369  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,032  [36mtflops: 47.59  [35mmfu: 15.25%[39m
+[rank0]:[titan] 2026-04-18 21:27:58,577 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:27:58,577 - root - INFO - [31mstep: 1840  [32mloss:  4.92802  [38;2;180;60;0mgrad_norm:  0.5807  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,817  [36mtflops: 46.77  [35mmfu: 14.99%[39m
+[rank0]:[titan] 2026-04-18 21:28:02,828 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:28:03,354 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:03,355 - root - INFO - [31mstep: 1850  [32mloss:  5.08466  [38;2;180;60;0mgrad_norm:  0.6426  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,603  [36mtflops: 46.62  [35mmfu: 14.94%[39m
+[rank0]:[titan] 2026-04-18 21:28:08,098 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:08,099 - root - INFO - [31mstep: 1860  [32mloss:  4.84679  [38;2;180;60;0mgrad_norm:  0.6379  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,082  [36mtflops: 46.95  [35mmfu: 15.05%[39m
+[rank0]:[titan] 2026-04-18 21:28:12,943 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:12,943 - root - INFO - [31mstep: 1870  [32mloss:  4.94961  [38;2;180;60;0mgrad_norm:  0.6239  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 67,655  [36mtflops: 45.98  [35mmfu: 14.74%[39m
+[rank0]:[titan] 2026-04-18 21:28:17,752 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:17,752 - root - INFO - [31mstep: 1880  [32mloss:  5.00248  [38;2;180;60;0mgrad_norm:  1.7919  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,162  [36mtflops: 46.32  [35mmfu: 14.85%[39m
+[rank0]:[titan] 2026-04-18 21:28:22,416 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:22,417 - root - INFO - [31mstep: 1890  [32mloss:  4.91658  [38;2;180;60;0mgrad_norm:  0.6894  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,268  [36mtflops: 47.75  [35mmfu: 15.31%[39m
+[rank0]:[titan] 2026-04-18 21:28:26,694 - root - INFO - [GC] Performing periodic GC collection took 0.09 seconds
+[rank0]:[titan] 2026-04-18 21:28:27,220 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:27,220 - root - INFO - [31mstep: 1900  [32mloss:  4.83192  [38;2;180;60;0mgrad_norm:  0.6274  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,228  [36mtflops: 46.37  [35mmfu: 14.86%[39m
+[rank0]:[titan] 2026-04-18 21:28:31,932 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:31,933 - root - INFO - [31mstep: 1910  [32mloss:  5.04520  [38;2;180;60;0mgrad_norm:  0.7691  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,548  [36mtflops: 47.26  [35mmfu: 15.15%[39m
+[rank0]:[titan] 2026-04-18 21:28:36,626 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:36,627 - root - INFO - [31mstep: 1920  [32mloss:  4.80458  [38;2;180;60;0mgrad_norm:  0.6295  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,825  [36mtflops: 47.45  [35mmfu: 15.21%[39m
+[rank0]:[titan] 2026-04-18 21:28:38,929 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:28:39,002 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212838Z&X-Amz-Expires=3600&X-Amz-Signature=85b132dae8348e067cc559a8c363a98359a7d0a9966e9c1af6ca3bfd8163c4a2&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551318&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTMxOH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=cE9aBIyVBdMk0nefSWzi2iVTFKi1ClBr6UI-hKSJwQg1bJ6zcCjTLOUECHluplUVrd5ngzYsrOv-OcT%7ETjOfJ2Zm5QsOlqAW6Ncz4z8-xU9kuDjCP6vVSlXpHq5AW3jgWRqN6BHUtzJdA8o5L0NcYd7XT%7EU2FmPWyvrpJSfOMyH%7EUZ5wapgzEXVwRM1KrC8tvmna5sXiKwOxN%7EX3Vd5nJqGnRXSWNhe2DHCNFqFOe26eib1hsrFqMKLYQk5g1CBPc72sR1ef5EA%7EeH9HWLkUbqOkW1SHf-Ekmf3MknoE2eQBs3WpbtITVUB6MmEZuC0nVWKaTyJ-o-K-GPspDxhOfQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:28:42,021 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:42,022 - root - INFO - [31mstep: 1930  [32mloss:  4.85973  [38;2;180;60;0mgrad_norm:  0.5947  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 60,750  [36mtflops: 41.29  [35mmfu: 13.23%[39m
+[rank0]:[titan] 2026-04-18 21:28:46,780 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:46,781 - root - INFO - [31mstep: 1940  [32mloss:  4.94114  [38;2;180;60;0mgrad_norm:  0.5876  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,880  [36mtflops: 46.81  [35mmfu: 15.00%[39m
+[rank0]:[titan] 2026-04-18 21:28:51,044 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:28:51,570 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:51,571 - root - INFO - [31mstep: 1950  [32mloss:  4.73633  [38;2;180;60;0mgrad_norm:  0.8741  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,428  [36mtflops: 46.50  [35mmfu: 14.90%[39m
+[rank0]:[titan] 2026-04-18 21:28:56,217 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:28:56,218 - root - INFO - [31mstep: 1960  [32mloss:  4.66861  [38;2;180;60;0mgrad_norm:  2.2928  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,542  [36mtflops: 47.94  [35mmfu: 15.37%[39m
+[rank0]:[titan] 2026-04-18 21:29:00,804 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:00,805 - root - INFO - [31mstep: 1970  [32mloss:  4.70550  [38;2;180;60;0mgrad_norm:  0.6581  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,458  [36mtflops: 48.56  [35mmfu: 15.56%[39m
+[rank0]:[titan] 2026-04-18 21:29:05,381 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:05,381 - root - INFO - [31mstep: 1980  [32mloss:  5.02763  [38;2;180;60;0mgrad_norm:  1.1606  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,604  [36mtflops: 48.66  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:29:09,849 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:29:09,913 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212909Z&X-Amz-Expires=3600&X-Amz-Signature=bac846b640c514ed13e15f3b14e9a072203253dfd87fb2e8abf4a29f10218b58&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551349&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTM0OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=iwADnhnPMlBfpSVyf0TrvHT5akpovf3VMkrjZsbc69IbH58IW%7E3t3mj9kxCcoG%7EOthoglsBhmAoGT3cxT4Slpe%7EPAsaNjCPBqot2lMAtBWWXhn5pRVppPPY0JpNC0qia7daQipGMDlFoOoSvUcvaTwsy3szMKetriL4kzyDiA9pwROhcwxSrZh1rIoXCxlOlqVPKhqsOnvTCLqBAefdGSCOuoD34a2q6Ht%7EXrhYs0fmbAWRkb7i0grAe2TGlCBNl-e4pfYXSoTEuLECVx41XuoMb0E1Uq3yEyaVuoCw6ftZneYqRhPvLTkRsRGDpFI90U54w11ers8kvVdvB2BPQ8A__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:29:10,577 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:10,578 - root - INFO - [31mstep: 1990  [32mloss:  4.87221  [38;2;180;60;0mgrad_norm:  0.6049  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,074  [36mtflops: 42.86  [35mmfu: 13.74%[39m
+[rank0]:[titan] 2026-04-18 21:29:14,831 - root - INFO - [GC] Performing periodic GC collection took 0.17 seconds
+[rank0]:[titan] 2026-04-18 21:29:15,359 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:15,360 - root - INFO - [31mstep: 2000  [32mloss:  4.80854  [38;2;180;60;0mgrad_norm:  0.6355  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 68,549  [36mtflops: 46.59  [35mmfu: 14.93%[39m
+[rank0]:[titan] 2026-04-18 21:29:19,927 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:19,927 - root - INFO - [31mstep: 2010  [32mloss:  5.01399  [38;2;180;60;0mgrad_norm:  0.5903  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,763  [36mtflops: 48.77  [35mmfu: 15.63%[39m
+[rank0]:[titan] 2026-04-18 21:29:24,483 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:24,483 - root - INFO - [31mstep: 2020  [32mloss:  4.89510  [38;2;180;60;0mgrad_norm:  0.6168  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,930  [36mtflops: 48.88  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:29:29,033 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:29,033 - root - INFO - [31mstep: 2030  [32mloss:  5.01657  [38;2;180;60;0mgrad_norm:  0.9289  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,031  [36mtflops: 48.95  [35mmfu: 15.69%[39m
+[rank0]:[titan] 2026-04-18 21:29:33,591 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:33,592 - root - INFO - [31mstep: 2040  [32mloss:  4.79080  [38;2;180;60;0mgrad_norm:  0.6077  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,890  [36mtflops: 48.86  [35mmfu: 15.66%[39m
+[rank0]:[titan] 2026-04-18 21:29:37,687 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:29:38,199 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:38,199 - root - INFO - [31mstep: 2050  [32mloss:  4.81642  [38;2;180;60;0mgrad_norm:  0.7182  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,131  [36mtflops: 48.34  [35mmfu: 15.49%[39m
+[rank0]:[titan] 2026-04-18 21:29:39,928 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:29:39,988 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T212939Z&X-Amz-Expires=3600&X-Amz-Signature=f045330a19279863a7d5374dcdf59f5ce0ef022bb65bcc8827166a39f0637d86&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551379&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTM3OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=CSpIB17cD5NkkEDXjNFvVYHsi0Dm-44qliYyx-hyZmyn2t54S6Zy0hp0Of5Bj4V7lqCPOHXkOmwjQPWOpkhsUQdsk6tpo%7EJScQsrIVT7uySWEVRg-5bfZxhxE2c3V91KgzUFUTvGUWjI72XG8NkTdk7MSM%7EMXnbHUuZCJPDDenBABC4ctqVDDA9tDuEZCFPaMKHd0A9ossGdiZHJx4BVLghWnKceBHn1Pw2sSBxtMI-cU0ZOcIln-haITUlLumUoxxQTlmt6xHulA1kXtJOLD8urvNx%7E6HmacQscLSx3TwuEuiWT%7Egd0xcUgA8vN5uJdZlt21-GDiMkGTY4s4NFhmg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:29:43,358 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:43,359 - root - INFO - [31mstep: 2060  [32mloss:  4.90019  [38;2;180;60;0mgrad_norm:  0.6311  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,522  [36mtflops: 43.17  [35mmfu: 13.84%[39m
+[rank0]:[titan] 2026-04-18 21:29:47,998 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:47,998 - root - INFO - [31mstep: 2070  [32mloss:  4.83371  [38;2;180;60;0mgrad_norm:  0.6075  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,641  [36mtflops: 48.01  [35mmfu: 15.39%[39m
+[rank0]:[titan] 2026-04-18 21:29:52,609 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:52,610 - root - INFO - [31mstep: 2080  [32mloss:  4.87023  [38;2;180;60;0mgrad_norm:  0.5862  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,076  [36mtflops: 48.30  [35mmfu: 15.48%[39m
+[rank0]:[titan] 2026-04-18 21:29:57,187 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:29:57,187 - root - INFO - [31mstep: 2090  [32mloss:  4.84041  [38;2;180;60;0mgrad_norm:  0.6091  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,598  [36mtflops: 48.66  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:30:01,320 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:30:01,838 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:01,838 - root - INFO - [31mstep: 2100  [32mloss:  4.73732  [38;2;180;60;0mgrad_norm:  0.5575  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,465  [36mtflops: 47.89  [35mmfu: 15.35%[39m
+[rank0]:[titan] 2026-04-18 21:30:06,405 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:06,406 - root - INFO - [31mstep: 2110  [32mloss:  4.91186  [38;2;180;60;0mgrad_norm:  1.1776  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,756  [36mtflops: 48.76  [35mmfu: 15.63%[39m
+[rank0]:[titan] 2026-04-18 21:30:11,050 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:11,050 - root - INFO - [31mstep: 2120  [32mloss:  4.68956  [38;2;180;60;0mgrad_norm:  0.5899  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,570  [36mtflops: 47.96  [35mmfu: 15.37%[39m
+[rank0]:[titan] 2026-04-18 21:30:15,614 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:15,615 - root - INFO - [31mstep: 2130  [32mloss:  4.79026  [38;2;180;60;0mgrad_norm:  0.6121  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,795  [36mtflops: 48.79  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:30:20,167 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:20,167 - root - INFO - [31mstep: 2140  [32mloss:  4.88231  [38;2;180;60;0mgrad_norm:  0.7928  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,996  [36mtflops: 48.93  [35mmfu: 15.68%[39m
+[rank0]:[titan] 2026-04-18 21:30:24,332 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:30:24,805 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:24,806 - root - INFO - [31mstep: 2150  [32mloss:  4.79195  [38;2;180;60;0mgrad_norm:  0.8947  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,657  [36mtflops: 48.02  [35mmfu: 15.39%[39m
+[rank0]:[titan] 2026-04-18 21:30:29,382 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:29,383 - root - INFO - [31mstep: 2160  [32mloss:  4.90246  [38;2;180;60;0mgrad_norm:  0.6522  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,606  [36mtflops: 48.66  [35mmfu: 15.60%[39m
+[rank0]:[titan] 2026-04-18 21:30:33,961 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:33,962 - root - INFO - [31mstep: 2170  [32mloss:  4.66607  [38;2;180;60;0mgrad_norm:  0.5950  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,569  [36mtflops: 48.64  [35mmfu: 15.59%[39m
+[rank0]:[titan] 2026-04-18 21:30:38,528 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:38,529 - root - INFO - [31mstep: 2180  [32mloss:  4.79679  [38;2;180;60;0mgrad_norm:  0.6187  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,763  [36mtflops: 48.77  [35mmfu: 15.63%[39m
+[rank0]:[titan] 2026-04-18 21:30:39,354 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:30:39,427 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T213039Z&X-Amz-Expires=3600&X-Amz-Signature=51ebe8ff792b15589a15b7e076485f9c7e2fc82ea5fb59ff469951663544e361&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551439&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTQzOX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=JODIHpaIUWbTv44vNTECNYRDvlsbVdyqhPtK5fjPdLOLjxWH1a8KsZmNnKISu8gA4aKBzm8C0qabRI6XX2aU0pbXrVQihZiemKDnZ6lGEm6Uxue96k7%7EcGNCDE7jYsAVoMZZKTLmb3R2DG6VFPSbY%7Ec7eDIlw6HyFKzMHWVx3oI3cTlB8vOCoKh%7E4MRALnYxRs9KM-wXUN7uF9MfLvQl-8NL0s4cH8Q3EEYcEDvp26dmfTxeRnPbo%7EUlzoZcTFvgS88u9tjQJSadoyB8xoYiRzTD0onwATfU5L9y4xExXGzOEGjDcq2ed9ssKiKzM78Oy-Ozd6tfNVEkOmHpjGAL%7EQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:30:43,676 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:43,677 - root - INFO - [31mstep: 2190  [32mloss:  4.83096  [38;2;180;60;0mgrad_norm:  0.6687  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,658  [36mtflops: 43.26  [35mmfu: 13.87%[39m
+[rank0]:[titan] 2026-04-18 21:30:47,777 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:30:48,292 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:48,292 - root - INFO - [31mstep: 2200  [32mloss:  4.85091  [38;2;180;60;0mgrad_norm:  0.6773  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,005  [36mtflops: 48.25  [35mmfu: 15.47%[39m
+[rank0]:[titan] 2026-04-18 21:30:52,843 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:52,843 - root - INFO - [31mstep: 2210  [32mloss:  4.80068  [38;2;180;60;0mgrad_norm:  0.6496  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,014  [36mtflops: 48.94  [35mmfu: 15.69%[39m
+[rank0]:[titan] 2026-04-18 21:30:57,386 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:30:57,387 - root - INFO - [31mstep: 2220  [32mloss:  4.81595  [38;2;180;60;0mgrad_norm:  0.5976  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,131  [36mtflops: 49.02  [35mmfu: 15.71%[39m
+[rank0]:[titan] 2026-04-18 21:31:01,951 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:01,951 - root - INFO - [31mstep: 2230  [32mloss:  4.80295  [38;2;180;60;0mgrad_norm:  0.6000  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,809  [36mtflops: 48.80  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:31:06,489 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:06,490 - root - INFO - [31mstep: 2240  [32mloss:  4.84300  [38;2;180;60;0mgrad_norm:  0.6559  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,214  [36mtflops: 49.08  [35mmfu: 15.73%[39m
+[rank0]:[titan] 2026-04-18 21:31:09,149 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:31:09,283 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T213039Z&X-Amz-Expires=3600&X-Amz-Signature=51ebe8ff792b15589a15b7e076485f9c7e2fc82ea5fb59ff469951663544e361&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551439&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTQzOX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=JODIHpaIUWbTv44vNTECNYRDvlsbVdyqhPtK5fjPdLOLjxWH1a8KsZmNnKISu8gA4aKBzm8C0qabRI6XX2aU0pbXrVQihZiemKDnZ6lGEm6Uxue96k7%7EcGNCDE7jYsAVoMZZKTLmb3R2DG6VFPSbY%7Ec7eDIlw6HyFKzMHWVx3oI3cTlB8vOCoKh%7E4MRALnYxRs9KM-wXUN7uF9MfLvQl-8NL0s4cH8Q3EEYcEDvp26dmfTxeRnPbo%7EUlzoZcTFvgS88u9tjQJSadoyB8xoYiRzTD0onwATfU5L9y4xExXGzOEGjDcq2ed9ssKiKzM78Oy-Ozd6tfNVEkOmHpjGAL%7EQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:31:11,439 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:31:11,951 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:11,951 - root - INFO - [31mstep: 2250  [32mloss:  4.63998  [38;2;180;60;0mgrad_norm:  0.8654  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 60,009  [36mtflops: 40.78  [35mmfu: 13.07%[39m
+[rank0]:[titan] 2026-04-18 21:31:16,493 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:16,493 - root - INFO - [31mstep: 2260  [32mloss:  4.75036  [38;2;180;60;0mgrad_norm:  0.6623  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,149  [36mtflops: 49.03  [35mmfu: 15.72%[39m
+[rank0]:[titan] 2026-04-18 21:31:21,040 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:21,040 - root - INFO - [31mstep: 2270  [32mloss:  4.79798  [38;2;180;60;0mgrad_norm:  0.5927  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,079  [36mtflops: 48.98  [35mmfu: 15.70%[39m
+[rank0]:[titan] 2026-04-18 21:31:25,672 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:25,672 - root - INFO - [31mstep: 2280  [32mloss:  4.69448  [38;2;180;60;0mgrad_norm:  1.3346  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,754  [36mtflops: 48.08  [35mmfu: 15.41%[39m
+[rank0]:[titan] 2026-04-18 21:31:30,224 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:30,225 - root - INFO - [31mstep: 2290  [32mloss:  4.90907  [38;2;180;60;0mgrad_norm:  0.6595  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,992  [36mtflops: 48.93  [35mmfu: 15.68%[39m
+[rank0]:[titan] 2026-04-18 21:31:34,344 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:31:34,860 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:34,861 - root - INFO - [31mstep: 2300  [32mloss:  4.85494  [38;2;180;60;0mgrad_norm:  0.9177  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,694  [36mtflops: 48.04  [35mmfu: 15.40%[39m
+[rank0]:[titan] 2026-04-18 21:31:39,327 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:31:39,391 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T213139Z&X-Amz-Expires=3600&X-Amz-Signature=a4e221f76c1032854c0ad59d2f10ef57ea411d50d0f2e8b4d728452593c4e54a&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551499&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTQ5OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=Vqt00p8keB0GxQZiy-UJnCeBY2-VjwzsRTVz6x3IEn0a8BUbu-ucqOSuZRTpGbHJjGICD75GwS05MmQAIb3Pi-cDvWSL4uMAHM%7EnkMzBNw-psQw1WWqtWXhav6UThl4gdAPhmXB2NCiDh0ihb3etTDnkm%7EI2IWxphB4a%7Ef37WRwchT0UL1ccwXiRMkaCL2ARd8kLzFjoXgGdvXVBIwHo0g21Kpv2L0azh58HWHPMxOo%7Edu6xeBQrugZ1sWrD7cpDeM7j0dkHNeh9cSd96cSxiSvVbYhnmkr70nw9NGvQX-khTGZxQ7rwGTWpyOHmssjp7eWKa-6L22h%7E4HQ%7EEiD-gg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:31:40,021 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:40,022 - root - INFO - [31mstep: 2310  [32mloss:  5.01442  [38;2;180;60;0mgrad_norm:  0.6982  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 63,500  [36mtflops: 43.15  [35mmfu: 13.83%[39m
+[rank0]:[titan] 2026-04-18 21:31:44,582 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:44,582 - root - INFO - [31mstep: 2320  [32mloss:  4.76707  [38;2;180;60;0mgrad_norm:  0.6188  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,864  [36mtflops: 48.84  [35mmfu: 15.65%[39m
+[rank0]:[titan] 2026-04-18 21:31:49,126 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:49,127 - root - INFO - [31mstep: 2330  [32mloss:  4.85780  [38;2;180;60;0mgrad_norm:  0.7724  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,110  [36mtflops: 49.01  [35mmfu: 15.71%[39m
+[rank0]:[titan] 2026-04-18 21:31:53,684 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:53,684 - root - INFO - [31mstep: 2340  [32mloss:  4.83502  [38;2;180;60;0mgrad_norm:  0.7474  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,918  [36mtflops: 48.88  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:31:57,779 - root - INFO - [GC] Performing periodic GC collection took 0.06 seconds
+[rank0]:[titan] 2026-04-18 21:31:58,295 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:31:58,296 - root - INFO - [31mstep: 2350  [32mloss:  5.02200  [38;2;180;60;0mgrad_norm:  0.6321  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,068  [36mtflops: 48.30  [35mmfu: 15.48%[39m
+[rank0]:[titan] 2026-04-18 21:32:02,859 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:02,859 - root - INFO - [31mstep: 2360  [32mloss:  4.86180  [38;2;180;60;0mgrad_norm:  0.6161  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,812  [36mtflops: 48.80  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:32:07,416 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:07,416 - root - INFO - [31mstep: 2370  [32mloss:  4.84149  [38;2;180;60;0mgrad_norm:  0.6234  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,922  [36mtflops: 48.88  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:32:12,048 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:12,049 - root - INFO - [31mstep: 2380  [32mloss:  5.02627  [38;2;180;60;0mgrad_norm:  0.7085  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,742  [36mtflops: 48.08  [35mmfu: 15.41%[39m
+[rank0]:[titan] 2026-04-18 21:32:16,609 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:16,609 - root - INFO - [31mstep: 2390  [32mloss:  4.74833  [38;2;180;60;0mgrad_norm:  0.5715  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,864  [36mtflops: 48.84  [35mmfu: 15.65%[39m
+[rank0]:[titan] 2026-04-18 21:32:20,730 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:32:21,245 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:21,246 - root - INFO - [31mstep: 2400  [32mloss:  4.97745  [38;2;180;60;0mgrad_norm:  0.7480  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,687  [36mtflops: 48.04  [35mmfu: 15.40%[39m
+[rank0]:[titan] 2026-04-18 21:32:25,796 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:25,797 - root - INFO - [31mstep: 2410  [32mloss:  4.68365  [38;2;180;60;0mgrad_norm:  0.6136  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 72,024  [36mtflops: 48.95  [35mmfu: 15.69%[39m
+[rank0]:[titan] 2026-04-18 21:32:30,362 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:30,363 - root - INFO - [31mstep: 2420  [32mloss:  4.60526  [38;2;180;60;0mgrad_norm:  0.6382  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,786  [36mtflops: 48.79  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:32:34,915 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:34,916 - root - INFO - [31mstep: 2430  [32mloss:  4.56850  [38;2;180;60;0mgrad_norm:  0.8453  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,983  [36mtflops: 48.92  [35mmfu: 15.68%[39m
+[rank0]:[titan] 2026-04-18 21:32:38,859 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-18 21:32:38,960 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260418%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260418T213238Z&X-Amz-Expires=3600&X-Amz-Signature=cf1831e417413de3f06bc57bee814cd959e6f5a3fa5d540f11221f0367bc4b79&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776551558&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjU1MTU1OH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=iuH%7E5ILes8IEn3XR7ThQPq-v3LCOcKXEkqJ3LZO5U9-huWhS5nLdsRugkXQPjNExu8oayzXWtuNJBt-im9uQ-O16B6l6gU-pfLMEL%7EiH8WFKMWGOIGQDywqkp9BBD0IQ3yqkpy7jmxo2Dlhmk%7E3wexJK7aFQeXJ9ZTCQlXUukRAZIz69yxrGgJA22xViT5XYIBe-aian8s62DcjmL53G0ZRhRoPtHXOtBOl6MAfCq9eg9q0G13zrLx88x8seLUyJU17R%7E1aoIKqZc5gZToPbDQq5xAXfELOwhJ2tnZkfogVA9zEy4jyUEJ4qhXTTP9AidBBAVqOX1TCjVp8rSyCakg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-18 21:32:40,363 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:40,364 - root - INFO - [31mstep: 2440  [32mloss:  4.69699  [38;2;180;60;0mgrad_norm:  0.6489  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 60,158  [36mtflops: 40.88  [35mmfu: 13.10%[39m
+[rank0]:[titan] 2026-04-18 21:32:44,538 - root - INFO - [GC] Performing periodic GC collection took 0.07 seconds
+[rank0]:[titan] 2026-04-18 21:32:45,052 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:45,053 - root - INFO - [31mstep: 2450  [32mloss:  4.74213  [38;2;180;60;0mgrad_norm:  0.6113  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 69,896  [36mtflops: 47.50  [35mmfu: 15.22%[39m
+[rank0]:[titan] 2026-04-18 21:32:49,656 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:49,657 - root - INFO - [31mstep: 2460  [32mloss:  4.72433  [38;2;180;60;0mgrad_norm:  0.6682  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,189  [36mtflops: 48.38  [35mmfu: 15.51%[39m
+[rank0]:[titan] 2026-04-18 21:32:54,246 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:54,247 - root - INFO - [31mstep: 2470  [32mloss:  5.21520  [38;2;180;60;0mgrad_norm:  0.7428  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,405  [36mtflops: 48.53  [35mmfu: 15.55%[39m
+[rank0]:[titan] 2026-04-18 21:32:58,810 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:32:58,810 - root - INFO - [31mstep: 2480  [32mloss:  5.04774  [38;2;180;60;0mgrad_norm:  1.0795  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,817  [36mtflops: 48.81  [35mmfu: 15.64%[39m
+[rank0]:[titan] 2026-04-18 21:33:03,365 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:33:03,366 - root - INFO - [31mstep: 2490  [32mloss:  4.77845  [38;2;180;60;0mgrad_norm:  1.0225  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 71,949  [36mtflops: 48.90  [35mmfu: 15.67%[39m
+[rank0]:[titan] 2026-04-18 21:33:07,481 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-04-18 21:33:08,001 - root - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-18 21:33:08,001 - root - INFO - [31mstep: 2500  [32mloss:  4.82641  [38;2;180;60;0mgrad_norm:  0.6065  [38;2;54;234;195mmemory: 29.11GiB(92.83%)  [34mtps: 70,703  [36mtflops: 48.05  [35mmfu: 15.40%[39m
+[rank0]:[titan] 2026-04-18 21:33:08,001 - root - INFO - Sleeping 2 seconds for other ranks to complete
+[rank0]:[titan] 2026-04-18 21:33:10,002 - root - INFO - Training completed
+[rank0]:[titan] 2026-04-18 21:33:10,374 - root - INFO - Process group destroyed
