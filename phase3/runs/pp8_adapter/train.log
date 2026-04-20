@@ -1,0 +1,2167 @@
+W0420 08:33:18.480000 136108 site-packages/torch/distributed/run.py:851] 
+W0420 08:33:18.480000 136108 site-packages/torch/distributed/run.py:851] *****************************************
+W0420 08:33:18.480000 136108 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0420 08:33:18.480000 136108 site-packages/torch/distributed/run.py:851] *****************************************
+[rank7]:[titan] 2026-04-20 08:33:27,013 - root - INFO - torchtitan version: 0.2.2 (0.0.0 means __version__ is not defined correctly).
+[rank7]:[titan] 2026-04-20 08:33:27,494 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank7]:[titan] 2026-04-20 08:33:27,497 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank7]:[titan] 2026-04-20 08:33:28,671 - root - INFO - Building device mesh with parallelism: pp=8, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank7]:[titan] 2026-04-20 08:33:28,678 - root - INFO - Successfully created meshes with active dimensions: ['pp']
+[rank7]:[titan] 2026-04-20 08:33:28,680 - root - INFO - Loading tokenizer from tokenizer.json
+[rank7]:[titan] 2026-04-20 08:33:29,017 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank7]:[titan] 2026-04-20 08:33:29,279 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank7]:[titan] 2026-04-20 08:33:29,284 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:29,474 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-04-20 08:33:29,475 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-04-20 08:33:30,071 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-04-20 08:33:30,449 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:30,956 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-04-20 08:33:31,197 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:31,443 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:31,852 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:32,048 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:32,322 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-04-20 08:33:32,446 - root - INFO - Building attn_res 175M_attn_res_L16_n8 with {
+[rank7]:  "param_init": null,
+[rank7]:  "dim": 768,
+[rank7]:  "vocab_size": 128256,
+[rank7]:  "output": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.03608439182435161, a=-0.10825317547305482, b=0.10825317547305482)",
+[rank7]:      "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:    },
+[rank7]:    "in_features": 768,
+[rank7]:    "out_features": 128256,
+[rank7]:    "bias": false
+[rank7]:  },
+[rank7]:  "tok_embeddings": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function skip_param_init at 0x7f1bfef468e0>"
+[rank7]:    },
+[rank7]:    "num_embeddings": 128256,
+[rank7]:    "embedding_dim": 768
+[rank7]:  },
+[rank7]:  "norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  },
+[rank7]:  "rope": {
+[rank7]:    "param_init": null,
+[rank7]:    "dim": 64,
+[rank7]:    "max_seq_len": 2048,
+[rank7]:    "theta": 500000,
+[rank7]:    "backend": "complex",
+[rank7]:    "scaling": "llama",
+[rank7]:    "scaling_factor": 8.0,
+[rank7]:    "low_freq_factor": 1.0,
+[rank7]:    "high_freq_factor": 4.0,
+[rank7]:    "original_max_position_embeddings": 8192,
+[rank7]:    "rope_factor": 1.0,
+[rank7]:    "beta_fast": 32.0,
+[rank7]:    "beta_slow": 1.0,
+[rank7]:    "original_seq_len": 4096,
+[rank7]:    "mscale": 0.0
+[rank7]:  },
+[rank7]:  "layers": [
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f1e70c407c0>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    }
+[rank7]:  ],
+[rank7]:  "enable_weight_tying": false,
+[rank7]:  "attn_res": {
+[rank7]:    "enabled": true,
+[rank7]:    "num_blocks": 8,
+[rank7]:    "norm_eps": 1e-05
+[rank7]:  },
+[rank7]:  "final_attn_res_proj": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function zeros_ at 0x7f1e70c409a0>"
+[rank7]:    },
+[rank7]:    "dim": 768
+[rank7]:  },
+[rank7]:  "final_attn_res_norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7f1e70c40900>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-04-20 08:33:32,476 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase3/runs/pp8_adapter/tb/20260420-0833
+[rank7]:[titan] 2026-04-20 08:33:32,476 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.37GiB memory
+[rank7]:[titan] 2026-04-20 08:33:32,479 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-04-20 08:33:32,479 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-04-20 08:33:32,480 - root - INFO - [34mModel attn_res 175M_attn_res_L16_n8 [31msize: 297,740,544 total parameters[39m
+[rank7]:[titan] 2026-04-20 08:33:32,504 - root - INFO - PP rank 7 is building stage_idx 7 with modules ['layers.7']
+[rank7]:[titan] 2026-04-20 08:33:32,524 - root - INFO - PP rank 7 is building stage_idx 15 with modules ['layers.15', 'norm', 'output', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank7]:[titan] 2026-04-20 08:33:32,540 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-04-20 08:33:32,558 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-04-20 08:33:32,559 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-04-20 08:33:32,565 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-04-20 08:33:32,565 - root - WARNING - Number of microbatches (4) is less than the total number of stages (16) which may result in a bubble in the pipeline.
+[rank7]:[titan] 2026-04-20 08:33:32,567 - root - INFO - Using pipeline schedule Interleaved1F1B with 4 microbatches and 16 stages.
+[rank7]:[rank7]:W0420 08:33:32.827000 136208 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank7]:[titan] 2026-04-20 08:33:33,059 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 7[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank7]:[titan] 2026-04-20 08:33:33,062 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-04-20 08:33:33,062 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-04-20 08:33:33,062 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-04-20 08:33:33,062 - root - INFO - CUDA memory usage for model: 0.44GiB(1.39%)
+[rank7]:[titan] 2026-04-20 08:33:33,063 - root - WARNING - Warmup (500) + decay (800) steps exceed total steps (1000). Adjusting decay steps to 500.
+[rank7]:[titan] 2026-04-20 08:33:33,063 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./assets/hf/Llama-3.1-8B/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank7]:[titan] 2026-04-20 08:33:33,066 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase3/runs/pp8_adapter/checkpoint
+[rank7]:[titan] 2026-04-20 08:33:33,067 - root - INFO - Trainer is initialized with local batch size 4, global batch size 4, gradient accumulation steps 1, sequence length 2048, total steps 1000 (warmup 500)
+[rank7]:[titan] 2026-04-20 08:33:33,067 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-04-20 08:33:33,310 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:33,961 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:34,271 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-04-20 08:33:34,481 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-04-20 08:33:34,524 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260420%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260420T083334Z&X-Amz-Expires=3600&X-Amz-Signature=054d89bc2937729d1c8a222553cb3c18b90a7f19da7faec50c428f5e6f8e361b&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776677614&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjY3NzYxNH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=HULufh3X1nxlSrPc5sziTqo5ratg-4AsN5RIxJQiTAoeS4EbAlMtfeG796Ylo6G23GCcdCGeKb-F4uESlWdmD03uXRMvwi6ovSNb4qMGTRdZay5xWlEGWjGekhXHkEXSKIfLqL2KgYXcoaQrgvNG4bvYnwQXpXSrCi%7EJb2lSzH-QtqOUPmL2xgAfeFIS9dtOdxW3VdvAvz9DHgTRgSkUpuTYfcXbfEATLm3zhwrH1eLBeX1b0xbi2W4UWKjlFjyF7-NvxML1pQmQJC%7EF2xaX0mVGYmPym53hFLPqpceXmVUkO0Ifl9SFWcqDepSIZQdvmgLOD6PojutWmrPetdVzpA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+W0420 08:33:44.940000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 136199 closing signal SIGTERM
+W0420 08:33:44.941000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 136201 closing signal SIGTERM
+W0420 08:33:44.942000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 136202 closing signal SIGTERM
+W0420 08:33:44.942000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 136203 closing signal SIGTERM
+W0420 08:33:44.943000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 136205 closing signal SIGTERM
+W0420 08:33:44.943000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 136206 closing signal SIGTERM
+W0420 08:33:44.943000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 136208 closing signal SIGTERM
+E0420 08:33:45.801000 136108 site-packages/torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 0 (pid: 136198) of binary: /venv/main/bin/python3
+E0420 08:33:45.806000 136108 site-packages/torch/distributed/elastic/multiprocessing/errors/error_handler.py:145] no error file defined for parent, to copy child error file (/tmp/torchelastic_3ishykc6/none_y3w3mx_f/attempt_0/0/error.json)
+Traceback (most recent call last):
+  File "/venv/main/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-04-20_08:33:45
+  host      : a3d1b0f4b90c
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 136199)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 136199
+[2]:
+  time      : 2026-04-20_08:33:45
+  host      : a3d1b0f4b90c
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 136201)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 136201
+[3]:
+  time      : 2026-04-20_08:33:45
+  host      : a3d1b0f4b90c
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 136202)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 136202
+[4]:
+  time      : 2026-04-20_08:33:45
+  host      : a3d1b0f4b90c
+  rank      : 4 (local_rank: 4)
+  exitcode  : -15 (pid: 136203)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 136203
+[5]:
+  time      : 2026-04-20_08:33:45
+  host      : a3d1b0f4b90c
+  rank      : 5 (local_rank: 5)
+  exitcode  : -15 (pid: 136205)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 136205
+[6]:
+  time      : 2026-04-20_08:33:45
+  host      : a3d1b0f4b90c
+  rank      : 6 (local_rank: 6)
+  exitcode  : -15 (pid: 136206)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 136206
+[7]:
+  time      : 2026-04-20_08:33:45
+  host      : a3d1b0f4b90c
+  rank      : 7 (local_rank: 7)
+  exitcode  : -15 (pid: 136208)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 136208
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-04-20_08:33:43
+  host      : a3d1b0f4b90c
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 136198)
+  error_file: /tmp/torchelastic_3ishykc6/none_y3w3mx_f/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/_backward.py", line 370, in stage_backward
+      torch.autograd.backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  RuntimeError: Trying to backward through the graph a second time (or directly access saved tensors after they have already been freed). Saved intermediate values of the graph are freed when you call .backward() or autograd.grad(). Specify retain_graph=True if you need to backward through the graph a second time or if you need to access saved tensors after calling backward.
+  
+  The above exception was the direct cause of the following exception:
+  
+  Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 670, in forward_backward_step
+      self.pp_schedule.step(
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 835, in patched_step
+      return orig_step(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 1634, in step
+      self._step_microbatches(
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 2269, in _step_microbatches
+      raise e
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 2256, in _step_microbatches
+      _perform_action(action)
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 2181, in _perform_action
+      stage.backward_one_chunk(
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 807, in patched_bwd
+      return orig_bwd(
+             ^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 806, in backward_one_chunk
+      grads_input, _ = self.backward_maybe_with_nosync(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 664, in backward_maybe_with_nosync
+      result = perform_backward(backward_type)()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 614, in <lambda>
+      stage_backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/_backward.py", line 411, in stage_backward
+      raise RuntimeError(exc_msg) from e
+  RuntimeError: 
+          Failed to run stage backward:
+          Stage output: ('Tensor(torch.Size([1, 2048, 768]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([1, 1, 2048, 768]), grad=True, dtype=torch.bfloat16)')
+          Output gradient: ('Tensor(torch.Size([1, 2048, 768]), grad=False, dtype=torch.bfloat16)', 'Tensor(torch.Size([1, 1, 2048, 768]), grad=False, dtype=torch.bfloat16)')
+          Input: ['Tensor(torch.Size([1, 2048]), grad=False, dtype=torch.int64)']
+          
+  
+============================================================
