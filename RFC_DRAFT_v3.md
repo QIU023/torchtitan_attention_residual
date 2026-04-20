@@ -1,5 +1,10 @@
 # [RFC] Block Attention Residuals for torchtitan
 
+## Author
+
+**Yiqiao Qiu** — Software Engineer, AWS
+[LinkedIn](https://www.linkedin.com/in/yiqiao-qiu-12013723a/)
+
 ## Problem
 
 Standard residuals `h_{l+1} = h_l + f_l(h_l)` give every layer equal
