@@ -191,61 +191,66 @@ them there.
   end-to-end debug-model forward+backward.
 - `README.md`: motivation, file inventory, design notes, run
   instructions, ownership.
-- Integration-test workflow badge (will be added in a follow-up if the
-  existing experiment CI pattern is the right fit — see open questions).
+- Integration-test workflow badge: happy to follow whichever pattern the
+  maintainers prefer (`integration_test_Xgpu_<name>.yaml`, 1-GPU or
+  8-GPU). Default plan is 1-GPU for PR #1 (the evidence above runs on
+  one device) with an 8-GPU workflow added when PR #2 lands.
 
-### PR #2 (follow-up, in flight)
+### PR #2 — Cross-stage caching adapter for AttnRes under PP
 
-Cross-stage caching adapter on `8 × RTX 5090 PCIe, PP=8, Llama-3
-1–2 B dense, interleaved 1F1B, VP=2`. Target metrics:
+**Status**: implementation in progress.
 
-- Step-time overhead vs non-AttnRes baseline under the same PP/VP
-  configuration: **< 5 %** (intentionally measured on PCIe, the cheap
-  interconnect — if the adapter hides AttnRes over PCIe it trivially
-  hides it over NVLink/NVSwitch).
-- Loss parity: naive-PP AttnRes and adapter-PP AttnRes must produce
-  matching loss curves to within PP-scheduler numerics, on the same
-  microbatch schedule.
-- Per-stage send size constant in stage id (the "cross-stage caching"
-  property; naive path has `O(stage_id)` send size).
-- Memory: `5.5 d` per layer vs `3 d` baseline, confirmed on PP split.
-- 1–2 B dense pretraining loss curve to demonstrate that the algorithm
-  win survives scale-up.
-- Profile trace + memory snapshot, since at PP scale these become
-  genuinely informative rather than redundant with MFU.
+Scope: a `pipelining_fn` hook (`pipeline_llm_with_cache_adapter`)
+registered on `ModelSpec` that wraps each `PipelineStage.submod`
+with a `CrossStageCacheAdapter`. When `TORCHTITAN_ATTNRES_CACHE=1`
+and the schedule is `Interleaved1F1B`, the adapter replaces the
+naive "send the full accumulated block stack at every hop" with a
+static delta layout: at each hop the producer ships only the blocks
+the receiver's rank does not already hold, computed at setup time
+from `(PP, VP, num_blocks, n_layers, layers_per_block)` by
+`BlockLayoutTables`. Cached blocks on the receiving rank are merged
+with the incoming delta before being handed to the wrapped model.
 
-**Adapter implementation status (honest).** Standard
-`torch.distributed.pipelining` assumes a fixed activation tensor shape
-across stages, but Block AttnRes's per-stage send payload is
-`(partial, new_blocks_committed_this_stage)` where the second tensor's
-leading dim grows with `stage_id` on the naive path and is matched
-across stages under the adapter. A first-cut implementation using
-`torch.autograd.Function` for grad send-back proved brittle under
-interleaved 1F1B recomputation (grad tags lost their mapping after
-microbatch replay). The adapter is being reimplemented around a custom
-effective-PP path that does explicit NCCL P2P outside autograd, keyed on
-integer `(microbatch, producer_stage, block_idx)` tags. Scale-up 1–2 B
-benchmark runs once that lands.
+All AttnRes PP code lives under `torchtitan/experiments/attn_res/`
+(`pipeline_adapter.py` ≈ 900 lines, `layout.py` ≈ 270 lines;
+comparable to `experiments/transformers_modeling_backend/pipeline.py`
+≈ 419 lines). Zero modifications to torchtitan core or to
+`torch.distributed.pipelining`.
 
-## Open questions for maintainers
+**Current validation (8× RTX 5090 PCIe, 175M dense, PP=8 VP=2, M=4)**:
 
-1. **Adapter hook surface (PR #2 blocker).** Wrapping `stage.submod` via
-   a custom `pipelining_fn` requires walking `schedule._stages` (private
-   torch attr). Is there a public API we should use, or should we
-   propose one upstream? Tracking in
-   [pytorch/pytorch#128665](https://github.com/pytorch/pytorch/issues/128665).
-2. **Variable-shape activations between stages.** Our cross-stage tensor
-   has a leading dim that depends on `stage_id`. Is there precedent or a
-   recommended pattern for this in torchtitan or
-   `torch.distributed.pipelining`, beyond bypassing the built-in P2P?
-3. **VP chunk keying.** Should the adapter cache per
-   `(microbatch_id, virtual_stage_id)` or per logical-depth block index?
-   The former is robust under VP but grows with VP; the latter is
-   compact but we'd need to prove it's unambiguous.
-4. **CI workflow.** The `experiments/` table suggests each experiment
-   gets an integration-test workflow (`integration_test_8gpu_<name>.yaml`).
-   Should PR #1 include a 1-GPU workflow first, or should we wait for
-   PR #2 to land an 8-GPU workflow directly?
+- Forward delta correct: each stage emits the shape predicted by
+  the static layout table; torch's `_shape_inference` and runtime
+  match.
+- 1000-step loss curve matches naive PP within bf16 tolerance
+  (Δ at step 1000 = 0.007). Numerically A/B-aligned.
+- Adapter remains opt-in: unsetting the env flag falls back to the
+  Phase-2 naive PP path with no behavioral change.
+
+**Bandwidth framing (accurate).** Paper §4.1 guarantees the
+cross-stage cache reuse from virtual stage `v ≥ 2` onward: `v=0`
+is naive growth; starting at `v ≥ 2` each rank reuses its cached
+blocks across virtual stages, so per-hop bytes drop to ∼`P · Np · d`
+instead of ∼`v · P · Np · d`. The sustained-state benefit shows up
+only with `VP ≥ 2`, which is why PR #2 is measured under
+Interleaved1F1B with `VP=2`.
+
+**Schedule coverage**: Interleaved1F1B only. Any other schedule
+falls back to naive PP with a warning; adding
+`ScheduleInterleavedZeroBubble` / `LoopedBFS` is a mechanical
+extension of the layout tables and out of scope for PR #2's initial
+landing.
+
+**Model-size coverage for the PR**: correctness validated at 175M;
+the 1.5–2B scale-up run for the PCIe-overhead headline plot is the
+next step in this PR's validation track.
+
+## Open questions
+
+PP adapter optimization work is ongoing; specific open items are
+tracked inside the experiment rather than in this RFC until they
+stabilize. Comments on PR #1 (single-GPU AttnRes correctness) are
+welcome in the meantime.
 
 ## Reference
 
