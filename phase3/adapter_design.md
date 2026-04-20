@@ -88,39 +88,60 @@ committed zero blocks, an assertion fires. This can happen only if
 
 ## Open unknowns
 
-Resolve these when the adapter actually boots on 8 GPUs:
+1. ~~**Microbatch keying.**~~ **Resolved.** We went with option (c) executed
+   inside the experiment: `pipeline_llm_with_cache_adapter` monkey-patches each
+   stage's `forward_one_chunk(fwd_chunk_id, ...)` and
+   `backward_one_chunk(bwd_chunk_id, ...)` to stash the integer index on a
+   thread-local keyed per adapter instance. The adapter's `forward` reads the
+   thread-local at entry; autograd backward runs on the same thread shortly
+   after, so the same thread-local is still valid when hooks fire. The key is
+   a plain int, so it survives P2P crossings exactly — producer and consumer
+   both key on the same `fwd_chunk_id` issued by the schedule. `id(tensor)` is
+   no longer used. See
+   [`torchtitan/experiments/attn_res/pipeline_adapter.py:_install_mb_index_patch`](../torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py).
 
-1. **Microbatch keying.** `torch.distributed.pipelining` doesn't explicitly
-   expose a microbatch id to the submodule. Options: (a) use `id(partial_block)`,
-   (b) increment an internal counter and rely on schedule order, (c) patch
-   `PipelineStage.forward` to pass an index kwarg. (b) is simplest but
-   fragile under any schedule that re-enters forward for re-materialization.
-   Start with (a) — activation identity is stable across the forward/backward
-   of one microbatch.
+2. **VP chunk order.** Still live: we read `stage.group_rank` per
+   `stage.stage_index` and build a `stage_to_rank` map at setup time so the
+   adapter's grad send-back targets the correct rank even under interleaved /
+   looped schedules. Needs a real 8-GPU run to confirm.
 
-2. **VP chunk order.** `PP=8, VP=2` means each rank owns two virtual stages,
-   non-contiguous in depth: rank 0 owns stage 0 + 8, rank 1 owns 1 + 9, etc.
-   (interleaved). The adapter must cache PER virtual stage, not per rank. Use
-   `stage_id` that includes VP, not just `pp_rank`.
+3. ~~**Backward hook reliability.**~~ **Resolved by sidestepping hooks.** The
+   new design uses two `torch.autograd.Function` subclasses instead of
+   `register_hook`: `_SendBlockGradsBack` wraps the cached prefix on the
+   consumer side (backward = accumulate into `_grad_accum` + `dist.isend` to
+   producer), `_RecvBlockGradsFromConsumers` wraps the emitted blocks on the
+   producer side (backward = `dist.irecv` from each consumer stage + sum into
+   local grad). AC replay re-runs the whole adapter forward, which re-creates
+   the Function's autograd graph — no stale hooks to worry about.
 
-3. **Backward hook reliability.** When the schedule's activation recomputation
-   (AC or FSDP reshard) reruns forward, does `register_hook` on the cached
-   block tensors still fire correctly during backward? We have to test. If it
-   doesn't, fall back to explicitly returning `(partial_block, cache_refs)`
-   from the adapter's forward and writing an explicit `torch.autograd.Function`
-   that owns the grad accumulation.
+4. **AC interaction.** Still live but less fragile: the adapter's forward is
+   already idempotent in the sense that a re-forward for the same mb_index
+   would re-populate `_cache` with the same tensors (because the schedule
+   gives the same `fwd_chunk_id`). The `_SendBlockGradsBack` autograd graph
+   gets rebuilt cleanly on re-forward. Needs a concrete AC-enabled 8-GPU run
+   to confirm.
 
-4. **AC interaction.** `activation_checkpoint.mode=selective` reruns forward
-   on a subset. For AttnRes, the rerun must NOT re-receive blocks over P2P
-   (they've already arrived); instead, it should hit the adapter's cache.
-   This probably means the adapter's `forward` needs to be idempotent for the
-   same microbatch id.
+5. **FSDP reshard + adapter.** Still live, same as before. The adapter wraps
+   the model so FSDP's pre-fwd hooks fire on the adapter's `__call__`. No
+   design change here.
 
-5. **FSDP reshard + adapter.** FSDP2 unshards on `__call__`. The adapter wraps
-   the model so FSDP's hook fires on the adapter's `__call__` which then
-   delegates to the inner model — same number of all_gathers as before. But
-   when AC triggers a re-forward, and the adapter shortcuts to the cache, does
-   FSDP still properly resharden? Needs explicit test.
+### Grad send-back protocol (solves Bug #3 in pipeline_adapter)
+
+Tag scheme: each cached block has a producer stage `p` and an index-within-
+producer `b`. Its P2P tag is `_grad_tag_base(mb, p) + b`
+(`_grad_tag_base` reserves 1024 tags per `(mb, producer)` pair). Consumer
+(stage `c`) posts `dist.isend(grad, dst=rank(p), tag=tag)`. Producer (stage
+`p`) pre-posts `dist.irecv(buf, src=rank(c), tag=tag)` once per consumer
+stage, sums all N buffers into a single `extra` tensor, and adds it to the
+local grad in its own backward via
+`_RecvBlockGradsFromConsumers.backward`. This makes producer-side grad
+equal to `(local_autograd_grad_from_partial_next) + sum_over_consumers(grad_i)`,
+which is exactly the naive PP value.
+
+CPU unit tests run with `group=None`; both Functions silently skip the
+P2P ops but still exercise the accumulation logic (`_SendBlockGradsBack`
+writes into `_cache._grad_accum` unconditionally, so tests can assert on
+the payload without NCCL).
 
 ## Rollout order (decisions I'm making for the draft)
 
