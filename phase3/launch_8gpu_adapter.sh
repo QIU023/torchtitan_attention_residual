@@ -34,6 +34,7 @@ echo "$(cd "${TORCHTITAN_DIR}" && git rev-parse --short HEAD)" > "${OUT_DIR}/GIT
 cd "${TORCHTITAN_DIR}"
 
 export TORCHTITAN_ATTNRES_CACHE=1
+export ATTNRES_DBG=1
 
 PYTORCH_ALLOC_CONF="expandable_segments:True" \
 torchrun \
