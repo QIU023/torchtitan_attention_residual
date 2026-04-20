@@ -136,7 +136,7 @@ because 8 does not divide 12 cleanly (N=6 and N=4 are the natural
 divisors below 12). We will include N=8 when we scale to L=16 in the
 PP follow-up.
 
-### Throughput / memory overhead (the honest number)
+### Single-GPU throughput and memory overhead
 
 On a single RTX 5090 with no communication to hide behind, Block AttnRes
 adds visible compute:
