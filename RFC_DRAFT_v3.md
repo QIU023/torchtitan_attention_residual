@@ -34,8 +34,8 @@ Block boundaries align with PP stage boundaries, which is the PP-friendly
 property the paper exploits: `O(N d)` cross-stage traffic vs `O(L d)` for
 Full AttnRes. The PP cross-stage caching adapter (per paper §4.1) is
 implemented and validated on 8× 5090 PCIe — it lives in **PR #2**, not
-this PR, so PR #1 can land as a self-contained single-GPU experiment
-first. See Plan below.
+PR #1. PR #1 is the single-GPU experiment and can land self-contained.
+See Plan below.
 
 ## Placement
 
@@ -153,7 +153,7 @@ This is higher than the paper's **<4 % PP overhead** number because
 that number measures end-to-end throughput under interleaved 1F1B
 where AttnRes compute overlaps with PP communication. On a single GPU
 there is no communication to overlap with, so AttnRes compute shows up
-directly. The target audience for this PR is the algorithm integration
+directly. The target audience for PR #1 is the algorithm integration
 itself — the PP throughput story requires the cross-stage caching
 adapter (PR #2).
 
@@ -162,7 +162,7 @@ bs=8 at seq=2048 on 32 GiB). The delta in peak memory (+0.94 GiB)
 matches the paper's predicted per-layer activation increase from 3 d
 to 5.5 d.
 
-Profile traces / memory snapshots are not captured for this PR — they
+Profile traces / memory snapshots are not captured for PR #1 — they
 become genuinely useful at PP scale in PR #2 and we plan to include
 them there.
 
@@ -183,9 +183,14 @@ them there.
 
 ## Plan
 
-### PR #1 (this RFC — ready)
+### PR #1 — single-GPU AttnRes experiment
 
-`experiments/attn_res/` containing:
+**Status**: ready. Will be filed against `pytorch/torchtitan` shortly
+after this RFC is posted; branch
+[QIU023/torchtitan@attention_residual_dev](https://github.com/QIU023/torchtitan/tree/attention_residual_dev)
+is the landing source.
+
+Contents of `experiments/attn_res/`:
 
 - `attn_res.py`: primitive, `AttnResConfig`, `AttnResProjection`
   (zero-initialized), `stack_blocks` / `unstack_blocks`.
@@ -248,9 +253,9 @@ falls back to naive PP with a warning; adding
 extension of the layout tables and out of scope for PR #2's initial
 landing.
 
-**Model-size coverage for the PR**: correctness validated at 175M;
+**Model-size coverage for PR #2**: correctness validated at 175M;
 the 1.5–2B scale-up run for the PCIe-overhead headline plot is the
-next step in this PR's validation track.
+next step in PR #2's validation track.
 
 ## Open questions
 
