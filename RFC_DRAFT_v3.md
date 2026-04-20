@@ -56,21 +56,33 @@ progress.
 
 - **PR #1 (this RFC)**: `experiments/attn_res/` with primitive, Llama3
   subclass, unit tests, and the single-GPU evidence above. Ready.
-- **PR #2 (follow-up)**: cross-stage caching adapter benchmarked on
-  `8 × RTX 5090 PCIe, PP=8, VP=2, Llama3 1.5–2 B, 20 B tokens,
-  interleaved 1F1B`. Target: step-time overhead < 5 % over PCIe
-  (intentionally the *cheap* interconnect — the result generalizes
-  upward). Reported: loss parity with naive PP, per-stage send size
-  constant in stage id, NCCL comm trace, memory 5.5 d vs 3 d per layer.
+- **PR #2 (follow-up, in flight)**: cross-stage caching adapter on
+  `8 × RTX 5090 PCIe, PP=8, Llama3 1-2 B, interleaved 1F1B`. Target:
+  step-time overhead < 5 % over PCIe (intentionally the cheap
+  interconnect). Reported: loss parity with naive PP, per-stage send
+  size constant in stage id, NCCL comm trace, memory 5.5 d vs 3 d per
+  layer, full scale-up loss curve at 1-2 B dense pretraining.
+
+**Status**: standard `torch.distributed.pipelining` assumes a fixed
+activation tensor shape across stages, but Block AttnRes's per-stage
+send payload is `(partial, new_blocks_committed_this_stage)` where the
+second tensor's leading dim grows with `stage_id` (naive path) or is
+constant but matched across stages under the adapter. A first cut
+using `torch.autograd.Function` for grad send-back proved brittle under
+interleaved 1F1B recomputation, so the adapter is being reimplemented
+around a custom effective-PP path that does explicit NCCL P2P outside
+autograd, keyed on integer `(microbatch, producer_stage, block_idx)`
+tags. Scale-up 1-2 B benchmark runs once that lands.
 
 ## Open questions for maintainers
 
 1. **Adapter hook surface.** Wrapping `stage.submod` via a custom
    `pipelining_fn` requires walking `schedule._stages` (private torch
    attr). Is there a cleaner canonical extension?
-2. **`PipelineScheduleMulti` autograd hooks.** Do
-   `tensor.register_hook` callbacks survive microbatch recomputation
-   under interleaved 1F1B? We'll test but prior art would shortcut it.
+2. **Variable-shape activations between stages.** Our cross-stage
+   tensor has a leading dim that depends on `stage_id`. Is there
+   precedent / a recommended pattern for this in torchtitan or
+   `torch.distributed.pipelining`, beyond bypassing the built-in P2P?
 3. **VP chunk keying.** Cache per `(microbatch_id, virtual_stage_id)`
    or per logical-depth block index?
 
