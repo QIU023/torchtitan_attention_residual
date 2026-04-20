@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 2 launch script: baseline + AttnRes Llama3-150M in a tmux session.
+# Phase 2 launch script: baseline + AttnRes Llama3-175M in a tmux session.
 #
 # Sequential, single-GPU. Each run writes its own TensorBoard + checkpoint
 # dirs so results are never mixed up. One tmux session with separate
@@ -123,7 +123,7 @@ echo "[launch] Creating tmux session: ${SESSION}"
 tmux new-session -d -s "${SESSION}" -n baseline
 
 # Window 1: baseline.
-BASELINE_CMD="${ACTIVATE} && $(make_cmd llama3_150m_baseline ${OUT_ROOT}/baseline)"
+BASELINE_CMD="${ACTIVATE} && $(make_cmd llama3_175m_baseline ${OUT_ROOT}/baseline)"
 tmux send-keys -t "${SESSION}:baseline" "${BASELINE_CMD}" C-m
 
 # Window 2: AttnRes (waits for baseline DONE flag).
@@ -134,7 +134,7 @@ while ! [ -f ${OUT_ROOT}/baseline/DONE ]; do \
     echo "[attn_res] waiting for baseline to finish..."; \
     sleep 60; \
 done && \
-$(make_cmd llama3_150m_attn_res ${OUT_ROOT}/attn_res)
+$(make_cmd llama3_175m_attn_res ${OUT_ROOT}/attn_res)
 EOF
 )
 tmux send-keys -t "${SESSION}:attn_res" "${ATTNRES_CMD}" C-m

@@ -7,7 +7,7 @@
 #   bash phase2/launch_ablation.sh
 #
 # Override the variant list:
-#   VARIANTS="llama3_150m_attn_res_n3 llama3_150m_attn_res_n4" \
+#   VARIANTS="llama3_175m_attn_res_n3 llama3_175m_attn_res_n4" \
 #       bash phase2/launch_ablation.sh
 #
 # Override steps (for a shorter smoke):
@@ -31,7 +31,7 @@ ACTIVATE="${ACTIVATE:-source /venv/main/bin/activate}"
 
 # Two-ended ablation by default (tightest RFC value per hour). The user
 # already has N=6 from the primary run in ../runs/attn_res/.
-VARIANTS="${VARIANTS:-llama3_150m_attn_res_n3 llama3_150m_attn_res_n12}"
+VARIANTS="${VARIANTS:-llama3_175m_attn_res_n3 llama3_175m_attn_res_n12}"
 
 if ! command -v tmux >/dev/null 2>&1; then
     echo "[ablation] tmux not found. Install with: sudo apt install -y tmux"

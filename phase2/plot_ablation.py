@@ -15,8 +15,8 @@ Usage:
     python phase2/plot_ablation.py \
         --baseline phase2/runs/baseline \
         --runs N6=phase2/runs/attn_res \
-               N3=phase2/runs/ablation/llama3_150m_attn_res_n3 \
-               N12=phase2/runs/ablation/llama3_150m_attn_res_n12 \
+               N3=phase2/runs/ablation/llama3_175m_attn_res_n3 \
+               N12=phase2/runs/ablation/llama3_175m_attn_res_n12 \
         --out phase2/runs/ablation/comparison.png
 """
 

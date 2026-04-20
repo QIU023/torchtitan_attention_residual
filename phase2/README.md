@@ -1,7 +1,7 @@
 # Phase 2 Runbook — Block AttnRes Loss-Curve Alignment
 
-Goal: on a single GPU, train a baseline Llama3-150M and a Block AttnRes
-Llama3-150M under identical hyperparameters, then compare their loss
+Goal: on a single GPU, train a baseline Llama3-175M and a Block AttnRes
+Llama3-175M under identical hyperparameters, then compare their loss
 curves. The expected outcome is that the AttnRes curve sits visibly below
 the baseline curve, with the gap widening over training. This is the
 proof-of-correctness needed before opening the torchtitan RFC PR.
@@ -134,14 +134,14 @@ configs load cleanly before burning GPU hours.
 cd ~/work/torchtitan
 
 COMM_MODE=fake_backend bash run_train.sh \
-    --module attn_res --config llama3_150m_baseline
+    --module attn_res --config llama3_175m_baseline
 
 COMM_MODE=fake_backend bash run_train.sh \
-    --module attn_res --config llama3_150m_attn_res
+    --module attn_res --config llama3_175m_attn_res
 ```
 
 Both should print model-parameter summaries and exit with status 0. Look
-for lines like `Model params: 1.82e+08` confirming the ~150M target, and
+for lines like `Model params: 1.82e+08` confirming the ~175M target, and
 for the AttnRes run, log lines mentioning `attn_res_proj` parameters.
 
 ---
@@ -181,8 +181,8 @@ bash phase2/launch.sh
 
 Starts a tmux session (`attnres`) with 4 windows:
 
-- `baseline`: 20k steps of `llama3_150m_baseline`
-- `attn_res`: 20k steps of `llama3_150m_attn_res` (waits for baseline to finish)
+- `baseline`: 20k steps of `llama3_175m_baseline`
+- `attn_res`: 20k steps of `llama3_175m_attn_res` (waits for baseline to finish)
 - `monitor`:  `nvidia-smi` in watch mode
 - `guardian`: tails `baseline/train.log` for "Training completed", then
   touches the `DONE` flag that unblocks attn_res
@@ -319,7 +319,7 @@ Lower the batch size:
 
 ```bash
 cd ~/work/torchtitan
-bash run_train.sh --module attn_res --config llama3_150m_baseline \
+bash run_train.sh --module attn_res --config llama3_175m_baseline \
     --training.local_batch_size 8
 ```
 
@@ -379,7 +379,7 @@ HF_REPO=NousResearch/Meta-Llama-3.1-8B bash phase2/setup_env.sh
 | --- | --- |
 | `torchtitan/experiments/attn_res/attn_res.py` | `block_attn_res()` primitive, `AttnResProjection`, stack/unstack helpers |
 | `torchtitan/experiments/attn_res/model.py` | `AttnResLlama3TransformerBlock`, `AttnResLlama3Model` subclasses (core `decoder.py`/`model.py` untouched) |
-| `torchtitan/experiments/attn_res/__init__.py` | Model flavors (`debugmodel_attn_res`, `150M_attn_res`) + `model_registry` |
-| `torchtitan/experiments/attn_res/config_registry.py` | Trainer configs: `llama3_150m_baseline`, `llama3_150m_attn_res` |
+| `torchtitan/experiments/attn_res/__init__.py` | Model flavors (`debugmodel_attn_res`, `175M_attn_res`) + `model_registry` |
+| `torchtitan/experiments/attn_res/config_registry.py` | Trainer configs: `llama3_175m_baseline`, `llama3_175m_attn_res` |
 | `torchtitan/experiments/attn_res/tests/test_attn_res.py` | Unit tests for all AttnRes components |
 | `torchtitan/experiments/__init__.py` | Registers `attn_res` in `_supported_experiments` |
