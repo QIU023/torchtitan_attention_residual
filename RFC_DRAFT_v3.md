@@ -49,8 +49,20 @@ steps, identical config except `model_spec`:
 | 20000 | 3.685 | 3.619 | **−0.066** |
 
 AttnRes is below baseline at every logged milestone. `num_blocks`
-ablation at 150M favors N=6 (Δ=−0.066) over N=3 (Δ=−0.030); N=12 in
-progress.
+ablation at 150M (final Δ, same 20 k-step config):
+
+| N | layers/block | final Δ |
+|---:|---:|---:|
+| 3 | 4 | −0.030 |
+| 6 | 2 | **−0.066** |
+| 12 | 1 | **−0.061** |
+
+N=6 and N=12 are statistically indistinguishable (gap within smoothing
+noise); N=3 clearly underperforms. The paper's "N=8 sweet spot" was
+established at L≥32; at L=12 the sweet-spot region widens and
+Full-AttnRes (N=L) does not degrade. Delta shrinks over training
+(−0.127 at step 500 → −0.066 final), consistent with the paper's
+smaller asymptotic gap on larger-scale runs.
 
 ## Plan
 
