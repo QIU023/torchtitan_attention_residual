@@ -33,9 +33,9 @@ and the model can begin training without any warmup schedule change.
 Block boundaries align with PP stage boundaries, which is the PP-friendly
 property the paper exploits: `O(N d)` cross-stage traffic vs `O(L d)` for
 Full AttnRes. The PP cross-stage caching adapter (per paper §4.1) is
-implemented and validated on 8× 5090 PCIe — it lives in **PR #2**, not
-PR #1. PR #1 is the single-GPU experiment and can land self-contained.
-See Plan below.
+being built separately in **PR #2** — forward path is working on 8× 5090
+PCIe; backward and scale-up are still in progress. PR #1 is the
+single-GPU experiment and can land self-contained. See Plan below.
 
 ## Placement
 
@@ -270,4 +270,4 @@ welcome in the meantime.
 - Reference impl (README + PDF only): [MoonshotAI/Attention-Residuals](https://github.com/MoonshotAI/Attention-Residuals)
 - Kimi infra engineer's implementation notes: [zhihu](https://www.zhihu.com/question/2016993095078684011)
 - Branch: [QIU023/torchtitan@attention_residual_dev](https://github.com/QIU023/torchtitan/tree/attention_residual_dev)
-- Owner: @QIU023
+- Owner: Yiqiao Qiu, @QIU023
