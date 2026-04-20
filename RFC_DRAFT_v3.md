@@ -32,8 +32,10 @@ and the model can begin training without any warmup schedule change.
 
 Block boundaries align with PP stage boundaries, which is the PP-friendly
 property the paper exploits: `O(N d)` cross-stage traffic vs `O(L d)` for
-Full AttnRes. That PP story is **out of scope for this PR** — see Plan
-below.
+Full AttnRes. The PP cross-stage caching adapter (per paper §4.1) is
+implemented and validated on 8× 5090 PCIe — it lives in **PR #2**, not
+this PR, so PR #1 can land as a self-contained single-GPU experiment
+first. See Plan below.
 
 ## Placement
 
