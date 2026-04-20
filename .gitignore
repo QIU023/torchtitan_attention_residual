@@ -1,7 +1,8 @@
-# The torchtitan fork is its own git repo (pushed separately to QIU023/torchtitan).
-# Do NOT commit it as a subdirectory — it would nest a repo inside a repo and
-# all prior history disappears from this workspace view.
-torchtitan/
+# The torchtitan fork is registered as a git submodule (see .gitmodules).
+# A submodule is a gitlink pointing at a specific commit in
+# QIU023/torchtitan, NOT a nested working copy, so history on both sides
+# stays intact. Do not re-ignore 'torchtitan/' — git would then refuse to
+# add or update the gitlink.
 
 # Kimi's reference implementation is a separate upstream repo; don't vendor it.
 # Clone alongside this workspace if needed.
