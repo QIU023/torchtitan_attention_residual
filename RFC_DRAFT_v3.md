@@ -89,7 +89,7 @@ residual reads plus a final cross-block aggregation:
 | local_batch_size | 8 |
 | global_batch_size | 16 |
 | grad_accum | 2 |
-| steps | 20,000 (≈ 650 M tokens) |
+| steps | 20,000 (≈ 655 M tokens: 20 k × 16 × 2048) |
 | lr | 3e-4, cosine, warmup 500, decay ratio 0.8 |
 | optimizer | AdamW |
 | precision | BF16 mixed (params/grads BF16, reduce fp32) |
@@ -105,7 +105,7 @@ The full configs are in
 | ---: | ---: | ---: | ---: |
 | 500 | 6.141 | 6.015 | **−0.127** |
 | 5000 | 4.357 | 4.270 | −0.088 |
-| 10000 | 4.324 | 4.219 | −0.105 |
+| 10000 | 4.324 | 4.219 | −0.104 |
 | 15000 | 3.737 | 3.686 | −0.051 |
 | 20000 | 3.685 | 3.619 | **−0.066** |
 
@@ -224,20 +224,35 @@ from `(PP, VP, num_blocks, n_layers, layers_per_block)` by
 with the incoming delta before being handed to the wrapped model.
 
 All AttnRes PP code lives under `torchtitan/experiments/attn_res/`
-(`pipeline_adapter.py` ≈ 900 lines, `layout.py` ≈ 270 lines;
+(`pipeline_adapter.py` ≈ 1,000 lines, `layout.py` ≈ 270 lines;
 comparable to `experiments/transformers_modeling_backend/pipeline.py`
 ≈ 419 lines). Zero modifications to torchtitan core or to
 `torch.distributed.pipelining`.
 
-**Current validation (8× RTX 5090 PCIe, 175M dense, PP=8 VP=2, M=4)**:
+**Status: WIP — not ready for review.** What currently works and what
+does not, on 8× RTX 5090 PCIe at 175M (16-layer variant, PP=8 VP=2,
+M=4, Interleaved1F1B):
 
-- Forward delta correct: each stage emits the shape predicted by
+- ✅ **Forward delta shape**: each stage emits the shape predicted by
   the static layout table; torch's `_shape_inference` and runtime
-  match.
-- 1000-step loss curve matches naive PP within bf16 tolerance
-  (Δ at step 1000 = 0.007). Numerically A/B-aligned.
-- Adapter remains opt-in: unsetting the env flag falls back to the
-  Phase-2 naive PP path with no behavioral change.
+  match. 8-GPU forward pass goes through.
+- ✅ **CPU correctness**: 41 / 41 CPU tests pass under
+  `torchtitan/experiments/attn_res/tests/`, including a 4-stage P=2
+  V=2 backward-grad-equivalence canary.
+- ⚠️ **8-GPU end-to-end backward**: pending. The current
+  `_LocalCacheAugment` / `_LocalCacheCapture` design hits
+  `RuntimeError: Trying to backward through the graph a second time`
+  at stage 0's `stage_backward` under real PP scheduling, even though
+  the CPU canary passes. Root cause is under investigation (current
+  hypothesis: both Functions return the input tensor by identity,
+  making autograd's grad_fn bookkeeping ambiguous across PP hops; a
+  `.view(...)` fix to force a distinct tensor wrapper is being
+  tested).
+- ⚠️ **Loss-parity measurement**: pending the double-backward fix.
+  Will be reported against naive PP at bf16 tolerance once 8-GPU
+  end-to-end runs cleanly.
+- ✅ **Opt-in**: unsetting `TORCHTITAN_ATTNRES_CACHE` falls back to
+  the standard `pipeline_llm` path with no behavioral change.
 
 **Bandwidth framing (accurate).** Paper §4.1 guarantees the
 cross-stage cache reuse from virtual stage `v ≥ 2` onward: `v=0`
@@ -253,9 +268,10 @@ falls back to naive PP with a warning; adding
 extension of the layout tables and out of scope for PR #2's initial
 landing.
 
-**Model-size coverage for PR #2**: correctness validated at 175M;
-the 1.5–2B scale-up run for the PCIe-overhead headline plot is the
-next step in PR #2's validation track.
+**Model-size coverage for PR #2**: forward correctness at 175M is
+confirmed on 8-GPU; full end-to-end validation + the 1.5–2B scale-up
+run for the PCIe-overhead headline plot are blocked on the
+double-backward fix above.
 
 ## Open questions
 
