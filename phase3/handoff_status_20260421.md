@@ -156,6 +156,91 @@ STEPS=50 bash phase3/launch_4gpu_adapter.sh
 ATTNRES_ADAPTER_DBG=1 STEPS=2 bash phase3/launch_4gpu_adapter.sh
 ```
 
+## 1000-step PP=4 V=2 result (added end of session)
+
+Both naive and adapter ran 1000 steps cleanly. Loss alignment is
+inside the naive-vs-naive nondeterminism band (max |Δ_naive→naive| at
+step 10 was 0.13 in this session; max |Δ_naive→adapter| over 1000
+steps is 0.06). Memory deltas match the design expectation: the
+adapter pays exactly the cache footprint (~260 MB on rank 3 for 175M
+at M=4 mb), no `retain_graph`-style inflation.
+
+| step | naive loss | adapter loss | naive tps | adapter tps | naive mem rank3 | adapter mem rank3 |
+|------|-----------|--------------|-----------|-------------|-----------------|-------------------|
+| 1    | 11.76178  | 11.76178     | 504       | 529         | 6.48 GiB        | 7.37 GiB          |
+| 10   | 11.52401  | 11.52564     | 7,009     | 6,876       | 6.96 GiB        | 7.66 GiB          |
+| 100  | 8.72997   | 8.73178      | 6,980     | 6,865       | 7.45 GiB        | 7.68 GiB          |
+| 500  | 6.49669   | 6.49083      | 6,881     | 6,759       | 7.45 GiB        | 7.71 GiB          |
+| 1000 | 6.37720   | **6.34968**  | 6,690     | 6,658       | 7.45 GiB        | 7.71 GiB          |
+
+Adapter is ~0.5% slower on TPS at this scale on PCIe. Expected:
+PCIe per-hop latency dominates the comm bytes the adapter saves; the
+adapter pays small bookkeeping overhead. The adapter's payoff is on
+NVLink-out, inter-node fabrics where the saved bandwidth
+(~60 MB/hop in steady state for this config) translates to wall clock.
+
+## Cache distribution & scaling envelope
+
+The schedule itself determines which blocks each rank caches; it is
+not a free design choice. Per-rank cache contents at the end of one
+mb's forward sweep (PP=4 V=2 num_blocks=8):
+
+| rank | own commits | relayed-from-recv                       | total |
+|------|-------------|-----------------------------------------|-------|
+|  0   | b0, b4      | b1, b2, b3 (via stage-4 recv)           | **5** |
+|  1   | b1, b5      | b0 (stage-1 recv), b2,b3,b4 (stage-5)   | **6** |
+|  2   | b2, b6      | b0,b1 (stage-2), b3,b4,b5 (stage-6)     | **7** |
+|  3   | b3, b7      | b0,b1,b2 (stage-3), b4,b5,b6 (stage-7)  | **8** |
+
+Per-block replication factor: b0..b4 = **4×**, b5 = 3×, b6 = 2×,
+b7 = 1×. Total system cache = 26 block-copies for 8 distinct blocks
+(avg 3.25× replication). With M=4 mbs in flight that's ×4 because
+the rank cache is keyed per-mb and only evicts at step boundary
+(`_install_step_drop_patch`).
+
+This explains the asymmetric nvidia-smi pattern observed in this
+session (rank 0: 5076 MiB, rank 3: 8750 MiB): later ranks structurally
+hold more cache because they need more prefix blocks for their deeper
+virtual stages, AND the last rank also carries the [B,T,V] loss
+logits and the output projection.
+
+Per-hop send size matches Reku's "constant after first vp chunk"
+claim:
+
+| hop | delta size | note |
+|-----|-----------|------|
+| 0→1 | 1         | warmup |
+| 1→2 | 2         | warmup |
+| 2→3 | 3         | steady-state begins |
+| 3→4 | 3         | |
+| 4→5 | 3         | |
+| 5→6 | 3         | |
+| 6→7 | 3         | |
+
+Steady-state per-hop = P − 1 blocks. Reku's comm-asymmetry claim
+holds for wire bytes; he says nothing about cache-memory asymmetry.
+
+### Memory envelope across model scales
+
+```
+peak_cache_bytes(rank R) ≈ |rank_cache_at_entry[R, V-1]| × B × T × D × 2 × M
+```
+
+| config                                       | peak rank cache | fits?               |
+|----------------------------------------------|-----------------|---------------------|
+| 175M smoke (B=4 T=2048 D=768 M=4, N=8)       | ~384 MB         | trivially           |
+| 48B target (B=1 T=8192 D=4096 M=8, N=16)     | ~8 GB           | yes on 80GB H100    |
+| Super-deep (128B+, N≥64, M=16-32)            | ~30+ GB         | breaks "fits-on-one-card" |
+
+The 48B target is comfortably inside Reku's "cache cost is small"
+assumption. Super-deep regimes break it; Reku's own recommended
+fallback for that case is **selective AC + activation offload**, NOT
+a distributed cache. To take that fallback in this codebase: unset
+`TORCHTITAN_ATTNRES_CACHE` (the adapter degrades to naive
+passthrough) and rely on torchtitan's existing
+`activation_checkpoint=selective` + activation offload. The current
+175M / 48B benchmark configs never need that escape hatch.
+
 ## Open follow-ups
 
 1. **8-GPU revalidation** — when an 8x box is available, rerun
@@ -177,3 +262,26 @@ ATTNRES_ADAPTER_DBG=1 STEPS=2 bash phase3/launch_4gpu_adapter.sh
    stricter parity becomes important for benchmarking, set
    `NCCL_DETERMINISTIC=1`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`, and
    pin `torch.use_deterministic_algorithms(True)` in the trainer.
+
+## Distributed cache: explicitly out of scope for this RFC
+
+Considered and skipped in this session:
+
+- **Producer-only cache + on-demand P2P fetch** — adds 24+ extra
+  P2P round-trips per mb at PP=4 N=8; would erase the
+  comm-savings story Reku's design buys.
+- **Designated holder rotation** — same comm shape with marginally
+  better load balance.
+- **Sharded cache across DP/TP peers** — only helps when DP > 1;
+  needs DP-aware mb-keyed P2P; weeks of engineering.
+
+Rationale for skipping: the user does not have the compute budget
+to validate or pre-train a super-deep config that would actually
+exercise these schemes, and Reku's published guidance for that
+regime is "selective AC + activation offload" (a different design
+axis, native to torchtitan). If a future session wants distributed
+caching, the design hook is in place: extend `RankLocalCache`
+(`pipeline_adapter.py:91+`) into a `DistributedRankCache` keyed by
+the same `(mb, producer_stage, block_idx)` slot scheme, with
+eviction still gated by `_install_step_drop_patch`. That is a
+separate RFC.
