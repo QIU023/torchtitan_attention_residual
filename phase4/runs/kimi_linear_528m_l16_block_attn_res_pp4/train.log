@@ -1,0 +1,254 @@
+W0423 07:26:10.367000 125641 site-packages/torch/distributed/run.py:851] 
+W0423 07:26:10.367000 125641 site-packages/torch/distributed/run.py:851] *****************************************
+W0423 07:26:10.367000 125641 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0423 07:26:10.367000 125641 site-packages/torch/distributed/run.py:851] *****************************************
+[rank3]:[titan] 2026-04-23 07:26:16,036 - root - INFO - torchtitan version: 0.2.2 (0.0.0 means __version__ is not defined correctly).
+[rank3]:[titan] 2026-04-23 07:26:17,287 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank3]:[titan] 2026-04-23 07:26:17,290 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank3]:[titan] 2026-04-23 07:26:17,797 - root - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank3]:[titan] 2026-04-23 07:26:17,809 - root - INFO - Successfully created meshes with active dimensions: ['pp']
+[rank3]:[titan] 2026-04-23 07:26:17,811 - root - INFO - Loading tokenizer from tokenizer.json
+[rank3]:[titan] 2026-04-23 07:26:18,189 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank3]:[titan] 2026-04-23 07:26:18,337 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-23 07:26:18,361 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank3]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank3]:[titan] 2026-04-23 07:26:18,479 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-23 07:26:18,479 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank3]:[titan] 2026-04-23 07:26:18,800 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-23 07:26:19,008 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:19,243 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-23 07:26:19,435 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:19,614 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:19,796 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:19,896 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:20,094 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-23 07:26:20,201 - root - INFO - Building kimi_linear kimi_linear_528m_l16_block_attn_res with {
+[rank3]:  "vocab_size": 163840,
+[rank3]:  "hidden_size": 1264,
+[rank3]:  "tie_word_embeddings": true,
+[rank3]:  "num_hidden_layers": 16,
+[rank3]:  "intermediate_size": 560,
+[rank3]:  "num_attention_heads": 17,
+[rank3]:  "num_key_value_heads": 17,
+[rank3]:  "q_lora_rank": null,
+[rank3]:  "kv_lora_rank": 632,
+[rank3]:  "qk_nope_head_dim": 74,
+[rank3]:  "qk_rope_head_dim": 37,
+[rank3]:  "v_head_dim": 74,
+[rank3]:  "mla_use_nope": true,
+[rank3]:  "rope_theta": 10000.0,
+[rank3]:  "kda_num_heads": 17,
+[rank3]:  "kda_head_dim": 74,
+[rank3]:  "kda_short_conv_kernel_size": 4,
+[rank3]:  "kda_layers": [
+[rank3]:    1,
+[rank3]:    2,
+[rank3]:    3,
+[rank3]:    5,
+[rank3]:    6,
+[rank3]:    7,
+[rank3]:    9,
+[rank3]:    10,
+[rank3]:    11,
+[rank3]:    13,
+[rank3]:    14,
+[rank3]:    15
+[rank3]:  ],
+[rank3]:  "full_attn_layers": [
+[rank3]:    4,
+[rank3]:    8,
+[rank3]:    12,
+[rank3]:    16
+[rank3]:  ],
+[rank3]:  "num_experts": 32,
+[rank3]:  "num_experts_per_token": 8,
+[rank3]:  "moe_intermediate_size": 560,
+[rank3]:  "moe_renormalize": true,
+[rank3]:  "moe_router_activation_func": "sigmoid",
+[rank3]:  "num_shared_experts": 1,
+[rank3]:  "routed_scaling_factor": 2.446,
+[rank3]:  "first_k_dense_replace": 1,
+[rank3]:  "moe_layer_freq": 1,
+[rank3]:  "use_grouped_topk": false,
+[rank3]:  "num_expert_group": 1,
+[rank3]:  "topk_group": 1,
+[rank3]:  "rms_norm_eps": 1e-05,
+[rank3]:  "hidden_act": "silu",
+[rank3]:  "initializer_range": 0.02,
+[rank3]:  "__spec__": {
+[rank3]:    "num_blocks": 8,
+[rank3]:    "model_class": "KimiLinearAttnResModel"
+[rank3]:  }
+[rank3]:}
+[rank3]:[titan] 2026-04-23 07:26:20,239 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase4/runs/kimi_linear_528m_l16_block_attn_res_pp4/tb/20260423-0726
+[rank3]:[titan] 2026-04-23 07:26:20,239 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank3]:[titan] 2026-04-23 07:26:20,241 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank3]:[titan] 2026-04-23 07:26:20,241 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank3]:[titan] 2026-04-23 07:26:20,242 - root - INFO - [34mModel kimi_linear kimi_linear_528m_l16_block_attn_res [31msize: 1,367,997,740 total parameters[39m
+[rank3]:[titan] 2026-04-23 07:26:20,274 - root - INFO - PP rank 3 is building stage_idx 3 with modules ['layers.6', 'layers.7']
+[rank3]:[titan] 2026-04-23 07:26:20,302 - root - INFO - PP rank 3 is building stage_idx 7 with modules ['layers.14', 'layers.15', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank3]:[titan] 2026-04-23 07:26:20,302 - root - WARNING - Number of microbatches (1) is less than the total number of stages (8) which may result in a bubble in the pipeline.
+[rank3]:[titan] 2026-04-23 07:26:20,303 - root - INFO - Using pipeline schedule Interleaved1F1B with 1 microbatches and 8 stages.
+[rank3]:[titan] 2026-04-23 07:26:20,325 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 3[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank3]:[titan] 2026-04-23 07:26:20,327 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank3]:[titan] 2026-04-23 07:26:20,327 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank3]:[titan] 2026-04-23 07:26:20,327 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank3]:[titan] 2026-04-23 07:26:20,328 - root - INFO - CUDA memory usage for model: 1.92GiB(6.12%)
+[rank3]:[titan] 2026-04-23 07:26:20,328 - root - WARNING - Warmup steps (500) exceed total steps (5). Adjusting warmup steps to 5.
+[rank3]:[titan] 2026-04-23 07:26:20,328 - root - WARNING - Warmup (5) + decay (4) steps exceed total steps (5). Adjusting decay steps to 0.
+[rank3]:[titan] 2026-04-23 07:26:20,334 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase4/runs/kimi_linear_528m_l16_block_attn_res_pp4/checkpoint
+[rank3]:[titan] 2026-04-23 07:26:20,334 - root - INFO - Trainer is initialized with local batch size 1, global batch size 4, gradient accumulation steps 4, sequence length 2048, total steps 5 (warmup 500)
+[rank3]:[titan] 2026-04-23 07:26:20,334 - root - INFO - Training starts at step 1
+[rank3]:[titan] 2026-04-23 07:26:20,472 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:20,733 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:20,876 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-23 07:26:20,984 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank3]:[titan] 2026-04-23 07:26:21,077 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260423%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260423T072620Z&X-Amz-Expires=3600&X-Amz-Signature=151a37c5ecc9754f5f6aa7c0e1e4099b0f78276f7b1adb102eb7aa86cfd751c6&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1776932780&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NjkzMjc4MH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=L6oAXBGvbQKNNwgO9y78N6FJhwsmCrzNKElrLjTN1D6O-iZ0d-NfLHt0x5eKJvEw7vmJyyEDkBIV6Lz9-R9zS9nHJXxZWxC0MU8vBc0jQkIe96EdR3hI1CggoWV8QQRFmzphdwN0ngPpFaCsKKow-uL4UN4EYpqiKyTvVTmBDxH-BP67SSmAT8-0aIY3q5%7ES3pXkIKILYJbANpp%7EMQHxjHynmzctYIVYipxOCeQio4lYE2zgJ5IMuWhEV75Y7FOe%7ENClEXWAwDPJaLlaI3WThJ3Asbw8COrlLKAs0CinfkouTMGJBuuQ9V6fxFEpQuJ-rdRWuMvIFlJNIH7Rx9LOQQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[titan] 2026-04-23 07:26:29,137 - root - INFO - [31mstep:  1  [32mloss: 12.00665  [38;2;180;60;0mgrad_norm: 62.7314  [38;2;54;234;195mmemory: 12.79GiB(40.79%)  [34mtps: 230  [36mtflops: 3,870.54  [35mmfu: 1240.56%[39m
+[rank3]:[titan] 2026-04-23 07:26:29,138 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.forward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] Capture.backward slot=(0, 3, 0)
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=7 mb=0
+[rank3]:[adapter-dbg rank=3] patched_bwd ENTER stage=3 mb=0
+[rank3]:[adapter-dbg rank=3] augment_hook slot=(0, 3, 0) captured=yes count=1 expected=1
+[rank3]:[adapter-dbg rank=3] patched_bwd EXIT stage=3 mb=0
+[rank3]:[titan] 2026-04-23 07:26:39,175 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank3]:[titan] 2026-04-23 07:26:39,175 - root - INFO - Saving a full checkpoint at last step, step 5.
+[rank3]:[titan] 2026-04-23 07:26:50,899 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.02 seconds
+[rank3]:[titan] 2026-04-23 07:26:50,900 - root - INFO - Training completed
+[rank3]:[titan] 2026-04-23 07:26:50,900 - root - INFO - Destroying the purge thread.
+[rank3]:[titan] 2026-04-23 07:26:52,947 - root - INFO - Process group destroyed
