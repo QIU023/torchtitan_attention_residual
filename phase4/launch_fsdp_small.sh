@@ -107,6 +107,14 @@ if [[ "${COMPILE}" = "1" ]]; then
     EXTRA_ARGS+=(--compile.enable)
 fi
 
+# EXTRA_ARGS_APPEND lets callers pass arbitrary extra flags (e.g.
+# --lr_scheduler.total_steps 12500 for resume-with-preserved-schedule).
+# Whitespace-split the variable; empty string means no-op.
+if [[ -n "${EXTRA_ARGS_APPEND:-}" ]]; then
+    # shellcheck disable=SC2206  # intentional word-split
+    EXTRA_ARGS+=(${EXTRA_ARGS_APPEND})
+fi
+
 PYTORCH_ALLOC_CONF="expandable_segments:True" \
 torchrun \
     --nproc_per_node="${NGPU}" \

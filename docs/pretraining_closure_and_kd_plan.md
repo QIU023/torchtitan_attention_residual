@@ -84,6 +84,16 @@ Chain a 17,500-step continuation on both baseline and AttnRes arms
 resuming from step 12,500 ckpts. Problem B runs in parallel if GPU
 free; else sequential. This closes plank 2.
 
+Launcher: `phase4/experiments/kimi_436m_attnres/launch_continue_30k.sh`.
+Important subtlety: the launcher pins `--lr_scheduler.total_steps
+12500` on the continuation so the original cosine schedule is
+preserved. Without that pin torchtitan rebuilds the LR lambda over
+the new 30K step target, which at the resume point (step 12,500)
+lands ~8× higher than the ~2e-4 the model ended at — a hot-restart
+that spikes loss for ~1K steps. Pinning leaves the continuation
+running at the min-LR floor (0.1 × peak = ~2e-4), which is the
+standard continued-pretraining recipe.
+
 **(b) Go straight to 60K (ideal closure).**
 Higher-confidence Δ, but another ~2 overnights beyond (a). Defer
 unless (a) shows the Δ shrinking into noise — in which case we'd

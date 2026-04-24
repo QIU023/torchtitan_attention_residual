@@ -10,13 +10,31 @@
 # torchtitan auto-resumes from the latest step in
 # {OUT_DIR}/checkpoint/, so we just point at the original run dirs
 # and bump --training.steps to 30000. The original train.log is
-# preserved as train.log.part1 before re-launch.
+# preserved as train.log.part_to_N before re-launch.
+#
+# LR-SCHEDULE GOTCHA (why lr_scheduler.total_steps=12500 below):
+#   torchtitan only persists `last_epoch` in the scheduler state;
+#   the LR-lambda itself is rebuilt from config at launch. If we
+#   let total_steps default to the new training.steps=30000, the
+#   schedule is recomputed with warmup=500, decay_ratio=0.8 over
+#   30K, and the LR at the resume point (step 12,500) lands at
+#   ~1.7e-3 — ~8× higher than the ~2.0e-4 the model ended at under
+#   the original 12,500-step schedule. That is a hot-restart with
+#   a stale optimizer state; we'd see a loss spike that takes
+#   1K+ steps to recover.
+#
+#   Pinning --lr_scheduler.total_steps 12500 keeps the original
+#   cosine curve and leaves the continuation running at the min LR
+#   (min_lr_factor=0.1 × peak = ~2.0e-4) from step 12,500 → 30,000.
+#   That is the standard continued-pretraining recipe — low-LR
+#   extension on an already-decayed schedule.
 #
 # Usage:
 #   bash launch_continue_30k.sh                # both arms, sequential
 #   ARM=baseline bash launch_continue_30k.sh   # baseline only
 #   ARM=attnres  bash launch_continue_30k.sh   # attnres only
 #   STEPS=60000 bash launch_continue_30k.sh    # push to ideal closure
+#   LR_TOTAL_STEPS=30000 bash launch_continue_30k.sh  # full fresh schedule (accept LR jump)
 
 set -euo pipefail
 
@@ -25,6 +43,7 @@ PHASE4_DIR="${SCRIPT_DIR}/../.."
 
 ARM="${ARM:-both}"
 STEPS="${STEPS:-30000}"
+LR_TOTAL_STEPS="${LR_TOTAL_STEPS:-12500}"  # preserve original schedule — see header
 
 BASELINE_DIR="${PHASE4_DIR}/runs/kimi_436m_baseline_fsdp_overnight"
 ATTNRES_DIR="${PHASE4_DIR}/runs/kimi_436m_block_attn_res_fsdp_overnight"
@@ -64,6 +83,7 @@ run_arm() {
     GLOBAL_BS=12 \
     SEQ_LEN=2048 \
     COMPILE=1 \
+    EXTRA_ARGS_APPEND="--lr_scheduler.total_steps ${LR_TOTAL_STEPS}" \
     bash "${PHASE4_DIR}/launch_fsdp_small.sh"
 
     echo "[$(date -Is)] === ${name}: continuation exited rc=$? ==="
