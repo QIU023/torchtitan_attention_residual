@@ -107,6 +107,19 @@ if [[ "${COMPILE}" = "1" ]]; then
     EXTRA_ARGS+=(--compile.enable)
 fi
 
+# Validation — off by default to preserve legacy launcher behavior,
+# but long runs should turn it on. Uses torchtitan's default
+# c4_validation dataset (see torchtitan/components/validate.py).
+#   VAL=1            enable
+#   VAL_FREQ=2500    run validation every N training steps
+#   VAL_STEPS=100    how many val batches to consume per check
+VAL="${VAL:-0}"
+if [[ "${VAL}" = "1" ]]; then
+    EXTRA_ARGS+=(--validation.enable)
+    EXTRA_ARGS+=(--validation.freq "${VAL_FREQ:-2500}")
+    EXTRA_ARGS+=(--validation.steps "${VAL_STEPS:-100}")
+fi
+
 # EXTRA_ARGS_APPEND lets callers pass arbitrary extra flags (e.g.
 # --lr_scheduler.total_steps 12500 for resume-with-preserved-schedule).
 # Whitespace-split the variable; empty string means no-op.

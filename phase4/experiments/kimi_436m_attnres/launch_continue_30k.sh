@@ -44,6 +44,12 @@ PHASE4_DIR="${SCRIPT_DIR}/../.."
 ARM="${ARM:-both}"
 STEPS="${STEPS:-30000}"
 LR_TOTAL_STEPS="${LR_TOTAL_STEPS:-12500}"  # preserve original schedule — see header
+# Validation: on by default for the continuation. C4 validation set,
+# run every 2500 steps x 100 val batches — so each check reads ~200K
+# tokens, costs ~60s on 4x 5090. Adds ~7 samples to the 30K run.
+VAL="${VAL:-1}"
+VAL_FREQ="${VAL_FREQ:-2500}"
+VAL_STEPS="${VAL_STEPS:-100}"
 
 BASELINE_DIR="${PHASE4_DIR}/runs/kimi_436m_baseline_fsdp_overnight"
 ATTNRES_DIR="${PHASE4_DIR}/runs/kimi_436m_block_attn_res_fsdp_overnight"
@@ -83,6 +89,7 @@ run_arm() {
     GLOBAL_BS=12 \
     SEQ_LEN=2048 \
     COMPILE=1 \
+    VAL="${VAL}" VAL_FREQ="${VAL_FREQ}" VAL_STEPS="${VAL_STEPS}" \
     EXTRA_ARGS_APPEND="--lr_scheduler.total_steps ${LR_TOTAL_STEPS}" \
     bash "${PHASE4_DIR}/launch_fsdp_small.sh"
 
