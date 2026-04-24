@@ -14,7 +14,7 @@ PHASE4_DIR="${SCRIPT_DIR}/../.."
 
 OUT_DIR="${OUT_DIR:-${PHASE4_DIR}/runs/kimi_436m_block_attn_res_fsdp_overnight}" \
 MODULE=kimi_linear \
-CONFIG=kimi_linear_436m_block_attn_res \
+CONFIG=kimi_linear_436m_block_attn_res_n4 \
 NGPU=4 \
 STEPS=12500 \
 LOCAL_BS=3 \
