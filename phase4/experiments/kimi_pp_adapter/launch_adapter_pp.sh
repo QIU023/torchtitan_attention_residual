@@ -16,7 +16,7 @@ CONFIG=kimi_linear_436m_block_attn_res \
 NGPU=4 \
 STEPS=1000 \
 LOCAL_BS=1 \
-GLOBAL_BS=4 \
+GLOBAL_BS=12 \
 SEQ_LEN=2048 \
 CACHE=1 \
 bash "${PHASE4_DIR}/launch_pp4_kimi.sh"

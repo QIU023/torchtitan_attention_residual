@@ -36,7 +36,7 @@ validation on Kimi Linear L=16 N=8 with KDA + MLA + MoE in the mix.
 | LR schedule | warmup 500 + cosine decay (decay_ratio=0.8) | torchtitan default |
 | SEQ_LEN | 2048 | hardware-constrained |
 | LOCAL_BS / rank | 1 | required for PP=4 V=2 lps=2 to fit; FSDP arm matches for fairness |
-| GLOBAL_BS | 4 | LOCAL_BS × NGPU |
+| GLOBAL_BS (effective batch) | 12 | matches Problem A's effective batch (apples-to-apples cross-problem). Also makes `num_microbatches = GLOBAL_BS / (LOCAL_BS × dp_size)` = 12/1 = 12 ≥ 8 virtual stages, so Interleaved1F1B fills the pipeline once over with 4 microbatches of slack — keeps the bubble small enough that the naive-vs-adapter comm comparison isn't dominated by pipeline stalls |
 | NGPU | 4 | 4× RTX 5090 |
 | Mixed precision | bf16 (param + reduce) | torchtitan default |
 | AC | off | Phase 4c |

@@ -19,7 +19,7 @@ CONFIG=kimi_linear_436m_block_attn_res \
 NGPU=4 \
 STEPS=1000 \
 LOCAL_BS=1 \
-GLOBAL_BS=4 \
+GLOBAL_BS=12 \
 SEQ_LEN=2048 \
 COMPILE=0 \
 bash "${PHASE4_DIR}/launch_fsdp_small.sh"
