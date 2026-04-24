@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Phase 4: PP=4 + FSDP Kimi Linear launcher with AttnRes cache adapter.
 #
-# Default target: kimi_linear_528m_l16_block_attn_res
-# (paper-528M's d_model=1264, d_ff=560, lr=2.02e-3, batch=432 with
-# n_layers=16 instead of paper's 17 — 17 is prime and doesn't divide
-# the 8 virtual stages that PP=4 V=2 lps=2 Interleaved1F1B requires;
-# L=16 is the closest pp-compatible point).
+# Default target: kimi_linear_436m_block_attn_res
+# (paper-exact 436M from Table 2: d_model=1168, d_ff=528, lr=2.20e-3,
+# batch=384, n_layers=16. L=16 is paper-native at this scale and
+# divides the 8 virtual stages PP=4 V=2 lps=2 Interleaved1F1B
+# requires — every block boundary lines up with a stage boundary.)
 #
 # Schedule: Interleaved1F1B (prerequisite for the cache adapter).
 # Adapter: ON by default (TORCHTITAN_ATTNRES_CACHE=1).
@@ -15,10 +15,10 @@
 #   STEPS=1000 LOCAL_BS=2 bash phase4/launch_pp4_kimi.sh
 #
 # Env overrides:
-#   CONFIG=kimi_linear_528m_l16_block_attn_res  (default)
-#           kimi_linear_528m_l16_baseline       (no AttnRes, same L=16)
-#           kimi_linear_528m_l16_full_attn_res  (Full AttnRes, N=L=16)
-#           kimi_linear_436m_block_attn_res     (paper-exact 436M, L=16)
+#   CONFIG=kimi_linear_436m_block_attn_res  (default, paper-exact 436M, L=16)
+#           kimi_linear_436m_baseline       (no AttnRes, same L=16)
+#           kimi_linear_528m_l16_block_attn_res  (528M with L massaged to 16)
+#           kimi_linear_528m_l16_full_attn_res   (Full AttnRes, N=L=16)
 #   STEPS=100       smoke
 #   LOCAL_BS=1      per-device micro-batch
 #   GLOBAL_BS=4     global batch (= num_microbatches when PP=4 V=2 lps=2
@@ -35,7 +35,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TORCHTITAN_DIR="${TORCHTITAN_DIR:-${SCRIPT_DIR}/../torchtitan}"
 
 MODULE="${MODULE:-kimi_linear}"
-CONFIG="${CONFIG:-kimi_linear_528m_l16_block_attn_res}"
+CONFIG="${CONFIG:-kimi_linear_436m_block_attn_res}"
 NGPU="${NGPU:-4}"
 STEPS="${STEPS:-100}"
 LOCAL_BS="${LOCAL_BS:-1}"

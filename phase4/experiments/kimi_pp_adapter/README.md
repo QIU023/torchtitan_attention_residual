@@ -30,9 +30,9 @@ validation on Kimi Linear L=16 N=8 with KDA + MLA + MoE in the mix.
 
 | Knob | Value | Notes |
 |---|---|---|
-| Model | `kimi_linear_528m_l16_block_attn_res` | L=16 (paper L=17 prime, can't divide; L=16 is the closest divisor-friendly shape that keeps 528M's d_model=1264, d_ff=560, lr=2.02e-3 paper hyperparams) |
-| num_blocks | 8 | paper N=8 recipe; 16/8 = 2 layers per block |
-| LR (peak) | 2.02e-3 | paper 528M default |
+| Model | `kimi_linear_436m_block_attn_res` | 436M is paper-native L=16 (Table 2), no shape-massaging needed; matches Problem A's AttnRes arm exactly so insights cross-cite cleanly |
+| num_blocks | 8 | paper N=8 recipe; 16/8 = 2 layers per block — also matches PP=4 V=2 lps=2 = 8 virtual stages, every block boundary lines up with a stage boundary |
+| LR (peak) | 2.20e-3 | paper 436M default (Table 2) |
 | LR schedule | warmup 500 + cosine decay (decay_ratio=0.8) | torchtitan default |
 | SEQ_LEN | 2048 | hardware-constrained |
 | LOCAL_BS / rank | 1 | required for PP=4 V=2 lps=2 to fit; FSDP arm matches for fairness |

@@ -12,7 +12,7 @@ PHASE4_DIR="${SCRIPT_DIR}/../.."
 
 OUT_DIR="${OUT_DIR:-${PHASE4_DIR}/runs/kimi_pp_adapter_bench/adapter_pp}" \
 MODULE=kimi_linear \
-CONFIG=kimi_linear_528m_l16_block_attn_res \
+CONFIG=kimi_linear_436m_block_attn_res \
 NGPU=4 \
 STEPS=1000 \
 LOCAL_BS=1 \
