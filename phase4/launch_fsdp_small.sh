@@ -90,10 +90,21 @@ cd "${TORCHTITAN_DIR}"
 # AttnRes cache adapter is a PP-only concept; explicit off for FSDP runs.
 unset TORCHTITAN_ATTNRES_CACHE
 
-# Compose optional LR override
+# Compose optional overrides
 EXTRA_ARGS=()
 if [[ -n "${LR}" ]]; then
     EXTRA_ARGS+=(--optimizer.lr "${LR}")
+fi
+
+# COMPILE=1 turns on per-decoder-layer torch.compile + grouped_mm
+# (the kimi_linear parallelize_fn handles the actual wrapping; this
+# just flips torchtitan's compile.enable knob). On 4× RTX 5090 the
+# combined effect on Kimi 436M is +46% throughput vs eager + ~15
+# percentage points lower peak memory. Default on for kimi_linear
+# since 4d landed; explicit COMPILE=0 reverts to eager.
+COMPILE="${COMPILE:-1}"
+if [[ "${COMPILE}" = "1" ]]; then
+    EXTRA_ARGS+=(--compile.enable)
 fi
 
 PYTORCH_ALLOC_CONF="expandable_segments:True" \
