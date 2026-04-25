@@ -27,10 +27,34 @@ class TestKDLoss(unittest.TestCase):
         return student, teacher, labels
 
     def test_shape_assertion(self):
-        s, _, labels = self._fake_batch()
-        bad_t = torch.randn(self.B, self.T, self.V + 1)
-        with self.assertRaises(AssertionError):
+        # Batch/seq mismatch — must raise.
+        s = torch.randn(self.B, self.T, self.V)
+        labels = torch.randint(0, self.V, (self.B, self.T))
+        bad_t = torch.randn(self.B + 1, self.T, self.V)
+        with self.assertRaises(ValueError):
             kd_loss(s, labels, bad_t)
+        # Student vocab smaller than teacher — must raise.
+        small_s = torch.randn(self.B, self.T, self.V - 8)
+        full_t = torch.randn(self.B, self.T, self.V)
+        with self.assertRaises(ValueError):
+            kd_loss(small_s, labels, full_t)
+
+    def test_vocab_superset_slicing(self):
+        """Student V > Teacher V: student logits sliced to teacher's V
+        for both CE and KL. Loss must be finite and gradient must flow."""
+        V_t = self.V
+        V_s = V_t + 32  # student has 32 extra unused vocab rows
+        student = torch.randn(self.B, self.T, V_s, requires_grad=True)
+        teacher = torch.randn(self.B, self.T, V_t)
+        labels = torch.randint(0, V_t, (self.B, self.T))
+        loss = kd_loss(student, labels, teacher,
+                       KDConfig(alpha=0.3, temperature=2.0))
+        self.assertTrue(torch.isfinite(loss))
+        loss.backward()
+        self.assertIsNotNone(student.grad)
+        # Grad should be 0 on the unused upper rows.
+        upper_grad = student.grad[..., V_t:]
+        self.assertEqual(upper_grad.abs().sum().item(), 0.0)
 
     def test_alpha_1_reduces_to_ce(self):
         """alpha=1 -> teacher contribution vanishes; matches torchtitan CE."""

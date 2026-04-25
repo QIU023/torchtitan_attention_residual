@@ -75,43 +75,72 @@ def kd_loss(
     """Token-level logit KD loss.
 
     Args:
-        student_logits: ``(B, T, V)`` student forward output, fp32-safe
+        student_logits: ``(B, T, V_s)`` student forward output, fp32-safe
             but typically bf16; cast to fp32 inside for numerical
             stability.
         labels: ``(B, T)`` integer gold tokens. Positions equal to
             ``cfg.ignore_index`` are skipped in both CE and KL.
-        teacher_logits: ``(B, T, V)`` pre-computed teacher output.
+        teacher_logits: ``(B, T, V_t)`` pre-computed teacher output.
             Must be ``torch.no_grad()`` upstream so no teacher
-            gradient is built. Shape and vocab must match the student.
+            gradient is built.
         cfg: KDConfig controlling ``alpha``, ``temperature``,
             ``ignore_index``. ``None`` uses defaults.
 
+    Vocab handling:
+        * If ``V_s == V_t`` — standard same-vocab KD.
+        * If ``V_s > V_t`` — student vocab is a superset of teacher's
+          (typical case: torchtitan's kimi_linear configs use
+          vocab=163840 placeholder, but the student was trained with
+          a smaller-vocab tokenizer so the upper rows are unused).
+          Student logits are sliced to ``[:V_t]`` for both CE and KL
+          so both terms share a single normalization basis.
+        * If ``V_s < V_t`` — not supported (student couldn't have been
+          trained on those teacher tokens).
+
     Returns:
-        Scalar loss, sum-reduced over non-ignored tokens (matching the
-        convention of ``components.loss.cross_entropy_loss``). Divide
-        by ``(labels != ignore_index).sum()`` upstream to get the
-        per-token mean.
+        Scalar loss, sum-reduced over non-ignored tokens. Divide by
+        ``(labels != ignore_index).sum()`` upstream to get per-token mean.
     """
     if cfg is None:
         cfg = KDConfig()
 
-    assert student_logits.shape == teacher_logits.shape, (
-        f"student/teacher logits shape mismatch: "
-        f"{tuple(student_logits.shape)} vs {tuple(teacher_logits.shape)}"
-    )
-    assert labels.shape == student_logits.shape[:-1], (
-        f"labels shape {tuple(labels.shape)} incompatible with "
-        f"student logits {tuple(student_logits.shape)}"
-    )
+    V_s = student_logits.shape[-1]
+    V_t = teacher_logits.shape[-1]
+    if V_s < V_t:
+        raise ValueError(
+            f"Student vocab ({V_s}) smaller than teacher ({V_t}); "
+            f"cannot align KL distribution."
+        )
+    if student_logits.shape[:-1] != teacher_logits.shape[:-1]:
+        raise ValueError(
+            f"Batch / seq mismatch: student {tuple(student_logits.shape)} "
+            f"vs teacher {tuple(teacher_logits.shape)}"
+        )
+    if labels.shape != student_logits.shape[:-1]:
+        raise ValueError(
+            f"labels shape {tuple(labels.shape)} incompatible with "
+            f"student logits {tuple(student_logits.shape)}"
+        )
 
-    # Flatten (B, T) -> (B*T,) for masking simplicity.
-    logits_s = student_logits.flatten(0, 1).float()  # (N, V)
-    logits_t = teacher_logits.flatten(0, 1).float()  # (N, V)
-    targets = labels.flatten(0, 1)                    # (N,)
+    # Flatten (B, T) -> (B*T,). For V_s > V_t, slice student to V_t so
+    # CE and KL share a single softmax basis (avoids double-bookkeeping
+    # of the unused upper rows that were never trained anyway).
+    if V_s > V_t:
+        student_logits = student_logits[..., :V_t]
+    # Keep math in the input dtype (typically bf16) — fp32 promotion
+    # of the [N, V_t] vocab tensor would peak ~2x VRAM and OOMs the
+    # student×teacher KD step on 31 GiB cards. F.cross_entropy and
+    # F.log_softmax handle bf16 with built-in stable max-subtraction,
+    # so we skip the explicit .float() upcast.
+    logits_s = student_logits.flatten(0, 1)  # (N, V_t)
+    logits_t = teacher_logits.flatten(0, 1)  # (N, V_t)
+    targets = labels.flatten(0, 1)            # (N,)
 
-    # CE term — sum-reduction, ignores IGNORE_INDEX positions.
+    # CE term — sum-reduction, ignores IGNORE_INDEX positions. Cast
+    # only the CE path to fp32 (cross_entropy_loss in torchtitan does
+    # the same); the KL path stays in bf16.
     ce = F.cross_entropy(
-        logits_s, targets,
+        logits_s.float(), targets,
         reduction="sum",
         ignore_index=cfg.ignore_index,
     )
@@ -121,18 +150,17 @@ def kd_loss(
     if not keep.any():
         return cfg.alpha * ce  # all masked; KL contributes 0
 
-    T = cfg.temperature
-    log_p_s = F.log_softmax(logits_s[keep] / T, dim=-1)
-    log_p_t = F.log_softmax(logits_t[keep] / T, dim=-1)
+    T_temp = cfg.temperature
+    # Slice keep BEFORE casting — slicing avoids materializing a
+    # full-size fp32 buffer for masked positions that we discard.
+    log_p_s = F.log_softmax(logits_s[keep] / T_temp, dim=-1)
+    log_p_t = F.log_softmax(logits_t[keep] / T_temp, dim=-1)
     # KL(student || teacher) = sum p_s * (log p_s - log p_t).
-    # Equivalently: F.kl_div(log_p_t, log_p_s, log_target=True,
-    # reduction='sum') — note F.kl_div expects (input=log_p_target,
-    # target=log_p_source) when log_target=True. We use the explicit
-    # form to keep the direction obvious.
     p_s = log_p_s.exp()
     kl = (p_s * (log_p_s - log_p_t)).sum()
-    # Hinton rescaling — T^2 keeps KL grad magnitude commensurate with CE.
-    kl = kl * (T * T)
+    # Hinton T^2 rescaling so KL grad magnitude stays commensurate
+    # with CE across temperature changes.
+    kl = kl * (T_temp * T_temp)
 
     return cfg.alpha * ce + (1.0 - cfg.alpha) * kl
 

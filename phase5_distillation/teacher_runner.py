@@ -33,7 +33,16 @@ if TYPE_CHECKING:
     from torch.distributed.device_mesh import DeviceMesh
 
 
-DEFAULT_TEACHER = "moonshotai/Kimi-Linear-48B-A3B-Base"
+# Default: Llama-3.1-8B-Base. Matches the Llama-3.1 tokenizer that
+# torchtitan's default kimi_linear configs ship with
+# (./assets/hf/Llama-3.1-8B). Student forward + teacher forward both
+# consume Llama BPE tokens (vocab 128,256).
+#
+# Using NousResearch's redistribution (same weights as
+# meta-llama/Llama-3.1-8B but non-gated, so HF auth is not required).
+# Switch to Llama-3.1-70B-Base (int8 / 4bit) for stronger signal
+# once the 8B path is validated.
+DEFAULT_TEACHER = "NousResearch/Meta-Llama-3.1-8B"
 
 
 class TeacherRunner:
