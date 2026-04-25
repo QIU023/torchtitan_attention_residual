@@ -115,9 +115,9 @@ fi
 #   VAL_STEPS=100    how many val batches to consume per check
 VAL="${VAL:-0}"
 if [[ "${VAL}" = "1" ]]; then
-    EXTRA_ARGS+=(--validation.enable)
-    EXTRA_ARGS+=(--validation.freq "${VAL_FREQ:-2500}")
-    EXTRA_ARGS+=(--validation.steps "${VAL_STEPS:-100}")
+    EXTRA_ARGS+=(--validator.enable)
+    EXTRA_ARGS+=(--validator.freq "${VAL_FREQ:-2500}")
+    EXTRA_ARGS+=(--validator.steps "${VAL_STEPS:-100}")
 fi
 
 # EXTRA_ARGS_APPEND lets callers pass arbitrary extra flags (e.g.

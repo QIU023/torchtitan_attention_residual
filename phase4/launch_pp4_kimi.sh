@@ -64,6 +64,19 @@ if [[ -n "${LR}" ]]; then
     EXTRA_ARGS+=(--optimizer.lr "${LR}")
 fi
 
+# Validation hooks (mirror launch_fsdp_small.sh)
+VAL="${VAL:-0}"
+if [[ "${VAL}" = "1" ]]; then
+    EXTRA_ARGS+=(--validator.enable)
+    EXTRA_ARGS+=(--validator.freq "${VAL_FREQ:-2500}")
+    EXTRA_ARGS+=(--validator.steps "${VAL_STEPS:-100}")
+fi
+
+if [[ -n "${EXTRA_ARGS_APPEND:-}" ]]; then
+    # shellcheck disable=SC2206
+    EXTRA_ARGS+=(${EXTRA_ARGS_APPEND})
+fi
+
 PYTORCH_ALLOC_CONF="expandable_segments:True" \
 torchrun \
     --nproc_per_node="${NGPU}" \
