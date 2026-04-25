@@ -46,17 +46,43 @@ T=2048 D=2304 → ~4 MB / layer). int8 weight-only quantization halves to
 - `tests/test_kd_loss.py` — 9 unit tests covering α=0, α=1, identical
   teacher, ignore-index masking, temperature, backward path.
 
-## Pending (not yet written)
+## Files
 
-- `teacher_runner.py` — wraps a HF `AutoModelForCausalLM` in eval / no_grad
-  mode, FSDP-sharded across the 4 GPUs, exposes `.forward(input_ids) →
-  logits`. Uses `transformers` directly (NOT vLLM — vLLM only exposes top-K
-  logprobs, full-vocab softmax is required for KD's KL term).
-- `train_kd.py` — driver that:
-  1. Builds the student via torchtitan's `kimi_linear` ModelSpec, loads the
-     12,500-step (or 30K/60K-closure) ckpt.
-  2. Builds the teacher via `teacher_runner`.
-  3. Runs the same input batch through both, computes `kd_loss`, optimizes
-     student only.
-- `launch_kd.sh` — torchrun wrapper, mirrors `phase4/launch_fsdp_small.sh`
-  but adds teacher loading.
+- `kd_loss.py` — KD loss math (`α·CE + (1-α)·T²·KL`). Pure torch.
+- `teacher_runner.py` — `TeacherRunner.load(repo_id, device_mesh)` wraps a
+  HF `AutoModelForCausalLM` in FSDP2 + eval / no_grad. Returns full-vocab
+  logits per rank. Uses `transformers` with `trust_remote_code=True`
+  (Kimi's KDA + MLA + MoE custom modeling).
+- `train_kd.py` — single-file training loop. Builds student via torchtitan
+  `kimi_linear` ModelSpec, loads step-12500 ckpt via DCP, builds teacher
+  via `teacher_runner`, runs both forwards on the same batch, computes
+  `kd_loss`, backwards student only. Streams c4-en, tokenizes with the
+  teacher's HF tokenizer (Kimi BPE) so the vocab matches automatically.
+- `launch_kd.sh` — torchrun wrapper. Defaults: 4 GPUs, LOCAL_BS=2,
+  GLOBAL_BS=8, SEQ_LEN=2048, LR=2e-4 constant (post-cosine-decay
+  distillation phase), α=0.3, T=2.0, 5000 steps, ckpt every 500.
+- `tests/test_kd_loss.py` — 9 unit tests, all green.
+
+## How to run
+
+```bash
+# Optional: pre-download teacher (~96 GB) to a fixed cache.
+huggingface-cli download moonshotai/Kimi-Linear-48B-A3B-Base \
+    --local-dir ~/hf_cache/Kimi-Linear-48B-A3B-Base
+
+# Kick off KD overnight from Phase 4's step-12500 ckpt.
+bash phase5_distillation/launch_kd.sh
+```
+
+Override knobs via env vars (see launcher header).
+
+## Open items
+
+- `compile.enable=False` in train_kd.py — torch.compile + two-model FSDP
+  forward is fragile to validate; leave off until baseline KD run works.
+- No LR scheduler — distillation phase uses constant LR=2e-4. Adding a
+  shorter warmup + decay should be straightforward if it helps.
+- No validation hooks — KD val_loss against the teacher's logits is
+  trivially low (it's the optimization target). For real evaluation
+  reuse `phase4/experiments/kimi_pp_adapter/eval_val.sh` against the
+  resulting student ckpts.
