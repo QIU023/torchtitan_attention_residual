@@ -1,0 +1,459 @@
+W0426 18:37:51.174000 340925 site-packages/torch/distributed/run.py:851] 
+W0426 18:37:51.174000 340925 site-packages/torch/distributed/run.py:851] *****************************************
+W0426 18:37:51.174000 340925 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0426 18:37:51.174000 340925 site-packages/torch/distributed/run.py:851] *****************************************
+[rank0]:[titan] 2026-04-26 18:37:56,880 - root - INFO - torchtitan version: 0.2.2 (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-04-26 18:37:58,078 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-04-26 18:37:58,081 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=4, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-04-26 18:37:58,092 - root - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'fsdp', 'efsdp']
+[rank0]:[titan] 2026-04-26 18:37:58,093 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-04-26 18:37:58,778 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-04-26 18:37:59,175 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-04-26 18:37:59,329 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-04-26 18:37:59,352 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:37:59,453 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:37:59,454 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:[titan] 2026-04-26 18:37:59,758 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:38:00,006 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:00,353 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:38:00,533 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:00,680 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:00,869 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:00,965 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:01,201 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:38:01,306 - root - INFO - Building kimi_linear kimi_linear_436m_block_attn_res_n4 with {
+[rank0]:  "vocab_size": 163840,
+[rank0]:  "hidden_size": 1168,
+[rank0]:  "tie_word_embeddings": true,
+[rank0]:  "num_hidden_layers": 16,
+[rank0]:  "intermediate_size": 528,
+[rank0]:  "num_attention_heads": 16,
+[rank0]:  "num_key_value_heads": 16,
+[rank0]:  "q_lora_rank": null,
+[rank0]:  "kv_lora_rank": 584,
+[rank0]:  "qk_nope_head_dim": 73,
+[rank0]:  "qk_rope_head_dim": 36,
+[rank0]:  "v_head_dim": 73,
+[rank0]:  "mla_use_nope": true,
+[rank0]:  "rope_theta": 10000.0,
+[rank0]:  "kda_num_heads": 16,
+[rank0]:  "kda_head_dim": 73,
+[rank0]:  "kda_short_conv_kernel_size": 4,
+[rank0]:  "kda_layers": [
+[rank0]:    1,
+[rank0]:    2,
+[rank0]:    3,
+[rank0]:    5,
+[rank0]:    6,
+[rank0]:    7,
+[rank0]:    9,
+[rank0]:    10,
+[rank0]:    11,
+[rank0]:    13,
+[rank0]:    14,
+[rank0]:    15
+[rank0]:  ],
+[rank0]:  "full_attn_layers": [
+[rank0]:    4,
+[rank0]:    8,
+[rank0]:    12,
+[rank0]:    16
+[rank0]:  ],
+[rank0]:  "num_experts": 32,
+[rank0]:  "num_experts_per_token": 8,
+[rank0]:  "moe_intermediate_size": 528,
+[rank0]:  "moe_renormalize": true,
+[rank0]:  "moe_router_activation_func": "sigmoid",
+[rank0]:  "num_shared_experts": 1,
+[rank0]:  "routed_scaling_factor": 2.446,
+[rank0]:  "first_k_dense_replace": 1,
+[rank0]:  "moe_layer_freq": 1,
+[rank0]:  "use_grouped_topk": false,
+[rank0]:  "num_expert_group": 1,
+[rank0]:  "topk_group": 1,
+[rank0]:  "rms_norm_eps": 1e-05,
+[rank0]:  "hidden_act": "silu",
+[rank0]:  "initializer_range": 0.02,
+[rank0]:  "__spec__": {
+[rank0]:    "num_blocks": 4,
+[rank0]:    "model_class": "KimiLinearAttnResModel"
+[rank0]:  }
+[rank0]:}
+[rank0]:[titan] 2026-04-26 18:38:01,346 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase5_distillation/miniplm/runs/miniplm_eval/tb/20260426-1838
+[rank0]:[titan] 2026-04-26 18:38:01,346 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.35GiB memory
+[rank0]:[titan] 2026-04-26 18:38:01,348 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-04-26 18:38:01,348 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-04-26 18:38:01,349 - root - INFO - [34mModel kimi_linear kimi_linear_436m_block_attn_res_n4 [31msize: 1,201,640,636 total parameters[39m
+[rank0]:[titan] 2026-04-26 18:38:01,349 - root - INFO - Compiling the loss function with torch.compile
+[rank0]:[titan] 2026-04-26 18:38:01,391 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank0]:[titan] 2026-04-26 18:38:01,503 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=4, dp_replicate=1).
+[rank0]:[titan] 2026-04-26 18:38:01,685 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-04-26 18:38:01,685 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-04-26 18:38:01,685 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-04-26 18:38:01,686 - root - INFO - CUDA memory usage for model: 1.31GiB(4.17%)
+[rank0]:[titan] 2026-04-26 18:38:01,711 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase5_distillation/miniplm/runs/miniplm_eval/checkpoint
+[rank0]:[titan] 2026-04-26 18:38:01,712 - root - INFO - Trainer is initialized with local batch size 3, global batch size 12, gradient accumulation steps 1, sequence length 2048, total steps 18001 (warmup 100)
+[rank0]:[titan] 2026-04-26 18:38:01,712 - root - INFO - Loading the checkpoint from /root/torchtitan_attention_residual/phase5_distillation/miniplm/runs/miniplm_overnight/checkpoint/step-18000.
+[rank0]:[titan] 2026-04-26 18:38:03,504 - root - INFO - [GC] GC collection for checkpoint loading. took 0.01 seconds
+[rank0]:[titan] 2026-04-26 18:38:03,504 - root - INFO - Finished loading the checkpoint in 1.79 seconds.
+[rank0]:[titan] 2026-04-26 18:38:03,505 - root - INFO - Training starts at step 1
+[rank0]:[titan] 2026-04-26 18:38:03,658 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:04,006 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:04,213 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:04,313 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-26 18:38:04,394 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260426%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260426T183709Z&X-Amz-Expires=3600&X-Amz-Signature=b7eff675d2553a452d18544ac361917b0097d41dcd01038f91764341ad358e99&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1777232229&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NzIzMjIyOX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=Jejny7dd0%7E-3o3l-pvzii639%7Ec-voRH3D0jdG2d8aNiFYhrbP2wjr-x7e8tf7ytQphP-WNbP%7Eqd9mQw1G0lIoT7RgLRCzzP3WX9NLCYVLMmwKrffwgzKif7-D6WhzoyvQsfEvKAZbG81nPW6te7e31zIv2T2vQV650bv0CjsL2lspuJbJbzCuh024RNfh9alOvM-LPI8QHrYPHNdADjHic7vL%7ECXk52EVGw-wdLDlPqhKINxnJITDHfw0kkfMLMRPuLTNEv8u6uknSydG8yk-Wb4bvBBk0jCK34Nt0il0OdYxEEvhS6ZF7rOOm1uUQ1xlMK7Vp7d44lRbCjAwB2Vsw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[rank0]:W0426 18:38:19.731000 340994 site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1168, out_features=1, bias=False)]
+[rank0]:[titan] 2026-04-26 18:38:20,437 - root - INFO - [31mstep:  1  [32mloss:  3.80906  [38;2;180;60;0mgrad_norm:  0.1926  [38;2;54;234;195mmemory: 23.58GiB(75.20%)  [34mtps: 322  [36mtflops: 2.00  [35mmfu: 0.64%[39m
+[rank0]:[titan] 2026-04-26 18:38:20,439 - root - INFO - Preparing c4_validation dataset from allenai/c4
+[rank0]:[titan] 2026-04-26 18:38:20,597 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-04-26 18:38:20,622 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:20,715 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:38:21,030 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:38:21,234 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:38:21,447 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:38:21,686 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:38:21,874 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-validation.00000-of-00008.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-26 18:38:21,962 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/dffa9a5aa789525d19e0d6d9473f981585bd51d31019f9ba258b54d311dd5bf2?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260426%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260426T183821Z&X-Amz-Expires=3600&X-Amz-Signature=ba0c032fe31ab058e6b2a942377c44247b842e8d2e09a3be8e875e9c888e86d5&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-validation.00000-of-00008.json.gz%3B+filename%3D%22c4-validation.00000-of-00008.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1777232301&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NzIzMjMwMX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvZGZmYTlhNWFhNzg5NTI1ZDE5ZTBkNmQ5NDczZjk4MTU4NWJkNTFkMzEwMTlmOWJhMjU4YjU0ZDMxMWRkNWJmMioifV19&Signature=VEBU2-bGXz7Pg9Ec3Eoehl8E6Qj3lVBOFiR00Agyx2PTvV6Jiuu99K7t5UybjmdVHD-hjSEEGnSQMbL5iM2CwPiqeSxMx1oVgr3EBrqHn9bMXmawYmrE9jBG8AmApabDyCfJ0PYAe8AMnbof-pQCjXmUzvRj6kvTJQK3RFVbg7T6E4PPkaJpNzPQK3PxTnFnsN-R6nHYZ7Vbuwx1M4E3GaCgOHi3Z0hY%7E3FNgy2zdKLlXVz-r3H7MpU%7EFbQvuqNwnSxeErtH905owU4z5Ex6oSXbgEowb8fk96BgKBL5KwUqT9IZcMs4KO74P5hT-B5mSACdqAEpGsjRGgfjwBFYXA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/utils.py:437: UserWarning: Set timeout is now only supported for either nccl or gloo.
+[rank0]:  torch.distributed.distributed_c10d._set_pg_timeout(timeout, group)
+[rank0]:[titan] 2026-04-26 18:41:00,808 - root - INFO - [33mvalidate step:  1  [32mloss:  3.8243  [38;2;54;234;195mmemory: 23.58GiB(75.20%)  [34mtps: 7,662[39m
+[rank0]:[titan] 2026-04-26 18:41:00,812 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-04-26 18:41:02,656 - root - INFO - Preparing c4_validation dataset from allenai/c4
+[rank0]:[titan] 2026-04-26 18:41:02,829 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-04-26 18:41:02,860 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:41:02,959 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:41:03,309 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:41:03,500 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:41:03,672 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:41:03,913 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:41:04,100 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-validation.00000-of-00008.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-26 18:41:04,188 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/dffa9a5aa789525d19e0d6d9473f981585bd51d31019f9ba258b54d311dd5bf2?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260426%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260426T184104Z&X-Amz-Expires=3600&X-Amz-Signature=726314274fb9033b4ee6f486389f47ea9f95a03aad8408c716be4d481dd2fe53&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-validation.00000-of-00008.json.gz%3B+filename%3D%22c4-validation.00000-of-00008.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1777232464&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NzIzMjQ2NH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvZGZmYTlhNWFhNzg5NTI1ZDE5ZTBkNmQ5NDczZjk4MTU4NWJkNTFkMzEwMTlmOWJhMjU4YjU0ZDMxMWRkNWJmMioifV19&Signature=UId6f61vM-QL65fevI1GzzLMDZw7MWKfch7ARDWa52xNQ1QofqrwknRar61-LKXp10h-s1BefKCshL4sOAc9yacBHAROL0GF9GMev6U%7EksdZZp1zS3Ty8BWorIBhmr0qBt0LWib2D1bBVjXtcJxyKn4d4N61nFbX8vyJ6IFkZJezGPS8McOLks3HfUcKpPvgtc-%7EEDbKBqYpehFiK30KNaHaCUnVf5Pdox63QlI4yCuwN7Bpvym1WYdaxNE2xQz26gS-B-dm4EvIdUawco90Z2LHXORoShAg6-oeZOZ3j-NlMpWWjmvfkqgfkRlL5e8MYGSXR3F-pQ1w6OgTPntw9A__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-26 18:43:32,166 - root - INFO - [33mvalidate step:  2  [32mloss:  3.8228  [38;2;54;234;195mmemory: 25.84GiB(82.40%)  [34mtps: 8,159[39m
+[rank0]:[titan] 2026-04-26 18:43:33,973 - root - INFO - Preparing c4_validation dataset from allenai/c4
+[rank0]:[titan] 2026-04-26 18:43:34,141 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-04-26 18:43:34,172 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:43:34,267 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:43:34,595 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:43:34,787 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:43:34,970 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:43:35,210 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:43:35,392 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-validation.00000-of-00008.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-26 18:43:35,478 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/dffa9a5aa789525d19e0d6d9473f981585bd51d31019f9ba258b54d311dd5bf2?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260426%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260426T184335Z&X-Amz-Expires=3600&X-Amz-Signature=af0af938dfd35ce17f8b70336814ec2b73023e3beb889484bb9269a3b42fe19e&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-validation.00000-of-00008.json.gz%3B+filename%3D%22c4-validation.00000-of-00008.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1777232615&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NzIzMjYxNX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvZGZmYTlhNWFhNzg5NTI1ZDE5ZTBkNmQ5NDczZjk4MTU4NWJkNTFkMzEwMTlmOWJhMjU4YjU0ZDMxMWRkNWJmMioifV19&Signature=wQgGv2o7s5sq5QmQnOg06GQ9wcZP93DjeDewKNs3gm3Ukz875ScWHnFgomvHURWhbCwS4eut%7E3E6WntPJdvn8EkL7l9AOJnyfv8tX5UiOsUBsNPWflZxgWnLcMKMWVu5azMjM-WZ49VQijXkfhJV7qlj3RiNNZZyPCYomz1TmwJPn5ja%7Ey8d3336sLah5WX14gAxKwN0EiJLNDIGVsutOG5dRbEqTBzZ5ykvghioWwcv%7Eh4UXusoDsCA1uklhf3CYD9omFFYC5p5JwaAUFTd8mJfLag6J8TKcZ1JNiGUF7ZWKT-0wF9wsd%7EJoyUV%7EZMAxaxCzqn1eRF6TmWEZbNhyA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-26 18:46:03,249 - root - INFO - [33mvalidate step:  3  [32mloss:  3.8208  [38;2;54;234;195mmemory: 27.69GiB(88.32%)  [34mtps: 8,174[39m
+[rank0]:[titan] 2026-04-26 18:46:05,062 - root - INFO - Preparing c4_validation dataset from allenai/c4
+[rank0]:[titan] 2026-04-26 18:46:05,229 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-04-26 18:46:05,253 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:46:05,351 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:46:05,684 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:46:05,884 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:46:06,186 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:46:06,427 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:46:06,616 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-validation.00000-of-00008.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-26 18:46:06,695 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/dffa9a5aa789525d19e0d6d9473f981585bd51d31019f9ba258b54d311dd5bf2?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260426%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260426T184606Z&X-Amz-Expires=3600&X-Amz-Signature=a428b36e661bba49f29f8825946ab1c9ecb5a4a59af0c22a442d0e6577a73997&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-validation.00000-of-00008.json.gz%3B+filename%3D%22c4-validation.00000-of-00008.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1777232766&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NzIzMjc2Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvZGZmYTlhNWFhNzg5NTI1ZDE5ZTBkNmQ5NDczZjk4MTU4NWJkNTFkMzEwMTlmOWJhMjU4YjU0ZDMxMWRkNWJmMioifV19&Signature=jumaJCMjjp%7EnmdXGgH9rGYP75xSOVUpMDekS3lNho4KZ4Jmk0u7PkngHNi1hrB2pOCeBI6i4%7E%7EaxN9YJb5vaNy9GrDfFpwrif5Zom%7EHnUaV-CoDDDLmt-VR%7EunsJRyD6kq8YTIYR30hYcVwJKTSYOnjnYSqDqgfeuiHmNTzwhYaHBfw7%7EFZ91gIbjiwVkWLmWsKMaY8UOq5DbEkSoS4oAvebBX7WFpbJISlriLWUAWf%7ExhNkjbvHiUDm%7ELElSb4FxxFNYBTeXmWf0R%7ESQ%7EJ8QervFfmXp4YL7pACvpaiWz6w%7EdGn57Uzb2OPX1wFs6e0dHCKY9oTRQ-IjXzMmojGhQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-26 18:48:34,475 - root - INFO - [33mvalidate step:  4  [32mloss:  3.8182  [38;2;54;234;195mmemory: 29.57GiB(94.30%)  [34mtps: 8,166[39m
+[rank0]:[titan] 2026-04-26 18:48:36,726 - root - INFO - Preparing c4_validation dataset from allenai/c4
+[rank0]:[titan] 2026-04-26 18:48:36,893 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-04-26 18:48:36,919 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:48:37,011 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:48:37,332 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:48:37,524 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:48:37,723 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-04-26 18:48:37,961 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-04-26 18:48:38,149 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-validation.00000-of-00008.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-04-26 18:48:38,225 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/dffa9a5aa789525d19e0d6d9473f981585bd51d31019f9ba258b54d311dd5bf2?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260426%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260426T183701Z&X-Amz-Expires=3600&X-Amz-Signature=2070db446af32fadb024a692b1f4b163883991f0bde052fe8399065f9cbe9cd3&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-validation.00000-of-00008.json.gz%3B+filename%3D%22c4-validation.00000-of-00008.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1777232221&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3NzIzMjIyMX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvZGZmYTlhNWFhNzg5NTI1ZDE5ZTBkNmQ5NDczZjk4MTU4NWJkNTFkMzEwMTlmOWJhMjU4YjU0ZDMxMWRkNWJmMioifV19&Signature=OuyJ4GV-vtzNmgSB3%7Eor2s9nJdRPJHlOA0pBNVscTXuMpK1B0MXj%7E%7EW9YNm6jrYdwEvpqAj007k2%7EuszuyXy0rYK023jm%7ELfMiLUEVADtN1jilwzRYGx6AcLZTA7mzGeOR7x32Abr%7EOa7PphoBVeGVRSZpOzjA7ECTQ1XhefU0vYx8KphVxyNvy6Ci58GdTS3JEPqp0Kh2MTcf9DC60NZeFy0Xnltdi1m0bmcb5TWRa-YawJlZWtvmD7HwhRsG5w8Wn%7El22EGHDFY97hxWcd3%7E-xA%7E%7E2y74AEn-mUu-zl6mxVCDzPJmUTdkGa%7EQSd95Urg2dsSR8qwGIazmBx0Aysw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-04-26 18:51:06,393 - root - WARNING - 2 CUDA memory allocation retries.
+[rank0]:[titan] 2026-04-26 18:51:06,393 - root - INFO - [33mvalidate step:  5  [32mloss:  3.8151  [38;2;54;234;195mmemory: 30.50GiB(97.27%)  [34mtps: 8,129[39m
+[rank0]:[rank0]: Traceback (most recent call last):
+[rank0]:[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 68, in <module>
+[rank0]:[rank0]:     main()
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 55, in main
+[rank0]:[rank0]:     trainer.train()
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+[rank0]:[rank0]:     return f(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+[rank0]:[rank0]:     self.train_step(data_iterator)
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+[rank0]:[rank0]:     loss = self.forward_backward_step(
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+[rank0]:[rank0]:     loss.backward()
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_tensor.py", line 631, in backward
+[rank0]:[rank0]:     torch.autograd.backward(
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/autograd/__init__.py", line 381, in backward
+[rank0]:[rank0]:     _engine_run_backward(
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+[rank0]:[rank0]:     return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/autograd/function.py", line 317, in apply
+[rank0]:[rank0]:     return user_fn(self, *args)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2748, in backward
+[rank0]:[rank0]:     return impl_fn()
+[rank0]:[rank0]:            ^^^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2734, in impl_fn
+[rank0]:[rank0]:     out = CompiledFunction._backward_impl(ctx, all_args)
+[rank0]:[rank0]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2918, in _backward_impl
+[rank0]:[rank0]:     out = call_func_at_runtime_with_args(
+[rank0]:[rank0]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 138, in call_func_at_runtime_with_args
+[rank0]:[rank0]:     out = normalize_as_list(f(args))
+[rank0]:[rank0]:                             ^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+[rank0]:[rank0]:     return fn(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 656, in __call__
+[rank0]:[rank0]:     return self.current_callable(inputs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/venv/main/lib/python3.12/site-packages/torch/_inductor/utils.py", line 3401, in run
+[rank0]:[rank0]:     out = model(new_inputs)
+[rank0]:[rank0]:           ^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/tmp/torchinductor_root/b5/cb5j4gtcsx4urnaur4vuvecx7zvefqdobuyaerntzs4jpv43bnf4.py", line 195, in call
+[rank0]:[rank0]:     buf1 = empty_strided_cuda((6144, 163840), (163840, 1), torch.bfloat16)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.88 GiB. GPU 0 has a total capacity of 31.35 GiB of which 745.38 MiB is free. Including non-PyTorch memory, this process has 30.62 GiB memory in use. Of the allocated memory 29.49 GiB is allocated by PyTorch, and 310.99 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+[rank0]:[titan] 2026-04-26 18:51:07,344 - root - INFO - Destroying the purge thread.
+W0426 18:51:10.966000 340925 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 340995 closing signal SIGTERM
+W0426 18:51:10.968000 340925 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 340997 closing signal SIGTERM
+E0426 18:51:12.115000 340925 site-packages/torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 0 (pid: 340994) of binary: /venv/main/bin/python3
+E0426 18:51:12.124000 340925 site-packages/torch/distributed/elastic/multiprocessing/errors/error_handler.py:145] no error file defined for parent, to copy child error file (/tmp/torchelastic_bblaqjdb/none_epku8bli/attempt_0/0/error.json)
+Traceback (most recent call last):
+  File "/venv/main/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-04-26_18:51:07
+  host      : 54d6b0680dd4
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 340996)
+  error_file: /tmp/torchelastic_bblaqjdb/none_epku8bli/attempt_0/2/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/venv/main/lib/python3.12/site-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/function.py", line 317, in apply
+      return user_fn(self, *args)
+             ^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2748, in backward
+      return impl_fn()
+             ^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2734, in impl_fn
+      out = CompiledFunction._backward_impl(ctx, all_args)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2918, in _backward_impl
+      out = call_func_at_runtime_with_args(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 138, in call_func_at_runtime_with_args
+      out = normalize_as_list(f(args))
+                              ^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 656, in __call__
+      return self.current_callable(inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/utils.py", line 3401, in run
+      out = model(new_inputs)
+            ^^^^^^^^^^^^^^^^^
+    File "/tmp/torchinductor_root/dk/cdk5a5bl3faontcnekc3kwhw6preqkemqcpnpxorcc4nyugjahoy.py", line 195, in call
+      buf1 = empty_strided_cuda((6144, 163840), (163840, 1), torch.bfloat16)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.88 GiB. GPU 2 has a total capacity of 31.36 GiB of which 747.75 MiB is free. Including non-PyTorch memory, this process has 30.62 GiB memory in use. Of the allocated memory 29.49 GiB is allocated by PyTorch, and 311.31 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+[2]:
+  time      : 2026-04-26_18:51:07
+  host      : 54d6b0680dd4
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 340995)
+  error_file: /tmp/torchelastic_bblaqjdb/none_epku8bli/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/venv/main/lib/python3.12/site-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/function.py", line 317, in apply
+      return user_fn(self, *args)
+             ^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2748, in backward
+      return impl_fn()
+             ^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2734, in impl_fn
+      out = CompiledFunction._backward_impl(ctx, all_args)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2918, in _backward_impl
+      out = call_func_at_runtime_with_args(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 138, in call_func_at_runtime_with_args
+      out = normalize_as_list(f(args))
+                              ^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 656, in __call__
+      return self.current_callable(inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/utils.py", line 3401, in run
+      out = model(new_inputs)
+            ^^^^^^^^^^^^^^^^^
+    File "/tmp/torchinductor_root/f7/cf7fjagkxjrmczptd634iqschneg4yiynq7nk4xf75ks4iu6ny25.py", line 195, in call
+      buf1 = empty_strided_cuda((6144, 163840), (163840, 1), torch.bfloat16)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.88 GiB. GPU 1 has a total capacity of 31.36 GiB of which 747.75 MiB is free. Including non-PyTorch memory, this process has 30.62 GiB memory in use. Of the allocated memory 29.49 GiB is allocated by PyTorch, and 311.31 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+[3]:
+  time      : 2026-04-26_18:51:07
+  host      : 54d6b0680dd4
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 340997)
+  error_file: /tmp/torchelastic_bblaqjdb/none_epku8bli/attempt_0/3/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/venv/main/lib/python3.12/site-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/function.py", line 317, in apply
+      return user_fn(self, *args)
+             ^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2748, in backward
+      return impl_fn()
+             ^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2734, in impl_fn
+      out = CompiledFunction._backward_impl(ctx, all_args)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2918, in _backward_impl
+      out = call_func_at_runtime_with_args(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 138, in call_func_at_runtime_with_args
+      out = normalize_as_list(f(args))
+                              ^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 656, in __call__
+      return self.current_callable(inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/utils.py", line 3401, in run
+      out = model(new_inputs)
+            ^^^^^^^^^^^^^^^^^
+    File "/tmp/torchinductor_root/mm/cmmiauu2exmjscbau5affuh4y3wk47nq3edqjxb3frh2yz7g2zmq.py", line 195, in call
+      buf1 = empty_strided_cuda((6144, 163840), (163840, 1), torch.bfloat16)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.88 GiB. GPU 3 has a total capacity of 31.36 GiB of which 747.75 MiB is free. Including non-PyTorch memory, this process has 30.62 GiB memory in use. Of the allocated memory 29.49 GiB is allocated by PyTorch, and 311.97 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-04-26_18:51:07
+  host      : 54d6b0680dd4
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 340994)
+  error_file: /tmp/torchelastic_bblaqjdb/none_epku8bli/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/venv/main/lib/python3.12/site-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/autograd/function.py", line 317, in apply
+      return user_fn(self, *args)
+             ^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2748, in backward
+      return impl_fn()
+             ^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2734, in impl_fn
+      out = CompiledFunction._backward_impl(ctx, all_args)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2918, in _backward_impl
+      out = call_func_at_runtime_with_args(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 138, in call_func_at_runtime_with_args
+      out = normalize_as_list(f(args))
+                              ^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 656, in __call__
+      return self.current_callable(inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.12/site-packages/torch/_inductor/utils.py", line 3401, in run
+      out = model(new_inputs)
+            ^^^^^^^^^^^^^^^^^
+    File "/tmp/torchinductor_root/b5/cb5j4gtcsx4urnaur4vuvecx7zvefqdobuyaerntzs4jpv43bnf4.py", line 195, in call
+      buf1 = empty_strided_cuda((6144, 163840), (163840, 1), torch.bfloat16)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.88 GiB. GPU 0 has a total capacity of 31.35 GiB of which 745.38 MiB is free. Including non-PyTorch memory, this process has 30.62 GiB memory in use. Of the allocated memory 29.49 GiB is allocated by PyTorch, and 310.99 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+============================================================

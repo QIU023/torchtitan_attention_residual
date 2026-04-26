@@ -1,88 +1,127 @@
-# Phase 5 — Distillation from Kimi-Linear-48B-A3B-Base into the 436M student
+# Phase 5 — Knowledge Distillation experiments (negative result)
 
-Standalone module that lives **outside** the torchtitan submodule. Distillation
-is a project-level concern (teacher loading, two-model orchestration, separate
-training loop) rather than a torchtitan-core feature; keeping it out of
-`torchtitan/torchtitan/experiments/` keeps the submodule's role clear: pure
-training framework for the student.
+This phase tested two paths to lower the Phase 4 Kimi Linear 436M
+student's c4 val_loss past the 12,500-step pretraining floor of
+**3.7326**, with the goal of producing a "multimodal-ready" backbone.
 
-## Why distillation here
+**Both attempts FAILED to improve val_loss.** The student is at the
+floor for the 4× RTX 5090 + c4 + Llama-tokenizer training budget.
+Multimodal work moves on without it as the LM backbone — see
+`docs/multimodal_with_attn_res_design.md` for the architectural
+pivot (Path A: `AttnRes Connector` on top of frozen Llama-3.1-8B).
 
-Continued CE pretraining of the 436M student to a multimodal-ready loss
-(~2.5–3.0) needs ~10B+ tokens, ~100 GPU-days on 4× RTX 5090. Distilling from
-**Kimi-Linear-48B-A3B-Base** as teacher reaches the same loss target with
-~1–3B KD tokens (1–3 days on the same hardware) because the dense softmax
-target carries 5–10× more signal per token than CE on a 1-hot label.
+This dir is preserved for the negative result. Future contributors:
+**don't repeat these experiments expecting a different outcome on
+this hardware + data budget.**
 
-See `docs/pretraining_closure_and_kd_plan.md` for the broader plan.
+## Results table
 
-## Why this teacher
+| approach | tokens consumed | c4 val_loss | Δ vs pre-KD floor |
+|---|---|---|---|
+| **pre-KD baseline** (Phase 4 step-12500) | 0.31 B | **3.7326** | 0.000 (floor) |
+| Online KD (α=0.3, T=2, fwd KL with Llama-3.1-8B) | +0.16 B (10K steps) | 3.8095 | **+0.077** worse |
+| MiniPLM-style data distillation (top-50% scored) | +0.44 B (18K steps) | 3.8243 | **+0.092** worse |
 
-| candidate | tokenizer | shares vocab with student? |
-|---|---|---|
-| Qwen3 / Qwen3.5 | Qwen BPE (vocab 152,064) | ❌ |
-| Llama3 | Llama (128,256) | ❌ |
-| DeepSeek-V3 | DSv3 BPE (129,280) | ❌ |
-| **Kimi-Linear-48B-A3B-Base** | **Kimi BPE (163,840)** | ✅ |
+## Why each approach failed
 
-KD on token-level logits requires student and teacher to share **the same
-vocab**, otherwise `KL(softmax_s ‖ softmax_t)` is not well-defined. Kimi
-tokenizer is unique to the Kimi family, so the teacher has to be in that
-family.
+### Online KD (10K steps, ~17h)
 
-## Memory plan on 4× RTX 5090
+Loss formula `0.3·CE + 0.7·T²·KL` made the KL term effectively 9×
+the CE weight (T²=4 multiplier). For forward-KL on a 128 K-vocab
+generative model this drove the student to over-spread mass across
+the teacher's low-probability regions — the canonical failure mode
+that MiniLLM (NeurIPS 2023) and DistiLLM-2 (ICML 2025 oral) both
+call out. The KL term shrank during training (intended signal) but
+the CE term — which is what c4 val_loss measures — barely moved.
 
-48B params bf16 = 96 GB total. With FSDP2 sharding across 4 ranks:
-~24 GB / rank for weights. Forward-only inference on the teacher means no
-optimizer state, no gradient accumulators. Activations are small (B=1
-T=2048 D=2304 → ~4 MB / layer). int8 weight-only quantization halves to
-12 GB / rank, giving comfortable headroom for the student's own footprint.
+**SOTA recipe would have been**: reverse-KL or skew-KL, no CE term,
+on-policy generation. Implementing that would have been a 2-3× more
+invasive change. We did not pursue it after the simpler MiniPLM
+data path turned out to be an equally interesting (and equally
+failing) 2024-2025 SOTA direction.
 
-## Layout
+Original teacher choice **Kimi-Linear-48B-A3B-Base** (96 GB
+download, FSDP-shardable across 4 ranks) was abandoned mid-debug
+when we discovered the Phase 4 student was actually trained with
+**Llama-3.1 tokenizer** (vocab 128,256), not the Kimi BPE the
+config flavor advertises. Switched teacher to
+`NousResearch/Meta-Llama-3.1-8B` (15 GB, non-gated redistribution)
+to get a vocab match.
 
-- `kd_loss.py` — `kd_loss(student, labels, teacher, cfg)` math module.
-  Pure torch, no torchtitan dependency. Implements
-  `α·CE + (1-α)·T²·KL(student ‖ teacher)` with Hinton T² rescaling.
-- `tests/test_kd_loss.py` — 9 unit tests covering α=0, α=1, identical
-  teacher, ignore-index masking, temperature, backward path.
+### MiniPLM data distillation (18K steps, ~9.5h)
+
+The data-side approach: score 120K c4-en chunks by
+`log p_teacher(chunk) - log p_reference(chunk)` (teacher
+Llama-3.1-8B, reference Llama-3.2-1B), keep the top 50%, run
+standard CE pretraining on the filtered subset. Per the MiniPLM
+ICLR 2025 paper this is the recommended *pretraining-stage*
+distillation paradigm — no teacher in the train loop, runs at
+full pretraining throughput.
+
+We hit **3,224 tps/rank with compile** (== Phase 4 baseline
+throughput, confirming the data + pipeline were sound). Training
+loss EMA dropped from 4.13 to ~3.30 over 18K steps. But c4 val_loss
+came back at **3.82 — worse than the unfiltered baseline of 3.73**.
+
+**Diagnosis**: MiniPLM's score function selects chunks where the
+8B teacher knows much more than the 1B reference. For our 436M
+student with effectively zero-budget for distillation, those are
+exactly the chunks the small student CAN'T learn well. We overfit
+to filtered hard chunks while losing coverage of easier content,
+net val degradation. MiniPLM's intended recipient (in their paper)
+was a 200M-1.2B student trained from scratch at larger compute —
+not a 436M ckpt being fine-tuned on a tight budget.
+
+## Bugs surfaced and fixed during development (preserved for record)
+
+* **Off-by-1 in `LocalJsonlIterableDataset`** caused infinite NCCL
+  hang at start of training — checked `len(ids) >= seq_len + 1` but
+  scored chunks were exactly `seq_len`. Fixed via stream
+  re-windowing across chunk boundaries (torchtitan-standard
+  pattern). Took ~3 false starts to localize.
+* **DataLoader `num_workers > 0` after Trainer.__init__** corrupted
+  CUDA context via fork — same fork-after-init NCCL issue
+  torchtitan's main path avoids by defaulting to `num_workers=0`.
+* **Tee buffering hides early step logs in train.log** — actual
+  output reaches torchelastic per-rank stdout (`/tmp/torchelastic_*`)
+  in real time. Run dirs now ship a `rank0_stdout.log` symlink.
+* **ConfigManager.parse_args default-arg binding** captures
+  `sys.argv` at function-definition time, not call time. Custom
+  pre-parsers must pass `sys.argv[1:]` explicitly.
+* **`torchtitan` logger needs `init_logger()`** explicitly when
+  bypassing `torchtitan/train.py` main entry — otherwise INFO logs
+  silently drop, only WARN+ visible.
 
 ## Files
 
-- `kd_loss.py` — KD loss math (`α·CE + (1-α)·T²·KL`). Pure torch.
-- `teacher_runner.py` — `TeacherRunner.load(repo_id, device_mesh)` wraps a
-  HF `AutoModelForCausalLM` in FSDP2 + eval / no_grad. Returns full-vocab
-  logits per rank. Uses `transformers` with `trust_remote_code=True`
-  (Kimi's KDA + MLA + MoE custom modeling).
-- `train_kd.py` — single-file training loop. Builds student via torchtitan
-  `kimi_linear` ModelSpec, loads step-12500 ckpt via DCP, builds teacher
-  via `teacher_runner`, runs both forwards on the same batch, computes
-  `kd_loss`, backwards student only. Streams c4-en, tokenizes with the
-  teacher's HF tokenizer (Kimi BPE) so the vocab matches automatically.
-- `launch_kd.sh` — torchrun wrapper. Defaults: 4 GPUs, LOCAL_BS=2,
-  GLOBAL_BS=8, SEQ_LEN=2048, LR=2e-4 constant (post-cosine-decay
-  distillation phase), α=0.3, T=2.0, 5000 steps, ckpt every 500.
-- `tests/test_kd_loss.py` — 9 unit tests, all green.
+* `kd_loss.py` — KD loss math (`α·CE + (1-α)·T²·KL`). 10 unit tests.
+  Standalone module, no torchtitan dependency.
+* `tests/test_kd_loss.py` — KD loss tests.
+* `teacher_runner.py` — HF `AutoModelForCausalLM` + FSDP2 wrapper.
+* `train_kd.py` — online KD training script (failed first attempt).
+* `eval_kd_student.sh` — c4_validation eval after KD training.
+* `launch_kd.sh` — torchrun launcher for `train_kd.py`.
+* `runs/kd_student_eval/eval.log` — final online-KD eval log
+  (val_loss 3.8095).
+* `miniplm/` — full MiniPLM-style data distillation pipeline
+  (score → filter → continue pretrain → eval).
+  See `miniplm/README.md` for design notes; ckpts in `runs/.../checkpoint/`
+  gitignored.
 
-## How to run
+## Recommendations for future work in this dir
 
-```bash
-# Optional: pre-download teacher (~96 GB) to a fixed cache.
-huggingface-cli download moonshotai/Kimi-Linear-48B-A3B-Base \
-    --local-dir ~/hf_cache/Kimi-Linear-48B-A3B-Base
+If you return to LLM distillation with this same student:
 
-# Kick off KD overnight from Phase 4's step-12500 ckpt.
-bash phase5_distillation/launch_kd.sh
-```
-
-Override knobs via env vars (see launcher header).
-
-## Open items
-
-- `compile.enable=False` in train_kd.py — torch.compile + two-model FSDP
-  forward is fragile to validate; leave off until baseline KD run works.
-- No LR scheduler — distillation phase uses constant LR=2e-4. Adding a
-  shorter warmup + decay should be straightforward if it helps.
-- No validation hooks — KD val_loss against the teacher's logits is
-  trivially low (it's the optimization target). For real evaluation
-  reuse `phase4/experiments/kimi_pp_adapter/eval_val.sh` against the
-  resulting student ckpts.
+1. **Don't re-run our recipes.** Both have been measured at this
+   hardware + data budget. Same setup → same negative result.
+2. **Try MiniLLM** (reverse KL + on-policy) if you can afford the
+   3-4× engineering cost. MiniPLM and online forward-KL are the
+   wrong primitive for small students.
+3. **Try non-c4 data** (instruction tuning, code, math) before
+   spending more compute on c4 filtering — distribution shift
+   matters more than data ranking at this scale.
+4. **Consider giving up on the 436M as backbone** for downstream
+   tasks. Use a larger frozen public LLM (Llama-3.1-8B-Base or
+   Qwen3-7B-Base), apply AttnRes only to from-scratch trained
+   components (vision↔LLM connector). See
+   `docs/multimodal_with_attn_res_design.md` for that pivot.
