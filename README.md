@@ -1,72 +1,126 @@
-# Block Attention Residuals (Kimi, 2026) — torchtitan integration workspace
+# Block Attention Residuals (Kimi Team, 2026) — torchtitan reference implementation
 
-Project-level workspace for integrating **Block Attention Residuals** into
-[pytorch/torchtitan](https://github.com/pytorch/torchtitan), covering the
-full arc from single-GPU correctness proof to 8-GPU PP benchmark.
+> **Status (2026-04-26).** RFC [pytorch/torchtitan#3029](https://github.com/pytorch/torchtitan/issues/3029)
+> filed; upstream merge gated on Kimi K3 release. **This fork is the canonical
+> reference implementation until then.** Independent reproduction of paper
+> Table 1 (loss-delta) on a 174M Llama3 dense run + first public PP cross-stage
+> caching adapter for AttnRes under torchtitan's `Interleaved1F1B` schedule
+> (paper §4.1).
 
-> **This repository is the logbook / playbook / RFC draft.** The actual
-> code that lands in torchtitan lives in the fork branch
-> [`QIU023/torchtitan:attention_residual_dev`](https://github.com/QIU023/torchtitan/tree/attention_residual_dev)
-> under `torchtitan/experiments/attn_res/`.
+This repo is the project logbook / playbook / RFC drafts for an independent,
+end-to-end implementation of **Block Attention Residuals**
+([Kimi Team, arXiv:2603.15031](https://arxiv.org/abs/2603.15031)) inside
+[pytorch/torchtitan](https://github.com/pytorch/torchtitan). The actual code
+lives in the fork submodule:
+
+- **Fork:** [`QIU023/torchtitan@attention_residual_dev`](https://github.com/QIU023/torchtitan/tree/attention_residual_dev)
+- **Experiments:** `torchtitan/experiments/attn_res/` (dense Llama3 + DSv3 MoE-MLA flavors) and `torchtitan/experiments/kimi_linear/` (Kimi Linear KDA+MLA+AttnRes port)
+- **RFC:** [pytorch/torchtitan#3029](https://github.com/pytorch/torchtitan/issues/3029)
 
 ## Algorithm
 
-Kimi Team's Block AttnRes ([arXiv 2603.15031](https://arxiv.org/abs/2603.15031))
-replaces fixed residual accumulation with softmax attention over block
-outputs, using a zero-initialized per-layer pseudo-query. Block AttnRes
-partitions layers into `N` blocks, uses standard residuals inside a block,
-and attention only at block boundaries — so cross-stage traffic is `O(N d)`
-instead of `O(L d)`.
+Block AttnRes replaces fixed residual accumulation with softmax attention over
+block outputs, using a per-layer zero-initialized pseudo-query. Layers are
+partitioned into `N` blocks; standard residuals run inside each block, attention
+fires only at block boundaries. Cross-stage traffic is `O(N d)` instead of
+`O(L d)` — making the algorithm PP-friendly at `N ≈ 8`.
 
-Paper: AttnRes ≈ baseline × 1.25 compute at matched size, PP-compatible at
-`N ≈ 8`.
+Paper headline: AttnRes ≈ baseline × 1.25 effective compute at matched param
+count. The single-GPU 174M dense Llama3 reproduction below is consistent with
+that range.
+
+## What's been done
+
+| Phase | Scope | Status |
+| --- | --- | --- |
+| **Phase 0** | Framework selection (torchtitan vs Megatron-LM); PP extension-point survey | ✅ done |
+| **Phase 2** | 174M dense Llama3 single-GPU FSDP A/B (baseline vs AttnRes), 20 k steps on C4-en | ✅ done — RFC evidence |
+| **Phase 3** | Cross-stage caching adapter for `Interleaved1F1B`; 4-GPU PP=4 V=2 naive-vs-adapter parity | ✅ done — see `phase3/` |
+| **Phase 4a** | Kimi Linear (KDA + MLA + dense/MoE) torchtitan port + AttnRes wrapper | ✅ done |
+| **Phase 4b** | 436M Kimi Linear FSDP baseline overnight, 12.5 k steps | ✅ done |
+| **Phase 4c** | Kimi Linear + AttnRes + PP cache adapter, 12.5 k step run | ✅ done |
+| **Phase 5** | Distillation / multimodal scaffolding using the 12.5 k ckpt | scaffolded; not pretraining-quality (see [`docs/multi_modal_idea.md`](./docs/multi_modal_idea.md)) |
+
+The 436M Kimi Linear ckpt is severely under-pretrained relative to the paper's
+119 B-token Table 2 budget (~0.35% of paper-spec tokens). It is sufficient as
+an **architecture-validation backbone** — end-to-end forward/backward, AttnRes
+gradient flow under PP, projector training dynamics, ckpt compatibility — but
+not as a downstream-benchmark backbone. Read [`docs/multi_modal_idea.md`](./docs/multi_modal_idea.md)
+for the realistic framing.
+
+## Phase 2 single-GPU result (174M dense Llama3, C4-en, FSDP)
+
+Same shape, same hyperparameters; only `model_spec` differs:
+
+| step | baseline | attn_res | Δ |
+|---:|---:|---:|---:|
+| 500   | 6.1412 | 6.0146 | −0.1265 |
+| 5000  | 4.3575 | 4.2696 | −0.0879 |
+| 10000 | 4.3235 | 4.2192 | −0.1043 |
+| 15000 | 3.7368 | 3.6861 | −0.0507 |
+
+Plot: [`phase2/runs/comparison.png`](./phase2/runs/comparison.png).
+
+## Phase 3 PP cross-stage caching adapter (4-GPU PP=4 V=2, 1000 steps)
+
+PP=4 V=2 with `layers_per_stage=2` against the 16-layer / 8-block
+`llama3_175m_attn_res_L16_n8` flavor — every stage boundary is a block
+boundary, so the cache adapter is exercised at every transition.
+
+| variant | step 1000 loss |
+|---|---:|
+| naive (no cache) seed A | 6.37720 |
+| naive (no cache) seed B | 6.37720 + small noise |
+| adapter (with cache) seed A | 6.34968 |
+
+`|Δ_naive→adapter| max 0.06` stays inside the `|Δ_naive→naive|` nondeterminism
+band (max 0.13) over the same horizon. Memory accounting matches the design
+(+260 MB cache on rank 3 for 175M at M=4 mb). 41/41 CPU unit tests pass.
+
+What is **not** yet shown:
+- ≥ 5 k step PP horizon stability,
+- PP=8 scale-up,
+- AttnRes-vs-baseline delta preservation under PP,
+- the 1.5–2 B PCIe-overhead headline plot.
+
+These are the natural next experiments — gated on multi-node access, not on
+the algorithm or adapter.
 
 ## Repository layout
 
 | Path | What it is |
 | --- | --- |
 | [`ROOT_PLAN.md`](./ROOT_PLAN.md) | Full phased project plan (hardware, budget, risk register, references to Kimi infra notes) |
-| [`RFC_DRAFT_v2.md`](./RFC_DRAFT_v2.md) | RFC to post as a GitHub issue on pytorch/torchtitan. Covers motivation, two-PR scope, Phase 2 evidence (loss-delta table), Phase 3/4 plan, open design questions. |
-| [`phase2/`](./phase2/) | Single-GPU FSDP reproduction playbook. `setup_env.sh` + `launch.sh` + `compare_losses.py` + results (`runs/comparison.png`). |
-| [`phase3/`](./phase3/) | Pipeline-parallel playbook for the 8-GPU run. Adapter design notes, fake-PG smoke, 8-GPU launch scripts, PP-vs-single numeric compare. |
-| [`reports/`](./reports/) | Interim written reports (en + zh) for portfolio / interview walkthroughs. |
-| [`Attention-Residuals/`](./Attention-Residuals/) | Kimi's reference implementation + paper PDF (unchanged vendor copy). |
+| [`RFC_DRAFT_v3.md`](./RFC_DRAFT_v3.md) | RFC text as posted to issue #3029 |
+| [`phase2/`](./phase2/) | Single-GPU FSDP playbook + results (`runs/comparison.png`) |
+| [`phase3/`](./phase3/) | PP playbook: adapter design notes, fake-PG smoke, 4-GPU launchers, naive-vs-adapter compare plots |
+| [`phase4/`](./phase4/) | Kimi Linear port + 12.5 k step FSDP / PP-adapter overnight runs |
+| [`docs/`](./docs/) | Cross-cutting design notes (multimodal idea, etc.) |
+| [`reports/`](./reports/) | Written reports (en + zh) for portfolio walkthroughs |
+| [`Attention-Residuals/`](./Attention-Residuals/) | Kimi's reference implementation + paper PDF (vendor copy) |
+| [`torchtitan/`](./torchtitan) | Submodule pointing at the fork's `attention_residual_dev` branch |
 
-## Phase 2 one-line result
+## Why fork-as-canonical (instead of merging)
 
-Single-GPU Llama3 150M dense on FSDP, 20 k steps on C4-en, identical config
-except `model_spec`:
+Kimi Team's K3 release is the natural upstream merge window — the model series
+that productionizes AttnRes will land alongside it. Until then:
 
-| step | baseline | attn_res | Δ |
-|---:|---:|---:|---:|
-| 500  | 6.1412 | 6.0146 | −0.1265 |
-| 5000 | 4.3575 | 4.2696 | −0.0879 |
-| 10000 | 4.3235 | 4.2192 | −0.1043 |
-| 15000 | 3.7368 | 3.6861 | −0.0507 |
+- the algorithm is reproduced and documented in the open,
+- the PP integration story is concrete (adapter + 4-GPU evidence),
+- anyone wanting to build on AttnRes inside torchtitan can pull this fork
+  rather than re-implement from the paper.
 
-AttnRes loss is consistently below baseline across every logged milestone.
-See [`phase2/runs/comparison.png`](./phase2/runs/comparison.png).
-
-## Phase 3/4 status
-
-Draft code for the cross-stage caching adapter is ready
-([`phase3/adapter_design.md`](./phase3/adapter_design.md) + the adapter
-itself lives in the fork at
-`torchtitan/experiments/attn_res/pipeline_adapter.py`). 8-GPU RTX 5090 PCIe
-validation is the next session's work.
+This repo is the entry point. Track 1 (single-GPU dense) backs the RFC; Track 2
+(PP adapter) is the contribution that's hard to reconstruct from the paper
+alone; Track 3 (Kimi Linear KDA+MLA+MoE+AttnRes) is the production-aligned
+scaffolding for the K3-era follow-up.
 
 ## Not in this repo
 
-- The torchtitan fork itself (separate repo:
-  [`QIU023/torchtitan@attention_residual_dev`](https://github.com/QIU023/torchtitan/tree/attention_residual_dev)).
-  Cloned alongside this workspace as a peer directory:
+- The torchtitan fork itself (cloned as a submodule under `torchtitan/`).
+- TensorBoard event files, optimizer ckpts, training shards — gitignored.
+  Only comparison plots and log tails are committed as evidence.
 
-  ```
-  <workspace-root>/
-  ├── <this repo>/
-  └── torchtitan/        # git clone -b attention_residual_dev git@github.com:QIU023/torchtitan.git
-  ```
+## Author
 
-- TensorBoard event files and checkpoints — gitignored (too large / not
-  essential). Only the comparison plot and the training log tails are
-  committed as evidence.
+[@QIU023](https://github.com/QIU023) — yiqiao.lbj23@gmail.com.
