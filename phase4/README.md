@@ -225,3 +225,80 @@ sharding strategy — explicitly out of scope for current 4-GPU box.
    completes 50 steps without RuntimeError
 5. Debug AttnRes flavor + cache adapter ON completes 50 steps with
    same loss trajectory as adapter-OFF within bf16 noise
+
+## Continuation-pretrain to 100K steps (phase4d → phase5 bridge)
+
+Started 2026-04-27 (`launch_continuation_100k.sh`). Baseline: Phase 4
+overnight ckpt at step-12500, val loss = **3.73** on C4. Goal: train
+the LM through enough additional steps that Phase 5 multimodal has a
+non-LM-bottlenecked starting point.
+
+### Why this run exists
+
+Phase 5 multimodal smoke (single-stage full-param fine-tune of
+AttnRes-Kimi-436M + frozen SigLIP + trainable MLP projector on
+LLaVA-Pretrain-558K) ran 2K steps and showed loss descent stalling
+near 3.8. Diagnosis: the LM itself only saw ~320M tokens during
+Phase 4 (12500 steps × global_bs 12 × seq_len 2048), far short of
+chinchilla-optimal ~9B for a 436M model. Captions inherit the LM's
+linguistic ceiling; the multimodal experiment can't validate AttnRes
+on a robust LM until the LM is robust.
+
+### Target val loss tiers
+
+| Tier | Val loss | Multimodal usefulness |
+|------|----------|----------------------|
+| Stretch | ≤ 2.8 | Pythia-410M-class LM, captions fluent + can ground objects |
+| **Target (recommended stop)** | **≤ 3.0** | GPT-2-355M-class LM, captions basically fluent — primary stop trigger |
+| Acceptable floor | ≤ 3.2 | Captions less repetitive but still primitive — fallback if 3.0 unreachable |
+| Current baseline | 3.73 | LM-bottlenecked, captions primitive/repetitive |
+
+Theoretical scaling-law extrapolation: 100K steps × 24K tokens =
+2.5B tokens (8× the Phase 4 baseline). Loss ∝ N^(-α), α≈0.075:
+3.73 × 8^(-0.075) ≈ 3.17 nats theoretical. With ~30% small-bs
+plateau discount, realistic landing zone is **3.0-3.3**.
+
+### Stop criteria — DO NOT stop the run unless one of these triggers
+
+This is a long autonomous run (~46h). The agent monitors and applies
+these rules without asking; the user can override at any time.
+
+1. **PRIMARY (success)** — `val_loss ≤ 3.0` confirmed at any
+   `--validator.freq` checkpoint (every 2500 steps). Stop the run,
+   keep the latest ckpt, return to Phase 5 multimodal with this
+   ckpt as initial weights.
+
+2. **PLATEAU (real)** — val loss has not improved by ≥ 0.05 nats
+   over **20K consecutive steps** (i.e. 8 consecutive validator
+   checkpoints, since validator runs every 2500 steps). Stop the
+   run — the model has settled into a small-bs local minimum that
+   constant LR + same optimizer state can't escape. Return to
+   Phase 5 with the best val ckpt seen so far (typically val
+   3.2-3.4 in this scenario).
+
+3. **PLATEAU (transient, do NOT stop)** — single-checkpoint val
+   regression, or 2-3 consecutive non-improvements followed by
+   another drop, is normal small-bs noise. Only "8 consecutive
+   non-improvements with total drift < 0.05 nats" counts as real
+   plateau.
+
+4. **DIVERGENCE** — train loss spike > 5.5 sustained for 100+
+   steps, OR grad_norm > 5.0 sustained, OR NaN. Stop, debug
+   before relaunch.
+
+5. **NEITHER (keep running)** — val still descending, even slowly.
+   The full 100K is the budget; do not pre-empt.
+
+### Resume strategy (if PLATEAU triggers)
+
+If the run stops on plateau at val 3.2-3.4:
+
+- The best ckpt is still **substantially better** than baseline
+  (3.73 → 3.2 = 0.5-nat improvement = ~40% perplexity reduction).
+- Phase 5 multimodal restart with that ckpt should converge faster
+  and to a lower caption loss than the original phase5 (which
+  stalled at 3.8 from baseline 3.73).
+- Plateau means: bs is the bottleneck, not training duration. Future
+  work could try (a) gradient accumulation to ↑ effective bs, (b)
+  larger seq_len if memory allows, or (c) move to bigger-memory
+  hardware (H100/H200) to fit paper bs=384 directly.
