@@ -264,12 +264,15 @@ respecting the maintainer's rule:
 1. **PP adapter system validation** — complete (Phase 3 + Phase 4 +
    Problem B).
 2. **AttnRes architecture port to Kimi Linear** — complete (Phase 4c-4e).
-3. **KD/MiniPLM negative result writeup** — complete (Phase 5).
-4. **Path F: speculative-decoding draft A/B** — Phase 6 (this dir).
+3. **KD/MiniPLM negative result writeup** — complete; preserved
+   under `phase5_distillation_deprecated/` (renamed from
+   `phase5_distillation/` after the pivot).
+4. **Path F: speculative-decoding draft A/B** — Phase 5 (the new
+   multimodal phase; takes over the `phase5/` slot).
    * AttnRes-Kimi-436M draft vs Llama-3.2-1B draft.
    * Frozen LLaVA-Next-8B (or Llama-3.1-8B-Base for text-only ablation).
    * Acceptance rate + wall-clock speedup on COCO captioning + VQAv2.
-5. **Path D: Q-Former / Perceiver Resampler A/B** — Phase 6.
+5. **Path D: Q-Former / Perceiver Resampler A/B** — Phase 5.
    * AttnRes Q-Former vs vanilla Q-Former.
    * Frozen SigLIP + frozen LLM, train on LLaVA-Pretrain.
    * Caption loss curves + VQAv2 zero-shot accuracy.

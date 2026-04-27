@@ -1,4 +1,11 @@
-# Phase 5 — Knowledge Distillation experiments (negative result)
+# Phase 5 (deprecated) — Knowledge Distillation experiments (negative result)
+
+> **DEPRECATED.** Renamed from `phase5_distillation/` →
+> `phase5_distillation_deprecated/` after the project pivoted away
+> from "use the 436M Kimi student as the multimodal LM backbone."
+> The actual Phase 5 (current, multimodal AttnRes work — Path D
+> Q-Former + Path F speculative draft) lives at `phase5/`. See
+> `docs/multimodal_with_attn_res_design.md`.
 
 This phase tested two paths to lower the Phase 4 Kimi Linear 436M
 student's c4 val_loss past the 12,500-step pretraining floor of
@@ -8,7 +15,8 @@ student's c4 val_loss past the 12,500-step pretraining floor of
 floor for the 4× RTX 5090 + c4 + Llama-tokenizer training budget.
 Multimodal work moves on without it as the LM backbone — see
 `docs/multimodal_with_attn_res_design.md` for the architectural
-pivot (Path A: `AttnRes Connector` on top of frozen Llama-3.1-8B).
+pivot (Path D: `AttnRes Q-Former` from scratch + Path F: deploy
+the AttnRes-Kimi-436M ckpt as a speculative-decoding draft model).
 
 This dir is preserved for the negative result. Future contributors:
 **don't repeat these experiments expecting a different outcome on

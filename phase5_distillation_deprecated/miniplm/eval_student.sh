@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Evaluate MiniPLM-trained student on c4_validation. Mirrors
-# phase5_distillation/eval_kd_student.sh — same strategy: re-launch
+# phase5_distillation_deprecated/eval_kd_student.sh — same strategy: re-launch
 # trainer with training.steps = ckpt_step + 1 + --validator.enable.
 
 set -uo pipefail

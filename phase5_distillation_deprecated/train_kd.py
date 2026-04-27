@@ -40,8 +40,8 @@ from torchtitan.trainer import Trainer  # noqa: E402
 from torchtitan.tools.logging import init_logger, logger  # noqa: E402
 import torchtitan.distributed.utils as dist_utils  # noqa: E402
 
-from phase5_distillation.kd_loss import KDConfig, kd_loss  # noqa: E402
-from phase5_distillation.teacher_runner import (  # noqa: E402
+from phase5_distillation_deprecated.kd_loss import KDConfig, kd_loss  # noqa: E402
+from phase5_distillation_deprecated.teacher_runner import (  # noqa: E402
     DEFAULT_TEACHER, TeacherRunner,
 )
 

@@ -37,7 +37,7 @@ torchrun \
     --nproc_per_node="${NGPU}" \
     --rdzv_backend=c10d --rdzv_endpoint=localhost:0 \
     --local-ranks-filter 0 --role rank --tee 3 \
-    -m phase5_distillation.miniplm.train_continued_pretrain \
+    -m phase5_distillation_deprecated.miniplm.train_continued_pretrain \
     --miniplm.filtered "${FILTERED}" \
     --module kimi_linear --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \

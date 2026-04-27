@@ -18,7 +18,7 @@
 #   LR              constant LR (default 2e-4 — distillation phase)
 #   ALPHA           KD CE weight (default 0.3)
 #   T               KD temperature (default 2.0)
-#   OUT_DIR         output dir (default phase5_distillation/runs/kd_overnight)
+#   OUT_DIR         output dir (default phase5_distillation_deprecated/runs/kd_overnight)
 #   NGPU            torchrun nproc_per_node (default 4)
 
 set -euo pipefail
@@ -99,7 +99,7 @@ torchrun \
     --rdzv_backend=c10d \
     --rdzv_endpoint=localhost:0 \
     --local-ranks-filter 0 --role rank --tee 3 \
-    -m phase5_distillation.train_kd \
+    -m phase5_distillation_deprecated.train_kd \
     "${KD_ARGS[@]}" \
     "${TT_ARGS[@]}" \
     2>&1 | tee "${OUT_DIR}/train.log"

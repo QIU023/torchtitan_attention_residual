@@ -8,7 +8,7 @@ import unittest
 
 import torch
 
-from phase5_distillation.kd_loss import (
+from phase5_distillation_deprecated.kd_loss import (
     KDConfig,
     build_kd_loss,
     kd_loss,
