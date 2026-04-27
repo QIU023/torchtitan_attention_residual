@@ -119,21 +119,22 @@ class LlavaPretrainDataset(IterableDataset):
                     caption, add_special_tokens=False,
                 )[: self.max_caption_tokens]
 
-                # Build sequence:
+                # Full sequence:
                 #   [<img>] * N_vision  +  [bos]  +  caption  +  [eos]
-                input_ids = (
+                full = (
                     [IMAGE_TOKEN_ID] * N_VISION_TOKENS
                     + [bos]
                     + caption_ids
                     + [eos]
                 )
-                # Loss only on caption + eos; mask image + bos positions.
-                labels = (
-                    [IGNORE_INDEX] * N_VISION_TOKENS
-                    + [IGNORE_INDEX]
-                    + caption_ids
-                    + [eos]
-                )
+                # Next-token prediction: input = full[:-1], labels = full[1:].
+                # Then mask label positions whose target token is an image
+                # token or BOS (we only train on predicting caption + EOS).
+                input_ids = full[:-1]
+                labels = list(full[1:])
+                for i, t in enumerate(labels):
+                    if t == IMAGE_TOKEN_ID or t == bos:
+                        labels[i] = IGNORE_INDEX
 
                 yield {
                     "pixel_values": pixel_values,
