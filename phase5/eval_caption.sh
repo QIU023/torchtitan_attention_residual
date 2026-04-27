@@ -30,7 +30,7 @@ torchrun \
     --local-ranks-filter 0 --role rank --tee 3 \
     -m phase5.train_mm \
     --mm.json /root/hf_cache/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
-    --mm.images /root/hf_cache/LLaVA-Pretrain/images \
+    --mm.images /root/hf_cache/LLaVA-Pretrain \
     --mm.vision-model google/siglip-base-patch16-224 \
     --mm.tokenizer NousResearch/Meta-Llama-3.1-8B \
     --mm.cache-dir /root/hf_cache \

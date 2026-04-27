@@ -150,7 +150,14 @@ class LlavaPretrainDataset(IterableDataset):
 
 
 def collate_with_pad(batch, pad_id: int = 0):
-    """Pad input_ids / labels to max length in batch; stack pixel_values."""
+    """Pad input_ids / labels to max length in batch; stack pixel_values.
+
+    Returns ``(input_dict, labels)`` matching torchtitan's
+    ``batch_generator`` contract (``input_dict, labels = batch``).
+    `pixel_values` and `input_ids` go in the input_dict; `labels`
+    is returned separately so torchtitan's IGNORE-index counting in
+    `train_step` works without modification.
+    """
     max_len = max(b["input_ids"].size(0) for b in batch)
     B = len(batch)
     pixel_values = torch.stack([b["pixel_values"] for b in batch], dim=0)
@@ -160,8 +167,8 @@ def collate_with_pad(batch, pad_id: int = 0):
         L = b["input_ids"].size(0)
         input_ids[i, :L] = b["input_ids"]
         labels[i, :L] = b["labels"]
-    return {
+    input_dict = {
         "pixel_values": pixel_values,
-        "input_ids": input_ids,
-        "labels": labels,
+        "input": input_ids,   # key name "input" for torchtitan trainer compat
     }
+    return input_dict, labels

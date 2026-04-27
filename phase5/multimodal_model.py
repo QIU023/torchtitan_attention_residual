@@ -45,22 +45,18 @@ class Projector(nn.Module):
         return self.fc2(F.gelu(self.fc1(x)))
 
 
-def lm_forward_with_embeds(lm: nn.Module, embeds: torch.Tensor) -> torch.Tensor:
-    """Run the LM forward pass starting from token embeddings instead of ids.
+def lm_forward_multimodal(lm: nn.Module, input_ids: torch.Tensor,
+                          vision_embeds: torch.Tensor,
+                          image_mask: torch.Tensor) -> torch.Tensor:
+    """Run the LM with vision-token embedding scatter happening INSIDE
+    the LM forward (single FSDP-root call).
 
-    Bypasses lm.embed_tokens by passing the embeds directly through layers,
-    norm, and lm_head. Mirrors KimiLinearModel.forward but skips the
-    embedding step.
+    KimiLinearModel.forward / KimiLinearAttnResModel.forward both
+    accept the (vision_embeds, image_mask) kwargs after the multimodal
+    patch — they call embed_tokens internally and overwrite the
+    image-mask positions with vision_embeds before running layers.
     """
-    h = embeds
-    # Kimi layers is a ModuleDict keyed by str(int).
-    for layer in lm.layers.values():
-        h = layer(h)
-    if getattr(lm, "norm", None) is not None:
-        h = lm.norm(h)
-    if getattr(lm, "lm_head", None) is not None:
-        return lm.lm_head(h)
-    return h
+    return lm(input_ids, vision_embeds=vision_embeds, image_mask=image_mask)
 
 
 def multimodal_loss(
@@ -92,15 +88,9 @@ def multimodal_loss(
     # Projector — trainable.
     vision_embeds = projector(vision_features)  # (B, N_vis, lm_dim)
 
-    # Text embeddings via the LM's embedding table.
-    # Even though IMAGE_TOKEN_ID positions get overwritten below, we still
-    # need to call embed_tokens so its grad path is wired.
-    text_embeds = lm.embed_tokens(input_ids)    # (B, T, lm_dim)
-
-    # Scatter vision_embeds into text_embeds at IMAGE_TOKEN_ID positions.
-    # Standard LLaVA layout: image positions are contiguous at the start
-    # of each row (length N_vision), but to be defensive we scatter via
-    # a boolean mask which handles any order.
+    # Build the image-token mask. Standard LLaVA layout: image positions
+    # are contiguous at the start of each row (length N_vision); we use
+    # a boolean mask defensively so any order works.
     image_mask = (input_ids == IMAGE_TOKEN_ID)  # (B, T)
     expected_per_row = vision_embeds.size(1)
     n_image_per_row = image_mask.sum(dim=1)
@@ -111,13 +101,12 @@ def multimodal_loss(
             f"row counts: min={n_image_per_row.min().item()}, "
             f"max={n_image_per_row.max().item()}, bad rows: {bad.flatten().tolist()[:5]}..."
         )
-    # Replace embeddings at image positions with vision_embeds.
-    # text_embeds[image_mask] is shape (B*N_vis, lm_dim); flatten vision_embeds to match.
-    text_embeds = text_embeds.clone()
-    text_embeds[image_mask] = vision_embeds.reshape(-1, vision_embeds.size(-1)).to(text_embeds.dtype)
 
-    # LM forward from embeddings.
-    logits = lm_forward_with_embeds(lm, text_embeds)  # (B, T, V_lm)
+    # Single FSDP-root LM call: embed_tokens + image-position scatter +
+    # layers + norm + lm_head all happen inside lm.forward.
+    logits = lm_forward_multimodal(
+        lm, input_ids=input_ids, vision_embeds=vision_embeds, image_mask=image_mask,
+    )  # (B, T, V_lm)
 
     # CE on non-ignored positions; sum reduction (caller normalizes by token count).
     loss = F.cross_entropy(

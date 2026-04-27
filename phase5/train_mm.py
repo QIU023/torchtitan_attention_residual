@@ -125,17 +125,24 @@ class MultimodalTrainer(Trainer):
         n_proj_params = sum(p.numel() for p in self.projector.parameters())
         logger.info(f"mm: projector built, params={n_proj_params:,}")
 
-        # ----- Add projector params to optimizer -----
-        # torchtitan OptimizersContainer holds one inner optimizer per
-        # model_part. We extend the first inner optimizer with the
-        # projector params via add_param_group.
+        # ----- Build a separate optimizer for the projector -----
+        # We can't add_param_group to the LM's optimizer because
+        # torchtitan's LambdaLR was built for the original param groups
+        # only and asserts strict zip(groups, lr_values) — adding a
+        # group breaks it. A fresh AdamW for the projector, appended
+        # to OptimizersContainer.optimizers, is stepped by the same
+        # optimizers.step() / zero_grad() loop without needing a
+        # scheduler (projector keeps a fixed LR).
         proj_lr = config.optimizer.lr * proj_lr_mult
-        inner_opt = self.optimizers.optimizers[0]
-        inner_opt.add_param_group({
-            "params": list(self.projector.parameters()),
-            "lr": proj_lr,
-        })
-        logger.info(f"mm: registered {n_proj_params:,} projector params at lr={proj_lr}")
+        proj_optim = torch.optim.AdamW(
+            list(self.projector.parameters()),
+            lr=proj_lr,
+            betas=(0.9, 0.95), weight_decay=0.01,
+        )
+        self.optimizers.optimizers.append(proj_optim)
+        logger.info(f"mm: appended projector AdamW (lr={proj_lr}, fixed) to "
+                    f"OptimizersContainer; total inner optimizers="
+                    f"{len(self.optimizers.optimizers)}")
 
         # ----- Replace dataloader -----
         ds = LlavaPretrainDataset(
@@ -174,7 +181,7 @@ class MultimodalTrainer(Trainer):
         pixel_values = input_dict["pixel_values"].to(
             self.device, dtype=torch.bfloat16, non_blocking=True,
         )
-        input_ids = input_dict["input_ids"].to(self.device, non_blocking=True)
+        input_ids = input_dict["input"].to(self.device, non_blocking=True)
         labels_ = labels.to(self.device, non_blocking=True)
 
         with self.train_context():
