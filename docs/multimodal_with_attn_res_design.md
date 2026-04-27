@@ -15,11 +15,15 @@ benchmarks.
 This doc lays out the *coherent* way to keep doing AttnRes work in a
 multimodal setting, given:
 
-1. The maintainer's constraint: **AttnRes cannot be bolted onto an
-   existing pretrained LLM**. The pseudo-query (paper §5) is
-   zero-init and slowly learned during pretraining; retrofitting it
-   onto a frozen, already-converged model breaks its optimization
-   premise — at best a no-op, at worst a perturbation.
+1. **Maintainer's actual rule** (sharper restatement after iteration):
+   *AttnRes must be co-pretrained from scratch with the model it
+   wraps.* The pseudo-query (paper §5) is zero-init and slowly
+   learned during pretraining; bolting it into a Llama3 / Qwen3 /
+   etc. model definition that has NOT been pretrained from scratch
+   with AttnRes is exactly what's forbidden — the optimization
+   premise is broken. **The rule does NOT prevent us from using
+   AttnRes inside any new component we train from scratch as part
+   of the multimodal stack.**
 
 2. The hardware constraint: 4× RTX 5090 PCIe, no path to a real 7B+
    AttnRes pretraining run.
@@ -27,199 +31,274 @@ multimodal setting, given:
 3. The narrative constraint: the project's value is *AttnRes
    architecture in a real training framework*, not "best multimodal
    benchmark." We need an experiment where AttnRes carries its own
-   weight as a from-scratch training story.
+   weight as a from-scratch training story — and that component
+   needs to be **substantial** enough for the AttnRes optimization
+   advantage to show up (a tiny 4-block connector is too thin).
 
-## What the maintainer's rule allows
+## Earlier paths (kept as appendix; superseded)
 
-The rule is "don't retrofit onto a pretrained LLM." It does NOT
-forbid AttnRes inside any *new* component that you train from
-scratch within a multimodal stack — even when the LLM backbone is a
-frozen public model.
+The first iteration of this doc proposed three placements:
 
-Three valid placements:
+* **Path A — AttnRes Connector**: a small (4-8 block, 0.5-1B params)
+  transformer between frozen SigLIP and frozen Llama-3.1-8B. Easy
+  hardware fit but **the connector is too small for AttnRes to
+  meaningfully demo** — the optimization advantage is most
+  pronounced in deep transformer training, marginal in shallow
+  alignment modules.
+* **Path B — AttnRes cross-attention adapter**: LoRA-style adapter
+  blocks inside frozen Llama. **Risky workaround**: even though the
+  adapter blocks themselves are from-scratch, they're inserted into
+  Llama's pretrained layer stack — getting close to "retrofitting
+  into the LLM definition" the maintainer flagged.
+* **Path C — AttnRes ViT from scratch**: most paper-aligned but
+  needs LAION-400M+ image data and weeks on H100 — out of scope
+  for 4× 5090.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│              Path A — AttnRes in the Connector                    │
-│                                                                   │
-│   SigLIP / DINOv2 (frozen)                                        │
-│           │                                                       │
-│           ▼                                                       │
-│   ┌─────────────────────┐                                         │
-│   │ AttnRes Connector   │  N transformer blocks + AttnRes,        │
-│   │  (train from scratch)│  trained on caption data               │
-│   └─────────────────────┘                                         │
-│           │                                                       │
-│           ▼                                                       │
-│   [aligned text-space tokens]                                     │
-│           │                                                       │
-│           ▼                                                       │
-│   Llama-3.1-8B / Qwen3-7B (frozen or LoRA)                        │
-└──────────────────────────────────────────────────────────────────┘
+After feedback, the better-targeted options below replace these.
 
-┌──────────────────────────────────────────────────────────────────┐
-│              Path B — AttnRes in cross-attention adapter          │
-│                                                                   │
-│   Llama-3.1-8B (frozen base)                                      │
-│         │                                                         │
-│         │ + AttnResAdapter blocks inserted between LLM layers,    │
-│         │   trained from scratch, attend to vision tokens         │
-│         ▼                                                         │
-│   multimodal-aware logits                                         │
-└──────────────────────────────────────────────────────────────────┘
+## Sharper options
 
-┌──────────────────────────────────────────────────────────────────┐
-│              Path C — AttnRes in a from-scratch ViT               │
-│                                                                   │
-│   image → ViT(AttnRes between blocks) → SigLIP-style embeds       │
-│   (only viable with massive image data; out of scope for          │
-│    4× 5090 hardware)                                              │
-└──────────────────────────────────────────────────────────────────┘
-```
+Three categories of placement that actually pass the
+"substantial + co-pretrained from scratch + multimodal-relevant"
+bar.
 
-## Recommended: Path A — AttnRes Connector
+### Category I — AttnRes inside a substantial from-scratch
+### multimodal sub-model
 
-This is the cleanest fit for the project's hardware + narrative
-constraints.
+#### Path D — Q-Former / Perceiver Resampler (1.5-3B, deep, recommended)
 
-### Why Path A wins for this project
-
-* **Connector is small** (~0.5–1B params, 4–8 transformer blocks at
-  hidden 1024-2048). 4× 5090 trains it overnight on caption data.
-* **Connector is from-scratch** → AttnRes's optimization story
-  applies in full.
-* **Strong LLM backbone is available** without us having to train it
-  (frozen Llama-3.1-8B, Qwen3-7B, etc.).
-* **A clean A/B exists**: connector-with-AttnRes vs vanilla-connector,
-  both trained on the same caption data with the same frozen vision
-  + LLM. This is the *publishable* claim — "AttnRes improves
-  multimodal connector training," same shape as the original
-  AttnRes paper's dense LM claim.
-* **Maintainer's rule satisfied**: backbone is untouched.
-* **PP adapter story stays cleanly separate**: the connector is
-  small enough to not need PP, so it doesn't entangle with the
-  Phase 3/4 PP work.
-
-### Concrete shape (typical LLaVA-style connector dimensions)
+The Q-Former (BLIP-2) and Perceiver Resampler (Flamingo) sit between
+a frozen vision tower and a frozen LLM, but unlike a connector they
+are **deep cross-attention transformers** (24-32 blocks at hidden
+2560-4096), often the dominant trainable component of the entire
+multimodal model. They are always trained from scratch.
 
 ```
-input:    (B, n_image_tokens=576, vision_dim=1152)   # SigLIP-SO400M
-          │
-          │ Linear projection → (B, 576, hidden=2048)
-          ▼
-   ┌──────────────────────────────────────┐
-   │ Block 1: self-attn + MLP + AttnRes_1 │
-   ├──────────────────────────────────────┤
-   │ Block 2: self-attn + MLP + AttnRes_2 │
-   ├──────────────────────────────────────┤
-   │       ...                             │
-   ├──────────────────────────────────────┤
-   │ Block N: self-attn + MLP + AttnRes_N │
-   └──────────────────────────────────────┘
-          │
-          │ Linear → (B, 576, llm_hidden=4096)
-          ▼
-output:   text-space embedded image tokens, ready to splice into
-          LLM input sequence (LLaVA convention: image tokens
-          precede text tokens)
+SigLIP-SO400M (frozen)
+     │
+     ▼
+Q-Former / Perceiver Resampler   ← TRAIN FROM SCRATCH
+     ┌──────────────────────────────────────────┐
+     │ N learnable query tokens                 │
+     ├──────────────────────────────────────────┤
+     │ Block 1: SelfAttn(Q) +                    │
+     │          CrossAttn(Q ↔ vision_tokens) +   │
+     │          MLP + AttnRes_1                  │
+     ├──────────────────────────────────────────┤
+     │ Block 2: ... + AttnRes_2                  │
+     ├──────────────────────────────────────────┤
+     │ ... 24-32 blocks total                    │
+     ├──────────────────────────────────────────┤
+     │ Block 32: ... + AttnRes_32                │
+     ├──────────────────────────────────────────┤
+     │ Linear: hidden → llm_dim                  │
+     └──────────────────────────────────────────┘
+     │
+     ▼
+[N text-space "soft tokens"]
+     │ injected at <image> position
+     ▼
+Llama-3.1-8B-Base (frozen)
+
+Trainable params: 1.5-3B  (deep enough for AttnRes to demo)
+Hardware: FSDP across 4× 5090, overnight feasible at small B/seq.
 ```
 
-`AttnRes_i` is the same per-paper recipe used in
-`torchtitan/experiments/attn_res/`: a pseudo-query w_l of shape
-(D, 1), zero-initialized, attended over cumulative block outputs.
+**Why D > A:**
+* Deep transformer (24-32 layers vs 4-8) → AttnRes's optimization
+  advantage actually shows up.
+* Q-Former is the **performance-determining component** of BLIP-2
+  / InstructBLIP — it's not glue, it's the model.
+* Co-pretrained from scratch on caption + VQA data ⇒ AttnRes
+  pseudo-queries learn alongside the rest, paper-aligned.
+* Standard, replicable A/B against vanilla Q-Former.
 
-### Training recipe
+#### Path E — From-scratch Visual Decoder Head
 
-Mirrors LLaVA-1.5 stage 1 (connector-only pretrain):
+If multimodal *generation* (text → image, à la CM3leon / Chameleon)
+is on the table, the visual decoder head is a from-scratch
+trained transformer that converts LLM hidden states back into image
+tokens. Substantial (~500M-1B params, deep). AttnRes between blocks.
 
-* **Frozen**: vision tower (SigLIP-SO400M), LLM (Llama-3.1-8B-Base)
-* **Trainable**: connector blocks + AttnRes pseudo-queries
-* **Data**: 558K LLaVA caption pairs (CC3M + LAION subset, public)
-* **Loss**: standard LM loss over caption tokens, image tokens
-  positioned via LLaVA's `vision_token_id=-200` sentinel (already
-  scaffolded in `torchtitan/experiments/kimi_linear/multimodal_model.py`)
-* **Hardware**: 4× 5090 single-node, FSDP across 4 ranks for the
-  connector + LLM (LLM frozen so weights replicate cheaply, only
-  cache management).
-* **Steps**: ~5K-10K, ~6h overnight on 4× 5090.
+Same constraint applies as Path C: needs significant image-token
+training data. We do not pursue this without a proper image-tokenized
+corpus.
 
-### A/B experimental plan
+### Category II — Use the existing 436M AttnRes ckpt as a
+### specialist module in a multimodal system
 
-Two arms:
+These reuse the AttnRes-from-scratch investment we already paid for
+in Phase 4. The 436M ckpt was co-pretrained with AttnRes from
+scratch on c4; that property is preserved when we use the ckpt as a
+component. No retrofit, no maintainer violation.
 
-| arm | connector | expected outcome |
-|---|---|---|
-| `vanilla_connector` | N=8 transformer blocks, no AttnRes | baseline LLaVA caption loss |
-| `attn_res_connector` | N=8 transformer blocks + AttnRes after each | lower caption loss + better downstream VQA, mirroring AttnRes paper's LM claim |
+#### Path F — Speculative-decoding draft model (recommended pair with D)
 
-Compare:
-1. Caption loss curves over training
-2. Zero-shot VQA accuracy on a held-out set (e.g. VQAv2 dev)
-3. CLIP-style retrieval accuracy on COCO captions
+Speculative decoding for multimodal inference: a frozen "main"
+multimodal model (e.g. LLaVA-Next-8B) verifies K-token candidate
+sequences proposed by a fast "draft" model. Draft quality directly
+determines throughput.
 
-If the AttnRes connector measurably wins on (1) + (2), that's the
-publishable contribution. If it doesn't, that's also a clean
-negative result ("AttnRes's LM gains do not transfer to small
-caption connectors") — still useful for the writeup.
+```
+Inference:
+  Big multimodal model (frozen, expensive forward)   ← LLaVA-Next-8B
+     ▲                                                 or similar
+     │  K candidate tokens (verify forward = 1 pass)
+  ┌──┴──────────────────────────────────────────┐
+  │ Draft model = our 436M AttnRes-Kimi (Phase 4)│  ← AttnRes
+  │   accepts visual tokens too                  │     trained
+  └──────────────────────────────────────────────┘     from scratch
+     │
+     ▼
+  Tokens accepted up to first rejection, resample
+  rejected position, continue.
+```
 
-## Where the existing 436M Kimi Linear ckpt fits in this story
+**Why F is compelling:**
+* Reuses 436M ckpt **exactly as it was trained** (no retrofit).
+* AttnRes-Kimi vs vanilla draft (Llama-3.2-1B etc.) is a direct
+  A/B on a metric that *matters in production*: speculative
+  decoding acceptance rate / wall-clock speedup.
+* Multimodal twist: extend the draft to accept image tokens
+  (small modification of multimodal_model.py vision_token_id=-200
+  scaffolding).
+* AttnRes's claimed "better trained representations" → "better
+  draft predictions" → "higher acceptance rate." Clean, measurable.
+* No need to retrain or distill the 436M; it's used as-is.
 
-**Not as the main multimodal LM backbone.** Use Llama-3.1-8B-Base
-(frozen) for that.
+#### Path G — Multimodal reward model / verifier
 
-But the 436M ckpt is still useful as a **secondary "small-LM head"
-in a plumbing experiment**, *not* a benchmark target:
+In RLHF for multimodal, a reward model (or output verifier) is
+trained from scratch on preference data. The 436M Kimi
+(or a fresh from-scratch AttnRes model) is a fine candidate
+backbone for the reward head. AttnRes participates in that
+from-scratch reward-model pretraining.
 
-* Verify the connector's outputs compose correctly with a small
-  trainable LM (drives end-to-end gradient flow through the full
-  multimodal stack including a from-scratch student LM).
-* Test the cache adapter on the multimodal sequence (vision + text
-  tokens) under PP=4, Problem B's adapter is wired and the adapter
-  is content-agnostic.
-* Demonstrate the integration between Phase 3/4 PP+adapter work and
-  the multimodal scaffolding — same fork, same submodule, same
-  trainer. That cohesion is the core "Kimi Linear + AttnRes +
-  multimodal full stack" claim from `multi_modal_idea.md`.
+#### Path H — MoE router / dispatcher
 
-The 436M is the **plumbing demo backbone**. The Llama-3.1-8B is
-the **performance demo backbone**. Different roles, no conflict.
+In a mixture-of-experts multimodal serving setup, a small router
+chooses between specialists. The router is from-scratch trained on
+routing decisions. 436M Kimi as router → AttnRes contribution
+preserved. Lower-impact than F or G; lower priority.
 
-## What the deliverables look like
+### Category III — Train a complete small multimodal model from scratch
 
-End of project:
+#### Path J — Mini-LLaVA (~1B end-to-end with AttnRes everywhere)
 
-1. **PP adapter system validation** — already complete (Phase 3 +
-   Phase 4 + Problem B). Three-arm comparison, loss alignment, eval.
-2. **AttnRes architecture port to Kimi Linear** — already complete
-   (Phase 4c–4e).
-3. **Multimodal scaffolding** — already wired in
-   `torchtitan/experiments/kimi_linear/multimodal_model.py` (LLaVA-
-   style projector, vision_token_id=-200 sentinel).
-4. **AttnRes Connector module** — to be added under
-   `torchtitan/experiments/attn_res/connector/` (new). Architecture
-   mirrors LLaVA's projector + adds AttnRes between blocks.
-5. **A/B caption-pretrain run** — vanilla vs AttnRes connector,
-   ~6h overnight each on 4× 5090 with frozen SigLIP + frozen
-   Llama-3.1-8B-Base.
-6. **Multimodal eval** — VQAv2 zero-shot or COCO retrieval, ~30
-   min on 4× 5090.
+The most paper-aligned but most expensive path: train a small
+multimodal model where vision encoder, connector, AND text decoder
+are all from-scratch, all with AttnRes:
 
-KD/MiniPLM negative results documented for honesty (see
-`docs/pretraining_closure_and_kd_plan.md`); they are not on the
-critical path.
+```
+vision encoder (300M, AttnRes-ViT, from scratch)
+       ▼
+connector (200M, AttnRes)
+       ▼
+text decoder (500M, AttnRes-Kimi-style, from scratch)
+```
 
-## Decision summary (for the project closure RFC)
+Trained on 5-10B tokens of caption + interleaved data. Needs 5-10
+overnights on 4× 5090. Real but expensive. Would not beat
+LLaVA-1.5 in performance, but is a *clean* end-to-end AttnRes
+multimodal demonstration.
 
-> AttnRes's optimization premise (zero-init pseudo-query trained
-> alongside the rest of the model) cannot be retrofitted onto a
-> pretrained LLM. For multimodal applications it must therefore be
-> placed in a component that is itself trained from scratch within
-> the multimodal stack. The cleanest such component is the
-> vision↔LLM connector. We propose an `AttnResConnector` module
-> trained on standard LLaVA caption data with frozen vision (SigLIP)
-> and frozen LLM (Llama-3.1-8B-Base) backbones, with a clean A/B
-> against a vanilla connector to test whether the AttnRes
-> architectural advantage transfers to the multimodal alignment
-> regime. This satisfies the maintainer's "no retrofit" rule,
-> respects 4× RTX 5090 hardware bounds, and produces a publishable
-> A/B in ~12h of overnight training (two arms × 6h each).
+## Comparison table
+
+| path | feasibility on 4×5090 | reuses 436M ckpt | AttnRes substantive? | engineering cost | recommend |
+|---|---|---|---|---|---|
+| **D. Q-Former / Resampler** | ✅ overnight | ❌ new 1-3B from scratch | **strong** (deep) | medium-high | **★★★** |
+| **F. Speculative draft** | ✅ overnight | **✅ as-is** | **strong** (uses already-trained AttnRes ckpt) | medium | **★★★** |
+| G. Reward model | ✅ overnight | ✅ | medium | medium | ★★ |
+| J. Mini-LLaVA full | ❌ 5-10 overnights | partial | strongest | high | ★ |
+| E. Visual decoder | ⚠️ data-bound | ❌ | strong | high | ★ |
+| H. MoE router | ✅ but weak demo | ✅ | weak | medium | ★ |
+| ~~A. tiny connector~~ | ✅ | ❌ | weak (too small) | low | (superseded) |
+| ~~B. cross-attn adapter~~ | ⚠️ | ❌ | medium | high | (close to retrofit) |
+| ~~C. ViT from scratch~~ | ❌ | ❌ | strongest | high | (out of scope) |
+
+## Recommended: Path D + Path F in parallel
+
+The two complementary stories that close the project most
+coherently:
+
+**Path F — speculative draft** showcases the *practical value of
+the 436M AttnRes investment we already made.* AttnRes-trained
+Kimi 436M predicts tokens better than a vanilla 1B draft → higher
+acceptance rate in speculative decoding → wall-clock speedup on
+multimodal inference. Direct, measurable, reuses the existing
+ckpt without any retraining.
+
+**Path D — Q-Former / Perceiver Resampler** showcases that *AttnRes
+remains useful when training a substantial new multimodal component
+from scratch.* A/B against vanilla Q-Former on the same caption
+corpus. This is the closest analog to the AttnRes paper's
+dense-LM claim, but in cross-modal alignment.
+
+Both paths share infrastructure:
+* Same frozen vision tower (SigLIP-SO400M)
+* Same frozen large LLM (Llama-3.1-8B-Base or LLaVA-Next-8B)
+* Same multimodal scaffolding (`multimodal_model.py` already
+  scaffolds `vision_token_id=-200` LLaVA convention)
+* Same caption dataset (LLaVA's 558K pretrain pairs)
+* Same evaluation harness (VQAv2 zero-shot, COCO retrieval, plus
+  speculative-decoding benchmarks for path F)
+
+The 436M Kimi ckpt has TWO concrete roles in this design, both
+respecting the maintainer's rule:
+
+1. **Path F**: deployed as-is as the speculative draft model.
+2. **Path D side-experiment**: serves as a small "verify-the-pipeline"
+   LM head behind the trained Q-Former, since LLaVA-Next-8B may be
+   too heavy for some smoke runs. Plumbing demo, not benchmark.
+
+## Out-of-scope items (kept for future H100-class work)
+
+* Train a 7B+ AttnRes LM from scratch
+* Train a from-scratch ViT with AttnRes
+* Mini-LLaVA full end-to-end
+* AttnRes inside Llama's frozen layer stack (this would violate the
+  maintainer's rule)
+
+## Project-closure deliverable list (updated)
+
+1. **PP adapter system validation** — complete (Phase 3 + Phase 4 +
+   Problem B).
+2. **AttnRes architecture port to Kimi Linear** — complete (Phase 4c-4e).
+3. **KD/MiniPLM negative result writeup** — complete (Phase 5).
+4. **Path F: speculative-decoding draft A/B** — Phase 6 (this dir).
+   * AttnRes-Kimi-436M draft vs Llama-3.2-1B draft.
+   * Frozen LLaVA-Next-8B (or Llama-3.1-8B-Base for text-only ablation).
+   * Acceptance rate + wall-clock speedup on COCO captioning + VQAv2.
+5. **Path D: Q-Former / Perceiver Resampler A/B** — Phase 6.
+   * AttnRes Q-Former vs vanilla Q-Former.
+   * Frozen SigLIP + frozen LLM, train on LLaVA-Pretrain.
+   * Caption loss curves + VQAv2 zero-shot accuracy.
+
+## Decision summary (project closure RFC excerpt)
+
+> AttnRes's optimization premise — a zero-init pseudo-query that
+> co-trains with the surrounding model from scratch — forbids
+> bolting AttnRes into a pretrained LLM's layer definition (the
+> maintainer's rule). It does not forbid AttnRes inside any
+> from-scratch trained component of a multimodal system, nor does
+> it forbid using a model that *was* AttnRes-co-pretrained as a
+> downstream specialist module.
+>
+> Two paths satisfy these constraints, fit 4× RTX 5090 hardware,
+> and produce publishable A/B comparisons:
+>
+> * **Path F (speculative-decoding draft model)**: deploy our
+>   already-trained AttnRes-Kimi-436M as the draft for a frozen
+>   large multimodal model. A/B against a same-tokenizer vanilla
+>   1B draft. Metric: acceptance rate, wall-clock speedup.
+>
+> * **Path D (Q-Former / Perceiver Resampler)**: train a
+>   substantial (1.5-3B) deep cross-attention transformer with
+>   AttnRes between blocks, on top of frozen SigLIP + frozen
+>   Llama-3.1-8B-Base. A/B against vanilla Q-Former. Metric:
+>   caption loss, downstream VQAv2 accuracy.
+>
+> Together they cover both directions AttnRes might add value:
+> reusing already-trained AttnRes weights (F), and producing a new
+> deeply-trained AttnRes module within the multimodal stack (D).
+> Each path requires ~1-2 overnights on the existing hardware.
