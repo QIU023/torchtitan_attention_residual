@@ -1,14 +1,34 @@
-"""Multimodal full-parameter fine-tune of AttnRes-Kimi-436M.
+"""Multimodal full-parameter fine-tune of AttnRes-Kimi (Phase 5).
 
-Subclasses torchtitan's Trainer to reuse all the FSDP / optim /
-scheduler / checkpoint plumbing. The override:
+Subclasses torchtitan's Trainer and threads vision through the standard
+PP/FSDP forward-backward path:
 
-* swap the dataloader for `LlavaPretrainDataset`
-* attach a frozen SigLIP vision tower + a trainable MLP projector
-  to the trainer
-* extend the optimizer to also step the projector params
-* override `forward_backward_step` to do the multimodal forward
-  (vision → projector → embed scatter → LM → CE)
+* ``post_dataloading_process`` is overridden to: (a) pop ``pixel_values``
+  from the dataloader's input_dict, (b) run the frozen vision tower
+  under ``no_grad``, (c) run the trainable projector with grad, (d)
+  inject ``vision_embeds`` (autograd-live) back into the input_dict so
+  the parent's PP/FSDP forward path picks it up via ``extra_inputs``.
+* The standard ``forward_backward_step`` then handles both PP and FSDP
+  uniformly: stage 0's wrapped ``KimiLinearAttnResModel.forward``
+  scatters vision_embeds at IMAGE_TOKEN_ID positions inside its forward
+  (the existing path used for the FSDP run since Phase 4e). Middle PP
+  stages don't have ``embed_tokens`` and silently ignore the vision
+  kwarg. Last stage emits logits, default cross-entropy loss with
+  ``ignore_index=-100`` matches the dataset's image/BOS-masked labels.
+
+Why this is the standard layout (vs. a custom ``forward_backward_step``):
+
+* PP scheduler default-chunks every Tensor kwarg along dim 0, so
+  ``vision_embeds`` (shape (B, 196, D)) is split per-microbatch
+  automatically — same as ``input_ids``. This is the same fixed-shape
+  pad pattern Megatron-LM's ``pretrain_vlm.py`` uses for VLM PP.
+* The autograd graph from CE loss back through stage 0's scatter into
+  ``vision_embeds`` reaches the trainer's projector through PP's
+  built-in SEND_B (per-microbatch grads sum into the projector tensor's
+  grad).
+* No bespoke loss path means the cache adapter's loss-alignment
+  comparison (Arm 2's headline metric) reduces to the standard
+  PP-vs-FSDP comparison from Phase 3/4.
 """
 from __future__ import annotations
 
@@ -16,6 +36,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import torch
 from transformers import AutoModel, AutoProcessor, AutoTokenizer
@@ -29,12 +50,15 @@ for p in (str(WORKSPACE), str(TORCHTITAN_PATH)):
 from torchtitan.trainer import Trainer  # noqa: E402
 from torchtitan.tools.logging import init_logger, logger  # noqa: E402
 from torchtitan.components.dataloader import ParallelAwareDataloader  # noqa: E402
-import torchtitan.distributed.utils as dist_utils  # noqa: E402
 
 from phase5.multimodal_dataset import (  # noqa: E402
-    IGNORE_INDEX, LlavaPretrainDataset, collate_with_pad,
+    GLOBAL_SEQ_LEN_DEFAULT,
+    IGNORE_INDEX,
+    IMAGE_TOKEN_ID,
+    LlavaPretrainDataset,
+    collate_with_pad,
 )
-from phase5.multimodal_model import Projector, multimodal_loss  # noqa: E402
+from phase5.multimodal_model import Projector  # noqa: E402
 
 
 # ----------------------------------------------------------------------
@@ -58,6 +82,11 @@ def _parse_mm_args() -> argparse.Namespace:
     p.add_argument("--mm.proj-lr-mult", dest="mm_proj_lr_mult",
                    type=float, default=1.0,
                    help="LR multiplier for projector params relative to LM LR")
+    p.add_argument("--mm.global-seq-len", dest="mm_global_seq_len",
+                   type=int, default=GLOBAL_SEQ_LEN_DEFAULT,
+                   help="Fixed sequence length for collate (PP P2P shape "
+                        "stability). Default 258 = 196 vision + 1 bos + 60 "
+                        "caption + 1 eos.")
     args, remaining = p.parse_known_args()
     sys.argv = [sys.argv[0]] + remaining
     return args
@@ -72,8 +101,11 @@ class MultimodalTrainer(Trainer):
     def __init__(self, config, *,
                  json_path: str, images_dir: str, vision_model: str,
                  tokenizer_path: str, cache_dir: str,
-                 proj_lr_mult: float = 1.0):
+                 proj_lr_mult: float = 1.0,
+                 global_seq_len: int = GLOBAL_SEQ_LEN_DEFAULT):
         super().__init__(config)
+
+        self._global_seq_len = global_seq_len
 
         # ----- DP rank info -----
         if self.parallel_dims.dp_enabled:
@@ -83,68 +115,108 @@ class MultimodalTrainer(Trainer):
         else:
             dp_world_size, dp_rank = 1, 0
 
-        # ----- Vision tower (frozen, replicated) -----
-        logger.info(f"mm: loading vision_tower {vision_model}")
-        vision = AutoModel.from_pretrained(
-            vision_model, torch_dtype=torch.bfloat16,
-            cache_dir=cache_dir, low_cpu_mem_usage=True,
+        # Detect first-stage rank for PP. Vision tower + projector live on
+        # the rank that holds the LM's stage 0 (it's the only place that
+        # actually consumes pixel_values + scatters vision into the embed
+        # stream). On other PP ranks they're not built — we'd never call
+        # them anyway, and their parameters would sit idle hogging memory.
+        self._is_vision_rank = (
+            (not self.parallel_dims.pp_enabled) or self.pp_has_first_stage
         )
-        # SigLIP has both vision_model and text_model; we only want the vision side.
-        if hasattr(vision, "vision_model"):
-            self.vision_tower = vision.vision_model.to(self.device).eval()
-        else:
-            self.vision_tower = vision.to(self.device).eval()
-        for p in self.vision_tower.parameters():
-            p.requires_grad_(False)
-        # Vision token count (inferred): SigLIP-Base patch16 224x224 → 196.
-        # Vision feature dim: SigLIP-Base = 768, SO400M = 1152.
-        # We'll pull lm_dim from the model_config below.
-        vision_dim = getattr(vision.config, "vision_config", vision.config).hidden_size
-        logger.info(f"mm: vision_tower hidden_size={vision_dim}, frozen")
+        # For mid/last PP ranks we still want a tokenizer for the dataset
+        # (text portion). Vision tower / projector are skipped.
 
-        # ----- Image processor + tokenizer -----
-        self.image_processor = AutoProcessor.from_pretrained(
-            vision_model, cache_dir=cache_dir,
-        )
+        # ----- Vision tower (frozen, replicated, vision-rank only) -----
+        if self._is_vision_rank:
+            logger.info(f"mm: loading vision_tower {vision_model}")
+            vision = AutoModel.from_pretrained(
+                vision_model, dtype=torch.bfloat16,
+                cache_dir=cache_dir, low_cpu_mem_usage=True,
+            )
+            # SigLIP has both vision_model and text_model; we only want vision.
+            if hasattr(vision, "vision_model"):
+                self.vision_tower = vision.vision_model.to(self.device).eval()
+            else:
+                self.vision_tower = vision.to(self.device).eval()
+            for p in self.vision_tower.parameters():
+                p.requires_grad_(False)
+            vision_dim = getattr(
+                vision.config, "vision_config", vision.config
+            ).hidden_size
+            logger.info(f"mm: vision_tower hidden_size={vision_dim}, frozen")
+
+            self.image_processor = AutoProcessor.from_pretrained(
+                vision_model, cache_dir=cache_dir,
+            )
+        else:
+            self.vision_tower = None
+            self.image_processor = None
+            vision_dim = None
+
         self.mm_tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_path, cache_dir=cache_dir,
         )
 
         # ----- LM dim (Kimi 436M = 1168) -----
+        # On non-first PP stages the LM submodule may not have embed_tokens,
+        # so we read hidden_size from the model's config instead.
         lm = self.model_parts[0]
-        # KimiLinearModel exposes embed_tokens with weight shape (V, D).
-        lm_dim = lm.embed_tokens.weight.shape[1] if hasattr(lm, "embed_tokens") and lm.embed_tokens is not None else None
+        lm_dim = getattr(getattr(lm, "config", None), "hidden_size", None)
         if lm_dim is None:
-            raise RuntimeError("Cannot infer lm_dim from model_parts[0].embed_tokens")
+            # Fallback: try to read from embed_tokens (first stage / non-PP).
+            if hasattr(lm, "embed_tokens") and lm.embed_tokens is not None:
+                lm_dim = lm.embed_tokens.weight.shape[1]
+        if lm_dim is None:
+            raise RuntimeError(
+                "Cannot infer lm_dim from model_parts[0].config or .embed_tokens"
+            )
+        self._lm_dim = lm_dim
         logger.info(f"mm: lm_dim={lm_dim}")
 
-        # ----- Projector (trainable, replicated) -----
-        self.projector = Projector(vision_dim=vision_dim, lm_dim=lm_dim).to(
-            device=self.device, dtype=torch.bfloat16,
-        )
-        n_proj_params = sum(p.numel() for p in self.projector.parameters())
-        logger.info(f"mm: projector built, params={n_proj_params:,}")
+        # ----- Projector (trainable, replicated, vision-rank only) -----
+        if self._is_vision_rank:
+            self.projector = Projector(vision_dim=vision_dim, lm_dim=lm_dim).to(
+                device=self.device, dtype=torch.bfloat16,
+            )
+            n_proj_params = sum(p.numel() for p in self.projector.parameters())
+            logger.info(f"mm: projector built, params={n_proj_params:,}")
 
-        # ----- Build a separate optimizer for the projector -----
-        # We can't add_param_group to the LM's optimizer because
-        # torchtitan's LambdaLR was built for the original param groups
-        # only and asserts strict zip(groups, lr_values) — adding a
-        # group breaks it. A fresh AdamW for the projector, appended
-        # to OptimizersContainer.optimizers, is stepped by the same
-        # optimizers.step() / zero_grad() loop without needing a
-        # scheduler (projector keeps a fixed LR).
-        proj_lr = config.optimizer.lr * proj_lr_mult
-        proj_optim = torch.optim.AdamW(
-            list(self.projector.parameters()),
-            lr=proj_lr,
-            betas=(0.9, 0.95), weight_decay=0.01,
-        )
-        self.optimizers.optimizers.append(proj_optim)
-        logger.info(f"mm: appended projector AdamW (lr={proj_lr}, fixed) to "
-                    f"OptimizersContainer; total inner optimizers="
-                    f"{len(self.optimizers.optimizers)}")
+            # Separate AdamW for the projector — torchtitan's LambdaLR was
+            # built for the LM's original param groups only and asserts
+            # strict zip(groups, lr_values), so we can't add_param_group.
+            # A standalone AdamW appended to OptimizersContainer.optimizers
+            # is stepped by the same optimizers.step() loop without a
+            # scheduler entry (projector keeps a fixed LR).
+            proj_lr = config.optimizer.lr * proj_lr_mult
+            proj_optim = torch.optim.AdamW(
+                list(self.projector.parameters()),
+                lr=proj_lr,
+                betas=(0.9, 0.95), weight_decay=0.01,
+            )
+            self.optimizers.optimizers.append(proj_optim)
+            logger.info(
+                f"mm: appended projector AdamW (lr={proj_lr}, fixed) to "
+                f"OptimizersContainer; total inner optimizers="
+                f"{len(self.optimizers.optimizers)}"
+            )
+        else:
+            self.projector = None
 
         # ----- Replace dataloader -----
+        # Tokenizer is enough on every rank; the image processor is only
+        # needed on the vision rank, but the dataset needs an image_processor
+        # to preprocess pixel_values for that rank. On non-vision ranks,
+        # we still build a dataset with the same processor (lazy-loaded on
+        # vision rank) to keep tokenization deterministic across DP shards.
+        if self.image_processor is None:
+            # Build a temporary processor purely for non-vision ranks so
+            # the dataset can still emit pixel_values placeholders. They'll
+            # be ignored downstream (mid/last PP stages don't consume
+            # pixel_values), but the collator needs a tensor in the dict.
+            self.image_processor = AutoProcessor.from_pretrained(
+                vision_model, cache_dir=cache_dir,
+            )
+
         ds = LlavaPretrainDataset(
             json_path=json_path,
             images_dir=images_dir,
@@ -159,45 +231,54 @@ class MultimodalTrainer(Trainer):
             dp_rank=dp_rank,
             dp_world_size=dp_world_size,
             batch_size=config.training.local_batch_size,
-            collate_fn=lambda b: collate_with_pad(b, pad_id=pad_id),
-            num_workers=0,   # > 0 would corrupt CUDA context; see phase5_distillation_deprecated/miniplm
+            collate_fn=lambda b: collate_with_pad(
+                b, pad_id=pad_id, global_seq_len=self._global_seq_len,
+            ),
+            num_workers=0,
         )
         logger.info(
             f"mm: replaced dataloader with LlavaPretrainDataset "
             f"(N={len(ds.records):,}, dp_rank={dp_rank}/{dp_world_size}, "
-            f"local_bs={config.training.local_batch_size})"
+            f"local_bs={config.training.local_batch_size}, "
+            f"seq_len={self._global_seq_len})"
         )
 
     # ------------------------------------------------------------------
-    # The single override.
+    # Multimodal injection point: post_dataloading_process.
     # ------------------------------------------------------------------
-    def forward_backward_step(self, *, input_dict, labels,
-                              global_valid_tokens) -> torch.Tensor:
-        if self.parallel_dims.pp_enabled:
-            raise NotImplementedError(
-                "Multimodal trainer does not support PP. Run on FSDP only."
-            )
+    def post_dataloading_process(
+        self, input_dict: dict[str, torch.Tensor], labels: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor], dict[str, Any]]:
+        """Pop pixel_values, compute vision_embeds, inject into input_dict.
 
-        pixel_values = input_dict["pixel_values"].to(
-            self.device, dtype=torch.bfloat16, non_blocking=True,
-        )
-        input_ids = input_dict["input"].to(self.device, non_blocking=True)
-        labels_ = labels.to(self.device, non_blocking=True)
+        The trainer's standard PP/FSDP forward-backward path then treats
+        ``vision_embeds`` as a regular ``extra_input`` (kwarg passed to the
+        first stage). The PP scheduler default-chunks tensor kwargs along
+        dim 0, so each microbatch's ``vision_embeds`` slice lines up with
+        its ``input_ids`` slice.
+        """
+        if "pixel_values" in input_dict:
+            pixel_values = input_dict.pop("pixel_values")
+        else:
+            pixel_values = None
 
-        with self.train_context():
-            loss_sum = multimodal_loss(
-                vision_tower=self.vision_tower,
-                projector=self.projector,
-                lm=self.model_parts[0],
-                pixel_values=pixel_values,
-                input_ids=input_ids,
-                labels=labels_,
+        # Only the vision rank actually computes the projection. Mid/last
+        # PP ranks won't see ``pixel_values`` from this DP shard's dataloader
+        # because torchtitan's batch_generator is constructed on every rank
+        # but its outputs are consumed only where the model needs them.
+        # Even if a mid-rank dataloader yields pixel_values, we just drop it.
+        if pixel_values is not None and self._is_vision_rank and self.vision_tower is not None:
+            pixel_values = pixel_values.to(
+                device=self.device, dtype=torch.bfloat16, non_blocking=True,
             )
-            # global_valid_tokens is the count of non-IGNORE labels across
-            # the DP mesh — train_step pre-computes this.
-            loss = loss_sum / global_valid_tokens
-            loss.backward()
-        return loss
+            with torch.no_grad():
+                vision_out = self.vision_tower(pixel_values=pixel_values)
+                vision_features = vision_out.last_hidden_state  # (B, N_vis, V_dim)
+            vision_embeds = self.projector(vision_features)  # (B, N_vis, lm_dim)
+            input_dict["vision_embeds"] = vision_embeds
+
+        # Hand off to the parent for the standard inputs/extra_inputs/extra_kwargs split.
+        return super().post_dataloading_process(input_dict, labels)
 
 
 # ----------------------------------------------------------------------
@@ -213,18 +294,6 @@ def main():
     cm = ConfigManager()
     config = cm.parse_args(sys.argv[1:])
 
-    # post_dataloading_process expects input_dict["input"] to be the main
-    # token tensor; for multimodal we replaced the dataloader and override
-    # forward_backward_step. We need to also override post_dataloading_process
-    # because train_step calls it via forward_backward_step.
-    # Easier: train_step will call our overridden forward_backward_step,
-    # and our override does NOT call post_dataloading_process — it consumes
-    # the multimodal batch directly. So no additional override needed.
-
-    # However train_step counts local_valid_tokens via labels != IGNORE_INDEX
-    # which happens to be the right count for us (image positions are
-    # IGNORE_INDEX, so they don't contribute, perfect).
-
     trainer = MultimodalTrainer(
         config,
         json_path=mm_args.mm_json,
@@ -233,6 +302,7 @@ def main():
         tokenizer_path=mm_args.mm_tokenizer,
         cache_dir=mm_args.mm_cache_dir,
         proj_lr_mult=mm_args.mm_proj_lr_mult,
+        global_seq_len=mm_args.mm_global_seq_len,
     )
     trainer.train()
     if torch.distributed.is_initialized():

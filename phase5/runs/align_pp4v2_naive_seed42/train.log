@@ -1,0 +1,146 @@
+W0428 08:50:17.463000 15716 site-packages/torch/distributed/run.py:851] 
+W0428 08:50:17.463000 15716 site-packages/torch/distributed/run.py:851] *****************************************
+W0428 08:50:17.463000 15716 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0428 08:50:17.463000 15716 site-packages/torch/distributed/run.py:851] *****************************************
+[rank3]:[titan] 2026-04-28 08:50:23,438 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank3]:[titan] 2026-04-28 08:50:23,439 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank3]:[titan] 2026-04-28 08:50:23,439 - root - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank3]:[titan] 2026-04-28 08:50:23,450 - root - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank3]:[titan] 2026-04-28 08:50:23,473 - root - INFO - Successfully created meshes with active dimensions: ['pp']
+[rank3]:[titan] 2026-04-28 08:50:23,474 - root - INFO - Loading tokenizer from tokenizer.json
+[rank3]:[titan] 2026-04-28 08:50:23,714 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank3]:[titan] 2026-04-28 08:50:24,019 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:24,043 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank3]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank3]:[titan] 2026-04-28 08:50:24,279 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:24,280 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank3]:[titan] 2026-04-28 08:50:25,001 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:25,354 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:26,055 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:26,540 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:26,835 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:27,360 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:27,609 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:27,927 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:27,985 - root - INFO - Building kimi_linear kimi_linear_436m_block_attn_res_n4 with {
+[rank3]:  "vocab_size": 163840,
+[rank3]:  "hidden_size": 1168,
+[rank3]:  "tie_word_embeddings": true,
+[rank3]:  "num_hidden_layers": 16,
+[rank3]:  "intermediate_size": 528,
+[rank3]:  "num_attention_heads": 16,
+[rank3]:  "num_key_value_heads": 16,
+[rank3]:  "q_lora_rank": null,
+[rank3]:  "kv_lora_rank": 584,
+[rank3]:  "qk_nope_head_dim": 73,
+[rank3]:  "qk_rope_head_dim": 36,
+[rank3]:  "v_head_dim": 73,
+[rank3]:  "mla_use_nope": true,
+[rank3]:  "rope_theta": 10000.0,
+[rank3]:  "kda_num_heads": 16,
+[rank3]:  "kda_head_dim": 73,
+[rank3]:  "kda_short_conv_kernel_size": 4,
+[rank3]:  "kda_layers": [
+[rank3]:    1,
+[rank3]:    2,
+[rank3]:    3,
+[rank3]:    5,
+[rank3]:    6,
+[rank3]:    7,
+[rank3]:    9,
+[rank3]:    10,
+[rank3]:    11,
+[rank3]:    13,
+[rank3]:    14,
+[rank3]:    15
+[rank3]:  ],
+[rank3]:  "full_attn_layers": [
+[rank3]:    4,
+[rank3]:    8,
+[rank3]:    12,
+[rank3]:    16
+[rank3]:  ],
+[rank3]:  "num_experts": 32,
+[rank3]:  "num_experts_per_token": 8,
+[rank3]:  "moe_intermediate_size": 528,
+[rank3]:  "moe_renormalize": true,
+[rank3]:  "moe_router_activation_func": "sigmoid",
+[rank3]:  "num_shared_experts": 1,
+[rank3]:  "routed_scaling_factor": 2.446,
+[rank3]:  "first_k_dense_replace": 1,
+[rank3]:  "moe_layer_freq": 1,
+[rank3]:  "use_grouped_topk": false,
+[rank3]:  "num_expert_group": 1,
+[rank3]:  "topk_group": 1,
+[rank3]:  "rms_norm_eps": 1e-05,
+[rank3]:  "hidden_act": "silu",
+[rank3]:  "initializer_range": 0.02,
+[rank3]:  "__spec__": {
+[rank3]:    "num_blocks": 4,
+[rank3]:    "model_class": "KimiLinearAttnResModel"
+[rank3]:  }
+[rank3]:}
+[rank3]:[titan] 2026-04-28 08:50:28,012 - root - INFO - TensorBoard logging enabled. Logs will be saved at phase5/runs/align_pp4v2_naive_seed42/tb/20260428-0850
+[rank3]:[titan] 2026-04-28 08:50:28,012 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5070 Ti with 15.48GiB memory
+[rank3]:[titan] 2026-04-28 08:50:28,013 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank3]:[titan] 2026-04-28 08:50:28,013 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5070 Ti, fallback to A100
+[rank3]:[titan] 2026-04-28 08:50:28,014 - root - INFO - [34mModel kimi_linear kimi_linear_436m_block_attn_res_n4 [31msize: 1,201,640,636 total parameters[39m
+[rank3]:[titan] 2026-04-28 08:50:28,033 - root - INFO - PP rank 3 is building stage_idx 3 with modules ['layers.6', 'layers.7']
+[rank3]:[titan] 2026-04-28 08:50:28,051 - root - INFO - PP rank 3 is building stage_idx 7 with modules ['layers.14', 'layers.15', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank3]:[titan] 2026-04-28 08:50:28,051 - root - WARNING - Number of microbatches (1) is less than the total number of stages (8) which may result in a bubble in the pipeline.
+[rank3]:[titan] 2026-04-28 08:50:28,052 - root - INFO - Using pipeline schedule Interleaved1F1B with 1 microbatches and 8 stages.
+[rank3]:[titan] 2026-04-28 08:50:28,074 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 3[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank3]:[titan] 2026-04-28 08:50:28,076 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank3]:[titan] 2026-04-28 08:50:28,076 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5070 Ti, fallback to A100
+[rank3]:[titan] 2026-04-28 08:50:28,076 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank3]:[titan] 2026-04-28 08:50:28,076 - root - INFO - CUDA memory usage for model: 1.72GiB(11.13%)
+[rank3]:[titan] 2026-04-28 08:50:28,080 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to phase5/runs/align_pp4v2_naive_seed42/checkpoint
+[rank3]:[titan] 2026-04-28 08:50:28,080 - root - INFO - Trainer is initialized with local batch size 1, global batch size 12, gradient accumulation steps 12, sequence length 260, total steps 10 (warmup 10)
+[rank3]:[titan] 2026-04-28 08:50:28,317 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:28,345 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:28,582 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:28,606 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:28,852 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:29,113 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:30,037 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:30,057 - root - INFO - mm: lm_dim=1168
+[rank3]:[titan] 2026-04-28 08:50:30,301 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:30,536 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:30,560 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:30,876 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:31,667 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:31,699 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:31,932 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:32,176 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:32,468 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:32,997 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:33,432 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:33,763 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:34,083 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:34,189 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:34,571 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:34,840 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:34,866 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:35,124 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:35,148 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:35,456 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank3]:[titan] 2026-04-28 08:50:35,493 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:35,745 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank3]:[titan] 2026-04-28 08:50:36,026 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank3]:[titan] 2026-04-28 08:50:36,938 - root - INFO - mm: replaced dataloader with LlavaPretrainDataset (N=558,128, dp_rank=0/1, local_bs=1, seq_len=258)
+[rank3]:[titan] 2026-04-28 08:50:36,938 - root - INFO - Training starts at step 1
+[rank3]:[titan] 2026-04-28 08:50:45,446 - root - INFO - [31mstep:  1  [32mloss: 12.22334  [38;2;180;60;0mgrad_norm: 5173.7715  [38;2;54;234;195mmemory:  7.09GiB(45.81%)  [34mtps: 44  [36mtflops: 0.27  [35mmfu: 0.09%[39m
+[rank3]:[titan] 2026-04-28 08:50:45,446 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank3]:[titan] 2026-04-28 08:50:49,606 - root - INFO - [31mstep:  2  [32mloss: 12.06333  [38;2;180;60;0mgrad_norm: 5017.0820  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 186  [36mtflops: 1.13  [35mmfu: 0.36%[39m
+[rank3]:[titan] 2026-04-28 08:50:53,725 - root - INFO - [31mstep:  3  [32mloss: 12.03981  [38;2;180;60;0mgrad_norm: 4443.8169  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 188  [36mtflops: 1.14  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:50:57,833 - root - INFO - [31mstep:  4  [32mloss: 11.93533  [38;2;180;60;0mgrad_norm: 4611.6665  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 188  [36mtflops: 1.15  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:51:01,936 - root - INFO - [31mstep:  5  [32mloss: 11.80242  [38;2;180;60;0mgrad_norm: 3790.4368  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 189  [36mtflops: 1.15  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:51:06,026 - root - INFO - [31mstep:  6  [32mloss: 11.59799  [38;2;180;60;0mgrad_norm: 4118.2046  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 189  [36mtflops: 1.15  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:51:10,094 - root - INFO - [31mstep:  7  [32mloss: 11.53441  [38;2;180;60;0mgrad_norm: 3105.7415  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 190  [36mtflops: 1.16  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:51:14,151 - root - INFO - [31mstep:  8  [32mloss: 11.55062  [38;2;180;60;0mgrad_norm: 3403.4341  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 191  [36mtflops: 1.16  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:51:18,188 - root - INFO - [31mstep:  9  [32mloss: 11.44116  [38;2;180;60;0mgrad_norm: 3262.2781  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 192  [36mtflops: 1.17  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:51:22,228 - root - INFO - [31mstep: 10  [32mloss: 11.21621  [38;2;180;60;0mgrad_norm: 3552.7410  [38;2;54;234;195mmemory:  9.01GiB(58.23%)  [34mtps: 192  [36mtflops: 1.16  [35mmfu: 0.37%[39m
+[rank3]:[titan] 2026-04-28 08:51:22,228 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank3]:[titan] 2026-04-28 08:51:22,228 - root - INFO - Saving a full checkpoint at last step, step 10.
+[rank3]:[titan] 2026-04-28 08:51:40,639 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.36 seconds
+[rank3]:[titan] 2026-04-28 08:51:40,640 - root - INFO - Training completed

@@ -28,6 +28,13 @@ IMAGE_TOKEN_ID = 32_000   # Llama-3.1 reserved special token, repurposed as <ima
 N_VISION_TOKENS = 196     # SigLIP-Base patch16 224x224 → 14*14 = 196
 IGNORE_INDEX = -100
 
+# Fixed seq_len used by collate_with_pad_global. All microbatches must have
+# IDENTICAL shape so PP's P2P recv buffers (sized at the first microbatch's
+# shape) don't crash on later batches with different padded length.
+#   N_VISION_TOKENS + bos + max_caption + eos = 196 + 1 + 60 + 1 = 258
+GLOBAL_SEQ_LEN_DEFAULT = 258
+MAX_CAPTION_TOKENS_DEFAULT = 60
+
 
 class LlavaPretrainDataset(IterableDataset):
     """Streams LLaVA-Pretrain image-caption pairs.
@@ -49,7 +56,7 @@ class LlavaPretrainDataset(IterableDataset):
         image_processor,
         dp_rank: int,
         dp_world_size: int,
-        max_caption_tokens: int = 64,
+        max_caption_tokens: int = MAX_CAPTION_TOKENS_DEFAULT,
     ):
         self.json_path = json_path
         self.images_dir = Path(images_dir)
@@ -150,24 +157,32 @@ class LlavaPretrainDataset(IterableDataset):
         pass
 
 
-def collate_with_pad(batch, pad_id: int = 0):
-    """Pad input_ids / labels to max length in batch; stack pixel_values.
+def collate_with_pad(batch, pad_id: int = 0,
+                     global_seq_len: int = GLOBAL_SEQ_LEN_DEFAULT):
+    """Pad to a FIXED `global_seq_len` so every microbatch has identical shape.
+
+    Why fixed rather than per-batch max:
+      Under PP, the scheduler pre-allocates P2P recv buffers from the FIRST
+      microbatch's shape. A later microbatch padded to a different length
+      crashes the receiving stage with a tensor-shape mismatch.
+      Fixed-length pad eliminates this.
+
+    Captions are dropped/truncated by the dataset's ``max_caption_tokens``
+    so each yield is at most ``global_seq_len`` tokens. Rows shorter than
+    ``global_seq_len`` are padded with ``pad_id``; their label positions
+    are filled with ``IGNORE_INDEX`` so they don't contribute to loss.
 
     Returns ``(input_dict, labels)`` matching torchtitan's
     ``batch_generator`` contract (``input_dict, labels = batch``).
-    `pixel_values` and `input_ids` go in the input_dict; `labels`
-    is returned separately so torchtitan's IGNORE-index counting in
-    `train_step` works without modification.
     """
-    max_len = max(b["input_ids"].size(0) for b in batch)
     B = len(batch)
     pixel_values = torch.stack([b["pixel_values"] for b in batch], dim=0)
-    input_ids = torch.full((B, max_len), pad_id, dtype=torch.long)
-    labels = torch.full((B, max_len), IGNORE_INDEX, dtype=torch.long)
+    input_ids = torch.full((B, global_seq_len), pad_id, dtype=torch.long)
+    labels = torch.full((B, global_seq_len), IGNORE_INDEX, dtype=torch.long)
     for i, b in enumerate(batch):
-        L = b["input_ids"].size(0)
-        input_ids[i, :L] = b["input_ids"]
-        labels[i, :L] = b["labels"]
+        L = min(b["input_ids"].size(0), global_seq_len)
+        input_ids[i, :L] = b["input_ids"][:L]
+        labels[i, :L] = b["labels"][:L]
     input_dict = {
         "pixel_values": pixel_values,
         "input": input_ids,   # key name "input" for torchtitan trainer compat
