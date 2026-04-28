@@ -59,12 +59,15 @@ multimodal stack. Runs on a SEPARATE rented box.
 
 ## 2. Hardware
 
-**Minimum**: 4 GPUs of 32 GB each (RTX 5090, A100-40GB, H100-80GB).
-The 436M LM with full optim state under FSDP=1 PP=4 fits per-GPU at
-LBS=1 SEQ=256.
+**Minimum**: 4 GPUs of 16 GB each (RTX 5060 Ti / 4060 Ti class).
+At 436M Kimi + PP=4 V=2 + LBS=1 SEQ=258, rank 3 (the heaviest)
+sits around 6.5 GB static + ~500 MB activations + ~700 MB PP cache,
+all under 8 GB used. **16 GB box is sufficient for Arm 2** (the
+correctness/alignment work; absolute tps is irrelevant).
 
-**Recommended**: 4× H100-80GB. Cleaner memory budget, room for SEQ=2048
-fallback if vision/text pad-to-max blows memory at SEQ=256.
+**Recommended**: 4× H100-80GB or 4× RTX 5090 32GB. Cleaner memory
+budget, room for SEQ=2048 fallback if vision/text pad-to-max blows
+memory at SEQ=256.
 
 **Required**: NVLink between cards for PP P2P bandwidth, OR PCIe is
 acceptable but throughput will be ~50-70% of NVLink. PCIe is fine for
@@ -72,6 +75,34 @@ correctness validation; the absolute tps doesn't matter for Arm 2's
 loss-alignment test.
 
 **NOT required**: multi-node. Single-node 4-GPU is sufficient.
+
+**Memory budget per rank (PP=4 V=2, LBS=1, SEQ=258, FSDP=1 replicate)**:
+
+| component | rank 0 | rank 1-2 | rank 3 |
+|---|---|---|---|
+| LM 4 layers (bf16) | ~216 MB | ~216 MB | ~216 MB |
+| LM AdamW state | ~1.5 GB | ~1.5 GB | ~1.5 GB |
+| `embed_tokens` (vocab × hidden) | ~300 MB | — | — |
+| `lm_head` + AdamW | — | — | ~2.1 GB |
+| `final_attn_res_*` + AdamW | — | — | ~30 MB |
+| `vision_tower` (frozen, no opt state) | ~184 MB | — | — |
+| `projector` + AdamW | ~50 MB | — | — |
+| PP cache (worst-case 8 blocks × 12 mb) | ~70 MB | ~250-400 MB | ~700 MB |
+| Activations (SEQ=258, autograd live) | ~300 MB | ~300 MB | ~500 MB |
+| PyTorch CUDA reserved overhead | ~1-2 GB | ~1-2 GB | ~1-2 GB |
+| **rank total** | **~3.7 GB** | **~3.5 GB** | **~6.5 GB** |
+
+If rank 3 exceeds 12 GB, drop to:
+
+* **Smaller flavor**: `kimi_linear_194m_block_attn_res_n4` (45% the
+  param count, fits easily under 4 GB rank 3). Algorithm/cache-adapter
+  math is identical; alignment test results carry over to 436M when
+  switching to a 32 GB box.
+* **Disable compile**: `COMPILE=0` env var saves 1-2 GB transient
+  during graph capture.
+
+Never reduce LBS below 1 or GLOBAL_BS below `V × PP = 8` — the latter
+breaks Interleaved1F1B's lookahead.
 
 ---
 
