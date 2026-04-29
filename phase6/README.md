@@ -35,7 +35,7 @@ deeper PP, TP+PP, and async checkpoint.
 
 | # | Item | Why upstream cares |
 |---|---|---|
-| A1 | **Arm 2 on real LLaVA-Pretrain + Phase 4 ckpt** (the one Phase 5 Arm 2 always promised but blocked on Arm 1 reference curve) | Maintainer will ask: "fresh-init alignment is nice, but production-realistic init?" Need this answered before PR review. |
+| A1 | **Arm 2 on real LLaVA-Pretrain + Phase 4 ckpt** (the one Phase 5 Arm 2 always promised but blocked on Arm 1 reference curve) — orchestrated by `phase6/run_a1_alignment.sh`: waits for current Arm 1 to pass step 6000 (caption-quality story ckpt) → runs Arm 1' FSDP=4 baseline (seed=42, from Phase 4 step-8000, 2k steps, GLOBAL_BS=12) → runs Arm 2 PP=4 V=2 + cache adapter (seed=42, same init, same data shuffle, same GLOBAL_BS) → emits `phase6/alignment_report_arm2_real_mm.txt`. Pass criterion: max\|Δ\| ≤ 0.13 nats over matched steps {1, 100, 500, 1000, 2000}. | Maintainer will ask: "fresh-init alignment is nice, but production-realistic init?" Need this answered before PR review. |
 | A2 | **PP=8 V=4** alignment matrix | Kimi-NextGen at 100B+ scale will use PP > 4. Cache adapter math is depth-agnostic but P2P shape stability + Interleaved1F1B lookahead under V=4 needs explicit smoke. |
 | A3 | **TP + PP + AttnRes** three-axis parallelism | Phase 5 launchers all use TP=1. AttnResProjection's (RMSNorm + linear) needs ColwiseParallel/RowwiseParallel registration in `parallelize.py`. Phase 4's `parallelize_kimi_linear` doesn't TP-wrap AttnRes layers. |
 | A4 | **Async DCP checkpoint** with AttnRes state | `--checkpoint.enable_async` not validated for AttnRes (pseudo-query weights). Sync save costs ~30s every save_freq, won't scale to multinode wallclock. |
@@ -75,15 +75,54 @@ contact with realistic VLM data.
 - HF weight loader for current Kimi-Linear-48B-A3B-Base. Different model
   family from NextGen-AttnRes; loader for the eventual release model is
   the relevant one but it doesn't exist yet.
+- **`fla-core` KDA triton kernel re-tuning for Blackwell (sm_120).**
+  Current observation on 4×RTX 5090: GPU util reads 100% but power
+  ~25% of TGP and MFU 0.78%. Root cause is `fla-core 0.5.0`'s
+  `chunk_kda` kernel was written for Hopper (H100 / sm_90 register +
+  shared-mem layout); Blackwell sm_120 register width and shared-memory
+  banking are different, so the same kernel hits register spill +
+  bank-conflict + cache-miss patterns and ALU sits idle. **`fla-core`
+  is not Kimi's repo** (it's the `flash-linear-attention` library
+  maintained separately by Songlin Yang et al.); the kernel side of
+  Blackwell adaptation belongs upstream there, not in our PR. Our
+  scope is the distributed-training framework (FSDP/PP/TP/EP composition,
+  cache adapter, multimodal trainer, ckpt resume) — kernel-level
+  micro-optimization is a different project. The torchtitan PR for
+  AttnRes will land alongside whichever KDA kernel implementation
+  Kimi-NextGen ships, which they will have tuned for whichever
+  hardware they release on.
+
+## 8-GPU 3D parallelism roadmap (rented box)
+
+The 4×5090 box only goes up to 2D parallelism (FSDP×PP). When we move to
+an 8-GPU rented box, we get a third axis. The valid 3D combos and their
+pre-merge value:
+
+| Config | GPUs | Tests what | AttnRes-specific work |
+|---|---|---|---|
+| **FSDP=2 × PP=4** | 8 | Deeper PP than 4-GPU max (PP=4 on 4 GPU forces FSDP=1) — validates Interleaved1F1B at PP=4 *with* FSDP=2 simultaneously, and that AttnRes cache adapter delta P2P sends survive PP×FSDP2 collective overlap | None — drop-in launcher |
+| **FSDP=2 × PP=2 × TP=2** | 8 | First time TP enters AttnRes path. Tests that `AttnResProjection` (RMSNorm + linear) registers correctly with `ColwiseParallel` / `RowwiseParallel`, and that the cache adapter's per-stage delta tensors are sharded along TP axis without breaking the loss-invariance contract (delta tensor's dim that ColParallel splits must remain consistent across send/recv) | Add TP plan map for `AttnResProjection` in `parallelize.py`; verify `_layers_per_block` and `_return_only_new_blocks` signal flow under TP wrapping |
+| **FSDP=2 × PP=2 × EP=2** (MoE) | 8 | Tests AttnRes through MoE-containing blocks. Kimi-NextGen is almost certainly MoE; expert routing + AttnRes block boundary commit need to interleave correctly. Also tests EP-shard reduce pattern under PP+FSDP | Switch flavor to a Kimi-Linear MoE config (`first_k_dense_replace` < L); verify cache adapter delta accumulation when block boundary lands inside a MoE FFN; add EP plan to `parallelize.py` |
+| **FSDP=2 × PP=2 × CP=2** (long context) | 8 | Tests context-parallel sequence sharding. Multimodal long-vision (1024 image tokens for hi-res) + caption sequences benefit. Cache adapter delta must shard along seq dim too | Add CP plan map; verify `multimodal_dataset.py`'s collate handles CP shard semantics; verify `image_mask` survives CP shard (currently per-row, would need per-shard) |
+
+Priority order for phase6 work: **FSDP=2 × PP=4 first** (cheapest, no
+new code), **then TP=2 variant** (key infra hole — TP support is
+explicitly in-scope for upstream merge readiness), **then EP=2** (needs
+MoE flavor in addition to AttnRes wrap), **then CP=2** (most code, biggest
+multimodal payoff but lowest priority for a pre-merge PR).
+
+For each config: launcher script + 1k-step alignment vs FSDP-only
+baseline + alignment plot. Same pass criterion (max\|Δ\| ≤ 0.13 nats)
+as the 4-GPU PP=4 V=2 result.
 
 ## Plan (3-4 weeks, single 4×5090 box)
 
 | Week | Track A (parallelism) | Track B (multimodal) | Track C (polish) |
 |---|---|---|---|
-| W0 | Finish Phase 5 Arm 1 → A1 (Arm 2 real-data alignment) | — | C2 (start tests, run continuously) |
-| W1 | A2 (PP=8 V=4), A3 (TP+PP smoke) + A6 (determinism matrix) | B1 (variable image count) | C2 grows with each A/B item |
-| W2 | A4 (async DCP), A5 (mid-save resume) | B2 (interleave), B4 (sentinel registry) | C1, C3 |
-| W3 (stretch) | — | B3 spec only (no impl) + B5 (kv-cache for AttnRes inference) | C4 (perf regression CI) |
+| W0 (4×5090) | Phase 5 Arm 1 to step 6000 → orchestrator `phase6/run_a1_alignment.sh` runs Arm 1' + Arm 2 (A1, real-data alignment) | — | C2 (start tests, run continuously) |
+| W1 (8×rented) | A2 (PP=8 V=4 single-axis), A3 (FSDP=2 PP=2 TP=2 — *the* TP infra hole), A6 (determinism matrix) | B1 (variable image count) | C2 grows with each A/B item |
+| W2 (8×rented) | A4 (async DCP), A5 (mid-save resume), FSDP=2 PP=2 EP=2 (MoE flavor) | B2 (interleave), B4 (sentinel registry) | C1, C3 |
+| W3 (8×rented if budget, stretch) | FSDP=2 PP=2 CP=2 (long context) | B3 spec only (no impl) + B5 (kv-cache for AttnRes inference) | C4 (perf regression CI) |
 
 C2 (CPU pytest) **runs continuously, not at the end** — every A/B item
 lands with its own unit tests in the same PR. C2 in W2 is the final
@@ -96,18 +135,34 @@ validate against, which our 4×5090 box cannot host.
 Each Track A/B item ends with: launcher + test + alignment plot + 1-paragraph
 writeup. Track C consolidates into PR-ready form.
 
-## Concrete first-week actions (right now)
+## Concrete first-week actions
 
-1. Let Phase 5 Arm 1 run to step 5000-6000 (caption loss target ≤ 2.8). That
-   produces the reference curve A1 needs.
-2. As soon as Arm 1 has 5k+ steps logged, launch Arm 2 with
-   `INIT=weak_ckpt INIT_CKPT=phase4/runs/.../step-8000` matched seed +
-   same data shuffle as Arm 1 → 2k step alignment → loss diff plot at
-   matched steps.
-3. In parallel, on this same box (CPU work, doesn't touch GPU): start
-   B1 — write `MultiImageDataset` that emits variable N_vision per row
-   + write the test that exercises the LM forward path with mixed
-   (1-image, 0-image, 2-image) microbatches.
+The orchestrator `phase6/run_a1_alignment.sh` runs in background and:
+
+1. Polls `phase5/runs/arm1_fsdp/train.log` for "step: 60[12]X" — confirms
+   Arm 1 is past step 6000 and the ckpt is safely on disk (caption-quality
+   story deliverable).
+2. SIGTERMs the running `phase5.train_mm` workers, waits up to 120 s for
+   clean exit, SIGKILLs if needed.
+3. Launches **Arm 1'** = FSDP=4 PP=1, `--debug.seed 42 --debug.deterministic`,
+   from Phase 4 step-8000, GLOBAL_BS=12 LOCAL_BS=3, 2000 steps, `--metrics.log_freq 1`.
+4. Launches **Arm 2** = PP=4 V=2 + Interleaved1F1B + cache adapter, same
+   seed, same init, same GLOBAL_BS=12, 2000 steps.
+5. Runs `phase5/compare_pp_vs_fsdp.py` → writes `phase6/alignment_report_arm2_real_mm.txt`.
+
+**Why both runs init from Phase 4 step-8000 (not from Arm 1's step-6000)**:
+Current Arm 1 was launched without `--debug.seed`, so its data shuffle
+and projector init are not reproducible. Branching Arm 2 from Arm 1's
+step-6000 would inherit that nondeterminism. Cleaner: re-init both
+alignment runs from a known reproducible point (Phase 4 step-8000 + seed 42),
+which gives a fully matched-seed alignment claim. Current Arm 1 still
+serves the caption-quality story (loss curve to step 6000) — it just
+isn't part of the alignment pair.
+
+In parallel (CPU work, doesn't touch GPU): B1 — `MultiImageDataset`
+that emits variable N_vision per row, with mixed (1-image, 0-image,
+2-image) microbatches. Tests the LM forward path under the relaxed
+`assert n_image_per_row == expected_per_row` constraint.
 
 ## Success criteria for the eventual upstream PR
 
