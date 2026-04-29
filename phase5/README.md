@@ -188,6 +188,93 @@ noise band over the same horizon (analog to Phase 3's
 
 **Total end-to-end: ~4 weeks**, vs ~6-8 weeks if serialized.
 
+## Execution sequence on the rented box (Arm 1 → Arm 2)
+
+After the gap-fix work is merged (commit `54bb2dd`, multimodal trainer
++ PP cache-adapter validated bug-free under fresh-init + C4 dataset),
+the **rented box has both code paths working**. The remaining question
+is the *real* multimodal training under each path. Run them in this
+order:
+
+### W0 / W1 — Arm 1 FSDP first (real LLaVA-Pretrain VLM)
+
+The C4-based alignment in `phase5/runs/align_pp4v2_*` validates that the
+multimodal codepath preserves PP+adapter loss invariance, but it never
+actually consumed images. The first **real** multimodal training run is
+Arm 1 on LLaVA-Pretrain-558K with the Phase 4 ckpt (latest available —
+`step-8000` if Phase 4 retrain still mid-flight, else `step-12500`):
+
+```bash
+# rented box
+INIT_CKPT=phase4/runs/.../checkpoint/step-8000 \
+STEPS=20000 LOCAL_BS=8 GLOBAL_BS=32 SEQ_LEN=258 \
+bash phase5/launch_train.sh   # FSDP=4, PP=1
+```
+
+Why FSDP first, not PP+adapter first:
+* Arm 2's loss-alignment claim needs a **reference loss curve** to
+  compare against — that reference is Arm 1's FSDP baseline. Comparing
+  Arm 2 PP+adapter only against Arm 2 PP+naive (already done at fresh
+  init) doesn't tell us whether the cache adapter preserves
+  multimodal-LM training dynamics; it only confirms cache delta is
+  numerically a no-op vs sending the full block stack.
+* Arm 1 is the **deliverable**: a converged AttnRes-Kimi-VL caption
+  model. Arm 2 is the systems-research follow-up that confirms PP
+  scales to it.
+* FSDP wallclock is shorter (~1.9 s/step) than PP+adapter (~4-8 s/step
+  with bubble); 20k steps is 10-12h on FSDP, 1-3 days on PP. Get the
+  baseline locked first.
+* Step-8000 (val 3.23) is already plenty for caption convergence vs
+  the original Phase 4 step-12500 (val 3.73) that stalled the earlier
+  multimodal smoke; if Arm 1 finishes before Phase 4 retrain hits its
+  own step-12500, just relaunch with the better ckpt.
+
+### W2 — Arm 2 PP+adapter on the same data
+
+Once Arm 1 produces `runs/arm1_fsdp/train.log` with seed 42 and
+matched data shuffle:
+
+```bash
+INIT_CKPT=phase4/runs/.../checkpoint/step-8000 \
+NGPU=4 PP=4 V=2 LOCAL_BS=1 GLOBAL_BS=12 STEPS=2000 \
+ADAPTER=1 SEED=42 \
+bash phase5/launch_pp_adapter.sh
+```
+
+Pass criterion (the headline result):
+
+```
+max | loss_arm2_pp_adapter[step] − loss_arm1_fsdp[step] |  ≤  0.13 nats
+```
+
+at matched `step ∈ {1, 100, 500, 1000, 2000}`. This is the first
+public verification that the cross-stage cache adapter preserves
+loss invariance under **real mixed vision+text sequences with a
+trained LM init** — the regime that internal Kimi multimodal
+infra has presumably solved but never published.
+
+### Why not naive PP?
+
+Naive PP = ship the full block stack between PP stages instead of
+just the delta. Loss is identical to PP+adapter by construction (no
+math difference, only network bytes), so "naive PP vs adapter PP"
+alignment is a vacuous test. The non-vacuous comparison is **adapter
+PP vs FSDP** — different parallelism strategies, same mathematical
+model, loss invariance is a meaningful claim.
+
+The fresh-init naive-PP baseline already in
+`phase5/runs/align_pp4v2_naive_seed42` exists only as a sanity check
+for "did the new train_mm.py actually wire PP correctly at all". Done.
+
+### Wallclock summary
+
+| Phase | Wallclock | What it produces |
+|---|---|---|
+| Arm 1 FSDP (W0/W1) | 10-12h | Converged VLM, caption loss curve |
+| Phase 4 retrain finishes (W2 on original box) | another 17h | val ~3.10 ckpt |
+| Optional: re-Arm 1 with stronger ckpt (W2/W3) | another 8h | Better caption quality |
+| Arm 2 PP+adapter alignment (W3) | 6-12h | Cross-modality cache invariance result |
+
 ## Data
 
 * **LLaVA-Pretrain-558K** (`liuhaotian/LLaVA-Pretrain` HF dataset):
