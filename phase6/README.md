@@ -40,6 +40,7 @@ deeper PP, TP+PP, and async checkpoint.
 | A3 | **TP + PP + AttnRes** three-axis parallelism | Phase 5 launchers all use TP=1. AttnResProjection's (RMSNorm + linear) needs ColwiseParallel/RowwiseParallel registration in `parallelize.py`. Phase 4's `parallelize_kimi_linear` doesn't TP-wrap AttnRes layers. |
 | A4 | **Async DCP checkpoint** with AttnRes state | `--checkpoint.enable_async` not validated for AttnRes (pseudo-query weights). Sync save costs ~30s every save_freq, won't scale to multinode wallclock. |
 | A5 | **Resume from interrupted mid-save ckpt** | DCP partial-write recovery on AttnRes state has no test coverage. SIGTERM during save → restart loss-curve continuity test. |
+| A6 | **Cross-parallelism numerical determinism smoke** | Standard PR-review question: same seed + data → bit-identical loss to bf16 epsilon across {FSDP-only, FSDP+PP, FSDP+PP+TP}? Without an explicit smoke we can't claim invariance under arbitrary parallelism composition. Run a small-config matrix (12 layers, 1B params) at 50 steps each and tabulate max\|Δ\|. |
 
 ### Category B — Multimodal-specific gaps
 
@@ -51,8 +52,9 @@ contact with realistic VLM data.
 |---|---|---|
 | B1 | **Variable image count per row** (drop fixed `n_image_per_row == expected_per_row` assert) | LLaVA-Pretrain is 1-image-per-row. Real VLM data: zero-image (text-only mixed in), multi-image, video frames. The current assert in `multimodal_model.py:97-103` crashes the moment data is non-uniform. |
 | B2 | **Image-text interleave** (image tokens not restricted to prefix) | LLaVA-Pretrain layout is `[<img>×196] [BOS] [caption]` — vision strictly at the start. InternVL / DeepSeek-VL2 / Kimi-VL 1.5 are interleaved (image at any position). Need: (a) `multimodal_dataset.py` collate handles arbitrary scatter positions, (b) PP cache adapter still preserves loss invariance when image_mask is non-contiguous. |
-| B3 | **Vision tower FSDP-shard** (not replicated) | SigLIP-Base 92M replicated is fine. NextGen vision encoder may be 1B+. Frozen-FSDP needs reduce-scatter-skip optimization or it wastes the bandwidth advantage. |
+| B3 | **Vision tower FSDP-shard** (not replicated) — *deferred to "stretch"* | SigLIP-Base 92M / SO400M 400M / InternViT 6B all fit replicated on 4×5090 32G (≤4 GB / rank). FSDP-sharding the vision tower only matters when the vision encoder grows past per-rank capacity, which is a multinode + giant-encoder scenario we can't validate on current hardware. Spec the API surface (a single `wrap_vision_tower(parallel_dims)` entry) but defer implementation until an actual giant vision encoder lands. |
 | B4 | **Tokenizer-aware sentinel selection** | Current `IMAGE_TOKEN_ID=32000` is "utility" in Llama-3.1's BPE — collision risk if caption legitimately contains "utility" tokens. Need per-tokenizer sentinel registry + startup assertion. |
+| B5 | **AttnRes inference kv-cache support** | Generation-time question: does inference need to cache all N+1 block outputs, or only the final aggregated state? AttnRes shifts the answer from standard KV-cache. Maintainer will ask this for the inference path. Settle the answer + add a generation smoke (50 token autoregressive decode) that confirms the chosen scheme matches training-time logits. |
 
 ### Category C — PR-review polish
 
@@ -61,6 +63,7 @@ contact with realistic VLM data.
 | C1 | **Cache adapter ablation table** (bytes saved / throughput / loss diff distribution) | Maintainer will ask "quantify the value." Need empirical bytes_saved vs L,N,B,T,D + matched-step loss histogram. |
 | C2 | **CPU pytest matrix expansion** | Phase 5 has 4 unit tests. Expand to: dynamic shape inference, mixed dtype, state_dict round-trip, partial failure recovery. |
 | C3 | **Doc rewrite** (`attn_res/README.md` + `phase5/README.md` → architecture diagram + verified matrix + known limitations) | Direct paste into PR description. |
+| C4 | **Performance regression CI** | Lock in current-baseline throughput (tps, peak memory, MFU) on a small config; CI runs 50-step smoke per PR and fails if any metric regresses >5%. Catches accidental perf hits introduced by future refactors. |
 
 ### Out of scope (explicitly)
 
@@ -73,17 +76,25 @@ contact with realistic VLM data.
   family from NextGen-AttnRes; loader for the eventual release model is
   the relevant one but it doesn't exist yet.
 
-## Plan (3 weeks, single 4×5090 box)
+## Plan (3-4 weeks, single 4×5090 box)
 
 | Week | Track A (parallelism) | Track B (multimodal) | Track C (polish) |
 |---|---|---|---|
-| W0 | Finish Phase 5 Arm 1 → A1 (Arm 2 real-data alignment) | — | — |
-| W1 | A2 (PP=8 V=4), A3 (TP+PP smoke) | B1 (variable image count) | — |
-| W2 | A4 (async DCP), A5 (mid-save resume) | B2 (interleave), B3 (vision FSDP), B4 (sentinel registry) | C1, C2, C3 |
+| W0 | Finish Phase 5 Arm 1 → A1 (Arm 2 real-data alignment) | — | C2 (start tests, run continuously) |
+| W1 | A2 (PP=8 V=4), A3 (TP+PP smoke) + A6 (determinism matrix) | B1 (variable image count) | C2 grows with each A/B item |
+| W2 | A4 (async DCP), A5 (mid-save resume) | B2 (interleave), B4 (sentinel registry) | C1, C3 |
+| W3 (stretch) | — | B3 spec only (no impl) + B5 (kv-cache for AttnRes inference) | C4 (perf regression CI) |
+
+C2 (CPU pytest) **runs continuously, not at the end** — every A/B item
+lands with its own unit tests in the same PR. C2 in W2 is the final
+matrix-completeness pass.
+
+B3 is **spec'd but deferred** — vision-tower FSDP-shard is premature
+optimization until we have a >4-GB-per-rank frozen vision encoder to
+validate against, which our 4×5090 box cannot host.
 
 Each Track A/B item ends with: launcher + test + alignment plot + 1-paragraph
-writeup. Track C is a final pass that consolidates everything into PR-ready
-form.
+writeup. Track C consolidates into PR-ready form.
 
 ## Concrete first-week actions (right now)
 
@@ -106,13 +117,37 @@ When Kimi-AttnRes-NextGen drops, the upstream PR should be able to claim:
 - Cache adapter loss invariance under PP×V×(text|multimodal)×(fresh|trained)
   init combinations — full matrix from Phase 3 + Phase 5 + Phase 6 A1/A2
 - TP+PP+AttnRes interop verified (Phase 6 A3)
+- Cross-parallelism numerical determinism (Phase 6 A6)
 - Async DCP + AttnRes state safe (Phase 6 A4/A5)
 - Multimodal trainer handles real VLM data layout
   (variable image count, interleave) (Phase 6 B1/B2)
-- Vision tower FSDP-shardable for >1B vision encoders (Phase 6 B3)
+- AttnRes-aware inference kv-cache scheme (Phase 6 B5)
+- Vision tower FSDP-shard API spec'd for >1B vision encoders (B3,
+  impl deferred until hardware allows validation)
 - ≥20 CPU-runnable unit tests + 5 GPU smokes in CI
+- Performance regression guard in CI (Phase 6 C4)
 - Architecture doc + verified-config matrix + known-limitation list
 
 If all of that's green, the PR is "ready for the next-gen model" and the
 maintainer's blocker (no-large-scale-validation-on-stitched-models)
 becomes moot — the model itself when it ships brings the validation.
+
+## Risk: NextGen-Kimi shape change
+
+Phase 6's "1-line registration" claim only holds if Kimi-NextGen keeps
+the current `KimiLinearAttnResModel` shape (KDA + MLA + MoE backbone,
+shared `AttnResProjection(d → 1, no bias)`, vocab 163840, etc).
+Plausible deviations that would break the claim:
+
+- KDA → standard MHA/GQA → `parallelize_kimi_linear`'s KDA-specific
+  TP wrap doesn't apply
+- `AttnResProjection` from `Linear(d → 1)` to `Linear(d → k)` (multi-head
+  pseudo-query) → scatter / softmax-pool path changes
+- Vocab change → embed/lm_head TP wrap shape
+- New layer types (state-space, mamba-hybrid) interleaved with KDA/MLA
+
+Mitigation: write Phase 6 infra at the **API level**, not hardcoded to
+current shape. Example: `wrap_attn_res_projection(module, in_dim,
+out_dim, tp_dim=None)` parameterizes both dims rather than assuming
+`out_features=1`. This costs minimal extra code now and absorbs most
+plausible NextGen shape changes without re-implementation.
