@@ -203,6 +203,33 @@ def test_image_mask_explicit_override():
         assert torch.equal(h[1, t], embed(tokens[1, t]))
 
 
+def test_mixed_dtype_scatter():
+    """vision_embeds in fp32, embed_tokens in bf16 — scatter must match
+    embed_tokens dtype (the resulting hidden state ``h`` is bf16, so
+    fp32 source must downcast before writing). Mirrors the production
+    setup where SigLIP outputs fp32, projector linearly maps fp32→fp32,
+    then enters a bf16 LM forward."""
+    embed = _make_embed().to(torch.bfloat16)
+    N_vis, D, T, B = 4, 8, 12, 2
+    tokens = torch.zeros(B, T, dtype=torch.long)
+    tokens[:, :N_vis] = _DEFAULT_IMAGE_TOKEN_ID
+    tokens[:, N_vis:] = torch.randint(1, 32_000, (B, T - N_vis))
+    vision_embeds_fp32 = torch.randn(B, N_vis, D, dtype=torch.float32)
+
+    h = _embed_with_scatter(embed, tokens, vision_embeds_fp32)
+
+    # h must be in embed_tokens' dtype, not vision_embeds' dtype.
+    assert h.dtype == torch.bfloat16, (
+        f"h dtype should match embed_tokens (bf16), got {h.dtype}"
+    )
+    # Image positions should equal vision_embeds *after bf16 downcast*.
+    expected_at_image = vision_embeds_fp32.to(torch.bfloat16)
+    for b in range(B):
+        for t in range(N_vis):
+            assert torch.equal(h[b, t], expected_at_image[b, t]), \
+                f"image-pos ({b},{t}) wasn't downcast properly"
+
+
 def test_assert_helper_raises_on_overflow():
     """The relaxed reference helper in ``multimodal_model.py`` still raises
     when a row has MORE image tokens than vision_embeds slots — catching
