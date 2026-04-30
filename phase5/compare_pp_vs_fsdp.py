@@ -53,6 +53,9 @@ def main():
                    help="Phase 3 measured FSDP seed-vs-seed nats (default: 0.13)")
     p.add_argument("--out-csv", default="",
                    help="Optional CSV dump of (step, pp_loss, fsdp_loss, abs_delta).")
+    p.add_argument("--out-plot", default="",
+                   help="Optional PNG path: 2-panel plot of loss curves (top) "
+                        "and |Δ| over step (bottom) with the noise-band line.")
     args = p.parse_args()
 
     pp = _load_scalar(Path(args.pp), args.tag)
@@ -85,6 +88,39 @@ def main():
             for s, p_, f_ in rows:
                 f.write(f"{s},{p_:.6f},{f_:.6f},{abs(p_ - f_):.6f}\n")
         print(f"Wrote {args.out_csv}")
+
+    if args.out_plot:
+        import matplotlib  # type: ignore
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt  # type: ignore
+
+        steps = [s for s, _, _ in rows]
+        pp_loss = [p_ for _, p_, _ in rows]
+        fsdp_loss = [f_ for _, _, f_ in rows]
+        abs_delta = [abs(p_ - f_) for _, p_, f_ in rows]
+
+        fig, (ax1, ax2) = plt.subplots(
+            2, 1, figsize=(7, 6), sharex=True,
+            gridspec_kw={"height_ratios": [2, 1]},
+        )
+        ax1.plot(steps, fsdp_loss, label="FSDP", linewidth=1.0, alpha=0.85)
+        ax1.plot(steps, pp_loss, label="PP+adapter", linewidth=1.0, alpha=0.85)
+        ax1.set_ylabel("loss (nats)")
+        ax1.legend(loc="best")
+        ax1.grid(True, alpha=0.3)
+        ax1.set_title("PP+adapter vs FSDP — matched seed alignment")
+
+        ax2.plot(steps, abs_delta, color="tab:red", linewidth=0.8)
+        ax2.axhline(args.noise_band, color="k", linestyle="--",
+                    linewidth=0.8, label=f"noise band {args.noise_band}")
+        ax2.set_xlabel("training step")
+        ax2.set_ylabel("|Δ| nats")
+        ax2.legend(loc="best")
+        ax2.grid(True, alpha=0.3)
+
+        fig.tight_layout()
+        fig.savefig(args.out_plot, dpi=150)
+        print(f"Wrote {args.out_plot}")
 
 
 if __name__ == "__main__":
