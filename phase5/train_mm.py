@@ -157,6 +157,31 @@ class MultimodalTrainer(Trainer):
             tokenizer_path, cache_dir=cache_dir,
         )
 
+        # Resolve image-sentinel id from the per-tokenizer registry rather
+        # than the legacy hardcoded IMAGE_TOKEN_ID. The registry warns at
+        # startup if a non-reserved sentinel collides too often with real
+        # caption text. Sample 1000 captions from the dataset for the
+        # check (skipped on non-vision ranks where the dataset isn't
+        # consulted yet at this point).
+        from phase5.sentinel_registry import resolve_sentinel  # noqa: E402
+        try:
+            self._image_sentinel_id = resolve_sentinel(
+                self.mm_tokenizer,
+                role="image",
+                sample_captions=None,  # full check happens during dataset construction
+                strict=False,
+            )
+            logger.info(
+                f"mm: image sentinel resolved via registry → id={self._image_sentinel_id} "
+                f"(legacy hardcoded value was 32_000)"
+            )
+        except Exception as e:
+            logger.warning(
+                f"mm: sentinel registry resolution failed ({e}); "
+                f"falling back to legacy IMAGE_TOKEN_ID=32_000"
+            )
+            self._image_sentinel_id = IMAGE_TOKEN_ID
+
         # ----- LM dim (Kimi 436M = 1168) -----
         # On non-first PP stages the LM submodule may not have embed_tokens,
         # so we read hidden_size from the model's config instead.
