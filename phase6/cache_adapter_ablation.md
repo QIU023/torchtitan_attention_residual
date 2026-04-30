@@ -23,17 +23,31 @@ PP=4 V=2 Interleaved1F1B, init from Phase 4 step-8000 ckpt:
 | `arm2_pp4v2_adapter_gbs12_seed42` | `ADAPTER=1` (delta) | 2000 | 129 | 4.38345 | 3.82584 |
 | `arm2_pp4v2_naive_gbs12_seed42`   | `ADAPTER=0` (full)  | 500  | 130 | 4.36913 | (run in progress) |
 
-Loss agreement at matched steps (first 100):
+Loss agreement over the full 500 matched steps (`compare_pp_vs_fsdp.py`
+output at `phase6/c1_adapter_vs_naive_report.txt`, per-step deltas at
+`phase6/c1_adapter_vs_naive.csv`, plot at `phase6/c1_adapter_vs_naive.png`):
+
+| Statistic | Value |
+|---|---|
+| Aligned steps | 500 |
+| max \|Δ\| | 0.0918 nats |
+| p95 \|Δ\| | 0.0526 nats |
+| median \|Δ\| | 0.0172 nats |
+| Phase 3 noise band | 0.130 nats |
+| **Verdict** | **PASS** (max 1.4× under threshold; median 7.5×) |
+
+Sample steps:
 
 |  step | adapter loss | naive loss | \|Δ\| nats |
 |---|---|---|---|
 | 1 | 6.00001 | 6.00001 | 0.0000 |
 | 10 | 4.97444 | 4.99070 | 0.0163 |
 | 100 | 4.38345 | 4.36913 | 0.0143 |
+| 500 | 3.82584 | 3.82115 | 0.0047 |
 
 The two modes differ only in network bytes and recv-buffer layout, so
-all loss differences are bf16 numerical noise. Within Phase 3's
-0.13-nats noise band by 8×.
+all loss differences are bf16 numerical noise. The full-curve verdict
+is PASS by Phase 3's 0.13-nats threshold.
 
 ## Bytes saved per stage hop — analytic formula
 
