@@ -88,18 +88,21 @@ def multimodal_loss(
     # Projector — trainable.
     vision_embeds = projector(vision_features)  # (B, N_vis, lm_dim)
 
-    # Build the image-token mask. Standard LLaVA layout: image positions
-    # are contiguous at the start of each row (length N_vision); we use
-    # a boolean mask defensively so any order works.
+    # Build the image-token mask. Variable image count per row supported:
+    # row i may have any 0 ≤ n_i ≤ vision_embeds.size(1) image tokens.
+    # The LM's forward filter (attn_res_model.py) consumes only the leading
+    # n_i slots of vision_embeds[i] per row, so callers can pad
+    # vision_embeds to a fixed width (PP shape stability) without forcing
+    # all rows to have the same image count.
     image_mask = (input_ids == IMAGE_TOKEN_ID)  # (B, T)
-    expected_per_row = vision_embeds.size(1)
     n_image_per_row = image_mask.sum(dim=1)
-    if not torch.all(n_image_per_row == expected_per_row):
-        bad = (n_image_per_row != expected_per_row).nonzero(as_tuple=False)
+    n_vis_max = vision_embeds.size(1)
+    if (n_image_per_row > n_vis_max).any():
+        bad = (n_image_per_row > n_vis_max).nonzero(as_tuple=False)
         raise RuntimeError(
-            f"Each row must have exactly {expected_per_row} image tokens; "
-            f"row counts: min={n_image_per_row.min().item()}, "
-            f"max={n_image_per_row.max().item()}, bad rows: {bad.flatten().tolist()[:5]}..."
+            f"Row image count exceeds vision_embeds slots ({n_vis_max}); "
+            f"row counts max={n_image_per_row.max().item()}, "
+            f"bad rows: {bad.flatten().tolist()[:5]}..."
         )
 
     # Single FSDP-root LM call: embed_tokens + image-position scatter +
