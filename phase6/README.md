@@ -122,7 +122,7 @@ as the 4-GPU PP=4 V=2 result.
 |---|---|---|---|
 | W0 (4×5090) | Phase 5 Arm 1 to step 6000 → orchestrator `phase6/run_a1_alignment.sh` runs Arm 1' + Arm 2 (A1, real-data alignment) | — | C2 (start tests, run continuously) |
 | W1 (8×rented) | A2 (PP=8 V=4 single-axis), A3 (FSDP=2 PP=2 TP=2 — *the* TP infra hole), A6 (determinism matrix) | B1 (variable image count) | C2 grows with each A/B item |
-| W2 (8×rented) | A4 (async DCP), A5 (mid-save resume), FSDP=2 PP=2 EP=2 (MoE flavor) | B2 (interleave), B4 (sentinel registry) | C1, C3 |
+| W2 (8×rented) | A4 (async DCP), A5 (mid-save resume), FSDP=2 PP=2 EP=2 (MoE flavor) | B2 (interleave), ✅ B4 (sentinel registry, commit bffbbdf + d1a2fcf) | ✅ C1 (commit 435f89f), C3 |
 | W3 (8×rented if budget, stretch) | FSDP=2 PP=2 CP=2 (long context) | B3 spec only (no impl) + B5 (kv-cache for AttnRes inference) | C4 (perf regression CI) |
 
 C2 (CPU pytest) **runs continuously, not at the end** — every A/B item
@@ -132,6 +132,29 @@ matrix-completeness pass.
 B3 is **spec'd but deferred** — vision-tower FSDP-shard is premature
 optimization until we have a >4-GB-per-rank frozen vision encoder to
 validate against, which our 4×5090 box cannot host.
+
+### Status board (2026-04-30)
+
+Items shipped so far on the 4×5090 box:
+
+| Item | Status | Commit | Notes |
+|---|---|---|---|
+| A1 + A1.1 | ✅ done | 2d69453, b270b1d | FSDP=2-wrap projector → A1 alignment median 0.024 nats max 0.252 (warmup transient). Full plot at `phase6/alignment_arm2_real_mm_v2.png`. |
+| B1 | ✅ done | 96f2647 (submodule) + e0e4b1d | Variable image count per row in `attn_res_model.py`; 6 CPU unit tests. |
+| B4 | ✅ done | bffbbdf + d1a2fcf | `phase5/sentinel_registry.py` + 9 unit tests + train_mm wire-up. |
+| C1 | ✅ done | 435f89f | `phase6/cache_adapter_ablation.md` — closed-form ratio `(N+1)/2`, 4× at our scale, projected 15-25% wallclock at 48B-A3B target. |
+| C2 (partial) | ✅ partial | 0aa8453 | Mixed-dtype scatter test added. Total phase5 tests: 20. |
+| PR draft | ✅ done | 2522a53 | `phase6/PR_DRAFT.md` consolidates all the above for the eventual upstream PR description. |
+| Alignment plot tooling | ✅ done | 655a0fd | `compare_pp_vs_fsdp.py --out-plot` emits a 2-panel figure (loss curves + |Δ| vs noise band). |
+
+Items pending (next 4-GPU work, then hand off to 8-GPU rented box):
+
+| Item | Status | Notes |
+|---|---|---|
+| A6 partial | pending | FSDP=2 PP=2 mixed config smoke (500 steps from Phase 4 step-8000). Adds a third point to the parallelism matrix. |
+| B2 | pending | Image-text interleave dataset (the model already supports it; B1's `test_image_mask_explicit_override` test proves it). Just need a real-data dataset wrapper. |
+| C2 (rest) | pending | state_dict round-trip + partial-failure-recovery tests. |
+| C3 (full) | pending | Rewrite `attn_res/README.md` and `phase5/README.md` in PR-ready form (PR_DRAFT.md is the start). |
 
 Each Track A/B item ends with: launcher + test + alignment plot + 1-paragraph
 writeup. Track C consolidates into PR-ready form.
