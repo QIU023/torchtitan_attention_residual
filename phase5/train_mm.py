@@ -173,13 +173,41 @@ class MultimodalTrainer(Trainer):
         self._lm_dim = lm_dim
         logger.info(f"mm: lm_dim={lm_dim}")
 
-        # ----- Projector (trainable, replicated, vision-rank only) -----
+        # ----- Projector (trainable, vision-rank only) -----
         if self._is_vision_rank:
             self.projector = Projector(vision_dim=vision_dim, lm_dim=lm_dim).to(
                 device=self.device, dtype=torch.bfloat16,
             )
             n_proj_params = sum(p.numel() for p in self.projector.parameters())
             logger.info(f"mm: projector built, params={n_proj_params:,}")
+
+            # FSDP2 wrap on the batch/dp mesh so projector grads are
+            # reduce-scattered across DP ranks. Without this wrap, each
+            # FSDP rank's projector trains on its own dp shard's samples
+            # only — projector copies silently diverge across ranks, and
+            # rank 0's projector sees ~1/dp_world_size of the actual
+            # batch per step. This was the FSDP=4 vs PP=4 alignment
+            # divergence root cause: PP rank 0 has the only projector
+            # and sees the full per-step batch (correct); FSDP=4 has a
+            # projector per rank, each seeing 1/4 of the batch (broken)
+            # → FSDP loss curve trains slower than PP for a multimodal
+            # property other than parallelism strategy.
+            #
+            # Under PP-only (no dp axis), get_optional_mesh("batch")
+            # returns None and we leave the projector unwrapped — the
+            # single PP-rank-0 projector already sees the full batch.
+            batch_mesh = self.parallel_dims.get_optional_mesh("batch")
+            if batch_mesh is not None and batch_mesh.size() > 1:
+                from torch.distributed._composable.fsdp import fully_shard
+                fully_shard(self.projector, mesh=batch_mesh)
+                logger.info(
+                    f"mm: projector wrapped with FSDP2 over batch mesh "
+                    f"size={batch_mesh.size()} (grad sync across DP ranks)"
+                )
+            else:
+                logger.info(
+                    "mm: projector unwrapped (no DP axis; single-rank projector)"
+                )
 
             # Separate AdamW for the projector — torchtitan's LambdaLR was
             # built for the LM's original param groups only and asserts
