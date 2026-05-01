@@ -58,6 +58,10 @@ subclass that:
 |---|---|---|---|
 | Llama-3 175M (text-only) | PP=4 V=2 + cache adapter | No | max\|Δ\|=0.013 nats (Phase 3) |
 | Kimi-Linear AttnRes 436M | PP=4 V=2 + cache adapter | No | passing (Phase 4) |
+| Kimi-Linear AttnRes 436M | FSDP=1 PP=4 V=2 + cache adapter | LLaVA-Pretrain | median \|Δ\|=0.024 / max 0.252 nats over 2000 steps (warmup transient); post-warmup median ~0.02 nats (Phase 6 A1) |
+| Kimi-Linear AttnRes 436M | FSDP=2 PP=2 V=2 + cache adapter | LLaVA-Pretrain | step-500 \|Δ\|=0.006 nats vs FSDP=1 PP=4 baseline (Phase 6 A6 partial) |
+| Kimi-Linear AttnRes 436M | FSDP=1 PP=4 V=4-per-rank + cache adapter | LLaVA-Pretrain | step-500 loss 3.48 (smoke; V=4-per-rank schedule loss-invariant) (Phase 6 A2 partial) |
+| Kimi-Linear AttnRes 436M | FSDP=4 + cache adapter | LLaVA-Pretrain (LOCAL_BS=30 GBS=120, 89.7% mem) | best caption loss **2.30** at step 5000 from a 2.79 init (v8 crash-resilient pretrain, Phase 6) |
 | Kimi-Linear AttnRes 436M | PP=4 V=2 + cache adapter | LLaVA-Pretrain | median \|Δ\|=0.024 nats / max 0.252 (warmup transient), 2000 steps from a multimodal-trained ckpt (Phase 6 A1, this PR) |
 
 Full ablation report: `phase6/cache_adapter_ablation.md`. The closed-form
@@ -100,15 +104,43 @@ phase5/tests/`:
 * `phase5/tests/test_pp_vision_plumbing.py` (4 tests) — vision_embeds +
   image_token_id kwarg survival through CrossStageCacheAdapter on stage 0
   / middle stage; collate fixed-len under variable per-row caption length
-* `phase5/tests/test_variable_image_count.py` (6 tests, this PR) —
+* `phase5/tests/test_variable_image_count.py` (7 tests, this PR) —
   uniform / mixed (zero, half, full) / all-zero / PP shape-inference /
-  caller-supplied image_mask / overflow detection
+  caller-supplied image_mask / mixed-dtype scatter / overflow detection
 * `phase5/tests/test_sentinel_registry.py` (9 tests, this PR) — registry
   hit per tokenizer family, fallback, collision check under/over
   threshold, strict raise, reserved-skip, unknown-role-rejected
 
-Total: 97 + 19 = 116 CPU tests passing + 4 DSv3 pre-existing CPU
+Total: 97 + 20 = 117 CPU tests passing + 4 DSv3 pre-existing CPU
 NotImplementedErrors (not introduced by this PR).
+
+## Resilience features (phase 6)
+
+Two upstream-merge-relevant infra improvements were added during the
+overnight pretraining run:
+
+* **Projector + AdamW state registered with the checkpointer.**
+  Before this fix, every `--checkpoint.initial_load_model_only` resume
+  reset the multimodal projector to fresh-random init, costing
+  ~50-100 steps of re-alignment work per restart. Now the trainer
+  registers `mm_projector` (projector module + its standalone
+  `proj_optim`) with the checkpointer's `self.states`, so any
+  same-`dump_folder` auto-resume restores full state — including
+  the FSDP2-wrapped projector and its AdamW momenta.
+* **PP+FSDP composition fix** (submodule commit 92ad381).
+  `kimi_linear/parallelize.py:apply_fsdp` was iterating
+  `module.modules()` over a list that included `None` entries
+  (PP-stripped `embed_tokens` / `lm_head` on non-first / non-last
+  stages). Fixed with a `None`-filter; bytes-identical behavior on
+  the prior FSDP=4 PP=1 path.
+
+Combined, these enable an autonomous "crash-resilient" overnight
+pretrain (`phase6/run_v8_crash_resilient_pretrain.sh`): on KDA Triton
+device-side assert (an upstream fla-core kernel issue on Blackwell,
+out of scope for this PR), the orchestrator detects the worker death,
+sleeps 30s, and relaunches with auto-resume. Across 4 such crashes
+during a 7+ hour run, the loss curve maintained a continuous descent
+trajectory.
 
 ## Phase-by-phase provenance
 
