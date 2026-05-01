@@ -133,6 +133,22 @@ B3 is **spec'd but deferred** — vision-tower FSDP-shard is premature
 optimization until we have a >4-GB-per-rank frozen vision encoder to
 validate against, which our 4×5090 box cannot host.
 
+### Status board (2026-05-01 update)
+
+**Today's late-day commits (after the overnight pretrain landed)**:
+
+| Item | Status | Commit | Notes |
+|---|---|---|---|
+| Projector save/load | ✅ done | 57a4b47 | Trainer registers `mm_projector` (projector + AdamW state) with checkpointer; full-state DCP resume now restores it. Eliminates the ~50-100 step projector reset penalty per crash. |
+| v8 crash-resilient pretrain orchestrator | 🟡 in flight | fa1081d | Auto-relaunch loop exploiting projector save/load. Survived 3 KDA Triton crashes mid-run; loss continued to descend across all crashes (best 2.30 at step 5000, vs prior best 2.79). |
+| A2 partial | ✅ done | n/a (results in tb only) | PP=4 layers_per_stage=1 = 4 virt/rank = 16 total virt stages + cache adapter, GBS=16 LOCAL_BS=1 seed=42, 500 steps. step-500 loss 3.48 (vs Arm 2 PP=4 V=2 = 3.83), V=4-per-rank schedule loss-invariant. |
+| C4 perf regression CI | ✅ done | 6254286 | `phase6/perf_regression_check.py` — 5 verified-config baselines + 5% tolerance check. Smoke-tested PASS on live v8. |
+| B5 partial (caption generation) | ✅ done | be78a37 | `phase5/generate_caption.py` — single-process inference, greedy decode, no KV cache. Will smoke-test against v8 final ckpt after pretrain ends. |
+| A5 redo orchestrator | ✅ done (script ready, pending GPU) | 49b3351 | `phase6/run_a5_redo.sh` with strict `INFO - step: NN` grep filter (no longer matches torchrun WARNINGs). Phase 2a + 2b auto-resume continuity check. |
+| B2 interleave dataset | ✅ done | 2f83d52 | `phase5/multimodal_dataset_interleave.py` + 7 CPU unit tests. Prefix / interior / random layouts. Image count + seq length invariant. Trainer wiring follow-up. |
+
+Total tests now in phase5/tests/: **27 passing** (4 PP plumbing + 7 variable image + 9 sentinel + 7 interleave). Plus 97 in torchtitan/experiments/{attn_res,kimi_linear}/tests/ → **124 total passing CPU tests** for the AttnRes + multimodal stack.
+
 ### Status board (2026-04-30)
 
 Items shipped so far on the 4×5090 box:
