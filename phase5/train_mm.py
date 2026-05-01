@@ -247,11 +247,58 @@ class MultimodalTrainer(Trainer):
                 betas=(0.9, 0.95), weight_decay=0.01,
             )
             self.optimizers.optimizers.append(proj_optim)
+            self._proj_optim = proj_optim
             logger.info(
                 f"mm: appended projector AdamW (lr={proj_lr}, fixed) to "
                 f"OptimizersContainer; total inner optimizers="
                 f"{len(self.optimizers.optimizers)}"
             )
+
+            # Register projector + its optimizer with the checkpointer so
+            # full-state resume preserves them. Without this, every
+            # ``--checkpoint.initial_load_model_only`` resume after a
+            # KDA Triton crash resets the projector to fresh-random init,
+            # costing ~50-100 steps of re-alignment work. With this hook
+            # the projector survives any same-dump_folder auto-resume.
+            from torch.distributed.checkpoint.stateful import Stateful  # noqa: E402
+
+            class _ProjectorWrapper(Stateful):
+                def __init__(self_w, projector, proj_optim):
+                    self_w.projector = projector
+                    self_w.proj_optim = proj_optim
+
+                def state_dict(self_w):
+                    from torch.distributed.checkpoint.state_dict import (
+                        get_model_state_dict,
+                        get_optimizer_state_dict,
+                    )
+                    return {
+                        "projector": get_model_state_dict(self_w.projector),
+                        "proj_optim": get_optimizer_state_dict(
+                            self_w.projector, self_w.proj_optim,
+                        ),
+                    }
+
+                def load_state_dict(self_w, sd):
+                    from torch.distributed.checkpoint.state_dict import (
+                        set_model_state_dict,
+                        set_optimizer_state_dict,
+                    )
+                    if "projector" in sd:
+                        set_model_state_dict(
+                            self_w.projector, model_state_dict=sd["projector"],
+                        )
+                    if "proj_optim" in sd:
+                        set_optimizer_state_dict(
+                            self_w.projector, self_w.proj_optim,
+                            optim_state_dict=sd["proj_optim"],
+                        )
+
+            if hasattr(self, "checkpointer") and self.checkpointer is not None:
+                self.checkpointer.states["mm_projector"] = _ProjectorWrapper(
+                    self.projector, proj_optim,
+                )
+                logger.info("mm: projector + proj_optim registered with checkpointer")
         else:
             self.projector = None
 
