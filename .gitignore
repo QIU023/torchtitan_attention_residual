@@ -41,9 +41,11 @@ phase5_distillation_deprecated/miniplm/runs/**/tb/
 phase5_distillation_deprecated/miniplm/runs/**/checkpoint/
 phase5_distillation_deprecated/miniplm/runs/**/comm_traces/
 
-phase5/runs/**/tb/
 phase5/runs/**/checkpoint/
 phase5/runs/**/comm_traces/
+# phase5/runs/**/tb/ intentionally tracked: TB files are <1MB each and are
+# the only loss-curve provenance for phase 6 runs (network bandwidth on
+# this box can't push ckpts off, so tb is the next best archive).
 
 # Keep: train.log tails (for provenance) and comparison.png (the money shot).
 # Explicit un-ignore:
