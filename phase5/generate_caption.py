@@ -95,11 +95,33 @@ def build_lm(args, device):
     return lm
 
 
-def load_lm_ckpt(lm, ckpt_path):
-    """Load LM weights from a DCP-sharded ckpt into a single-rank LM."""
-    state_dict = {"model": {k: v for k, v in lm.state_dict().items()}}
+def load_lm_ckpt(lm, ckpt_path, projector=None):
+    """Load LM weights (and optionally projector) from a DCP-sharded ckpt.
+
+    The ckpt's top-level keys are flat (no `model.` prefix): the LM
+    parameters are at top level (``embed_tokens.weight`` etc), and
+    if commit 57a4b47 was active when the ckpt was saved, ``mm_projector``
+    contains the multimodal projector + its AdamW state.
+    """
+    state_dict = {k: v for k, v in lm.state_dict().items()}
     dcp.load(state_dict, checkpoint_id=str(ckpt_path))
-    lm.load_state_dict(state_dict["model"], strict=False)
+    lm.load_state_dict(state_dict, strict=False)
+
+    if projector is not None:
+        # Load projector from mm_projector.projector.* if present.
+        proj_state = {f"mm_projector.projector.{k}": v
+                      for k, v in projector.state_dict().items()}
+        try:
+            dcp.load(proj_state, checkpoint_id=str(ckpt_path))
+            stripped = {
+                k[len("mm_projector.projector."):]: v
+                for k, v in proj_state.items()
+                if k.startswith("mm_projector.projector.")
+            }
+            projector.load_state_dict(stripped, strict=False)
+            print("[gen] loaded trained projector from ckpt mm_projector entry")
+        except Exception as e:
+            print(f"[gen] projector not in ckpt ({e.__class__.__name__}); using fresh init")
 
 
 def main():
@@ -135,8 +157,9 @@ def main():
     )
 
     print(f"[gen] loading LM weights from {args.ckpt}")
-    load_lm_ckpt(lm, args.ckpt)
+    load_lm_ckpt(lm, args.ckpt, projector=projector)
     lm.eval()
+    projector.eval()
 
     # --------- Prepare input ---------
     img = Image.open(args.image).convert("RGB")
