@@ -87,6 +87,13 @@ def _parse_mm_args() -> argparse.Namespace:
                    help="Fixed sequence length for collate (PP P2P shape "
                         "stability). Default 258 = 196 vision + 1 bos + 60 "
                         "caption + 1 eos.")
+    p.add_argument("--mm.layout", dest="mm_layout", default="prefix",
+                   choices=("prefix", "interior", "random"),
+                   help="Image-token layout policy in input_ids. "
+                        "'prefix' (default): original LLaVA layout "
+                        "[<img>×196] [BOS] [caption]. "
+                        "'interior': image block in middle of caption. "
+                        "'random': per-record uniform pick of {prefix, interior}.")
     args, remaining = p.parse_known_args()
     sys.argv = [sys.argv[0]] + remaining
     return args
@@ -102,8 +109,10 @@ class MultimodalTrainer(Trainer):
                  json_path: str, images_dir: str, vision_model: str,
                  tokenizer_path: str, cache_dir: str,
                  proj_lr_mult: float = 1.0,
-                 global_seq_len: int = GLOBAL_SEQ_LEN_DEFAULT):
+                 global_seq_len: int = GLOBAL_SEQ_LEN_DEFAULT,
+                 layout: str = "prefix"):
         super().__init__(config)
+        self._mm_layout = layout
 
         self._global_seq_len = global_seq_len
 
@@ -317,14 +326,32 @@ class MultimodalTrainer(Trainer):
                 vision_model, cache_dir=cache_dir,
             )
 
-        ds = LlavaPretrainDataset(
-            json_path=json_path,
-            images_dir=images_dir,
-            tokenizer=self.mm_tokenizer,
-            image_processor=self.image_processor,
-            dp_rank=dp_rank,
-            dp_world_size=dp_world_size,
-        )
+        if self._mm_layout == "prefix":
+            ds = LlavaPretrainDataset(
+                json_path=json_path,
+                images_dir=images_dir,
+                tokenizer=self.mm_tokenizer,
+                image_processor=self.image_processor,
+                dp_rank=dp_rank,
+                dp_world_size=dp_world_size,
+            )
+            logger.info("mm: dataset = LlavaPretrainDataset (prefix layout)")
+        else:
+            from phase5.multimodal_dataset_interleave import (
+                InterleavedLlavaPretrainDataset,
+            )
+            ds = InterleavedLlavaPretrainDataset(
+                json_path=json_path,
+                images_dir=images_dir,
+                tokenizer=self.mm_tokenizer,
+                image_processor=self.image_processor,
+                dp_rank=dp_rank,
+                dp_world_size=dp_world_size,
+                layout=self._mm_layout,
+            )
+            logger.info(
+                f"mm: dataset = InterleavedLlavaPretrainDataset (layout={self._mm_layout!r})"
+            )
         pad_id = self.mm_tokenizer.pad_token_id or 0
         self.dataloader = ParallelAwareDataloader(
             ds,
@@ -403,6 +430,7 @@ def main():
         cache_dir=mm_args.mm_cache_dir,
         proj_lr_mult=mm_args.mm_proj_lr_mult,
         global_seq_len=mm_args.mm_global_seq_len,
+        layout=mm_args.mm_layout,
     )
     trainer.train()
     if torch.distributed.is_initialized():
