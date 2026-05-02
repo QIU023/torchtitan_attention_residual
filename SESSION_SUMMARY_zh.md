@@ -16,8 +16,8 @@ merge readiness"目标。
 | 测试 | phase5 27 + torchtitan 97 = **124 个 CPU 单元测试** |
 | 多模态训练总步数 | 接近 **35,000 步** 跨 v1-v9 链 |
 | 多模态见过样本数 | **~3.5M image-text pairs**（约 6 个 LLaVA-Pretrain epoch）|
-| 历史最佳 caption loss | **1.90 nats** (v8/step-9150) |
-| 当前最佳 ckpt | `v8_pretrain_resilient_from_v7_step800/checkpoint/step-10000` (loss 2.07，含 mm_projector) |
+| 历史最佳 caption loss | **1.81 nats** (v9/step-5000) |
+| 当前最佳 ckpt | `v9_continue_from_v8_step10000/checkpoint/step-5000` (loss 1.81，含 mm_projector) |
 
 ---
 
