@@ -49,6 +49,12 @@ for p in (str(WORKSPACE), str(TORCHTITAN_PATH)):
 
 from torchtitan.trainer import Trainer  # noqa: E402
 from torchtitan.tools.logging import init_logger, logger  # noqa: E402
+
+# Apply the PP+V≥2+LBS≥2 backward-graph hotfix before any pipeline
+# schedule is constructed. Idempotent; safe under non-PP runs (still
+# patches the method but it's never invoked). See
+# additional_found_issues/torchtitan_pp_lbs_backward_INVESTIGATION.md.
+import phase6.torchtitan_pp_backward_hotfix  # noqa: E402,F401
 from torchtitan.components.dataloader import ParallelAwareDataloader  # noqa: E402
 
 from phase5.multimodal_dataset import (  # noqa: E402
