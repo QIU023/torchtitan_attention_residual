@@ -85,9 +85,12 @@ phase5/runs/**/tier_c_trace/collective_summary.csv
 !phase5/runs/**/eval.log
 !phase5/runs/**/train.log
 
-# Backup archives
+# Backup archives — ignored by default. phase7/archive/ holds the
+# committed trace tarballs (NCCL logs + recipe + tb) for cluster
+# traffic replay; explicitly un-ignore that path.
 *.tar.gz
 *.tgz
+!phase7/archive/*.tar.gz
 
 # Editor
 .vscode/
