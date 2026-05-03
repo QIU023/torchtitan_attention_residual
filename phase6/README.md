@@ -133,6 +133,65 @@ B3 is **spec'd but deferred** — vision-tower FSDP-shard is premature
 optimization until we have a >4-GB-per-rank frozen vision encoder to
 validate against, which our 4×5090 box cannot host.
 
+### Status board (2026-05-03 — 8-GPU box arrival)
+
+Switched to a fresh 8×RTX 5090 PCIe rental box. Earlier 4-GPU
+multimodal pretrain ckpts (v8/v9) were not migrated and are not
+required by the 8-GPU work below; phase4/step-8000 is the only
+needed init and was scp'd over.
+
+**Multi-D parallelism support added** (commits below land
+`torchtitan/torchtitan/experiments/kimi_linear/parallelize.py`):
+
+| Item | Status | What was added |
+|---|---|---|
+| TP plan (A3 unblock) | ✅ | `apply_tp_kimi_linear` registers ColwiseParallel/RowwiseParallel for dense MLP gate/up/down. KDA/MLA/AttnRes left replicated (KDA fla-core kernels not validated for sharded heads; MLA's asymmetric head_dim split is fragile; AttnRes Linear(d→1) cannot be sharded). Minimum-viable TP plan that fires all-reduce per dense-MLP forward. |
+| EP plan (A6 unblock) | ✅ | `apply_ep_kimi_linear` applies `ExpertParallel()` to every MoE layer's `ffn._moe.experts` ModuleList. Fires all-to-all on the EP mesh for token dispatch + combine. Works with the existing `kimi_linear_436m_block_attn_res_n4` flavor (which already has `first_k_dense_replace=1` so layer 0 is dense and 1+ are MoE). |
+| CP plan | ❌ blocked on fla-core | `parallelize.py` raises `NotImplementedError` when CP > 1. KDA's `chunk_kda` triton kernel runs causal recurrence over seq dim; CP shards seq dim; making KDA CP-correct requires ring-recurrence in fla-core upstream. Documented in code + here. Track [fla-org/flash-linear-attention](https://github.com/fla-org/flash-linear-attention) for ring-attention KDA support. |
+| 8-GPU launcher | ✅ | `phase6/launch_8gpu_mm.sh` parameterized by mesh + recipe + tier; drives alignment, Tier B (production-realistic, GBS=120), Tier A (production-standardized, GBS=384), and v10 from one entry point. |
+| Tokenizer + data on box | ✅ | `/workspace/.hf_home/{LLaVA-Pretrain,Meta-Llama-3.1-8B-tokenizer,models--google--siglip-base-patch16-224}` + 30 C4 shards prefetched. Symlink at `torchtitan/assets/hf/Llama-3.1-8B`. |
+| 124 CPU tests pass on 8-GPU box | ✅ | 27 phase5 + 97 torchtitan; 4 DSv3 pre-existing CPU NotImplementedErrors unchanged. |
+
+**8-GPU alignment matrix (in flight)**
+
+Each config: 500 steps continued multimodal pretrain from step-8000 +
+seed=42 + GBS=12, vs B0 anchor (FSDP=8 PP=1). Pass criterion same as
+phase 6 A1: max\|Δ\| ≤ 0.13 nats.
+
+| Config | Mesh | Status |
+|---|---|---|
+| B0 anchor | FSDP=8 | running (loss 5.86 → 4.45 by step 148) |
+| A2 | FSDP=2 × PP=4 + adapter | queued |
+| A3 | FSDP=2 × PP=2 × TP=2 + adapter | queued (TP plan registered) |
+| A6 | FSDP=2 × PP=2 × EP=2 (MoE) + adapter | queued (EP plan registered) |
+| Phase 7 #4 | TP=2 × PP=2 × EP=2 (FSDP=1) | queued |
+| Phase 7 #5 | FSDP=2 × TP=2 × EP=2 (PP=1) | queued |
+| CP=2 | FSDP=2 × PP=2 × CP=2 | ❌ out of scope (fla-core blocker, documented) |
+
+Per-config Tier C NCCL trace is captured automatically on first 50 steps
+(`tier_c_trace/nccl-rank-*.log` per run). `phase7/extract_collectives.py`
+parses these into per-(op, size_bucket, nranks) histograms; verified
+working on B0 (44k collective rows, FSDP all-gather + reduce-scatter
+dominate).
+
+**Phase 7 trace tier matrix (after alignment)**
+
+| Tier | GBS | Steps | Wallclock per config | Total (6 configs) |
+|---|---|---|---|---|
+| C (alignment-slice, free) | 12 | 50 | 0 (piggybacks on alignment) | 0 |
+| B (production-realistic) | 120 | 50 | ~30 min | ~3 h |
+| A (production-standardized) | 384 | 100 | ~1.5 h | ~9 h |
+
+Tier C automatic, Tier B + Tier A driven by `phase7/run_tier_b_a_traces.sh`.
+Replay priority: A > B > C > D.
+
+**v10 multimodal continued pretrain**
+
+`phase6/run_v10_pretrain.sh`: 5000 steps, GBS=120, FSDP=8, from
+step-8000. ~3.5 h on 8 GPUs. Captures Tier B trace as a side effect.
+Optional — user may stop early if not deemed valuable; v9/step-5000
+loss 1.81 already established as session record on 4-GPU box.
+
 ### Status board (2026-05-01 update)
 
 **Today's late-day commits (after the overnight pretrain landed)**:

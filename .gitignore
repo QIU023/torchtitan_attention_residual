@@ -43,6 +43,21 @@ phase5_distillation_deprecated/miniplm/runs/**/comm_traces/
 
 phase5/runs/**/checkpoint/
 phase5/runs/**/comm_traces/
+# Phase 7 NCCL traces (~10-200MB per dir, 18+ dirs total) — produced by
+# launch_8gpu_mm.sh's TRACE_TIER=tier_{a,b,c}; the parsed CSV summaries
+# (collective_summary.csv) are kept; raw nccl-rank-*.log files are not.
+phase5/runs/**/tier_a_trace/nccl-rank-*.log
+phase5/runs/**/tier_b_trace/nccl-rank-*.log
+phase5/runs/**/tier_c_trace/nccl-rank-*.log
+phase5/runs/**/tier_a_trace/nsys-*
+phase5/runs/**/tier_b_trace/nsys-*
+phase5/runs/**/tier_c_trace/nsys-*
+# collective_summary.csv can be 200k-800k rows (one row per NCCL collective
+# call across all ranks × all steps). Reproducible from raw logs via
+# phase7/extract_collectives.py; histograms are stored in pattern_catalog.md.
+phase5/runs/**/tier_a_trace/collective_summary.csv
+phase5/runs/**/tier_b_trace/collective_summary.csv
+phase5/runs/**/tier_c_trace/collective_summary.csv
 # phase5/runs/**/tb/ intentionally tracked: TB files are <1MB each and are
 # the only loss-curve provenance for phase 6 runs (network bandwidth on
 # this box can't push ckpts off, so tb is the next best archive).
