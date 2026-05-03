@@ -1,9 +1,9 @@
 # Phase 7 NCCL trace archive
 
-Generated: 2026-05-03T08:44:39Z
+Generated: 2026-05-03T08:45:47Z
 Hostname: b008e969124e
 Hardware: 8× RTX 5090 PCIe (Blackwell sm_120, 32 GiB / GPU)
-Workspace HEAD: d70c08b3b46fed05456d63822b5cb73c2f1b853b phase7: KDA Blackwell sm_120 optimization analysis
+Workspace HEAD: ce1de6ae534f85c8c6b80d0e7d748d98461a3ed0 phase7/archive: refresh trace tarballs (after A3 step 500)
 Submodule HEAD: a2d7ecb3c162005e13dfe0b494633f4f6a5ae8fa kimi_linear, attn_res: A3 (FSDP×PP×TP) end-to-end fix via DSv3 inner_attention pattern
 
 Each per-run tarball is self-contained. Untar and replay with
@@ -19,7 +19,7 @@ phase7/extract_collectives.py (re-emit CSV from raw NCCL log).
 | `a2_fsdp2_pp4_alignment.tar.gz` | FSDP=2 PP=4 V=2 | tier_c | 16 | 500 | 2.4M | `8a2bb17036fb…` |
 | `a2_fsdp2_pp4_tier_b.tar.gz` | FSDP=2 PP=4 V=2 | tier_b | 120 | 50 (failed) | 32K | `c2cc099a99aa…` |
 | `a2_fsdp2_pp4_tier_a.tar.gz` | FSDP=2 PP=4 V=2 | tier_a | 384 | 100 (failed) | 32K | `fd2cca44c8c1…` |
-| `a3_fsdp2_pp2_tp2_alignment_SNAPSHOT.tar.gz` | FSDP=2 PP=2 TP=2 V=2 | tier_c | 16 | 500 (in flight) | 10M | `16341e1dc4a1…` |
+| `a3_fsdp2_pp2_tp2_alignment_SNAPSHOT.tar.gz` | FSDP=2 PP=2 TP=2 V=2 | tier_c | 16 | 500 (in flight) | 11M | `979408db0fb5…` |
 | `v10_fsdp8_pretrain_PARTIAL.tar.gz` | FSDP=8 PP=1 | tier_b | 120 | interrupted | 156K | `054f7f49a521…` |
 
 ## Helper scripts (in tools.tar.gz)
