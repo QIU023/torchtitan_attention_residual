@@ -16,7 +16,7 @@ set -u
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$WORKSPACE_DIR/phase6/launch_8gpu_mm.sh"
 PHASE4_CKPT="$WORKSPACE_DIR/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000"
-OUT_DIR="$WORKSPACE_DIR/phase5/runs/v10_continue_8gpu_from_p4_step8000"
+OUT_DIR="$WORKSPACE_DIR/phase5/runs/v10_3d_continue_8gpu_from_p4_step8000"
 
 mkdir -p "$OUT_DIR"
 LOG="$WORKSPACE_DIR/phase6/v10_orchestrator.log"
@@ -33,13 +33,13 @@ if pgrep -f "phase5.train_mm" >/dev/null 2>&1; then
 fi
 
 OUT_DIR="$OUT_DIR" \
-FSDP=8 PP=1 TP=1 CP=1 EP=1 V=1 \
-STEPS=5000 LOCAL_BS=15 GLOBAL_BS=120 SEQ_LEN=260 \
+FSDP=2 PP=2 TP=2 CP=1 EP=1 V=2 \
+STEPS=5000 LOCAL_BS=1 GLOBAL_BS=14 SEQ_LEN=260 \
 FLAVOR=kimi_linear_436m_block_attn_res_n4 \
 STUDENT_CKPT="$PHASE4_CKPT" \
 SEED=42 DETERMINISTIC=0 COMPILE=1 \
 LR=1e-5 WARMUP=200 \
-SAVE_FREQ=500 KEEP_K=3 \
+CHECKPOINT_ENABLED=1 SAVE_FREQ=500 KEEP_K=2 \
 TRACE_TIER=tier_b TRACE_STEPS=50 \
 bash "$LAUNCHER" || {
     echo "[$(date)] [ERROR] v10 failed; user can re-run with same dump_folder"

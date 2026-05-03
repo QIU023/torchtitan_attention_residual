@@ -105,8 +105,14 @@ if [[ "$COMPILE" == "1" ]]; then
 fi
 
 CKPT_ARGS=""
-if [[ -d "$STUDENT_CKPT" ]]; then
+CHECKPOINT_ENABLED="${CHECKPOINT_ENABLED:-0}"
+if [[ "$CHECKPOINT_ENABLED" == "1" && -d "$STUDENT_CKPT" ]]; then
+    # Long pretrain: rolling checkpoints, keep latest K=KEEP_K (default 2)
     CKPT_ARGS="--checkpoint.enable --checkpoint.initial_load_path ${STUDENT_CKPT} --checkpoint.initial_load_model_only --checkpoint.interval ${SAVE_FREQ} --checkpoint.keep_latest_k ${KEEP_K}"
+elif [[ -d "$STUDENT_CKPT" ]]; then
+    # Alignment / trace tier: load init only, never save (interval set
+    # ridiculously high). See phase6/CHECKPOINT_RULES.md for the rule.
+    CKPT_ARGS="--checkpoint.enable --checkpoint.initial_load_path ${STUDENT_CKPT} --checkpoint.initial_load_model_only --checkpoint.interval 999999999 --checkpoint.keep_latest_k 1"
 fi
 
 DEBUG_ARGS=""

@@ -122,6 +122,39 @@ scaffolding for the K3-era follow-up.
 - TensorBoard event files, optimizer ckpts, training shards — gitignored.
   Only comparison plots and log tails are committed as evidence.
 
+## Disk discipline (operational rules)
+
+Lessons from a 2026-05-03 disk-full incident that wasted ~7 GPU-hours
+(see `phase6/CHECKPOINT_RULES.md` for the full postmortem and the
+launcher patch). The rules:
+
+1. **Alignment + NCCL trace runs do NOT keep checkpoints.** A 500-step
+   alignment or a 50-step trace tier writes a ~15 GB DCP shard that is
+   never re-loaded — pure disk drag. Pass `CHECKPOINT_ENABLED=0` to
+   `phase6/launch_8gpu_mm.sh`.
+
+2. **Long pretrain runs use `keep_latest_k=2 interval=500`.** Two
+   rolling checkpoints, no historical accumulation. If you want to
+   preserve a milestone, copy it to a separate dir before the rolling
+   counter overwrites it.
+
+3. **Trace data is the deliverable for short runs.** What gets
+   committed: `tb/events.out.tfevents.*` (loss curve), `recipe.json`
+   (mesh + recipe), and `tier_*_trace/{nccl-rank-*.log,
+   collective_summary.csv}` packaged into `phase7/archive/*.tar.gz`
+   via `phase7/pack_traces.sh`. The model state itself is throwaway.
+
+4. **Compress + commit + push immediately after each run.**
+   `phase7/auto_publish_watcher.sh` polls run logs and fires
+   `phase7/publish_archive.sh` at known step milestones (alignment
+   step:500, tier tier_b/a step:50/100, pretrain step:1000/3000/5000).
+   Push happens automatically — no manual archive management.
+
+5. **Pre-launch disk check.** Before any run, `df -h /` should report
+   ≥ 30 GB free. Below that, do `rm -rf
+   phase5/runs/8gpu_*_seed*/checkpoint/` (alignment ckpts that
+   shouldn't have existed in the first place) before launching.
+
 ## Author
 
 [@QIU023](https://github.com/QIU023) — yiqiao.lbj23@gmail.com.
