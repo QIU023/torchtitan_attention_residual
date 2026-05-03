@@ -227,17 +227,27 @@ upstream-trunk torch before opening the issue.
   - **(A)** Per-step recv buffer allocation: make `_prepare_forward_infra`
     allocate a fresh buffer per (step, chunk_id) instead of reusing.
     Costs `2 × max_in_flight × buffer_size` extra memory, but the
-    autograd alias goes away cleanly.
-  - **(B)** Move buffer cloning earlier: clone INSIDE `_retrieve_recv_activations`
-    so the model's forward operates on the clone (autograd leaf) and
-    the recv buffer is a separate slot. Then `args_recv_info[id].buffer`
-    is the IO buffer; `input_values` is the autograd leaf. Both `.grad`
-    paths work but `get_bwd_send_ops` needs to read from the clone.
+    autograd alias goes away cleanly. **The only viable fix path** —
+    invasive but correct.
+  - **(B)** ❌ Move buffer cloning earlier: clone INSIDE
+    `_retrieve_recv_activations` so the model's forward operates on
+    the clone. **Tested 2026-05-03 via vendored stage.py overlay
+    (phase6/torchtitan_pp_patches/), failed.** The clone is non-leaf
+    and gradient at non-leaf doesn't reach `bwd_cache[chunk_id]` via
+    `stage_backward()` — `grads_input` ends up `None` for the clone
+    entry, then `get_bwd_send_ops` hits the same secondary error
+    `"[N] for chunk 0 has gradients None and is expecting to send
+    gradients to stage M"` as the post-cache clone variant.
   - **(C)** Modify backward send to read `.grad` from the recv buffer
     (which IS where gradient lands today) instead of from input_values.
     Smallest API surface change but coupling backward send to the recv
     buffer object identity is fragile.
-  Each requires a torch core PR. Not done in this experiment.
+  Each requires a torch core PR. **Two clone-based attempts both
+  fail because PP's get_bwd_send_ops fundamentally expects gradient
+  to be reachable through the leaves it stored at forward time —
+  any buffer remap mid-flight breaks that contract.** The right
+  patch is option (A): per-step buffer pool. Beyond what a runtime
+  monkey-patch / single-file vendor can express; needs upstream PR.
 - Until upstream fix lands: workaround is **LBS=1 for any PP+V≥2 run**.
   v10 / A3 alignment / A2 alignment all stable at LBS=1.
 - TBD: minimal repro on vanilla torchtitan llama3 (no AttnRes / kimi_linear)
