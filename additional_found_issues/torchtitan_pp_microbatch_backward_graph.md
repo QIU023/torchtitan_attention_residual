@@ -151,12 +151,97 @@ To bisect whether it's kimi_linear-specific or general, swap the model
 to `--module llama3 --config llama3_debugmodel` with the same PP+V+LBS
 settings.
 
+## Why hasn't this been reported widely if PP+V≥2+LBS≥2 is "normal"?
+
+User's question, valid skepticism. PP V=2 LBS=2+ should be a routine
+production setup; if every torchtitan production user hit this, there'd
+be a flood of issues. Several plausible reasons it hasn't been:
+
+1. **torchtitan integration tests run with LBS=1**. The Llama3 / DSv3
+   PP smoke tests in `torchtitan/tests/integration_tests/models.py` use
+   `local_batch_size=1` (we verified — search for "DeepSeek V3 PP+FSDP+TP"
+   block, the runner config does not set LBS>1). The CI never exercises
+   the LBS≥2 path under V≥2 Interleaved1F1B with a meaningfully large
+   model.
+
+2. **The pytorch tutorial** (`pipelining_tutorial.html`) demonstrates
+   PP at LBS=1, never LBS≥2. Most newcomers calibrate to LBS=1 because
+   that's what the docs show.
+
+3. **Many production runs use compile path which incidentally fixes
+   the alias.** When stages are wrapped with `torch.compile`, dynamo
+   emits a `clone()` or `detach()` at FX graph boundaries that breaks
+   the recv-buffer aliasing as a side effect. The bug is exposed only
+   when stages run uncompiled (eager) and the recv buffer flows
+   straight into the autograd graph as a leaf input.
+
+4. **The bug is conditional on the schedule's exact microbatch
+   pipeline timing**. With small N_microbatches, there's no room for
+   the next-step's irecv to overlap with this step's backward, so the
+   buffer overwrite happens after the alias is consumed. The window
+   opens at LBS≥2 (multiple microbatches per dp_rank that fight over
+   the same recv slot across step boundaries) AND V≥2 (interleaved
+   schedule that issues backward after later forwards within the same
+   step).
+
+5. **Our specific reproduction is the kimi_linear AttnRes flavor with
+   a 12-layer KimiAttnResDecoderLayer model.** We have NOT yet
+   confirmed the bug fires on a fresh torchtitan checkout with
+   `--module llama3 --config llama3_8b_full` at LBS=2 PP=2 V=2. That
+   reproduction is a 5-minute torchrun and would establish the bug as
+   independent of our experiment code. **TODO before filing upstream.**
+
+6. **Maybe it WAS fixed in pytorch nightly** but our box is on stable
+   2.11.0+cu130. Worth diffing
+   `pytorch/main:torch/distributed/pipelining/stage.py` against ours
+   before filing — the fix might already be in the trunk and we just
+   need a backport / version bump.
+
+In short: not seeing prior reports doesn't mean the bug is fake; it
+likely means most users either (a) stayed at LBS=1, (b) used compiled
+stages that mask the bug, or (c) on a different pytorch trunk where
+the fix already landed. We will reproduce on vanilla llama3 +
+upstream-trunk torch before opening the issue.
+
 ## Status
 
 - 2026-05-03: documented here.
-- 2026-05-03: sub-agent dispatched to investigate root cause in
-  `torchtitan/torchtitan/distributed/pipeline_parallel.py` and the
-  pytorch `pipelining/_backward.py` interaction. Output target:
-  `additional_found_issues/torchtitan_pp_lbs_backward_INVESTIGATION.md`.
-- TBD: file upstream RFC at https://github.com/pytorch/torchtitan/issues
-  with a minimal repro that doesn't depend on AttnRes / kimi_linear.
+- 2026-05-03: sub-agent investigation completed (committed at
+  `1ad310e`). Root cause: `args_recv_info[chunk_id].buffer` is
+  allocated once in `_prepare_forward_infra` and reused across every
+  step; `forward_one_chunk` stores the live buffer reference into
+  `fwd_cache[chunk_id]` as `input_values`; the next step's irecv
+  overwrites the buffer; this step's backward walks an autograd graph
+  with freed/overwritten saved tensors → crash.
+- 2026-05-03: monkey-patch hotfix (`phase6/torchtitan_pp_backward_hotfix.py`)
+  attempted: clone `input_values` after the original `forward_one_chunk`
+  computes the output. **Did NOT work**. Cloning AFTER forward breaks
+  PP's gradient-recovery path: gradient is accumulated on the original
+  recv buffer (the autograd leaf the output graph saved), but PP's
+  `get_bwd_send_ops` reads `.grad` from `input_values` (now a clone
+  whose `.grad` stays None). New error at step 1 backward:
+  `RuntimeError: [N] for chunk 0 has gradients None and is expecting
+  to send gradients to stage M`. Hotfix reverted to a no-op pass-through
+  for posterity.
+- A real fix needs one of:
+  - **(A)** Per-step recv buffer allocation: make `_prepare_forward_infra`
+    allocate a fresh buffer per (step, chunk_id) instead of reusing.
+    Costs `2 × max_in_flight × buffer_size` extra memory, but the
+    autograd alias goes away cleanly.
+  - **(B)** Move buffer cloning earlier: clone INSIDE `_retrieve_recv_activations`
+    so the model's forward operates on the clone (autograd leaf) and
+    the recv buffer is a separate slot. Then `args_recv_info[id].buffer`
+    is the IO buffer; `input_values` is the autograd leaf. Both `.grad`
+    paths work but `get_bwd_send_ops` needs to read from the clone.
+  - **(C)** Modify backward send to read `.grad` from the recv buffer
+    (which IS where gradient lands today) instead of from input_values.
+    Smallest API surface change but coupling backward send to the recv
+    buffer object identity is fragile.
+  Each requires a torch core PR. Not done in this experiment.
+- Until upstream fix lands: workaround is **LBS=1 for any PP+V≥2 run**.
+  v10 / A3 alignment / A2 alignment all stable at LBS=1.
+- TBD: minimal repro on vanilla torchtitan llama3 (no AttnRes / kimi_linear)
+  to confirm the bug is upstream-only. Then file
+  https://github.com/pytorch/pytorch/issues/new with the per-step
+  buffer-reuse race trace + the failed-clone-after experiment as
+  evidence that fixing it requires more than `.clone()`.

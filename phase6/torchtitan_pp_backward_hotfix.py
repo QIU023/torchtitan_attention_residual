@@ -52,23 +52,32 @@ def apply_pp_backward_hotfix() -> None:
 
     original = _PipelineStageBase.forward_one_chunk
 
-    def patched_forward_one_chunk(self, fwd_chunk_id, args, kwargs=None):
-        # Call original with a sentinel that lets us intercept after
-        # fwd_cache is populated. Simpler approach: re-implement minimally
-        # by calling original then replacing fwd_cache[fwd_chunk_id] entry.
-        result = original(self, fwd_chunk_id, args, kwargs)
-        # After original ran, fwd_cache[fwd_chunk_id] is (output_tuple,
-        # input_values). Clone tensor inputs to break aliasing with the
-        # recv buffer. We can't change the original tuple in place, but
-        # we can rebuild it with cloned tensors.
-        if fwd_chunk_id in self.fwd_cache:
-            output_tuple, input_values = self.fwd_cache[fwd_chunk_id]
-            cloned_input_values = [
-                t.clone() if isinstance(t, torch.Tensor) else t
-                for t in input_values
-            ]
-            self.fwd_cache[fwd_chunk_id] = (output_tuple, cloned_input_values)
-        return result
+    def patched_forward_one_chunk(self, fwd_chunk_id, *args, **kwargs):
+        # ATTEMPTED hotfix — DOES NOT WORK in pytorch 2.11.
+        #
+        # Cloning input_values *after* the original forward computes
+        # output_tuple breaks PP's gradient-recovery path: gradient is
+        # accumulated on the original recv buffer (the autograd leaf
+        # used by output_tuple's saved tensors), but PP's
+        # get_bwd_send_ops reads .grad from input_values (now a clone
+        # whose .grad is always None). Result: error
+        # "[N] for chunk 0 has gradients None and is expecting to send
+        # gradients to stage M" at step 1 backward.
+        #
+        # A real fix requires either (a) per-step recv buffer allocation
+        # in _prepare_forward_infra so the buffer is never reused across
+        # steps, or (b) reading .grad from args_recv_info[id].buffer in
+        # the backward send path instead of from input_values. Both are
+        # intrusive pytorch-core changes that don't fit a runtime
+        # monkey-patch and need an upstream PR.
+        #
+        # Until that lands upstream, the workaround in this repo is
+        # LBS=1 for any PP+V≥2 run (v10, A3 alignment, A2 alignment all
+        # pass at LBS=1).
+        #
+        # Pass through unchanged so the hotfix is a no-op (signature-
+        # agnostic via *args/**kwargs).
+        return original(self, fwd_chunk_id, *args, **kwargs)
 
     _PipelineStageBase.forward_one_chunk = patched_forward_one_chunk
     setattr(_PipelineStageBase, _PATCHED_FLAG_ATTR, True)
