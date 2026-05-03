@@ -130,6 +130,9 @@ if [[ "$PP" -gt 1 ]]; then
     PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_layers_per_stage $V"
     PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_first_stage_less_layers 0"
     PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_last_stage_less_layers 0"
+    if [[ -n "${PP_MICROBATCH:-}" ]]; then
+        PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_microbatch_size $PP_MICROBATCH"
+    fi
     if [[ "$ADAPTER" == "1" ]]; then
         export TORCHTITAN_ATTNRES_CACHE=1
     else
