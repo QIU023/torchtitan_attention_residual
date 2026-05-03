@@ -54,6 +54,7 @@ TORCHTITAN_DIR="${WORKSPACE_DIR}/torchtitan"
 
 # ---- defaults ----
 NGPU="${NGPU:-8}"
+DP_REP="${DP_REP:-1}"
 V="${V:-1}"
 ADAPTER="${ADAPTER:-1}"
 FLAVOR="${FLAVOR:-kimi_linear_436m_block_attn_res_n4}"
@@ -84,9 +85,9 @@ HF_CACHE_DIR="${HF_CACHE_DIR:-/workspace/.hf_home}"
 # In torchtitan, EP borrows from existing FSDP+TP axes via the sparse mesh
 # unflatten, so the dense-mesh product is FSDP*PP*TP*CP and must equal NGPU.
 # The constraint EP*ETP <= FSDP*TP must also hold (EP=1 trivially satisfies).
-DENSE_PRODUCT=$(( FSDP * PP * TP * CP ))
+DENSE_PRODUCT=$(( FSDP * DP_REP * PP * TP * CP ))
 if [[ "$DENSE_PRODUCT" != "$NGPU" ]]; then
-    echo "ERROR: dense FSDP($FSDP) * PP($PP) * TP($TP) * CP($CP) = $DENSE_PRODUCT != NGPU($NGPU)" >&2
+    echo "ERROR: dense FSDP($FSDP) * DP_REP($DP_REP) * PP($PP) * TP($TP) * CP($CP) = $DENSE_PRODUCT != NGPU($NGPU)" >&2
     echo "       (EP=$EP borrows from FSDP×TP and does not enter the dense product)" >&2
     exit 1
 fi
@@ -144,7 +145,6 @@ fi
 # so rank index = pp*(dp_rep*fsdp*tp) + dp_rep*(fsdp*tp) + fsdp*tp + tp_idx.
 # Last PP stage starts at rank (PP-1) * dp_replicate * fsdp * tp.
 # We default LOG_RANK there (loss-bearing rank).
-DP_REP=1
 LAST_PP_RANK_BASE="$(( (PP - 1) * DP_REP * FSDP * TP ))"
 LOG_RANK="${LOG_RANK:-${LAST_PP_RANK_BASE}}"
 
@@ -229,7 +229,7 @@ torchrun \
     --lr_scheduler.decay_ratio 0.0 \
     $PP_ARGS \
     --parallelism.data_parallel_shard_degree "$FSDP" \
-    --parallelism.data_parallel_replicate_degree 1 \
+    --parallelism.data_parallel_replicate_degree "$DP_REP" \
     --parallelism.tensor_parallel_degree "$TP" \
     --parallelism.context_parallel_degree "$CP" \
     --parallelism.expert_parallel_degree "$EP" \

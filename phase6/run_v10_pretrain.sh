@@ -16,7 +16,7 @@ set -u
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$WORKSPACE_DIR/phase6/launch_8gpu_mm.sh"
 PHASE4_CKPT="$WORKSPACE_DIR/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000"
-OUT_DIR="$WORKSPACE_DIR/phase5/runs/v10_3d_lbs160_mb20_continue_8gpu_from_p4_step8000"
+OUT_DIR="$WORKSPACE_DIR/phase5/runs/v10_3d_lbs160_mb10_continue_8gpu_from_p4_step8000"
 
 mkdir -p "$OUT_DIR"
 LOG="$WORKSPACE_DIR/phase6/v10_orchestrator.log"
@@ -33,8 +33,8 @@ if pgrep -f "phase5.train_mm" >/dev/null 2>&1; then
 fi
 
 OUT_DIR="$OUT_DIR" \
-FSDP=2 PP=2 TP=2 CP=1 EP=1 V=2 ADAPTER=1 \
-PP_MICROBATCH=20 \
+FSDP=2 DP_REP=1 PP=2 TP=2 CP=1 EP=1 V=2 ADAPTER=1 \
+PP_MICROBATCH=10 \
 STEPS=5000 LOCAL_BS=160 GLOBAL_BS=320 SEQ_LEN=260 \
 FLAVOR=kimi_linear_436m_block_attn_res_n4 \
 STUDENT_CKPT="$PHASE4_CKPT" \
