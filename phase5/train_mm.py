@@ -55,6 +55,7 @@ from torchtitan.tools.logging import init_logger, logger  # noqa: E402
 # patches the method but it's never invoked). See
 # additional_found_issues/torchtitan_pp_lbs_backward_INVESTIGATION.md.
 import phase6.torchtitan_pp_backward_hotfix  # noqa: E402,F401
+import phase6.torchtitan_pp_retain_graph_diag  # noqa: E402,F401  diagnostic, env-gated
 from torchtitan.components.dataloader import ParallelAwareDataloader  # noqa: E402
 
 from phase5.multimodal_dataset import (  # noqa: E402
@@ -407,11 +408,60 @@ class MultimodalTrainer(Trainer):
             with torch.no_grad():
                 vision_out = self.vision_tower(pixel_values=pixel_values)
                 vision_features = vision_out.last_hidden_state  # (B, N_vis, V_dim)
-            vision_embeds = self.projector(vision_features)  # (B, N_vis, lm_dim)
-            input_dict["vision_embeds"] = vision_embeds
+            # Compute the projector output, then sever its autograd graph
+            # from PP. Why: each PP microbatch's vision_embeds slice routes
+            # grad back to the SAME projector grad_fn (the projector runs
+            # ONCE per step, on the full pre-microbatch batch). With V>=2
+            # + LBS>=3 + Interleaved1F1B, two microbatches' stage_backward
+            # calls hit that shared grad_fn and the second one crashes with
+            # "Trying to backward through the graph a second time". Detach
+            # makes ``vision_embeds_leaf`` a fresh leaf (no upstream graph)
+            # so PP's per-microbatch backward only walks back to the leaf.
+            # The leaf accumulates ``.grad`` across microbatches via
+            # AccumulateGrad; ``forward_backward_step`` below replays a
+            # single backward through the projector with the summed grad
+            # so the projector still trains correctly.
+            vision_embeds_orig = self.projector(vision_features)
+            vision_embeds_leaf = (
+                vision_embeds_orig.detach().requires_grad_(True)
+            )
+            input_dict["vision_embeds"] = vision_embeds_leaf
+            self._mm_projector_stash = (vision_embeds_orig, vision_embeds_leaf)
 
         # Hand off to the parent for the standard inputs/extra_inputs/extra_kwargs split.
         return super().post_dataloading_process(input_dict, labels)
+
+    def forward_backward_step(
+        self, *,
+        input_dict: dict[str, torch.Tensor],
+        labels: torch.Tensor,
+        global_valid_tokens: torch.Tensor,
+    ) -> torch.Tensor:
+        """Wraps the trainer's PP/FSDP forward+backward to drive the
+        deferred projector backward.
+
+        ``post_dataloading_process`` detaches the projector output before
+        handing it to PP (see the comment there for why). After PP /
+        FSDP backward returns, ``vision_embeds_leaf.grad`` holds the
+        sum of every microbatch's slice grad. We replay a single
+        backward through the original projector graph with that summed
+        grad so the projector parameters receive the correct accumulated
+        gradient and FSDP's reduce-scatter on them sees the full step.
+        """
+        self._mm_projector_stash = None
+        loss = super().forward_backward_step(
+            input_dict=input_dict,
+            labels=labels,
+            global_valid_tokens=global_valid_tokens,
+        )
+        stash = getattr(self, "_mm_projector_stash", None)
+        if stash is not None:
+            vision_embeds_orig, vision_embeds_leaf = stash
+            grad = vision_embeds_leaf.grad
+            if grad is not None:
+                torch.autograd.backward(vision_embeds_orig, grad)
+            self._mm_projector_stash = None
+        return loss
 
 
 # ----------------------------------------------------------------------

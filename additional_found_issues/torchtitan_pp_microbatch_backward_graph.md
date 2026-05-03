@@ -1,5 +1,33 @@
 # Issue 1: torchtitan PP + Interleaved1F1B + LOCAL_BS ≥ 3 + V ≥ 2 → "Trying to backward through the graph a second time"
 
+> **STATUS (2026-05-03): RESOLVED in our codebase.** The root cause was NOT
+> in upstream pytorch PP, NOT in AttnRes, and NOT in the recv-buffer alias
+> originally hypothesized. It was the multimodal-training pattern in
+> `phase5/train_mm.py`: the projector ran ONCE per step (in
+> `post_dataloading_process`) producing `vision_embeds`, then PP chunked
+> that tensor per microbatch — every chunk routed grad back to the SAME
+> projector grad_fn. Under V≥2+LBS≥3+Interleaved1F1B, mb_0's stage_backward
+> freed the projector's saved tensors and mb_1's stage_backward then hit
+> "second time".
+>
+> Fix: detach the projector output before injecting into the PP input
+> dict, and override `MultimodalTrainer.forward_backward_step` to do a
+> single deferred `torch.autograd.backward(vision_embeds_orig,
+> vision_embeds_leaf.grad)` at the end of each step, replaying the summed
+> grad through the projector with a single autograd traversal.
+>
+> Two diagnostics confirmed the root cause before the fix:
+> 1. Patching `_backward.stage_backward` to pass `retain_graph=True` lets
+>    the same buggy config train cleanly (3 steps, loss 12.24→12.14→12.09).
+> 2. Detaching `vision_embeds` (no projector training, but graph severed)
+>    also passes 3 steps cleanly.
+>
+> The proper fix produces the same loss curve as `retain_graph=True`
+> (projector trains correctly) at lower memory (11.4 GiB vs 16.4 GiB).
+>
+> See `phase5/train_mm.py:MultimodalTrainer.post_dataloading_process` and
+> `forward_backward_step` for the implementation.
+
 > **This is a software BUG, not a hardware bottleneck.** The error fires
 > inside the autograd graph traversal logic in pytorch's `pipelining/_backward.py`,
 > independent of which interconnect (PCIe / NVLink / IB) is used. The
