@@ -11,6 +11,14 @@ Attention-Residuals/
 # Claude Code project cache (hooks, memory, sessions). Not useful to others.
 .claude/
 
+# Oh-My-ClaudeCode (OMC) project state. We commit .omc/skills/ and the
+# RELEASE_RULE cache (both are recipe content, see SETUP_OMC.md); everything
+# else under .omc/ is runtime scratch — per-session plans, in-flight state,
+# local caches.
+.omc/*
+!.omc/skills/
+!.omc/RELEASE_RULE.md
+
 # Python
 __pycache__/
 *.pyc

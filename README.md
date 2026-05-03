@@ -99,6 +99,7 @@ the algorithm or adapter.
 | [`reports/`](./reports/) | Written reports (en + zh) for portfolio walkthroughs |
 | [`Attention-Residuals/`](./Attention-Residuals/) | Kimi's reference implementation + paper PDF (vendor copy) |
 | [`torchtitan/`](./torchtitan) | Submodule pointing at the fork's `attention_residual_dev` branch |
+| [`SETUP_OMC.md`](./SETUP_OMC.md) | Optional: oh-my-claudecode plugin install + project-local skills (`.omc/skills/`) for the recurring 8-GPU / submodule / NCCL-trace recipes |
 
 ## Why fork-as-canonical (instead of merging)
 
