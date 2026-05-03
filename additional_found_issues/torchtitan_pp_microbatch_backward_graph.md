@@ -151,6 +151,76 @@ To bisect whether it's kimi_linear-specific or general, swap the model
 to `--module llama3 --config llama3_debugmodel` with the same PP+V+LBS
 settings.
 
+## H1 vs H2 disambiguation (2026-05-03 evening)
+
+Empirical experiment to determine whether the bug is upstream-pytorch
+(H1) or in our experiment code (H2).
+
+**Smoke 1 — baseline kimi backbone (no AttnRes), same broken recipe**
+```
+FLAVOR=kimi_linear_436m_baseline      # NO AttnRes, NO cache adapter
+FSDP=2 PP=2 TP=2 V=2  LBS=14 GBS=112  # the LBS≥3+V≥2 broken combo
+→ ✅ 10 steps clean, loss 7.88 → 7.43, no crash
+```
+
+**Smoke 2 — AttnRes flavor, naive PP (cache adapter disabled)**
+```
+FLAVOR=kimi_linear_436m_block_attn_res_n4  # AttnRes ON
+ADAPTER=0                                   # cache adapter OFF (naive PP)
+FSDP=2 PP=2 TP=2 V=2  LBS=14 GBS=112
+→ ❌ "RuntimeError: Trying to backward through the graph a second time"
+```
+
+**Smoke 3 — AttnRes flavor + cache adapter (the original repro)**
+```
+FLAVOR=kimi_linear_436m_block_attn_res_n4  # AttnRes ON
+ADAPTER=1                                   # cache adapter ON
+FSDP=2 PP=2 TP=2 V=2  LBS=14 GBS=112
+→ ❌ Same crash
+```
+
+**Verdict: H2 confirmed, but narrowed further** — the bug is in our
+AttnRes path (kimi_linear AttnResModel + block_attn_res aggregator),
+**not** in the cache adapter (which is only the optimization layer
+on top of naive PP), and **not** in upstream pytorch/torchtitan PP
+itself. The baseline kimi backbone with the EXACT broken recipe runs
+clean for 10 steps, including step 2 backward where the crash always
+fires under AttnRes.
+
+This means:
+- Filing an upstream RFC at pytorch/pytorch is **not warranted** —
+  the upstream PP path handles V≥2+LBS≥3 correctly when given a
+  well-behaved model.
+- The fix lives entirely inside our fork, in
+  `torchtitan/experiments/{attn_res,kimi_linear}/`. Specifically the
+  AttnRes-introduced operations (`block_attn_res`,
+  `KimiAttnResDecoderLayer.forward` block-list/partial-block threading,
+  `KimiLinearAttnResModel.forward` PP boundary stack/unstack) must be
+  creating a tensor alias that V≥2 + LBS≥3 + Interleaved1F1B exposes.
+- The cache adapter is a passenger; both adapter ON and OFF crash
+  identically.
+
+**Hypotheses for the AttnRes-internal alias (next investigation):**
+- The `partial_block` is the recv-buffer or embed_tokens output. It
+  enters every layer's `block_attn_res` as input AND gets accumulated
+  across layers into the new block list. If a partial_block tensor
+  retains an autograd reference to its source (recv buffer / embed
+  output) across multiple layer calls in V≥2 schedule, the saved-for-
+  backward set might cross-link microbatches.
+- The `attn_res_proj.weight` (Linear(d → 1) zero-init) is shared across
+  all microbatches as a parameter. Zero-init + multiple microbatches
+  feeding through it might create degenerate gradient state that the
+  schedule's interleaved backward mishandles.
+- The `final_attn_res_proj` + `final_attn_res_norm` at the last PP
+  stage operate on the full `block_list + [partial_block]`; under V≥2
+  on the last stage device, two microbatches' final aggregations may
+  share a leaf reference.
+
+**Status:** sub-investigation deferred. Practical path forward: keep
+v10 / production runs at LBS=1 + V=2 (proven safe), file this as
+internal AttnRes-fork issue (not upstream), root-cause when GPU time
+permits.
+
 ## Why hasn't this been reported widely if PP+V≥2+LBS≥2 is "normal"?
 
 User's question, valid skepticism. PP V=2 LBS=2+ should be a routine
