@@ -35,18 +35,40 @@ echo "==============================================================="
 echo "[$(date)] v12 4D pretrain START (EP replaces TP)"
 echo "==============================================================="
 
-OUT_DIR="$OUT_DIR" \
-FSDP=2 DP_REP=2 PP=2 TP=1 CP=1 EP=2 V=2 ADAPTER=1 \
-PP_MICROBATCH=10 \
-STEPS=5000 LOCAL_BS=100 GLOBAL_BS=400 SEQ_LEN=260 \
-FLAVOR=kimi_linear_436m_block_attn_res_n4 \
-STUDENT_CKPT="$PHASE4_CKPT" \
-SEED=42 DETERMINISTIC=0 COMPILE=0 \
-LR=1e-5 WARMUP=200 \
-CHECKPOINT_ENABLED=1 SAVE_FREQ=500 KEEP_K=2 \
-TRACE_TIER=tier_b TRACE_STEPS=50 \
-bash "$LAUNCHER" || {
-    echo "[$(date)] [ERROR] v12 failed; rerun same dump_folder to auto-resume"
-}
+# Same retry-loop pattern as run_v11: grouped_mm device-side asserts
+# under EP=2 are upstream cuBLAS / kimi-MoE-routing tail-distribution;
+# auto-restart from latest ckpt.
+MAX_RETRIES=25
+attempt=0
+while [[ $attempt -lt $MAX_RETRIES ]]; do
+    attempt=$((attempt + 1))
+    echo "[$(date)] v12 attempt #$attempt"
+    OUT_DIR="$OUT_DIR" \
+    FSDP=2 DP_REP=2 PP=2 TP=1 CP=1 EP=2 V=2 ADAPTER=1 \
+    PP_MICROBATCH=20 \
+    STEPS=5000 LOCAL_BS=200 GLOBAL_BS=800 SEQ_LEN=260 \
+    FLAVOR=kimi_linear_436m_block_attn_res_n4 \
+    STUDENT_CKPT="$PHASE4_CKPT" \
+    SEED=42 DETERMINISTIC=0 COMPILE=0 \
+    LR=1e-5 WARMUP=200 \
+    CHECKPOINT_ENABLED=1 SAVE_FREQ=200 KEEP_K=2 \
+    TRACE_TIER=tier_b TRACE_STEPS=50 \
+    bash "$LAUNCHER"
+    rc=$?
+    last_step=$(grep -aoE "step:\s*[0-9]+" "$OUT_DIR/train.log" 2>/dev/null \
+        | tail -1 | grep -oE "[0-9]+")
+    last_step=${last_step:-0}
+    echo "[$(date)] v12 attempt #$attempt rc=$rc last_step=$last_step"
+    if [[ "$last_step" -ge 5000 ]]; then
+        echo "[$(date)] v12 done at step $last_step"
+        break
+    fi
+    if [[ "$rc" -eq 0 ]]; then
+        echo "[$(date)] v12 clean exit at step $last_step before STEPS=5000; stop"
+        break
+    fi
+    echo "[$(date)] v12 crashed; sleeping 30s then retry"
+    sleep 30
+done
 
-echo "[$(date)] v12 4D pretrain DONE"
+echo "[$(date)] v12 4D pretrain DONE (attempt=$attempt)"

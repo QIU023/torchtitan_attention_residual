@@ -1,0 +1,1146 @@
+W0504 15:55:44.814000 3536309 site-packages/torch/distributed/run.py:851] 
+W0504 15:55:44.814000 3536309 site-packages/torch/distributed/run.py:851] *****************************************
+W0504 15:55:44.814000 3536309 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0504 15:55:44.814000 3536309 site-packages/torch/distributed/run.py:851] *****************************************
+[rank4]:[titan] 2026-05-04 15:55:50,804 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank4]:[titan] 2026-05-04 15:55:50,804 - root - WARNING - ENV[TORCH_NCCL_DUMP_ON_TIMEOUT] = 1 will be overridden to 1 based on job config
+[rank4]:[titan] 2026-05-04 15:55:50,806 - root - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=2, cp=1, tp=2, ep=2, etp=1
+[rank4]:[titan] 2026-05-04 15:55:50,838 - root - INFO - Successfully created meshes with active dimensions: ['pp', 'batch', 'loss', 'fsdp', 'tp', 'ep', 'efsdp']
+[rank4]:[titan] 2026-05-04 15:55:50,839 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank4]:[titan] 2026-05-04 15:55:50,841 - root - INFO - Loading tokenizer from tokenizer.json
+[rank4]:[titan] 2026-05-04 15:55:51,111 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank4]:[titan] 2026-05-04 15:55:51,465 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:55:51,466 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:[titan] 2026-05-04 15:55:51,512 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:51,710 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:52,442 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:52,815 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:53,239 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:53,618 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:53,884 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:54,147 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:54,355 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:54,657 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:54,712 - root - INFO - Building kimi_linear kimi_linear_436m_block_attn_res_n4 with {
+[rank4]:  "vocab_size": 163840,
+[rank4]:  "hidden_size": 1168,
+[rank4]:  "tie_word_embeddings": true,
+[rank4]:  "num_hidden_layers": 16,
+[rank4]:  "intermediate_size": 528,
+[rank4]:  "num_attention_heads": 16,
+[rank4]:  "num_key_value_heads": 16,
+[rank4]:  "q_lora_rank": null,
+[rank4]:  "kv_lora_rank": 584,
+[rank4]:  "qk_nope_head_dim": 73,
+[rank4]:  "qk_rope_head_dim": 36,
+[rank4]:  "v_head_dim": 73,
+[rank4]:  "mla_use_nope": true,
+[rank4]:  "rope_theta": 10000.0,
+[rank4]:  "kda_num_heads": 16,
+[rank4]:  "kda_head_dim": 73,
+[rank4]:  "kda_short_conv_kernel_size": 4,
+[rank4]:  "kda_layers": [
+[rank4]:    1,
+[rank4]:    2,
+[rank4]:    3,
+[rank4]:    5,
+[rank4]:    6,
+[rank4]:    7,
+[rank4]:    9,
+[rank4]:    10,
+[rank4]:    11,
+[rank4]:    13,
+[rank4]:    14,
+[rank4]:    15
+[rank4]:  ],
+[rank4]:  "full_attn_layers": [
+[rank4]:    4,
+[rank4]:    8,
+[rank4]:    12,
+[rank4]:    16
+[rank4]:  ],
+[rank4]:  "num_experts": 32,
+[rank4]:  "num_experts_per_token": 8,
+[rank4]:  "moe_intermediate_size": 528,
+[rank4]:  "moe_renormalize": true,
+[rank4]:  "moe_router_activation_func": "sigmoid",
+[rank4]:  "num_shared_experts": 1,
+[rank4]:  "routed_scaling_factor": 2.446,
+[rank4]:  "first_k_dense_replace": 1,
+[rank4]:  "moe_layer_freq": 1,
+[rank4]:  "use_grouped_topk": false,
+[rank4]:  "num_expert_group": 1,
+[rank4]:  "topk_group": 1,
+[rank4]:  "rms_norm_eps": 1e-05,
+[rank4]:  "hidden_act": "silu",
+[rank4]:  "initializer_range": 0.02,
+[rank4]:  "__spec__": {
+[rank4]:    "num_blocks": 4,
+[rank4]:    "model_class": "KimiLinearAttnResModel"
+[rank4]:  }
+[rank4]:}
+[rank4]:[titan] 2026-05-04 15:55:54,736 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase5/runs/v11_4d_fsdp2_pp2_tp2_ep2_continue_8gpu_from_p4_step8000/tb/20260504-1555
+[rank4]:[titan] 2026-05-04 15:55:54,737 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank4]:[titan] 2026-05-04 15:55:54,739 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank4]:[titan] 2026-05-04 15:55:54,739 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank4]:[titan] 2026-05-04 15:55:54,739 - root - INFO - [34mModel kimi_linear kimi_linear_436m_block_attn_res_n4 [31msize: 1,201,640,636 total parameters[39m
+[rank4]:[titan] 2026-05-04 15:55:54,758 - root - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.2', 'layers.3']
+[rank4]:[titan] 2026-05-04 15:55:54,775 - root - INFO - PP rank 1 is building stage_idx 3 with modules ['layers.6', 'layers.7']
+[rank4]:[titan] 2026-05-04 15:55:54,792 - root - INFO - PP rank 1 is building stage_idx 5 with modules ['layers.10', 'layers.11']
+[rank4]:[titan] 2026-05-04 15:55:54,809 - root - INFO - PP rank 1 is building stage_idx 7 with modules ['layers.14', 'layers.15', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank4]:[titan] 2026-05-04 15:55:54,833 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 15:55:54,836 - root - INFO - EP plan wrapped 2 MoE layer experts.
+[rank4]:[titan] 2026-05-04 15:55:54,836 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=2.
+[rank4]:[titan] 2026-05-04 15:55:54,862 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 15:55:54,867 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 15:55:54,868 - root - INFO - EP plan wrapped 2 MoE layer experts.
+[rank4]:[titan] 2026-05-04 15:55:54,868 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=2.
+[rank4]:[titan] 2026-05-04 15:55:54,881 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 15:55:54,886 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 15:55:54,887 - root - INFO - EP plan wrapped 2 MoE layer experts.
+[rank4]:[titan] 2026-05-04 15:55:54,887 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=2.
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'norm' could not be resolved: no submodule matching token 'norm' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'lm_head' could not be resolved: no submodule matching token 'lm_head' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (6): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (7): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'norm' could not be resolved: no submodule matching token 'norm' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (6): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (7): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'lm_head' could not be resolved: no submodule matching token 'lm_head' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (6): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (7): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (10): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (11): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'norm' could not be resolved: no submodule matching token 'norm' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (10): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (11): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'lm_head' could not be resolved: no submodule matching token 'lm_head' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (10): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (11): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:[titan] 2026-05-04 15:55:54,900 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 15:55:54,907 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 15:55:54,907 - root - INFO - EP plan wrapped 2 MoE layer experts.
+[rank4]:[titan] 2026-05-04 15:55:54,907 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=2.
+[rank4]:[titan] 2026-05-04 15:55:54,924 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 15:55:54,925 - root - INFO - Using pipeline schedule Interleaved1F1B with 10 microbatches and 8 stages.
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:443: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (14): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (15): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:  (lm_head): Linear(in_features=1168, out_features=163840, bias=False)
+[rank4]:  (final_attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:  (final_attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:[titan] 2026-05-04 15:55:55,012 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 4[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank4]:[titan] 2026-05-04 15:55:55,015 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank4]:[titan] 2026-05-04 15:55:55,015 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank4]:[titan] 2026-05-04 15:55:55,015 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank4]:[titan] 2026-05-04 15:55:55,015 - root - INFO - CUDA memory usage for model: 0.73GiB(2.32%)
+[rank4]:[titan] 2026-05-04 15:55:55,025 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase5/runs/v11_4d_fsdp2_pp2_tp2_ep2_continue_8gpu_from_p4_step8000/checkpoint
+[rank4]:[titan] 2026-05-04 15:55:55,025 - root - INFO - Trainer is initialized with local batch size 200, global batch size 400, gradient accumulation steps 1, sequence length 260, total steps 5000 (warmup 200)
+[rank4]:[titan] 2026-05-04 15:55:55,255 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:55:55,300 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:55,514 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:55:55,559 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:55,767 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:55,981 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:56,937 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:56,955 - phase5.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank4]:[titan] 2026-05-04 15:55:56,955 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank4]:[titan] 2026-05-04 15:55:56,955 - root - INFO - mm: lm_dim=1168
+[rank4]:[titan] 2026-05-04 15:55:57,161 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:57,359 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:55:57,405 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:57,619 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:57,825 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:55:57,870 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:58,076 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:58,281 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:58,485 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:58,690 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:58,893 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:59,102 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:59,313 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:55:59,359 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:55:59,562 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:55:59,766 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:55:59,812 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:56:00,016 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:56:00,062 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:56:00,288 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 15:56:00,335 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:56:00,542 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 15:56:00,750 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 15:56:01,828 - root - INFO - mm: dataset = LlavaPretrainDataset (prefix layout)
+[rank4]:[titan] 2026-05-04 15:56:01,829 - root - INFO - mm: replaced dataloader with LlavaPretrainDataset (N=558,128, dp_rank=0/2, local_bs=200, seq_len=258)
+[rank4]:[titan] 2026-05-04 15:56:01,829 - root - WARNING - checkpoint.initial_load_path is provided but the checkpoint.folder exists. Checkpointer will use the checkpoints from the checkpoint.folder /root/torchtitan_attention_residual/phase5/runs/v11_4d_fsdp2_pp2_tp2_ep2_continue_8gpu_from_p4_step8000/checkpoint.
+[rank4]:[titan] 2026-05-04 15:56:01,829 - root - INFO - Loading the checkpoint from /root/torchtitan_attention_residual/phase5/runs/v11_4d_fsdp2_pp2_tp2_ep2_continue_8gpu_from_p4_step8000/checkpoint/step-4800.
+[rank4]:[rank4]:[W504 15:56:03.489464657 Utils.hpp:137] Warning: Environment variable TORCH_NCCL_TRACE_BUFFER_SIZE is deprecated; use TORCH_FR_BUFFER_SIZE instead (function operator())
+[rank4]:[titan] 2026-05-04 15:56:05,785 - root - INFO - [GC] GC collection for checkpoint loading. took 0.23 seconds
+[rank4]:[titan] 2026-05-04 15:56:05,785 - root - INFO - Finished loading the checkpoint in 3.96 seconds.
+[rank4]:[titan] 2026-05-04 15:56:05,786 - root - INFO - Training starts at step 4801
+[rank4]:[rank4]:W0504 15:56:11.429000 3536382 site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1168, out_features=1, bias=False)]
+[rank4]:[rank4]:W0504 15:56:15.519000 3536382 site-packages/torch/distributed/tensor/_redistribute.py:347] While redistributing from (_NormPartial(2.0), _NormPartial(2.0)) to (Replicate(), Replicate()), 2 sequential all_reduce operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. To optimize, flatten mesh dimensions ["efsdp", "ep"] so DTensor can use a single operation instead.
+[rank4]:[rank4]:W0504 15:56:15.817000 3536382 site-packages/torch/distributed/tensor/_redistribute.py:347] While redistributing from (_NormPartial(2.0), _NormPartial(2.0)) to (Replicate(), Replicate()), 2 sequential all_reduce operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. To optimize, flatten mesh dimensions ["fsdp", "tp"] so DTensor can use a single operation instead.
+[rank4]:[titan] 2026-05-04 15:56:16,140 - root - INFO - [31mstep: 4801  [32mloss:  2.91867  [38;2;180;60;0mgrad_norm: 144452.9219  [38;2;54;234;195mmemory: 28.53GiB(90.99%)  [34mtps: 603  [36mtflops: 3.66  [35mmfu: 1.17%[39m
+[rank4]:[titan] 2026-05-04 15:56:21,402 - root - INFO - [31mstep: 4802  [32mloss:  2.95187  [38;2;180;60;0mgrad_norm: 148191.7500  [38;2;54;234;195mmemory: 28.54GiB(91.00%)  [34mtps: 2,453  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 15:56:26,648 - root - INFO - [31mstep: 4803  [32mloss:  2.93858  [38;2;180;60;0mgrad_norm: 157336.8906  [38;2;54;234;195mmemory: 28.54GiB(91.00%)  [34mtps: 2,460  [36mtflops: 14.96  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 15:56:31,826 - root - INFO - [31mstep: 4804  [32mloss:  2.86236  [38;2;180;60;0mgrad_norm: 129452.0000  [38;2;54;234;195mmemory: 28.54GiB(91.00%)  [34mtps: 2,492  [36mtflops: 15.15  [35mmfu: 4.86%[39m
+[rank4]:[titan] 2026-05-04 15:56:37,070 - root - INFO - [31mstep: 4805  [32mloss:  2.90946  [38;2;180;60;0mgrad_norm: 120864.7188  [38;2;54;234;195mmemory: 28.54GiB(91.00%)  [34mtps: 2,461  [36mtflops: 14.96  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 15:56:42,335 - root - INFO - [31mstep: 4806  [32mloss:  2.88346  [38;2;180;60;0mgrad_norm: 144142.9375  [38;2;54;234;195mmemory: 28.54GiB(91.00%)  [34mtps: 2,451  [36mtflops: 14.90  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 15:56:47,671 - root - INFO - [31mstep: 4807  [32mloss:  2.82044  [38;2;180;60;0mgrad_norm: 129771.4688  [38;2;54;234;195mmemory: 28.59GiB(91.18%)  [34mtps: 2,419  [36mtflops: 14.71  [35mmfu: 4.71%[39m
+[rank4]:[titan] 2026-05-04 15:56:52,788 - root - INFO - [31mstep: 4808  [32mloss:  2.88239  [38;2;180;60;0mgrad_norm: 180831.4219  [38;2;54;234;195mmemory: 28.59GiB(91.18%)  [34mtps: 2,522  [36mtflops: 15.34  [35mmfu: 4.92%[39m
+[rank4]:[titan] 2026-05-04 15:56:57,931 - root - INFO - [31mstep: 4809  [32mloss:  2.94269  [38;2;180;60;0mgrad_norm: 146367.0000  [38;2;54;234;195mmemory: 28.59GiB(91.18%)  [34mtps: 2,509  [36mtflops: 15.26  [35mmfu: 4.89%[39m
+[rank4]:[titan] 2026-05-04 15:57:03,019 - root - INFO - [31mstep: 4810  [32mloss:  2.87297  [38;2;180;60;0mgrad_norm: 166453.4688  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,537  [36mtflops: 15.42  [35mmfu: 4.94%[39m
+[rank4]:[titan] 2026-05-04 15:57:08,197 - root - INFO - [31mstep: 4811  [32mloss:  2.90770  [38;2;180;60;0mgrad_norm: 157051.7188  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,493  [36mtflops: 15.15  [35mmfu: 4.86%[39m
+[rank4]:[titan] 2026-05-04 15:57:13,410 - root - INFO - [31mstep: 4812  [32mloss:  2.91101  [38;2;180;60;0mgrad_norm: 149213.6250  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,476  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 15:57:18,534 - root - INFO - [31mstep: 4813  [32mloss:  2.94077  [38;2;180;60;0mgrad_norm: 144145.4062  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,519  [36mtflops: 15.31  [35mmfu: 4.91%[39m
+[rank4]:[titan] 2026-05-04 15:57:23,585 - root - INFO - [31mstep: 4814  [32mloss:  2.90997  [38;2;180;60;0mgrad_norm: 148587.4062  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,555  [36mtflops: 15.54  [35mmfu: 4.98%[39m
+[rank4]:[titan] 2026-05-04 15:57:28,676 - root - INFO - [31mstep: 4815  [32mloss:  2.92439  [38;2;180;60;0mgrad_norm: 128775.4766  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,535  [36mtflops: 15.41  [35mmfu: 4.94%[39m
+[rank4]:[titan] 2026-05-04 15:57:33,741 - root - INFO - [31mstep: 4816  [32mloss:  2.94162  [38;2;180;60;0mgrad_norm: 162465.5625  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,548  [36mtflops: 15.49  [35mmfu: 4.97%[39m
+[rank4]:[titan] 2026-05-04 15:57:38,755 - root - INFO - [31mstep: 4817  [32mloss:  2.96297  [38;2;180;60;0mgrad_norm: 148420.4531  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,574  [36mtflops: 15.65  [35mmfu: 5.02%[39m
+[rank4]:[titan] 2026-05-04 15:57:43,878 - root - INFO - [31mstep: 4818  [32mloss:  3.08820  [38;2;180;60;0mgrad_norm: 186290.2656  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,519  [36mtflops: 15.32  [35mmfu: 4.91%[39m
+[rank4]:[titan] 2026-05-04 15:57:49,095 - root - INFO - [31mstep: 4819  [32mloss:  2.93886  [38;2;180;60;0mgrad_norm: 145940.3281  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,474  [36mtflops: 15.04  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 15:57:54,320 - root - INFO - [31mstep: 4820  [32mloss:  2.80901  [38;2;180;60;0mgrad_norm: 143542.6406  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 15:57:59,558 - root - INFO - [31mstep: 4821  [32mloss:  2.84797  [38;2;180;60;0mgrad_norm: 141627.2188  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,464  [36mtflops: 14.98  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 15:58:04,816 - root - INFO - [31mstep: 4822  [32mloss:  2.86988  [38;2;180;60;0mgrad_norm: 160550.4531  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,455  [36mtflops: 14.92  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 15:58:10,060 - root - INFO - [31mstep: 4823  [32mloss:  3.02745  [38;2;180;60;0mgrad_norm: 157125.8750  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,461  [36mtflops: 14.96  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 15:58:15,306 - root - INFO - [31mstep: 4824  [32mloss:  2.96413  [38;2;180;60;0mgrad_norm: 172556.0938  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,461  [36mtflops: 14.96  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 15:58:20,513 - root - INFO - [31mstep: 4825  [32mloss:  2.95698  [38;2;180;60;0mgrad_norm: 201077.8281  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,479  [36mtflops: 15.07  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 15:58:25,784 - root - INFO - [31mstep: 4826  [32mloss:  2.92485  [38;2;180;60;0mgrad_norm: 177022.6875  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,449  [36mtflops: 14.89  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 15:58:31,067 - root - INFO - [31mstep: 4827  [32mloss:  2.90202  [38;2;180;60;0mgrad_norm: 155799.7188  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,442  [36mtflops: 14.85  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 15:58:36,350 - root - INFO - [31mstep: 4828  [32mloss:  2.90994  [38;2;180;60;0mgrad_norm: 158184.7188  [38;2;54;234;195mmemory: 28.67GiB(91.43%)  [34mtps: 2,443  [36mtflops: 14.85  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 15:58:41,574 - root - INFO - [31mstep: 4829  [32mloss:  2.95842  [38;2;180;60;0mgrad_norm: 180157.4844  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 15:58:46,793 - root - INFO - [31mstep: 4830  [32mloss:  2.86809  [38;2;180;60;0mgrad_norm: 219695.8281  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,472  [36mtflops: 15.03  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 15:58:51,999 - root - INFO - [31mstep: 4831  [32mloss:  2.94592  [38;2;180;60;0mgrad_norm: 212046.6562  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,479  [36mtflops: 15.07  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 15:58:57,223 - root - INFO - [31mstep: 4832  [32mloss:  3.00096  [38;2;180;60;0mgrad_norm: 221914.7500  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,471  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 15:59:02,486 - root - INFO - [31mstep: 4833  [32mloss:  2.93822  [38;2;180;60;0mgrad_norm: 195388.1094  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,452  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 15:59:07,704 - root - INFO - [31mstep: 4834  [32mloss:  2.87630  [38;2;180;60;0mgrad_norm: 172802.6562  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,473  [36mtflops: 15.04  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 15:59:12,956 - root - INFO - [31mstep: 4835  [32mloss:  2.89205  [38;2;180;60;0mgrad_norm: 206137.0625  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,457  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 15:59:18,232 - root - INFO - [31mstep: 4836  [32mloss:  2.95616  [38;2;180;60;0mgrad_norm: 166347.5469  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,446  [36mtflops: 14.87  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 15:59:23,465 - root - INFO - [31mstep: 4837  [32mloss:  2.86279  [38;2;180;60;0mgrad_norm: 217112.6719  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,466  [36mtflops: 14.99  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 15:59:28,691 - root - INFO - [31mstep: 4838  [32mloss:  2.91791  [38;2;180;60;0mgrad_norm: 242598.2344  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 15:59:33,904 - root - INFO - [31mstep: 4839  [32mloss:  2.89061  [38;2;180;60;0mgrad_norm: 237313.9844  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,475  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 15:59:39,172 - root - INFO - [31mstep: 4840  [32mloss:  3.02093  [38;2;180;60;0mgrad_norm: 197912.1875  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,450  [36mtflops: 14.89  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 15:59:44,402 - root - INFO - [31mstep: 4841  [32mloss:  2.89212  [38;2;180;60;0mgrad_norm: 202443.5625  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,468  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 15:59:49,672 - root - INFO - [31mstep: 4842  [32mloss:  3.04649  [38;2;180;60;0mgrad_norm: 181919.2031  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,449  [36mtflops: 14.89  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 15:59:54,978 - root - INFO - [31mstep: 4843  [32mloss:  2.98545  [38;2;180;60;0mgrad_norm: 222433.6875  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,433  [36mtflops: 14.79  [35mmfu: 4.74%[39m
+[rank4]:[titan] 2026-05-04 16:00:00,212 - root - INFO - [31mstep: 4844  [32mloss:  3.04104  [38;2;180;60;0mgrad_norm: 217597.7969  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,466  [36mtflops: 14.99  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:00:05,422 - root - INFO - [31mstep: 4845  [32mloss:  2.97800  [38;2;180;60;0mgrad_norm: 216046.3594  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,477  [36mtflops: 15.06  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:00:10,627 - root - INFO - [31mstep: 4846  [32mloss:  3.03239  [38;2;180;60;0mgrad_norm: 226021.5000  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,480  [36mtflops: 15.08  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:00:15,822 - root - INFO - [31mstep: 4847  [32mloss:  2.92679  [38;2;180;60;0mgrad_norm: 190425.5938  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,484  [36mtflops: 15.10  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:00:21,071 - root - INFO - [31mstep: 4848  [32mloss:  2.95089  [38;2;180;60;0mgrad_norm: 224797.4844  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,459  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:00:26,264 - root - INFO - [31mstep: 4849  [32mloss:  2.97952  [38;2;180;60;0mgrad_norm: 213818.5625  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,485  [36mtflops: 15.11  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:00:28,391 - root - INFO - [GC] Performing periodic GC collection took 2.13 seconds
+[rank4]:[titan] 2026-05-04 16:00:33,706 - root - INFO - [31mstep: 4850  [32mloss:  2.98777  [38;2;180;60;0mgrad_norm: 209951.0156  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 1,734  [36mtflops: 10.54  [35mmfu: 3.38%[39m
+[rank4]:[titan] 2026-05-04 16:00:38,931 - root - INFO - [31mstep: 4851  [32mloss:  2.98000  [38;2;180;60;0mgrad_norm: 249400.0781  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:00:44,156 - root - INFO - [31mstep: 4852  [32mloss:  2.84552  [38;2;180;60;0mgrad_norm: 205245.0625  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:00:49,361 - root - INFO - [31mstep: 4853  [32mloss:  2.97549  [38;2;180;60;0mgrad_norm: 197493.2656  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,479  [36mtflops: 15.07  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:00:54,552 - root - INFO - [31mstep: 4854  [32mloss:  2.93188  [38;2;180;60;0mgrad_norm: 185481.5000  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,486  [36mtflops: 15.12  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:00:59,746 - root - INFO - [31mstep: 4855  [32mloss:  2.93268  [38;2;180;60;0mgrad_norm: 172699.1250  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,485  [36mtflops: 15.11  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:01:04,960 - root - INFO - [31mstep: 4856  [32mloss:  2.93078  [38;2;180;60;0mgrad_norm: 246759.4688  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,475  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:01:10,158 - root - INFO - [31mstep: 4857  [32mloss:  2.93910  [38;2;180;60;0mgrad_norm: 189720.0469  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,483  [36mtflops: 15.10  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:01:15,334 - root - INFO - [31mstep: 4858  [32mloss:  2.91744  [38;2;180;60;0mgrad_norm: 209021.7812  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,493  [36mtflops: 15.16  [35mmfu: 4.86%[39m
+[rank4]:[titan] 2026-05-04 16:01:20,605 - root - INFO - [31mstep: 4859  [32mloss:  2.91113  [38;2;180;60;0mgrad_norm: 181143.3438  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,448  [36mtflops: 14.89  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:01:25,819 - root - INFO - [31mstep: 4860  [32mloss:  2.99574  [38;2;180;60;0mgrad_norm: 155205.2969  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,475  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:01:31,061 - root - INFO - [31mstep: 4861  [32mloss:  2.91205  [38;2;180;60;0mgrad_norm: 166264.9531  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,462  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:01:36,324 - root - INFO - [31mstep: 4862  [32mloss:  2.90129  [38;2;180;60;0mgrad_norm: 168375.9375  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,452  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:01:41,550 - root - INFO - [31mstep: 4863  [32mloss:  2.92188  [38;2;180;60;0mgrad_norm: 197894.4219  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:01:46,745 - root - INFO - [31mstep: 4864  [32mloss:  2.95179  [38;2;180;60;0mgrad_norm: 166808.2812  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,484  [36mtflops: 15.10  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:01:51,933 - root - INFO - [31mstep: 4865  [32mloss:  2.90864  [38;2;180;60;0mgrad_norm: 163908.4375  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,488  [36mtflops: 15.12  [35mmfu: 4.85%[39m
+[rank4]:[titan] 2026-05-04 16:01:57,186 - root - INFO - [31mstep: 4866  [32mloss:  2.96142  [38;2;180;60;0mgrad_norm: 159781.1562  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,457  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:02:02,393 - root - INFO - [31mstep: 4867  [32mloss:  2.85320  [38;2;180;60;0mgrad_norm: 160880.6562  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,479  [36mtflops: 15.07  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:02:07,596 - root - INFO - [31mstep: 4868  [32mloss:  2.87464  [38;2;180;60;0mgrad_norm: 172482.8594  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,481  [36mtflops: 15.08  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:02:12,848 - root - INFO - [31mstep: 4869  [32mloss:  2.91739  [38;2;180;60;0mgrad_norm: 190374.0781  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,458  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:02:18,135 - root - INFO - [31mstep: 4870  [32mloss:  2.92361  [38;2;180;60;0mgrad_norm: 170826.7188  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,441  [36mtflops: 14.84  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:02:23,437 - root - INFO - [31mstep: 4871  [32mloss:  2.84113  [38;2;180;60;0mgrad_norm: 388380.5625  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,434  [36mtflops: 14.80  [35mmfu: 4.74%[39m
+[rank4]:[titan] 2026-05-04 16:02:28,662 - root - INFO - [31mstep: 4872  [32mloss:  2.88899  [38;2;180;60;0mgrad_norm: 165210.3125  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:02:33,945 - root - INFO - [31mstep: 4873  [32mloss:  2.95990  [38;2;180;60;0mgrad_norm: 216685.4688  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,443  [36mtflops: 14.85  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:02:39,200 - root - INFO - [31mstep: 4874  [32mloss:  2.89548  [38;2;180;60;0mgrad_norm: 171054.2500  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:02:44,469 - root - INFO - [31mstep: 4875  [32mloss:  2.91474  [38;2;180;60;0mgrad_norm: 202939.9219  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,450  [36mtflops: 14.89  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:02:49,741 - root - INFO - [31mstep: 4876  [32mloss:  2.83860  [38;2;180;60;0mgrad_norm: 261073.6875  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,448  [36mtflops: 14.88  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:02:54,987 - root - INFO - [31mstep: 4877  [32mloss:  2.84354  [38;2;180;60;0mgrad_norm: 216814.7344  [38;2;54;234;195mmemory: 28.69GiB(91.50%)  [34mtps: 2,460  [36mtflops: 14.96  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:03:00,237 - root - INFO - [31mstep: 4878  [32mloss:  2.91581  [38;2;180;60;0mgrad_norm: 166775.1562  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,459  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:03:05,468 - root - INFO - [31mstep: 4879  [32mloss:  2.92250  [38;2;180;60;0mgrad_norm: 155198.4219  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,467  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:03:10,669 - root - INFO - [31mstep: 4880  [32mloss:  2.90560  [38;2;180;60;0mgrad_norm: 203700.7500  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,481  [36mtflops: 15.09  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:03:15,915 - root - INFO - [31mstep: 4881  [32mloss:  2.91439  [38;2;180;60;0mgrad_norm: 184801.0781  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,460  [36mtflops: 14.96  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:03:21,192 - root - INFO - [31mstep: 4882  [32mloss:  2.90073  [38;2;180;60;0mgrad_norm: 174361.6719  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,446  [36mtflops: 14.87  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:03:26,445 - root - INFO - [31mstep: 4883  [32mloss:  2.92690  [38;2;180;60;0mgrad_norm: 176119.6250  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,457  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:03:31,659 - root - INFO - [31mstep: 4884  [32mloss:  2.95773  [38;2;180;60;0mgrad_norm: 208655.4219  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,475  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:03:36,864 - root - INFO - [31mstep: 4885  [32mloss:  2.95419  [38;2;180;60;0mgrad_norm: 190411.9062  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,479  [36mtflops: 15.07  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:03:42,095 - root - INFO - [31mstep: 4886  [32mloss:  2.95382  [38;2;180;60;0mgrad_norm: 186231.2344  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,467  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:03:47,320 - root - INFO - [31mstep: 4887  [32mloss:  3.02309  [38;2;180;60;0mgrad_norm: 251017.9062  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:03:52,541 - root - INFO - [31mstep: 4888  [32mloss:  2.90069  [38;2;180;60;0mgrad_norm: 223475.6250  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,472  [36mtflops: 15.03  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:03:57,727 - root - INFO - [31mstep: 4889  [32mloss:  3.00972  [38;2;180;60;0mgrad_norm: 234751.1250  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,489  [36mtflops: 15.13  [35mmfu: 4.85%[39m
+[rank4]:[titan] 2026-05-04 16:04:02,938 - root - INFO - [31mstep: 4890  [32mloss:  2.96316  [38;2;180;60;0mgrad_norm: 250246.1406  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,477  [36mtflops: 15.06  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:04:08,152 - root - INFO - [31mstep: 4891  [32mloss:  2.90100  [38;2;180;60;0mgrad_norm: 217332.8750  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,475  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:04:13,353 - root - INFO - [31mstep: 4892  [32mloss:  3.01428  [38;2;180;60;0mgrad_norm: 257697.7031  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,481  [36mtflops: 15.09  [35mmfu: 4.84%[39m
+[rank4]:[titan] 2026-05-04 16:04:18,563 - root - INFO - [31mstep: 4893  [32mloss:  2.96863  [38;2;180;60;0mgrad_norm: 251184.2812  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,477  [36mtflops: 15.06  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:04:23,810 - root - INFO - [31mstep: 4894  [32mloss:  2.92785  [38;2;180;60;0mgrad_norm: 220647.4219  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,460  [36mtflops: 14.96  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:04:28,983 - root - INFO - [31mstep: 4895  [32mloss:  2.88431  [38;2;180;60;0mgrad_norm: 289309.9375  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,495  [36mtflops: 15.17  [35mmfu: 4.86%[39m
+[rank4]:[titan] 2026-05-04 16:04:34,206 - root - INFO - [31mstep: 4896  [32mloss:  2.93190  [38;2;180;60;0mgrad_norm: 197984.6406  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,471  [36mtflops: 15.02  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:04:39,443 - root - INFO - [31mstep: 4897  [32mloss:  2.94603  [38;2;180;60;0mgrad_norm: 186337.4219  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,464  [36mtflops: 14.98  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:04:44,686 - root - INFO - [31mstep: 4898  [32mloss:  2.85990  [38;2;180;60;0mgrad_norm: 302369.1562  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,462  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:04:49,909 - root - INFO - [31mstep: 4899  [32mloss:  2.87174  [38;2;180;60;0mgrad_norm: 197545.0000  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,471  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:04:50,573 - root - INFO - [GC] Performing periodic GC collection took 0.66 seconds
+[rank4]:[titan] 2026-05-04 16:04:56,495 - root - INFO - [31mstep: 4900  [32mloss:  2.94721  [38;2;180;60;0mgrad_norm: 257492.2969  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 1,959  [36mtflops: 11.91  [35mmfu: 3.82%[39m
+[rank4]:[titan] 2026-05-04 16:05:01,736 - root - INFO - [31mstep: 4901  [32mloss:  2.96133  [38;2;180;60;0mgrad_norm: 228790.5938  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,462  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:05:06,997 - root - INFO - [31mstep: 4902  [32mloss:  2.85731  [38;2;180;60;0mgrad_norm: 214116.5625  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,454  [36mtflops: 14.92  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:05:12,241 - root - INFO - [31mstep: 4903  [32mloss:  2.94748  [38;2;180;60;0mgrad_norm: 260867.0781  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,461  [36mtflops: 14.96  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:05:17,468 - root - INFO - [31mstep: 4904  [32mloss:  2.95555  [38;2;180;60;0mgrad_norm: 183952.1719  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,469  [36mtflops: 15.01  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:05:22,722 - root - INFO - [31mstep: 4905  [32mloss:  2.89908  [38;2;180;60;0mgrad_norm: 173667.2188  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,457  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:05:27,943 - root - INFO - [31mstep: 4906  [32mloss:  2.99418  [38;2;180;60;0mgrad_norm: 220574.9062  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,472  [36mtflops: 15.03  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:05:33,167 - root - INFO - [31mstep: 4907  [32mloss:  2.94792  [38;2;180;60;0mgrad_norm: 193609.2500  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,471  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:05:38,390 - root - INFO - [31mstep: 4908  [32mloss:  2.86124  [38;2;180;60;0mgrad_norm: 198497.4219  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,471  [36mtflops: 15.02  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:05:43,631 - root - INFO - [31mstep: 4909  [32mloss:  2.96394  [38;2;180;60;0mgrad_norm: 182177.2500  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,463  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:05:48,871 - root - INFO - [31mstep: 4910  [32mloss:  2.90482  [38;2;180;60;0mgrad_norm: 204497.1406  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,463  [36mtflops: 14.98  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:05:54,049 - root - INFO - [31mstep: 4911  [32mloss:  2.88768  [38;2;180;60;0mgrad_norm: 185784.3125  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,493  [36mtflops: 15.15  [35mmfu: 4.86%[39m
+[rank4]:[titan] 2026-05-04 16:05:59,302 - root - INFO - [31mstep: 4912  [32mloss:  2.90865  [38;2;180;60;0mgrad_norm: 208650.9375  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,457  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:06:04,567 - root - INFO - [31mstep: 4913  [32mloss:  2.81728  [38;2;180;60;0mgrad_norm: 191475.0312  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,452  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:06:09,826 - root - INFO - [31mstep: 4914  [32mloss:  2.96560  [38;2;180;60;0mgrad_norm: 201108.5625  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,454  [36mtflops: 14.92  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:06:15,068 - root - INFO - [31mstep: 4915  [32mloss:  2.85358  [38;2;180;60;0mgrad_norm: 158806.8438  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,462  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:06:20,340 - root - INFO - [31mstep: 4916  [32mloss:  2.91221  [38;2;180;60;0mgrad_norm: 227129.1875  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,448  [36mtflops: 14.89  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:06:25,577 - root - INFO - [31mstep: 4917  [32mloss:  2.87729  [38;2;180;60;0mgrad_norm: 155279.5938  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,464  [36mtflops: 14.98  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:06:30,819 - root - INFO - [31mstep: 4918  [32mloss:  2.94986  [38;2;180;60;0mgrad_norm: 165838.4219  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,462  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:06:36,038 - root - INFO - [31mstep: 4919  [32mloss:  2.86185  [38;2;180;60;0mgrad_norm: 155113.9062  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,473  [36mtflops: 15.04  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:06:41,270 - root - INFO - [31mstep: 4920  [32mloss:  2.93980  [38;2;180;60;0mgrad_norm: 191690.7344  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,467  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:06:46,530 - root - INFO - [31mstep: 4921  [32mloss:  2.94812  [38;2;180;60;0mgrad_norm: 171742.0938  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,454  [36mtflops: 14.92  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:06:51,741 - root - INFO - [31mstep: 4922  [32mloss:  2.93635  [38;2;180;60;0mgrad_norm: 170614.1875  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,477  [36mtflops: 15.06  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:06:56,976 - root - INFO - [31mstep: 4923  [32mloss:  2.89643  [38;2;180;60;0mgrad_norm: 170326.0938  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,466  [36mtflops: 14.99  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:07:02,190 - root - INFO - [31mstep: 4924  [32mloss:  2.95691  [38;2;180;60;0mgrad_norm: 185285.5156  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,476  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:07:07,408 - root - INFO - [31mstep: 4925  [32mloss:  2.88462  [38;2;180;60;0mgrad_norm: 216332.5312  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,474  [36mtflops: 15.04  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:07:12,642 - root - INFO - [31mstep: 4926  [32mloss:  2.96442  [38;2;180;60;0mgrad_norm: 170475.9219  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,466  [36mtflops: 14.99  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:07:17,855 - root - INFO - [31mstep: 4927  [32mloss:  2.95996  [38;2;180;60;0mgrad_norm: 162459.6406  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,476  [36mtflops: 15.06  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:07:23,068 - root - INFO - [31mstep: 4928  [32mloss:  2.99235  [38;2;180;60;0mgrad_norm: 195913.3906  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,476  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:07:28,277 - root - INFO - [31mstep: 4929  [32mloss:  2.90538  [38;2;180;60;0mgrad_norm: 177720.2812  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,478  [36mtflops: 15.07  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:07:33,484 - root - INFO - [31mstep: 4930  [32mloss:  2.83333  [38;2;180;60;0mgrad_norm: 122280.7656  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,479  [36mtflops: 15.07  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:07:38,726 - root - INFO - [31mstep: 4931  [32mloss:  2.88012  [38;2;180;60;0mgrad_norm: 137194.7344  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,463  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:07:43,968 - root - INFO - [31mstep: 4932  [32mloss:  2.84626  [38;2;180;60;0mgrad_norm: 154688.6094  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,462  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:07:49,179 - root - INFO - [31mstep: 4933  [32mloss:  3.05710  [38;2;180;60;0mgrad_norm: 157039.4375  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,477  [36mtflops: 15.06  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:07:54,358 - root - INFO - [31mstep: 4934  [32mloss:  2.97793  [38;2;180;60;0mgrad_norm: 161763.5625  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,492  [36mtflops: 15.15  [35mmfu: 4.86%[39m
+[rank4]:[titan] 2026-05-04 16:07:59,561 - root - INFO - [31mstep: 4935  [32mloss:  2.90016  [38;2;180;60;0mgrad_norm: 159403.4375  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,481  [36mtflops: 15.08  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:08:04,781 - root - INFO - [31mstep: 4936  [32mloss:  2.93096  [38;2;180;60;0mgrad_norm: 153719.3750  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,472  [36mtflops: 15.03  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:08:09,966 - root - INFO - [31mstep: 4937  [32mloss:  2.97000  [38;2;180;60;0mgrad_norm: 216253.0625  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,490  [36mtflops: 15.14  [35mmfu: 4.85%[39m
+[rank4]:[titan] 2026-05-04 16:08:15,207 - root - INFO - [31mstep: 4938  [32mloss:  2.83665  [38;2;180;60;0mgrad_norm: 168566.5469  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,463  [36mtflops: 14.98  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:08:20,420 - root - INFO - [31mstep: 4939  [32mloss:  2.91240  [38;2;180;60;0mgrad_norm: 159280.0781  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,476  [36mtflops: 15.05  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:08:25,636 - root - INFO - [31mstep: 4940  [32mloss:  2.90578  [38;2;180;60;0mgrad_norm: 173052.4062  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,475  [36mtflops: 15.05  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:08:30,839 - root - INFO - [31mstep: 4941  [32mloss:  2.93283  [38;2;180;60;0mgrad_norm: 174445.7500  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,481  [36mtflops: 15.08  [35mmfu: 4.83%[39m
+[rank4]:[titan] 2026-05-04 16:08:36,060 - root - INFO - [31mstep: 4942  [32mloss:  2.87825  [38;2;180;60;0mgrad_norm: 142078.0938  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,472  [36mtflops: 15.03  [35mmfu: 4.82%[39m
+[rank4]:[titan] 2026-05-04 16:08:41,292 - root - INFO - [31mstep: 4943  [32mloss:  2.93128  [38;2;180;60;0mgrad_norm: 152726.7812  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,467  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:08:46,522 - root - INFO - [31mstep: 4944  [32mloss:  2.88186  [38;2;180;60;0mgrad_norm: 157668.5312  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,468  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:08:51,785 - root - INFO - [31mstep: 4945  [32mloss:  2.90607  [38;2;180;60;0mgrad_norm: 198161.1250  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,453  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:08:57,018 - root - INFO - [31mstep: 4946  [32mloss:  2.88230  [38;2;180;60;0mgrad_norm: 175251.5938  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,466  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:09:02,266 - root - INFO - [31mstep: 4947  [32mloss:  2.90880  [38;2;180;60;0mgrad_norm: 149985.8750  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,460  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:09:07,552 - root - INFO - [31mstep: 4948  [32mloss:  3.01308  [38;2;180;60;0mgrad_norm: 158098.4062  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,455  [36mtflops: 14.93  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:09:12,812 - root - INFO - [31mstep: 4949  [32mloss:  2.92694  [38;2;180;60;0mgrad_norm: 189774.8594  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,454  [36mtflops: 14.92  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:09:12,812 - root - INFO - [GC] Performing periodic GC collection took 0.00 seconds
+[rank4]:[titan] 2026-05-04 16:09:18,083 - root - INFO - [31mstep: 4950  [32mloss:  2.84175  [38;2;180;60;0mgrad_norm: 165597.7656  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,449  [36mtflops: 14.89  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:09:23,371 - root - INFO - [31mstep: 4951  [32mloss:  2.88834  [38;2;180;60;0mgrad_norm: 195528.1562  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,441  [36mtflops: 14.84  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:09:28,659 - root - INFO - [31mstep: 4952  [32mloss:  2.92554  [38;2;180;60;0mgrad_norm: 162551.0625  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,441  [36mtflops: 14.84  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:09:33,915 - root - INFO - [31mstep: 4953  [32mloss:  2.95295  [38;2;180;60;0mgrad_norm: 165157.6250  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:09:39,179 - root - INFO - [31mstep: 4954  [32mloss:  2.87251  [38;2;180;60;0mgrad_norm: 159893.6875  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,452  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:09:44,424 - root - INFO - [31mstep: 4955  [32mloss:  3.01980  [38;2;180;60;0mgrad_norm: 159644.1094  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,461  [36mtflops: 14.96  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:09:49,690 - root - INFO - [31mstep: 4956  [32mloss:  2.91084  [38;2;180;60;0mgrad_norm: 190767.5000  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,451  [36mtflops: 14.90  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:09:54,920 - root - INFO - [31mstep: 4957  [32mloss:  2.89806  [38;2;180;60;0mgrad_norm: 171941.4688  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,468  [36mtflops: 15.01  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:10:00,169 - root - INFO - [31mstep: 4958  [32mloss:  2.81838  [38;2;180;60;0mgrad_norm: 162591.6562  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,459  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:10:05,421 - root - INFO - [31mstep: 4959  [32mloss:  2.92132  [38;2;180;60;0mgrad_norm: 183747.2500  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,457  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:10:10,646 - root - INFO - [31mstep: 4960  [32mloss:  2.90453  [38;2;180;60;0mgrad_norm: 188589.9375  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,470  [36mtflops: 15.02  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:10:15,912 - root - INFO - [31mstep: 4961  [32mloss:  2.90571  [38;2;180;60;0mgrad_norm: 221106.7031  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,451  [36mtflops: 14.90  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:10:21,191 - root - INFO - [31mstep: 4962  [32mloss:  2.95653  [38;2;180;60;0mgrad_norm: 194945.3281  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,445  [36mtflops: 14.86  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:10:26,441 - root - INFO - [31mstep: 4963  [32mloss:  2.88484  [38;2;180;60;0mgrad_norm: 202869.5625  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,459  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:10:31,696 - root - INFO - [31mstep: 4964  [32mloss:  2.90667  [38;2;180;60;0mgrad_norm: 202949.2812  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:10:36,952 - root - INFO - [31mstep: 4965  [32mloss:  2.94832  [38;2;180;60;0mgrad_norm: 260453.7188  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:10:42,202 - root - INFO - [31mstep: 4966  [32mloss:  2.97330  [38;2;180;60;0mgrad_norm: 245638.7500  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,458  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:10:47,434 - root - INFO - [31mstep: 4967  [32mloss:  2.97814  [38;2;180;60;0mgrad_norm: 229610.6719  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,467  [36mtflops: 15.00  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:10:52,700 - root - INFO - [31mstep: 4968  [32mloss:  3.00160  [38;2;180;60;0mgrad_norm: 179984.3750  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,451  [36mtflops: 14.90  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:10:57,946 - root - INFO - [31mstep: 4969  [32mloss:  2.95619  [38;2;180;60;0mgrad_norm: 208251.3906  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,460  [36mtflops: 14.96  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:11:03,235 - root - INFO - [31mstep: 4970  [32mloss:  2.96367  [38;2;180;60;0mgrad_norm: 193041.6719  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,440  [36mtflops: 14.84  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:11:08,525 - root - INFO - [31mstep: 4971  [32mloss:  2.91012  [38;2;180;60;0mgrad_norm: 241531.0469  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,440  [36mtflops: 14.83  [35mmfu: 4.75%[39m
+[rank4]:[titan] 2026-05-04 16:11:13,808 - root - INFO - [31mstep: 4972  [32mloss:  2.93839  [38;2;180;60;0mgrad_norm: 217214.8906  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,444  [36mtflops: 14.86  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:11:19,090 - root - INFO - [31mstep: 4973  [32mloss:  2.93165  [38;2;180;60;0mgrad_norm: 224609.2500  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,444  [36mtflops: 14.86  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:11:24,327 - root - INFO - [31mstep: 4974  [32mloss:  2.85618  [38;2;180;60;0mgrad_norm: 209967.9531  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,464  [36mtflops: 14.98  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:11:29,585 - root - INFO - [31mstep: 4975  [32mloss:  2.98075  [38;2;180;60;0mgrad_norm: 211176.9531  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,455  [36mtflops: 14.93  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:11:34,832 - root - INFO - [31mstep: 4976  [32mloss:  2.84843  [38;2;180;60;0mgrad_norm: 169039.3281  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,460  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:11:40,069 - root - INFO - [31mstep: 4977  [32mloss:  2.93622  [38;2;180;60;0mgrad_norm: 176870.3438  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,465  [36mtflops: 14.99  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:11:45,324 - root - INFO - [31mstep: 4978  [32mloss:  2.98531  [38;2;180;60;0mgrad_norm: 230974.2656  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:11:50,572 - root - INFO - [31mstep: 4979  [32mloss:  2.91066  [38;2;180;60;0mgrad_norm: 217402.8906  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,459  [36mtflops: 14.95  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:11:55,834 - root - INFO - [31mstep: 4980  [32mloss:  2.95030  [38;2;180;60;0mgrad_norm: 192525.0469  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,453  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:12:01,086 - root - INFO - [31mstep: 4981  [32mloss:  2.94908  [38;2;180;60;0mgrad_norm: 213259.1875  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,458  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:12:06,343 - root - INFO - [31mstep: 4982  [32mloss:  2.96050  [38;2;180;60;0mgrad_norm: 214475.0469  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,455  [36mtflops: 14.93  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:12:11,586 - root - INFO - [31mstep: 4983  [32mloss:  2.99215  [38;2;180;60;0mgrad_norm: 181699.3438  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,462  [36mtflops: 14.97  [35mmfu: 4.80%[39m
+[rank4]:[titan] 2026-05-04 16:12:16,854 - root - INFO - [31mstep: 4984  [32mloss:  2.89271  [38;2;180;60;0mgrad_norm: 220769.5000  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,450  [36mtflops: 14.90  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:12:22,117 - root - INFO - [31mstep: 4985  [32mloss:  2.91130  [38;2;180;60;0mgrad_norm: 162666.4062  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,453  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:12:27,378 - root - INFO - [31mstep: 4986  [32mloss:  2.94498  [38;2;180;60;0mgrad_norm: 258358.2031  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,453  [36mtflops: 14.91  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:12:32,636 - root - INFO - [31mstep: 4987  [32mloss:  2.92574  [38;2;180;60;0mgrad_norm: 281707.0625  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,455  [36mtflops: 14.93  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:12:37,915 - root - INFO - [31mstep: 4988  [32mloss:  2.97562  [38;2;180;60;0mgrad_norm: 239974.2031  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,445  [36mtflops: 14.87  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:12:43,223 - root - INFO - [31mstep: 4989  [32mloss:  2.90453  [38;2;180;60;0mgrad_norm: 227243.6094  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,432  [36mtflops: 14.78  [35mmfu: 4.74%[39m
+[rank4]:[titan] 2026-05-04 16:12:48,496 - root - INFO - [31mstep: 4990  [32mloss:  2.98912  [38;2;180;60;0mgrad_norm: 200532.6562  [38;2;54;234;195mmemory: 28.71GiB(91.56%)  [34mtps: 2,448  [36mtflops: 14.88  [35mmfu: 4.77%[39m
+[rank4]:[titan] 2026-05-04 16:12:53,776 - root - INFO - [31mstep: 4991  [32mloss:  2.89427  [38;2;180;60;0mgrad_norm: 275769.1562  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,445  [36mtflops: 14.86  [35mmfu: 4.76%[39m
+[rank4]:[titan] 2026-05-04 16:12:59,038 - root - INFO - [31mstep: 4992  [32mloss:  2.96739  [38;2;180;60;0mgrad_norm: 215167.4688  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,453  [36mtflops: 14.92  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:13:04,272 - root - INFO - [31mstep: 4993  [32mloss:  2.94190  [38;2;180;60;0mgrad_norm: 225629.5156  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,466  [36mtflops: 14.99  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:13:09,531 - root - INFO - [31mstep: 4994  [32mloss:  2.90964  [38;2;180;60;0mgrad_norm: 191905.7969  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,454  [36mtflops: 14.92  [35mmfu: 4.78%[39m
+[rank4]:[titan] 2026-05-04 16:13:14,782 - root - INFO - [31mstep: 4995  [32mloss:  2.88534  [38;2;180;60;0mgrad_norm: 209563.9688  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,458  [36mtflops: 14.94  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:13:20,039 - root - INFO - [31mstep: 4996  [32mloss:  2.83582  [38;2;180;60;0mgrad_norm: 161824.8750  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:13:25,293 - root - INFO - [31mstep: 4997  [32mloss:  2.89189  [38;2;180;60;0mgrad_norm: 181642.7812  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:13:30,549 - root - INFO - [31mstep: 4998  [32mloss:  2.84209  [38;2;180;60;0mgrad_norm: 214078.2812  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,456  [36mtflops: 14.93  [35mmfu: 4.79%[39m
+[rank4]:[titan] 2026-05-04 16:13:35,779 - root - INFO - [31mstep: 4999  [32mloss:  2.91256  [38;2;180;60;0mgrad_norm: 153448.5000  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 2,468  [36mtflops: 15.01  [35mmfu: 4.81%[39m
+[rank4]:[titan] 2026-05-04 16:13:42,750 - root - INFO - [GC] Performing periodic GC collection took 6.97 seconds
+[rank4]:[titan] 2026-05-04 16:13:48,066 - root - INFO - [31mstep: 5000  [32mloss:  2.97523  [38;2;180;60;0mgrad_norm: 187760.9531  [38;2;54;234;195mmemory: 28.79GiB(91.81%)  [34mtps: 1,050  [36mtflops: 6.38  [35mmfu: 2.05%[39m
+[rank4]:[titan] 2026-05-04 16:13:48,066 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank4]:[titan] 2026-05-04 16:13:48,066 - root - INFO - Saving a full checkpoint at last step, step 5000.
+[rank4]:[titan] 2026-05-04 16:15:15,474 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.00 seconds
+[rank4]:[titan] 2026-05-04 16:15:15,475 - root - INFO - Training completed
+[rank4]:Exception ignored while calling deallocator <function CheckpointManager.__del__ at 0x7ff1d8c18eb0>:
+[rank4]:Traceback (most recent call last):
+[rank4]:  File "/root/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 405, in __del__
+[rank4]:    self.close()
+[rank4]:  File "/root/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 419, in close
+[rank4]:    self.purge_thread.join()
+[rank4]:  File "/venv/main/lib/python3.14/threading.py", line 1133, in join
+[rank4]:    self._os_thread_handle.join(timeout)
+[rank4]:PythonFinalizationError: cannot join thread at interpreter shutdown
