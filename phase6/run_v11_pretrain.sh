@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# v11 multimodal continued pretrain — 4D parallel (FSDP+PP+TP+EP)
+#
+# Same data + per-step batch as v10 (GBS=320, LBS=160, micro=10) but
+# upgrades 3D (FSDP=2 PP=2 TP=2) to 4D by adding EP=2 (borrowed from
+# FSDP×TP=4). Routed experts shard across the EP mesh, non-expert
+# params shard across edp_mesh = (dp_replicate × efsdp).
+#
+# Mesh:
+#   PP=2 × FSDP=2 × TP=2  = 8 (dense, all 8 GPUs)
+#   EP=2 borrows from FSDP×TP=4
+#
+#   ranks 0..7 group membership:
+#     PP groups: {0,1,2,3}, {4,5,6,7}        (PP rank 0 / 1)
+#     FSDP groups: {0,1}, {2,3}, {4,5}, {6,7}
+#     TP groups: {0,2}, {1,3}, {4,6}, {5,7}
+#     EP groups: same physical pairs as FSDP×TP combined
+#
+# Pre-req fixes:
+#   - apply_tp_kimi_linear(skip_expert_params=True) under EP
+#     (torchtitan @ attention_residual_dev tip)
+#   - apply_fsdp(ep_degree, edp_mesh) for nested expert shard
+#     (same commit)
+#
+# To run: just bash this script. It does NOT auto-kill prior runs —
+# stop v10 first if shared box. Auto-resume happens via the trainer
+# checkpointer when OUT_DIR contains step-N/.
+set -u
+
+WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LAUNCHER="$WORKSPACE_DIR/phase6/launch_8gpu_mm.sh"
+PHASE4_CKPT="$WORKSPACE_DIR/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000"
+OUT_DIR="$WORKSPACE_DIR/phase5/runs/v11_4d_fsdp2_pp2_tp2_ep2_continue_8gpu_from_p4_step8000"
+
+mkdir -p "$OUT_DIR"
+LOG="$WORKSPACE_DIR/phase6/v11_orchestrator.log"
+exec >>"$LOG" 2>&1
+
+echo "==============================================================="
+echo "[$(date)] v11 4D pretrain START"
+echo "==============================================================="
+
+OUT_DIR="$OUT_DIR" \
+FSDP=2 DP_REP=1 PP=2 TP=2 CP=1 EP=2 V=2 ADAPTER=1 \
+PP_MICROBATCH=10 \
+STEPS=5000 LOCAL_BS=160 GLOBAL_BS=320 SEQ_LEN=260 \
+FLAVOR=kimi_linear_436m_block_attn_res_n4 \
+STUDENT_CKPT="$PHASE4_CKPT" \
+SEED=42 DETERMINISTIC=0 COMPILE=1 \
+LR=1e-5 WARMUP=200 \
+CHECKPOINT_ENABLED=1 SAVE_FREQ=500 KEEP_K=1 \
+TRACE_TIER=tier_b TRACE_STEPS=50 \
+bash "$LAUNCHER" || {
+    echo "[$(date)] [ERROR] v11 failed; rerun same dump_folder to auto-resume"
+}
+
+echo "[$(date)] v11 4D pretrain DONE"
