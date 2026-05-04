@@ -1,0 +1,1034 @@
+W0503 22:16:24.147000 1207625 site-packages/torch/distributed/run.py:851] 
+W0503 22:16:24.147000 1207625 site-packages/torch/distributed/run.py:851] *****************************************
+W0503 22:16:24.147000 1207625 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0503 22:16:24.147000 1207625 site-packages/torch/distributed/run.py:851] *****************************************
+[rank4]:[titan] 2026-05-03 22:16:33,490 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank4]:[titan] 2026-05-03 22:16:33,491 - root - WARNING - ENV[TORCH_NCCL_DUMP_ON_TIMEOUT] = 1 will be overridden to 1 based on job config
+[rank4]:[titan] 2026-05-03 22:16:33,494 - root - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=4, cp=1, tp=1, ep=2, etp=1
+[rank4]:[titan] 2026-05-03 22:16:33,522 - root - INFO - Successfully created meshes with active dimensions: ['pp', 'batch', 'loss', 'fsdp', 'ep', 'efsdp']
+[rank4]:[titan] 2026-05-03 22:16:33,522 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank4]:[titan] 2026-05-03 22:16:33,543 - root - INFO - Loading tokenizer from tokenizer.json
+[rank4]:[titan] 2026-05-03 22:16:33,814 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank4]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:[titan] 2026-05-03 22:16:34,196 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-03 22:16:34,197 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:[titan] 2026-05-03 22:16:34,243 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:16:34,450 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:16:35,143 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:16:35,451 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:16:36,009 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:16:36,995 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:16:37,264 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:16:37,695 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:16:37,973 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:16:38,281 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:16:38,335 - root - INFO - Building kimi_linear kimi_linear_436m_block_attn_res_n4 with {
+[rank4]:  "vocab_size": 163840,
+[rank4]:  "hidden_size": 1168,
+[rank4]:  "tie_word_embeddings": true,
+[rank4]:  "num_hidden_layers": 16,
+[rank4]:  "intermediate_size": 528,
+[rank4]:  "num_attention_heads": 16,
+[rank4]:  "num_key_value_heads": 16,
+[rank4]:  "q_lora_rank": null,
+[rank4]:  "kv_lora_rank": 584,
+[rank4]:  "qk_nope_head_dim": 73,
+[rank4]:  "qk_rope_head_dim": 36,
+[rank4]:  "v_head_dim": 73,
+[rank4]:  "mla_use_nope": true,
+[rank4]:  "rope_theta": 10000.0,
+[rank4]:  "kda_num_heads": 16,
+[rank4]:  "kda_head_dim": 73,
+[rank4]:  "kda_short_conv_kernel_size": 4,
+[rank4]:  "kda_layers": [
+[rank4]:    1,
+[rank4]:    2,
+[rank4]:    3,
+[rank4]:    5,
+[rank4]:    6,
+[rank4]:    7,
+[rank4]:    9,
+[rank4]:    10,
+[rank4]:    11,
+[rank4]:    13,
+[rank4]:    14,
+[rank4]:    15
+[rank4]:  ],
+[rank4]:  "full_attn_layers": [
+[rank4]:    4,
+[rank4]:    8,
+[rank4]:    12,
+[rank4]:    16
+[rank4]:  ],
+[rank4]:  "num_experts": 32,
+[rank4]:  "num_experts_per_token": 8,
+[rank4]:  "moe_intermediate_size": 528,
+[rank4]:  "moe_renormalize": true,
+[rank4]:  "moe_router_activation_func": "sigmoid",
+[rank4]:  "num_shared_experts": 1,
+[rank4]:  "routed_scaling_factor": 2.446,
+[rank4]:  "first_k_dense_replace": 1,
+[rank4]:  "moe_layer_freq": 1,
+[rank4]:  "use_grouped_topk": false,
+[rank4]:  "num_expert_group": 1,
+[rank4]:  "topk_group": 1,
+[rank4]:  "rms_norm_eps": 1e-05,
+[rank4]:  "hidden_act": "silu",
+[rank4]:  "initializer_range": 0.02,
+[rank4]:  "__spec__": {
+[rank4]:    "num_blocks": 4,
+[rank4]:    "model_class": "KimiLinearAttnResModel"
+[rank4]:  }
+[rank4]:}
+[rank4]:[titan] 2026-05-03 22:16:38,359 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase5/runs/v10_fsdp4_pp2_ep2_lbs192_mb24_continue_8gpu_from_p4_step8000/tb/20260503-2216
+[rank4]:[titan] 2026-05-03 22:16:38,359 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank4]:[titan] 2026-05-03 22:16:38,362 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank4]:[titan] 2026-05-03 22:16:38,362 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank4]:[titan] 2026-05-03 22:16:38,363 - root - INFO - [34mModel kimi_linear kimi_linear_436m_block_attn_res_n4 [31msize: 1,201,640,636 total parameters[39m
+[rank4]:[titan] 2026-05-03 22:16:38,363 - root - INFO - Compiling the loss function with torch.compile
+[rank4]:[titan] 2026-05-03 22:16:38,392 - root - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.2', 'layers.3']
+[rank4]:[titan] 2026-05-03 22:16:38,410 - root - INFO - PP rank 1 is building stage_idx 3 with modules ['layers.6', 'layers.7']
+[rank4]:[rank4]: Traceback (most recent call last):
+[rank4]:[rank4]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank4]:[rank4]:   File "<frozen runpy>", line 88, in _run_code
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 497, in <module>
+[rank4]:[rank4]:     main()
+[rank4]:[rank4]:     ~~~~^^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 480, in main
+[rank4]:[rank4]:     trainer = MultimodalTrainer(
+[rank4]:[rank4]:         config,
+[rank4]:[rank4]:     ...<7 lines>...
+[rank4]:[rank4]:         layout=mm_args.mm_layout,
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 121, in __init__
+[rank4]:[rank4]:     super().__init__(config)
+[rank4]:[rank4]:     ~~~~~~~~~~~~~~~~^^^^^^^^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+[rank4]:[rank4]:     return f(*args, **kwargs)
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+[rank4]:[rank4]:     ) = model_spec.pipelining_fn(
+[rank4]:[rank4]:         ~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank4]:[rank4]:         model,
+[rank4]:[rank4]:         ^^^^^^
+[rank4]:[rank4]:     ...<10 lines>...
+[rank4]:[rank4]:         loss_fn=self.loss_fn,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+[rank4]:[rank4]:     pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+[rank4]:[rank4]:                                                                 ~~~~~~~~~~~~^
+[rank4]:[rank4]:         model, **kwargs
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+[rank4]:[rank4]:     m = parallelize_fn(
+[rank4]:[rank4]:         m,
+[rank4]:[rank4]:     ...<6 lines>...
+[rank4]:[rank4]:         dump_folder=dump_folder,
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+[rank4]:[rank4]:     apply_fsdp(
+[rank4]:[rank4]:     ~~~~~~~~~~^
+[rank4]:[rank4]:         model,
+[rank4]:[rank4]:         ^^^^^^
+[rank4]:[rank4]:     ...<7 lines>...
+[rank4]:[rank4]:         ),
+[rank4]:[rank4]:         ^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+[rank4]:[rank4]:     fully_shard(
+[rank4]:[rank4]:     ~~~~~~~~~~~^
+[rank4]:[rank4]:         layer,
+[rank4]:[rank4]:         ^^^^^^
+[rank4]:[rank4]:         **fsdp_config,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^
+[rank4]:[rank4]:         reshard_after_forward=reshard_after_forward,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+[rank4]:[rank4]:     updated = func(inp_module, *args, **kwargs)
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+[rank4]:[rank4]:     _init_param_group(
+[rank4]:[rank4]:     ~~~~~~~~~~~~~~~~~^
+[rank4]:[rank4]:         state,
+[rank4]:[rank4]:         ^^^^^^
+[rank4]:[rank4]:     ...<7 lines>...
+[rank4]:[rank4]:         offload_policy,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+[rank4]:[rank4]:     state._fsdp_param_group = FSDPParamGroup(
+[rank4]:[rank4]:                               ~~~~~~~~~~~~~~^
+[rank4]:[rank4]:         params,
+[rank4]:[rank4]:         ^^^^^^^
+[rank4]:[rank4]:     ...<6 lines>...
+[rank4]:[rank4]:         offload_policy,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+[rank4]:[rank4]:     FSDPParam(
+[rank4]:[rank4]:     ~~~~~~~~~^
+[rank4]:[rank4]:         param,
+[rank4]:[rank4]:         ^^^^^^
+[rank4]:[rank4]:     ...<6 lines>...
+[rank4]:[rank4]:         offload_policy,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+[rank4]:[rank4]:     self._init_sharded_param(param, device, shard_placement_fn)
+[rank4]:[rank4]:     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+[rank4]:[rank4]:     return func(*args, **kwargs)
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+[rank4]:[rank4]:     self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+[rank4]:[rank4]:                       ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+[rank4]:[rank4]:     raise RuntimeError(
+[rank4]:[rank4]:         f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+[rank4]:[rank4]:     )
+[rank4]:[rank4]: RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+[rank4]:[titan] 2026-05-03 22:16:38,427 - root - INFO - PP rank 1 is building stage_idx 5 with modules ['layers.10', 'layers.11']
+[rank4]:[titan] 2026-05-03 22:16:38,444 - root - INFO - PP rank 1 is building stage_idx 7 with modules ['layers.14', 'layers.15', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank4]:[titan] 2026-05-03 22:16:38,450 - root - INFO - EP plan wrapped 2 MoE layer experts.
+[rank4]:[titan] 2026-05-03 22:16:38,450 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=2.
+[rank4]:[titan] 2026-05-03 22:16:38,453 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+W0503 22:16:39.521000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1207759 closing signal SIGTERM
+W0503 22:16:39.522000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1207760 closing signal SIGTERM
+W0503 22:16:39.523000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1207761 closing signal SIGTERM
+W0503 22:16:39.524000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1207762 closing signal SIGTERM
+W0503 22:16:39.525000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1207763 closing signal SIGTERM
+W0503 22:16:39.526000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1207765 closing signal SIGTERM
+W0503 22:16:39.526000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1207766 closing signal SIGTERM
+E0503 22:16:40.312000 1207625 site-packages/torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 5 (pid: 1207764) of binary: /venv/main/bin/python3
+E0503 22:16:40.321000 1207625 site-packages/torch/distributed/elastic/multiprocessing/errors/error_handler.py:145] no error file defined for parent, to copy child error file (/tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/5/error.json)
+Traceback (most recent call last):
+  File "/venv/main/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+    ~~~^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+    ~~~~~~~~~~~~~~~
+        config=config,
+        ~~~~~~~~~~~~~~
+        entrypoint=cmd,
+        ~~~~~~~~~~~~~~~
+    )(*cmd_args)
+    ~^^^^^^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+    ...<2 lines>...
+    )
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase5.train_mm FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-03_22:16:39
+  host      : b008e969124e
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 1207759)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+[2]:
+  time      : 2026-05-03_22:16:38
+  host      : b008e969124e
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 1207760)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+[3]:
+  time      : 2026-05-03_22:16:39
+  host      : b008e969124e
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 1207761)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/2/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+[4]:
+  time      : 2026-05-03_22:16:39
+  host      : b008e969124e
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 1207762)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/3/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+[5]:
+  time      : 2026-05-03_22:16:38
+  host      : b008e969124e
+  rank      : 4 (local_rank: 4)
+  exitcode  : -15 (pid: 1207763)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/4/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+[6]:
+  time      : 2026-05-03_22:16:39
+  host      : b008e969124e
+  rank      : 6 (local_rank: 6)
+  exitcode  : -15 (pid: 1207765)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/6/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+[7]:
+  time      : 2026-05-03_22:16:38
+  host      : b008e969124e
+  rank      : 7 (local_rank: 7)
+  exitcode  : -15 (pid: 1207766)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/7/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-03_22:16:38
+  host      : b008e969124e
+  rank      : 5 (local_rank: 5)
+  exitcode  : 1 (pid: 1207764)
+  error_file: /tmp/torchelastic_izwoh6wl/none_4_4km4j3/attempt_0/5/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 188, in parallelize_kimi_linear
+      apply_fsdp(
+      ~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<7 lines>...
+          ),
+          ^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 839, in apply_fsdp
+      fully_shard(
+      ~~~~~~~~~~~^
+          layer,
+          ^^^^^^
+          **fsdp_config,
+          ^^^^^^^^^^^^^^
+          reshard_after_forward=reshard_after_forward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/_composable/contract.py", line 156, in wrapper
+      updated = func(inp_module, *args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fully_shard.py", line 210, in fully_shard
+      _init_param_group(
+      ~~~~~~~~~~~~~~~~~^
+          state,
+          ^^^^^^
+      ...<7 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_init.py", line 373, in _init_param_group
+      state._fsdp_param_group = FSDPParamGroup(
+                                ~~~~~~~~~~~~~~^
+          params,
+          ^^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param_group.py", line 142, in __init__
+      FSDPParam(
+      ~~~~~~~~~^
+          param,
+          ^^^^^^
+      ...<6 lines>...
+          offload_policy,
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 245, in __init__
+      self._init_sharded_param(param, device, shard_placement_fn)
+      ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+      return func(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_param.py", line 299, in _init_sharded_param
+      self._spmd_mesh = DeviceMesh._concatenate([dp_mesh, tp_mesh])
+                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/device_mesh.py", line 1409, in _concatenate
+      raise RuntimeError(
+          f"Cannot concatenate overlapping meshes: {device_mesh_list}"
+      )
+  RuntimeError: Cannot concatenate overlapping meshes: [DeviceMesh((fsdp=4), 'cuda', stride=(1,)), DeviceMesh((ep=2), 'cuda', stride=(1,))]
+  
+============================================================

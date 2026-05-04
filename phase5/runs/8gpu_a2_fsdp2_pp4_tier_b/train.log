@@ -1,0 +1,463 @@
+W0503 06:22:18.914000 1611060 site-packages/torch/distributed/run.py:851] 
+W0503 06:22:18.914000 1611060 site-packages/torch/distributed/run.py:851] *****************************************
+W0503 06:22:18.914000 1611060 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0503 06:22:18.914000 1611060 site-packages/torch/distributed/run.py:851] *****************************************
+[rank6]:[titan] 2026-05-03 06:22:28,957 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank6]:[titan] 2026-05-03 06:22:28,958 - root - WARNING - ENV[TORCH_NCCL_DUMP_ON_TIMEOUT] = 1 will be overridden to 1 based on job config
+[rank6]:[titan] 2026-05-03 06:22:28,960 - root - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=2, cp=1, tp=1, ep=1, etp=1
+[rank6]:[titan] 2026-05-03 06:22:28,972 - root - INFO - Successfully created meshes with active dimensions: ['pp', 'batch', 'loss', 'fsdp', 'efsdp']
+[rank6]:[titan] 2026-05-03 06:22:28,974 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank6]:[titan] 2026-05-03 06:22:28,980 - root - INFO - Loading tokenizer from tokenizer.json
+[rank6]:[titan] 2026-05-03 06:22:29,263 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank6]:[titan] 2026-05-03 06:22:29,642 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:29,688 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:29,888 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:29,888 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank6]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank6]:[titan] 2026-05-03 06:22:30,578 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:30,888 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:31,318 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:31,696 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:31,938 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:32,241 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:32,460 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:32,767 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:32,821 - root - INFO - Building kimi_linear kimi_linear_436m_block_attn_res_n4 with {
+[rank6]:  "vocab_size": 163840,
+[rank6]:  "hidden_size": 1168,
+[rank6]:  "tie_word_embeddings": true,
+[rank6]:  "num_hidden_layers": 16,
+[rank6]:  "intermediate_size": 528,
+[rank6]:  "num_attention_heads": 16,
+[rank6]:  "num_key_value_heads": 16,
+[rank6]:  "q_lora_rank": null,
+[rank6]:  "kv_lora_rank": 584,
+[rank6]:  "qk_nope_head_dim": 73,
+[rank6]:  "qk_rope_head_dim": 36,
+[rank6]:  "v_head_dim": 73,
+[rank6]:  "mla_use_nope": true,
+[rank6]:  "rope_theta": 10000.0,
+[rank6]:  "kda_num_heads": 16,
+[rank6]:  "kda_head_dim": 73,
+[rank6]:  "kda_short_conv_kernel_size": 4,
+[rank6]:  "kda_layers": [
+[rank6]:    1,
+[rank6]:    2,
+[rank6]:    3,
+[rank6]:    5,
+[rank6]:    6,
+[rank6]:    7,
+[rank6]:    9,
+[rank6]:    10,
+[rank6]:    11,
+[rank6]:    13,
+[rank6]:    14,
+[rank6]:    15
+[rank6]:  ],
+[rank6]:  "full_attn_layers": [
+[rank6]:    4,
+[rank6]:    8,
+[rank6]:    12,
+[rank6]:    16
+[rank6]:  ],
+[rank6]:  "num_experts": 32,
+[rank6]:  "num_experts_per_token": 8,
+[rank6]:  "moe_intermediate_size": 528,
+[rank6]:  "moe_renormalize": true,
+[rank6]:  "moe_router_activation_func": "sigmoid",
+[rank6]:  "num_shared_experts": 1,
+[rank6]:  "routed_scaling_factor": 2.446,
+[rank6]:  "first_k_dense_replace": 1,
+[rank6]:  "moe_layer_freq": 1,
+[rank6]:  "use_grouped_topk": false,
+[rank6]:  "num_expert_group": 1,
+[rank6]:  "topk_group": 1,
+[rank6]:  "rms_norm_eps": 1e-05,
+[rank6]:  "hidden_act": "silu",
+[rank6]:  "initializer_range": 0.02,
+[rank6]:  "__spec__": {
+[rank6]:    "num_blocks": 4,
+[rank6]:    "model_class": "KimiLinearAttnResModel"
+[rank6]:  }
+[rank6]:}
+[rank6]:[titan] 2026-05-03 06:22:32,844 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase5/runs/8gpu_a2_fsdp2_pp4_tier_b/tb/20260503-0622
+[rank6]:[titan] 2026-05-03 06:22:32,845 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank6]:[titan] 2026-05-03 06:22:32,847 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank6]:[titan] 2026-05-03 06:22:32,847 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank6]:[titan] 2026-05-03 06:22:32,848 - root - INFO - [34mModel kimi_linear kimi_linear_436m_block_attn_res_n4 [31msize: 1,201,640,636 total parameters[39m
+[rank6]:[titan] 2026-05-03 06:22:32,848 - root - INFO - Compiling the loss function with torch.compile
+[rank6]:[titan] 2026-05-03 06:22:32,878 - root - INFO - PP rank 3 is building stage_idx 3 with modules ['layers.6', 'layers.7']
+[rank6]:[titan] 2026-05-03 06:22:32,895 - root - INFO - PP rank 3 is building stage_idx 7 with modules ['layers.14', 'layers.15', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank6]:[titan] 2026-05-03 06:22:32,897 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank6]:[titan] 2026-05-03 06:22:32,922 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank6]:[titan] 2026-05-03 06:22:32,924 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank6]:[titan] 2026-05-03 06:22:32,931 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank6]:[titan] 2026-05-03 06:22:32,931 - root - WARNING - Number of microbatches (5) is less than the total number of stages (8) which may result in a bubble in the pipeline.
+[rank6]:[titan] 2026-05-03 06:22:32,932 - root - INFO - Using pipeline schedule Interleaved1F1B with 5 microbatches and 8 stages.
+[rank6]:[titan] 2026-05-03 06:22:32,999 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 6[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank6]:[titan] 2026-05-03 06:22:33,002 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank6]:[titan] 2026-05-03 06:22:33,002 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank6]:[titan] 2026-05-03 06:22:33,002 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank6]:[titan] 2026-05-03 06:22:33,002 - root - INFO - CUDA memory usage for model: 0.86GiB(2.75%)
+[rank6]:[titan] 2026-05-03 06:22:33,007 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase5/runs/8gpu_a2_fsdp2_pp4_tier_b/checkpoint
+[rank6]:[titan] 2026-05-03 06:22:33,007 - root - INFO - Trainer is initialized with local batch size 5, global batch size 120, gradient accumulation steps 12, sequence length 260, total steps 50 (warmup 10)
+[rank6]:[titan] 2026-05-03 06:22:33,208 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:33,253 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:33,457 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:33,502 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:33,710 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:33,932 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:34,878 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:34,895 - phase5.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank6]:[titan] 2026-05-03 06:22:34,895 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank6]:[titan] 2026-05-03 06:22:34,895 - root - INFO - mm: lm_dim=1168
+[rank6]:[titan] 2026-05-03 06:22:35,099 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:35,302 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:35,348 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:35,550 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:35,758 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:35,804 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:36,012 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:36,217 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:36,417 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:36,631 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:36,851 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:37,056 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:37,266 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:37,312 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:37,524 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:37,727 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:37,772 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:37,985 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:38,031 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:38,264 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank6]:[titan] 2026-05-03 06:22:38,309 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:38,518 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank6]:[titan] 2026-05-03 06:22:38,720 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank6]:[titan] 2026-05-03 06:22:39,755 - root - INFO - mm: dataset = LlavaPretrainDataset (prefix layout)
+[rank6]:[titan] 2026-05-03 06:22:39,756 - root - INFO - mm: replaced dataloader with LlavaPretrainDataset (N=558,128, dp_rank=0/2, local_bs=5, seq_len=258)
+[rank6]:[titan] 2026-05-03 06:22:39,756 - root - INFO - Loading the checkpoint from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000.
+[rank6]:[rank6]:[W503 06:22:41.476491334 Utils.hpp:137] Warning: Environment variable TORCH_NCCL_TRACE_BUFFER_SIZE is deprecated; use TORCH_FR_BUFFER_SIZE instead (function operator())
+[rank6]:[titan] 2026-05-03 06:22:43,120 - root - INFO - [GC] GC collection for checkpoint loading. took 0.45 seconds
+[rank6]:[titan] 2026-05-03 06:22:43,120 - root - INFO - Finished loading the checkpoint in 3.36 seconds.
+[rank6]:[titan] 2026-05-03 06:22:43,120 - root - INFO - Training starts at step 1
+[rank6]:[rank6]:W0503 06:23:04.747000 1611145 site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1168, out_features=1, bias=False)]
+W0503 06:23:11.113000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1611139 closing signal SIGTERM
+W0503 06:23:11.115000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1611141 closing signal SIGTERM
+W0503 06:23:11.123000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1611142 closing signal SIGTERM
+W0503 06:23:11.131000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1611143 closing signal SIGTERM
+W0503 06:23:11.142000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1611144 closing signal SIGTERM
+W0503 06:23:11.148000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1611145 closing signal SIGTERM
+W0503 06:23:11.151000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1611146 closing signal SIGTERM
+[rank6]:/venv/main/lib/python3.14/multiprocessing/resource_tracker.py:396: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown: {'/mp-t1s6lbqf'}
+[rank6]:  warnings.warn(
+E0503 06:23:12.481000 1611060 site-packages/torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 1 (pid: 1611140) of binary: /venv/main/bin/python3
+E0503 06:23:12.489000 1611060 site-packages/torch/distributed/elastic/multiprocessing/errors/error_handler.py:145] no error file defined for parent, to copy child error file (/tmp/torchelastic_12hkhcf5/none_quy7kw7q/attempt_0/1/error.json)
+Traceback (most recent call last):
+  File "/venv/main/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+    ~~~^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+    ~~~~~~~~~~~~~~~
+        config=config,
+        ~~~~~~~~~~~~~~
+        entrypoint=cmd,
+        ~~~~~~~~~~~~~~~
+    )(*cmd_args)
+    ~^^^^^^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+    ...<2 lines>...
+    )
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase5.train_mm FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-03_06:23:06
+  host      : b008e969124e
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 1611139)
+  error_file: /tmp/torchelastic_12hkhcf5/none_quy7kw7q/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/_backward.py", line 370, in stage_backward
+      torch.autograd.backward(
+      ~~~~~~~~~~~~~~~~~~~~~~~^
+          stage_output_tensors,
+          ^^^^^^^^^^^^^^^^^^^^^
+          grad_tensors=output_grad_tensors,  # type: ignore[arg-type]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+      ~~~~~~~~~~~~~~~~~~~~^
+          tensors,
+          ^^^^^^^^
+      ...<5 lines>...
+          accumulate_grad=True,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          t_outputs, *args, **kwargs
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )  # Calls into the C++ engine to run the backward pass
+      ^
+  RuntimeError: Trying to backward through the graph a second time (or directly access saved tensors after they have already been freed). Saved intermediate values of the graph are freed when you call .backward() or autograd.grad(). Specify retain_graph=True if you need to backward through the graph a second time or if you need to access saved tensors after calling backward.
+  
+  The above exception was the direct cause of the following exception:
+  
+  Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+      ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+          input_dict=input_dict,
+      ...<2 lines>...
+          global_valid_tokens=global_valid_tokens,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 670, in forward_backward_step
+      self.pp_schedule.step(
+      ~~~~~~~~~~~~~~~~~~~~~^
+          inputs,
+          ^^^^^^^
+      ...<4 lines>...
+          return_outputs=False,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 967, in patched_step
+      return orig_step(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 1634, in step
+      self._step_microbatches(
+      ~~~~~~~~~~~~~~~~~~~~~~~^
+          args_split, kwargs_split, targets_split, losses, return_outputs
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 2269, in _step_microbatches
+      raise e
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 2256, in _step_microbatches
+      _perform_action(action)
+      ~~~~~~~~~~~~~~~^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 2181, in _perform_action
+      stage.backward_one_chunk(
+      ~~~~~~~~~~~~~~~~~~~~~~~~^
+          mb_index,
+          ^^^^^^^^^
+      ...<2 lines>...
+          last_backward=last_backward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 938, in patched_bwd
+      return orig_bwd(
+          bwd_chunk_id, loss=loss, full_backward=full_backward,
+          last_backward=last_backward,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/stage.py", line 806, in backward_one_chunk
+      grads_input, _ = self.backward_maybe_with_nosync(
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+          "full", bwd_kwargs, last_backward=last_backward
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/stage.py", line 664, in backward_maybe_with_nosync
+      result = perform_backward(backward_type)()
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/stage.py", line 614, in <lambda>
+      stage_backward(
+      ~~~~~~~~~~~~~~^
+          bwd_kwargs["stage_output"],
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          bwd_kwargs["output_grads"],
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          bwd_kwargs["input_values"],
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      ),
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/_backward.py", line 411, in stage_backward
+      raise RuntimeError(exc_msg) from e
+  RuntimeError: 
+          Failed to run stage backward:
+          Stage output: ('Tensor(torch.Size([1, 258, 1168]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([1, 1, 258, 1168]), grad=True, dtype=torch.bfloat16)')
+          Output gradient: ('Tensor(torch.Size([1, 258, 1168]), grad=False, dtype=torch.bfloat16)', 'Tensor(torch.Size([1, 1, 258, 1168]), grad=False, dtype=torch.bfloat16)')
+          Input: ['Tensor(torch.Size([1, 258]), grad=False, dtype=torch.int64)', 'Tensor(torch.Size([1, 196, 1168]), grad=True, dtype=torch.bfloat16)']
+          
+  
+[2]:
+  time      : 2026-05-03_06:23:12
+  host      : b008e969124e
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 1611141)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 1611141
+[3]:
+  time      : 2026-05-03_06:23:12
+  host      : b008e969124e
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 1611142)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 1611142
+[4]:
+  time      : 2026-05-03_06:23:12
+  host      : b008e969124e
+  rank      : 4 (local_rank: 4)
+  exitcode  : -15 (pid: 1611143)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 1611143
+[5]:
+  time      : 2026-05-03_06:23:12
+  host      : b008e969124e
+  rank      : 5 (local_rank: 5)
+  exitcode  : -15 (pid: 1611144)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 1611144
+[6]:
+  time      : 2026-05-03_06:23:12
+  host      : b008e969124e
+  rank      : 6 (local_rank: 6)
+  exitcode  : -15 (pid: 1611145)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 1611145
+[7]:
+  time      : 2026-05-03_06:23:12
+  host      : b008e969124e
+  rank      : 7 (local_rank: 7)
+  exitcode  : -15 (pid: 1611146)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 1611146
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-03_06:23:06
+  host      : b008e969124e
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 1611140)
+  error_file: /tmp/torchelastic_12hkhcf5/none_quy7kw7q/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/_backward.py", line 370, in stage_backward
+      torch.autograd.backward(
+      ~~~~~~~~~~~~~~~~~~~~~~~^
+          stage_output_tensors,
+          ^^^^^^^^^^^^^^^^^^^^^
+          grad_tensors=output_grad_tensors,  # type: ignore[arg-type]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+      ~~~~~~~~~~~~~~~~~~~~^
+          tensors,
+          ^^^^^^^^
+      ...<5 lines>...
+          accumulate_grad=True,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          t_outputs, *args, **kwargs
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )  # Calls into the C++ engine to run the backward pass
+      ^
+  RuntimeError: Trying to backward through the graph a second time (or directly access saved tensors after they have already been freed). Saved intermediate values of the graph are freed when you call .backward() or autograd.grad(). Specify retain_graph=True if you need to backward through the graph a second time or if you need to access saved tensors after calling backward.
+  
+  The above exception was the direct cause of the following exception:
+  
+  Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+      ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+          input_dict=input_dict,
+      ...<2 lines>...
+          global_valid_tokens=global_valid_tokens,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 670, in forward_backward_step
+      self.pp_schedule.step(
+      ~~~~~~~~~~~~~~~~~~~~~^
+          inputs,
+          ^^^^^^^
+      ...<4 lines>...
+          return_outputs=False,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 967, in patched_step
+      return orig_step(*args, **kwargs)
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 1634, in step
+      self._step_microbatches(
+      ~~~~~~~~~~~~~~~~~~~~~~~^
+          args_split, kwargs_split, targets_split, losses, return_outputs
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 2269, in _step_microbatches
+      raise e
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 2256, in _step_microbatches
+      _perform_action(action)
+      ~~~~~~~~~~~~~~~^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/schedules.py", line 2181, in _perform_action
+      stage.backward_one_chunk(
+      ~~~~~~~~~~~~~~~~~~~~~~~~^
+          mb_index,
+          ^^^^^^^^^
+      ...<2 lines>...
+          last_backward=last_backward,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 938, in patched_bwd
+      return orig_bwd(
+          bwd_chunk_id, loss=loss, full_backward=full_backward,
+          last_backward=last_backward,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/stage.py", line 806, in backward_one_chunk
+      grads_input, _ = self.backward_maybe_with_nosync(
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+          "full", bwd_kwargs, last_backward=last_backward
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/stage.py", line 664, in backward_maybe_with_nosync
+      result = perform_backward(backward_type)()
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/stage.py", line 614, in <lambda>
+      stage_backward(
+      ~~~~~~~~~~~~~~^
+          bwd_kwargs["stage_output"],
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          bwd_kwargs["output_grads"],
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          bwd_kwargs["input_values"],
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      ),
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/pipelining/_backward.py", line 411, in stage_backward
+      raise RuntimeError(exc_msg) from e
+  RuntimeError: 
+          Failed to run stage backward:
+          Stage output: ('Tensor(torch.Size([1, 258, 1168]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([1, 1, 258, 1168]), grad=True, dtype=torch.bfloat16)')
+          Output gradient: ('Tensor(torch.Size([1, 258, 1168]), grad=False, dtype=torch.bfloat16)', 'Tensor(torch.Size([1, 1, 258, 1168]), grad=False, dtype=torch.bfloat16)')
+          Input: ['Tensor(torch.Size([1, 258]), grad=False, dtype=torch.int64)', 'Tensor(torch.Size([1, 196, 1168]), grad=True, dtype=torch.bfloat16)']
+          
+  
+============================================================

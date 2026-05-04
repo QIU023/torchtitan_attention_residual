@@ -1,0 +1,975 @@
+W0503 22:14:37.220000 1206504 site-packages/torch/distributed/run.py:851] 
+W0503 22:14:37.220000 1206504 site-packages/torch/distributed/run.py:851] *****************************************
+W0503 22:14:37.220000 1206504 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0503 22:14:37.220000 1206504 site-packages/torch/distributed/run.py:851] *****************************************
+[rank4]:[titan] 2026-05-03 22:14:45,958 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank4]:[titan] 2026-05-03 22:14:45,959 - root - WARNING - ENV[TORCH_NCCL_DUMP_ON_TIMEOUT] = 1 will be overridden to 1 based on job config
+[rank4]:[titan] 2026-05-03 22:14:45,960 - root - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=2, cp=1, tp=2, ep=2, etp=1
+[rank4]:[titan] 2026-05-03 22:14:45,994 - root - INFO - Successfully created meshes with active dimensions: ['pp', 'batch', 'loss', 'fsdp', 'tp', 'ep', 'efsdp']
+[rank4]:[titan] 2026-05-03 22:14:45,994 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank4]:[titan] 2026-05-03 22:14:45,999 - root - INFO - Loading tokenizer from tokenizer.json
+[rank4]:[titan] 2026-05-03 22:14:46,264 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank4]:[titan] 2026-05-03 22:14:46,640 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-03 22:14:46,641 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:[titan] 2026-05-03 22:14:46,685 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank4]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:[titan] 2026-05-03 22:14:46,894 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:14:47,581 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:14:47,932 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:14:48,460 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:14:48,866 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:14:49,105 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:14:49,397 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:14:49,606 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-03 22:14:49,883 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-03 22:14:49,937 - root - INFO - Building kimi_linear kimi_linear_436m_block_attn_res_n4 with {
+[rank4]:  "vocab_size": 163840,
+[rank4]:  "hidden_size": 1168,
+[rank4]:  "tie_word_embeddings": true,
+[rank4]:  "num_hidden_layers": 16,
+[rank4]:  "intermediate_size": 528,
+[rank4]:  "num_attention_heads": 16,
+[rank4]:  "num_key_value_heads": 16,
+[rank4]:  "q_lora_rank": null,
+[rank4]:  "kv_lora_rank": 584,
+[rank4]:  "qk_nope_head_dim": 73,
+[rank4]:  "qk_rope_head_dim": 36,
+[rank4]:  "v_head_dim": 73,
+[rank4]:  "mla_use_nope": true,
+[rank4]:  "rope_theta": 10000.0,
+[rank4]:  "kda_num_heads": 16,
+[rank4]:  "kda_head_dim": 73,
+[rank4]:  "kda_short_conv_kernel_size": 4,
+[rank4]:  "kda_layers": [
+[rank4]:    1,
+[rank4]:    2,
+[rank4]:    3,
+[rank4]:    5,
+[rank4]:    6,
+[rank4]:    7,
+[rank4]:    9,
+[rank4]:    10,
+[rank4]:    11,
+[rank4]:    13,
+[rank4]:    14,
+[rank4]:    15
+[rank4]:  ],
+[rank4]:  "full_attn_layers": [
+[rank4]:    4,
+[rank4]:    8,
+[rank4]:    12,
+[rank4]:    16
+[rank4]:  ],
+[rank4]:  "num_experts": 32,
+[rank4]:  "num_experts_per_token": 8,
+[rank4]:  "moe_intermediate_size": 528,
+[rank4]:  "moe_renormalize": true,
+[rank4]:  "moe_router_activation_func": "sigmoid",
+[rank4]:  "num_shared_experts": 1,
+[rank4]:  "routed_scaling_factor": 2.446,
+[rank4]:  "first_k_dense_replace": 1,
+[rank4]:  "moe_layer_freq": 1,
+[rank4]:  "use_grouped_topk": false,
+[rank4]:  "num_expert_group": 1,
+[rank4]:  "topk_group": 1,
+[rank4]:  "rms_norm_eps": 1e-05,
+[rank4]:  "hidden_act": "silu",
+[rank4]:  "initializer_range": 0.02,
+[rank4]:  "__spec__": {
+[rank4]:    "num_blocks": 4,
+[rank4]:    "model_class": "KimiLinearAttnResModel"
+[rank4]:  }
+[rank4]:}
+[rank4]:[titan] 2026-05-03 22:14:49,960 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase5/runs/v10_4d_ep2_lbs192_mb24_continue_8gpu_from_p4_step8000/tb/20260503-2214
+[rank4]:[titan] 2026-05-03 22:14:49,961 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank4]:[titan] 2026-05-03 22:14:49,963 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank4]:[titan] 2026-05-03 22:14:49,963 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank4]:[titan] 2026-05-03 22:14:49,964 - root - INFO - [34mModel kimi_linear kimi_linear_436m_block_attn_res_n4 [31msize: 1,201,640,636 total parameters[39m
+[rank4]:[titan] 2026-05-03 22:14:49,964 - root - INFO - Compiling the loss function with torch.compile
+[rank4]:[titan] 2026-05-03 22:14:49,994 - root - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.2', 'layers.3']
+[rank4]:[titan] 2026-05-03 22:14:50,012 - root - INFO - PP rank 1 is building stage_idx 3 with modules ['layers.6', 'layers.7']
+[rank4]:[titan] 2026-05-03 22:14:50,029 - root - INFO - PP rank 1 is building stage_idx 5 with modules ['layers.10', 'layers.11']
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:421: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:421: UserWarning: Parallelize plan key 'norm' could not be resolved: no submodule matching token 'norm' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:421: UserWarning: Parallelize plan key 'lm_head' could not be resolved: no submodule matching token 'lm_head' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:[titan] 2026-05-03 22:14:50,046 - root - INFO - PP rank 1 is building stage_idx 7 with modules ['layers.14', 'layers.15', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:[titan] 2026-05-03 22:14:50,071 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:[rank4]: Traceback (most recent call last):
+[rank4]:[rank4]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank4]:[rank4]:   File "<frozen runpy>", line 88, in _run_code
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 497, in <module>
+[rank4]:[rank4]:     main()
+[rank4]:[rank4]:     ~~~~^^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 480, in main
+[rank4]:[rank4]:     trainer = MultimodalTrainer(
+[rank4]:[rank4]:         config,
+[rank4]:[rank4]:     ...<7 lines>...
+[rank4]:[rank4]:         layout=mm_args.mm_layout,
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 121, in __init__
+[rank4]:[rank4]:     super().__init__(config)
+[rank4]:[rank4]:     ~~~~~~~~~~~~~~~~^^^^^^^^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+[rank4]:[rank4]:     return f(*args, **kwargs)
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+[rank4]:[rank4]:     ) = model_spec.pipelining_fn(
+[rank4]:[rank4]:         ~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank4]:[rank4]:         model,
+[rank4]:[rank4]:         ^^^^^^
+[rank4]:[rank4]:     ...<10 lines>...
+[rank4]:[rank4]:         loss_fn=self.loss_fn,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+[rank4]:[rank4]:     pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+[rank4]:[rank4]:                                                                 ~~~~~~~~~~~~^
+[rank4]:[rank4]:         model, **kwargs
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+[rank4]:[rank4]:     m = parallelize_fn(
+[rank4]:[rank4]:         m,
+[rank4]:[rank4]:     ...<6 lines>...
+[rank4]:[rank4]:         dump_folder=dump_folder,
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+[rank4]:[rank4]:     apply_ep_kimi_linear(model, ep_mesh)
+[rank4]:[rank4]:     ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+[rank4]:[rank4]:     parallelize_module(
+[rank4]:[rank4]:     ~~~~~~~~~~~~~~~~~~^
+[rank4]:[rank4]:         module=moe.experts,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:         device_mesh=ep_mesh,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:         parallelize_plan=plan,
+[rank4]:[rank4]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:     ^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+[rank4]:[rank4]:     return parallelize_plan._apply(module, device_mesh)
+[rank4]:[rank4]:            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+[rank4]:[rank4]:     return distribute_module(
+[rank4]:[rank4]:         module,
+[rank4]:[rank4]:     ...<5 lines>...
+[rank4]:[rank4]:         output_fn=self._token_combine,
+[rank4]:[rank4]:     )
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+[rank4]:[rank4]:     partition_fn(name, submod, device_mesh)
+[rank4]:[rank4]:     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+[rank4]:[rank4]:     dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+[rank4]:[rank4]:                               ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+[rank4]:[rank4]:     raise ValueError(
+[rank4]:[rank4]:     ...<2 lines>...
+[rank4]:[rank4]:     )
+[rank4]:[rank4]: ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+W0503 22:14:51.356000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1206573 closing signal SIGTERM
+W0503 22:14:51.357000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1206574 closing signal SIGTERM
+W0503 22:14:51.359000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1206575 closing signal SIGTERM
+W0503 22:14:51.359000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1206576 closing signal SIGTERM
+W0503 22:14:51.359000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1206577 closing signal SIGTERM
+W0503 22:14:51.360000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1206579 closing signal SIGTERM
+W0503 22:14:51.360000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 1206580 closing signal SIGTERM
+E0503 22:14:51.847000 1206504 site-packages/torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 5 (pid: 1206578) of binary: /venv/main/bin/python3
+E0503 22:14:51.855000 1206504 site-packages/torch/distributed/elastic/multiprocessing/errors/error_handler.py:145] no error file defined for parent, to copy child error file (/tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/5/error.json)
+Traceback (most recent call last):
+  File "/venv/main/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+    ~~~^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+    ~~~~~~~~~~~~~~~
+        config=config,
+        ~~~~~~~~~~~~~~
+        entrypoint=cmd,
+        ~~~~~~~~~~~~~~~
+    )(*cmd_args)
+    ~^^^^^^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+    ...<2 lines>...
+    )
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase5.train_mm FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 1206573)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+[2]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 1206574)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+[3]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 1206575)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/2/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+[4]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 1206576)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/3/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+[5]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 4 (local_rank: 4)
+  exitcode  : 1 (pid: 1206577)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/4/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+[6]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 6 (local_rank: 6)
+  exitcode  : 1 (pid: 1206579)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/6/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+[7]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 7 (local_rank: 7)
+  exitcode  : 1 (pid: 1206580)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/7/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-03_22:14:50
+  host      : b008e969124e
+  rank      : 5 (local_rank: 5)
+  exitcode  : 1 (pid: 1206578)
+  error_file: /tmp/torchelastic_p8rnjep5/none_7h6dwcmq/attempt_0/5/error.json
+  traceback : Traceback (most recent call last):
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 362, in __init__
+      ) = model_spec.pipelining_fn(
+          ~~~~~~~~~~~~~~~~~~~~~~~~^
+          model,
+          ^^^^^^
+      ...<10 lines>...
+          loss_fn=self.loss_fn,
+          ^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py", line 146, in pipeline_kimi_linear_with_cache_adapter
+      pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
+                                                                  ~~~~~~~~~~~~^
+          model, **kwargs
+          ^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/pipeline_parallel.py", line 146, in pipeline_llm
+      m = parallelize_fn(
+          m,
+      ...<6 lines>...
+          dump_folder=dump_folder,
+      )
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 151, in parallelize_kimi_linear
+      apply_ep_kimi_linear(model, ep_mesh)
+      ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 726, in apply_ep_kimi_linear
+      parallelize_module(
+      ~~~~~~~~~~~~~~~~~~^
+          module=moe.experts,
+          ^^^^^^^^^^^^^^^^^^^
+          device_mesh=ep_mesh,
+          ^^^^^^^^^^^^^^^^^^^^
+          parallelize_plan=plan,
+          ^^^^^^^^^^^^^^^^^^^^^^
+      )
+      ^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/parallel/api.py", line 86, in parallelize_module
+      return parallelize_plan._apply(module, device_mesh)
+             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 220, in _apply
+      return distribute_module(
+          module,
+      ...<5 lines>...
+          output_fn=self._token_combine,
+      )
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 1075, in distribute_module
+      partition_fn(name, submod, device_mesh)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/distributed/expert_parallel.py", line 139, in _partition_fn
+      dist_param = nn.Parameter(distribute_tensor(param, device_mesh, [Shard(0)]))
+                                ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/venv/main/lib/python3.14/site-packages/torch/distributed/tensor/_api.py", line 863, in distribute_tensor
+      raise ValueError(
+      ...<2 lines>...
+      )
+  ValueError: Cannot distribute a DTensor with device mesh DeviceMesh((tp=2), 'cuda', stride=(1,)) to a different device mesh DeviceMesh((ep=2), 'cuda', stride=(1,)).
+  
+============================================================

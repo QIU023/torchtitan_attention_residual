@@ -66,6 +66,13 @@ phase5/runs/**/tier_c_trace/nsys-*
 phase5/runs/**/tier_a_trace/collective_summary.csv
 phase5/runs/**/tier_b_trace/collective_summary.csv
 phase5/runs/**/tier_c_trace/collective_summary.csv
+# flows.csv: per-pair P2P decomposition produced by phase7/expand_to_flows.py;
+# can be 200MB+ for tier_b on large LBS runs. Recreate via the same script
+# from collective_summary.csv. The aggregated ixia_config.json (~32K) IS
+# committed as the small canonical artifact.
+phase5/runs/**/tier_a_trace/flows.csv
+phase5/runs/**/tier_b_trace/flows.csv
+phase5/runs/**/tier_c_trace/flows.csv
 # phase5/runs/**/tb/ intentionally tracked: TB files are <1MB each and are
 # the only loss-curve provenance for phase 6 runs (network bandwidth on
 # this box can't push ckpts off, so tb is the next best archive).

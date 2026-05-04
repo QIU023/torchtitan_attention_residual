@@ -1,0 +1,947 @@
+W0504 05:38:08.028000 71045 site-packages/torch/distributed/run.py:851] 
+W0504 05:38:08.028000 71045 site-packages/torch/distributed/run.py:851] *****************************************
+W0504 05:38:08.028000 71045 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0504 05:38:08.028000 71045 site-packages/torch/distributed/run.py:851] *****************************************
+[rank4]:[titan] 2026-05-04 05:38:14,870 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank4]:[titan] 2026-05-04 05:38:14,870 - root - WARNING - ENV[TORCH_NCCL_DUMP_ON_TIMEOUT] = 1 will be overridden to 1 based on job config
+[rank4]:[titan] 2026-05-04 05:38:14,872 - root - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=2, cp=1, tp=2, ep=1, etp=1
+[rank4]:[titan] 2026-05-04 05:38:14,885 - root - INFO - Successfully created meshes with active dimensions: ['pp', 'batch', 'loss', 'fsdp', 'tp', 'efsdp']
+[rank4]:[titan] 2026-05-04 05:38:14,885 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank4]:[titan] 2026-05-04 05:38:14,888 - root - INFO - Loading tokenizer from tokenizer.json
+[rank4]:[titan] 2026-05-04 05:38:15,154 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank4]:[titan] 2026-05-04 05:38:15,541 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:15,591 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:15,821 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:16,542 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:16,825 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:17,890 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:18,289 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:18,598 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:19,029 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:19,237 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank4]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:[titan] 2026-05-04 05:38:19,525 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:19,526 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank4]:[titan] 2026-05-04 05:38:19,580 - root - INFO - Building kimi_linear kimi_linear_436m_block_attn_res_n4 with {
+[rank4]:  "vocab_size": 163840,
+[rank4]:  "hidden_size": 1168,
+[rank4]:  "tie_word_embeddings": true,
+[rank4]:  "num_hidden_layers": 16,
+[rank4]:  "intermediate_size": 528,
+[rank4]:  "num_attention_heads": 16,
+[rank4]:  "num_key_value_heads": 16,
+[rank4]:  "q_lora_rank": null,
+[rank4]:  "kv_lora_rank": 584,
+[rank4]:  "qk_nope_head_dim": 73,
+[rank4]:  "qk_rope_head_dim": 36,
+[rank4]:  "v_head_dim": 73,
+[rank4]:  "mla_use_nope": true,
+[rank4]:  "rope_theta": 10000.0,
+[rank4]:  "kda_num_heads": 16,
+[rank4]:  "kda_head_dim": 73,
+[rank4]:  "kda_short_conv_kernel_size": 4,
+[rank4]:  "kda_layers": [
+[rank4]:    1,
+[rank4]:    2,
+[rank4]:    3,
+[rank4]:    5,
+[rank4]:    6,
+[rank4]:    7,
+[rank4]:    9,
+[rank4]:    10,
+[rank4]:    11,
+[rank4]:    13,
+[rank4]:    14,
+[rank4]:    15
+[rank4]:  ],
+[rank4]:  "full_attn_layers": [
+[rank4]:    4,
+[rank4]:    8,
+[rank4]:    12,
+[rank4]:    16
+[rank4]:  ],
+[rank4]:  "num_experts": 32,
+[rank4]:  "num_experts_per_token": 8,
+[rank4]:  "moe_intermediate_size": 528,
+[rank4]:  "moe_renormalize": true,
+[rank4]:  "moe_router_activation_func": "sigmoid",
+[rank4]:  "num_shared_experts": 1,
+[rank4]:  "routed_scaling_factor": 2.446,
+[rank4]:  "first_k_dense_replace": 1,
+[rank4]:  "moe_layer_freq": 1,
+[rank4]:  "use_grouped_topk": false,
+[rank4]:  "num_expert_group": 1,
+[rank4]:  "topk_group": 1,
+[rank4]:  "rms_norm_eps": 1e-05,
+[rank4]:  "hidden_act": "silu",
+[rank4]:  "initializer_range": 0.02,
+[rank4]:  "__spec__": {
+[rank4]:    "num_blocks": 4,
+[rank4]:    "model_class": "KimiLinearAttnResModel"
+[rank4]:  }
+[rank4]:}
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'norm' could not be resolved: no submodule matching token 'norm' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'lm_head' could not be resolved: no submodule matching token 'lm_head' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (2): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:[titan] 2026-05-04 05:38:19,609 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase5/runs/v10_3d_lbs160_mb10_continue_8gpu_from_p4_step8000/tb/20260504-0538
+[rank4]:[titan] 2026-05-04 05:38:19,609 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:[titan] 2026-05-04 05:38:19,611 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank4]:[titan] 2026-05-04 05:38:19,611 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank4]:    )
+[rank4]:    (3): KimiAttnResDecoderLayer(
+[rank4]:[titan] 2026-05-04 05:38:19,612 - root - INFO - [34mModel kimi_linear kimi_linear_436m_block_attn_res_n4 [31msize: 1,201,640,636 total parameters[39m
+[rank4]:[titan] 2026-05-04 05:38:19,612 - root - INFO - Compiling the loss function with torch.compile
+[rank4]:[titan] 2026-05-04 05:38:19,644 - root - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.2', 'layers.3']
+[rank4]:[titan] 2026-05-04 05:38:19,662 - root - INFO - PP rank 1 is building stage_idx 3 with modules ['layers.6', 'layers.7']
+[rank4]:[titan] 2026-05-04 05:38:19,679 - root - INFO - PP rank 1 is building stage_idx 5 with modules ['layers.10', 'layers.11']
+[rank4]:[titan] 2026-05-04 05:38:19,697 - root - INFO - PP rank 1 is building stage_idx 7 with modules ['layers.14', 'layers.15', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:[titan] 2026-05-04 05:38:19,723 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 05:38:19,725 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank4]:[titan] 2026-05-04 05:38:19,751 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 05:38:19,757 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 05:38:19,759 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank4]:[titan] 2026-05-04 05:38:19,773 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 05:38:19,777 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 05:38:19,780 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank4]:[titan] 2026-05-04 05:38:19,793 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 05:38:19,800 - root - INFO - Applied DSv3-style TP plan tp_degree=2.
+[rank4]:[titan] 2026-05-04 05:38:19,802 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (6): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (7): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'norm' could not be resolved: no submodule matching token 'norm' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (6): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (7): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'lm_head' could not be resolved: no submodule matching token 'lm_head' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (6): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (7): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (10): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (11): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'norm' could not be resolved: no submodule matching token 'norm' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (10): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (11): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'lm_head' could not be resolved: no submodule matching token 'lm_head' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (10): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (11): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): None
+[rank4]:  (lm_head): None
+[rank4]:  (final_attn_res_proj): None
+[rank4]:  (final_attn_res_norm): None
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py:436: UserWarning: Parallelize plan key 'embed_tokens' could not be resolved: no submodule matching token 'embed_tokens' in module KimiLinearAttnResModel(
+[rank4]:  (embed_tokens): None
+[rank4]:  (layers): ModuleDict(
+[rank4]:    (14): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiDeltaAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (k_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (v_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (q_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (k_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (v_conv1d): ShortConvolution(1168, 1168, kernel_size=(4,), stride=(1,), padding=(3,), groups=1168, bias=False, activation=silu, backend=triton)
+[rank4]:        (f_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (f_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (g_a_proj): Linear(in_features=1168, out_features=73, bias=False)
+[rank4]:        (g_b_proj): Linear(in_features=73, out_features=1168, bias=False)
+[rank4]:        (b_proj): Linear(in_features=1168, out_features=16, bias=False)
+[rank4]:        (o_norm): FusedRMSNormGated(73, eps=1e-05, activation=sigmoid)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:    (15): KimiAttnResDecoderLayer(
+[rank4]:      (self_attn): KimiMLAAttention(
+[rank4]:        (q_proj): Linear(in_features=1168, out_features=1744, bias=False)
+[rank4]:        (kv_a_proj_with_mqa): Linear(in_features=1168, out_features=620, bias=False)
+[rank4]:        (kv_a_layernorm): RMSNorm((584,), eps=1e-05, elementwise_affine=True)
+[rank4]:        (kv_b_proj): Linear(in_features=584, out_features=2336, bias=False)
+[rank4]:        (o_proj): Linear(in_features=1168, out_features=1168, bias=False)
+[rank4]:        (inner_attention): KimiMLAInnerAttention()
+[rank4]:      )
+[rank4]:      (ffn): KimiMoE(
+[rank4]:        (_moe): MoE(
+[rank4]:          (experts): GroupedExperts()
+[rank4]:          (router): TokenChoiceTopKRouter(
+[rank4]:            (gate): Linear(in_features=1168, out_features=32, bias=False)
+[rank4]:          )
+[rank4]:          (reorderer): TokenReorderer()
+[rank4]:          (shared_experts): FeedForward(
+[rank4]:            (w1): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:            (w2): Linear(in_features=528, out_features=1168, bias=False)
+[rank4]:            (w3): Linear(in_features=1168, out_features=528, bias=False)
+[rank4]:          )
+[rank4]:        )
+[rank4]:      )
+[rank4]:      (input_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (post_attention_layernorm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (mlp_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:      (attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:      (mlp_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:    )
+[rank4]:  )
+[rank4]:  (norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:  (lm_head): Linear(in_features=1168, out_features=163840, bias=False)
+[rank4]:  (final_attn_res_proj): AttnResProjection(in_features=1168, out_features=1, bias=False)
+[rank4]:  (final_attn_res_norm): RMSNorm((1168,), eps=1e-05, elementwise_affine=True)
+[rank4]:), skipping this plan entry.
+[rank4]:  parallelize_module(
+[rank4]:[titan] 2026-05-04 05:38:19,818 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=2, dp_replicate=1).
+[rank4]:[titan] 2026-05-04 05:38:19,819 - root - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 8 stages.
+[rank4]:[titan] 2026-05-04 05:38:19,930 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 4[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank4]:[titan] 2026-05-04 05:38:19,933 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank4]:[titan] 2026-05-04 05:38:19,933 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank4]:[titan] 2026-05-04 05:38:19,933 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank4]:[titan] 2026-05-04 05:38:19,933 - root - INFO - CUDA memory usage for model: 1.16GiB(3.69%)
+[rank4]:[titan] 2026-05-04 05:38:19,943 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase5/runs/v10_3d_lbs160_mb10_continue_8gpu_from_p4_step8000/checkpoint
+[rank4]:[titan] 2026-05-04 05:38:19,943 - root - INFO - Trainer is initialized with local batch size 160, global batch size 320, gradient accumulation steps 1, sequence length 260, total steps 5000 (warmup 200)
+[rank4]:[titan] 2026-05-04 05:38:20,153 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:20,198 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:20,406 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:20,451 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:20,663 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:20,871 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:21,834 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:21,854 - phase5.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank4]:[titan] 2026-05-04 05:38:21,854 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank4]:[titan] 2026-05-04 05:38:21,854 - root - INFO - mm: lm_dim=1168
+[rank4]:[titan] 2026-05-04 05:38:22,055 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:22,255 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:22,300 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:22,500 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:22,707 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:22,752 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:22,962 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:23,171 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:23,375 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:23,578 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:23,785 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:23,990 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:24,193 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:24,238 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:24,446 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:24,642 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:24,687 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:24,957 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:25,003 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:25,218 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank4]:[titan] 2026-05-04 05:38:25,264 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:25,473 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank4]:[titan] 2026-05-04 05:38:25,677 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank4]:[titan] 2026-05-04 05:38:26,806 - root - INFO - mm: dataset = LlavaPretrainDataset (prefix layout)
+[rank4]:[titan] 2026-05-04 05:38:26,807 - root - INFO - mm: replaced dataloader with LlavaPretrainDataset (N=558,128, dp_rank=0/2, local_bs=160, seq_len=258)
+[rank4]:[titan] 2026-05-04 05:38:26,807 - root - WARNING - checkpoint.initial_load_path is provided but the checkpoint.folder exists. Checkpointer will use the checkpoints from the checkpoint.folder /root/torchtitan_attention_residual/phase5/runs/v10_3d_lbs160_mb10_continue_8gpu_from_p4_step8000/checkpoint.
+[rank4]:[titan] 2026-05-04 05:38:26,808 - root - INFO - Loading the checkpoint from /root/torchtitan_attention_residual/phase5/runs/v10_3d_lbs160_mb10_continue_8gpu_from_p4_step8000/checkpoint/step-2000.
+[rank4]:[rank4]:[W504 05:38:27.463756296 Utils.hpp:137] Warning: Environment variable TORCH_NCCL_TRACE_BUFFER_SIZE is deprecated; use TORCH_FR_BUFFER_SIZE instead (function operator())
+[rank4]:[titan] 2026-05-04 05:38:30,954 - root - INFO - [GC] GC collection for checkpoint loading. took 0.39 seconds
+[rank4]:[titan] 2026-05-04 05:38:30,954 - root - INFO - Finished loading the checkpoint in 4.15 seconds.
+[rank4]:[titan] 2026-05-04 05:38:30,954 - root - INFO - Training starts at step 2001
+[rank4]:[rank4]:W0504 05:38:48.984000 71123 site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1168, out_features=1, bias=False)]
+[rank4]:[rank4]:W0504 05:38:54.656000 71123 site-packages/torch/distributed/tensor/_redistribute.py:347] While redistributing from (_NormPartial(2.0), _NormPartial(2.0)) to (Replicate(), Replicate()), 2 sequential all_reduce operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. To optimize, flatten mesh dimensions ["fsdp", "tp"] so DTensor can use a single operation instead.
+[rank4]:[titan] 2026-05-04 05:38:55,148 - root - INFO - [31mstep: 2001  [32mloss:  3.06111  [38;2;180;60;0mgrad_norm: 72102.0781  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 290  [36mtflops: 1.77  [35mmfu: 0.57%[39m
+[rank4]:[titan] 2026-05-04 05:39:00,996 - root - INFO - [31mstep: 2002  [32mloss:  3.13554  [38;2;180;60;0mgrad_norm: 67892.5625  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,766  [36mtflops: 10.73  [35mmfu: 3.44%[39m
+[rank4]:[titan] 2026-05-04 05:39:06,805 - root - INFO - [31mstep: 2003  [32mloss:  3.12118  [38;2;180;60;0mgrad_norm: 30094.8887  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,777  [36mtflops: 10.80  [35mmfu: 3.46%[39m
+[rank4]:[titan] 2026-05-04 05:39:12,562 - root - INFO - [31mstep: 2004  [32mloss:  3.10524  [38;2;180;60;0mgrad_norm: 48772.3633  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,793  [36mtflops: 10.90  [35mmfu: 3.49%[39m
+[rank4]:[titan] 2026-05-04 05:39:18,332 - root - INFO - [31mstep: 2005  [32mloss:  3.07738  [38;2;180;60;0mgrad_norm: 43907.1211  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,789  [36mtflops: 10.88  [35mmfu: 3.49%[39m
+[rank4]:[titan] 2026-05-04 05:39:24,117 - root - INFO - [31mstep: 2006  [32mloss:  3.11148  [38;2;180;60;0mgrad_norm: 33795.0117  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,785  [36mtflops: 10.85  [35mmfu: 3.48%[39m
+[rank4]:[titan] 2026-05-04 05:39:29,870 - root - INFO - [31mstep: 2007  [32mloss:  3.07694  [38;2;180;60;0mgrad_norm: 24454.7500  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,795  [36mtflops: 10.91  [35mmfu: 3.50%[39m
+[rank4]:[titan] 2026-05-04 05:39:35,813 - root - INFO - [31mstep: 2008  [32mloss:  3.10002  [38;2;180;60;0mgrad_norm: 25430.9922  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,737  [36mtflops: 10.56  [35mmfu: 3.38%[39m
+[rank4]:[titan] 2026-05-04 05:39:41,695 - root - INFO - [31mstep: 2009  [32mloss:  2.95534  [38;2;180;60;0mgrad_norm: 77973.9375  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,755  [36mtflops: 10.67  [35mmfu: 3.42%[39m
+[rank4]:[titan] 2026-05-04 05:39:47,515 - root - INFO - [31mstep: 2010  [32mloss:  3.08554  [38;2;180;60;0mgrad_norm: 81123.8359  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,774  [36mtflops: 10.78  [35mmfu: 3.46%[39m
+[rank4]:[titan] 2026-05-04 05:39:53,304 - root - INFO - [31mstep: 2011  [32mloss:  3.10429  [38;2;180;60;0mgrad_norm: 33567.4570  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,783  [36mtflops: 10.84  [35mmfu: 3.47%[39m
+[rank4]:[titan] 2026-05-04 05:39:59,097 - root - INFO - [31mstep: 2012  [32mloss:  3.10849  [38;2;180;60;0mgrad_norm: 35289.4336  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,782  [36mtflops: 10.83  [35mmfu: 3.47%[39m
+[rank4]:[titan] 2026-05-04 05:40:04,879 - root - INFO - [31mstep: 2013  [32mloss:  3.05376  [38;2;180;60;0mgrad_norm: 36926.2500  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,786  [36mtflops: 10.86  [35mmfu: 3.48%[39m
+[rank4]:[titan] 2026-05-04 05:40:10,707 - root - INFO - [31mstep: 2014  [32mloss:  3.09950  [38;2;180;60;0mgrad_norm: 44623.6680  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,772  [36mtflops: 10.77  [35mmfu: 3.45%[39m
+[rank4]:[titan] 2026-05-04 05:40:16,458 - root - INFO - [31mstep: 2015  [32mloss:  3.10759  [38;2;180;60;0mgrad_norm: 25776.3223  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,795  [36mtflops: 10.91  [35mmfu: 3.50%[39m
+[rank4]:[titan] 2026-05-04 05:40:22,271 - root - INFO - [31mstep: 2016  [32mloss:  3.12234  [38;2;180;60;0mgrad_norm: 177264.5312  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,776  [36mtflops: 10.80  [35mmfu: 3.46%[39m
+[rank4]:[titan] 2026-05-04 05:40:28,067 - root - INFO - [31mstep: 2017  [32mloss:  3.10770  [38;2;180;60;0mgrad_norm: 129637.5234  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,781  [36mtflops: 10.83  [35mmfu: 3.47%[39m
+[rank4]:[titan] 2026-05-04 05:40:33,833 - root - INFO - [31mstep: 2018  [32mloss:  3.09912  [38;2;180;60;0mgrad_norm: 70863.0078  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,790  [36mtflops: 10.89  [35mmfu: 3.49%[39m
+[rank4]:[titan] 2026-05-04 05:40:39,632 - root - INFO - [31mstep: 2019  [32mloss:  3.07880  [38;2;180;60;0mgrad_norm: 46179.0000  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,780  [36mtflops: 10.82  [35mmfu: 3.47%[39m
+[rank4]:[titan] 2026-05-04 05:40:45,406 - root - INFO - [31mstep: 2020  [32mloss:  3.19419  [38;2;180;60;0mgrad_norm: 92003.9531  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,788  [36mtflops: 10.87  [35mmfu: 3.48%[39m
+[rank4]:[titan] 2026-05-04 05:40:51,178 - root - INFO - [31mstep: 2021  [32mloss:  3.19197  [38;2;180;60;0mgrad_norm: 144567.2812  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,789  [36mtflops: 10.87  [35mmfu: 3.49%[39m
+[rank4]:[titan] 2026-05-04 05:40:56,884 - root - INFO - [31mstep: 2022  [32mloss:  3.20839  [38;2;180;60;0mgrad_norm: 45193.4609  [38;2;54;234;195mmemory: 15.55GiB(49.60%)  [34mtps: 1,810  [36mtflops: 11.00  [35mmfu: 3.53%[39m
