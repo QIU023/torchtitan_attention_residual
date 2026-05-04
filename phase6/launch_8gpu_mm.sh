@@ -129,8 +129,8 @@ PP_ARGS="--parallelism.pipeline_parallel_degree $PP"
 if [[ "$PP" -gt 1 ]]; then
     PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_schedule Interleaved1F1B"
     PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_layers_per_stage $V"
-    PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_first_stage_less_layers 0"
-    PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_last_stage_less_layers 0"
+    PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_first_stage_less_layers ${PP_FIRST_LESS:-0}"
+    PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_last_stage_less_layers ${PP_LAST_LESS:-0}"
     if [[ -n "${PP_MICROBATCH:-}" ]]; then
         PP_ARGS="$PP_ARGS --parallelism.pipeline_parallel_microbatch_size $PP_MICROBATCH"
     fi
