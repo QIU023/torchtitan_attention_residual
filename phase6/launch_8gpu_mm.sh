@@ -113,7 +113,9 @@ if [[ "$CHECKPOINT_ENABLED" == "1" && -d "$STUDENT_CKPT" ]]; then
 elif [[ -d "$STUDENT_CKPT" ]]; then
     # Alignment / trace tier: load init only, never save (interval set
     # ridiculously high). See phase6/CHECKPOINT_RULES.md for the rule.
-    CKPT_ARGS="--checkpoint.enable --checkpoint.initial_load_path ${STUDENT_CKPT} --checkpoint.initial_load_model_only --checkpoint.interval 999999999 --checkpoint.keep_latest_k 1"
+    # keep_latest_k must be >= 2 (torchtitan validator); benign at
+    # interval=999999999 since nothing gets saved anyway.
+    CKPT_ARGS="--checkpoint.enable --checkpoint.initial_load_path ${STUDENT_CKPT} --checkpoint.initial_load_model_only --checkpoint.interval 999999999 --checkpoint.keep_latest_k 2"
 fi
 
 DEBUG_ARGS=""

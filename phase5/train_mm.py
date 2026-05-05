@@ -95,7 +95,7 @@ def _parse_mm_args() -> argparse.Namespace:
                         "stability). Default 258 = 196 vision + 1 bos + 60 "
                         "caption + 1 eos.")
     p.add_argument("--mm.layout", dest="mm_layout", default="prefix",
-                   choices=("prefix", "interior", "random"),
+                   choices=("prefix", "interior", "random", "sft"),
                    help="Image-token layout policy in input_ids. "
                         "'prefix' (default): original LLaVA layout "
                         "[<img>×196] [BOS] [caption]. "

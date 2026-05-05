@@ -79,8 +79,8 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
     # phase5/train_mm.py reads.
     OUT_DIR="$OUT_DIR" \
     FSDP=2 DP_REP=1 PP=2 TP=2 CP=1 EP=2 V=2 ADAPTER=1 \
-    PP_MICROBATCH=10 \
-    STEPS=400 LOCAL_BS=200 GLOBAL_BS=400 SEQ_LEN=580 \
+    PP_MICROBATCH=8 \
+    STEPS=400 LOCAL_BS=160 GLOBAL_BS=320 SEQ_LEN=580 \
     MM_GLOBAL_SEQ_LEN=580 \
     FLAVOR=kimi_linear_436m_block_attn_res_n4 \
     STUDENT_CKPT="$V11_CKPT" \
