@@ -48,7 +48,23 @@ MAX_RETRIES=20
 attempt=0
 while [[ $attempt -lt $MAX_RETRIES ]]; do
     attempt=$((attempt + 1))
-    echo "[$(date)] v11 attempt #$attempt"
+
+    # Disk pre-flight + per-attempt cleanup; see phase6/DISK_DISCIPLINE.md.
+    free_gb=$(df -BG --output=avail "$WORKSPACE_DIR" | tail -1 | tr -d 'G ')
+    if [[ "$free_gb" -lt 48 ]]; then
+        echo "[$(date)] v11 DISK ABORT: ${free_gb}GB free < 48GB required"
+        break
+    fi
+    echo "[$(date)] v11 attempt #$attempt (disk free: ${free_gb}GB)"
+    if [[ "$attempt" -gt 1 ]]; then
+        rm -f "$OUT_DIR/tier_b_trace/nccl-rank-"*.log 2>/dev/null
+    fi
+    if [[ "$attempt" -eq 1 ]]; then
+        TRACE_ENV_TIER=tier_b
+    else
+        TRACE_ENV_TIER=
+    fi
+
     OUT_DIR="$OUT_DIR" \
     FSDP=2 DP_REP=1 PP=2 TP=2 CP=1 EP=2 V=2 ADAPTER=1 \
     PP_MICROBATCH=20 \
@@ -58,7 +74,7 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
     SEED=42 DETERMINISTIC=0 COMPILE=0 \
     LR=1e-5 WARMUP=200 \
     CHECKPOINT_ENABLED=1 SAVE_FREQ=200 KEEP_K=2 \
-    TRACE_TIER=tier_b TRACE_STEPS=50 \
+    TRACE_TIER="$TRACE_ENV_TIER" TRACE_STEPS=50 \
     bash "$LAUNCHER"
     rc=$?
     last_step=$(grep -oE "step:\s*[0-9]+" "$OUT_DIR/train.log" 2>/dev/null \
