@@ -333,7 +333,20 @@ class MultimodalTrainer(Trainer):
                 vision_model, cache_dir=cache_dir,
             )
 
-        if self._mm_layout == "prefix":
+        if self._mm_layout == "sft":
+            from phase9.multimodal_sft_dataset import LlavaInstructSFTDataset
+            ds = LlavaInstructSFTDataset(
+                json_path=json_path,
+                images_dir=images_dir,
+                tokenizer=self.mm_tokenizer,
+                image_processor=self.image_processor,
+                dp_rank=dp_rank,
+                dp_world_size=dp_world_size,
+            )
+            logger.info(
+                "mm: dataset = LlavaInstructSFTDataset (sft layout, conversation format)"
+            )
+        elif self._mm_layout == "prefix":
             ds = LlavaPretrainDataset(
                 json_path=json_path,
                 images_dir=images_dir,

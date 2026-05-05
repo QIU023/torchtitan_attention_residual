@@ -212,6 +212,7 @@ torchrun \
     -m phase5.train_mm \
     --mm.json "$JSON" \
     --mm.images "$IMAGES" \
+    --mm.layout "${MM_LAYOUT:-prefix}" \
     --mm.vision-model "$VISION" \
     --mm.tokenizer "$TOKENIZER" \
     --mm.cache-dir "$HF_CACHE_DIR" \
