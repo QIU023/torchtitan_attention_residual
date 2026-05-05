@@ -171,17 +171,27 @@ class LlavaInstructSFTDataset(IterableDataset):
                     images=image, return_tensors="pt",
                 )["pixel_values"][0]
 
-                # Prepend N_vision image-token placeholders.
-                ids = (
+                # Build full sequence then shift like LlavaPretrainDataset.
+                # The trainer's loss_fn does NOT shift internally — it
+                # computes CE(logits, labels) directly — so the dataset
+                # must provide labels = input_ids[1:] (next-token target)
+                # with IGNORE_INDEX wherever loss should be skipped.
+                full_ids = (
                     [IMAGE_TOKEN_ID] * N_VISION_TOKENS
                     + text_ids
                 )
-                labs = (
+                full_labels = (
                     [IGNORE_INDEX] * N_VISION_TOKENS
                     + text_labels
                 )
+                # Standard next-token shift:
+                #   input_ids = full[:-1]  (positions 0..L-2)
+                #   labels    = full[1:]   (the targets: position 1..L-1)
+                input_ids = full_ids[:-1]
+                labels = full_labels[1:]
+
                 yield {
                     "pixel_values": px,
-                    "input_ids": torch.tensor(ids, dtype=torch.long),
-                    "labels": torch.tensor(labs, dtype=torch.long),
+                    "input_ids": torch.tensor(input_ids, dtype=torch.long),
+                    "labels": torch.tensor(labels, dtype=torch.long),
                 }
