@@ -96,7 +96,7 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
         | tail -1 | grep -oE "[0-9]+")
     last_step=${last_step:-0}
     echo "[$(date)] SFT attempt #$attempt rc=$rc last_step=$last_step"
-    if [[ "$last_step" -ge 400 ]]; then
+    if [[ "$last_step" -ge 490 ]]; then
         echo "[$(date)] SFT done at step $last_step"; break
     fi
     if [[ "$rc" -eq 0 ]]; then break; fi
