@@ -93,3 +93,29 @@ batch density.
 - **Kimi CP**: blocked by KDA fla-core (no ring-recurrence).
 - **commId-axis mapping**: heuristic axis labels conflate PP and EP
   for nranks=2 Send/Recv. Real fix needs trainer-side PG dump.
+
+## Phase 10 — Inference + RLHF fabric (separate effort)
+
+After phases 7/8/9 closed, a new Phase 10 was added covering the
+inference and RLHF fabric — see `phase10/PHASE10_FABRIC_REPORT.md`
+for the standalone deliverable. Stages:
+
+- A: SGLang fork submodule + branch (PR-ready scaffolding).
+- B: DCP → HF kimi_linear conversion script (424 → 1819 keys, 2.6 GB
+  bf16 safetensors).
+- C: `kimi_block_attn_res.py` model class on
+  `attention_residual_inference` branch — runtime-blocked by
+  sgl_kernel cu130/py314/sm120 wheel, but PR-ready as a structural
+  deliverable.
+- D: forward-only inference fabric trace at FSDP=4 × TP=2 × EP=2;
+  captures the **inference signature** (zero ReduceScatter).
+- E: `phase10/TRAINING_INFERENCE_FABRIC_ASYMMETRY.md` — first-of-
+  kind training/inference fabric asymmetry analysis for Block AttnRes.
+- F: real PPO smoke (kimi_linear AttnRes actor + frozen ref) at
+  FSDP=4 × TP=2 × EP=2; captures **RLHF fabric** (training + inference
+  half-overlap).
+- G: `phase10/PHASE10_FABRIC_REPORT.md` — cross-regime aggregate.
+
+This supersedes the Phase 9-B "vLLM blocker" stance — see Phase 10
+Stage F for what was actually delivered (real PPO without vLLM, on
+torchtitan, capturing the production-shape fabric on a co-located mesh).

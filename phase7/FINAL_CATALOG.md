@@ -136,7 +136,25 @@ in `phase7/flows_to_ixia.py` for standard Ethernet.
    join with `phase7/comm_axis_map.csv` for accurate axis labels.
    Resolves the PP/EP heuristic conflation.
 2. **CP trace** via fla-core ring-attention KDA (upstream PR).
-3. **Real PPO trace** with kimi_linear actor + ref loaded from v11 ckpt
-   (current PPO smoke uses random-init MLP for fabric pattern only).
+3. ~~**Real PPO trace**~~ ✓ done in Phase 10 Stage F: real
+   kimi_linear AttnRes actor + frozen ref co-located on FSDP=4 x
+   TP=2 x EP=2 mesh. See
+   `phase5/runs/ppo_real_torchtitan/tier_b_trace/ixia_config.json`
+   and `phase10/PHASE10_FABRIC_REPORT.md`.
 4. **Multi-node trace** to capture true wire-level UDP/IP/RoCE packets
    (current SHM-only single-host runs cannot).
+5. **Block AttnRes two-phase computation** (paper-aligned production
+   inference path): converts per-attention TP `AllReduce` to
+   `ReduceScatter + AllGather` pair (same volume, different fabric
+   pattern shape). Captured analytically in
+   `phase10/PHASE10_FABRIC_REPORT.md`; impl pending.
+
+## Phase 10 additions to the catalog (inference + RLHF)
+
+| Run / config | mesh | trace path | ixia_config | notes |
+|---|---|---|---|---|
+| **Stage D inference** | FSDP=4 x TP=2 x EP=2 (PP=1) | `phase5/runs/inference_torchtitan_phase4_step8000/tier_b_trace/` | ✓ | 50 fwd-only steps, phase4 step-8000 ckpt; **0 ReduceScatter** distinguishes from training |
+| **Stage F real PPO** | FSDP=4 x TP=2 x EP=2 | `phase5/runs/ppo_real_torchtitan/tier_b_trace/` | ✓ | 50-step real RLHF with kimi_linear AttnRes actor + frozen ref + KL + PPO ratio loss; ~3x FSDP volume vs Stage D inference (2 fwd + 1 bwd) |
+
+See `phase10/PHASE10_FABRIC_REPORT.md` for the cross-regime
+asymmetry analysis and IXIA config catalog.
