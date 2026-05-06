@@ -44,20 +44,24 @@
   trivial loss=0.009 due to misaligned target. Fix mirrors
   `LlavaPretrainDataset` pattern (`full[:-1]` / `full[1:]`).
 
-## Phase 9-B — PPO Trace (Deferred)
-- **Status**: Deferred. Original framing in
-  `phase9/PPO_TRACE_DEFERRED.md` over-stated the dependency on
-  vLLM/monarch/torchstore — those are torchtitan's *example* RL
-  entry-point's choices, not PPO requirements. **vLLM is for rollout
-  speed**, not RLHF correctness; a pure-PyTorch GRPO/PPO smoke (load
-  2× v11 ckpts as actor + ref, slow `model.generate`, mock reward,
-  KL + ratio loss) would capture the unique multi-model fabric
-  pattern (cross-model logprob exchange) without those installs.
-- **Estimated time for vLLM-free PPO smoke**: 4-6 hours; deferred to
-  next session given current 18h budget already exceeded.
-- **See**: `phase9/PPO_TRACE_DEFERRED.md` for setup checklist and
-  recommended path forward (now updated to recommend the vLLM-free
-  variant).
+## Phase 9-B — PPO Trace (vLLM-free smoke captured)
+- **Status**: ✓ done. `phase9/ppo_smoke_no_vllm.py` runs 50-step
+  toy-MLP PPO with actor on ranks 0-3 sub-mesh and frozen ref on
+  ranks 4-7 sub-mesh. Cross-mesh KL exchange via world_pg
+  Broadcast captures the **unique RLHF fabric signature** that
+  v11/v12/SFT/5D-MODE-B all lack.
+- **Captured collectives** (50 steps, 1.2 s wall):
+  - 800 nranks=8 Broadcast <1 KB (cross-mesh KL — NEW pattern)
+  - 800 nranks=4 AllReduce 16-256 MB (actor sub-mesh grad sync)
+  - 400 nranks=4 AllReduce 1-64 KB + 400 <1 KB (small-msg AR)
+- **Trace**: `phase5/runs/ppo_smoke_no_vllm/tier_b_trace/`
+  (ixia_config.json, 6.3 KB; 8 nccl-rank-*.log.gz, ~600 B each).
+- **Limitations**: random-init MLP (not real LM), no actual rollout
+  (uses fixed batch as "rollout"), mock reward. Captures fabric
+  pattern only, not RLHF training quality. To upgrade: load v11
+  step-5000 ckpt twice (DCP load is non-trivial under 4D mesh) and
+  do real `model.generate` rollout — see
+  `phase9/PPO_TRACE_DEFERRED.md` for the recommended next step.
 
 ## Disk Discipline (lessons learned)
 - Two ENOSPC incidents during retry-loop runs filled `/root` to 100%

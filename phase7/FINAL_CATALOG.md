@@ -15,7 +15,7 @@ canonical `ixia_config.json` (~30 KB) consumable by IxNetwork.
 | 8gpu_a3 (alignment) | FSDP=2 × PP=2 × TP=2, V=2 | `phase5/runs/8gpu_a3_*/tier_c_trace/` | ✓ | older, GBS=16 |
 | 8gpu_b0 (alignment) | FSDP=8 (no PP), V=1 | `phase5/runs/8gpu_b0_*/tier_*_trace/` | ✓ (×3 tiers) | older, GBS=16 (DP-only) |
 | **5D MODE=B (llama3 + CP)** | PP=2 × FSDP=2 × CP=2 (3 fabric axes) | `phase5/runs/5d_mode_b_llama3_pp_fsdp_cp/tier_b_trace/` | ✓ | 50 step llama3_debugmodel; **adds CP coverage** (nranks=4 AllGather/ReduceScatter from CP×FSDP group). DSv3+CP path crashes with mixed Tensor/DTensor in scaled_dot_product_attention; llama3 dense path is stable |
-| **PPO trace smoke** | actor 4D + ref + RM + critic | — | ✗ deferred | requires vLLM/monarch/torchstore; see phase9/PPO_TRACE_DEFERRED.md |
+| **PPO smoke (vLLM-free)** | actor sub-mesh (ranks 0-3) + ref sub-mesh (ranks 4-7) + cross-mesh world_pg KL | `phase5/runs/ppo_smoke_no_vllm/tier_b_trace/` | ✓ | 50 step toy MLP smoke; **adds cross-mesh KL exchange signature** — nranks=8 Broadcast (KL scalars 800 ops, <1 KB) + nranks=4 AllReduce 16-256 MB (sub-mesh grad sync, 800 ops); see `phase9/ppo_smoke_no_vllm.py` |
 
 ## Per-axis breakdown — v11 4D 50-step trace
 
@@ -73,6 +73,24 @@ Lower absolute volumes vs v11 because shorter run (490 vs 5000 steps)
 and smaller GBS (320 vs 400). **Per-step rates similar**, confirming
 that mesh dictates fabric pattern, not data.
 
+## Per-axis breakdown — PPO smoke (vLLM-free) 50-step
+
+```
+nranks=8 Broadcast    : 800 ops, <1 KB each   (cross-mesh KL — NEW)
+nranks=4 AllReduce 16-256MB : 800 ops         (actor sub-mesh grad sync)
+nranks=4 AllReduce <1KB     : 400 ops         (scalar sub_lp AR)
+nranks=4 AllReduce 1-64KB   : 400 ops         (small param grads)
+nranks=8 AllReduce <1KB     :   8 ops         (final barrier)
+```
+
+The **nranks=8 Broadcast at <1 KB** is the unique RLHF signature — it
+does not appear in v11/v12/SFT (single-mesh runs) or in 5D MODE=B
+(no cross-mesh exchange). At step rate 0.024 s/step with 16 KL
+scalar broadcasts per step, this trivializes fabric-wise; the
+distinguishing factor for IXIA is the *combination* of (a) cross-
+mesh small-msg broadcast and (b) sub-mesh large-msg AR — same
+endpoints alternate roles.
+
 ## Pattern shape per axis (qualitative)
 
 | Axis | Op kinds | nranks | Typical message size | Cluster role in IXIA test |
@@ -118,6 +136,7 @@ in `phase7/flows_to_ixia.py` for standard Ethernet.
    join with `phase7/comm_axis_map.csv` for accurate axis labels.
    Resolves the PP/EP heuristic conflation.
 2. **CP trace** via fla-core ring-attention KDA (upstream PR).
-3. **PPO trace** when vLLM/monarch/torchstore install is feasible.
+3. **Real PPO trace** with kimi_linear actor + ref loaded from v11 ckpt
+   (current PPO smoke uses random-init MLP for fabric pattern only).
 4. **Multi-node trace** to capture true wire-level UDP/IP/RoCE packets
    (current SHM-only single-host runs cannot).
