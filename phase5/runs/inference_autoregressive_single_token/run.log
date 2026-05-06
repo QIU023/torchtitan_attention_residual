@@ -1,0 +1,974 @@
+W0506 09:53:34.558000 2302406 site-packages/torch/distributed/run.py:851] 
+W0506 09:53:34.558000 2302406 site-packages/torch/distributed/run.py:851] *****************************************
+W0506 09:53:34.558000 2302406 site-packages/torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0506 09:53:34.558000 2302406 site-packages/torch/distributed/run.py:851] *****************************************
+[autoregress] world=8 mode=single_token
+[rank4]:W0506 09:53:50.761000 2302479 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank5]:W0506 09:53:50.761000 2302480 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank7]:W0506 09:53:50.761000 2302482 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank2]:W0506 09:53:50.761000 2302477 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank1]:W0506 09:53:50.763000 2302476 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank3]:W0506 09:53:50.764000 2302478 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank6]:W0506 09:53:50.764000 2302481 site-packages/torch/distributed/tensor/_random.py:212] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[infer] loading DCP from /root/torchtitan_attention_residual/phase4/runs/kimi_436m_block_attn_res_fsdp/checkpoint/step-8000 (state_dict keys: 424)
+[autoregress] model params: 1,393,005,756
+[autoregress] 20 generations x 20 tokens (mode=single_token, prompt=64)
+[rank4]: Traceback (most recent call last):
+[rank4]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank4]:   File "<frozen runpy>", line 88, in _run_code
+[rank4]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank4]:     main()
+[rank4]:     ~~~~^^
+[rank4]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank4]:     logits = model(one_tok)
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank4]:     return self._call_impl(*args, **kwargs)
+[rank4]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank4]:     return inner()
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank4]:     result = forward_call(*args, **kwargs)
+[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank4]:     block_list, partial_block = layer(
+[rank4]:                                 ~~~~~^
+[rank4]:         block_list, partial_block, is_block_start
+[rank4]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:     )
+[rank4]:     ^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank4]:     return self._call_impl(*args, **kwargs)
+[rank4]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank4]:     return inner()
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank4]:     result = forward_call(*args, **kwargs)
+[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank4]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank4]:     return self._call_impl(*args, **kwargs)
+[rank4]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank4]:     return inner()
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank4]:     result = forward_call(*args, **kwargs)
+[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank4]:     q, _ = self.q_conv1d(
+[rank4]:            ~~~~~~~~~~~~~^
+[rank4]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank4]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:     )
+[rank4]:     ^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank4]:     return self._call_impl(*args, **kwargs)
+[rank4]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank4]:     return forward_call(*args, **kwargs)
+[rank4]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank4]:     out = orig(self, x, *args, **kwargs)
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank4]:     y, cache = self.step(
+[rank4]:                ~~~~~~~~~^
+[rank4]:         x=x,
+[rank4]:         ^^^^
+[rank4]:     ...<3 lines>...
+[rank4]:         cu_seqlens=cu_seqlens,
+[rank4]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:     )
+[rank4]:     ^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank4]:     return causal_conv1d_update(
+[rank4]:         x=x,
+[rank4]:     ...<4 lines>...
+[rank4]:         activation=self.activation,
+[rank4]:     )
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank4]:     return fn(*processed_args, **processed_kwargs)
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank4]:     causal_conv1d_update_kernel[grid](
+[rank4]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank4]:         x=x,
+[rank4]:         ^^^^
+[rank4]:     ...<12 lines>...
+[rank4]:         ACTIVATION=activation,
+[rank4]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:     )
+[rank4]:     ^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank4]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank4]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank4]:     return self.fn.run(*args, **kwargs)
+[rank4]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank4]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank4]:     bench_fn()
+[rank4]:     ~~~~~~~~^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank4]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank4]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank4]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank4]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank4]:     fn()
+[rank4]:     ~~^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank4]:     self.pre_hook(full_nargs)
+[rank4]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank4]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank4]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank4]:                                  ^^^^^^^^^^^^^^^^^^
+[rank4]: AttributeError: 'NoneType' object has no attribute 'clone'
+[rank6]: Traceback (most recent call last):
+[rank6]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank6]:   File "<frozen runpy>", line 88, in _run_code
+[rank6]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank6]:     main()
+[rank6]:     ~~~~^^
+[rank6]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank6]:     logits = model(one_tok)
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank6]:     return self._call_impl(*args, **kwargs)
+[rank6]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank6]:     return inner()
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank6]:     result = forward_call(*args, **kwargs)
+[rank6]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank6]:     block_list, partial_block = layer(
+[rank6]:                                 ~~~~~^
+[rank6]:         block_list, partial_block, is_block_start
+[rank6]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank6]:     )
+[rank6]:     ^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank6]:     return self._call_impl(*args, **kwargs)
+[rank6]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank6]:     return inner()
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank6]:     result = forward_call(*args, **kwargs)
+[rank6]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank6]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank6]:     return self._call_impl(*args, **kwargs)
+[rank6]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank6]:     return inner()
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank6]:     result = forward_call(*args, **kwargs)
+[rank6]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank6]:     q, _ = self.q_conv1d(
+[rank6]:            ~~~~~~~~~~~~~^
+[rank6]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank6]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank6]:     )
+[rank6]:     ^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank6]:     return self._call_impl(*args, **kwargs)
+[rank6]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank6]:     return forward_call(*args, **kwargs)
+[rank6]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank6]:     out = orig(self, x, *args, **kwargs)
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank6]:     y, cache = self.step(
+[rank6]:                ~~~~~~~~~^
+[rank6]:         x=x,
+[rank6]:         ^^^^
+[rank6]:     ...<3 lines>...
+[rank6]:         cu_seqlens=cu_seqlens,
+[rank6]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank6]:     )
+[rank6]:     ^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank6]:     return causal_conv1d_update(
+[rank6]:         x=x,
+[rank6]:     ...<4 lines>...
+[rank6]:         activation=self.activation,
+[rank6]:     )
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank6]:     return fn(*processed_args, **processed_kwargs)
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank6]:     causal_conv1d_update_kernel[grid](
+[rank6]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank6]:         x=x,
+[rank6]:         ^^^^
+[rank6]:     ...<12 lines>...
+[rank6]:         ACTIVATION=activation,
+[rank6]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank6]:     )
+[rank6]:     ^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank6]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank6]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank6]:     return self.fn.run(*args, **kwargs)
+[rank6]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank6]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank6]:     bench_fn()
+[rank6]:     ~~~~~~~~^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank6]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank6]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank6]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank6]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank6]:     fn()
+[rank6]:     ~~^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank6]:     self.pre_hook(full_nargs)
+[rank6]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank6]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank6]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank6]:                                  ^^^^^^^^^^^^^^^^^^
+[rank6]: AttributeError: 'NoneType' object has no attribute 'clone'
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank0]:     main()
+[rank0]:     ~~~~^^
+[rank0]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank0]:     logits = model(one_tok)
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank0]:     return inner()
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank0]:     block_list, partial_block = layer(
+[rank0]:                                 ~~~~~^
+[rank0]:         block_list, partial_block, is_block_start
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:     )
+[rank0]:     ^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank0]:     return inner()
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank0]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank0]:     return inner()
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank0]:     q, _ = self.q_conv1d(
+[rank0]:            ~~~~~~~~~~~~~^
+[rank0]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:     )
+[rank0]:     ^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank0]:     out = orig(self, x, *args, **kwargs)
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank0]:     y, cache = self.step(
+[rank0]:                ~~~~~~~~~^
+[rank0]:         x=x,
+[rank0]:         ^^^^
+[rank0]:     ...<3 lines>...
+[rank0]:         cu_seqlens=cu_seqlens,
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:     )
+[rank0]:     ^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank0]:     return causal_conv1d_update(
+[rank0]:         x=x,
+[rank0]:     ...<4 lines>...
+[rank0]:         activation=self.activation,
+[rank0]:     )
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank0]:     return fn(*processed_args, **processed_kwargs)
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank0]:     causal_conv1d_update_kernel[grid](
+[rank0]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank0]:         x=x,
+[rank0]:         ^^^^
+[rank0]:     ...<12 lines>...
+[rank0]:         ACTIVATION=activation,
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:     )
+[rank0]:     ^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank0]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank0]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank0]:     return self.fn.run(*args, **kwargs)
+[rank0]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank0]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank0]:     bench_fn()
+[rank0]:     ~~~~~~~~^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank0]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank0]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank0]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank0]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank0]:     fn()
+[rank0]:     ~~^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank0]:     self.pre_hook(full_nargs)
+[rank0]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank0]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank0]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank0]:                                  ^^^^^^^^^^^^^^^^^^
+[rank0]: AttributeError: 'NoneType' object has no attribute 'clone'
+[rank7]: Traceback (most recent call last):
+[rank7]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank7]:   File "<frozen runpy>", line 88, in _run_code
+[rank7]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank7]:     main()
+[rank7]:     ~~~~^^
+[rank7]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank7]:     logits = model(one_tok)
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank7]:     return self._call_impl(*args, **kwargs)
+[rank7]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank7]:     return inner()
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank7]:     result = forward_call(*args, **kwargs)
+[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank7]:     block_list, partial_block = layer(
+[rank7]:                                 ~~~~~^
+[rank7]:         block_list, partial_block, is_block_start
+[rank7]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:     )
+[rank7]:     ^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank7]:     return self._call_impl(*args, **kwargs)
+[rank7]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank7]:     return inner()
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank7]:     result = forward_call(*args, **kwargs)
+[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank7]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank7]:     return self._call_impl(*args, **kwargs)
+[rank7]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank7]:     return inner()
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank7]:     result = forward_call(*args, **kwargs)
+[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank7]:     q, _ = self.q_conv1d(
+[rank7]:            ~~~~~~~~~~~~~^
+[rank7]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank7]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:     )
+[rank7]:     ^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank7]:     return self._call_impl(*args, **kwargs)
+[rank7]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank7]:     return forward_call(*args, **kwargs)
+[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank7]:     out = orig(self, x, *args, **kwargs)
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank7]:     y, cache = self.step(
+[rank7]:                ~~~~~~~~~^
+[rank7]:         x=x,
+[rank7]:         ^^^^
+[rank7]:     ...<3 lines>...
+[rank7]:         cu_seqlens=cu_seqlens,
+[rank7]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:     )
+[rank7]:     ^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank7]:     return causal_conv1d_update(
+[rank7]:         x=x,
+[rank7]:     ...<4 lines>...
+[rank7]:         activation=self.activation,
+[rank7]:     )
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank7]:     return fn(*processed_args, **processed_kwargs)
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank7]:     causal_conv1d_update_kernel[grid](
+[rank7]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank7]:         x=x,
+[rank7]:         ^^^^
+[rank7]:     ...<12 lines>...
+[rank7]:         ACTIVATION=activation,
+[rank7]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:     )
+[rank7]:     ^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank7]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank7]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank7]:     return self.fn.run(*args, **kwargs)
+[rank7]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank7]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank7]:     bench_fn()
+[rank7]:     ~~~~~~~~^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank7]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank7]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank7]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank7]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank7]:     fn()
+[rank7]:     ~~^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank7]:     self.pre_hook(full_nargs)
+[rank7]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank7]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank7]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank7]:                                  ^^^^^^^^^^^^^^^^^^
+[rank7]: AttributeError: 'NoneType' object has no attribute 'clone'
+[rank5]: Traceback (most recent call last):
+[rank5]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank5]:   File "<frozen runpy>", line 88, in _run_code
+[rank5]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank5]:     main()
+[rank5]:     ~~~~^^
+[rank5]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank5]:     logits = model(one_tok)
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank5]:     return self._call_impl(*args, **kwargs)
+[rank5]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank5]:     return inner()
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank5]:     result = forward_call(*args, **kwargs)
+[rank5]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank5]:     block_list, partial_block = layer(
+[rank5]:                                 ~~~~~^
+[rank5]:         block_list, partial_block, is_block_start
+[rank5]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank5]:     )
+[rank5]:     ^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank5]:     return self._call_impl(*args, **kwargs)
+[rank5]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank5]:     return inner()
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank5]:     result = forward_call(*args, **kwargs)
+[rank5]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank5]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank5]:     return self._call_impl(*args, **kwargs)
+[rank5]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank5]:     return inner()
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank5]:     result = forward_call(*args, **kwargs)
+[rank5]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank5]:     q, _ = self.q_conv1d(
+[rank5]:            ~~~~~~~~~~~~~^
+[rank5]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank5]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank5]:     )
+[rank5]:     ^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank5]:     return self._call_impl(*args, **kwargs)
+[rank5]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank5]:     return forward_call(*args, **kwargs)
+[rank5]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank5]:     out = orig(self, x, *args, **kwargs)
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank5]:     y, cache = self.step(
+[rank5]:                ~~~~~~~~~^
+[rank5]:         x=x,
+[rank5]:         ^^^^
+[rank5]:     ...<3 lines>...
+[rank5]:         cu_seqlens=cu_seqlens,
+[rank5]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank5]:     )
+[rank5]:     ^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank5]:     return causal_conv1d_update(
+[rank5]:         x=x,
+[rank5]:     ...<4 lines>...
+[rank5]:         activation=self.activation,
+[rank5]:     )
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank5]:     return fn(*processed_args, **processed_kwargs)
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank5]:     causal_conv1d_update_kernel[grid](
+[rank5]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank5]:         x=x,
+[rank5]:         ^^^^
+[rank5]:     ...<12 lines>...
+[rank5]:         ACTIVATION=activation,
+[rank5]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank5]:     )
+[rank5]:     ^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank5]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank5]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank5]:     return self.fn.run(*args, **kwargs)
+[rank5]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank5]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank5]:     bench_fn()
+[rank5]:     ~~~~~~~~^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank5]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank5]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank5]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank5]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank5]:     fn()
+[rank5]:     ~~^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank5]:     self.pre_hook(full_nargs)
+[rank5]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank5]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank5]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank5]:                                  ^^^^^^^^^^^^^^^^^^
+[rank5]: AttributeError: 'NoneType' object has no attribute 'clone'
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank1]:   File "<frozen runpy>", line 88, in _run_code
+[rank1]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank1]:     main()
+[rank1]:     ~~~~^^
+[rank1]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank1]:     logits = model(one_tok)
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank1]:     return inner()
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank1]:     block_list, partial_block = layer(
+[rank1]:                                 ~~~~~^
+[rank1]:         block_list, partial_block, is_block_start
+[rank1]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:     )
+[rank1]:     ^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank1]:     return inner()
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank1]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank1]:     return inner()
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank1]:     q, _ = self.q_conv1d(
+[rank1]:            ~~~~~~~~~~~~~^
+[rank1]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank1]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:     )
+[rank1]:     ^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank1]:     out = orig(self, x, *args, **kwargs)
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank1]:     y, cache = self.step(
+[rank1]:                ~~~~~~~~~^
+[rank1]:         x=x,
+[rank1]:         ^^^^
+[rank1]:     ...<3 lines>...
+[rank1]:         cu_seqlens=cu_seqlens,
+[rank1]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:     )
+[rank1]:     ^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank1]:     return causal_conv1d_update(
+[rank1]:         x=x,
+[rank1]:     ...<4 lines>...
+[rank1]:         activation=self.activation,
+[rank1]:     )
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank1]:     return fn(*processed_args, **processed_kwargs)
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank1]:     causal_conv1d_update_kernel[grid](
+[rank1]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank1]:         x=x,
+[rank1]:         ^^^^
+[rank1]:     ...<12 lines>...
+[rank1]:         ACTIVATION=activation,
+[rank1]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:     )
+[rank1]:     ^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank1]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank1]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank1]:     return self.fn.run(*args, **kwargs)
+[rank1]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank1]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank1]:     bench_fn()
+[rank1]:     ~~~~~~~~^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank1]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank1]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank1]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank1]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank1]:     fn()
+[rank1]:     ~~^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank1]:     self.pre_hook(full_nargs)
+[rank1]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank1]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank1]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank1]:                                  ^^^^^^^^^^^^^^^^^^
+[rank1]: AttributeError: 'NoneType' object has no attribute 'clone'
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank2]:   File "<frozen runpy>", line 88, in _run_code
+[rank2]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank2]:     main()
+[rank2]:     ~~~~^^
+[rank2]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank2]:     logits = model(one_tok)
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank2]:     return inner()
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank2]:     result = forward_call(*args, **kwargs)
+[rank2]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank2]:     block_list, partial_block = layer(
+[rank2]:                                 ~~~~~^
+[rank2]:         block_list, partial_block, is_block_start
+[rank2]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:     )
+[rank2]:     ^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank2]:     return inner()
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank2]:     result = forward_call(*args, **kwargs)
+[rank2]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank2]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank2]:     return inner()
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank2]:     result = forward_call(*args, **kwargs)
+[rank2]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank2]:     q, _ = self.q_conv1d(
+[rank2]:            ~~~~~~~~~~~~~^
+[rank2]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank2]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:     )
+[rank2]:     ^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank2]:     out = orig(self, x, *args, **kwargs)
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank2]:     y, cache = self.step(
+[rank2]:                ~~~~~~~~~^
+[rank2]:         x=x,
+[rank2]:         ^^^^
+[rank2]:     ...<3 lines>...
+[rank2]:         cu_seqlens=cu_seqlens,
+[rank2]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:     )
+[rank2]:     ^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank2]:     return causal_conv1d_update(
+[rank2]:         x=x,
+[rank2]:     ...<4 lines>...
+[rank2]:         activation=self.activation,
+[rank2]:     )
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank2]:     return fn(*processed_args, **processed_kwargs)
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank2]:     causal_conv1d_update_kernel[grid](
+[rank2]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank2]:         x=x,
+[rank2]:         ^^^^
+[rank2]:     ...<12 lines>...
+[rank2]:         ACTIVATION=activation,
+[rank2]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:     )
+[rank2]:     ^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank2]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank2]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank2]:     return self.fn.run(*args, **kwargs)
+[rank2]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank2]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank2]:     bench_fn()
+[rank2]:     ~~~~~~~~^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank2]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank2]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank2]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank2]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank2]:     fn()
+[rank2]:     ~~^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank2]:     self.pre_hook(full_nargs)
+[rank2]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank2]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank2]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank2]:                                  ^^^^^^^^^^^^^^^^^^
+[rank2]: AttributeError: 'NoneType' object has no attribute 'clone'
+[rank3]: Traceback (most recent call last):
+[rank3]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank3]:   File "<frozen runpy>", line 88, in _run_code
+[rank3]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 147, in <module>
+[rank3]:     main()
+[rank3]:     ~~~~^^
+[rank3]:   File "/root/torchtitan_attention_residual/phase10/inference_autoregressive.py", line 122, in main
+[rank3]:     logits = model(one_tok)
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank3]:     return inner()
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank3]:     result = forward_call(*args, **kwargs)
+[rank3]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+[rank3]:     block_list, partial_block = layer(
+[rank3]:                                 ~~~~~^
+[rank3]:         block_list, partial_block, is_block_start
+[rank3]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:     )
+[rank3]:     ^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank3]:     return inner()
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank3]:     result = forward_call(*args, **kwargs)
+[rank3]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 128, in forward
+[rank3]:     attn_out = self.self_attn(self.input_layernorm(h))
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+[rank3]:     return inner()
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1833, in inner
+[rank3]:     result = forward_call(*args, **kwargs)
+[rank3]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 505, in forward
+[rank3]:     q, _ = self.q_conv1d(
+[rank3]:            ~~~~~~~~~~~~~^
+[rank3]:         x=_local_linear(self.q_proj, x), cache=None, output_final_state=False,
+[rank3]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:     )
+[rank3]:     ^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+[rank3]:     return forward_call(*args, **kwargs)
+[rank3]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/parallelize.py", line 307, in _patched
+[rank3]:     out = orig(self, x, *args, **kwargs)
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 164, in forward
+[rank3]:     y, cache = self.step(
+[rank3]:                ~~~~~~~~~^
+[rank3]:         x=x,
+[rank3]:         ^^^^
+[rank3]:     ...<3 lines>...
+[rank3]:         cu_seqlens=cu_seqlens,
+[rank3]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:     )
+[rank3]:     ^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/short_conv.py", line 217, in step
+[rank3]:     return causal_conv1d_update(
+[rank3]:         x=x,
+[rank3]:     ...<4 lines>...
+[rank3]:         activation=self.activation,
+[rank3]:     )
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/fla/utils.py", line 227, in wrapper
+[rank3]:     return fn(*processed_args, **processed_kwargs)
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/fla/modules/conv/triton/ops.py", line 322, in causal_conv1d_update
+[rank3]:     causal_conv1d_update_kernel[grid](
+[rank3]:     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+[rank3]:         x=x,
+[rank3]:         ^^^^
+[rank3]:     ...<12 lines>...
+[rank3]:         ACTIVATION=activation,
+[rank3]:         ^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:     )
+[rank3]:     ^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+[rank3]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank3]:                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 459, in run
+[rank3]:     return self.fn.run(*args, **kwargs)
+[rank3]:            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 238, in run
+[rank3]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 202, in check_disk_cache
+[rank3]:     bench_fn()
+[rank3]:     ~~~~~~~~^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 229, in benchmark
+[rank3]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank3]:                        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 164, in _bench
+[rank3]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank3]:            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/testing.py", line 149, in do_bench
+[rank3]:     fn()
+[rank3]:     ~~^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 148, in kernel_call
+[rank3]:     self.pre_hook(full_nargs)
+[rank3]:     ~~~~~~~~~~~~~^^^^^^^^^^^^
+[rank3]:   File "/venv/main/lib/python3.14/site-packages/triton/runtime/autotuner.py", line 63, in _pre_hook
+[rank3]:     self.restore_copies = {name: kwargs[name].clone() for name in self.restore_value}
+[rank3]:                                  ^^^^^^^^^^^^^^^^^^
+[rank3]: AttributeError: 'NoneType' object has no attribute 'clone'
+W0506 09:53:54.393000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 2302475 closing signal SIGTERM
+W0506 09:53:54.393000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 2302476 closing signal SIGTERM
+W0506 09:53:54.393000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 2302477 closing signal SIGTERM
+W0506 09:53:54.394000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 2302478 closing signal SIGTERM
+W0506 09:53:54.394000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 2302479 closing signal SIGTERM
+W0506 09:53:54.394000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 2302480 closing signal SIGTERM
+W0506 09:53:54.394000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 2302482 closing signal SIGTERM
+E0506 09:53:55.072000 2302406 site-packages/torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 6 (pid: 2302481) of binary: /venv/main/bin/python3
+Traceback (most recent call last):
+  File "/venv/main/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+    ~~~^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+    ~~~~~~~~~~~~~~~
+        config=config,
+        ~~~~~~~~~~~~~~
+        entrypoint=cmd,
+        ~~~~~~~~~~~~~~~
+    )(*cmd_args)
+    ~^^^^^^^^^^^
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/venv/main/lib/python3.14/site-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+    ...<2 lines>...
+    )
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase10.inference_autoregressive FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-06_09:53:55
+  host      : b008e969124e
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 2302475)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2026-05-06_09:53:55
+  host      : b008e969124e
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 2302476)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[3]:
+  time      : 2026-05-06_09:53:55
+  host      : b008e969124e
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 2302477)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[4]:
+  time      : 2026-05-06_09:53:55
+  host      : b008e969124e
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 2302478)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[5]:
+  time      : 2026-05-06_09:53:55
+  host      : b008e969124e
+  rank      : 4 (local_rank: 4)
+  exitcode  : 1 (pid: 2302479)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[6]:
+  time      : 2026-05-06_09:53:55
+  host      : b008e969124e
+  rank      : 5 (local_rank: 5)
+  exitcode  : 1 (pid: 2302480)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[7]:
+  time      : 2026-05-06_09:53:55
+  host      : b008e969124e
+  rank      : 7 (local_rank: 7)
+  exitcode  : 1 (pid: 2302482)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-06_09:53:54
+  host      : b008e969124e
+  rank      : 6 (local_rank: 6)
+  exitcode  : 1 (pid: 2302481)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
