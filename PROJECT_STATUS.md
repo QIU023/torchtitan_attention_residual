@@ -98,6 +98,64 @@ Total ~50 NCCL trace runs catalogued; 12+ ixia_config.json files.
 6. **CP via fla-core ring-recurrence** — KDA blocks CP support; needs
    fla-core upstream PR for `chunk_kda` ring updates.
 
+## Local environment snapshot vs target (8× 5090)
+
+Hardware stays (RTX 5090, 8 cards). Only software stack swaps. The
+SGLang `sgl_kernel` wheel ships sm90 + sm100 binaries; SM 120 falls
+through, and the wheel ABI also requires CUDA 12.x + Python 3.10-3.13.
+
+| Component | Local snapshot (broken) | Target (next box) | Action |
+|---|---|---|---|
+| GPU | 8× RTX 5090 (SM 120) | same | keep |
+| Driver | 595.58.03 (CUDA 13 capable, also CUDA 12 capable) | same | keep |
+| CUDA toolkit | 13.2 | **12.4 (or 12.6)** | downgrade |
+| nvcc | 13.2 | 12.4 | downgrade with toolkit |
+| Python | **3.14.3** | **3.12.x** | downgrade |
+| PyTorch | 2.11.0+cu130 (nightly) | **2.6.x cu124** stable | downgrade |
+| torchvision / torchaudio / torchcodec | 0.26 / 2.11 / 0.11 cu130 | matching cu124 builds | downgrade |
+| triton | 3.6.0 | 3.2.x (matching torch 2.6) | replaced via torch downgrade |
+| transformers | 5.7.0 | 4.46.x (LLaVA + safetensors compatible) | downgrade |
+| fla-core | 0.5.0 | 0.5.0 | keep (KDA Triton kernels) |
+| **sgl_kernel** | 0.3.21 (broken: `libnvrtc.so.12` missing, `common_ops` SM 120 absent) | 0.3.x cu124 wheel for sm90 | re-install after Python+CUDA swap |
+| sglang | 0.0.0.dev (editable, can `import sglang` but `srt.layers.*` blocked by sgl_kernel) | same dev build, fully importable once sgl_kernel loads | resolves automatically |
+
+### Concrete swap script (target box)
+
+```bash
+# 1. uv-managed Python 3.12 venv
+uv venv --python 3.12 /venv/main_312
+
+# 2. CUDA 12.4 toolkit (apt or conda)
+apt-get install cuda-toolkit-12-4   # or conda install cudatoolkit=12.4
+
+# 3. PyTorch 2.6 cu124
+uv pip install torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# 4. SGLang via our editable install
+cd /root/torchtitan_attention_residual/sglang/python
+uv pip install -e .   # sgl_kernel pulled as dep, should match cu124+py312+sm90
+
+# 5. fla-core (unchanged)
+uv pip install fla-core==0.5.0
+```
+
+### What "still broken" looks like after the swap
+
+If sgl_kernel cu124+py312 wheel **still** has no SM 120 binary
+(possible — most wheel matrices stop at sm90/sm100), two fallbacks:
+
+1. **Build sgl_kernel from source** for SM 120 (~2-4h, needs CUDA
+   12.4 nvcc + the source repo at `sgl-project/sgl-kernel`). This
+   is the proper fix.
+2. **Patch our `sglang/python/sglang/srt/models/kimi_block_attn_res.py`**
+   to use `torch.nn.RMSNorm` / `torch.nn.Linear` instead of
+   `sglang.srt.layers.{RMSNorm,Linear}` in the AttnRes paths only.
+   Slower (no fused norm) but bypasses sgl_kernel for our model
+   class. ~4-6h with numerical equivalence test.
+
+The fallback decision lives in `phase11/` (next session) once we see
+which sgl_kernel wheel resolution we get on the target box.
+
 ## What's runnable on a fresh CUDA 12 + Python 3.12 box (no code change)
 
 - All `phase{2,3,4,5,6}` training paths (single-GPU through 4D)
