@@ -305,3 +305,46 @@ current shape. Example: `wrap_attn_res_projection(module, in_dim,
 out_dim, tp_dim=None)` parameterizes both dims rather than assuming
 `out_features=1`. This costs minimal extra code now and absorbs most
 plausible NextGen shape changes without re-implementation.
+
+## Directory layout (post-cleanup, 2026-05-06)
+
+```
+phase6/
+├── README.md, DISK_DISCIPLINE.md, CHECKPOINT_RULES.md   # docs (top-level)
+├── launch_8gpu_mm.sh         # ACTIVE main launcher (also used by phase9 SFT)
+├── run_v11_pretrain.sh       # ACTIVE 4D production pretrain
+├── run_v12_pretrain.sh       # ACTIVE 4D EP-replace-TP variant
+├── alignment_archive/        # Phase 6 alignment-era scripts + outputs
+│   ├── alignment_*.{csv,txt,png}
+│   ├── run_a1/a3/a5_*.sh, run_arm2_only.sh, run_remaining_8gpu.sh
+│   ├── run_8gpu_alignment_matrix.sh
+│   ├── run_alignment_reports.sh
+│   └── run_phase6_closure_then_pretrain.sh
+├── cache_adapter_ablation/   # PP adapter vs naive results
+│   ├── cache_adapter_ablation.md
+│   └── c1_adapter_vs_naive.{csv,png,txt}
+├── summaries_archive/        # one-off final reports
+│   ├── SESSION_8GPU_summary.md
+│   ├── overnight_pretrain_summary.md
+│   ├── v8_final_summary.md, v9_final_summary.md
+│   └── PR_DRAFT.md
+├── pretrain_archive/         # superseded pretrain run scripts
+│   ├── run_v8_crash_resilient_pretrain.sh
+│   ├── run_v9_continue_pretrain.sh
+│   └── run_v10_pretrain.sh
+├── torchtitan_patches/       # debugging hotfixes (kept for forensic reference)
+│   ├── pp_patches/                       # was torchtitan_pp_patches/
+│   ├── torchtitan_pp_backward_hotfix.py
+│   └── torchtitan_pp_retain_graph_diag.py
+├── logs/                     # orchestrator logs from production runs
+│   ├── v10_orchestrator.log, v11_orchestrator.log, v12_orchestrator.log
+│   ├── orchestrator_8gpu.log
+│   └── a3_v10_3d_orchestrator.log
+└── utils/
+    ├── check_8gpu_status.sh
+    └── perf_regression_check.py
+```
+
+**What stays at top level** (intentionally minimal): the 3 currently-
+runnable launchers + the 3 always-needed docs. Everything else is
+organized by lifecycle stage.

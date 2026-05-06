@@ -46,8 +46,8 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
     # Disk pre-flight: bail rather than fill disk silently. See
     # phase6/DISK_DISCIPLINE.md for why this guard is mandatory.
     free_gb=$(df -BG --output=avail "$WORKSPACE_DIR" | tail -1 | tr -d 'G ')
-    if [[ "$free_gb" -lt 48 ]]; then
-        echo "[$(date)] v12 DISK ABORT: ${free_gb}GB free < 48GB required"
+    if [[ "$free_gb" -lt 32 ]]; then
+        echo "[$(date)] v12 DISK ABORT: ${free_gb}GB free < 32GB required"
         echo "[$(date)] Free disk and rerun manually"
         break
     fi

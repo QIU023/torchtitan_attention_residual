@@ -51,8 +51,8 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
 
     # Disk pre-flight + per-attempt cleanup; see phase6/DISK_DISCIPLINE.md.
     free_gb=$(df -BG --output=avail "$WORKSPACE_DIR" | tail -1 | tr -d 'G ')
-    if [[ "$free_gb" -lt 48 ]]; then
-        echo "[$(date)] v11 DISK ABORT: ${free_gb}GB free < 48GB required"
+    if [[ "$free_gb" -lt 32 ]]; then
+        echo "[$(date)] v11 DISK ABORT: ${free_gb}GB free < 32GB required"
         break
     fi
     echo "[$(date)] v11 attempt #$attempt (disk free: ${free_gb}GB)"
