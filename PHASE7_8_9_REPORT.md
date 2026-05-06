@@ -2,10 +2,22 @@
 
 ## Phase 7 — NCCL Fabric Profiling
 - **Pretrain trace catalog**: v11 4D (full coverage of FSDP+PP+TP+EP),
-  SFT 4D (post-train), 8gpu_a2/a3/b0 alignments.
+  v12 4D no-TP (50-step post-hoc from step-5000 ckpt; production trace
+  was wiped by retry-loop cleanup), SFT 4D (post-train),
+  8gpu_a2/a3/b0 alignments.
+- **5D MODE=B captured**: PP=2×FSDP=2×CP=2 via llama3_debugmodel
+  (DSv3+CP path crashes with mixed Tensor/DTensor in
+  scaled_dot_product_attention). Adds **CP** axis to the catalog —
+  new nranks=4 AG/RS signature from the combined CP×FSDP group, plus
+  CP ring Send/Recv.
+- **8-GPU constraint acknowledged**: "true 5D" with 5 axes ≥ 2 needs
+  ≥ 16 GPUs. TP doesn't generate fabric traffic (intra-node SHM) so
+  on 8 GPUs the most informative split is 3 fabric axes ≥ 2.
 - **Pipeline**: `extract_collectives.py` → `expand_to_flows.py` →
   `flows_to_ixia.py` end-to-end, with axis heuristic.
-- **IXIA-ready artifacts**: 9+ `ixia_config.json` files, ~30 KB each.
+- **IXIA-ready artifacts**: 11 `ixia_config.json` files, ~30 KB each.
+- **Loss curves**: `phase8/eval_results/loss_curves.png` (v11 / v12 /
+  SFT side-by-side).
 - **See**: `phase7/FINAL_CATALOG.md`.
 
 ## Phase 8 — VQA Eval (Qualitative)
@@ -33,10 +45,19 @@
   `LlavaPretrainDataset` pattern (`full[:-1]` / `full[1:]`).
 
 ## Phase 9-B — PPO Trace (Deferred)
-- **Status**: vLLM/monarch/torchstore not installed; 1-2 day setup
-  blocker exceeds budget.
+- **Status**: Deferred. Original framing in
+  `phase9/PPO_TRACE_DEFERRED.md` over-stated the dependency on
+  vLLM/monarch/torchstore — those are torchtitan's *example* RL
+  entry-point's choices, not PPO requirements. **vLLM is for rollout
+  speed**, not RLHF correctness; a pure-PyTorch GRPO/PPO smoke (load
+  2× v11 ckpts as actor + ref, slow `model.generate`, mock reward,
+  KL + ratio loss) would capture the unique multi-model fabric
+  pattern (cross-model logprob exchange) without those installs.
+- **Estimated time for vLLM-free PPO smoke**: 4-6 hours; deferred to
+  next session given current 18h budget already exceeded.
 - **See**: `phase9/PPO_TRACE_DEFERRED.md` for setup checklist and
-  recommended path forward.
+  recommended path forward (now updated to recommend the vLLM-free
+  variant).
 
 ## Disk Discipline (lessons learned)
 - Two ENOSPC incidents during retry-loop runs filled `/root` to 100%

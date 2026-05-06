@@ -9,12 +9,12 @@ canonical `ixia_config.json` (~30 KB) consumable by IxNetwork.
 | Run / config | mesh | trace path | ixia_config | notes |
 |---|---|---|---|---|
 | **v11 4D pretrain** | FSDP=2 × PP=2 × TP=2 × EP=2 (V=2) | `phase5/runs/v11_4d_*/tier_b_trace/` | ✓ | 5000 step run, 13 attempts, 18 GB raw → 210 MB CSV.gz |
-| **v12 4D pretrain (no TP)** | FSDP=2 × dp_rep=2 × PP=2 × EP=2 (V=2) | (trace lost in retry-loop cleanup) | ✗ | 5000 step run, 23 attempts; pattern infer-able from v11 minus TP allreduce |
+| **v12 4D pretrain (no TP)** | FSDP=2 × dp_rep=2 × PP=2 × EP=2 (V=2) | `phase5/runs/v12_trace_50step/tier_b_trace/` | ✓ | 50 step trace from step-5000 ckpt (production trace lost in retry-loop cleanup; this is the post-hoc replacement) |
 | **SFT (post-train)** | same as v11 (FSDP=2×PP=2×TP=2×EP=2) | `phase5/runs/sft_v11_llava_instruct_150k_4d/tier_b_trace/` | ✓ | 490 step on LLaVA-Instruct-150K |
 | 8gpu_a2 (alignment) | FSDP=2 × PP=4, V=2 | `phase5/runs/8gpu_a2_*/tier_*_trace/` | ✓ (×3 tiers) | older, GBS=16 |
 | 8gpu_a3 (alignment) | FSDP=2 × PP=2 × TP=2, V=2 | `phase5/runs/8gpu_a3_*/tier_c_trace/` | ✓ | older, GBS=16 |
 | 8gpu_b0 (alignment) | FSDP=8 (no PP), V=1 | `phase5/runs/8gpu_b0_*/tier_*_trace/` | ✓ (×3 tiers) | older, GBS=16 (DP-only) |
-| **5D MODE=B (DSv3)** | PP=2×FSDP=2×CP=2×TP=1+EP=2 | — | ✗ deferred | torchtitan train.py CLI not validated; post-mortem in phase7/run_5d_fabric_trace.sh comments |
+| **5D MODE=B (llama3 + CP)** | PP=2 × FSDP=2 × CP=2 (3 fabric axes) | `phase5/runs/5d_mode_b_llama3_pp_fsdp_cp/tier_b_trace/` | ✓ | 50 step llama3_debugmodel; **adds CP coverage** (nranks=4 AllGather/ReduceScatter from CP×FSDP group). DSv3+CP path crashes with mixed Tensor/DTensor in scaled_dot_product_attention; llama3 dense path is stable |
 | **PPO trace smoke** | actor 4D + ref + RM + critic | — | ✗ deferred | requires vLLM/monarch/torchstore; see phase9/PPO_TRACE_DEFERRED.md |
 
 ## Per-axis breakdown — v11 4D 50-step trace
@@ -30,6 +30,36 @@ NCCL Send/Recv at `nranks=2` are indistinguishable without commId
 trace dump from torchtitan. To split EP from PP in any run, dump the
 PG-axis-to-commId map from the trainer init and join post-hoc.
 Documented in `phase7/expand_to_flows.py:_classify`.
+
+## Per-axis breakdown — v12 50-step trace (post-hoc, 4D no-TP)
+
+```
+pp+ep    : 713 K flows,  12.1 TB (matches v11 shape minus TP allreduce)
+fsdp     : 0 flows captured at nranks=2 (heuristic landed in `unknown`)
+dp       :  392 flows,  224 B
+tp       :  61 K flows  (heuristic mis-label of dp_replicate AllReduces)
+```
+
+Captured by re-running `tier_b_trace` for 50 steps from
+`v12_4d_*/checkpoint/step-5000` since the production 5000-step
+trace was wiped by retry-loop cleanup. Fabric pattern matches v11
+expected shape (PP+EP send/recv dominant, no TP allreduce).
+
+## Per-axis breakdown — 5D MODE=B (llama3 + CP) 50-step
+
+```
+pp       : 24 K flows,   5.66 GB (PP send/recv, debug model is small)
+fsdp     :  4.8 K flows, 632 MB (AllGather + ReduceScatter)
+dp       :  112 flows,   0 B
+nranks=4 collectives (CP+FSDP combined group): 4824 AG + 1600 RS + 664 AR
+```
+
+**Key new signature**: nranks=4 AllGather/ReduceScatter on the
+`fsdp_cp` combined group (vs nranks=2 in v11/v12 which had no CP).
+This is the CP fabric pattern adding a new dimension beyond v11/v12.
+The CP attention ring exchange itself is implemented via Send/Recv
+(captured as nranks=2 P2P, indistinguishable from PP in the heuristic
+without commId dump — same caveat as PP/EP).
 
 ## Per-axis breakdown — SFT (post-train) 490-step trace
 
@@ -52,7 +82,7 @@ that mesh dictates fabric pattern, not data.
 | **FSDP** | AllGather / ReduceScatter | 2 (per FSDP unit) | 7-15 MB per layer | param all-gather, grad reduce-scatter |
 | **TP** | AllReduce (intra-node) | 2 (per TP group) | 12 MB | Stays on SHM/NVLink, **not on fabric** |
 | **DP** (full-mesh) | AllReduce | world_size | mostly small (<KB) | Cross-replica sync, infrequent |
-| **CP** | (not captured — KDA blocks) | — | — | Future work via fla-core ring-attention |
+| **CP** | Send/Recv (ring) + Combined-group AG/RS (CP×FSDP=4) | 2 (ring), 4 (with FSDP) | 64 KB-1 MB | **Captured via llama3 in 5D MODE=B** — Kimi CP blocked by KDA fla-core, llama3 dense works |
 
 ## How to consume the IXIA configs
 

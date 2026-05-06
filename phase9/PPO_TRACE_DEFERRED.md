@@ -1,27 +1,50 @@
 # Phase 9-B PPO Trace — Deferred (Future Work)
 
-## Status: Deferred
+## Status: Deferred (re-scoped after user correction)
 
 Originally planned as 50-step PPO infrastructure smoke for fabric
 profile (multi-model NCCL pattern: actor + ref + reward + critic
 sub-meshes + cross-mesh logprob exchange). Skipped due to setup
-blocker.
+blocker, but the original blocker analysis was wrong.
 
-## Setup blocker
+## Original (over-scoped) blocker
 
-torchtitan's `experiments/rl/simple_grpo_sum_digits.py` (the cleanest
-RL entry point in this repo) requires:
+torchtitan's `experiments/rl/simple_grpo_sum_digits.py` (one example
+RL entry point) requires vLLM + monarch + torchstore. These are NOT
+PPO/RLHF requirements — they are speed/scale optimizations:
 
-- **vLLM** for actor rollout (not installed; `pip install vllm` ~2 GB
-  + dep conflicts with our PyTorch 2.11 nightly possible)
-- **monarch.actor** (Meta's distributed actor framework, beta) — not
-  installed
-- **torchstore** for cross-mesh weight sync — not installed
-- **Qwen3-0.6B** base ckpt — needs HF download (~1 GB) and
-  ``hf_assets_path`` config
+- **vLLM** is a fast batched-inference server for the rollout phase
+  (sample tokens from actor). Pure PyTorch `model.generate()` works,
+  just slower.
+- **monarch.actor** is for cross-mesh actor scheduling. Not needed
+  for a single-host smoke.
+- **torchstore** is for cross-mesh weight sync. Not needed when actor
+  and ref share the same mesh / are loaded into the same process.
 
-Realistic setup + first-run debug = **1-2 days**. Doesn't fit the
-remaining 18h budget after phase 9-A SFT + phase 8 qual eval.
+## Re-scoped path (vLLM-free smoke, ~4-6 h)
+
+A minimal PPO/GRPO trace smoke that captures the unique fabric
+pattern (multi-model fwd/bwd, KL exchange) without vLLM:
+
+1. Load `v11_4d_*/checkpoint/step-5000` twice (actor + frozen ref),
+   both wrapped in the same FSDP+PP mesh.
+2. Mock reward (random scalar per sample, or "all-positive" sanity
+   reward to avoid div/zero in advantage).
+3. For each training step:
+   a. **Slow rollout** via `actor.generate(max_new_tokens=64)` (no
+      KV cache for simplicity; ~2-3× slower than training fwd).
+   b. **Compute logprobs** under both actor and frozen ref → KL.
+   c. **PPO loss** = `clip_ratio * advantage - kl_coef * KL`.
+   d. Backward + optimizer step on actor only.
+4. Tier_b NCCL trace at steps 30-50 → captures:
+   - Actor training fwd/bwd (same as v11 pattern)
+   - **Frozen ref forward** (FSDP allgather without RS — distinctive
+     fabric signature for "inference-only" model)
+   - **Cross-model exchange** (logits broadcast actor→ref or KL
+     reduce across actor+ref ranks if they're in different meshes)
+
+This adds **dual-model fwd + KL exchange** to the catalog, which is
+the fabric signature unique to RLHF.
 
 ## Alternatives considered
 
