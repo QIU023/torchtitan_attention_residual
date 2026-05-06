@@ -124,21 +124,75 @@ Generated `ixia_config.json` files (post-Phase 10):
 Plus older alignment-matrix traces from Phase 6 (8gpu_a2/a3/b0 — see
 `phase7/FINAL_CATALOG.md`).
 
+## Stage I — Two-phase TP RS+AG synthetic demo
+
+`phase10/TWO_PHASE_TP_FABRIC_DEMO.md`. Two modes side-by-side:
+* AllReduce baseline: 6400 × `AllReduce 12 MB nranks=8`
+* RS+AG two-phase: 6400 × `RS 12 MB` + 6400 × `AG 12 MB` nranks=8
+
+Same total bytes; different fabric pattern shape (2× event count,
+sequenced).
+
+## Stage J — Autoregressive (no-cache growing) inference fabric
+
+`phase10/AUTOREGRESSIVE_FABRIC.md`. 20 generations × 20 tokens (no
+KV cache, full prefix re-forward each step). 400 forward calls in
+67.3 s. Captures **growing-prefix per-step fabric**: AllReduce sizes
+climb 350 KB → 388 KB across the trace.
+
+`single_token` (ideal-cache) mode blocked by KDA Triton kernel
+autotuner — documented as Phase 11 future work.
+
+## Stage K — Two-phase TP RS+AG in real-model context
+
+`phase10/TWO_PHASE_REAL_MODEL_FABRIC.md`. Real kimi_linear AttnRes
+inference + injected RS+AG ops at real attention output shape
+(4 × 512 × 1168 ≈ 4.6 MB) per layer per step. Captured:
+
+```
+ReduceScatter   1-16 MB  nranks=2  count=6400   <- INJECTED
+AllGather       1-16 MB  nranks=2  count=6400   <- INJECTED
++ regular Stage D fabric unchanged
+```
+
+Diagnostic for IXIA: `RS @ 1-16 MB nranks=2` immediately followed by
+`AG @ 1-16 MB nranks=2` is the unique two-phase Block AttnRes
+inference signature, distinguishing it from any other regime.
+
+## Stage L — Sustained inference workload sweep
+
+`phase10/SUSTAINED_INFERENCE_WORKLOAD.md`. 4 production-volume
+workload shapes:
+
+| Workload | Batch | Seq | Steps | Total fabric |
+|---|---|---|---|---|
+| short_high_bs | 16 | 256 | 200 | 8.25 TB |
+| mid | 4 | 1024 | 200 | 8.25 TB |
+| long | 2 | 4096 | 100 | 8.07 TB |
+| prod | 8 | 2048 | 100 | 15.96 TB |
+
+**Per-token fabric rate ~10 MB invariant across batch/seq
+decompositions** at the kimi_linear_436m / 4D mesh scale. Fabric
+scales linearly with token count, not the batch/seq breakdown.
+
 ## Outstanding work
 
-1. **Two-phase computation impl**: would close the gap between paper-
-   described production inference and our captured naive-AllReduce
-   pattern. ~1-day engineering work to implement in
-   `KimiAttnResDecoderLayer.forward` + apply_tp_kimi_linear.
-2. **Cross-system PPO** (separate actor-mesh + ref-mesh + reward-mesh):
-   blocked by sgl_kernel cu130/py314/sm120 wheel availability. Once
-   SGLang serves on this env, the `kimi_block_attn_res.py` upstream
-   model file (already on `attention_residual_inference` branch) +
-   `dcp_to_hf_kimi_attn_res.py` ckpt converter close the loop.
-3. **commId-aware axis labels**: heuristic conflates PP and EP at
-   nranks=2 Send/Recv. A trainer-side commId dump joined post-hoc
-   with `comm_axis_map.csv` resolves the ambiguity (carry-over from
-   `phase7/FINAL_CATALOG.md`).
-4. **CP / fla-core ring-recurrence**: KDA blocks CP support; would
-   require fla-core upstream PR for `chunk_kda` to support ring
-   updates.
+1. **Two-phase computation full integration**: Stage K's *injection*
+   demonstrates the fabric pattern; production-grade integration
+   (replacing `o_proj`'s `RowwiseParallel` AllReduce with
+   `Shard(seq)` output then `AllGather`) is ~1-day work in
+   `apply_tp_kimi_linear`.
+2. **Real KV cache for KDA + MLA**: required for the `single_token`
+   ideal-cache fabric mode. KDA cache needs fla-core API extension
+   for the recurrent state. ~2 days.
+3. **commId-aware axis labels**: requires upstream
+   `torch.distributed` PR to expose `group_name` in NCCL trace
+   output. Heuristic in `phase7/expand_to_flows.py` conflates PP and
+   EP at nranks=2. Workaround documented; clean fix is upstream.
+4. **Cross-system PPO** (separate actor / ref / reward meshes
+   served by SGLang): blocked by sgl_kernel cu130/py314/sm120 wheel
+   availability. PR-ready model file already on
+   `attention_residual_inference` branch; closure is environment
+   work.
+5. **CP / fla-core ring-recurrence**: KDA blocks CP support; fla-core
+   upstream PR needed.
