@@ -1,0 +1,62 @@
+{
+  "args": {
+    "model": "/root/torchtitan_attention_residual/phase11/hf_aligned_447m",
+    "tp": 1,
+    "prefill": 4096,
+    "decode": 128,
+    "warmup": 2,
+    "timed": 3,
+    "disable_cuda_graph": false,
+    "out": "phase11/bench_results_v2_fused/tp1_prefill4096.json"
+  },
+  "modes": {
+    "vanilla": {
+      "prefill_ttft_ms_mean": 21.03077864740044,
+      "prefill_ttft_ms_stdev": 0.18579018476906564,
+      "decode_tps_mean": 818.5844802624255,
+      "decode_tps_stdev": 0.30684608901371674,
+      "prefill_ttft_raw": [
+        21.236835047602654,
+        20.979456952773035,
+        20.87604394182563
+      ],
+      "decode_tps_raw": [
+        818.8748818893465,
+        818.6150767574034,
+        818.2634821405264
+      ]
+    },
+    "naive": {
+      "prefill_ttft_ms_mean": 15.600956045091152,
+      "prefill_ttft_ms_stdev": 0.06385321970543083,
+      "decode_tps_mean": 704.7110508688436,
+      "decode_tps_stdev": 0.6529624188760089,
+      "prefill_ttft_raw": [
+        15.54288703482598,
+        15.669338055886328,
+        15.590643044561148
+      ],
+      "decode_tps_raw": [
+        704.929766234612,
+        705.2265792652146,
+        703.9768071067041
+      ]
+    },
+    "two-phase": {
+      "prefill_ttft_ms_mean": 14.989668348183235,
+      "prefill_ttft_ms_stdev": 0.20755998596843434,
+      "decode_tps_mean": 534.8569954177468,
+      "decode_tps_stdev": 0.6908397167863836,
+      "prefill_ttft_raw": [
+        15.21437696646899,
+        14.949499047361314,
+        14.8051290307194
+      ],
+      "decode_tps_raw": [
+        535.6116980514014,
+        534.7034240494306,
+        534.2558641524084
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+=== tp=1 prefill=4096 ===
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla           21.03 ± 0.19     818.58 ± 0.31
+naive             15.60 ± 0.06     704.71 ± 0.65
+two-phase         14.99 ± 0.21     534.86 ± 0.69
+
+AttnRes (two-phase) overhead vs vanilla: prefill +-28.7% TTFT, decode -34.7% throughput
+Two-phase speedup vs naive: prefill 1.04× (16ms → 15ms)
+=== tp=1 prefill=16384 ===
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla           22.94 ± 0.34     733.98 ± 0.74
+naive             16.94 ± 0.41     639.29 ± 0.21
+two-phase         16.60 ± 0.34     495.13 ± 4.86
+
+AttnRes (two-phase) overhead vs vanilla: prefill +-27.6% TTFT, decode -32.5% throughput
+Two-phase speedup vs naive: prefill 1.02× (17ms → 17ms)
+=== tp=8 prefill=4096 ===
+--------------------------------------------------
+vanilla           24.91 ± 0.57     636.03 ± 5.32
+naive             18.30 ± 0.66     564.49 ± 2.20
+two-phase         18.12 ± 0.31     440.12 ± 1.00
+shard             18.25 ± 0.40     439.42 ± 1.27
+
+AttnRes (two-phase) overhead vs vanilla: prefill +-27.3% TTFT, decode -30.8% throughput
+Two-phase speedup vs naive: prefill 1.01× (18ms → 18ms)
+=== tp=8 prefill=16384 ===
+--------------------------------------------------
+vanilla           26.57 ± 0.87     554.01 ± 5.06
+naive             22.04 ± 1.16     488.72 ± 2.15
+two-phase         19.60 ± 0.76     378.63 ± 0.57
+shard             20.05 ± 0.48     389.56 ± 2.71
+
+AttnRes (two-phase) overhead vs vanilla: prefill +-26.2% TTFT, decode -31.7% throughput
+Two-phase speedup vs naive: prefill 1.12× (22ms → 20ms)

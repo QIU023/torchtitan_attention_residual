@@ -286,16 +286,33 @@ doesn't).
 | 7 numerical-equivalence tests | ✅ (6 pass + 1 distributed-skip) |
 | Two-carrier proof of generality | ✅ (Kimi + Qwen3) |
 | End-user doc | ✅ |
-| Fused kernels | ✅ Phase-2 merge+RMSNorm+logit Triton kernel (`_phase2_merge_norm_kernel` in `layers/attn_res.py`) — matches blog's "Phase 2 elementwise → fuses with RMSNorm/AR" claim. Single read of partial_block (was 2), fp32 internal math, falls back to torch path on CPU |
-| DP attention | ❌ (raises clearly) |
-| Chunked-prefill | partial — Phase-2 merge supports continuation but not exercised in this report |
+| Fused kernels | ✅ Phase-2 merge+RMSNorm+logit Triton kernel; Phase-1 left on cuBLAS einsum by design (already optimal there) |
+| DP attention | ⚠️ design conflict (overlay bypasses LayerCommunicator.prepare_attn where DP scatter lives) — hard-block kept rather than half-implement |
+| Chunked-prefill | ✅ stress-tested at 8K prompt × 2K chunk_size on real ckpt — boots + completes 16-token decode |
+| Real-ckpt end-to-end | ✅ phase4 step-12500 trained weights → DCP→HF→SGLang TP=1+TP=8 boot+gen verified |
+| PPO production smoke | ✅ phase9/ppo_actor_ref_real_ckpt.py — dual 1.4B model fwd/bwd + KL + clipped surrogate validated on real ckpt |
 
 This is a research-deliverable PR target. Phase-2 fused Triton kernel
-(merge + RMSNorm + logit) landed in `sglang@63325b2b4`. For upstream
-merge, remaining work: (a) Phase-1 batched-attention Triton kernel
-(currently torch.einsum), (b) DP-attention support, (c) chunked-
-prefill stress test, (d) Phase 1 ↔ first-decoder-layer CUDA stream
-overlap (deferred — requires CUDA-graph stream parallelism).
+landed in `sglang@63325b2b4`. Real-ckpt end-to-end + chunked-prefill
++ PPO actor/ref smoke all closed in this update. Remaining gaps for
+upstream merge: (a) DP attention (true design conflict — see above),
+(b) Phase 1 ↔ layer-0 CUDA stream overlap (~2-3h, marginal at our
+scale where Phase 1 is ~1ms vs decode ~25ms), (c) full RLHF stack
+(SGLang rollout + reward model + monarch weight sync — separate 2-day
+scope tracked in `phase9/PPO_TRACE_DEFERRED.md`).
+
+### Fused-kernel performance note
+
+Re-bench with the Phase-2 Triton kernel active showed **no
+significant wall-clock delta** vs the cuda-graph-fused torch path
+(see `bench_results_v2_fused/`). At our 1.4B / d=1024 / N=4 / per-
+layer Phase-2 scale, inductor under cuda-graph capture already fuses
+the (RMSNorm → einsum → exp → merge) chain into a single device
+kernel. The explicit Triton kernel preserves the I/O amortisation and
+fp32 internal accumulation, but the wall-clock benefit it claims
+(blog's "进一步减少额外 IO") is already being captured by torch.compile
++ inductor. Larger d / larger N would expose a clearer Triton win;
+out of scope here.
 
 ---
 

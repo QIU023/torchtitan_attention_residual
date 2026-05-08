@@ -129,19 +129,21 @@ def remap_one(name: str, tensor: torch.Tensor) -> list[tuple[str, torch.Tensor]]
 
 
 def build_skeleton_state_dict(config_name: str):
-    from torchtitan.experiments.kimi_linear.config_registry import (
-        kimi_linear_436m_block_attn_res_n4,
-    )
+    from torchtitan.experiments.kimi_linear import config_registry
     from torchtitan.experiments.kimi_linear.attn_res_model import (
         KimiLinearAttnResModel,
     )
-    if config_name != "kimi_linear_436m_block_attn_res_n4":
-        raise NotImplementedError(f"Only 436m_block_attn_res_n4 supported now, got {config_name}")
-    cfg = kimi_linear_436m_block_attn_res_n4()
+    builder = getattr(config_registry, config_name, None)
+    if builder is None:
+        raise NotImplementedError(
+            f"Unknown config '{config_name}'. Available: "
+            + ", ".join(n for n in dir(config_registry) if n.startswith("kimi_linear_"))
+        )
+    cfg = builder()
     spec = cfg.model_spec.model
     model = KimiLinearAttnResModel(spec.kimi_config, num_blocks=spec.num_blocks)
     model.init_weights()
-    return spec.kimi_config, model.state_dict()
+    return spec.kimi_config, model
 
 
 def make_hf_config(kimi_config) -> dict:
@@ -152,7 +154,12 @@ def make_hf_config(kimi_config) -> dict:
     KimiLinearConfig is a PretrainedConfig accepting these kwargs.
     """
     return {
-        "architectures": ["KimiBlockAttnResForCausalLM"],
+        # Both archs needed: SGLang's model_config.py uses
+        # ``KimiLinearForCausalLM`` as the trigger for the MLA branch
+        # (sets attention_arch=MLA so flashinfer_mla backend is picked).
+        # Without it, the regular FlashInferAttnBackend is used and
+        # falls over on the q_rope kwarg passed by MLA layers.
+        "architectures": ["KimiBlockAttnResForCausalLM", "KimiLinearForCausalLM"],
         "model_type": "kimi_linear",
         # core dims
         "hidden_size": kimi_config.hidden_size,
@@ -165,6 +172,10 @@ def make_hf_config(kimi_config) -> dict:
         "hidden_act": kimi_config.hidden_act,
         "rms_norm_eps": kimi_config.rms_norm_eps,
         "tie_word_embeddings": getattr(kimi_config, "tie_word_embeddings", True),
+        # 32K matches the smoke ckpt; torchtitan trained on 2048-token
+        # sequences but RoPE generalises beyond — SGLang gates on this
+        # to clamp prompt length so set it to the inference target.
+        "max_position_embeddings": 32768,
         # MLA
         "kv_lora_rank": kimi_config.kv_lora_rank,
         "qk_nope_head_dim": kimi_config.qk_nope_head_dim,
@@ -172,9 +183,9 @@ def make_hf_config(kimi_config) -> dict:
         "v_head_dim": kimi_config.v_head_dim,
         "q_lora_rank": getattr(kimi_config, "q_lora_rank", None),
         "mla_use_nope": kimi_config.mla_use_nope,
-        # MoE
-        "is_moe": kimi_config.is_moe,
-        "is_mla": kimi_config.is_mla,
+        # MoE — is_moe / is_mla are read-only properties on
+        # KimiLinearConfig (derived from n_routed_experts / kv_lora_rank);
+        # don't emit them or HF's from_dict trips on the missing setter.
         "num_experts": kimi_config.num_experts,
         "n_routed_experts": kimi_config.num_experts,
         "num_experts_per_token": kimi_config.num_experts_per_token,
@@ -188,12 +199,24 @@ def make_hf_config(kimi_config) -> dict:
         "topk_group": getattr(kimi_config, "topk_group", 1),
         "routed_scaling_factor": getattr(kimi_config, "routed_scaling_factor", 1.0),
         "use_grouped_topk": getattr(kimi_config, "use_grouped_topk", False),
-        # KDA
-        "kda_layers": list(kimi_config.kda_layers),
-        "full_attn_layers": list(kimi_config.full_attn_layers),
-        "kda_num_heads": kimi_config.kda_num_heads,
-        "kda_head_dim": kimi_config.kda_head_dim,
-        "kda_short_conv_kernel_size": kimi_config.kda_short_conv_kernel_size,
+        # KDA — SGLang's KimiLinearConfig expects ``linear_attn_config``
+        # as a nested dict with kda/full_attn layer lists (1-indexed
+        # per the loader's ``(layer_idx + 1) in kda_layers`` check).
+        # torchtitan's config already stores them 1-indexed.
+        "linear_attn_config": {
+            "kda_layers": list(kimi_config.kda_layers),
+            "full_attn_layers": list(kimi_config.full_attn_layers),
+            "num_heads": kimi_config.kda_num_heads,
+            "head_dim": kimi_config.kda_head_dim,
+            "short_conv_kernel_size": kimi_config.kda_short_conv_kernel_size,
+        },
+        # RoPE — without these, SGLang's MLA path picks a different
+        # forward variant whose q_rope kwarg flashinfer doesn't accept.
+        "rope_theta": getattr(kimi_config, "rope_theta", 10000.0),
+        "rope_parameters": {
+            "rope_theta": getattr(kimi_config, "rope_theta", 10000.0),
+            "rope_type": "default",
+        },
         # AttnRes (custom — used by our extension)
         "attn_res_enabled": True,
         "attn_res_num_blocks": 4,
@@ -220,24 +243,103 @@ def main():
     init_dist()
     torch.cuda.set_device(0)
 
-    print(f"[conv] building skeleton state dict for config={args.config}")
-    kimi_config, sd = build_skeleton_state_dict(args.config)
+    print(f"[conv] building skeleton model for config={args.config}")
+    kimi_config, model = build_skeleton_state_dict(args.config)
+    sd = model.state_dict()
     print(f"[conv] skeleton has {len(sd)} keys")
 
     print(f"[conv] loading DCP from {args.in_dir}")
     dcp.load(sd, checkpoint_id=str(args.in_dir))
+    # Copy DCP-populated tensors back into the live model so the
+    # walker (next step) sees real weights, not random init.
+    model.load_state_dict(sd, strict=False, assign=False)
 
     target_dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[
         args.dtype
     ]
 
-    print(f"[conv] remapping {len(sd)} keys + casting to {target_dtype}")
+    # Direct torchtitan → SGLang renaming. SGLang's KimiLinear loader
+    # expects the upstream Kimi naming (``model.`` prefix +
+    # ``block_sparse_moe.experts.X.{w1,w2,w3}`` + ``mlp.gate_proj``
+    # for dense). torchtitan emits ``ffn`` and ``ffn._moe.experts``
+    # with a fused [E, ...] expert tensor.
+    print(f"[conv] remapping {len(sd)} torchtitan keys → SGLang naming "
+          f"(cast → {target_dtype})")
+
+    # w1=gate_proj, w3=up_proj, w2=down_proj for shared_experts only —
+    # routed experts keep w1/w2/w3 names per SGLang's KimiMoE loader.
+    _SHARED_W_TO_HF = {"w1": "gate_proj", "w2": "down_proj", "w3": "up_proj"}
+
     hf_sd: dict[str, torch.Tensor] = {}
     n_in = 0
     for name, t in sd.items():
         n_in += 1
-        for hf_name, hf_t in remap_one(name, t):
-            hf_sd[hf_name] = hf_t.detach().to(target_dtype).contiguous()
+        t = t.detach().to(target_dtype).contiguous()
+
+        # Per-layer remappings.
+        if name.startswith("layers."):
+            i, rest = name[len("layers."):].split(".", 1)
+            layer_prefix = f"model.layers.{i}"
+
+            # Layer 0 dense MLP: ffn.{gate,up,down}_proj → mlp.{gate,up,down}_proj
+            if rest.startswith("ffn.gate_proj") or rest.startswith("ffn.up_proj") \
+                    or rest.startswith("ffn.down_proj"):
+                hf_sd[f"{layer_prefix}.{rest.replace('ffn.', 'mlp.')}"] = t
+                continue
+
+            # MoE: ffn._moe.experts.{w1/w2/w3}  shape [E, *, *]
+            if rest == "ffn._moe.experts.w1" or rest == "ffn._moe.experts.w2" \
+                    or rest == "ffn._moe.experts.w3":
+                w_tag = rest.split(".")[-1]
+                E = t.shape[0]
+                for e in range(E):
+                    hf_sd[
+                        f"{layer_prefix}.block_sparse_moe.experts.{e}.{w_tag}.weight"
+                    ] = t[e].contiguous()
+                continue
+
+            # MoE router gate.
+            if rest == "ffn._moe.router.gate.weight":
+                hf_sd[f"{layer_prefix}.block_sparse_moe.gate.weight"] = t
+                continue
+
+            # MoE expert correction bias (fused MoE gate's e_score_correction_bias).
+            if rest == "ffn._moe.expert_bias":
+                hf_sd[
+                    f"{layer_prefix}.block_sparse_moe.gate.e_score_correction_bias"
+                ] = t
+                continue
+
+            # MoE shared experts: w1→gate_proj, w3→up_proj, w2→down_proj
+            if rest.startswith("ffn._moe.shared_experts."):
+                tail = rest[len("ffn._moe.shared_experts."):]
+                w_tag, _, suff = tail.partition(".")
+                hf_tag = _SHARED_W_TO_HF[w_tag]
+                hf_sd[
+                    f"{layer_prefix}.block_sparse_moe.shared_experts.{hf_tag}.{suff}"
+                ] = t
+                continue
+
+            # KDA self_attn.A_log: torchtitan stores (num_heads,), SGLang
+            # expects (1, 1, num_heads, 1).
+            if rest == "self_attn.A_log":
+                hf_sd[f"{layer_prefix}.self_attn.A_log"] = t.reshape(1, 1, -1, 1)
+                continue
+
+            # All other layer params: just prefix with model.
+            hf_sd[f"{layer_prefix}.{rest}"] = t
+            continue
+
+        # lm_head.weight stays at root (matches HF / SGLang convention).
+        if name == "lm_head.weight":
+            hf_sd["lm_head.weight"] = t
+            continue
+        # Top-level: model.embed_tokens, model.norm, model.final_attn_res_*
+        hf_sd[f"model.{name}"] = t
+
+    # SGLang expects an explicit lm_head.weight even with tied embeddings.
+    if "model.embed_tokens.weight" in hf_sd and "lm_head.weight" not in hf_sd:
+        hf_sd["lm_head.weight"] = hf_sd["model.embed_tokens.weight"].clone()
 
     print(f"[conv] DCP keys in: {n_in}, HF keys out: {len(hf_sd)}")
 

@@ -1,0 +1,78 @@
+{
+  "args": {
+    "model": "/root/torchtitan_attention_residual/phase11/hf_aligned_447m",
+    "tp": 8,
+    "prefill": 16384,
+    "decode": 128,
+    "warmup": 2,
+    "timed": 3,
+    "disable_cuda_graph": false,
+    "out": "phase11/bench_results_v2_fused/tp8_prefill16384.json"
+  },
+  "modes": {
+    "vanilla": {
+      "prefill_ttft_ms_mean": 26.567414014910657,
+      "prefill_ttft_ms_stdev": 0.8726019549903242,
+      "decode_tps_mean": 554.0070175507593,
+      "decode_tps_stdev": 5.060359709818647,
+      "prefill_ttft_raw": [
+        27.544707991182804,
+        26.291150017641485,
+        25.866384035907686
+      ],
+      "decode_tps_raw": [
+        558.3734609256607,
+        555.1865134522673,
+        548.4610782743501
+      ]
+    },
+    "naive": {
+      "prefill_ttft_ms_mean": 22.044205339625478,
+      "prefill_ttft_ms_stdev": 1.1556749622315285,
+      "decode_tps_mean": 488.72374291265953,
+      "decode_tps_stdev": 2.1541959028232247,
+      "prefill_ttft_raw": [
+        21.144752041436732,
+        23.34764297120273,
+        21.64022100623697
+      ],
+      "decode_tps_raw": [
+        487.6930024151495,
+        491.19965913328946,
+        487.2785671895396
+      ]
+    },
+    "two-phase": {
+      "prefill_ttft_ms_mean": 19.59992266104867,
+      "prefill_ttft_ms_stdev": 0.7609846908419647,
+      "decode_tps_mean": 378.62872913806706,
+      "decode_tps_stdev": 0.5748014712928526,
+      "prefill_ttft_raw": [
+        20.438296953216195,
+        19.408648018725216,
+        18.9528230112046
+      ],
+      "decode_tps_raw": [
+        378.51039966515566,
+        379.2534867787222,
+        378.12230097032324
+      ]
+    },
+    "shard": {
+      "prefill_ttft_ms_mean": 20.045894004094105,
+      "prefill_ttft_ms_stdev": 0.4786772642146758,
+      "decode_tps_mean": 389.5637014738864,
+      "decode_tps_stdev": 2.707685276261647,
+      "prefill_ttft_raw": [
+        20.109637058340013,
+        19.538538996130228,
+        20.48950595781207
+      ],
+      "decode_tps_raw": [
+        386.44620959185823,
+        390.91630952561155,
+        391.3285853041894
+      ]
+    }
+  }
+}
