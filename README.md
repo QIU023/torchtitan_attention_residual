@@ -1,11 +1,18 @@
 # Block Attention Residuals (Kimi Team, 2026) — torchtitan reference implementation
 
-> **Status (2026-04-26).** RFC [pytorch/torchtitan#3029](https://github.com/pytorch/torchtitan/issues/3029)
+> **Status (2026-05-08).** RFC [pytorch/torchtitan#3029](https://github.com/pytorch/torchtitan/issues/3029)
 > filed; upstream merge gated on Kimi K3 release. **This fork is the canonical
 > reference implementation until then.** Independent reproduction of paper
 > Table 1 (loss-delta) on a 174M Llama3 dense run + first public PP cross-stage
 > caching adapter for AttnRes under torchtitan's `Interleaved1F1B` schedule
-> (paper §4.1).
+> (paper Section 4.1), with downstream extensions to Kimi-Linear MoE
+> pretraining and multimodal VLM training.
+
+![Phase 2: 174M dense Llama3 baseline vs AttnRes (20 k steps, C4-en, FSDP)](./phase2/runs/comparison.png)
+
+*AttnRes consistently below baseline at every milestone (Δ −0.05 to −0.13),
+reproducing the paper's Table 1 trend on a single-GPU FSDP A/B at matched
+shape and hyperparameters. See `phase2/` for the playbook.*
 
 This repo is the project logbook / playbook / RFC drafts for an independent,
 end-to-end implementation of **Block Attention Residuals**
@@ -15,6 +22,7 @@ lives in the fork submodule:
 
 - **Fork:** [`QIU023/torchtitan@attention_residual_dev`](https://github.com/QIU023/torchtitan/tree/attention_residual_dev)
 - **Experiments:** `torchtitan/experiments/attn_res/` (dense Llama3 + DSv3 MoE-MLA flavors) and `torchtitan/experiments/kimi_linear/` (Kimi Linear KDA+MLA+AttnRes port)
+- **Inference fork:** [`QIU023/sglang@attention_residual_inference`](https://github.com/QIU023/sglang/tree/attention_residual_inference) — Block AttnRes overlay for SGLang (Kimi-Linear + Qwen3, with CUDA Graph integration)
 - **RFC:** [pytorch/torchtitan#3029](https://github.com/pytorch/torchtitan/issues/3029)
 
 ## Algorithm
