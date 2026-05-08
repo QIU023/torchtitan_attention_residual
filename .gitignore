@@ -121,5 +121,13 @@ phase5_distillation_deprecated/miniplm/scored/
 
 # Phase 11: random-init dummy HF checkpoints (large, regenerable)
 phase11/hf_*/
-phase11/trace_*/
 phase11/__pycache__/
+# Phase 11 NCCL traces: keep recipe + run.log + ixia + gzipped artifacts;
+# drop raw csv/log (regenerable from .gz, large unzipped).
+phase11/trace_*/nccl-rank-*.log
+phase11/trace_*/collective_summary.csv
+phase11/trace_*/flows.csv
+phase11/trace_*/__pycache__/
+# Bench run artifacts: pretrain workdir is regenerable from DCP ckpts.
+phase4/runs/kimi_447m_aligned_block_attn_res_fsdp_paperhparams/
+phase4/runs/kimi_447m_aligned_pretrain.log

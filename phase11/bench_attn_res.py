@@ -68,9 +68,9 @@ e = sgl.Engine(
     skip_tokenizer_init=True,
     tp_size=TP_SIZE,
     dtype="bfloat16",
-    mem_fraction_static=0.5,
-    disable_cuda_graph=True,
-    disable_piecewise_cuda_graph=True,
+    mem_fraction_static=0.6,
+    disable_cuda_graph={disable_cuda_graph},
+    disable_piecewise_cuda_graph={disable_piecewise_cuda_graph},
     log_level="error",
     attention_backend="flashinfer",
     linear_attn_backend="triton",
@@ -129,6 +129,8 @@ def _run_one_mode(name: str, env_vars: dict, args) -> dict | None:
         n_warmup=args.warmup,
         n_timed=args.timed,
         tp_size=args.tp,
+        disable_cuda_graph=str(args.disable_cuda_graph),
+        disable_piecewise_cuda_graph=str(args.disable_cuda_graph),
     )
     env = dict(os.environ)
     # Clear any inherited AttnRes env so each mode runs cleanly.
@@ -178,6 +180,8 @@ def main():
                     help="number of new tokens to decode")
     ap.add_argument("--warmup", type=int, default=2)
     ap.add_argument("--timed", type=int, default=5)
+    ap.add_argument("--disable-cuda-graph", action="store_true",
+                    help="run with --disable-cuda-graph (eager mode); default leaves cuda graph ON")
     ap.add_argument("--out", default="phase11/bench_results.json")
     args = ap.parse_args()
 

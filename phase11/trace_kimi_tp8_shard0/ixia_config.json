@@ -1,0 +1,319 @@
+{
+  "schema": "ixnetwork-traffic-config-v1",
+  "topology": {
+    "endpoints": [
+      {
+        "name": "rank_0",
+        "port": "card_1/port_1",
+        "ipv4": "10.0.0.1",
+        "mac": "02:00:00:00:00:00"
+      },
+      {
+        "name": "rank_1",
+        "port": "card_1/port_2",
+        "ipv4": "10.0.0.2",
+        "mac": "02:00:00:00:00:01"
+      },
+      {
+        "name": "rank_2",
+        "port": "card_2/port_1",
+        "ipv4": "10.0.0.3",
+        "mac": "02:00:00:00:00:02"
+      },
+      {
+        "name": "rank_3",
+        "port": "card_2/port_2",
+        "ipv4": "10.0.0.4",
+        "mac": "02:00:00:00:00:03"
+      },
+      {
+        "name": "rank_4",
+        "port": "card_3/port_1",
+        "ipv4": "10.0.0.5",
+        "mac": "02:00:00:00:00:04"
+      },
+      {
+        "name": "rank_5",
+        "port": "card_3/port_2",
+        "ipv4": "10.0.0.6",
+        "mac": "02:00:00:00:00:05"
+      },
+      {
+        "name": "rank_6",
+        "port": "card_4/port_1",
+        "ipv4": "10.0.0.7",
+        "mac": "02:00:00:00:00:06"
+      },
+      {
+        "name": "rank_7",
+        "port": "card_4/port_2",
+        "ipv4": "10.0.0.8",
+        "mac": "02:00:00:00:00:07"
+      }
+    ]
+  },
+  "trafficItems": [
+    {
+      "name": "dp_r0_to_r1",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_0"
+        ],
+        "dst": [
+          "rank_1"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    },
+    {
+      "name": "dp_r1_to_r2",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_1"
+        ],
+        "dst": [
+          "rank_2"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    },
+    {
+      "name": "dp_r2_to_r3",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_2"
+        ],
+        "dst": [
+          "rank_3"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    },
+    {
+      "name": "dp_r3_to_r4",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_3"
+        ],
+        "dst": [
+          "rank_4"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    },
+    {
+      "name": "dp_r4_to_r5",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_4"
+        ],
+        "dst": [
+          "rank_5"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    },
+    {
+      "name": "dp_r5_to_r6",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_5"
+        ],
+        "dst": [
+          "rank_6"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    },
+    {
+      "name": "dp_r6_to_r7",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_6"
+        ],
+        "dst": [
+          "rank_7"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    },
+    {
+      "name": "dp_r7_to_r0",
+      "type": "L2L3",
+      "endpointSet": {
+        "src": [
+          "rank_7"
+        ],
+        "dst": [
+          "rank_0"
+        ]
+      },
+      "frameSize": {
+        "type": "fixed",
+        "value": 9000
+      },
+      "frameCount": 863,
+      "burstStart_us": 0,
+      "duration_us": 13,
+      "interFrameGap_ns": 12,
+      "encapsulation": "ethernetVlan",
+      "payload": "incrementing",
+      "metadata": {
+        "axis_guess": "dp",
+        "ops_seen": [
+          "AllGather",
+          "AllReduce"
+        ],
+        "msgs_aggregated": 21119,
+        "bytes_total": 7762944
+      }
+    }
+  ],
+  "axisSummary": {
+    "dp": {
+      "flows": 168952,
+      "bytes_total": 62103552,
+      "unique_pairs": 8
+    }
+  },
+  "frameSize": 9000,
+  "mode": "aggregated",
+  "source": {
+    "trace_dir": "/root/torchtitan_attention_residual/phase11/trace_kimi_tp8_shard0",
+    "n_traffic_items": 8,
+    "n_endpoints": 8
+  }
+}
