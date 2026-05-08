@@ -155,6 +155,24 @@ launcher patch). The rules:
    phase5/runs/8gpu_*_seed*/checkpoint/` (alignment ckpts that
    shouldn't have existed in the first place) before launching.
 
+## Development methodology
+
+This project was built with **extensive AI pair-programming** (Claude Code, both
+local and cloud-hosted long-context sessions). Architectural direction, phase
+scoping, design trade-offs, and final code review are mine; AI-assisted commits
+are explicitly tagged via `Co-Authored-By` in commit messages.
+
+Why this matters for the project: each phase has a clear scientific or
+engineering question, validated outcomes, and an honest writeup of what worked
+and what did not (e.g., `phase5_distillation_deprecated/` preserves a negative
+KD result; the v8/v9 multimodal pretrain ckpt is explicitly framed as
+architecture-validation grade, not pretraining-grade). The commit log is verbose
+by design — every non-trivial design decision has a corresponding commit with
+rationale, and reproducible artifacts (loss curves, alignment plots, NCCL
+traces) accompany each phase.
+
 ## Author
 
-[@QIU023](https://github.com/QIU023) — yiqiao.lbj23@gmail.com.
+[@QIU023](https://github.com/QIU023) — open issues / discussions on this repo
+for technical questions, or reach out via the LinkedIn link on my GitHub
+profile.
