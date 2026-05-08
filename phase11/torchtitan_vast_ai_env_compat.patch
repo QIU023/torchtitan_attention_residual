@@ -1,0 +1,203 @@
+diff --git a/torchtitan/distributed/context_parallel.py b/torchtitan/distributed/context_parallel.py
+index ae8916e..cb84ff9 100644
+--- a/torchtitan/distributed/context_parallel.py
++++ b/torchtitan/distributed/context_parallel.py
+@@ -10,13 +10,37 @@ from typing import Any, cast
+ import torch
+ import torch.nn as nn
+ from torch.distributed.device_mesh import DeviceMesh
+-from torch.distributed.tensor.experimental._attention import (
+-    _context_parallel_shard,
+-    _ContextParallel,
+-    _enable_context_parallel_dispatcher,
+-    _HeadTailLoadBalancer,
+-    _PTRRLoadBalancer,
+-)
++try:
++    from torch.distributed.tensor.experimental._attention import (
++        _context_parallel_shard,
++        _ContextParallel,
++        _enable_context_parallel_dispatcher,
++        _HeadTailLoadBalancer,
++        _PTRRLoadBalancer,
++    )
++except ImportError:
++    # PyTorch 2.9 stable doesn't expose these private CP APIs (renamed or
++    # added in nightly). On configs with CP=1 (which is our case for the
++    # 8x RTX 5090 box) ``apply_cp_to_attention_module`` is never called,
++    # so we stub them. If the runtime path actually invokes these, raise
++    # at call time rather than import time.
++    def _context_parallel_shard(*a, **k):
++        raise NotImplementedError("CP not supported on this torch build")
++
++    class _ContextParallel:
++        def __init__(self, *a, **k):
++            raise NotImplementedError("CP not supported on this torch build")
++
++    def _enable_context_parallel_dispatcher(*a, **k):
++        raise NotImplementedError("CP not supported on this torch build")
++
++    class _HeadTailLoadBalancer:
++        def __init__(self, *a, **k):
++            raise NotImplementedError("CP not supported on this torch build")
++
++    class _PTRRLoadBalancer:
++        def __init__(self, *a, **k):
++            raise NotImplementedError("CP not supported on this torch build")
+ from torch.distributed.tensor.parallel import parallelize_module
+ from torch.nn.attention.flex_attention import BlockMask
+ 
+diff --git a/torchtitan/distributed/parallel_dims.py b/torchtitan/distributed/parallel_dims.py
+index df96668..d92225c 100644
+--- a/torchtitan/distributed/parallel_dims.py
++++ b/torchtitan/distributed/parallel_dims.py
+@@ -134,20 +134,27 @@ class ParallelDims:
+         ):
+             """Unflatten the world mesh to create the required mesh dimensions.
+ 
+-            Uses fake backend for dimensions with degree 1 or for 'batch' dimension
+-            to avoid unnecessary process group creation.
++            torch 2.9 stable doesn't have ``DeviceMesh._unflatten``; fall back
++            to the standard ``init_device_mesh`` which produces an
++            equivalent multi-dim mesh from the same world ranks. We lose
++            the ``backend_override={"name": "fake"}`` optimisation (which
++            skips PG creation for degree-1 dims) — slight startup overhead,
++            no semantic change.
+             """
+-            backend_override = {}
+-            for name, degree in zip(dim_names, dim_degrees, strict=True):
+-                if not self._mesh_exist(name, degree):
+-                    backend_override[name] = "fake"
+-
+-            return world_mesh._unflatten(
+-                0,
+-                dim_degrees,
+-                dim_names,
+-                # pyrefly: ignore [bad-argument-type]
+-                backend_override=backend_override,
++            if hasattr(world_mesh, "_unflatten"):
++                backend_override = {}
++                for name, degree in zip(dim_names, dim_degrees, strict=True):
++                    if not self._mesh_exist(name, degree):
++                        backend_override[name] = "fake"
++                return world_mesh._unflatten(
++                    0,
++                    dim_degrees,
++                    dim_names,
++                    backend_override=backend_override,
++                )
++            # Fallback: re-init the mesh in the desired shape.
++            return init_device_mesh(
++                device_type, dim_degrees, mesh_dim_names=dim_names,
+             )
+ 
+         logger.info(
+diff --git a/torchtitan/distributed/utils.py b/torchtitan/distributed/utils.py
+index 0596029..60c5d33 100644
+--- a/torchtitan/distributed/utils.py
++++ b/torchtitan/distributed/utils.py
+@@ -396,12 +396,17 @@ def init_distributed(
+         dist_config.use_torchcomms = True
+         device_id = torch.device(device_type, int(os.environ["LOCAL_RANK"]))
+ 
+-    torch.distributed.init_process_group(
++    # torch 2.9 stable doesn't accept ``_ranks`` (nightly-only); pass it
++    # only when the runtime supports it.
++    init_kwargs = dict(
+         backend=_get_distributed_backend(enable_cpu_backend),
+         timeout=timedelta(seconds=comm_config.init_timeout_seconds),
+-        _ranks=ranks if ranks is not None else [],
+         device_id=device_id,
+     )
++    import inspect
++    if "_ranks" in inspect.signature(torch.distributed.init_process_group).parameters:
++        init_kwargs["_ranks"] = ranks if ranks is not None else []
++    torch.distributed.init_process_group(**init_kwargs)
+ 
+     return torch.distributed.get_world_size()
+ 
+diff --git a/torchtitan/experiments/kimi_linear/parallelize.py b/torchtitan/experiments/kimi_linear/parallelize.py
+index 72d11b6..3ec35bd 100644
+--- a/torchtitan/experiments/kimi_linear/parallelize.py
++++ b/torchtitan/experiments/kimi_linear/parallelize.py
+@@ -1026,7 +1026,9 @@ def _apply_compile_kimi_linear(model: nn.Module, compile_config: CompileConfig)
+     # Allow MoE token-choice routing's data-dependent control flow.
+     torch._dynamo.config.capture_scalar_outputs = True
+     # Eager AC <-> compile divergence acceptance (matches upstream).
+-    torch._dynamo.config.skip_fwd_side_effects_in_bwd_under_checkpoint = True
++    # Only available in torch nightly; skip silently on stable builds.
++    if hasattr(torch._dynamo.config, "skip_fwd_side_effects_in_bwd_under_checkpoint"):
++        torch._dynamo.config.skip_fwd_side_effects_in_bwd_under_checkpoint = True
+     # KDA + MLA layers each compile separately; we have up to L layer
+     # flavors plus permutations. 64 leaves comfortable headroom for
+     # all per-layer specializations without thrashing.
+diff --git a/torchtitan/models/common/attention.py b/torchtitan/models/common/attention.py
+index cf5703c..d626090 100644
+--- a/torchtitan/models/common/attention.py
++++ b/torchtitan/models/common/attention.py
+@@ -18,12 +18,23 @@ import torch
+ import torch.nn.functional as F
+ from torch.distributed.tensor import DTensor, Shard
+ from torch.distributed.tensor.experimental import local_map
+-from torch.nn.attention import (
+-    activate_flash_attention_impl,
+-    current_flash_attention_impl,
+-    sdpa_kernel,
+-    SDPBackend,
+-)
++from torch.nn.attention import sdpa_kernel, SDPBackend
++try:
++    from torch.nn.attention import (
++        activate_flash_attention_impl,
++        current_flash_attention_impl,
++    )
++except ImportError:
++    # PyTorch < ~2.10 doesn't expose these (they were added with FA3
++    # backend selection). On SM 12.0 (RTX 5090) we don't go down the
++    # FA3 path anyway — the only call sites are guarded by
++    # ``has_cuda_capability(9, 0)`` (Hopper-only). Provide stubs so
++    # the module imports cleanly on torch 2.9.
++    def activate_flash_attention_impl(_impl: str) -> None:
++        return None
++
++    def current_flash_attention_impl() -> str:
++        return "FA2"
+ from torch.nn.attention.flex_attention import (
+     _DEFAULT_SPARSE_BLOCK_SIZE,
+     _mask_mod_signature,
+@@ -33,7 +44,19 @@ from torch.nn.attention.flex_attention import (
+     create_block_mask,
+     flex_attention,
+ )
+-from torch.nn.attention.varlen import varlen_attn
++try:
++    from torch.nn.attention.varlen import varlen_attn
++except ImportError:
++    # Torch < ~2.10 doesn't have ``torch.nn.attention.varlen``. The
++    # ``VarlenAttention`` class below is only used at runtime when the
++    # config explicitly selects varlen — if user runs without it, this
++    # stub never executes.
++    def varlen_attn(*args, **kwargs):
++        raise NotImplementedError(
++            "torch.nn.attention.varlen.varlen_attn is unavailable on "
++            "this PyTorch build. Upgrade torch (≥2.10 nightly) or "
++            "switch to a non-varlen attention impl."
++        )
+ 
+ from torchtitan.distributed.utils import is_in_batch_invariant_mode
+ 
+@@ -267,9 +290,11 @@ class FlexAttention(LocalMapInnerAttention):
+         kernel_options: dict = field(default_factory=dict)
+ 
+     inductor_configs: ClassVar[dict[str, bool]] = {
+-        # TODO: turn on wrap_inductor_compiled_regions after PyTorch fix is
+-        # landed again: https://github.com/pytorch/pytorch/pull/175733.
+-        "wrap_inductor_compiled_regions": False,
++        # ``wrap_inductor_compiled_regions`` was added in torch nightly
++        # (see https://github.com/pytorch/pytorch/pull/175733) and is not
++        # available on torch 2.9. It defaults to False here anyway, so on
++        # builds that don't recognise the option we just drop the entry.
++        # (the runtime construction below handles that)
+         # Recommended workflow: run once with max_autotune=True to discover
+         # good kernel_options, then set kernel_options explicitly in the config
+         # and keep max_autotune disabled for faster compilation.

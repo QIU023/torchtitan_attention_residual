@@ -302,8 +302,15 @@ overlap (deferred — requires CUDA-graph stream parallelism).
 ## Closing the loop
 
 * Shard correctness fix committed in `sglang@0ddd84617` (this branch).
+* Phase-2 fused Triton kernel committed in `sglang@63325b2b4`.
 * Local-only env-compat patches in `torchtitan/distributed/*` and
-  `torchtitan/models/common/*` remain uncommitted per user instruction.
+  `torchtitan/models/common/*` exported to
+  [`phase11/torchtitan_vast_ai_env_compat.patch`](torchtitan_vast_ai_env_compat.patch)
+  with the rationale documented in
+  [`phase11/TORCHTITAN_VAST_AI_PATCHES.md`](TORCHTITAN_VAST_AI_PATCHES.md).
+  These are vast.ai-specific (torch 2.9.1+cu129 stable vs torchtitan's
+  nightly target) and stay outside the torchtitan submodule pointer so
+  upstream merges aren't polluted with `hasattr` guards.
 * Pretrain (step-8000 ckpt) ready for resume:
   ```
   CONFIG=kimi_linear_447m_aligned_block_attn_res_n4 \
