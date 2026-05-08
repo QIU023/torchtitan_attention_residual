@@ -286,13 +286,16 @@ doesn't).
 | 7 numerical-equivalence tests | ✅ (6 pass + 1 distributed-skip) |
 | Two-carrier proof of generality | ✅ (Kimi + Qwen3) |
 | End-user doc | ✅ |
-| Fused kernels | ❌ (out of scope per user; mHC quality, not structural alignment) |
+| Fused kernels | ✅ Phase-2 merge+RMSNorm+logit Triton kernel (`_phase2_merge_norm_kernel` in `layers/attn_res.py`) — matches blog's "Phase 2 elementwise → fuses with RMSNorm/AR" claim. Single read of partial_block (was 2), fp32 internal math, falls back to torch path on CPU |
 | DP attention | ❌ (raises clearly) |
 | Chunked-prefill | partial — Phase-2 merge supports continuation but not exercised in this report |
 
-This is a research-deliverable PR target. For upstream merge, the
-next steps would be: (a) a fused Phase-1 + Phase-2 + RMSNorm Triton
-kernel, (b) DP-attention support, (c) chunked-prefill stress test.
+This is a research-deliverable PR target. Phase-2 fused Triton kernel
+(merge + RMSNorm + logit) landed in `sglang@63325b2b4`. For upstream
+merge, remaining work: (a) Phase-1 batched-attention Triton kernel
+(currently torch.einsum), (b) DP-attention support, (c) chunked-
+prefill stress test, (d) Phase 1 ↔ first-decoder-layer CUDA stream
+overlap (deferred — requires CUDA-graph stream parallelism).
 
 ---
 
