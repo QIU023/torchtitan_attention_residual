@@ -301,18 +301,33 @@ scale where Phase 1 is ~1ms vs decode ~25ms), (c) full RLHF stack
 (SGLang rollout + reward model + monarch weight sync — separate 2-day
 scope tracked in `phase9/PPO_TRACE_DEFERRED.md`).
 
-### Fused-kernel performance note
+### Fused-kernel performance note (CORRECTED)
 
-Re-bench with the Phase-2 Triton kernel active showed **no
-significant wall-clock delta** vs the cuda-graph-fused torch path
-(see `bench_results_v2_fused/`). At our 1.4B / d=1024 / N=4 / per-
-layer Phase-2 scale, inductor under cuda-graph capture already fuses
-the (RMSNorm → einsum → exp → merge) chain into a single device
-kernel. The explicit Triton kernel preserves the I/O amortisation and
-fp32 internal accumulation, but the wall-clock benefit it claims
-(blog's "进一步减少额外 IO") is already being captured by torch.compile
-+ inductor. Larger d / larger N would expose a clearer Triton win;
-out of scope here.
+**Original v2 conclusion was wrong.** SGLang installs from
+`/sgl-workspace/sglang/`, and that path was not synced with the
+user submodule where the kernel commit landed. The v2 bench therefore
+ran the torch path everywhere, leading to the bogus "no Δ" finding.
+
+After syncing the install (see `PROFILING_REPORT.md` lesson section)
+and re-benching (`bench_results_v3_kernel_actually_on/`):
+
+| ctx | TP | mode | v2 (kernel off) | **v3 (kernel on)** |
+|---:|---:|---|---:|---:|
+| 4K | 1 | two-phase decode tps | 535 | **698** (**+30%**) |
+| 16K | 1 | two-phase decode tps | 497 | **634** (**+28%**) |
+| 4K | 8 | two-phase decode tps | 441 | **559** (**+27%**) |
+| 16K | 8 | two-phase decode tps | 379 | **482** (**+27%**) |
+| 16K | 8 | shard decode tps | 389 | **481** (**+24%**) |
+
+Triton kernel call count: **2015 / 2048 expected** per (64 decode
+tokens × 16 layers × 2 queries) batch — i.e. >98% of expected
+Phase-2 merges hit the kernel. The remaining 33 are block-0 short-
+circuits (no committed blocks yet).
+
+Two-phase vs vanilla decode tps overhead drops from **-32% to -13%**
+— the blog's "进一步减少额外 IO" claim is real and measurable at our
+scale, not just at 128K. Profiling details in
+`PROFILING_REPORT.md`.
 
 ---
 
