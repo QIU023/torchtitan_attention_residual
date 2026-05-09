@@ -410,7 +410,13 @@ def main():
     # Override here for our 8x 5090 layout: trainer FSDP=4, generator TP=4.
     config.trainer.parallelism.data_parallel_shard_degree = 4
     config.generator.parallelism.tensor_parallel_degree = 4
-    config.generator.gpu_memory_limit = 0.3
+    # SGLang's mem-pool calc is:
+    #   rest = post_model_load_mem - pre_model_load_mem * (1 - mem_frac)
+    # So HIGHER mem_frac = less of pre_load_mem subtracted = bigger
+    # KV pool. Counter-intuitive vs vLLM where higher mem_frac means
+    # "use more of my total GPU budget". Push to 0.85 — at that
+    # value the formula leaves enough head-room for the KV cache.
+    config.generator.gpu_memory_limit = 0.85
     config.generator.weight_sync_method = "disk"
     config.generator.weight_sync_disk_path = (
         config.dump_folder + "/sglang_weights"

@@ -148,6 +148,45 @@ Both fixes live in `phase11/rlhf/run_grpo_llava_caption.py` in the
 underlying torch issue. Once these are applied, the trainer mesh
 spawns cleanly and PolicyTrainer instantiates.
 
+## Architectural friction: SGLang Engine vs Monarch actor model
+
+After threading model_spec through the upstream pattern, we hit a
+real architecture mismatch: Monarch's `per_host={"gpus": N}` spawn
+creates N actor processes (one per GPU). vLLM's RL plugin handles
+this via `distributed_executor_backend="external_launcher"`, where
+each Monarch actor IS one vLLM worker.
+
+SGLang's Engine doesn't have an external-launcher mode — it spawns
+its own TP worker subprocesses internally. So our 4-GPU generator
+mesh ends up with 4 actor processes, each trying to start an
+Engine with `tp_size=4`, producing 16 total SGLang TP workers
+fighting for the same 4 physical GPUs.
+
+Diagnosis is conclusive: each generator actor sees CVD=4,5,6,7,
+torch.cuda.device_count()=4, all 4 GPUs at 33 GB free. The OOM is
+*after* SGLang spawns its inner TP workers and they collide.
+
+Two paths to resolve:
+
+* **(α) Single-actor with all GPUs**: `per_host={"gpus": 4}` but
+  ONE actor process that has all 4 GPUs visible. Then SGLang
+  Engine spawns its 4 TP workers without fighting other actors.
+  Needs Monarch-specific option (or wrapper actor that ignores
+  per-GPU process granularity).
+
+* **(β) HTTP-server SGLang**: deploy SGLang as a service on the
+  generator host, have a single Monarch actor call its HTTP API
+  for rollouts. Cleaner architecturally; +1 process to manage.
+
+Both are upstream-RFC-worthy: any framework wanting to support
+SGLang as a peer of vLLM needs to pick one of these. The
+`SGLangGenerator` actor and `SGLangEngine` wrapper we landed are
+unchanged either way — only the spawn topology differs.
+
+For this session we stop here; the framework + the multimodal task
++ the engine-agnostic generator are all in place. End-to-end RLHF
+trace requires the topology fix above.
+
 ## Remaining gap: model_spec wiring
 
 The framework works end-to-end *up to* `PolicyTrainer.__init__`,
