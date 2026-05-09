@@ -40,3 +40,10 @@ echo "==> 2. SGLang Engine smoke (TP=1 on GPU 7)"
 CUDA_VISIBLE_DEVICES=7 timeout 360 python3 "$WS/phase11/smoke_vlm_engine.py" \
     --model-path "$HF_OUT" \
     --tp-size 1
+
+echo
+echo "==> 3. Qualitative eval on 10 LLaVA-Pretrain images (TP=1 on GPU 7)"
+CUDA_VISIBLE_DEVICES=7 timeout 600 python3 "$WS/phase11/eval_vlm_qualitative.py" \
+    --model-path "$HF_OUT" \
+    --num-images 10 \
+    --tp-size 1 2>&1 | tee "$HF_OUT/qualitative_eval.log"
