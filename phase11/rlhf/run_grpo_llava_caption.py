@@ -78,20 +78,25 @@ logger = logging.getLogger(__name__)
 
 
 class Provisioner:
-    """Allocates non-overlapping GPU ranges for Monarch proc meshes.
+    """Allocates GPU ranges for Monarch proc meshes.
+
+    Two allocation modes:
+
+    * ``allocate(n)`` — split mode. Each spawned worker sees a single
+      GPU. Used by trainer mesh where each actor is one FSDP rank.
+    * ``allocate_shared(n)`` — shared mode. ALL workers in the mesh
+      see the same N GPUs. Used by SGLang generator mesh where the
+      Engine internally TP-shards onto all visible GPUs and only
+      one (lead) actor instance actually constructs it.
 
     The bootstrap callback runs inside each spawned worker subprocess
     BEFORE CUDA initializes and BEFORE any torch import. We use it to:
 
-    1. Pin ``CUDA_VISIBLE_DEVICES`` so the worker only sees its own
-       GPUs.
+    1. Pin ``CUDA_VISIBLE_DEVICES`` so the worker only sees its
+       allocated GPU(s).
     2. Re-establish the parent process's venv. Without this, Monarch's
        spawned worker inherits a partially-broken sys.path and may
-       import the system torch (which on this box is missing
-       ``torch._C._distributed_c10d``). Setting ``VIRTUAL_ENV`` and
-       prepending the venv's site-packages to ``PYTHONPATH`` is the
-       same thing ``activate`` does in shell, applied programmatically
-       so spawned subprocesses inherit it.
+       import the system torch.
 
     The env-injection is a no-op outside venv-based deployments.
     """
@@ -114,6 +119,7 @@ class Provisioner:
         return self.total_gpus - self.next_gpu
 
     def allocate(self, num_gpus: int) -> Callable[[], None]:
+        """Split mode: ``num_gpus`` workers, each with one GPU."""
         if num_gpus > self.available:
             raise RuntimeError(
                 f"Requested {num_gpus} GPUs but only {self.available} "
@@ -121,20 +127,45 @@ class Provisioner:
             )
         gpu_ids = list(range(self.next_gpu, self.next_gpu + num_gpus))
         self.next_gpu += num_gpus
+        return self._make_bootstrap(gpu_ids, share_all=False)
 
+    def allocate_shared(self, num_gpus: int) -> tuple[Callable[[], None], list[int]]:
+        """Shared mode: bootstrap binds every worker in the mesh to
+        the same ``num_gpus`` GPUs. Returns (bootstrap_fn, gpu_ids).
+
+        Used for SGLang generator: the Engine inside the lead actor
+        spawns its own TP-N workers and needs all N GPUs visible.
+        Non-lead actors (rank > 0) are no-ops and don't allocate any
+        GPU memory; they exist only because Monarch's
+        ``per_host={"gpus": N}`` spawn creates N processes.
+        """
+        if num_gpus > self.available:
+            raise RuntimeError(
+                f"Requested {num_gpus} GPUs but only {self.available} "
+                f"available (total={self.total_gpus})"
+            )
+        gpu_ids = list(range(self.next_gpu, self.next_gpu + num_gpus))
+        self.next_gpu += num_gpus
+        return self._make_bootstrap(gpu_ids, share_all=True), gpu_ids
+
+    def _make_bootstrap(self, gpu_ids: list[int], *, share_all: bool) -> Callable[[], None]:
         # Capture by value for the closure — these strings live in
         # the bootstrap callback that the worker subprocess runs.
         venv = self._venv
-        # Filter to filesystem paths the worker can actually use
-        # (drop empty cwd-marker, drop editable-install path-hook
-        # placeholders that don't resolve in a fresh process).
+        # Filter to filesystem paths the worker can actually use.
         propagated_paths = [
             p for p in self._captured_paths
             if p and os.path.isdir(p)
         ]
 
+        # In split mode each worker gets its own GPU id (1 per actor).
+        # In shared mode every worker sees the same gpu_ids list, so
+        # SGLang's lead actor can spawn TP=N inner workers across all
+        # the GPUs while non-lead actors run no-op.
+        cvd_str = ",".join(str(g) for g in gpu_ids)
+
         def _bootstrap():
-            os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(g) for g in gpu_ids)
+            os.environ["CUDA_VISIBLE_DEVICES"] = cvd_str
             os.environ["VIRTUAL_ENV"] = venv
             existing_pp = os.environ.get("PYTHONPATH", "")
             new_pp_parts = list(propagated_paths)
@@ -229,10 +260,12 @@ async def _async_main(config: _Config) -> None:
     )
     logger.info(f"Loaded LlavaCaptionTask with {len(task)} records")
 
-    # Provision GPU meshes — 4 GPUs trainer, 4 GPUs generator.
+    # Provision GPU meshes — 4 GPUs trainer (split, one per actor),
+    # 4 GPUs generator (shared, all visible to the lead SGLang Engine).
     provisioner = Provisioner(total_gpus=8)
     trainer_bootstrap = provisioner.allocate(4)
-    generator_bootstrap = provisioner.allocate(4)
+    generator_bootstrap, generator_gpu_ids = provisioner.allocate_shared(4)
+    logger.info(f"Generator mesh shares GPUs: {generator_gpu_ids}")
 
     # Spawn proc meshes on disjoint GPU partitions (single-node mode).
     trainer_mesh = this_host().spawn_procs(
@@ -297,12 +330,25 @@ async def _async_main(config: _Config) -> None:
             else [r.image_path for r in records]
         )
 
-        # 2. Rollout. Pass images positionally per the actor endpoint
-        # signature (Monarch ``call`` is not aware of kwargs).
-        episodes = generator.generate.call(prompts, gold, images).get()
+        # 2. Rollout. ``call`` returns a ValueMesh — one entry per
+        # actor in the mesh. Under our lead/follower pattern only
+        # rank-0 actually generated; flatten to its list.
+        result = generator.generate.call(prompts, gold, images).get()
+        episodes = []
+        for _, eps in result:
+            episodes.extend(eps)
 
-        # 3. Score.
-        episodes = grader.score.call(episodes).get()
+        # 3. Score. ``call`` returns a ValueMesh (one entry per
+        # actor); the CPU grader mesh has 1 actor, take its result.
+        result = grader.score.call(episodes).get()
+        if isinstance(result, list):
+            episodes = result
+        else:
+            try:
+                episodes = next(iter(result))[1]
+            except (TypeError, StopIteration):
+                # Direct scalar (older Monarch path).
+                episodes = result
 
         # 4. Compute group-relative advantages (GRPO).
         groups: dict[str, list[Episode]] = defaultdict(list)
@@ -317,15 +363,16 @@ async def _async_main(config: _Config) -> None:
                 ep.advantage = (ep.reward - mean_r) / std_r
 
         # 5. Trainer step + push new weights.
-        # ``trainer.step.call(episodes)`` returns a dict per rank; we
-        # take rank-0 metrics.
         metrics = trainer.step.call(episodes).get()
-        # Monarch's call().get() returns a ValueMesh; extract rank-0.
-        loss = (
-            metrics.item(0)["loss"]
-            if hasattr(metrics, "item")
-            else metrics[0]["loss"]
-        )
+        # Take rank-0 metrics from ValueMesh.
+        first_metric = None
+        try:
+            for _, m in metrics:
+                first_metric = m
+                break
+        except TypeError:
+            first_metric = metrics
+        loss = first_metric.get("loss", 0.0) if isinstance(first_metric, dict) else 0.0
         trainer.push_model_state_dict.call().get()
         generator.pull_model_state_dict.call(step + 1).get()
 
@@ -384,7 +431,11 @@ def main():
     # supports a non-Qwen3 model_spec, swapping the trainer side is
     # a one-config edit.
     from torchtitan.models.qwen3 import model_registry as qwen3_registry
-    flavor = os.environ.get("RLHF_FLAVOR", "0.6B_varlen")
+    # 0.6B (non-varlen) avoids the torch 2.9 ``varlen_attn`` stub
+    # raise. Upstream defaults to ``0.6B_varlen`` which requires
+    # torch ≥2.10 nightly. ``0.6B`` uses standard flash attention
+    # which is bundled with torch 2.9 stable.
+    flavor = os.environ.get("RLHF_FLAVOR", "0.6B")
     model_spec = qwen3_registry(flavor)
     # Mirror upstream simple_grpo_sum_digits.py: swap in the RL-side
     # parallelize fn (the one in models/qwen3 expects training-side

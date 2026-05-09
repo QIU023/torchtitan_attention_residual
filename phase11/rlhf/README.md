@@ -148,7 +148,63 @@ Both fixes live in `phase11/rlhf/run_grpo_llava_caption.py` in the
 underlying torch issue. Once these are applied, the trainer mesh
 spawns cleanly and PolicyTrainer instantiates.
 
-## Architectural friction: SGLang Engine vs Monarch actor model
+## α implementation: lead/follower pattern (LANDED)
+
+The friction below is now resolved by the lead/follower pattern in
+`torchtitan/experiments/rl/actors/sglang_generator.py`:
+
+* **Provisioner** has two modes — `allocate(n)` (one-actor-per-GPU,
+  used for trainer) and `allocate_shared(n)` (all actors in mesh
+  see the same N GPUs, used for generator).
+* **SGLangGenerator** detects rank: rank-0 is "lead" and constructs
+  the Engine; ranks > 0 are no-ops returning `[]` from `generate`
+  and skipping `pull_model_state_dict`.
+* **Engine async API**: switched from sync `Engine.generate` /
+  `update_weights_from_disk` (which call `loop.run_until_complete`
+  on their own loop and conflict with Monarch's running endpoint
+  loop) to `async_generate` / `tokenizer_manager.update_weights_from_disk`.
+
+Verified the pipeline boots end-to-end: 4 generator actors with
+3 followers idling and 1 lead spawning a TP=4 SGLang Engine, all
+seeing CVD=4,5,6,7 with 33 GB free per GPU. Generator produces
+rollouts, grader scores them, GRPO advantage is computed.
+
+## Last torch-version blocker: `varlen_attn` is nightly-only
+
+After lead/follower is in place, `trainer.step()` runs and hits:
+
+```
+NotImplementedError: torch.nn.attention.varlen.varlen_attn is
+unavailable on this PyTorch build. Upgrade torch (≥2.10 nightly)
+or switch to a non-varlen attention impl.
+```
+
+torchtitan's RL trainer uses `varlen_attn` from `torch.nn.attention.varlen`
+to compute per-token log-probs over packed prompt+completion
+sequences. The function exists only on torch nightly (~2.10+).
+On our pinned torch 2.9.1+cu129 stable (required by sgl_kernel ABI),
+this is unavailable.
+
+This is the same env-compat boundary documented in
+`phase11/TORCHTITAN_VAST_AI_PATCHES.md`. The trainer can't be
+patched around — it depends on the actual `varlen_attn` kernel for
+correct logprob math, not just a feature flag.
+
+Three paths to unblock:
+1. **Switch to torch nightly** on this box — accept the cost of
+   re-installing sgl_kernel against nightly's ABI (likely needs a
+   source build, ~2-4h).
+2. **Re-implement `varlen_attn` for torch 2.9** in the env-compat
+   patch — replace with FlashAttention-2 packed-sequence kernels.
+3. **Use a non-varlen RL trainer**. Upstream's PolicyTrainer
+   asserts varlen, but a fork could substitute a standard
+   attention path. Real engineering, ~1d.
+
+The architectural work — engine-agnostic Generator + lead/follower
++ multimodal task wiring — is upstream-PR-ready independent of this
+torch version pin.
+
+## Original architectural friction (resolved)
 
 After threading model_spec through the upstream pattern, we hit a
 real architecture mismatch: Monarch's `per_host={"gpus": N}` spawn
