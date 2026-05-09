@@ -51,8 +51,15 @@ export NCCL_DEBUG_SUBSYS=COLL
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 export PYTORCH_ALLOC_CONF="expandable_segments:True"
 
-# Make the python tree importable.
-export PYTHONPATH="$WS:$WS/torchtitan${PYTHONPATH:+:${PYTHONPATH}}"
+# Make the python tree importable. We MUST include
+# /usr/local/lib/python3.12/dist-packages here because that's where
+# torch lives on this box (the venv has only torchstore + monarch +
+# torchdata; torch itself is system-wide). Without explicitly
+# propagating this to PYTHONPATH, Monarch's spawned worker
+# subprocesses fall back on a sys.path that's missing /usr/local
+# and aborts on first ``import torch.distributed.rpc``.
+TORCH_SITE=/usr/local/lib/python3.12/dist-packages
+export PYTHONPATH="$WS:$WS/torchtitan:$TORCH_SITE${PYTHONPATH:+:${PYTHONPATH}}"
 
 cd "$WS"
 

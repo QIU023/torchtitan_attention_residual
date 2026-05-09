@@ -1,43 +1,105 @@
 Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
 Loaded LlavaCaptionTask with 50000 records
-Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-09_07:44_747
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-09_08:14_938
 [actor=<root>] Initializing TorchStoreStrategy with default_transport_type=<TransportType.Unset: 1>
-Unhandled monarch error on the root actor, hostname=dfbfb7339589, PID=826865 at time 2026-05-09 07:44:33.627377:
-The actor <root> and all its descendants have failed:
+ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+Unhandled monarch error on the root actor, hostname=dfbfb7339589, PID=859133 at time 2026-05-09 08:14:41.285218:
+The actor <root>.<torchtitan.experiments.rl.actors.trainer.PolicyTrainer trainer{'gpus': 0/4}> and all its descendants have failed:
   actor explicitly aborted due to: Traceback (most recent call last):
     File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
       response_port.exception(
-    File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 1197, in handle
-      args, kwargs = PicklingState(message, local_state).unpickle()
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/__init__.py", line 32, in <module>
-      from torchtitan.experiments.rl.plugin import (
-    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/plugin.py", line 29, in <module>
-      from torchtitan.protocols.model_spec import ModelSpec
-    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/protocols/__init__.py", line 7, in <module>
-      from torchtitan.config import Configurable
-    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/config/__init__.py", line 7, in <module>
-      import torch
-    File "/usr/local/lib/python3.12/dist-packages/torch/__init__.py", line 2161, in <module>
-      from torch import _VF as _VF, functional as functional  # usort: skip
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    File "/usr/local/lib/python3.12/dist-packages/torch/functional.py", line 8, in <module>
-      import torch.nn.functional as F
-    File "/usr/local/lib/python3.12/dist-packages/torch/nn/__init__.py", line 8, in <module>
-      from torch.nn.modules import *  # usort: skip # noqa: F403
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/__init__.py", line 2, in <module>
-      from .linear import Bilinear, Identity, LazyLinear, Linear  # usort: skip
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/linear.py", line 7, in <module>
-      from torch.nn import functional as F, init
-    File "/usr/local/lib/python3.12/dist-packages/torch/nn/functional.py", line 11, in <module>
-      from torch._jit_internal import (
-    File "/usr/local/lib/python3.12/dist-packages/torch/_jit_internal.py", line 44, in <module>
-      import torch.distributed.rpc
-    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/rpc/__init__.py", line 40, in <module>
-      from torch._C._distributed_c10d import Store
-  ModuleNotFoundError: No module named 'torch._C._distributed_c10d'; 'torch._C' is not a package
+    File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 1215, in handle
+      self.instance = Class(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/trainer.py", line 119, in __init__
+      if model_spec.state_dict_adapter is not None:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  AttributeError: 'NoneType' object has no attribute 'state_dict_adapter'
 
-fatal runtime error: Rust cannot catch foreign exceptions, aborting
-fatal runtime error: Rust cannot catch foreign exceptions, aborting
+Traceback (most recent call last):
+  File "/root/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_caption.py", line 383, in <module>
+  File "/root/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_caption.py", line 379, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/root/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_caption.py", line 278, in _async_main
+    trainer.push_model_state_dict.call().get()
+  File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._rust_bindings.monarch_hyperactor.supervision.SupervisionError: Endpoint call trainer.push_model_state_dict() failed, The actor <root>.<torchtitan.experiments.rl.actors.trainer.PolicyTrainer trainer{'gpus': 0/4}> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 1215, in handle
+      self.instance = Class(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/trainer.py", line 119, in __init__
+      if model_spec.state_dict_adapter is not None:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  AttributeError: 'NoneType' object has no attribute 'state_dict_adapter'
+
+
+thread 'monarch-pytokio-worker-363' (862543) panicked at monarch_hyperactor/src/actor.rs:1526:14:
+Unable to send panic message: MailboxSenderError { location: Unbound(ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_2-12iw3LU7pE2W"), "trainer-1bxJ5rbCAbXt", 0), "hyperactor::actor::Signal"), kind: Mailbox(MailboxError { actor_id: ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_2-12iw3LU7pE2W"), "trainer-1bxJ5rbCAbXt", 0), kind: OwnerTerminated(Stopped("stop host")) }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'monarch-pytokio-worker-1' (861811) panicked at monarch_hyperactor/src/actor.rs:1526:14:
+Unable to send panic message: MailboxSenderError { location: Unbound(ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_1-1FkCbMBQ2HKS"), "trainer-1bxJ5rbCAbXt", 0), "hyperactor::actor::Signal"), kind: Mailbox(MailboxError { actor_id: ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_1-1FkCbMBQ2HKS"), "trainer-1bxJ5rbCAbXt", 0), kind: OwnerTerminated(Stopped("stop host")) }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'monarch-pytokio-worker-365' (863168) panicked at monarch_hyperactor/src/actor.rs:1526:14:
+Unable to send panic message: MailboxSenderError { location: Unbound(ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_3-1t29muph5XN2"), "trainer-1bxJ5rbCAbXt", 0), "hyperactor::actor::Signal"), kind: Mailbox(MailboxError { actor_id: ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_3-1t29muph5XN2"), "trainer-1bxJ5rbCAbXt", 0), kind: OwnerTerminated(Stopped("stop host")) }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'monarch-pytokio-worker-365' (860319) panicked at monarch_hyperactor/src/actor.rs:1526:14:
+Unable to send panic message: MailboxSenderError { location: Unbound(ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_0-17z62QNvNu4r"), "grader-1A6R652Lu4hT", 0), "hyperactor::actor::Signal"), kind: Mailbox(MailboxError { actor_id: ActorId(ProcId(Unix(Bound("dUsCTYmP3A4N7fz14gao0D2f" (abstract))), "anon_0-17z62QNvNu4r"), "grader-1A6R652Lu4hT", 0), kind: OwnerTerminated(Stopped("stop host")) }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[rank1]:[W509 08:14:42.907288322 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[rank2]:[W509 08:14:42.908134212 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[rank0]:[W509 08:14:42.911341121 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[rank3]:[W509 08:14:42.998484569 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[rank3]:[W509 08:14:42.459698622 TCPStore.cpp:125] [c10d] recvValue failed on SocketImpl(fd=104, addr=[dfbfb7339589]:60620, remote=[dfbfb7339589]:48977): Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+Exception raised from recvBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:682 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x80 (0x7f7c8015db80 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x5ffc5d1 (0x7f7bc91545d1 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #2: <unknown function> + 0x5ffd9cd (0x7f7bc91559cd in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #3: <unknown function> + 0x5ffe57a (0x7f7bc915657a in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #4: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x31e (0x7f7bc915129e in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #5: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x3c8 (0x7f7b6ccc4c88 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xecdb4 (0x7f7beb06edb4 in /lib/x86_64-linux-gnu/libstdc++.so.6)
+frame #7: <unknown function> + 0x9caa4 (0x7f81eda43aa4 in /lib/x86_64-linux-gnu/libc.so.6)
+frame #8: __clone + 0x44 (0x7f81edad0a64 in /lib/x86_64-linux-gnu/libc.so.6)
+
+[rank3]:[W509 08:14:42.464661101 ProcessGroupNCCL.cpp:1771] [PG ID 0 PG GUID 0(default_pg) Rank 3] Failed to check the "should dump" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+<frozen importlib._bootstrap_external>:1297: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+Exception ignored in atexit callback: <function _init_client_context.<locals>.<lambda> at 0x7ef97e800360>
+Traceback (most recent call last):
+  File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 444, in <lambda>
+    atexit.register(lambda: shutdown_context().get(timeout=5.0))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+TimeoutError: 

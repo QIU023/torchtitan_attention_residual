@@ -123,38 +123,70 @@ exchange path. We pick GRPO because:
 The framework is method-agnostic: changing to PPO is a Trainer-side
 change (add a `ValueModel` actor), not a Generator/Grader change.
 
-## Known blocker: Monarch worker / torch-install conflict
+## Env compat fixes (worker spawn)
 
-When `run_with_trace.sh --text-only` actually launches the trainer
-mesh, Monarch spawns a worker subprocess that fails to import torch:
+Monarch's worker subprocess spawn doesn't inherit the parent's full
+sys.path; we hit two cascading bugs and fixed both in
+``Provisioner._bootstrap``:
+
+1. **`torch._C is not a package`** — Monarch's pickle-deserialize
+   handler triggers `import torch` at an unfortunate moment. torch's
+   ``_jit_internal → torch.distributed.rpc → torch._C
+   ._distributed_c10d`` chain doesn't survive that nested context
+   (it's a known torch C-extension init quirk). **Fix**: pre-import
+   torch + the full distributed stack in the bootstrap callback,
+   *before* Monarch's mailbox handler runs.
+
+2. **`_DeadlockError` on `torch.distributed._shard._utils`** — same
+   nested-import context, but a different module lock. **Fix**: same
+   pre-import pattern; bootstrap now imports the entire torch
+   distributed surface plus the torchtitan modules the message
+   handler will need.
+
+Both fixes live in `phase11/rlhf/run_grpo_llava_caption.py` in the
+`Provisioner.allocate` closure, with comments pointing at the
+underlying torch issue. Once these are applied, the trainer mesh
+spawns cleanly and PolicyTrainer instantiates.
+
+## Remaining gap: model_spec wiring
+
+The framework works end-to-end *up to* `PolicyTrainer.__init__`,
+which then fails with:
 
 ```
-ModuleNotFoundError: No module named 'torch._C._distributed_c10d';
-'torch._C' is not a package
-fatal runtime error: Rust cannot catch foreign exceptions, aborting
+AttributeError: 'NoneType' object has no attribute 'state_dict_adapter'
 ```
 
-Root cause is a venv ↔ system-Python torch install conflict on this
-box: the venv has torch 2.9.1+cu129 at `/venv/main/lib/python3.12/...`
-while the system has a partial torch at `/usr/local/lib/python3.12/...`.
-Monarch's worker spawn somehow picks up the system path first and
-imports a half-broken torch.
+This is a real config issue — we pass `model_spec=None`. The upstream
+`config_registry.py` shows the expected pattern:
 
-The fix is environmental, not code-side. Options:
+```python
+from torchtitan.models.qwen3 import model_registry
+config.model_spec = model_registry("0.6B_varlen")
+config.hf_assets_path = ".../Qwen3-0.6B"
+```
 
-1. Install monarch + torchstore + the rest of the RL deps into the
-   *same* python the trainer/generator processes will inherit
-   (cleanest: a single venv that contains torch + monarch +
-   torchstore + sglang).
-2. Set `PYTHONPATH` and `VIRTUAL_ENV` explicitly in the
-   `Provisioner._bootstrap` callback so the spawned worker
-   subprocess reuses the venv's site-packages.
+To run end-to-end we need ONE of:
 
-We document this here rather than working around it because the
-deeper fix (single-venv install) is more honest and benefits any
-follow-up. With option (2) wired up, a text-only run on the 447m
-ckpt should produce a valid NCCL trace; that's the next step
-once env is clean.
+* **(a) Qwen3-0.6B path (fast smoke)** — download the HF ckpt, set
+  `model_spec = qwen3.model_registry("0.6B_varlen")`. Validates the
+  framework + emits a clean NCCL trace, but uses Qwen3 not our 447m
+  AttnRes. ~30 min including download.
+
+* **(b) 447m AttnRes path (production)** — register a `model_spec`
+  for our Kimi Linear AttnRes config that PolicyTrainer can build.
+  This requires:
+    1. A `model_registry("447m_aligned_block_attn_res")` entry in
+       `torchtitan/torchtitan/experiments/kimi_linear/config_registry.py`
+       returning a `ModelSpec`.
+    2. The trainer's `parallelize_fn` plumbed for the AttnRes overlay
+       (already exists at `experiments/kimi_linear/parallelize.py`).
+    3. The HF-converted ckpt at `phase11/hf_aligned_447m_step12500/`
+       (already done, validated).
+  ~1-2h.
+
+Once either lands, end-to-end NCCL trace becomes available — the
+framework is otherwise complete.
 
 ## Trace pattern expectations (NCCL fabric output)
 

@@ -78,11 +78,36 @@ logger = logging.getLogger(__name__)
 
 
 class Provisioner:
-    """Allocates non-overlapping GPU ranges for Monarch proc meshes."""
+    """Allocates non-overlapping GPU ranges for Monarch proc meshes.
+
+    The bootstrap callback runs inside each spawned worker subprocess
+    BEFORE CUDA initializes and BEFORE any torch import. We use it to:
+
+    1. Pin ``CUDA_VISIBLE_DEVICES`` so the worker only sees its own
+       GPUs.
+    2. Re-establish the parent process's venv. Without this, Monarch's
+       spawned worker inherits a partially-broken sys.path and may
+       import the system torch (which on this box is missing
+       ``torch._C._distributed_c10d``). Setting ``VIRTUAL_ENV`` and
+       prepending the venv's site-packages to ``PYTHONPATH`` is the
+       same thing ``activate`` does in shell, applied programmatically
+       so spawned subprocesses inherit it.
+
+    The env-injection is a no-op outside venv-based deployments.
+    """
 
     def __init__(self, total_gpus: int = 8):
         self.total_gpus = total_gpus
         self.next_gpu = 0
+        # Capture the parent process's effective sys.path so the
+        # spawned worker subprocesses can re-establish it. Monarch's
+        # default spawn doesn't preserve all of: editable installs,
+        # venv site-packages, and additional paths added by .pth
+        # files. We snapshot what the parent ACTUALLY sees and
+        # propagate that via PYTHONPATH.
+        self._captured_paths = list(sys.path)
+        # Parent's venv (matches activate-style behaviour).
+        self._venv = os.environ.get("VIRTUAL_ENV") or sys.prefix
 
     @property
     def available(self) -> int:
@@ -97,8 +122,64 @@ class Provisioner:
         gpu_ids = list(range(self.next_gpu, self.next_gpu + num_gpus))
         self.next_gpu += num_gpus
 
+        # Capture by value for the closure — these strings live in
+        # the bootstrap callback that the worker subprocess runs.
+        venv = self._venv
+        # Filter to filesystem paths the worker can actually use
+        # (drop empty cwd-marker, drop editable-install path-hook
+        # placeholders that don't resolve in a fresh process).
+        propagated_paths = [
+            p for p in self._captured_paths
+            if p and os.path.isdir(p)
+        ]
+
         def _bootstrap():
             os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(g) for g in gpu_ids)
+            os.environ["VIRTUAL_ENV"] = venv
+            existing_pp = os.environ.get("PYTHONPATH", "")
+            new_pp_parts = list(propagated_paths)
+            for p in existing_pp.split(os.pathsep):
+                if p and p not in new_pp_parts:
+                    new_pp_parts.append(p)
+            os.environ["PYTHONPATH"] = os.pathsep.join(new_pp_parts)
+            venv_bin = f"{venv}/bin"
+            existing_path = os.environ.get("PATH", "")
+            if venv_bin not in existing_path.split(os.pathsep):
+                os.environ["PATH"] = (
+                    venv_bin + (os.pathsep + existing_path if existing_path else "")
+                )
+            # Pre-import all the heavy modules we know will be
+            # triggered during pickle deserialize of actor messages.
+            # If left for the message handler to import lazily, two
+            # bugs hit:
+            #   * ``torch._C is not a package`` — torch.distributed.rpc
+            #     forces ``torch._C._distributed_c10d`` to resolve as
+            #     a submodule; in a fresh interpreter mid-pickle that
+            #     fails because ``_C`` is a ``.so`` (not a package).
+            #   * ``_DeadlockError`` — the nested import chain
+            #     re-enters ``torch.distributed._shard._utils`` while
+            #     another thread holds its module lock.
+            # Both are eliminated by completing torch / torchtitan /
+            # sglang / torchstore imports here, BEFORE Monarch
+            # deserializes the first actor message.
+            import site
+            site.main()
+            import torch  # noqa: F401
+            import torch.distributed  # noqa: F401
+            import torch.distributed.rpc  # noqa: F401
+            import torch.distributed._shard._utils  # noqa: F401
+            import torch.distributed.checkpoint  # noqa: F401
+            import torch.distributed.fsdp  # noqa: F401
+            # torchtitan imports (the message handler will trigger
+            # these via the model_spec we pass to the actor spawn).
+            import torchtitan  # noqa: F401
+            import torchtitan.config  # noqa: F401
+            import torchtitan.protocols.model_spec  # noqa: F401
+            import torchtitan.experiments.rl  # noqa: F401
+            import torchtitan.experiments.rl.plugin  # noqa: F401
+            # torchstore + monarch (the runtime needs these too,
+            # but they may already be loaded by Monarch's bootstrap).
+            import torchstore  # noqa: F401
 
         return _bootstrap
 
