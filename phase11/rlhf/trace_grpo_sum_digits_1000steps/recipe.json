@@ -1,0 +1,12 @@
+{
+  "phase": 11,
+  "task": "rlhf-grpo-sum-digits",
+  "framework": "torchtitan + monarch + sglang",
+  "engine": "sglang",
+  "method": "grpo",
+  "trainer_mesh": "FSDP=4 ranks 0-3",
+  "generator_mesh": "TP=4 ranks 4-7 (lead/follower; rank 0 lead)",
+  "model_path": "/root/torchtitan_attention_residual/phase11/rlhf/qwen3_0_6b",
+  "model": "Qwen3-0.6B (HF)",
+  "num_steps": 1000
+}
