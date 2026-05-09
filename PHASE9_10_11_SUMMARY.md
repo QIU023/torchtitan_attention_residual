@@ -131,9 +131,17 @@ upstream Monarch changes.
 
 ### 11-D: Real GRPO + PPO end-to-end + NCCL trace
 
-* **GRPO sum-digits**: 50 steps Qwen3-0.6B, reward_mean -1.0 → +0.69,
-  loss oscillating (no KL constraint). 0.9 s/step. 40K NCCL
-  collective ops captured.
+* **GRPO sum-digits**: production runs at 50 / 200 / 500 / **1000**
+  steps on Qwen3-0.6B. The 1000-step definitive run (commit `aa4235a`)
+  shows steady positive learning over the full horizon:
+  `+0.18 → +0.20 → +0.24 → +0.20 → +0.28 → +0.21 → +0.21 → +0.23 → +0.22`
+  (per-100-step reward bucket mean). 63,483 NCCL collective ops
+  captured — the largest production RL trace in the catalog.
+  No KL constraint (vanilla GRPO) so policy oscillates around the
+  improved mean rather than converging hard.
+* **dt drift**: 0.9 s/step early → 4–10 s/step by step 900, due to
+  SGLang `update_weights_from_disk` accumulating cache pressure.
+  Not a framework issue; full RDMA torchstore path would keep dt flat.
 * **PPO sum-digits** (kl_coef=0.05, frozen ref engaged): 50 steps,
   similar reward trajectory but loss values much smaller (KL
   stabilizes). 1.1 s/step. Send/Recv count is **2× GRPO** —
@@ -198,8 +206,9 @@ diff at `phase11/torchtitan_vast_ai_env_compat.patch`.
 * **+27% decode tps** from one fused Triton kernel
 * **−58% AllReduce bytes** from sequence-dim TP shard
 * **2× Send/Recv** in PPO vs GRPO trace (frozen-ref signature)
-* **40K NCCL ops** captured in production GRPO 50-step run
+* **63K NCCL ops** captured in the 1000-step production GRPO run
 * **0.9 s/step** for full GRPO loop (rollout + grader + train + sync)
-  on Qwen3-0.6B / FSDP=4 trainer / TP=4 generator
+  on Qwen3-0.6B / FSDP=4 trainer / TP=4 generator (early-loop figure)
 * **>98% kernel hit rate** for the Phase-2 fused Triton kernel (2015
   / 2048 expected calls per 64-token decode batch)
+* **+0.18 → +0.22** GRPO reward improvement over 1000 steps end-to-end
