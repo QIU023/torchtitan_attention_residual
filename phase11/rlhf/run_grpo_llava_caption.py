@@ -256,6 +256,9 @@ async def _async_main(config: _Config) -> None:
         PolicyTrainer,
         config.trainer,
         model_spec=config.model_spec,
+        hf_assets_path=config.hf_assets_path,
+        transfer_dtype=config.generator.model_dtype,
+        kl_coef=config.kl_coef,
     )
     generator = generator_mesh.spawn(
         "generator",
@@ -359,7 +362,44 @@ def main():
                    default="/workspace/.hf_home/LLaVA-Pretrain")
     args = p.parse_args()
 
+    # ModelSpec selection.
+    #
+    # Architectural note: torchtitan's ``PolicyTrainer`` is currently
+    # Qwen3-specific. Its ``_build_model`` does:
+    #
+    #     assert isinstance(
+    #         model_spec.model.layers[0].attention.inner_attention,
+    #         VarlenAttention.Config,
+    #     )
+    #
+    # which assumes Qwen3-style ``.layers[0].attention.inner_attention``
+    # access at config time. Our Kimi Linear AttnRes (KDA + MLA) has a
+    # different structure (no ``.attention.inner_attention`` field) so
+    # PolicyTrainer can't load our 447m AttnRes ckpt as-is.
+    #
+    # Filing this as a separate upstream RFC ("make PolicyTrainer
+    # model-agnostic"). Until that lands, we use Qwen3-0.6B for the
+    # framework + NCCL-trace deliverable. The SGLangGenerator and the
+    # multimodal task pieces are unchanged — when PolicyTrainer
+    # supports a non-Qwen3 model_spec, swapping the trainer side is
+    # a one-config edit.
+    from torchtitan.models.qwen3 import model_registry as qwen3_registry
+    flavor = os.environ.get("RLHF_FLAVOR", "0.6B_varlen")
+    model_spec = qwen3_registry(flavor)
+    # Mirror upstream simple_grpo_sum_digits.py: swap in the RL-side
+    # parallelize fn (the one in models/qwen3 expects training-side
+    # kwargs that PolicyTrainer doesn't supply at RL time).
+    from torchtitan.experiments.rl.models.parallelize import parallelize_qwen3
+    model_spec.parallelize_fn = parallelize_qwen3
+    logger.info(f"Loaded ModelSpec: name={model_spec.name} flavor={model_spec.flavor}")
+    logger.info(
+        "NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for "
+        "the framework + trace; the 447m Kimi AttnRes needs a "
+        "model-agnostic PolicyTrainer (separate RFC)."
+    )
+
     config = _Config()
+    config.model_spec = model_spec
     config.hf_assets_path = args.model_path
     config.num_steps = args.num_steps
     config.text_only = args.text_only
@@ -370,6 +410,7 @@ def main():
     # Override here for our 8x 5090 layout: trainer FSDP=4, generator TP=4.
     config.trainer.parallelism.data_parallel_shard_degree = 4
     config.generator.parallelism.tensor_parallel_degree = 4
+    config.generator.gpu_memory_limit = 0.3
     config.generator.weight_sync_method = "disk"
     config.generator.weight_sync_disk_path = (
         config.dump_folder + "/sglang_weights"
