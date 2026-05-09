@@ -1,0 +1,15 @@
+Long-context AttnRes inference bench — kernel ON (post-sync).
+
+TP=1:
+  ctx=24K  vanilla 715 tps   naive 630   two-phase 623  (-12.9% vs vanilla; TTFT 17.9 ms)
+  ctx=32K  FAILED (model max_position_embeddings=32768; prefill+decode overruns)
+
+TP=8:
+  ctx=24K  vanilla 526       naive 462   two-phase 466   shard 461  (TTFT 21.9 ms)
+  ctx=32K  FAILED (same)
+
+Two-phase TTFT vs naive at 24K: 1.04-1.07x — still consistent with
+the +5-10% blog-claim ceiling. Decode-tps overhead vs vanilla:
+-12.9% (TP=1) and -11.5% (TP=8); the AttnRes overhead is now stable
+across context lengths — the kernel-on landing was the major win,
+context-length scaling is ~constant overhead from here.

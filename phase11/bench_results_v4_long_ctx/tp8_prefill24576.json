@@ -1,0 +1,70 @@
+{
+  "args": {
+    "model": "/root/torchtitan_attention_residual/phase11/hf_aligned_447m",
+    "tp": 8,
+    "prefill": 24576,
+    "decode": 64,
+    "warmup": 1,
+    "timed": 2,
+    "disable_cuda_graph": false,
+    "out": "/root/torchtitan_attention_residual/phase11/bench_results_v4_long_ctx/tp8_prefill24576.json"
+  },
+  "modes": {
+    "vanilla": {
+      "prefill_ttft_ms_mean": 29.35481700114906,
+      "prefill_ttft_ms_stdev": 0.3182207246945206,
+      "decode_tps_mean": 525.8977410131643,
+      "decode_tps_stdev": 2.8221598547684414,
+      "prefill_ttft_raw": [
+        29.57983303349465,
+        29.129800968803465
+      ],
+      "decode_tps_raw": [
+        527.8933093840634,
+        523.902172642265
+      ]
+    },
+    "naive": {
+      "prefill_ttft_ms_mean": 22.93949999148026,
+      "prefill_ttft_ms_stdev": 1.0422626700341218,
+      "decode_tps_mean": 462.3144374942918,
+      "decode_tps_stdev": 1.8468757204646682,
+      "prefill_ttft_raw": [
+        23.676490993238986,
+        22.202508989721537
+      ],
+      "decode_tps_raw": [
+        461.0084991483424,
+        463.62037584024114
+      ]
+    },
+    "two-phase": {
+      "prefill_ttft_ms_mean": 21.961692022159696,
+      "prefill_ttft_ms_stdev": 0.7364503232770749,
+      "decode_tps_mean": 465.65368460910526,
+      "decode_tps_stdev": 1.0486683644171482,
+      "prefill_ttft_raw": [
+        22.48244103975594,
+        21.44094300456345
+      ],
+      "decode_tps_raw": [
+        464.9121640974101,
+        466.3952051208004
+      ]
+    },
+    "shard": {
+      "prefill_ttft_ms_mean": 22.27435604436323,
+      "prefill_ttft_ms_stdev": 1.5819166806320537,
+      "decode_tps_mean": 460.9626460494129,
+      "decode_tps_stdev": 3.373462593662661,
+      "prefill_ttft_raw": [
+        23.39294005651027,
+        21.15577203221619
+      ],
+      "decode_tps_raw": [
+        463.34804432547094,
+        458.5772477733549
+      ]
+    }
+  }
+}
