@@ -1,0 +1,43 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Loaded LlavaCaptionTask with 50000 records
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-09_07:44_747
+[actor=<root>] Initializing TorchStoreStrategy with default_transport_type=<TransportType.Unset: 1>
+Unhandled monarch error on the root actor, hostname=dfbfb7339589, PID=826865 at time 2026-05-09 07:44:33.627377:
+The actor <root> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/venv/main/lib/python3.12/site-packages/monarch/_src/actor/actor_mesh.py", line 1197, in handle
+      args, kwargs = PicklingState(message, local_state).unpickle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/__init__.py", line 32, in <module>
+      from torchtitan.experiments.rl.plugin import (
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/plugin.py", line 29, in <module>
+      from torchtitan.protocols.model_spec import ModelSpec
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/protocols/__init__.py", line 7, in <module>
+      from torchtitan.config import Configurable
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/config/__init__.py", line 7, in <module>
+      import torch
+    File "/usr/local/lib/python3.12/dist-packages/torch/__init__.py", line 2161, in <module>
+      from torch import _VF as _VF, functional as functional  # usort: skip
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/functional.py", line 8, in <module>
+      import torch.nn.functional as F
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/__init__.py", line 8, in <module>
+      from torch.nn.modules import *  # usort: skip # noqa: F403
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/__init__.py", line 2, in <module>
+      from .linear import Bilinear, Identity, LazyLinear, Linear  # usort: skip
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/linear.py", line 7, in <module>
+      from torch.nn import functional as F, init
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/functional.py", line 11, in <module>
+      from torch._jit_internal import (
+    File "/usr/local/lib/python3.12/dist-packages/torch/_jit_internal.py", line 44, in <module>
+      import torch.distributed.rpc
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/rpc/__init__.py", line 40, in <module>
+      from torch._C._distributed_c10d import Store
+  ModuleNotFoundError: No module named 'torch._C._distributed_c10d'; 'torch._C' is not a package
+
+fatal runtime error: Rust cannot catch foreign exceptions, aborting
+fatal runtime error: Rust cannot catch foreign exceptions, aborting

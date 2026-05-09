@@ -142,8 +142,6 @@ class _Config(Configurable.Config):
 
 
 async def _async_main(config: _Config) -> None:
-    setup_torch_elastic_env_async()
-
     task = LlavaCaptionTask(
         json_path=config.llava_json_path,
         images_dir=config.llava_images_dir,
@@ -155,36 +153,49 @@ async def _async_main(config: _Config) -> None:
     trainer_bootstrap = provisioner.allocate(4)
     generator_bootstrap = provisioner.allocate(4)
 
-    # Spawn actors on disjoint meshes.
-    host = this_host()
-    trainer_mesh = await host.spawn_procs(
+    # Spawn proc meshes on disjoint GPU partitions (single-node mode).
+    trainer_mesh = this_host().spawn_procs(
         per_host={"gpus": 4},
         bootstrap=trainer_bootstrap,
     )
-    generator_mesh = await host.spawn_procs(
+    generator_mesh = this_host().spawn_procs(
         per_host={"gpus": 4},
         bootstrap=generator_bootstrap,
     )
+    grader_mesh = this_host().spawn_procs()  # CPU-only mesh
+
+    # torchelastic env must be set per-mesh BEFORE the actors are
+    # spawned so the trainer/generator processes inherit
+    # RANK/WORLD_SIZE/MASTER_ADDR/etc.
+    await setup_torch_elastic_env_async(trainer_mesh)
+    await setup_torch_elastic_env_async(generator_mesh)
 
     trainer = trainer_mesh.spawn(
         "trainer",
         PolicyTrainer,
-        config=config.trainer,
+        config.trainer,
         model_spec=config.model_spec,
     )
     generator = generator_mesh.spawn(
         "generator",
         SGLangGenerator,
-        config=config.generator,
+        config.generator,
         model_spec=config.model_spec,
         model_path=config.hf_assets_path,
     )
-    grader = Grader(reward_fn=task.reward_function)
+    grader = grader_mesh.spawn(
+        "grader",
+        Grader,
+        reward_fn=task.reward_function,
+    )
 
-    # Warm up: pull initial weights from trainer's policy v0.
-    await ts.start_async(num_storage_volumes=1)
-    await trainer.push_model_state_dict.call_one(version=0)
-    await generator.pull_model_state_dict.call_one(version=0)
+    # torchstore initialised on the trainer mesh; LocalRankStrategy
+    # so colocated procs share a volume (matches upstream simple_grpo).
+    await ts.initialize(mesh=trainer_mesh, strategy=ts.LocalRankStrategy())
+
+    # Warm up: trainer pushes policy v0, generator pulls.
+    trainer.push_model_state_dict.call().get()
+    generator.pull_model_state_dict.call(0).get()
 
     for step in range(config.num_steps):
         t0 = time.perf_counter()
@@ -202,15 +213,12 @@ async def _async_main(config: _Config) -> None:
             else [r.image_path for r in records]
         )
 
-        # 2. Rollout.
-        episodes = await generator.generate.call_one(
-            prompt_texts=prompts,
-            expected_answers=gold,
-            images=images,
-        )
+        # 2. Rollout. Pass images positionally per the actor endpoint
+        # signature (Monarch ``call`` is not aware of kwargs).
+        episodes = generator.generate.call(prompts, gold, images).get()
 
         # 3. Score.
-        episodes = await grader.score.call_one(episodes=episodes)
+        episodes = grader.score.call(episodes).get()
 
         # 4. Compute group-relative advantages (GRPO).
         groups: dict[str, list[Episode]] = defaultdict(list)
@@ -225,9 +233,17 @@ async def _async_main(config: _Config) -> None:
                 ep.advantage = (ep.reward - mean_r) / std_r
 
         # 5. Trainer step + push new weights.
-        loss = await trainer.train_step.call_one(episodes=episodes)
-        await trainer.push_model_state_dict.call_one(version=step + 1)
-        await generator.pull_model_state_dict.call_one(version=step + 1)
+        # ``trainer.step.call(episodes)`` returns a dict per rank; we
+        # take rank-0 metrics.
+        metrics = trainer.step.call(episodes).get()
+        # Monarch's call().get() returns a ValueMesh; extract rank-0.
+        loss = (
+            metrics.item(0)["loss"]
+            if hasattr(metrics, "item")
+            else metrics[0]["loss"]
+        )
+        trainer.push_model_state_dict.call().get()
+        generator.pull_model_state_dict.call(step + 1).get()
 
         dt = time.perf_counter() - t0
         rewards = [ep.reward for ep in episodes]

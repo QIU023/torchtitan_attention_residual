@@ -78,7 +78,7 @@ python phase7/flows_to_ixia.py phase11/rlhf/trace/ --world-size 8
 | `SGLangGenerator` (engine-agnostic actor) | ✅ | Lazy-import + drop-in for VLLMGenerator |
 | `run_grpo_llava_caption.py` (entry point) | ✅ | Wires trainer / generator / grader on 8 GPUs, GRPO logic in line |
 | Multimodal SGLang model class (Kimi AttnRes + SigLIP + projector) | ❌ | The remaining gap. Half-day of work; see "Multimodal model wiring" below |
-| End-to-end run + NCCL trace | ⏸ | Blocked on the model class above; framework-only smoke (text-only path) ready |
+| End-to-end run + NCCL trace | ⏸ | Two blockers: (a) multimodal SGLang model class (below) and (b) a Monarch-worker / torch-install conflict (below) |
 
 ## Multimodal model wiring (the remaining gap)
 
@@ -122,6 +122,39 @@ exchange path. We pick GRPO because:
 
 The framework is method-agnostic: changing to PPO is a Trainer-side
 change (add a `ValueModel` actor), not a Generator/Grader change.
+
+## Known blocker: Monarch worker / torch-install conflict
+
+When `run_with_trace.sh --text-only` actually launches the trainer
+mesh, Monarch spawns a worker subprocess that fails to import torch:
+
+```
+ModuleNotFoundError: No module named 'torch._C._distributed_c10d';
+'torch._C' is not a package
+fatal runtime error: Rust cannot catch foreign exceptions, aborting
+```
+
+Root cause is a venv ↔ system-Python torch install conflict on this
+box: the venv has torch 2.9.1+cu129 at `/venv/main/lib/python3.12/...`
+while the system has a partial torch at `/usr/local/lib/python3.12/...`.
+Monarch's worker spawn somehow picks up the system path first and
+imports a half-broken torch.
+
+The fix is environmental, not code-side. Options:
+
+1. Install monarch + torchstore + the rest of the RL deps into the
+   *same* python the trainer/generator processes will inherit
+   (cleanest: a single venv that contains torch + monarch +
+   torchstore + sglang).
+2. Set `PYTHONPATH` and `VIRTUAL_ENV` explicitly in the
+   `Provisioner._bootstrap` callback so the spawned worker
+   subprocess reuses the venv's site-packages.
+
+We document this here rather than working around it because the
+deeper fix (single-venv install) is more honest and benefits any
+follow-up. With option (2) wired up, a text-only run on the 447m
+ckpt should produce a valid NCCL trace; that's the next step
+once env is clean.
 
 ## Trace pattern expectations (NCCL fabric output)
 
