@@ -1,0 +1,737 @@
+=== launch_8gpu_mm.sh ===
+  OUT_DIR=/root/torchtitan_attention_residual/phase5/runs/sft_v_fsdp8_447m_llava_pretrain
+  mesh: NGPU=8 FSDP=8 PP=1 TP=1 CP=1 EP=1 V=1
+  recipe: STEPS=500 LOCAL_BS=8 GLOBAL_BS=64 SEQ_LEN=260
+  trace:  (steps=50)
+=========================
+W0509 01:46:19.225000 723712 torch/distributed/run.py:803] 
+W0509 01:46:19.225000 723712 torch/distributed/run.py:803] *****************************************
+W0509 01:46:19.225000 723712 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0509 01:46:19.225000 723712 torch/distributed/run.py:803] *****************************************
+[rank0]:[titan] 2026-05-09 01:46:29,821 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-05-09 01:46:29,823 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=8, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-05-09 01:46:29,856 - root - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'fsdp', 'efsdp']
+[rank0]:[titan] 2026-05-09 01:46:29,856 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-05-09 01:46:29,858 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-05-09 01:46:30,121 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-05-09 01:46:30,472 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:30,518 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:30,719 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:31,423 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:31,705 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:32,254 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:32,669 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:32,930 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:33,365 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:33,574 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:[titan] 2026-05-09 01:46:33,886 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:33,887 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:[titan] 2026-05-09 01:46:33,961 - root - INFO - Building kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 with {
+[rank0]:  "vocab_size": 163840,
+[rank0]:  "hidden_size": 1024,
+[rank0]:  "tie_word_embeddings": true,
+[rank0]:  "num_hidden_layers": 16,
+[rank0]:  "intermediate_size": 768,
+[rank0]:  "num_attention_heads": 16,
+[rank0]:  "num_key_value_heads": 16,
+[rank0]:  "q_lora_rank": null,
+[rank0]:  "kv_lora_rank": 512,
+[rank0]:  "qk_nope_head_dim": 64,
+[rank0]:  "qk_rope_head_dim": 32,
+[rank0]:  "v_head_dim": 64,
+[rank0]:  "mla_use_nope": true,
+[rank0]:  "rope_theta": 10000.0,
+[rank0]:  "kda_num_heads": 16,
+[rank0]:  "kda_head_dim": 64,
+[rank0]:  "kda_short_conv_kernel_size": 4,
+[rank0]:  "kda_layers": [
+[rank0]:    1,
+[rank0]:    2,
+[rank0]:    3,
+[rank0]:    5,
+[rank0]:    6,
+[rank0]:    7,
+[rank0]:    9,
+[rank0]:    10,
+[rank0]:    11,
+[rank0]:    13,
+[rank0]:    14,
+[rank0]:    15
+[rank0]:  ],
+[rank0]:  "full_attn_layers": [
+[rank0]:    4,
+[rank0]:    8,
+[rank0]:    12,
+[rank0]:    16
+[rank0]:  ],
+[rank0]:  "num_experts": 32,
+[rank0]:  "num_experts_per_token": 8,
+[rank0]:  "moe_intermediate_size": 768,
+[rank0]:  "moe_renormalize": true,
+[rank0]:  "moe_router_activation_func": "sigmoid",
+[rank0]:  "num_shared_experts": 1,
+[rank0]:  "routed_scaling_factor": 2.446,
+[rank0]:  "first_k_dense_replace": 1,
+[rank0]:  "moe_layer_freq": 1,
+[rank0]:  "use_grouped_topk": false,
+[rank0]:  "num_expert_group": 1,
+[rank0]:  "topk_group": 1,
+[rank0]:  "rms_norm_eps": 1e-05,
+[rank0]:  "hidden_act": "silu",
+[rank0]:  "initializer_range": 0.02,
+[rank0]:  "__spec__": {
+[rank0]:    "num_blocks": 4,
+[rank0]:    "model_class": "KimiLinearAttnResModel"
+[rank0]:  }
+[rank0]:}
+[rank0]:[titan] 2026-05-09 01:46:33,987 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase5/runs/sft_v_fsdp8_447m_llava_pretrain/tb/20260509-0146
+[rank0]:[titan] 2026-05-09 01:46:33,988 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank0]:[titan] 2026-05-09 01:46:33,989 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-09 01:46:33,989 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-09 01:46:33,990 - root - INFO - [34mModel kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 [31msize: 1,409,320,896 total parameters[39m
+[rank0]:[titan] 2026-05-09 01:46:34,084 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank0]:[titan] 2026-05-09 01:46:34,237 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-09 01:46:34,237 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-09 01:46:34,237 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-05-09 01:46:34,237 - root - INFO - CUDA memory usage for model: 0.74GiB(2.35%)
+[rank0]:[titan] 2026-05-09 01:46:34,267 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase5/runs/sft_v_fsdp8_447m_llava_pretrain/checkpoint
+[rank0]:[titan] 2026-05-09 01:46:34,267 - root - INFO - Trainer is initialized with local batch size 8, global batch size 64, gradient accumulation steps 1, sequence length 260, total steps 500 (warmup 50)
+[rank0]:[titan] 2026-05-09 01:46:34,267 - root - INFO - mm: loading vision_tower google/siglip-base-patch16-224
+[rank0]:[titan] 2026-05-09 01:46:34,463 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:34,508 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:
+[rank0]:Loading weights:   0%|          | 0/408 [00:00<?, ?it/s]
+[rank0]:Loading weights: 100%|██████████| 408/408 [00:00<00:00, 4987.47it/s]
+[rank0]:[titan] 2026-05-09 01:46:34,737 - root - INFO - mm: vision_tower hidden_size=768, frozen
+[rank0]:[titan] 2026-05-09 01:46:34,940 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:35,145 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:35,190 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:35,392 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:35,592 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:35,637 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:35,862 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:36,062 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:36,265 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:36,465 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:36,676 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:36,886 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:The image processor of type `SiglipImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. 
+[rank0]:[titan] 2026-05-09 01:46:37,095 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:37,140 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:37,369 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:37,575 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:37,621 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:37,826 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:37,872 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:38,074 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:38,120 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:38,324 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:38,543 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:38,931 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:38,977 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:39,183 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-09 01:46:39,228 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:39,432 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-09 01:46:39,645 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:40,584 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-09 01:46:40,605 - phase5.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank0]:[titan] 2026-05-09 01:46:40,605 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank0]:[titan] 2026-05-09 01:46:40,606 - root - INFO - mm: lm_dim=1024
+[rank0]:[titan] 2026-05-09 01:46:40,621 - root - INFO - mm: projector built, params=1,837,056
+[rank0]:[titan] 2026-05-09 01:46:40,626 - root - INFO - mm: projector wrapped with FSDP2 over batch mesh size=8 (grad sync across DP ranks)
+[rank0]:[titan] 2026-05-09 01:46:40,626 - root - INFO - mm: appended projector AdamW (lr=0.001, fixed) to OptimizersContainer; total inner optimizers=2
+[rank0]:[titan] 2026-05-09 01:46:40,626 - root - INFO - mm: projector + proj_optim registered with checkpointer
+[rank0]:[titan] 2026-05-09 01:46:41,564 - root - INFO - mm: dataset = LlavaPretrainDataset (prefix layout)
+[rank0]:[titan] 2026-05-09 01:46:41,565 - root - INFO - mm: replaced dataloader with LlavaPretrainDataset (N=558,128, dp_rank=0/8, local_bs=8, seq_len=258)
+[rank0]:[titan] 2026-05-09 01:46:41,565 - root - INFO - Loading the checkpoint from /root/torchtitan_attention_residual/phase5/runs/v_fsdp8_447m_aligned_continue_from_step12500/checkpoint/step-2500.
+[rank0]:[titan] 2026-05-09 01:46:45,549 - root - INFO - [GC] GC collection for checkpoint loading. took 0.41 seconds
+[rank0]:[titan] 2026-05-09 01:46:45,549 - root - INFO - Finished loading the checkpoint in 3.98 seconds.
+[rank0]:[titan] 2026-05-09 01:46:45,549 - root - INFO - Training starts at step 1
+[rank0]:[rank0]:W0509 01:46:49.399000 723787 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:330] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank0]:[titan] 2026-05-09 01:46:50,271 - root - INFO - [31mstep:  1  [32mloss:  5.05238  [38;2;180;60;0mgrad_norm:  0.3887  [38;2;54;234;195mmemory: 12.35GiB(39.38%)  [34mtps: 127  [36mtflops: 0.95  [35mmfu: 0.30%[39m
+[rank0]:[titan] 2026-05-09 01:46:50,272 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-05-09 01:46:52,469 - root - INFO - [31mstep:  2  [32mloss:  4.64002  [38;2;180;60;0mgrad_norm:  0.4395  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 940  [36mtflops: 7.02  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:46:54,661 - root - INFO - [31mstep:  3  [32mloss:  4.36977  [38;2;180;60;0mgrad_norm:  0.3758  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:46:56,847 - root - INFO - [31mstep:  4  [32mloss:  4.50649  [38;2;180;60;0mgrad_norm:  0.3864  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:46:59,039 - root - INFO - [31mstep:  5  [32mloss:  4.41792  [38;2;180;60;0mgrad_norm:  0.8645  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.04  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:47:01,227 - root - INFO - [31mstep:  6  [32mloss:  4.32424  [38;2;180;60;0mgrad_norm:  0.3276  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:03,415 - root - INFO - [31mstep:  7  [32mloss:  4.34976  [38;2;180;60;0mgrad_norm:  0.2886  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:05,601 - root - INFO - [31mstep:  8  [32mloss:  4.05703  [38;2;180;60;0mgrad_norm:  0.2311  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:07,787 - root - INFO - [31mstep:  9  [32mloss:  4.18945  [38;2;180;60;0mgrad_norm:  0.2302  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:09,976 - root - INFO - [31mstep: 10  [32mloss:  4.30171  [38;2;180;60;0mgrad_norm:  0.2770  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:12,165 - root - INFO - [31mstep: 11  [32mloss:  4.26857  [38;2;180;60;0mgrad_norm:  0.2094  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:14,345 - root - INFO - [31mstep: 12  [32mloss:  4.11558  [38;2;180;60;0mgrad_norm:  0.2342  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:47:16,530 - root - INFO - [31mstep: 13  [32mloss:  4.08336  [38;2;180;60;0mgrad_norm:  0.2100  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:18,730 - root - INFO - [31mstep: 14  [32mloss:  4.22391  [38;2;180;60;0mgrad_norm:  0.2326  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 939  [36mtflops: 7.01  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:47:20,921 - root - INFO - [31mstep: 15  [32mloss:  4.17990  [38;2;180;60;0mgrad_norm:  0.2163  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.04  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:47:23,113 - root - INFO - [31mstep: 16  [32mloss:  3.96599  [38;2;180;60;0mgrad_norm:  0.2087  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:47:25,301 - root - INFO - [31mstep: 17  [32mloss:  3.93466  [38;2;180;60;0mgrad_norm:  0.2177  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:27,488 - root - INFO - [31mstep: 18  [32mloss:  4.22582  [38;2;180;60;0mgrad_norm:  0.1951  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:29,674 - root - INFO - [31mstep: 19  [32mloss:  4.04248  [38;2;180;60;0mgrad_norm:  0.1968  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:31,860 - root - INFO - [31mstep: 20  [32mloss:  4.22002  [38;2;180;60;0mgrad_norm:  0.2214  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:34,043 - root - INFO - [31mstep: 21  [32mloss:  3.97671  [38;2;180;60;0mgrad_norm:  0.2125  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:36,234 - root - INFO - [31mstep: 22  [32mloss:  4.04670  [38;2;180;60;0mgrad_norm:  0.2234  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:38,418 - root - INFO - [31mstep: 23  [32mloss:  3.92662  [38;2;180;60;0mgrad_norm:  0.1857  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:40,609 - root - INFO - [31mstep: 24  [32mloss:  3.95380  [38;2;180;60;0mgrad_norm:  0.1916  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:42,804 - root - INFO - [31mstep: 25  [32mloss:  3.81746  [38;2;180;60;0mgrad_norm:  0.1900  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.02  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:47:44,988 - root - INFO - [31mstep: 26  [32mloss:  4.12905  [38;2;180;60;0mgrad_norm:  0.2045  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:47,176 - root - INFO - [31mstep: 27  [32mloss:  3.91697  [38;2;180;60;0mgrad_norm:  0.2009  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:49,358 - root - INFO - [31mstep: 28  [32mloss:  3.88809  [38;2;180;60;0mgrad_norm:  0.2126  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:51,545 - root - INFO - [31mstep: 29  [32mloss:  3.94508  [38;2;180;60;0mgrad_norm:  0.1999  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:53,733 - root - INFO - [31mstep: 30  [32mloss:  3.82159  [38;2;180;60;0mgrad_norm:  0.2004  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:55,916 - root - INFO - [31mstep: 31  [32mloss:  3.74152  [38;2;180;60;0mgrad_norm:  0.1988  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:47:58,103 - root - INFO - [31mstep: 32  [32mloss:  3.94970  [38;2;180;60;0mgrad_norm:  0.1955  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:00,283 - root - INFO - [31mstep: 33  [32mloss:  3.97217  [38;2;180;60;0mgrad_norm:  0.2024  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:48:02,469 - root - INFO - [31mstep: 34  [32mloss:  3.68272  [38;2;180;60;0mgrad_norm:  0.1949  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:04,651 - root - INFO - [31mstep: 35  [32mloss:  3.98782  [38;2;180;60;0mgrad_norm:  0.2085  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:48:06,835 - root - INFO - [31mstep: 36  [32mloss:  3.85787  [38;2;180;60;0mgrad_norm:  0.1924  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:09,018 - root - INFO - [31mstep: 37  [32mloss:  3.70280  [38;2;180;60;0mgrad_norm:  0.2085  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:11,205 - root - INFO - [31mstep: 38  [32mloss:  3.72850  [38;2;180;60;0mgrad_norm:  0.1942  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:13,388 - root - INFO - [31mstep: 39  [32mloss:  3.87810  [38;2;180;60;0mgrad_norm:  0.2053  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:15,580 - root - INFO - [31mstep: 40  [32mloss:  3.80771  [38;2;180;60;0mgrad_norm:  0.2197  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.04  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:48:17,773 - root - INFO - [31mstep: 41  [32mloss:  3.52670  [38;2;180;60;0mgrad_norm:  0.2015  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:48:19,955 - root - INFO - [31mstep: 42  [32mloss:  3.62186  [38;2;180;60;0mgrad_norm:  0.2010  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:22,136 - root - INFO - [31mstep: 43  [32mloss:  3.53411  [38;2;180;60;0mgrad_norm:  0.1930  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:48:24,325 - root - INFO - [31mstep: 44  [32mloss:  3.66433  [38;2;180;60;0mgrad_norm:  0.2036  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:26,508 - root - INFO - [31mstep: 45  [32mloss:  3.57639  [38;2;180;60;0mgrad_norm:  0.1965  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:28,697 - root - INFO - [31mstep: 46  [32mloss:  3.78573  [38;2;180;60;0mgrad_norm:  0.1973  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:30,885 - root - INFO - [31mstep: 47  [32mloss:  3.55362  [38;2;180;60;0mgrad_norm:  0.2059  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:33,078 - root - INFO - [31mstep: 48  [32mloss:  3.49996  [38;2;180;60;0mgrad_norm:  0.1924  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:48:35,267 - root - INFO - [31mstep: 49  [32mloss:  3.68202  [38;2;180;60;0mgrad_norm:  0.1808  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:35,302 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-09 01:48:37,492 - root - INFO - [31mstep: 50  [32mloss:  3.50432  [38;2;180;60;0mgrad_norm:  0.1977  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 928  [36mtflops: 6.93  [35mmfu: 2.22%[39m
+[rank0]:[titan] 2026-05-09 01:48:39,678 - root - INFO - [31mstep: 51  [32mloss:  3.54637  [38;2;180;60;0mgrad_norm:  0.1761  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:41,862 - root - INFO - [31mstep: 52  [32mloss:  3.66704  [38;2;180;60;0mgrad_norm:  0.1800  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:44,062 - root - INFO - [31mstep: 53  [32mloss:  3.60184  [38;2;180;60;0mgrad_norm:  0.1824  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 938  [36mtflops: 7.01  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:48:46,250 - root - INFO - [31mstep: 54  [32mloss:  3.60993  [38;2;180;60;0mgrad_norm:  0.2003  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:48,434 - root - INFO - [31mstep: 55  [32mloss:  3.41124  [38;2;180;60;0mgrad_norm:  0.1830  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:50,617 - root - INFO - [31mstep: 56  [32mloss:  3.59573  [38;2;180;60;0mgrad_norm:  0.1843  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:52,801 - root - INFO - [31mstep: 57  [32mloss:  3.63067  [38;2;180;60;0mgrad_norm:  0.2018  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:54,986 - root - INFO - [31mstep: 58  [32mloss:  3.58257  [38;2;180;60;0mgrad_norm:  0.1898  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:48:57,165 - root - INFO - [31mstep: 59  [32mloss:  3.78977  [38;2;180;60;0mgrad_norm:  0.1981  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 948  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:48:59,354 - root - INFO - [31mstep: 60  [32mloss:  3.31387  [38;2;180;60;0mgrad_norm:  0.1898  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:01,542 - root - INFO - [31mstep: 61  [32mloss:  3.37537  [38;2;180;60;0mgrad_norm:  0.1903  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:03,727 - root - INFO - [31mstep: 62  [32mloss:  3.51742  [38;2;180;60;0mgrad_norm:  0.1853  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:05,907 - root - INFO - [31mstep: 63  [32mloss:  3.35608  [38;2;180;60;0mgrad_norm:  0.1858  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:49:08,092 - root - INFO - [31mstep: 64  [32mloss:  3.53917  [38;2;180;60;0mgrad_norm:  0.2003  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:10,280 - root - INFO - [31mstep: 65  [32mloss:  3.54250  [38;2;180;60;0mgrad_norm:  0.1791  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:12,467 - root - INFO - [31mstep: 66  [32mloss:  3.83315  [38;2;180;60;0mgrad_norm:  0.1942  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:14,655 - root - INFO - [31mstep: 67  [32mloss:  3.58491  [38;2;180;60;0mgrad_norm:  0.2025  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:16,838 - root - INFO - [31mstep: 68  [32mloss:  3.25998  [38;2;180;60;0mgrad_norm:  0.1941  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:19,029 - root - INFO - [31mstep: 69  [32mloss:  3.51789  [38;2;180;60;0mgrad_norm:  0.1915  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:21,213 - root - INFO - [31mstep: 70  [32mloss:  3.58726  [38;2;180;60;0mgrad_norm:  0.2003  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:23,398 - root - INFO - [31mstep: 71  [32mloss:  3.44358  [38;2;180;60;0mgrad_norm:  0.1846  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:25,587 - root - INFO - [31mstep: 72  [32mloss:  3.44862  [38;2;180;60;0mgrad_norm:  0.1868  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:27,769 - root - INFO - [31mstep: 73  [32mloss:  3.39531  [38;2;180;60;0mgrad_norm:  0.1894  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:29,959 - root - INFO - [31mstep: 74  [32mloss:  3.33455  [38;2;180;60;0mgrad_norm:  0.1875  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:32,142 - root - INFO - [31mstep: 75  [32mloss:  3.67102  [38;2;180;60;0mgrad_norm:  0.2053  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:34,327 - root - INFO - [31mstep: 76  [32mloss:  3.77322  [38;2;180;60;0mgrad_norm:  0.2187  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:36,517 - root - INFO - [31mstep: 77  [32mloss:  3.40809  [38;2;180;60;0mgrad_norm:  0.1868  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:38,702 - root - INFO - [31mstep: 78  [32mloss:  3.32038  [38;2;180;60;0mgrad_norm:  0.1845  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:40,890 - root - INFO - [31mstep: 79  [32mloss:  3.39644  [38;2;180;60;0mgrad_norm:  0.1862  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:43,077 - root - INFO - [31mstep: 80  [32mloss:  3.42213  [38;2;180;60;0mgrad_norm:  0.2021  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:45,259 - root - INFO - [31mstep: 81  [32mloss:  3.53879  [38;2;180;60;0mgrad_norm:  0.1942  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:47,451 - root - INFO - [31mstep: 82  [32mloss:  3.42822  [38;2;180;60;0mgrad_norm:  0.2059  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:49:49,632 - root - INFO - [31mstep: 83  [32mloss:  3.42332  [38;2;180;60;0mgrad_norm:  0.1886  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:49:51,818 - root - INFO - [31mstep: 84  [32mloss:  3.30358  [38;2;180;60;0mgrad_norm:  0.1874  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:54,001 - root - INFO - [31mstep: 85  [32mloss:  3.36673  [38;2;180;60;0mgrad_norm:  0.1844  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:49:56,181 - root - INFO - [31mstep: 86  [32mloss:  3.41780  [38;2;180;60;0mgrad_norm:  0.1944  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:49:58,366 - root - INFO - [31mstep: 87  [32mloss:  3.40153  [38;2;180;60;0mgrad_norm:  0.1914  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:00,541 - root - INFO - [31mstep: 88  [32mloss:  3.26699  [38;2;180;60;0mgrad_norm:  0.2094  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 949  [36mtflops: 7.09  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:50:02,727 - root - INFO - [31mstep: 89  [32mloss:  3.57726  [38;2;180;60;0mgrad_norm:  0.2049  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:04,916 - root - INFO - [31mstep: 90  [32mloss:  3.34082  [38;2;180;60;0mgrad_norm:  0.1947  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:07,107 - root - INFO - [31mstep: 91  [32mloss:  3.34583  [38;2;180;60;0mgrad_norm:  0.1807  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:09,295 - root - INFO - [31mstep: 92  [32mloss:  3.48453  [38;2;180;60;0mgrad_norm:  0.1971  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:11,480 - root - INFO - [31mstep: 93  [32mloss:  3.37829  [38;2;180;60;0mgrad_norm:  0.1866  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:13,663 - root - INFO - [31mstep: 94  [32mloss:  3.38116  [38;2;180;60;0mgrad_norm:  0.1863  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:15,844 - root - INFO - [31mstep: 95  [32mloss:  3.33633  [38;2;180;60;0mgrad_norm:  0.1766  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:50:18,032 - root - INFO - [31mstep: 96  [32mloss:  3.42620  [38;2;180;60;0mgrad_norm:  0.1879  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:20,219 - root - INFO - [31mstep: 97  [32mloss:  3.25994  [38;2;180;60;0mgrad_norm:  0.1925  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:22,404 - root - INFO - [31mstep: 98  [32mloss:  3.43054  [38;2;180;60;0mgrad_norm:  0.1890  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:24,593 - root - INFO - [31mstep: 99  [32mloss:  3.75945  [38;2;180;60;0mgrad_norm:  0.2053  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:50:24,621 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-09 01:50:26,804 - root - INFO - [31mstep: 100  [32mloss:  3.55037  [38;2;180;60;0mgrad_norm:  0.1896  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 933  [36mtflops: 6.97  [35mmfu: 2.23%[39m
+[rank0]:[titan] 2026-05-09 01:50:26,805 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[titan] 2026-05-09 01:51:20,910 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.02 seconds
+[rank0]:[titan] 2026-05-09 01:51:20,914 - root - INFO - Finished saving the checkpoint (or staging if async is enabled) in 54.11 seconds.
+[rank0]:[titan] 2026-05-09 01:51:23,118 - root - INFO - [31mstep: 101  [32mloss:  3.60285  [38;2;180;60;0mgrad_norm:  0.1956  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 37  [36mtflops: 0.27  [35mmfu: 0.09%[39m
+[rank0]:[titan] 2026-05-09 01:51:25,302 - root - INFO - [31mstep: 102  [32mloss:  3.30814  [38;2;180;60;0mgrad_norm:  0.1959  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:27,484 - root - INFO - [31mstep: 103  [32mloss:  3.31801  [38;2;180;60;0mgrad_norm:  0.1859  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:29,670 - root - INFO - [31mstep: 104  [32mloss:  3.33516  [38;2;180;60;0mgrad_norm:  0.1860  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:31,857 - root - INFO - [31mstep: 105  [32mloss:  3.51702  [38;2;180;60;0mgrad_norm:  0.1955  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:34,052 - root - INFO - [31mstep: 106  [32mloss:  3.34576  [38;2;180;60;0mgrad_norm:  0.1862  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.02  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:51:36,239 - root - INFO - [31mstep: 107  [32mloss:  3.35583  [38;2;180;60;0mgrad_norm:  0.1789  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:38,421 - root - INFO - [31mstep: 108  [32mloss:  3.57965  [38;2;180;60;0mgrad_norm:  0.1929  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:40,609 - root - INFO - [31mstep: 109  [32mloss:  3.53093  [38;2;180;60;0mgrad_norm:  0.1961  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:42,796 - root - INFO - [31mstep: 110  [32mloss:  3.32550  [38;2;180;60;0mgrad_norm:  0.1874  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:44,977 - root - INFO - [31mstep: 111  [32mloss:  3.55965  [38;2;180;60;0mgrad_norm:  0.1753  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:51:47,164 - root - INFO - [31mstep: 112  [32mloss:  3.56379  [38;2;180;60;0mgrad_norm:  0.1862  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:49,349 - root - INFO - [31mstep: 113  [32mloss:  3.46696  [38;2;180;60;0mgrad_norm:  0.1963  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:51,535 - root - INFO - [31mstep: 114  [32mloss:  3.22789  [38;2;180;60;0mgrad_norm:  0.1794  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:53,716 - root - INFO - [31mstep: 115  [32mloss:  3.48810  [38;2;180;60;0mgrad_norm:  0.2063  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:55,901 - root - INFO - [31mstep: 116  [32mloss:  3.48504  [38;2;180;60;0mgrad_norm:  0.1955  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:51:58,087 - root - INFO - [31mstep: 117  [32mloss:  3.29922  [38;2;180;60;0mgrad_norm:  0.1904  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:00,269 - root - INFO - [31mstep: 118  [32mloss:  3.48362  [38;2;180;60;0mgrad_norm:  0.1974  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:52:02,449 - root - INFO - [31mstep: 119  [32mloss:  3.27234  [38;2;180;60;0mgrad_norm:  0.1839  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:52:04,633 - root - INFO - [31mstep: 120  [32mloss:  3.16985  [38;2;180;60;0mgrad_norm:  0.1756  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:06,819 - root - INFO - [31mstep: 121  [32mloss:  3.22250  [38;2;180;60;0mgrad_norm:  0.1869  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:09,002 - root - INFO - [31mstep: 122  [32mloss:  3.44924  [38;2;180;60;0mgrad_norm:  0.1879  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:11,188 - root - INFO - [31mstep: 123  [32mloss:  3.13878  [38;2;180;60;0mgrad_norm:  0.1791  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:13,379 - root - INFO - [31mstep: 124  [32mloss:  3.24605  [38;2;180;60;0mgrad_norm:  0.1821  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.04  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:52:15,563 - root - INFO - [31mstep: 125  [32mloss:  3.27952  [38;2;180;60;0mgrad_norm:  0.1845  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:17,747 - root - INFO - [31mstep: 126  [32mloss:  3.58530  [38;2;180;60;0mgrad_norm:  0.1959  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:19,929 - root - INFO - [31mstep: 127  [32mloss:  3.14847  [38;2;180;60;0mgrad_norm:  0.1740  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:22,115 - root - INFO - [31mstep: 128  [32mloss:  3.25870  [38;2;180;60;0mgrad_norm:  0.1810  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:24,308 - root - INFO - [31mstep: 129  [32mloss:  3.23699  [38;2;180;60;0mgrad_norm:  0.1905  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:52:26,493 - root - INFO - [31mstep: 130  [32mloss:  3.20896  [38;2;180;60;0mgrad_norm:  0.1798  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:28,681 - root - INFO - [31mstep: 131  [32mloss:  3.08691  [38;2;180;60;0mgrad_norm:  0.1811  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:30,866 - root - INFO - [31mstep: 132  [32mloss:  3.15981  [38;2;180;60;0mgrad_norm:  0.1798  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:33,052 - root - INFO - [31mstep: 133  [32mloss:  3.09760  [38;2;180;60;0mgrad_norm:  0.1874  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:35,234 - root - INFO - [31mstep: 134  [32mloss:  3.22665  [38;2;180;60;0mgrad_norm:  0.1795  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:37,415 - root - INFO - [31mstep: 135  [32mloss:  3.30265  [38;2;180;60;0mgrad_norm:  0.1840  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:39,601 - root - INFO - [31mstep: 136  [32mloss:  3.33841  [38;2;180;60;0mgrad_norm:  0.1818  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:41,785 - root - INFO - [31mstep: 137  [32mloss:  3.33101  [38;2;180;60;0mgrad_norm:  0.1801  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:43,975 - root - INFO - [31mstep: 138  [32mloss:  3.21186  [38;2;180;60;0mgrad_norm:  0.1815  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:46,158 - root - INFO - [31mstep: 139  [32mloss:  3.37875  [38;2;180;60;0mgrad_norm:  0.2006  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:48,343 - root - INFO - [31mstep: 140  [32mloss:  3.47005  [38;2;180;60;0mgrad_norm:  0.1933  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:50,531 - root - INFO - [31mstep: 141  [32mloss:  3.35865  [38;2;180;60;0mgrad_norm:  0.1929  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:52,714 - root - INFO - [31mstep: 142  [32mloss:  3.29406  [38;2;180;60;0mgrad_norm:  0.1872  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:54,903 - root - INFO - [31mstep: 143  [32mloss:  3.39852  [38;2;180;60;0mgrad_norm:  0.1833  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:57,091 - root - INFO - [31mstep: 144  [32mloss:  3.33767  [38;2;180;60;0mgrad_norm:  0.1793  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:52:59,278 - root - INFO - [31mstep: 145  [32mloss:  3.24395  [38;2;180;60;0mgrad_norm:  0.1885  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:01,471 - root - INFO - [31mstep: 146  [32mloss:  3.17457  [38;2;180;60;0mgrad_norm:  0.1746  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:53:03,668 - root - INFO - [31mstep: 147  [32mloss:  3.35565  [38;2;180;60;0mgrad_norm:  0.1686  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 940  [36mtflops: 7.02  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:53:05,864 - root - INFO - [31mstep: 148  [32mloss:  3.40168  [38;2;180;60;0mgrad_norm:  0.1975  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 949  [36mtflops: 7.08  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:53:08,052 - root - INFO - [31mstep: 149  [32mloss:  3.24676  [38;2;180;60;0mgrad_norm:  0.1910  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:08,083 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-09 01:53:10,278 - root - INFO - [31mstep: 150  [32mloss:  3.39488  [38;2;180;60;0mgrad_norm:  0.1791  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 928  [36mtflops: 6.93  [35mmfu: 2.22%[39m
+[rank0]:[titan] 2026-05-09 01:53:12,459 - root - INFO - [31mstep: 151  [32mloss:  3.33312  [38;2;180;60;0mgrad_norm:  0.1820  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:53:14,641 - root - INFO - [31mstep: 152  [32mloss:  3.07638  [38;2;180;60;0mgrad_norm:  0.1744  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:16,823 - root - INFO - [31mstep: 153  [32mloss:  3.24135  [38;2;180;60;0mgrad_norm:  0.2062  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:19,005 - root - INFO - [31mstep: 154  [32mloss:  3.45849  [38;2;180;60;0mgrad_norm:  0.1890  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:21,191 - root - INFO - [31mstep: 155  [32mloss:  3.23222  [38;2;180;60;0mgrad_norm:  0.1822  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:23,375 - root - INFO - [31mstep: 156  [32mloss:  3.18918  [38;2;180;60;0mgrad_norm:  0.1823  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:25,559 - root - INFO - [31mstep: 157  [32mloss:  3.35273  [38;2;180;60;0mgrad_norm:  0.1871  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:27,751 - root - INFO - [31mstep: 158  [32mloss:  3.23345  [38;2;180;60;0mgrad_norm:  0.1744  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:53:29,945 - root - INFO - [31mstep: 159  [32mloss:  3.29344  [38;2;180;60;0mgrad_norm:  0.1917  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:53:32,135 - root - INFO - [31mstep: 160  [32mloss:  3.28089  [38;2;180;60;0mgrad_norm:  0.1797  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:34,327 - root - INFO - [31mstep: 161  [32mloss:  3.20249  [38;2;180;60;0mgrad_norm:  0.1915  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:53:36,507 - root - INFO - [31mstep: 162  [32mloss:  3.24219  [38;2;180;60;0mgrad_norm:  0.1909  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:53:38,695 - root - INFO - [31mstep: 163  [32mloss:  3.22926  [38;2;180;60;0mgrad_norm:  0.1752  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:40,874 - root - INFO - [31mstep: 164  [32mloss:  3.28987  [38;2;180;60;0mgrad_norm:  0.1877  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 948  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:53:43,056 - root - INFO - [31mstep: 165  [32mloss:  3.31874  [38;2;180;60;0mgrad_norm:  0.1903  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:45,240 - root - INFO - [31mstep: 166  [32mloss:  3.46406  [38;2;180;60;0mgrad_norm:  0.1967  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:47,421 - root - INFO - [31mstep: 167  [32mloss:  3.08797  [38;2;180;60;0mgrad_norm:  0.1926  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:53:49,608 - root - INFO - [31mstep: 168  [32mloss:  3.04517  [38;2;180;60;0mgrad_norm:  0.1713  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:51,789 - root - INFO - [31mstep: 169  [32mloss:  3.13726  [38;2;180;60;0mgrad_norm:  0.1862  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:53:53,982 - root - INFO - [31mstep: 170  [32mloss:  3.20133  [38;2;180;60;0mgrad_norm:  0.2148  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:53:56,169 - root - INFO - [31mstep: 171  [32mloss:  3.26244  [38;2;180;60;0mgrad_norm:  0.1848  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:53:58,350 - root - INFO - [31mstep: 172  [32mloss:  3.29343  [38;2;180;60;0mgrad_norm:  0.1846  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:54:00,537 - root - INFO - [31mstep: 173  [32mloss:  3.12645  [38;2;180;60;0mgrad_norm:  0.1789  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:02,714 - root - INFO - [31mstep: 174  [32mloss:  3.29842  [38;2;180;60;0mgrad_norm:  0.1830  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 948  [36mtflops: 7.08  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:54:04,901 - root - INFO - [31mstep: 175  [32mloss:  3.20790  [38;2;180;60;0mgrad_norm:  0.1831  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:07,088 - root - INFO - [31mstep: 176  [32mloss:  3.11456  [38;2;180;60;0mgrad_norm:  0.1828  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:09,278 - root - INFO - [31mstep: 177  [32mloss:  3.32681  [38;2;180;60;0mgrad_norm:  0.1901  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:11,468 - root - INFO - [31mstep: 178  [32mloss:  3.35016  [38;2;180;60;0mgrad_norm:  0.1838  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:13,648 - root - INFO - [31mstep: 179  [32mloss:  3.26922  [38;2;180;60;0mgrad_norm:  0.1801  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:54:15,832 - root - INFO - [31mstep: 180  [32mloss:  3.27814  [38;2;180;60;0mgrad_norm:  0.1768  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:18,020 - root - INFO - [31mstep: 181  [32mloss:  3.07135  [38;2;180;60;0mgrad_norm:  0.2122  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:20,214 - root - INFO - [31mstep: 182  [32mloss:  3.19709  [38;2;180;60;0mgrad_norm:  0.1892  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:54:22,395 - root - INFO - [31mstep: 183  [32mloss:  3.02341  [38;2;180;60;0mgrad_norm:  0.2011  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:24,582 - root - INFO - [31mstep: 184  [32mloss:  3.13056  [38;2;180;60;0mgrad_norm:  0.1820  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:26,764 - root - INFO - [31mstep: 185  [32mloss:  3.35703  [38;2;180;60;0mgrad_norm:  0.1818  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:28,949 - root - INFO - [31mstep: 186  [32mloss:  3.18583  [38;2;180;60;0mgrad_norm:  0.1879  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:31,141 - root - INFO - [31mstep: 187  [32mloss:  3.06819  [38;2;180;60;0mgrad_norm:  0.1823  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:54:33,324 - root - INFO - [31mstep: 188  [32mloss:  3.06225  [38;2;180;60;0mgrad_norm:  0.1858  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:35,506 - root - INFO - [31mstep: 189  [32mloss:  3.09587  [38;2;180;60;0mgrad_norm:  0.1751  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:54:37,688 - root - INFO - [31mstep: 190  [32mloss:  3.16999  [38;2;180;60;0mgrad_norm:  0.1868  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:39,868 - root - INFO - [31mstep: 191  [32mloss:  3.07744  [38;2;180;60;0mgrad_norm:  0.1831  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:54:42,050 - root - INFO - [31mstep: 192  [32mloss:  3.36181  [38;2;180;60;0mgrad_norm:  0.1848  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:54:44,235 - root - INFO - [31mstep: 193  [32mloss:  3.17673  [38;2;180;60;0mgrad_norm:  0.1725  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:46,424 - root - INFO - [31mstep: 194  [32mloss:  3.26562  [38;2;180;60;0mgrad_norm:  0.2059  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:48,609 - root - INFO - [31mstep: 195  [32mloss:  3.41086  [38;2;180;60;0mgrad_norm:  0.1855  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:50,798 - root - INFO - [31mstep: 196  [32mloss:  3.16755  [38;2;180;60;0mgrad_norm:  0.1793  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:52,988 - root - INFO - [31mstep: 197  [32mloss:  3.33365  [38;2;180;60;0mgrad_norm:  0.1819  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:55,166 - root - INFO - [31mstep: 198  [32mloss:  3.24530  [38;2;180;60;0mgrad_norm:  0.1825  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 948  [36mtflops: 7.08  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:54:57,349 - root - INFO - [31mstep: 199  [32mloss:  3.24490  [38;2;180;60;0mgrad_norm:  0.1854  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:54:57,380 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-09 01:54:59,567 - root - INFO - [31mstep: 200  [32mloss:  3.34564  [38;2;180;60;0mgrad_norm:  0.1837  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 931  [36mtflops: 6.95  [35mmfu: 2.23%[39m
+[rank0]:[titan] 2026-05-09 01:54:59,567 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[titan] 2026-05-09 01:56:31,840 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.04 seconds
+[rank0]:[titan] 2026-05-09 01:56:31,846 - root - INFO - Finished saving the checkpoint (or staging if async is enabled) in 92.28 seconds.
+[rank0]:[titan] 2026-05-09 01:56:34,031 - root - INFO - [31mstep: 201  [32mloss:  3.01223  [38;2;180;60;0mgrad_norm:  0.2049  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 22  [36mtflops: 0.16  [35mmfu: 0.05%[39m
+[rank0]:[titan] 2026-05-09 01:56:36,219 - root - INFO - [31mstep: 202  [32mloss:  3.23047  [38;2;180;60;0mgrad_norm:  0.1956  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:38,402 - root - INFO - [31mstep: 203  [32mloss:  3.07242  [38;2;180;60;0mgrad_norm:  0.1788  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:40,588 - root - INFO - [31mstep: 204  [32mloss:  3.08091  [38;2;180;60;0mgrad_norm:  0.1820  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:42,774 - root - INFO - [31mstep: 205  [32mloss:  3.27670  [38;2;180;60;0mgrad_norm:  0.1866  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:44,959 - root - INFO - [31mstep: 206  [32mloss:  3.17962  [38;2;180;60;0mgrad_norm:  0.1845  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:47,151 - root - INFO - [31mstep: 207  [32mloss:  3.32856  [38;2;180;60;0mgrad_norm:  0.1870  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:56:49,337 - root - INFO - [31mstep: 208  [32mloss:  3.19774  [38;2;180;60;0mgrad_norm:  0.1779  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:51,518 - root - INFO - [31mstep: 209  [32mloss:  3.15080  [38;2;180;60;0mgrad_norm:  0.1929  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:56:53,703 - root - INFO - [31mstep: 210  [32mloss:  2.90553  [38;2;180;60;0mgrad_norm:  0.1874  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:55,888 - root - INFO - [31mstep: 211  [32mloss:  2.93705  [38;2;180;60;0mgrad_norm:  0.1891  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:56:58,080 - root - INFO - [31mstep: 212  [32mloss:  3.16235  [38;2;180;60;0mgrad_norm:  0.1953  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:57:00,261 - root - INFO - [31mstep: 213  [32mloss:  3.10650  [38;2;180;60;0mgrad_norm:  0.1899  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:57:02,446 - root - INFO - [31mstep: 214  [32mloss:  3.06085  [38;2;180;60;0mgrad_norm:  0.1891  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:04,632 - root - INFO - [31mstep: 215  [32mloss:  3.08278  [38;2;180;60;0mgrad_norm:  0.1802  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:06,819 - root - INFO - [31mstep: 216  [32mloss:  3.06384  [38;2;180;60;0mgrad_norm:  0.1821  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:09,007 - root - INFO - [31mstep: 217  [32mloss:  3.12560  [38;2;180;60;0mgrad_norm:  0.1833  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:11,189 - root - INFO - [31mstep: 218  [32mloss:  3.16892  [38;2;180;60;0mgrad_norm:  0.1953  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:13,374 - root - INFO - [31mstep: 219  [32mloss:  3.27382  [38;2;180;60;0mgrad_norm:  0.1792  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:15,560 - root - INFO - [31mstep: 220  [32mloss:  3.05686  [38;2;180;60;0mgrad_norm:  0.1827  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:17,743 - root - INFO - [31mstep: 221  [32mloss:  3.18897  [38;2;180;60;0mgrad_norm:  0.1838  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:19,934 - root - INFO - [31mstep: 222  [32mloss:  3.33565  [38;2;180;60;0mgrad_norm:  0.1764  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:22,121 - root - INFO - [31mstep: 223  [32mloss:  3.19576  [38;2;180;60;0mgrad_norm:  0.1774  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:24,306 - root - INFO - [31mstep: 224  [32mloss:  3.11330  [38;2;180;60;0mgrad_norm:  0.1726  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:26,497 - root - INFO - [31mstep: 225  [32mloss:  3.01779  [38;2;180;60;0mgrad_norm:  0.1812  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:28,677 - root - INFO - [31mstep: 226  [32mloss:  3.05760  [38;2;180;60;0mgrad_norm:  0.1811  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:57:30,863 - root - INFO - [31mstep: 227  [32mloss:  3.00447  [38;2;180;60;0mgrad_norm:  0.1959  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:33,049 - root - INFO - [31mstep: 228  [32mloss:  2.98905  [38;2;180;60;0mgrad_norm:  0.1875  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:35,233 - root - INFO - [31mstep: 229  [32mloss:  3.06851  [38;2;180;60;0mgrad_norm:  0.1791  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:37,424 - root - INFO - [31mstep: 230  [32mloss:  3.19872  [38;2;180;60;0mgrad_norm:  0.1793  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:39,604 - root - INFO - [31mstep: 231  [32mloss:  3.07406  [38;2;180;60;0mgrad_norm:  0.1871  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:57:41,791 - root - INFO - [31mstep: 232  [32mloss:  2.99541  [38;2;180;60;0mgrad_norm:  0.1775  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:43,977 - root - INFO - [31mstep: 233  [32mloss:  3.05106  [38;2;180;60;0mgrad_norm:  0.1727  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:46,159 - root - INFO - [31mstep: 234  [32mloss:  3.20749  [38;2;180;60;0mgrad_norm:  0.1865  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:48,351 - root - INFO - [31mstep: 235  [32mloss:  2.99073  [38;2;180;60;0mgrad_norm:  0.1850  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:57:50,531 - root - INFO - [31mstep: 236  [32mloss:  3.13515  [38;2;180;60;0mgrad_norm:  0.1930  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:57:52,723 - root - INFO - [31mstep: 237  [32mloss:  3.26106  [38;2;180;60;0mgrad_norm:  0.1882  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:57:54,907 - root - INFO - [31mstep: 238  [32mloss:  2.95293  [38;2;180;60;0mgrad_norm:  0.1735  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:57:57,098 - root - INFO - [31mstep: 239  [32mloss:  3.10929  [38;2;180;60;0mgrad_norm:  0.1817  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:57:59,283 - root - INFO - [31mstep: 240  [32mloss:  3.03562  [38;2;180;60;0mgrad_norm:  0.1823  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:01,459 - root - INFO - [31mstep: 241  [32mloss:  3.13044  [38;2;180;60;0mgrad_norm:  0.1856  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 949  [36mtflops: 7.08  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:58:03,646 - root - INFO - [31mstep: 242  [32mloss:  3.23026  [38;2;180;60;0mgrad_norm:  0.1907  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:05,830 - root - INFO - [31mstep: 243  [32mloss:  3.07601  [38;2;180;60;0mgrad_norm:  0.1884  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:08,011 - root - INFO - [31mstep: 244  [32mloss:  3.07832  [38;2;180;60;0mgrad_norm:  0.1756  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:58:10,191 - root - INFO - [31mstep: 245  [32mloss:  3.18046  [38;2;180;60;0mgrad_norm:  0.1865  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:58:12,373 - root - INFO - [31mstep: 246  [32mloss:  3.19683  [38;2;180;60;0mgrad_norm:  0.1910  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:14,567 - root - INFO - [31mstep: 247  [32mloss:  3.24293  [38;2;180;60;0mgrad_norm:  0.1785  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:58:16,750 - root - INFO - [31mstep: 248  [32mloss:  3.08606  [38;2;180;60;0mgrad_norm:  0.1877  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:18,944 - root - INFO - [31mstep: 249  [32mloss:  3.25867  [38;2;180;60;0mgrad_norm:  0.1847  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:58:18,977 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-09 01:58:21,164 - root - INFO - [31mstep: 250  [32mloss:  3.10468  [38;2;180;60;0mgrad_norm:  0.1808  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 930  [36mtflops: 6.95  [35mmfu: 2.23%[39m
+[rank0]:[titan] 2026-05-09 01:58:23,353 - root - INFO - [31mstep: 251  [32mloss:  3.20699  [38;2;180;60;0mgrad_norm:  0.1809  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:25,539 - root - INFO - [31mstep: 252  [32mloss:  3.09848  [38;2;180;60;0mgrad_norm:  0.1829  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:27,719 - root - INFO - [31mstep: 253  [32mloss:  2.94047  [38;2;180;60;0mgrad_norm:  0.1866  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:58:29,913 - root - INFO - [31mstep: 254  [32mloss:  3.04139  [38;2;180;60;0mgrad_norm:  0.1894  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:58:32,094 - root - INFO - [31mstep: 255  [32mloss:  2.87389  [38;2;180;60;0mgrad_norm:  0.1733  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:34,280 - root - INFO - [31mstep: 256  [32mloss:  3.07687  [38;2;180;60;0mgrad_norm:  0.1747  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:36,463 - root - INFO - [31mstep: 257  [32mloss:  3.32081  [38;2;180;60;0mgrad_norm:  0.1847  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:38,646 - root - INFO - [31mstep: 258  [32mloss:  2.92375  [38;2;180;60;0mgrad_norm:  0.1861  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:40,830 - root - INFO - [31mstep: 259  [32mloss:  3.09993  [38;2;180;60;0mgrad_norm:  0.1805  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:43,012 - root - INFO - [31mstep: 260  [32mloss:  3.32148  [38;2;180;60;0mgrad_norm:  0.1842  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:45,196 - root - INFO - [31mstep: 261  [32mloss:  3.18371  [38;2;180;60;0mgrad_norm:  0.1861  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:47,387 - root - INFO - [31mstep: 262  [32mloss:  3.03781  [38;2;180;60;0mgrad_norm:  0.1825  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:49,579 - root - INFO - [31mstep: 263  [32mloss:  3.04539  [38;2;180;60;0mgrad_norm:  0.1821  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:58:51,765 - root - INFO - [31mstep: 264  [32mloss:  3.22144  [38;2;180;60;0mgrad_norm:  0.1897  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:53,953 - root - INFO - [31mstep: 265  [32mloss:  3.24959  [38;2;180;60;0mgrad_norm:  0.1872  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:56,138 - root - INFO - [31mstep: 266  [32mloss:  3.23580  [38;2;180;60;0mgrad_norm:  0.2020  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:58:58,324 - root - INFO - [31mstep: 267  [32mloss:  3.08121  [38;2;180;60;0mgrad_norm:  0.1737  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:00,519 - root - INFO - [31mstep: 268  [32mloss:  3.04158  [38;2;180;60;0mgrad_norm:  0.1907  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 941  [36mtflops: 7.02  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:59:02,706 - root - INFO - [31mstep: 269  [32mloss:  3.24049  [38;2;180;60;0mgrad_norm:  0.1832  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:04,891 - root - INFO - [31mstep: 270  [32mloss:  2.97667  [38;2;180;60;0mgrad_norm:  0.1853  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:07,074 - root - INFO - [31mstep: 271  [32mloss:  3.16225  [38;2;180;60;0mgrad_norm:  0.1905  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:09,267 - root - INFO - [31mstep: 272  [32mloss:  3.15438  [38;2;180;60;0mgrad_norm:  0.1865  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:59:11,459 - root - INFO - [31mstep: 273  [32mloss:  3.23428  [38;2;180;60;0mgrad_norm:  0.1885  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:59:13,641 - root - INFO - [31mstep: 274  [32mloss:  3.12978  [38;2;180;60;0mgrad_norm:  0.1835  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:15,829 - root - INFO - [31mstep: 275  [32mloss:  3.11512  [38;2;180;60;0mgrad_norm:  0.1851  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:18,020 - root - INFO - [31mstep: 276  [32mloss:  3.00986  [38;2;180;60;0mgrad_norm:  0.1778  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:59:20,209 - root - INFO - [31mstep: 277  [32mloss:  3.09966  [38;2;180;60;0mgrad_norm:  0.2165  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:22,397 - root - INFO - [31mstep: 278  [32mloss:  3.05702  [38;2;180;60;0mgrad_norm:  0.1815  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:24,576 - root - INFO - [31mstep: 279  [32mloss:  3.04748  [38;2;180;60;0mgrad_norm:  0.1875  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 948  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:59:26,766 - root - INFO - [31mstep: 280  [32mloss:  3.26173  [38;2;180;60;0mgrad_norm:  0.2053  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:28,946 - root - INFO - [31mstep: 281  [32mloss:  3.12481  [38;2;180;60;0mgrad_norm:  0.1865  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 947  [36mtflops: 7.07  [35mmfu: 2.27%[39m
+[rank0]:[titan] 2026-05-09 01:59:31,131 - root - INFO - [31mstep: 282  [32mloss:  3.37784  [38;2;180;60;0mgrad_norm:  0.1849  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:33,314 - root - INFO - [31mstep: 283  [32mloss:  3.19656  [38;2;180;60;0mgrad_norm:  0.1881  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:35,503 - root - INFO - [31mstep: 284  [32mloss:  3.08279  [38;2;180;60;0mgrad_norm:  0.1944  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:37,688 - root - INFO - [31mstep: 285  [32mloss:  2.86231  [38;2;180;60;0mgrad_norm:  0.1830  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:39,871 - root - INFO - [31mstep: 286  [32mloss:  3.22542  [38;2;180;60;0mgrad_norm:  0.1790  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:42,062 - root - INFO - [31mstep: 287  [32mloss:  3.27531  [38;2;180;60;0mgrad_norm:  0.1850  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 942  [36mtflops: 7.03  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:59:44,244 - root - INFO - [31mstep: 288  [32mloss:  3.08789  [38;2;180;60;0mgrad_norm:  0.1894  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:46,430 - root - INFO - [31mstep: 289  [32mloss:  3.17009  [38;2;180;60;0mgrad_norm:  0.1789  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:48,615 - root - INFO - [31mstep: 290  [32mloss:  3.20467  [38;2;180;60;0mgrad_norm:  0.1817  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:50,803 - root - INFO - [31mstep: 291  [32mloss:  2.83401  [38;2;180;60;0mgrad_norm:  0.1810  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:53,000 - root - INFO - [31mstep: 292  [32mloss:  3.02778  [38;2;180;60;0mgrad_norm:  0.1883  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 940  [36mtflops: 7.02  [35mmfu: 2.25%[39m
+[rank0]:[titan] 2026-05-09 01:59:55,184 - root - INFO - [31mstep: 293  [32mloss:  2.90960  [38;2;180;60;0mgrad_norm:  0.1794  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 946  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:57,372 - root - INFO - [31mstep: 294  [32mloss:  2.97386  [38;2;180;60;0mgrad_norm:  0.1771  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 01:59:59,564 - root - INFO - [31mstep: 295  [32mloss:  3.10471  [38;2;180;60;0mgrad_norm:  0.1965  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 02:00:01,753 - root - INFO - [31mstep: 296  [32mloss:  3.12105  [38;2;180;60;0mgrad_norm:  0.1805  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 943  [36mtflops: 7.04  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 02:00:03,938 - root - INFO - [31mstep: 297  [32mloss:  2.92610  [38;2;180;60;0mgrad_norm:  0.1756  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 02:00:06,125 - root - INFO - [31mstep: 298  [32mloss:  2.95126  [38;2;180;60;0mgrad_norm:  0.1824  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 944  [36mtflops: 7.05  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 02:00:08,310 - root - INFO - [31mstep: 299  [32mloss:  3.04009  [38;2;180;60;0mgrad_norm:  0.1814  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 945  [36mtflops: 7.06  [35mmfu: 2.26%[39m
+[rank0]:[titan] 2026-05-09 02:00:08,344 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-09 02:00:10,527 - root - INFO - [31mstep: 300  [32mloss:  2.97161  [38;2;180;60;0mgrad_norm:  0.1823  [38;2;54;234;195mmemory: 13.63GiB(43.48%)  [34mtps: 931  [36mtflops: 6.95  [35mmfu: 2.23%[39m
+[rank0]:[titan] 2026-05-09 02:00:10,527 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[rank0]: Traceback (most recent call last):
+[rank0]:[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 510, in <module>
+[rank0]:[rank0]:     main()
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/phase5/train_mm.py", line 504, in main
+[rank0]:[rank0]:     trainer.train()
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+[rank0]:[rank0]:     return f(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 848, in train
+[rank0]:[rank0]:     self.checkpointer.save(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank0]:[rank0]:     return func(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 604, in save
+[rank0]:[rank0]:     self.dcp_save(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank0]:[rank0]:     return func(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 495, in dcp_save
+[rank0]:[rank0]:     ret = dcp.save(
+[rank0]:[rank0]:           ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 475, in inner_func
+[rank0]:[rank0]:     return func(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 193, in save
+[rank0]:[rank0]:     return _save_state_dict(
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 479, in _save_state_dict
+[rank0]:[rank0]:     metadata = distW.all_reduce("write", write_data, finish_checkpoint)
+[rank0]:[rank0]:                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 259, in all_reduce
+[rank0]:[rank0]:     raise final_result
+[rank0]:[rank0]: torch.distributed.checkpoint.api.CheckpointException: CheckpointException ranks:dict_keys([0, 1, 2, 3, 4, 5, 6, 7])
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 0)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 1)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 2)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 3)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 4)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 5)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 6)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:[rank0]: Traceback (most recent call last): (RANK 7)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank0]:[rank0]:     local_data = map_fun()
+[rank0]:[rank0]:                  ^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank0]:[rank0]:     result = func(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank0]:[rank0]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank0]:[rank0]:     return self._write_data(planner, file_queue)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 730, in _write_data
+[rank0]:[rank0]:     _write_files_from_queue(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 433, in _write_files_from_queue
+[rank0]:[rank0]:     _write_item(
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 338, in _write_item
+[rank0]:[rank0]:     torch.save(data, transform_to)
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 966, in save
+[rank0]:[rank0]:     with _open_zipfile_writer(f) as opened_zipfile:
+[rank0]:[rank0]:   File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 818, in __exit__
+[rank0]:[rank0]:     self.file_like.write_end_of_file()
+[rank0]:[rank0]: RuntimeError: [enforce fail at inline_container.cc:664] . unexpected pos 704 vs 598
+[rank0]:
+[rank0]:[rank0]:[W509 02:00:14.775649741 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0509 02:00:18.019000 723712 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 723787 closing signal SIGTERM
+W0509 02:00:18.021000 723712 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 723788 closing signal SIGTERM
+W0509 02:00:18.022000 723712 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 723789 closing signal SIGTERM
+W0509 02:00:18.023000 723712 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 723790 closing signal SIGTERM
+W0509 02:00:18.024000 723712 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 723791 closing signal SIGTERM
+W0509 02:00:18.025000 723712 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 723792 closing signal SIGTERM
+W0509 02:00:18.026000 723712 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 723793 closing signal SIGTERM
+E0509 02:00:21.043000 723712 torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 7 (pid: 723794) of binary: /usr/bin/python3
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase5.train_mm FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-09_02:00:18
+  host      : dfbfb7339589
+  rank      : 7 (local_rank: 7)
+  exitcode  : 1 (pid: 723794)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
