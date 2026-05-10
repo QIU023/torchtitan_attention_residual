@@ -107,7 +107,13 @@ fi
 
 CKPT_ARGS=""
 CHECKPOINT_ENABLED="${CHECKPOINT_ENABLED:-0}"
-if [[ "$CHECKPOINT_ENABLED" == "1" && -d "$STUDENT_CKPT" ]]; then
+RESUME="${RESUME:-0}"
+if [[ "$RESUME" == "1" ]]; then
+    # Resume mode: torchtitan auto-loads the most recent checkpoint
+    # under OUT_DIR/checkpoint/. Do NOT pass initial_load_path (it
+    # would override the resume and re-init from STUDENT_CKPT).
+    CKPT_ARGS="--checkpoint.enable --checkpoint.interval ${SAVE_FREQ} --checkpoint.keep_latest_k ${KEEP_K}"
+elif [[ "$CHECKPOINT_ENABLED" == "1" && -d "$STUDENT_CKPT" ]]; then
     # Long pretrain: rolling checkpoints, keep latest K=KEEP_K (default 2)
     CKPT_ARGS="--checkpoint.enable --checkpoint.initial_load_path ${STUDENT_CKPT} --checkpoint.initial_load_model_only --checkpoint.interval ${SAVE_FREQ} --checkpoint.keep_latest_k ${KEEP_K}"
 elif [[ -d "$STUDENT_CKPT" ]]; then
