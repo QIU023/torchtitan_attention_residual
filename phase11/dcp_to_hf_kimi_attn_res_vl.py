@@ -107,7 +107,13 @@ def make_hf_vlm_config(kimi_config, vision_tower_path: str, vision_dim: int) -> 
     text_cfg.pop("architectures", None)
 
     return {
-        "architectures": ["KimiAttnResVLForConditionalGeneration"],
+        # Both archs: the second triggers SGLang's MLA dispatch
+        # (sets attention_arch=MLA so flashinfer_mla backend is
+        # picked). Same workaround as the LM-only converter.
+        "architectures": [
+            "KimiAttnResVLForConditionalGeneration",
+            "KimiLinearForCausalLM",
+        ],
         "model_type": "kimi_attn_res_vl",
         "text_config": text_cfg,
         "vision_tower_path": vision_tower_path,
