@@ -52,7 +52,7 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
     PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" \
     OUT_DIR="$OUT_DIR" \
     FSDP=8 DP_REP=1 PP=1 TP=1 CP=1 EP=1 V=1 ADAPTER=0 \
-    STEPS=1200 LOCAL_BS=4 GLOBAL_BS=64 SEQ_LEN=512 \
+    STEPS=2344 LOCAL_BS=4 GLOBAL_BS=64 SEQ_LEN=512 \
     MM_GLOBAL_SEQ_LEN=512 \
     FLAVOR=kimi_linear_447m_aligned_block_attn_res_n4 \
     STUDENT_CKPT="$BASE_CKPT" \
@@ -72,7 +72,7 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
     # Don't declare done until we hit at least 1100 (close to STEPS=1200).
     # The 436M template's threshold (490) was too low for our retrying
     # CUDA-assert MoE OOMs that re-trigger after a hundred steps.
-    if [[ "$last_step" -ge 1100 ]]; then
+    if [[ "$last_step" -ge 2300 ]]; then
         echo "[$(date)] SFT 447M done at step $last_step"; break
     fi
     if [[ "$rc" -eq 0 ]]; then break; fi

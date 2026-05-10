@@ -38,8 +38,8 @@ while true; do
     last_step=$(grep -aoE "step:\s*[0-9]+" "$WS/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/train.log" 2>/dev/null \
         | tail -1 | grep -oE "[0-9]+")
     last_step=${last_step:-0}
-    if (( last_step < 1100 )); then
-        echo "[$(date)] orchestrator says DONE but last_step=$last_step < 1100; not firing"
+    if (( last_step < 2300 )); then
+        echo "[$(date)] orchestrator says DONE but last_step=$last_step < 2300 (1 epoch); not firing"
         continue
     fi
     echo "[$(date)] SFT complete at step=$last_step. Firing post_sft_vlm_smoke.sh"
