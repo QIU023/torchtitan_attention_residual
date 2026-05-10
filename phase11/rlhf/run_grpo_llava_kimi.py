@@ -1,35 +1,26 @@
-"""GRPO on the 447M Kimi AttnRes LM (real research weights, text-only).
+"""Multimodal GRPO RLHF on LLaVA-Pretrain captions, 447M Kimi AttnRes
+(real research weights, *not* a Qwen3 placeholder), SGLang VLM rollout.
 
-Mirror of run_grpo_sum_digits.py with Qwen3 → Kimi AttnRes swap. The
-goal: prove the PolicyTrainer + SGLangGenerator framework works on
-our actual research model (1.4B-total / 447M-active Kimi Linear AttnRes,
-KDA + MLA + MoE), not a Qwen3 placeholder.
+Combines:
+  * ``run_grpo_kimi_attn_res.py`` — Kimi 447M Block AttnRes
+    model_spec + parallelize adapter + DCP-native load + MonarchRPC
+    transport + fp32 MLA fallback (set ATTNRES_MLA_FP32_FALLBACK=1)
+  * ``run_grpo_llava_caption.py`` — LlavaCaptionTask (BLEU-1 reward
+    against gold caption) + image_data forwarding to the generator
 
-Differences from run_grpo_sum_digits.py:
+The generator side loads a VLM-format HF ckpt (vision tower +
+projector + LM); the trainer side loads the LM-only DCP ckpt and
+only updates LM weights. Weight sync via torchstore: vision tower
+and projector params don't appear in the LM trainer's state_dict
+so they stay frozen on the generator side throughout the run.
 
-  * ``model_spec`` from torchtitan/experiments/kimi_linear (has its
-    own ``parallelize_kimi_linear`` that handles FSDP+TP correctly,
-    not the rl-specific Qwen3 substitute).
-  * ``state_dict_adapter=None`` on the model_spec → trainer loads
-    via the new ``dcp_initial_load_path`` path (DCP-native, skips
-    HF↔torchtitan key remap that doesn't yet exist for Kimi MoE).
-  * ``hf_assets_path`` still points to a converted HF safetensors
-    dir for the SGLang Engine (which loads HF format by default).
-  * No PolicyTrainer Qwen3 inner-attention assertion (already soft-
-    warned in upstream branch).
+Usage:
 
-Known caveats (will be flagged at run time):
-
-  * Disk-based weight sync from trainer→generator currently writes
-    nothing to ``weight_sync_disk_path``: the trainer's
-    ``push_model_state_dict`` only goes through torchstore, not disk.
-    Generator's ``update_weights_from_disk`` will see an empty dir
-    and skip with a warning — which means policy rollouts use the
-    initial v0 weights the entire run. That's still useful for
-    end-to-end smoke (does the trainer step, does the SGLang model
-    class accept our 447M MoE ckpt, do gradients flow?), but it's
-    NOT yet "true PPO with synced weights". The disk dump is
-    documented as a follow-up RFC.
+    PYTHONPATH=$PWD/torchtitan:$PWD ATTNRES_MLA_FP32_FALLBACK=1 \\
+    python phase11/rlhf/run_grpo_llava_kimi.py \\
+        --dcp-load-path $PWD/phase5/runs/vlm_447m_sft_instruct/checkpoint/step-2344 \\
+        --hf-model-path $PWD/phase11/hf/vlm_sft_1ep \\
+        --num-steps 500 --num-episodes-per-step 4
 """
 from __future__ import annotations
 
@@ -56,10 +47,9 @@ from torchtitan.config import Configurable
 from torchtitan.experiments.rl.actors.grader import Grader
 from torchtitan.experiments.rl.actors.sglang_generator import SGLangGenerator
 from torchtitan.experiments.rl.actors.trainer import PolicyTrainer
-from torchtitan.experiments.rl.sum_digits import extract_answer, SumDigitsTask
 from torchtitan.experiments.rl.types import Episode
 
-# Reuse the Provisioner from the LLaVA entry-point.
+from llava_caption_task import LlavaCaptionTask  # noqa: E402
 from run_grpo_llava_caption import Provisioner  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -70,11 +60,13 @@ class _Config(Configurable.Config):
     model_spec: object = None
     hf_assets_path: str = ""
     dcp_initial_load_path: str = ""
-    num_steps: int = 50
-    dump_folder: str = "phase11/rlhf/outputs/grpo_kimi_attn_res"
+    num_steps: int = 500
+    dump_folder: str = "phase11/rlhf/outputs/grpo_llava_kimi"
     num_episodes_per_step: int = 4
     log_samples: bool = True
     kl_coef: float = 0.0
+    llava_json_path: str = "/workspace/.hf_home/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json"
+    llava_images_dir: str = "/workspace/.hf_home/LLaVA-Pretrain"
 
     trainer: PolicyTrainer.Config = field(default_factory=PolicyTrainer.Config)
     generator: SGLangGenerator.Config = field(default_factory=SGLangGenerator.Config)
@@ -86,20 +78,20 @@ def _log_samples(episodes: list[Episode]) -> None:
         if ep.group_id in seen:
             continue
         seen.add(ep.group_id)
-        extracted = extract_answer(ep.text)
-        is_correct = (
-            extracted == int(ep.expected_answer) if ep.expected_answer else None
-        )
-        mark = "+" if is_correct else "-"
-        logger.info(
-            f"  [{mark}] expected={ep.expected_answer} extracted={extracted} "
-            f"reward={ep.reward:+.2f}"
-        )
-        logger.info(f"       {ep.text[:240].replace(chr(10), ' ').strip()}")
+        cand = ep.text[:200].replace("\n", " ").strip()
+        gold = (ep.expected_answer or "")[:120].replace("\n", " ").strip()
+        mark = "+" if (ep.reward or 0) > 0 else "-"
+        logger.info(f"  [{mark}] reward={ep.reward:+.3f}")
+        logger.info(f"       gold: {gold}")
+        logger.info(f"       cand: {cand}")
 
 
 async def _async_main(config: _Config) -> None:
-    task = SumDigitsTask(seed=42)
+    task = LlavaCaptionTask(
+        json_path=config.llava_json_path,
+        images_dir=config.llava_images_dir,
+    )
+    logger.info(f"Loaded LlavaCaptionTask with {len(task)} records")
 
     provisioner = Provisioner(total_gpus=8)
     trainer_bootstrap = provisioner.allocate(4)
@@ -140,10 +132,7 @@ async def _async_main(config: _Config) -> None:
         reward_fn=task.reward_function,
     )
 
-    # SHM transport requires high ulimit -l (locked-memory); container is
-    # only 64KB. Force MonarchRPC instead — slower but works without
-    # cudaHostRegister pinning. To enable SHM, restart the container with
-    # --ulimit memlock=-1 and switch back to TransportType.Unset.
+    # MonarchRPC transport instead of SHM (container ulimit -l = 64KB).
     from torchstore.transport import TransportType
     await ts.initialize(
         mesh=trainer_mesh,
@@ -157,17 +146,29 @@ async def _async_main(config: _Config) -> None:
     for step in range(config.num_steps):
         t0 = time.perf_counter()
 
-        records = []
-        for _ in range(config.num_episodes_per_step):
-            q, ans = task.create_question()
-            records.append((q, ans))
-        prompts = [
-            f"{task.get_system_prompt()}\n\nUser: {q}\nAssistant:"
-            for q, _ in records
+        records = [
+            task.create_question() for _ in range(config.num_episodes_per_step)
         ]
-        gold = [a for _, a in records]
+        # Embed <image>\n placeholder in the prompt so SGLang's
+        # multimodal processor splices vision tokens at that point.
+        prompts = [
+            f"{task.get_system_prompt()}\n\n<image>\nUser: {r.prompt_text}\nAssistant:"
+            for r in records
+        ]
+        gold = [r.gold_caption for r in records]
+        # Read image bytes inline so SGLang doesn't try to mmap from
+        # disk via its scheduler-side POSIX SHM bridge (which races
+        # against Monarch's actor lifecycle and produces FileNotFoundError
+        # on /psm_xxx). Passing raw bytes triggers SGLang's in-RAM
+        # path instead of the SHM IPC path.
+        import base64
+        images = []
+        for r in records:
+            with open(r.image_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("ascii")
+            images.append(f"data:image/jpeg;base64,{b64}")
 
-        result = generator.generate.call(prompts, gold, None).get()
+        result = generator.generate.call(prompts, gold, images).get()
         episodes = []
         for _, eps in result:
             episodes.extend(eps)
@@ -224,22 +225,21 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--dcp-load-path", required=True,
-        help="torchtitan-native DCP ckpt dir (e.g. phase4/.../step-12500)",
+        help="torchtitan DCP ckpt dir for the LM (no vision tower).",
     )
     p.add_argument(
         "--hf-model-path", required=True,
-        help="HF safetensors dir for the SGLang Engine to load. "
-             "Use phase10/dcp_to_hf_kimi_attn_res.py to convert from DCP.",
+        help="HF safetensors VLM dir (vision + projector + LM) for SGLang.",
     )
-    p.add_argument("--num-steps", type=int, default=50)
+    p.add_argument("--num-steps", type=int, default=500)
     p.add_argument("--num-episodes-per-step", type=int, default=4)
     p.add_argument(
         "--kl-coef", type=float, default=0.0,
-        help="0 = vanilla GRPO; >0 engages frozen ref + KL penalty (PPO mode)",
+        help="0 = vanilla GRPO; >0 engages frozen ref + KL penalty",
     )
     p.add_argument(
-        "--flavor", default="kimi_linear_447m_aligned_block_attn_res_n4",
-        help="torchtitan flavor name from kimi_linear/config_registry.py",
+        "--flavor", default="kimi_linear_447m_aligned_block_attn_res",
+        help="torchtitan flavor name (LM-only Kimi config)",
     )
     args = p.parse_args()
 
@@ -254,14 +254,8 @@ def main():
     from torchtitan.protocols.model_converter import ModelConvertersContainer
 
     model_spec = kimi_registry(args.flavor)
-
-    # The rl PolicyTrainer calls parallelize_fn with only
-    # (model, parallel_dims, parallelism, compile_config) — but
-    # parallelize_kimi_linear requires four more kwargs (training,
-    # model_converters, ac_config, dump_folder). Adapt the signature
-    # locally so the trainer can drive it without touching core.
     _orig_parallelize = parallelize_kimi_linear
-    _adapter_dump_dir = "phase11/rlhf/outputs/grpo_kimi_attn_res"
+    _adapter_dump_dir = "phase11/rlhf/outputs/grpo_llava_kimi"
 
     def _rl_parallelize_adapter(
         model, *, parallel_dims, parallelism, compile_config,
@@ -298,26 +292,16 @@ def main():
         state_dict_adapter=model_spec.state_dict_adapter,
     )
     logger.info(
-        f"Loaded ModelSpec: name={model_spec.name} flavor={model_spec.flavor}"
+        f"ModelSpec: name={model_spec.name} flavor={model_spec.flavor}"
     )
-    if model_spec.state_dict_adapter is None:
-        logger.info(
-            "model_spec.state_dict_adapter is None — using DCP-native load via "
-            f"--dcp-load-path={args.dcp_load_path}"
-        )
 
     config = _Config()
     config.model_spec = model_spec
-    config.hf_assets_path = args.hf_model_path  # SGLang side (HF format)
-    config.dcp_initial_load_path = args.dcp_load_path  # trainer side (DCP)
+    config.hf_assets_path = args.hf_model_path
+    config.dcp_initial_load_path = args.dcp_load_path
     config.num_steps = args.num_steps
     config.num_episodes_per_step = args.num_episodes_per_step
     config.kl_coef = args.kl_coef
-
-    if args.kl_coef > 0:
-        logger.info(f"PPO mode (kl_coef={args.kl_coef}, frozen ref engaged)")
-    else:
-        logger.info("GRPO mode (kl_coef=0, no frozen ref)")
 
     config.trainer.parallelism.data_parallel_shard_degree = 4
     config.generator.parallelism.tensor_parallel_degree = 4
