@@ -115,3 +115,48 @@ The Kimi paper's original AttnRes formulation may have additional
 normalization steps we missed, or paper-scale models may not hit the
 overflow because they're trained with different optimizer states /
 LR schedules that keep `attn_out` magnitudes smaller.
+
+## CRITICAL UPDATE — SFT ckpt is FINE
+
+Loaded the same SFT step-2344 ckpt via torchtitan eager-mode
+`KimiLinearAttnResModel.forward(input_ids)` (the exact training-time
+forward path). Output: **max=10.69, abs_mean=2.42, NO NaN**.
+
+Same prompt, same weights, same algorithm — but SGLang inference
+hits NaN at layer 16, while training-time forward produces moderate
+logits (max=10.69 is normal for an unembedding output).
+
+**Conclusion**: the SFT ckpt is fully functional. The bug is purely
+in SGLang's inference path. Specifically the difference between:
+- Training: torchtitan eager + `torch.nn.functional.scaled_dot_product_attention`
+- Inference: SGLang + `flashinfer_mla` kernels
+
+The `flashinfer_mla` kernel is producing NaN where eager SDPA
+doesn't, on this specific magnitude distribution. This is a kernel-
+side numerical issue, not an algorithmic bug.
+
+## Why the original Kimi blog/paper has no NaN
+
+Three convergent reasons (none requires retraining):
+
+1. **Production Kimi K-series ckpt is much more converged** — Kimi K1.5/K2 
+   are 100B+ params trained on T-scale tokens. Weights are settled;
+   activation magnitudes likely don't grow to max=77.
+
+2. **Production deployment likely uses fp32 for sensitive ops** — Kimi
+   serving stack may force fp32 in RMSNorm divisor / attention softmax
+   accumulator. SGLang's flashinfer_mla is bf16-only.
+
+3. **Their head_dim is larger** — bigger attention head_dim means
+   larger sqrt(d) scaling, producing smaller dot products that don't
+   overflow as easily.
+
+For us (small 1.4B-total model, 12,500 base steps + 2,344 SFT steps —
+heavily undertrained vs production scale), magnitudes don't have the
+same "convergence-bounded" property.
+
+**Real fixes (no retraining needed)**:
+A. Patch SGLang to do fp32 attention scoring — bypass flashinfer_mla
+   for this specific model.
+B. Use torch eager attention via SGLang's `attention_backend=torch_native`
+   (not yet tried — separate from `triton` which OOM'd).
