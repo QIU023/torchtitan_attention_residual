@@ -13,13 +13,28 @@
 set -uo pipefail
 
 WS=/root/torchtitan_attention_residual
-SFT_CKPT="${SFT_CKPT:-$WS/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/step-1200}"
-HF_OUT="${HF_OUT:-$WS/phase11/hf_aligned_447m_vlm_sft1200}"
+SFT_DIR="$WS/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint"
+
+# Auto-detect the latest step-N ckpt. Watchdog keeps only the latest
+# while training, so this is usually a single dir.
+if [[ -z "${SFT_CKPT:-}" ]]; then
+    latest=$(ls -1 "$SFT_DIR" 2>/dev/null | grep -E '^step-[0-9]+$' \
+        | sort -t- -k2 -n | tail -1)
+    if [[ -z "$latest" ]]; then
+        echo "ERROR: no step-N ckpt found under $SFT_DIR"
+        exit 1
+    fi
+    SFT_CKPT="$SFT_DIR/$latest"
+fi
+LATEST_STEP=$(basename "$SFT_CKPT" | grep -oE '[0-9]+$')
+HF_OUT="${HF_OUT:-$WS/phase11/hf_aligned_447m_vlm_sft${LATEST_STEP}}"
+
+echo "==> using SFT ckpt: $SFT_CKPT (step $LATEST_STEP)"
+echo "==> HF output dir : $HF_OUT"
+echo
 
 if [[ ! -d "$SFT_CKPT" ]]; then
     echo "ERROR: SFT ckpt not found at $SFT_CKPT"
-    echo "Available steps:"
-    ls "$WS/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/" 2>/dev/null
     exit 1
 fi
 

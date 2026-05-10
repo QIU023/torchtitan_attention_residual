@@ -56,10 +56,11 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
     MM_GLOBAL_SEQ_LEN=512 \
     FLAVOR=kimi_linear_447m_aligned_block_attn_res_n4 \
     STUDENT_CKPT="$BASE_CKPT" \
-    SEED=42 DETERMINISTIC=0 COMPILE=0 \
+    SEED=43 DETERMINISTIC=0 COMPILE=0 \
+    AC=full \
     LR=2e-5 WARMUP=20 \
     PROJ_LR_MULT=50.0 \
-    CHECKPOINT_ENABLED=1 SAVE_FREQ=100 KEEP_K=2 \
+    CHECKPOINT_ENABLED=1 SAVE_FREQ=200 KEEP_K=2 \
     JSON="$SFT_JSON" IMAGES="$SFT_IMAGES" \
     MM_LAYOUT=sft \
     bash "$LAUNCHER"
@@ -68,7 +69,10 @@ while [[ $attempt -lt $MAX_RETRIES ]]; do
         | tail -1 | grep -oE "[0-9]+")
     last_step=${last_step:-0}
     echo "[$(date)] SFT 447M attempt #$attempt rc=$rc last_step=$last_step"
-    if [[ "$last_step" -ge 490 ]]; then
+    # Don't declare done until we hit at least 1100 (close to STEPS=1200).
+    # The 436M template's threshold (490) was too low for our retrying
+    # CUDA-assert MoE OOMs that re-trigger after a hundred steps.
+    if [[ "$last_step" -ge 1100 ]]; then
         echo "[$(date)] SFT 447M done at step $last_step"; break
     fi
     if [[ "$rc" -eq 0 ]]; then break; fi
