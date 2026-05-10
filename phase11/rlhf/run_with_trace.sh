@@ -23,7 +23,7 @@ set -uo pipefail
 
 WS=/root/torchtitan_attention_residual
 TRACE_DIR=${TRACE_DIR:-$WS/phase11/rlhf/trace_grpo_llava}
-MODEL_PATH=${MODEL_PATH:-$WS/phase11/hf_aligned_447m_step12500}
+MODEL_PATH=${MODEL_PATH:-$WS/phase11/hf/lm_base}
 NUM_STEPS=${NUM_STEPS:-20}
 
 mkdir -p "$TRACE_DIR"

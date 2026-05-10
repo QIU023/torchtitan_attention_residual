@@ -15,7 +15,7 @@
 set -uo pipefail
 
 WS=/root/torchtitan_attention_residual
-KIMI_MODEL=$WS/phase11/hf_aligned_447m
+KIMI_MODEL=$WS/phase11/hf/lm_base
 QWEN3_MODEL=$WS/phase11/hf_qwen3_attn_res
 
 if [[ -f /venv/main/bin/activate && -z "${VIRTUAL_ENV:-}" ]]; then

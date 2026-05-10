@@ -35,7 +35,7 @@ while true; do
         continue
     fi
     # Did we complete enough steps?
-    last_step=$(grep -aoE "step:\s*[0-9]+" "$WS/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/train.log" 2>/dev/null \
+    last_step=$(grep -aoE "step:\s*[0-9]+" "$WS/phase5/runs/vlm_447m_sft_instruct/train.log" 2>/dev/null \
         | tail -1 | grep -oE "[0-9]+")
     last_step=${last_step:-0}
     if (( last_step < 2300 )); then

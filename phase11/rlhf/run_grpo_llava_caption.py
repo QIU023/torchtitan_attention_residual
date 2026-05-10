@@ -22,7 +22,7 @@ Usage:
     NCCL_DEBUG=INFO NCCL_DEBUG_FILE=phase11/rlhf/trace/nccl-rank-%h-%p.log \\
     NCCL_DEBUG_SUBSYS=COLL \\
     python phase11/rlhf/run_grpo_llava_caption.py \\
-        --model-path /root/torchtitan_attention_residual/phase11/hf_aligned_447m_step12500 \\
+        --model-path /root/torchtitan_attention_residual/phase11/hf/lm_base \\
         --num-steps 50
 
 GPU layout (8 GPUs total):
@@ -398,7 +398,7 @@ def main():
     # via ConfigManager when invoked through the standard launcher.
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--model-path", required=True,
-                   help="HF-format ckpt dir (e.g. phase11/hf_aligned_447m_step12500)")
+                   help="HF-format ckpt dir (e.g. phase11/hf/lm_base)")
     p.add_argument("--num-steps", type=int, default=50)
     p.add_argument("--text-only", action="store_true",
                    help="Skip image input (text-only smoke; useful before "

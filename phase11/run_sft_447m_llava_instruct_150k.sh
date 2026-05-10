@@ -15,8 +15,8 @@ set -u
 
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$WORKSPACE_DIR/phase6/launch_8gpu_mm.sh"
-BASE_CKPT="$WORKSPACE_DIR/phase4/runs/kimi_447m_aligned_block_attn_res_fsdp_paperhparams/checkpoint/step-12500"
-OUT_DIR="$WORKSPACE_DIR/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k"
+BASE_CKPT="$WORKSPACE_DIR/phase4/runs/lm_447m_base/checkpoint/step-12500"
+OUT_DIR="$WORKSPACE_DIR/phase5/runs/vlm_447m_sft_instruct"
 
 SFT_JSON="/workspace/.hf_home/LLaVA-Instruct-150K/llava_instruct_150k.json"
 SFT_IMAGES="/workspace/.hf_home/coco_train2017/train2017"

@@ -21,8 +21,8 @@ Differences:
 Usage::
 
     torchrun --nproc_per_node=1 phase11/dcp_to_hf_kimi_attn_res_vl.py \
-        --in phase5/runs/v_fsdp8_447m_aligned_continue_from_step12500/checkpoint/step-2500 \
-        --out phase11/hf_aligned_447m_vlm_step2500 \
+        --in phase5/runs/vlm_447m_pretrain/checkpoint/step-2500 \
+        --out phase11/hf/vlm_pretrain \
         --config kimi_linear_447m_aligned_block_attn_res_n4 \
         --vision-tower google/siglip-base-patch16-224
 

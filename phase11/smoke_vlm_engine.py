@@ -33,7 +33,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument(
         "--model-path", type=Path,
-        default=_WS / "phase11" / "hf_aligned_447m_vlm_step2500",
+        default=_WS / "phase11" / "hf/vlm_pretrain",
     )
     p.add_argument("--tp-size", type=int, default=1)
     p.add_argument(

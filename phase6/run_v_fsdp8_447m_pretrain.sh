@@ -21,8 +21,8 @@ set -u
 
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$WORKSPACE_DIR/phase6/launch_8gpu_mm.sh"
-PHASE4_CKPT="$WORKSPACE_DIR/phase4/runs/kimi_447m_aligned_block_attn_res_fsdp_paperhparams/checkpoint/step-12500"
-OUT_DIR="$WORKSPACE_DIR/phase5/runs/v_fsdp8_447m_aligned_continue_from_step12500"
+PHASE4_CKPT="$WORKSPACE_DIR/phase4/runs/lm_447m_base/checkpoint/step-12500"
+OUT_DIR="$WORKSPACE_DIR/phase5/runs/vlm_447m_pretrain"
 
 mkdir -p "$OUT_DIR"
 LOG="$WORKSPACE_DIR/phase6/v_fsdp8_447m_orchestrator.log"

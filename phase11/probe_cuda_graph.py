@@ -15,9 +15,9 @@ Possible failure modes we want to detect:
 
 Usage::
 
-    python3 phase11/probe_cuda_graph.py --model phase11/hf_aligned_447m \\
+    python3 phase11/probe_cuda_graph.py --model phase11/hf/lm_base \\
         --tp 1
-    python3 phase11/probe_cuda_graph.py --model phase11/hf_aligned_447m \\
+    python3 phase11/probe_cuda_graph.py --model phase11/hf/lm_base \\
         --tp 8 --seq-shard 1
 """
 from __future__ import annotations

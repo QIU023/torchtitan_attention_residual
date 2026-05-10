@@ -19,7 +19,7 @@ multi-day scope. With rollout, this becomes proper PPO.
 Run:
     NGPU=8 torchrun --nproc_per_node=$NGPU \
         phase9/ppo_actor_ref_real_ckpt.py \
-        --ckpt phase4/runs/kimi_447m_aligned_block_attn_res_fsdp_paperhparams/checkpoint/step-12500
+        --ckpt phase4/runs/lm_447m_base/checkpoint/step-12500
 """
 from __future__ import annotations
 

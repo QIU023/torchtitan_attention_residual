@@ -14,7 +14,7 @@ Usage::
 
     bash phase11/post_sft_vlm_smoke.sh   # converts SFT ckpt first
     python phase11/eval_vlm_qualitative.py \\
-        --model-path phase11/hf_aligned_447m_vlm_sft1200 \\
+        --model-path phase11/hf/vlm_sft_1ep \\
         --num-images 10
 """
 from __future__ import annotations
@@ -77,7 +77,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--model-path", type=Path,
-        default=_WS / "phase11" / "hf_aligned_447m_vlm_sft1200",
+        default=_WS / "phase11" / "hf/vlm_sft_1ep",
     )
     p.add_argument("--num-images", type=int, default=10)
     p.add_argument(

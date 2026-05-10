@@ -93,7 +93,7 @@ print(f"BOOT_TIME_S {{t1 - t0}}", flush=True)
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model",
-                    default="/root/torchtitan_attention_residual/phase11/hf_aligned_447m")
+                    default="/root/torchtitan_attention_residual/phase11/hf/lm_base")
     ap.add_argument("--tp", type=int, default=8)
     ap.add_argument("--prefill", type=int, default=16384)
     ap.add_argument("--shard", type=int, default=0,

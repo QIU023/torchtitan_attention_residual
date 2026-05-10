@@ -5,7 +5,7 @@ import time
 
 def main():
     LM_CKPT = sys.argv[1] if len(sys.argv) > 1 else (
-        "/root/torchtitan_attention_residual/phase11/hf_aligned_447m_lm_only"
+        "/root/torchtitan_attention_residual/phase11/hf/lm_base"
     )
     import sglang as sgl
     t0 = time.perf_counter()

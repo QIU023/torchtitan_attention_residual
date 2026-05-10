@@ -2,7 +2,7 @@
 # Long-context + cuda-graph-ON 4-way bench sweep.
 set -uo pipefail
 
-MODEL=/root/torchtitan_attention_residual/phase11/hf_aligned_447m
+MODEL=/root/torchtitan_attention_residual/phase11/hf/lm_base
 OUT_DIR=/root/torchtitan_attention_residual/phase11/bench_results
 mkdir -p "$OUT_DIR"
 

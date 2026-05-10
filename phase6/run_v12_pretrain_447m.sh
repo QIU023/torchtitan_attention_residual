@@ -24,7 +24,7 @@ set -u
 
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$WORKSPACE_DIR/phase6/launch_8gpu_mm.sh"
-PHASE4_CKPT="$WORKSPACE_DIR/phase4/runs/kimi_447m_aligned_block_attn_res_fsdp_paperhparams/checkpoint/step-12500"
+PHASE4_CKPT="$WORKSPACE_DIR/phase4/runs/lm_447m_base/checkpoint/step-12500"
 OUT_DIR="$WORKSPACE_DIR/phase5/runs/v12_4d_447m_aligned_continue_from_step12500"
 
 mkdir -p "$OUT_DIR"

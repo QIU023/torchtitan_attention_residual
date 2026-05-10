@@ -14,8 +14,8 @@
 #   nohup bash phase6/orchestrate_overnight.sh > phase6/overnight.log 2>&1 &
 set -u
 WS=/root/torchtitan_attention_residual
-PRETRAIN_OUT=$WS/phase5/runs/v_fsdp8_447m_aligned_continue_from_step12500
-SFT_OUT=$WS/phase5/runs/sft_v_fsdp8_447m_llava_pretrain
+PRETRAIN_OUT=$WS/phase5/runs/vlm_447m_pretrain
+SFT_OUT=$WS/phase5/runs/vlm_447m_sft_pretrain
 PRETRAIN_DATA_DIR=/workspace/.hf_home/LLaVA-Pretrain
 PRETRAIN_JSON=$PRETRAIN_DATA_DIR/blip_laion_cc_sbu_558k.json
 

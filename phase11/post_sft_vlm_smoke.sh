@@ -13,7 +13,7 @@
 set -uo pipefail
 
 WS=/root/torchtitan_attention_residual
-SFT_DIR="$WS/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint"
+SFT_DIR="$WS/phase5/runs/vlm_447m_sft_instruct/checkpoint"
 
 # Auto-detect the latest step-N ckpt. Watchdog keeps only the latest
 # while training, so this is usually a single dir.
@@ -27,7 +27,7 @@ if [[ -z "${SFT_CKPT:-}" ]]; then
     SFT_CKPT="$SFT_DIR/$latest"
 fi
 LATEST_STEP=$(basename "$SFT_CKPT" | grep -oE '[0-9]+$')
-HF_OUT="${HF_OUT:-$WS/phase11/hf_aligned_447m_vlm_sft${LATEST_STEP}}"
+HF_OUT="${HF_OUT:-$WS/phase11/hf/vlm_sft_${LATEST_STEP}}"
 
 echo "==> using SFT ckpt: $SFT_CKPT (step $LATEST_STEP)"
 echo "==> HF output dir : $HF_OUT"

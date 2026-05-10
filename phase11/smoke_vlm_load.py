@@ -30,7 +30,7 @@ sys.path.insert(0, str(_WS / "sglang" / "python"))
 
 
 def main():
-    ckpt = _WS / "phase11" / "hf_aligned_447m_vlm_step2500"
+    ckpt = _WS / "phase11" / "hf/vlm_pretrain"
     assert ckpt.exists(), f"converted VLM ckpt not found: {ckpt}"
 
     # Parse config the same way SGLang does

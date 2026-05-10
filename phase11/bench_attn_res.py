@@ -23,9 +23,9 @@ runs after 2 warmup runs. Reports mean ± stdev for prefill TTFT and
 decode tokens/sec.
 
 Usage:
-    python3 phase11/bench_attn_res.py --model phase11/hf_aligned_447m \
+    python3 phase11/bench_attn_res.py --model phase11/hf/lm_base \
         --tp 1
-    python3 phase11/bench_attn_res.py --model phase11/hf_aligned_447m \
+    python3 phase11/bench_attn_res.py --model phase11/hf/lm_base \
         --tp 8
 
 Run on a free GPU box (training must not be active). Each engine boot
