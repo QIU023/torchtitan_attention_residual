@@ -79,8 +79,10 @@ def main():
         linear_attn_backend="triton",
         trust_remote_code=True,
         log_level="warning",
-        # cuda graphs off for first smoke; enables faster boot
-        disable_cuda_graph=True,
+        # KDA's forward path requires the piecewise_context_manager's
+        # forward_context to be active when calling
+        # unified_linear_attention_with_output. CUDA graphs must be
+        # enabled for that context to be set.
         disable_radix_cache=True,
     )
     boot_dt = time.perf_counter() - t0
