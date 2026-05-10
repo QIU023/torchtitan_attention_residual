@@ -1,54 +1,117 @@
-# Vision injection bug — root cause analysis (in progress)
+# Block AttnRes inference NaN bug — root cause analysis
 
-## Symptoms
+## TL;DR
 
-| Test | Result |
+* **NOT** a vision-injection bug (despite earlier framing). Affects
+  text-only LM inference identically.
+* **Root cause**: Block AttnRes residual stream `partial_block` grows
+  unboundedly across 4-layer blocks because the AttnRes aggregation
+  *replaces* the standard pre-norm residual stream — losing the
+  implicit per-layer normalization that keeps magnitudes in check.
+  By block 4 (layers 12-15), `partial_block` reaches max ≈ 77 in
+  bf16; the layer 16 (1-indexed) MLA self-attention then produces
+  NaN logits.
+* The same magnitude growth happened during SFT training; the LM
+  weights converged on it (loss 2.22 → 1.22). But SGLang's
+  inference path uses different attention kernels (flashinfer_mla)
+  than torchtitan's training path, and these kernels produce NaN
+  on our specific magnitude distribution.
+
+## Diagnostic trace (LM-only, prompt "Hi", greedy)
+
+Per-layer `partial_block` stats from `ATTNRES_NAN_TRACE=1` instrumentation:
+
+```
+embed_tokens                       abs_mean=0.04  max=0.18   ✅
+== block 0 (layers 0-3, 1-idx 1-4) ==
+L0_after_attn                      abs_mean=0.08  max=1.91   ✅
+L0_after_mlp                       abs_mean=0.14  max=2.19
+L1_after_attn                      abs_mean=0.20  max=2.47
+L1_after_mlp                       abs_mean=1.27  max=10.25
+L2_after_attn                      abs_mean=1.37  max=11.38
+L2_after_mlp                       abs_mean=1.87  max=17.25
+L3_after_attn                      abs_mean=1.97  max=19.00
+L3_after_mlp                       abs_mean=3.07  max=37.50  ← block 0 commits here
+== block 1 (layers 4-7) ==
+L0_after_attn                      abs_mean=0.07  max=0.71
+L3_after_mlp                       abs_mean=2.13  max=47.00
+== block 2 (layers 8-11) ==
+L0_after_attn                      abs_mean=0.10  max=0.84
+L3_after_mlp                       abs_mean=2.63  max=77.50  ← growth visible
+== block 3 (layers 12-15) ==
+L0_after_attn                      abs_mean=0.31  max=4.59
+L0_after_mlp                       abs_mean=1.52  max=48.75
+L1_after_attn                      abs_mean=1.52  max=49.00
+L1_after_mlp                       abs_mean=1.96  max=66.50
+L2_after_attn                      abs_mean=1.99  max=68.00
+L2_after_mlp                       abs_mean=2.43  max=76.50
+L3_after_attn                      NaN            NaN        ← FAIL
+```
+
+**Layer 16 (1-idx, 0-idx 15) is MLA**. Layers (0-idx) 3, 7, 11, 15 are
+all MLA per `full_attn_layers=[4,8,12,16]` config. Layers 11 and 15 are
+both MLA-after-3-KDA-in-block. Layer 11's attn handled max=50, layer 15
+fails on max=76. So it's a magnitude ceiling, not an architectural one.
+
+## Symptoms it produces
+
+* Greedy decode → `argmax(NaN_logits)` returns first index = token 0
+  in Llama-3.1 vocab = `'!'`. Hence the all-`!!!!!` outputs.
+* `return_logprob=True` shows `nan` at every position, all top-K
+  alternatives `nan`.
+* Intermittent — short prompts with mild residual growth might
+  succeed (the magnitude trajectory varies with input distribution).
+* Vision injection accelerates the problem (87× larger projector
+  embeddings as input), but text-only LM also triggers given long
+  enough prompts.
+
+## What didn't fix it
+
+| Attempt | Result |
 | --- | --- |
-| LM-only greedy on SFT'd 2344 ckpt, prompt "Once upon a time, there was a young man who was very fond of music" (9 words) | ✅ generates real English |
-| LM-only greedy, prompt "Hi" (1 word) | ❌ all `!` |
-| LM-only greedy, prompt "Once upon a time, there was a young man. He lived in the countryside near a river. He worked hard every day from morning to night, supporting his elderly parents and three young siblings." (34 words) | ❌ all `!` |
-| VLM greedy, ANY prompt with image | ❌ all `!` |
-| VLM with `dtype=bfloat16` + `disable_cuda_graph=True` | ❌ all `!` |
-| VLM with projector output scaled 0.0115× to match text-embed magnitude | ❌ all `!` |
+| `disable_cuda_graph=True` | NaN unchanged (it's not a capture/replay issue) |
+| `dtype=fp32` engine | sgl_kernel triton kernels mismatched-type errors |
+| `dtype=fp16` | sgl_kernel mismatched-type errors |
+| `attention_backend=triton` | flashinfer's MLA fallback triton kernel runs out of shared memory (131072 required, 101376 available on RTX 5090) |
+| Project output 0.0115× scale-down (match text magnitude) | NaN unchanged |
+| `partial_block` accumulated in fp32 | NaN unchanged (cast-back to bf16 happens before attn) |
+| Manual fp32 RMSNorm at `input_layernorm` | NaN unchanged (issue is INSIDE self-attn, not at norm) |
+| `partial_block.clamp(-20, 20)` before attn | NaN unchanged (clamp on partial-block doesn't affect the RMSNormed h that goes into attn) |
 
-**Output `!` is token id 0 in Llama-3.1 tokenizer**. Greedy argmax over a NaN logit array returns first index = 0 = `!`. So `!!!!!` is **NaN-fallback**, not a learned model preference.
+## Real fixes (require code beyond tonight's scope)
 
-`return_logprob=True` confirms: every position's logprob is `NaN`, top-10 alternatives all `nan`.
+1. **Algorithmic**: change `block_attn_res` to return weighted sum of
+   *normed* V instead of unnormed V — keeps magnitudes bounded layer-
+   to-layer. Requires retraining the model with the new normalization.
 
-## Confirmed NOT root cause
+2. **Per-layer rescale**: insert a learnable scaling factor on
+   `attn_out` and `ffn_out` before adding to `partial_block`, so
+   accumulation stays bounded. Same retraining requirement.
 
-* CUDA graphs (disable still fails)
-* Vision feature magnitude (87× larger than text — but training saw same scale)
-* Projector NaN/inf (clean output: abs mean=3.91, max=43.25, no NaN/inf)
-* SFT undertraining (loss 1.22 at 1 epoch, LM-only sometimes generates real text)
+3. **fp32 attention path**: implement an fp32 MLA forward that bypasses
+   flashinfer_mla. Significant SGLang patching.
 
-## Suspected root cause
+4. **Pre-train Block AttnRes with depth-scaled residual** (e.g.
+   `partial_block += attn_out / sqrt(num_layers)` like ReZero or
+   StableT5). Requires retraining from scratch.
 
-**bf16 numerical instability inside Kimi Linear LM forward** under SGLang inference path. Affects:
+## What we have so far (committed)
 
-* LM-only AND VLM (NOT VLM-specific)
-* Intermittent — some prompt lengths/contents succeed, others fail
-* Independent of CUDA graph
+* `ATTNRES_NAN_TRACE=1` instrumentation in
+  `sglang/srt/models/attn_res_overlay.py` — per-block + per-layer
+  magnitude stats logged via `_logger.warning`.
+* `ATTNRES_BF16_ACCUM` / `ATTNRES_CLIP` / `ATTNRES_FP32_NORM` env
+  toggles (none currently fix the bug, but useful for future probing).
 
-Likely culprit: KDA's recurrent state accumulation in bf16 over many tokens, OR RMSNorm divisor approaching zero, OR lm_head matmul overflowing bf16 range.
+## Path forward
 
-## What this means for VLM post-training
+For VLM post-training to actually work, we have to either retrain
+with one of the algorithmic fixes (#1 or #2) or build out the fp32
+MLA inference path (#3). All are multi-day engineering efforts.
 
-* **SGLang generator** produces NaN logits → all `!` rollouts → no GRPO/PPO signal
-* **PolicyTrainer** (training-time logprob recompute via direct
-  `model.forward(vision_embeds=, image_mask=)` path) probably DOES work
-  because the training-time forward path used same bf16 and converged
-  loss 2.22 → 1.22 — but uses different code internals than inference
-
-## Practical overnight options
-
-| Option | Cost | Output |
-| --- | --- | --- |
-| A. Retry with fp32 dtype | requires SGLang triton kernel fixes (currently fp16/fp32 hit `Mismatched type` errors) | ~6h debug; might fix |
-| B. Switch backbone to Qwen3-0.6B + SigLIP + projector, train 1-2h on LLaVA-Pretrain, do VLM GRPO on it | ~8h overnight | working VLM RL on a different (well-pretrained) backbone |
-| C. Continue debug Kimi Linear bf16 instability (instrument forward, find NaN-source layer) | open-ended | might unblock our research model |
-| D. Use trainer-side compute_token_log_probs only — accept generator producing `!` rollouts as KNOWN broken; demonstrate trainer-step on captured episodes | ~1h | partial demo, no real RL |
-
-Option B is the most pragmatic overnight unblock. Loses Kimi AttnRes
-research alignment but produces a working VLM RL artifact.
-Option C is the proper fix but open-ended.
+The Block AttnRes overlay is *correct* in algorithm (loss converged
+2.22 → 1.22 in SFT) but *not numerically robust* at inference depth.
+The Kimi paper's original AttnRes formulation may have additional
+normalization steps we missed, or paper-scale models may not hit the
+overflow because they're trained with different optimizer states /
+LR schedules that keep `attn_out` magnitudes smaller.
