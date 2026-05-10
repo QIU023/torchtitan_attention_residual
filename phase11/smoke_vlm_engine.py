@@ -98,11 +98,24 @@ def main():
     out = engine.generate(
         prompt=prompt,
         image_data=str(image_path),
-        sampling_params={"temperature": 0.0, "max_new_tokens": 40},
+        sampling_params={"temperature": 0.0, "max_new_tokens": 40, "stop": []},
     )
     gen_dt = time.perf_counter() - t0
     text = out.get("text", "")
+    mi = out.get("meta_info", {})
     print(f"[engine-smoke] gen ({gen_dt:.2f}s): {text[:200]!r}")
+    print(f"[engine-smoke] meta finish_reason={mi.get('finish_reason')}")
+    print(f"[engine-smoke] meta completion_tokens={mi.get('completion_tokens')}")
+    print(f"[engine-smoke] meta prompt_tokens={mi.get('prompt_tokens')}")
+    print(f"[engine-smoke] full out keys={list(out.keys())}")
+    # Try with temperature > 0 to escape any greedy-EOS trap.
+    out2 = engine.generate(
+        prompt=prompt,
+        image_data=str(image_path),
+        sampling_params={"temperature": 0.7, "top_p": 0.95, "max_new_tokens": 40, "stop": []},
+    )
+    print(f"[engine-smoke] T=0.7 gen: {out2.get('text', '')!r}")
+    print(f"[engine-smoke] T=0.7 meta finish_reason={out2.get('meta_info', {}).get('finish_reason')}")
     print("[engine-smoke] DONE ✓")
     return 0
 
