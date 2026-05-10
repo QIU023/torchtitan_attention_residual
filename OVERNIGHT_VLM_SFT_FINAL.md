@@ -13,12 +13,11 @@ RL trace work that the user explicitly de-prioritised ("不要为了采 trace
   ~1.7h wall (after one CUDA-assert recovery via SEED=43 resume).
   Final ckpt at `phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/step-1200`.
 
-* **SGLang VLM model class** + DCP→HF converter + processor for
-  Kimi AttnRes VLM landed on `vlm-sglang-overlay` branch
-  (sglang submodule + main repo, both pushed). End-to-end DCP→HF→
-  Engine-load works structurally; final inference path hits a KDA
-  forward-context branch that needs more debugging (LM-only path
-  unaffected, verified).
+* **SGLang VLM serving works end-to-end** ✅ — Engine boots in 25s
+  on the converted ckpt, SigLIP+projector+KDA+MLA+MoE all dispatch
+  correctly, image+text prompts decode in ~3.6 s/sample. Output
+  text quality is poor (model is undertrained at this scale) but
+  the entire serving stack is verified functional.
 
 * **PolicyTrainer DCP-native load** added, unblocks running RL
   trainer on our 447M Kimi AttnRes ckpt without writing a full
@@ -73,23 +72,52 @@ last batch's noise; smoothed loss across the last 50 steps is ~1.39.
 
 ---
 
+## VLM serving fix (root cause + minimal patch)
+
+The VLM forward through `general_mm_embed_routine` was hitting
+`RadixLinearAttention.forward` with `get_forward_context()` returning
+None (because piecewise CUDA graph is explicitly disabled by SGLang
+when `forward_batch.input_embeds is not None`, see TODO(yuwei) in
+`piecewise_cuda_graph_runner.py:can_run`).
+
+But that turned out NOT to be the actual blocker — wrapping our
+forward in `set_forward_context` made `is_extend()` still come back
+False during prefill capture, suggesting the IF/ELSE in
+`RadixLinearAttention.forward` was a red herring.
+
+**True root cause**: `ModelRunner.kimi_linear_config` returned None
+for our `KimiAttnResVLConfig` because the `KimiLinearConfig` is
+nested under `.text_config` (LLaVA-style VLM wrapping). Without it,
+`mambaish_config` returned None, and the `HybridLinearAttnBackend`
+that routes KDA layers to `MambaAttnBackendBase` (vs MLA layers to
+flashinfer_mla) never got attached. Result: the standard
+`AttentionBackend.forward(q,k,v)` got called with KDA's
+`(layer, mixed_qkv, a, b)` kwargs and crashed.
+
+**Patch** (in `vlm-sglang-overlay`):
+
+```python
+# sglang/srt/model_executor/model_runner.py
+@property
+def kimi_linear_config(self):
+    config = self.model_config.hf_config
+    if isinstance(config, KimiLinearConfig):
+        return config
+    # VLM unwrap
+    text_cfg = getattr(config, "text_config", None)
+    if text_cfg is not None and isinstance(text_cfg, KimiLinearConfig):
+        return text_cfg
+    return None
+```
+
+Plus the converter emits dual architectures
+`["KimiAttnResVLForConditionalGeneration", "KimiLinearForCausalLM"]`
+so MLA dispatch routes via flashinfer_mla (mirrors the LM-only
+converter trick).
+
 ## What's NOT done (next-session work)
 
-1. **VLM end-to-end serving** — converter + model class + processor
-   land cleanly; HF AutoConfig + AutoTokenizer + SigLIP image
-   processor all work; the LM forward path through
-   `general_mm_embed_routine` hits
-   `RadixLinearAttention.forward` with `get_forward_context() is
-   None`, falling back to a mismatched
-   `AttentionBackend.forward(q,k,v)` signature that the layer's
-   `(mixed_qkv, a, b)` arguments don't satisfy. LM-only inference
-   on the same converted weights works (smoke_lm_only.py passes),
-   so the issue is contained to the multimodal embed-splice path.
-   Likely fix: ensure `set_forward_context()` is held during
-   prefill when input_embeds-driven, OR call
-   `unified_linear_attention_with_output` unconditionally.
-
-2. **Real prod-grade RL** — RFC #26 partial (DCP load works,
+1. **Real prod-grade RL** — RFC #26 partial (DCP load works,
    `compute_token_log_probs` should work too since Kimi Linear
    accepts kwargs). But disk-based weight sync from trainer to
    SGLang Engine is a framework gap (push_model_state_dict only
