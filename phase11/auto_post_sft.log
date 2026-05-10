@@ -1,0 +1,103 @@
+
+[Sun May 10 12:28:54 AM UTC 2026] auto_post_sft starting (poll every 60s)
+[Sun May 10 01:55:55 AM UTC 2026] SFT complete at step=1200. Firing post_sft_vlm_smoke.sh
+==> using SFT ckpt: /root/torchtitan_attention_residual/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/step-1200 (step 1200)
+==> HF output dir : /root/torchtitan_attention_residual/phase11/hf_aligned_447m_vlm_sft1200
+
+==> 1. converting DCP -> HF VLM safetensors
+    in:  /root/torchtitan_attention_residual/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/step-1200
+    out: /root/torchtitan_attention_residual/phase11/hf_aligned_447m_vlm_sft1200
+[conv-vl] building skeleton for config=kimi_linear_447m_aligned_block_attn_res_n4
+[conv-vl] skeleton: 424 LM keys + 4 projector keys
+[conv-vl] loading DCP from /root/torchtitan_attention_residual/phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/step-1200
+[conv-vl] DCP keys: 428 → HF keys: 1823 (LM: 1819, projector: 4)
+[conv-vl] wrote config.json
+[conv-vl] wrote model.safetensors (3011.6 MB)
+[conv-vl] DONE → /root/torchtitan_attention_residual/phase11/hf_aligned_447m_vlm_sft1200
+[rank0]:[W510 01:56:21.589205351 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+
+==> 2. SGLang Engine smoke (TP=1 on GPU 7)
+[engine-smoke] image: /workspace/.hf_home/LLaVA-Pretrain/00001/000015879.jpg
+[engine-smoke] booting SGLang Engine TP=1
+[2026-05-10 01:56:32] User lacks permission to set NUMA affinity, skipping NUMA node configuration for GPU. If using docker, try adding --cap-add SYS_NICE to your docker run command.
+Traceback (most recent call last):
+  File "/root/torchtitan_attention_residual/phase11/smoke_vlm_engine.py", line 109, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/root/torchtitan_attention_residual/phase11/smoke_vlm_engine.py", line 74, in main
+    engine = sgl.Engine(
+             ^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/utils.py", line 406, in __call__
+    return module(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 197, in __init__
+    ) = self._launch_subprocesses(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 721, in _launch_subprocesses
+    tokenizer_manager, template_manager = init_tokenizer_manager_func(
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 129, in init_tokenizer_manager
+    tokenizer_manager = TokenizerManagerClass(server_args, port_args)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 197, in __init__
+    self.init_tokenizer_and_processor()
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 262, in init_tokenizer_and_processor
+    _processor = _get_processor_wrapper(server_args)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 2535, in _get_processor_wrapper
+    raise e
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 2514, in _get_processor_wrapper
+    processor = get_processor(
+                ^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers_utils.py", line 1284, in get_processor
+    raise e
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers_utils.py", line 1248, in get_processor
+    processor = AutoProcessor.from_pretrained(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/processing_auto.py", line 428, in from_pretrained
+    raise ValueError(
+ValueError: Unrecognized processing class in /root/torchtitan_attention_residual/phase11/hf_aligned_447m_vlm_sft1200. Can't instantiate a processor, a tokenizer, an image processor, a video processor or a feature extractor for this model. Make sure the repository contains the files of at least one of those processing classes.
+
+==> 3. Qualitative eval on 10 LLaVA-Pretrain images (TP=1 on GPU 7)
+[eval] sampled 10 images
+[eval] booting SGLang Engine TP=1 from /root/torchtitan_attention_residual/phase11/hf_aligned_447m_vlm_sft1200
+[2026-05-10 01:56:44] User lacks permission to set NUMA affinity, skipping NUMA node configuration for GPU. If using docker, try adding --cap-add SYS_NICE to your docker run command.
+Traceback (most recent call last):
+  File "/root/torchtitan_attention_residual/phase11/eval_vlm_qualitative.py", line 158, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/root/torchtitan_attention_residual/phase11/eval_vlm_qualitative.py", line 109, in main
+    engine = sgl.Engine(
+             ^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/utils.py", line 406, in __call__
+    return module(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 197, in __init__
+    ) = self._launch_subprocesses(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 721, in _launch_subprocesses
+    tokenizer_manager, template_manager = init_tokenizer_manager_func(
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 129, in init_tokenizer_manager
+    tokenizer_manager = TokenizerManagerClass(server_args, port_args)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 197, in __init__
+    self.init_tokenizer_and_processor()
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 262, in init_tokenizer_and_processor
+    _processor = _get_processor_wrapper(server_args)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 2535, in _get_processor_wrapper
+    raise e
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 2514, in _get_processor_wrapper
+    processor = get_processor(
+                ^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers_utils.py", line 1284, in get_processor
+    raise e
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers_utils.py", line 1248, in get_processor
+    processor = AutoProcessor.from_pretrained(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/processing_auto.py", line 428, in from_pretrained
+    raise ValueError(
+ValueError: Unrecognized processing class in /root/torchtitan_attention_residual/phase11/hf_aligned_447m_vlm_sft1200. Can't instantiate a processor, a tokenizer, an image processor, a video processor or a feature extractor for this model. Make sure the repository contains the files of at least one of those processing classes.
+[Sun May 10 01:56:47 AM UTC 2026] post_sft_vlm_smoke.sh rc=1
+[Sun May 10 01:56:47 AM UTC 2026] auto_post_sft EXIT

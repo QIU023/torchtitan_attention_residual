@@ -431,11 +431,11 @@ def main():
     # supports a non-Qwen3 model_spec, swapping the trainer side is
     # a one-config edit.
     from torchtitan.models.qwen3 import model_registry as qwen3_registry
-    # 0.6B (non-varlen) avoids the torch 2.9 ``varlen_attn`` stub
+    # 0.6B_varlen + our SDPA fallback for varlen_attn the torch 2.9 ``varlen_attn`` stub
     # raise. Upstream defaults to ``0.6B_varlen`` which requires
     # torch ≥2.10 nightly. ``0.6B`` uses standard flash attention
     # which is bundled with torch 2.9 stable.
-    flavor = os.environ.get("RLHF_FLAVOR", "0.6B")
+    flavor = os.environ.get("RLHF_FLAVOR", "0.6B_varlen")
     model_spec = qwen3_registry(flavor)
     # Mirror upstream simple_grpo_sum_digits.py: swap in the RL-side
     # parallelize fn (the one in models/qwen3 expects training-side

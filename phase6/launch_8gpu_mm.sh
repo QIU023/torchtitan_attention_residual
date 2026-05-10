@@ -126,6 +126,13 @@ if [[ "$DETERMINISTIC" == "1" ]]; then
     DEBUG_ARGS="$DEBUG_ARGS --debug.deterministic"
 fi
 
+# AC=full|selective|none — caller-controlled activation checkpointing.
+# Default is torchtitan's default (selective). Set AC=full when memory
+# pressure (e.g. VLM SFT with vision-token expansion) overflows 32GB cards.
+if [[ -n "${AC:-}" ]]; then
+    DEBUG_ARGS="$DEBUG_ARGS --activation_checkpoint.mode $AC"
+fi
+
 # PP schedule + cache adapter only when PP > 1
 PP_ARGS="--parallelism.pipeline_parallel_degree $PP"
 if [[ "$PP" -gt 1 ]]; then
