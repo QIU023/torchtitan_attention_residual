@@ -203,6 +203,12 @@ def main():
     p.add_argument("--model-path", required=True)
     p.add_argument("--num-steps", type=int, default=50)
     p.add_argument("--num-episodes-per-step", type=int, default=4)
+    p.add_argument(
+        "--kl-coef",
+        type=float,
+        default=0.0,
+        help="0 = vanilla GRPO; >0 engages frozen ref + KL penalty (PPO mode)",
+    )
     args = p.parse_args()
 
     from torchtitan.models.qwen3 import model_registry as qwen3_registry
@@ -218,6 +224,11 @@ def main():
     config.hf_assets_path = args.model_path
     config.num_steps = args.num_steps
     config.num_episodes_per_step = args.num_episodes_per_step
+    config.kl_coef = args.kl_coef
+    if args.kl_coef > 0:
+        logger.info(f"PPO mode: kl_coef={args.kl_coef} (frozen ref engaged)")
+    else:
+        logger.info("GRPO mode: kl_coef=0 (no frozen ref)")
     config.trainer.parallelism.data_parallel_shard_degree = 4
     config.generator.parallelism.tensor_parallel_degree = 4
     config.generator.gpu_memory_limit = 0.85
