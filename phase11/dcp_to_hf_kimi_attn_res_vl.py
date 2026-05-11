@@ -218,6 +218,17 @@ def main():
         help="Output dim of the vision tower's last_hidden_state. "
              "768 for siglip-base-patch16-224.",
     )
+    p.add_argument(
+        "--processor-source", type=Path, default=None,
+        help="Optional path to a pre-existing HF VLM directory that "
+             "already has processor configs (preprocessor_config.json, "
+             "processor_config.json, tokenizer*, special_tokens_map.json). "
+             "If provided, these 5 files are copied into --out-dir so "
+             "SGLang's AutoProcessor.from_pretrained(out_dir) boots "
+             "without manual intervention. Skipping this means SGLang "
+             "engine boot will fail with 'cannot find processor in <out>' "
+             "(known bug, 2026-05-11 overnight chain Stage C).",
+    )
     args = p.parse_args()
 
     init_dist()
@@ -299,6 +310,40 @@ def main():
         f"[conv-vl] wrote model.safetensors ({total_bytes / 1024**2:.1f} MB)"
     )
 
+    # Auto-copy processor configs so SGLang's AutoProcessor.from_pretrained
+    # boots without manual intervention. Failure to do this is a known
+    # repeat-incident bug (overnight chain 2026-05-11 Stage C wasted ~30 min
+    # to manually `cp` these from a prior working dir before GRPO could
+    # launch). Make the failure mode impossible going forward.
+    PROCESSOR_FILES = [
+        "preprocessor_config.json",
+        "processor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "special_tokens_map.json",
+    ]
+    copied_processor_files: list[str] = []
+    if args.processor_source is not None and args.processor_source.exists():
+        import shutil
+        for fname in PROCESSOR_FILES:
+            src = args.processor_source / fname
+            if src.exists():
+                shutil.copy2(src, args.out_dir / fname)
+                copied_processor_files.append(fname)
+            else:
+                print(f"[conv-vl] WARN: {src} missing in --processor-source")
+        print(
+            f"[conv-vl] copied {len(copied_processor_files)} processor files "
+            f"from {args.processor_source}"
+        )
+    else:
+        print(
+            "[conv-vl] WARN: --processor-source not given; "
+            "SGLang AutoProcessor.from_pretrained(out_dir) will fail. "
+            "Pass --processor-source <prior_working_hf_dir> or copy the "
+            f"5 files manually: {PROCESSOR_FILES}"
+        )
+
     manifest = {
         "source_dcp": str(args.in_dir),
         "n_dcp_keys": len(combined),
@@ -307,6 +352,8 @@ def main():
         "dtype": args.dtype,
         "total_bytes": total_bytes,
         "vision_tower": args.vision_tower,
+        "processor_source": str(args.processor_source) if args.processor_source else None,
+        "copied_processor_files": copied_processor_files,
         "key_sample": sorted(hf_sd.keys())[:20] + ["..."] + sorted(hf_sd.keys())[-5:],
     }
     with (args.out_dir / "conversion_manifest.json").open("w") as f:
