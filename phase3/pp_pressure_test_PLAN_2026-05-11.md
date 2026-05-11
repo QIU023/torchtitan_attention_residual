@@ -51,52 +51,56 @@ layers. Two paths:
 
 User asked for "aggressive" → Path A primary, Path B secondary.
 
-## Refined test matrix
+## Refined test matrix (Path A — from-scratch C4 training, no real weights needed)
 
-### Tier 0 — sanity smoke (1h, low risk)
+User correction (2026-05-11 06:35): pressure tests don't need real
+weights. Build deeper Path-A carriers (L32, L48) and train each from
+random init on C4 for 1000 steps. The adapter-vs-naive comparison is
+about **wire bandwidth + numerics match**, not absolute loss quality.
 
-Run the EXISTING `phase3/launch_8gpu_adapter.sh` with the unchanged 175M
-L16 toy carrier as a re-validation. Catches whether anything in
-torchtitan trunk regressed since phase3's earlier passing runs.
+**Carriers added** to `torchtitan/experiments/attn_res/__init__.py`:
 
-| run | model | PP | VP | µbs | gbs | layers/stage |
+| flavor | n_layers | n_blocks | layers/block | dim | n_heads | params |
 |---|---|---|---|---|---|---|
-| `pp8_vp1_175m_naive` (sanity) | 175m L16 | 8 | 1 | 4 | 32 | 2 |
-| `pp8_vp1_175m_adapter` (sanity) | 175m L16 | 8 | 1 | 4 | 32 | 2 |
+| `175M_attn_res_L16_n8` (existing) | 16 | 8 | 2 | 768 | 12 | ~175M |
+| `175M_attn_res_L32_n8` (NEW) | 32 | 8 | 4 | 768 | 12 | ~280M |
+| `175M_attn_res_L48_n8` (NEW) | 48 | 8 | 6 | 768 | 12 | ~390M |
 
-### Tier 1 — aggressive PP=8 × VP=4 on 32-layer carrier
+Verified registered + ModelSpec builds (06:42).
 
-| run | model | PP | VP | µbs | gbs | layers/chunk | num_microbatches |
-|---|---|---|---|---|---|---|---|
-| `pp8_vp4_L32_naive` | 300m L32 | 8 | 4 | 1 | 32 | 1 | 32 (PP*VP) |
-| `pp8_vp4_L32_adapter` | 300m L32 | 8 | 4 | 1 | 32 | 1 | 32 |
+### Sweep matrix
 
-**Why µbs=1, gbs=32**: minimum to fill the PP=8 × VP=4 pipeline
-(32 microbatches in flight, one per chunk). Smaller gbs would leave
-the pipe underfilled; larger gbs just makes test slower.
+| run | flavor | PP | VP | layers/chunk | µbs | gbs | num_µbatches | notes |
+|---|---|---|---|---|---|---|---|---|
+| **A1 sanity** | L16_n8 | 8 | 2 | 1 | 1 | 16 | 16 | reproduce existing phase3 baseline |
+| **A2 aggressive** | L32_n8 | 8 | 4 | 1 | 1 | 32 | 32 | matches user's "PP=8 VP=4" |
+| **A3 alt-shape** | L32_n8 | 4 | 8 | 1 | 1 | 32 | 32 | same 32 chunks but VP doubled, PP halved |
+| **A4 prod-depth** | L48_n8 | 8 | 6 | 1 | 1 | 48 | 48 | closer to Llama-3.1 8B's 32 layers × 1.5 |
+| **A5 deep-VP** | L48_n8 | 4 | 12 | 1 | 1 | 48 | 48 | extreme VP=12 (Megatron's 1T benchmark uses VP=12) |
 
-Real prod would use a larger gbs (Llama 3.1's PP=9 VP=7 uses gbs=2304
-with µbs=1, i.e. 2304 microbatches → ~36× the pipe size for high
-utilization). For SMOKE only, gbs=32 is enough to measure adapter
-overhead.
+Each row runs **naive** (adapter OFF) then **adapter** (adapter ON) →
+10 runs total. At 1000 steps each on 8× 5090 with PP=8 ≈ ~1500-2500
+tps × 1000 ≈ 8-15 min/run → **total sweep ~2-3h**.
 
-### Tier 2 — real-weights PP=8 × VP=2 on 447M
+### Why this design
 
-| run | model | PP | VP | µbs | gbs | layers/chunk |
-|---|---|---|---|---|---|---|
-| `pp8_vp2_447m_naive` | kimi 447M | 8 | 2 | 4 | 64 | 1 |
-| `pp8_vp2_447m_adapter` | kimi 447M | 8 | 2 | 4 | 64 | 1 |
+* **From scratch on C4**: matches phase 3's original adapter-vs-naive
+  protocol (which validated bit-identical loss curves on the 175M L16
+  pair). Same standard, just deeper.
+* **Multiple shapes per (chunks total)**: A2 vs A3 both have 32 chunks
+  but different (PP, VP) splits — adapter overhead per-chunk vs per-
+  rank-collective is measured separately.
+* **A5 VP=12**: above-prod aggressive. If adapter overhead stays bounded
+  at VP=12 it'll trivially hold at the prod sweet spot VP=4-8.
+* **No real-weights tier**: dropped per user correction. Real-weights
+  comparisons go in the carrier paper, not the infrastructure paper.
 
-This uses our real research weights and matches the inference-side
-VLM SFT 3ep ckpt. Numeric loss must match phase 4 LM-only training
-within bf16 tolerance.
+### Tier B (stretch) — multi-node PP=16
 
-### Tier 3 (stretch) — multi-node PP=16 × VP=2
-
-Skip unless we get a second 8-GPU node from vast.ai. Mentioned in the
-test plan only for completeness — the on-wire signature on PP cross-
-node ethernet (vs intra-node NVLink) is where the adapter's bandwidth-
-constant property is most visible.
+Defer until we get a second 8-GPU node. The intra-node-NVLink vs
+inter-node-ethernet asymmetry is where the adapter's constant-bandwidth
+property is most visible (NVLink can hide naive's growing send-bytes
+in the noise; ethernet can't).
 
 ## Exit criteria
 
