@@ -33,23 +33,29 @@ export HF_HOME="${HF_HOME:-/workspace/.hf_home}"
 # Sweep: space-separated "config:pp:vp:lbs:gbs" tuples.
 # lbs/gbs control microbatch sizing; defaults below satisfy
 # num_microbatches = gbs / (DP * lbs) >= PP * VP.
-# Config function names are snake_case lowercase (e.g.
-# llama3_175m_attn_res_L32_n8). The launcher prepends "llama3_" so
-# entries here use the suffix after that. Use lowercase 175m.
+# Config function names are snake_case lowercase. Tuple = config:PP:VP:LBS:GBS.
 #
-# VP > 2 deadlocks on the AttnRes carrier because its non-last stage
-# returns ``(partial_block, stacked_blocks)`` (two tensors) and
-# Interleaved1F1B's VP=4+ chunk-stitching doesn't currently thread
-# multi-output stages through correctly — ranks end up calling
-# batch_isend_irecv with mismatched expectations and NCCL 600s
-# timeouts. Sweep stays at VP=2 across multiple depths instead.
-# Fixing VP>2 needs an AttnRes pipelining_fn extension to manually
-# rebatch the two tensors at virtual-stage boundaries; tracked as a
-# follow-up task in pp_pressure_test_PLAN.md.
+# LBS must satisfy n_microbatches = LBS / pipeline_parallel_microbatch_size
+# >= num_total_stages = PP * VP. Default pipeline_parallel_microbatch_size = 1,
+# so LBS >= PP * VP. Otherwise the schedule deadlocks in batch_isend_irecv
+# at _step_microbatches:1730 (rather than erroring up front).
+# Historical phase3 used LBS=4 which masked this — that was less than
+# PP*VP=16 for the pp8_adapter run, so it likely had a real bubble or
+# incorrect schedule shape too.
+#
+# Sweep at PP=8 VP=2 across three depths. PP=8 VP=4 needs LBS=32 which
+# is large but valid; add as a stretch row.
+# Tuple = config:PP:VP:LBS:GBS.
+# Constraints:
+#   1. n_microbatches = LBS / pipeline_parallel_microbatch_size >= PP*VP
+#      (microbatch_size default 1, so LBS >= PP*VP).
+#   2. GBS must be divisible by LBS * DP where DP = NGPU/PP.
+#      e.g. PP=4 on NGPU=8 -> DP=2, so GBS = LBS * 2 * k.
+#      PP=8 on NGPU=8 -> DP=1, so GBS = LBS * k.
 SWEEP="${SWEEP:-\
-175m_attn_res_L16_n8:8:2:4:4 \
-175m_attn_res_L32_n8:8:2:4:4 \
-175m_attn_res_L48_n8:8:2:4:4 \
+175m_attn_res_L16_n8:8:2:16:16 \
+175m_attn_res_L16_n8:4:2:8:16 \
+175m_attn_res_L16_n8:4:4:16:32 \
 }"
 
 mkdir -p "$SWEEP_OUT_ROOT"
@@ -63,9 +69,19 @@ steps=${STEPS} ngpu=${NGPU}
 |---|---|---|---|---|---|---|---|---|
 EOF
 
+RUN_NAIVE="${RUN_NAIVE:-1}"
+RUN_ADAPTER="${RUN_ADAPTER:-1}"
+
 run_one() {
     local cfg="$1" pp="$2" vp="$3" lbs="$4" gbs="$5" mode="$6"
-    local layers_per_stage=1
+    # Derive layers_per_stage from carrier depth.
+    # L<n>_n<b> → n = num_layers. virtual_stages = num_layers/layers_per_stage
+    # VP = virtual_stages / PP, so layers_per_stage = num_layers / (PP * VP).
+    local n_layers
+    n_layers=$(echo "$cfg" | grep -oE "_L[0-9]+_" | grep -oE "[0-9]+")
+    if [[ -z "$n_layers" ]]; then n_layers=16; fi  # legacy 175m_attn_res has 16
+    local layers_per_stage=$(( n_layers / (pp * vp) ))
+    if [[ $layers_per_stage -lt 1 ]]; then layers_per_stage=1; fi
     local run_name="${cfg}_pp${pp}_vp${vp}_${mode}"
     local out_dir="$SWEEP_OUT_ROOT/$run_name"
     mkdir -p "$out_dir"
@@ -145,10 +161,12 @@ for tuple in $SWEEP; do
     if [[ -z "${gbs:-}" ]]; then
         echo "skip malformed: $tuple"; continue
     fi
-    # Naive first, then adapter — gives matched naive baseline
-    # for each adapter run on the same fresh-init RNG.
-    run_one "$cfg" "$pp" "$vp" "$lbs" "$gbs" "naive"
-    run_one "$cfg" "$pp" "$vp" "$lbs" "$gbs" "adapter"
+    if [[ "$RUN_NAIVE" == "1" ]]; then
+        run_one "$cfg" "$pp" "$vp" "$lbs" "$gbs" "naive"
+    fi
+    if [[ "$RUN_ADAPTER" == "1" ]]; then
+        run_one "$cfg" "$pp" "$vp" "$lbs" "$gbs" "adapter"
+    fi
 done
 
 echo ""
