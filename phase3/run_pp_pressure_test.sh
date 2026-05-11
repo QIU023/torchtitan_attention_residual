@@ -33,11 +33,23 @@ export HF_HOME="${HF_HOME:-/workspace/.hf_home}"
 # Sweep: space-separated "config:pp:vp:lbs:gbs" tuples.
 # lbs/gbs control microbatch sizing; defaults below satisfy
 # num_microbatches = gbs / (DP * lbs) >= PP * VP.
+# Config function names are snake_case lowercase (e.g.
+# llama3_175m_attn_res_L32_n8). The launcher prepends "llama3_" so
+# entries here use the suffix after that. Use lowercase 175m.
+#
+# VP > 2 deadlocks on the AttnRes carrier because its non-last stage
+# returns ``(partial_block, stacked_blocks)`` (two tensors) and
+# Interleaved1F1B's VP=4+ chunk-stitching doesn't currently thread
+# multi-output stages through correctly — ranks end up calling
+# batch_isend_irecv with mismatched expectations and NCCL 600s
+# timeouts. Sweep stays at VP=2 across multiple depths instead.
+# Fixing VP>2 needs an AttnRes pipelining_fn extension to manually
+# rebatch the two tensors at virtual-stage boundaries; tracked as a
+# follow-up task in pp_pressure_test_PLAN.md.
 SWEEP="${SWEEP:-\
-175M_attn_res_L32_n8:8:4:1:32 \
-175M_attn_res_L32_n8:4:8:1:32 \
-175M_attn_res_L48_n8:8:6:1:48 \
-175M_attn_res_L16_n8:8:2:1:16 \
+175m_attn_res_L16_n8:8:2:4:4 \
+175m_attn_res_L32_n8:8:2:4:4 \
+175m_attn_res_L48_n8:8:2:4:4 \
 }"
 
 mkdir -p "$SWEEP_OUT_ROOT"
