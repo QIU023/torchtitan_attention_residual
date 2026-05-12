@@ -1,0 +1,2219 @@
+W0511 08:08:31.863000 1910759 torch/distributed/run.py:803] 
+W0511 08:08:31.863000 1910759 torch/distributed/run.py:803] *****************************************
+W0511 08:08:31.863000 1910759 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0511 08:08:31.863000 1910759 torch/distributed/run.py:803] *****************************************
+[rank7]:[titan] 2026-05-11 08:08:40,150 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank7]:[titan] 2026-05-11 08:08:40,956 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank7]:[titan] 2026-05-11 08:08:40,958 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank7]:[titan] 2026-05-11 08:08:41,695 - root - INFO - Building device mesh with parallelism: pp=8, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank7]:[titan] 2026-05-11 08:08:41,723 - root - INFO - Successfully created meshes with active dimensions: ['pp']
+[rank7]:[titan] 2026-05-11 08:08:41,724 - root - INFO - Loading tokenizer from tokenizer.json
+[rank7]:[titan] 2026-05-11 08:08:42,083 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank7]:[titan] 2026-05-11 08:08:42,480 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank7]:[titan] 2026-05-11 08:08:42,527 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank7]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-11 08:08:42,736 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:08:42,736 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-11 08:08:43,413 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:08:43,725 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:44,189 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:08:44,566 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:44,816 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:45,156 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:45,376 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:45,689 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:08:45,807 - root - INFO - Building attn_res 175M_attn_res_L16_n8 with {
+[rank7]:  "param_init": null,
+[rank7]:  "dim": 768,
+[rank7]:  "vocab_size": 128256,
+[rank7]:  "output": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.03608439182435161, a=-0.10825317547305482, b=0.10825317547305482)",
+[rank7]:      "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:    },
+[rank7]:    "in_features": 768,
+[rank7]:    "out_features": 128256,
+[rank7]:    "bias": false
+[rank7]:  },
+[rank7]:  "tok_embeddings": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function skip_param_init at 0x7f98c14ace00>"
+[rank7]:    },
+[rank7]:    "num_embeddings": 128256,
+[rank7]:    "embedding_dim": 768
+[rank7]:  },
+[rank7]:  "norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  },
+[rank7]:  "rope": {
+[rank7]:    "param_init": null,
+[rank7]:    "dim": 64,
+[rank7]:    "max_seq_len": 2048,
+[rank7]:    "theta": 500000,
+[rank7]:    "backend": "complex",
+[rank7]:    "scaling": "llama",
+[rank7]:    "scaling_factor": 8.0,
+[rank7]:    "low_freq_factor": 1.0,
+[rank7]:    "high_freq_factor": 4.0,
+[rank7]:    "original_max_position_embeddings": 8192,
+[rank7]:    "rope_factor": 1.0,
+[rank7]:    "beta_fast": 32.0,
+[rank7]:    "beta_slow": 1.0,
+[rank7]:    "original_seq_len": 4096,
+[rank7]:    "mscale": 0.0
+[rank7]:  },
+[rank7]:  "layers": [
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7f9b310e8d60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    }
+[rank7]:  ],
+[rank7]:  "enable_weight_tying": false,
+[rank7]:  "attn_res": {
+[rank7]:    "enabled": true,
+[rank7]:    "num_blocks": 8,
+[rank7]:    "norm_eps": 1e-05
+[rank7]:  },
+[rank7]:  "final_attn_res_proj": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function zeros_ at 0x7f9b310e8f40>"
+[rank7]:    },
+[rank7]:    "dim": 768
+[rank7]:  },
+[rank7]:  "final_attn_res_norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7f9b310e8ea0>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-11 08:08:45,825 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase3/runs/pressure_test_20260511-0757/175m_attn_res_L16_n8_pp8_vp2_adapter/tb/20260511-0808
+[rank7]:[titan] 2026-05-11 08:08:45,825 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-11 08:08:45,827 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-11 08:08:45,827 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-11 08:08:45,827 - root - INFO - [34mModel attn_res 175M_attn_res_L16_n8 [31msize: 297,740,544 total parameters[39m
+[rank7]:[titan] 2026-05-11 08:08:45,842 - root - INFO - PP rank 7 is building stage_idx 7 with modules ['layers.7']
+[rank7]:[titan] 2026-05-11 08:08:45,855 - root - INFO - PP rank 7 is building stage_idx 15 with modules ['layers.15', 'norm', 'output', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank7]:[titan] 2026-05-11 08:08:45,864 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 08:08:45,875 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 08:08:45,875 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 08:08:45,879 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 08:08:45,879 - root - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 16 stages.
+[rank7]:[rank7]:W0511 08:08:46.660000 1910836 torch/distributed/tensor/_random.py:208] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank7]:[titan] 2026-05-11 08:08:46,811 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 7[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank7]:[titan] 2026-05-11 08:08:46,813 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-11 08:08:46,813 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-11 08:08:46,813 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-11 08:08:46,813 - root - INFO - CUDA memory usage for model: 0.43GiB(1.38%)
+[rank7]:[titan] 2026-05-11 08:08:46,813 - root - WARNING - Warmup (500) + decay (800) steps exceed total steps (1000). Adjusting decay steps to 500.
+[rank7]:[titan] 2026-05-11 08:08:46,817 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase3/runs/pressure_test_20260511-0757/175m_attn_res_L16_n8_pp8_vp2_adapter/checkpoint
+[rank7]:[titan] 2026-05-11 08:08:46,817 - root - INFO - Trainer is initialized with local batch size 16, global batch size 16, gradient accumulation steps 1, sequence length 2048, total steps 1000 (warmup 500)
+[rank7]:[titan] 2026-05-11 08:08:46,817 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-11 08:08:47,072 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:47,508 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:47,954 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:08:48,169 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 08:08:48,350 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T080848Z&X-Amz-Expires=3600&X-Amz-Signature=b98626c310020f7a8fe8929e24da22629c4ba3246aa846f33902ced114eb64b8&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778490528&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODQ5MDUyOH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=V-79qpUHI6HK5Z6PSpRQTiEdGy1LLgOgpR8BAv8QOilJOyB2uNg69PkGQVyJTaJfaAOfVOSskJQAOZnEX13ryMuslY1etcUmCgNe1Q%7EYVVrdwMcYIKiR920MJOosnB2eTm3QPyuUlWWyLKsavAKBI-VuM9yxceXrO%7Ekq%7EYFl4wHJu0C13yMHxyIpPa-H3iLlw1CDGIl2x5NvjPzaH4xdG2Gdix-mFeSGdn8dMVY876m5X03X12nBlGMKDWPdRmP5WL1oMfrrtyWgM-aRSXvxDejMb89RqjWTuID6U2y3ZA-oFBqvr1x%7ETfYt9zkuFlakU94lnUhT72SFSYOLp8hmNg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 08:08:54,323 - root - INFO - Destroying the purge thread.
+[rank7]:[rank7]:E0511 08:08:54.316000 1910836 torch/distributed/pipelining/schedules.py:1732] [Rank 7] pipeline schedule ScheduleInterleaved1F1B caught the following exception '_PipelineStageBase.forward_one_chunk() got an unexpected keyword argument 'save_forward_output'' at time_step 7 when running action 7F0
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741]          Rank 0  Rank 1  Rank 2  Rank 3  Rank 4  Rank 5  Rank 6  Rank 7 
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 00: 0F0                                                            
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 01: 0F1     1F0                                                    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 02: 0F2     1F1     2F0                                            
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 03: 0F3     1F2     2F1     3F0                                    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 04: 0F4     1F3     2F2     3F1     4F0                            
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 05: 0F5     1F4     2F3     3F2     4F1     5F0                    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 06: 0F6     1F5     2F4     3F3     4F2     5F1     6F0            
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 07: 0F7     1F6     2F5     3F4     4F3     5F2     6F1     7F0     <-- ERROR HERE
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 08: 8F0     1F7     2F6     3F5     4F4     5F3     6F2     7F1    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 09: 8F1     9F0     2F7     3F6     4F5     5F4     6F3     7F2    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 10: 8F2     9F1     10F0    3F7     4F6     5F5     6F4     7F3    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 11: 8F3     9F2     10F1    11F0    4F7     5F6     6F5     7F4    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 12: 8F4     9F3     10F2    11F1    12F0    5F7     6F6     7F5    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 13: 8F5     9F4     10F3    11F2    12F1    13F0    6F7     7F6    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 14: 8F6     9F5     10F4    11F3    12F2    13F1    14F0    7F7    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 15: 8F7     9F6     10F5    11F4    12F3    13F2    14F1           
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 16: 0F8     9F7     10F6    11F5    12F4    13F3            15F0   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 17: 0F9     1F8     10F7    11F6    12F5                    15B0   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 18: 0F10    1F9     2F8     11F7                    14F2    15F1   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 19: 0F11    1F10    2F9                             14B0    15B1   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 20: 0F12    1F11                            13F4    14F3    15F2   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 21: 0F13                                    13B0    14B1    15B2   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 22:                                 12F6    13F5    14F4    15F3   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 23:                                 12B0    13B1    14B2    15B3   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 24:                         3F8     12F7    13F6    14F5    15F4   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 25:                         11B0    12B1    13B2    14B3    15B4   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 26:                 2F10    3F9     4F8     13F7    14F6    15F5   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 27:                 10B0    11B1    12B2    13B3    14B4    15B5   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 28:         1F12    2F11    3F10    4F9     5F8     14F7    15F6   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 29:         9B0     10B1    11B2    12B3    13B4    14B5    15B6   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 30: 0F14    1F13    2F12    3F11    4F10    5F9     6F8     15F7   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 31: 8B0     9B1     10B2    11B3    12B4    13B5    14B6    15B7   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 32: 0F15    1F14    2F13    3F12    4F11    5F10    6F9     7F8    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 33: 8B1     9B2     10B3    11B4    12B5    13B6    14B7    7B0    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 34: 8F8     1F15    2F14    3F13    4F12    5F11    6F10    7F9    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 35: 8B2     9B3     10B4    11B5    12B6    13B7    6B0     7B1    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 36: 8F9     9F8     2F15    3F14    4F13    5F12    6F11    7F10   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 37: 8B3     9B4     10B5    11B6    12B7    5B0     6B1     7B2    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 38: 8F10    9F9     10F8    3F15    4F14    5F13    6F12    7F11   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 39: 8B4     9B5     10B6    11B7    4B0     5B1     6B2     7B3    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 40: 8F11    9F10    10F9    11F8    4F15    5F14    6F13    7F12   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 41: 8B5     9B6     10B7    3B0     4B1     5B2     6B3     7B4    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 42: 8F12    9F11    10F10   11F9    12F8    5F15    6F14    7F13   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 43: 8B6     9B7     2B0     3B1     4B2     5B3     6B4     7B5    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 44: 8F13    9F12    10F11   11F10   12F9    13F8    6F15    7F14   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 45: 8B7     1B0     2B1     3B2     4B3     5B4     6B5     7B6    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 46: 8F14    9F13    10F12   11F11   12F10   13F9    14F8    7F15   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 47: 0B0     1B1     2B2     3B3     4B4     5B5     6B6     7B7    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 48: 8F15    9F14    10F13   11F12   12F11   13F10   14F9    15F8   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 49: 0B1     1B2     2B3     3B4     4B5     5B6     6B7     15B8   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 50:         9F15    10F14   11F13   12F12   13F11   14F10   15F9   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 51: 0B2     1B3     2B4     3B5     4B6     5B7     14B8    15B9   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 52:                 10F15   11F14   12F13   13F12   14F11   15F10  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 53: 0B3     1B4     2B5     3B6     4B7     13B8    14B9    15B10  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 54:                         11F15   12F14   13F13   14F12   15F11  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 55: 0B4     1B5     2B6     3B7     12B8    13B9    14B10   15B11  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 56:                                 12F15   13F14   14F13   15F12  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 57: 0B5     1B6     2B7     11B8    12B9    13B10   14B11   15B12  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 58:                                         13F15   14F14   15F13  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 59: 0B6     1B7     10B8    11B9    12B10   13B11   14B12   15B13  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 60:                                                 14F15   15F14  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 61: 0B7     9B8     10B9    11B10   12B11   13B12   14B13   15B14  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 62:                                                         15F15  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 63: 8B8     9B9     10B10   11B11   12B12   13B13   14B14   15B15  
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 64:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 65: 8B9     9B10    10B11   11B12   12B13   13B14   14B15   7B8    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 66:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 67: 8B10    9B11    10B12   11B13   12B14   13B15   6B8     7B9    
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 68:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 69: 8B11    9B12    10B13   11B14   12B15   5B8     6B9     7B10   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 70:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 71: 8B12    9B13    10B14   11B15   4B8     5B9     6B10    7B11   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 72:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 73: 8B13    9B14    10B15   3B8     4B9     5B10    6B11    7B12   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 74:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 75: 8B14    9B15    2B8     3B9     4B10    5B11    6B12    7B13   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 76:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 77: 8B15    1B8     2B9     3B10    4B11    5B12    6B13    7B14   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 78:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 79: 0B8     1B9     2B10    3B11    4B12    5B13    6B14    7B15   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 80:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 81: 0B9     1B10    2B11    3B12    4B13    5B14    6B15           
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 82:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 83: 0B10    1B11    2B12    3B13    4B14    5B15                   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 84:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 85: 0B11    1B12    2B13    3B14    4B15                           
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 86:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 87: 0B12    1B13    2B14    3B15                                   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 88:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 89: 0B13    1B14    2B15                                           
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 90:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 91: 0B14    1B15                                                   
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 92:                                                                
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] Step 93: 0B15                                                           
+[rank7]:[rank7]:E0511 08:08:54.320000 1910836 torch/distributed/pipelining/schedules.py:1741] 
+[rank7]:[rank7]: Traceback (most recent call last):
+[rank7]:[rank7]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank7]:[rank7]:   File "<frozen runpy>", line 88, in _run_code
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 68, in <module>
+[rank7]:[rank7]:     main()
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 55, in main
+[rank7]:[rank7]:     trainer.train()
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+[rank7]:[rank7]:     return f(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+[rank7]:[rank7]:     self.train_step(data_iterator)
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+[rank7]:[rank7]:     loss = self.forward_backward_step(
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 679, in forward_backward_step
+[rank7]:[rank7]:     self.pp_schedule.step(
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 967, in patched_step
+[rank7]:[rank7]:     return orig_step(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1554, in step
+[rank7]:[rank7]:     self._step_microbatches(args_split, kwargs_split, targets_split, losses)
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1747, in _step_microbatches
+[rank7]:[rank7]:     raise e
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1612, in _step_microbatches
+[rank7]:[rank7]:     output = stage.forward_one_chunk(
+[rank7]:[rank7]:              ^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 914, in patched_fwd
+[rank7]:[rank7]:     return orig_fwd(
+[rank7]:[rank7]:            ^^^^^^^^^
+[rank7]:[rank7]: TypeError: _PipelineStageBase.forward_one_chunk() got an unexpected keyword argument 'save_forward_output'
+[rank7]:[rank7]:[W511 08:08:54.595059779 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0511 08:08:55.924000 1910759 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1910829 closing signal SIGTERM
+W0511 08:08:55.925000 1910759 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1910830 closing signal SIGTERM
+W0511 08:08:55.926000 1910759 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1910832 closing signal SIGTERM
+W0511 08:08:55.926000 1910759 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1910833 closing signal SIGTERM
+W0511 08:08:55.927000 1910759 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1910834 closing signal SIGTERM
+W0511 08:08:55.927000 1910759 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1910835 closing signal SIGTERM
+W0511 08:08:55.927000 1910759 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1910836 closing signal SIGTERM
+E0511 08:08:56.516000 1910759 torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 2 (pid: 1910831) of binary: /usr/bin/python3
+E0511 08:08:56.520000 1910759 torch/distributed/elastic/multiprocessing/errors/error_handler.py:141] no error file defined for parent, to copy child error file (/tmp/torchelastic_xo6z6ocd/none_66mn_gh6/attempt_0/2/error.json)
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-11_08:08:54
+  host      : dfbfb7339589
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 1910831)
+  error_file: /tmp/torchelastic_xo6z6ocd/none_66mn_gh6/attempt_0/2/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 679, in forward_backward_step
+      self.pp_schedule.step(
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 967, in patched_step
+      return orig_step(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1554, in step
+      self._step_microbatches(args_split, kwargs_split, targets_split, losses)
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1747, in _step_microbatches
+      raise e
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1612, in _step_microbatches
+      output = stage.forward_one_chunk(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 914, in patched_fwd
+      return orig_fwd(
+             ^^^^^^^^^
+  TypeError: _PipelineStageBase.forward_one_chunk() got an unexpected keyword argument 'save_forward_output'
+  
+============================================================

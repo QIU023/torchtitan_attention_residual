@@ -97,6 +97,15 @@ run_one() {
     echo "[$(date)] $run_name STEPS=$STEPS LBS=$lbs GBS=$gbs"
     echo "==============================================================="
 
+    local lr_arg=""
+    if [[ -n "${LR:-}" ]]; then
+        lr_arg="--optimizer.lr $LR"
+    fi
+    local warmup_arg=""
+    if [[ -n "${WARMUP:-}" ]]; then
+        warmup_arg="--lr_scheduler.warmup_steps $WARMUP --lr_scheduler.total_steps $STEPS"
+    fi
+
     (cd "$TORCHTITAN_DIR" && \
      env $cache_arg ATTNRES_DBG=0 \
          PYTORCH_ALLOC_CONF="expandable_segments:True" \
@@ -109,6 +118,7 @@ run_one() {
              --training.steps "$STEPS" \
              --training.local_batch_size "$lbs" \
              --training.global_batch_size "$gbs" \
+             $lr_arg $warmup_arg \
              --parallelism.pipeline_parallel_degree "$pp" \
              --parallelism.pipeline_parallel_schedule "Interleaved1F1B" \
              --parallelism.pipeline_parallel_layers_per_stage "$layers_per_stage" \

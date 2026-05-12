@@ -1,0 +1,2120 @@
+W0511 08:17:25.191000 1920186 torch/distributed/run.py:803] 
+W0511 08:17:25.191000 1920186 torch/distributed/run.py:803] *****************************************
+W0511 08:17:25.191000 1920186 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0511 08:17:25.191000 1920186 torch/distributed/run.py:803] *****************************************
+[rank7]:[titan] 2026-05-11 08:17:30,772 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank7]:[titan] 2026-05-11 08:17:31,858 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank7]:[titan] 2026-05-11 08:17:31,861 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank7]:[titan] 2026-05-11 08:17:33,121 - root - INFO - Building device mesh with parallelism: pp=8, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank7]:[titan] 2026-05-11 08:17:33,135 - root - INFO - Successfully created meshes with active dimensions: ['pp']
+[rank7]:[titan] 2026-05-11 08:17:33,137 - root - INFO - Loading tokenizer from tokenizer.json
+[rank7]:[titan] 2026-05-11 08:17:33,387 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank7]:[titan] 2026-05-11 08:17:33,735 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank7]:[titan] 2026-05-11 08:17:33,781 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank7]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-11 08:17:33,995 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:17:33,996 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-11 08:17:34,720 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:17:35,042 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:35,525 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:17:35,903 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:36,147 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:36,500 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:36,707 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:37,023 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 08:17:37,156 - root - INFO - Building attn_res 175M_attn_res_L16_n8 with {
+[rank7]:  "param_init": null,
+[rank7]:  "dim": 768,
+[rank7]:  "vocab_size": 128256,
+[rank7]:  "output": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.03608439182435161, a=-0.10825317547305482, b=0.10825317547305482)",
+[rank7]:      "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:    },
+[rank7]:    "in_features": 768,
+[rank7]:    "out_features": 128256,
+[rank7]:    "bias": false
+[rank7]:  },
+[rank7]:  "tok_embeddings": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function skip_param_init at 0x7fac589e0ea0>"
+[rank7]:    },
+[rank7]:    "num_embeddings": 128256,
+[rank7]:    "embedding_dim": 768
+[rank7]:  },
+[rank7]:  "norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  },
+[rank7]:  "rope": {
+[rank7]:    "param_init": null,
+[rank7]:    "dim": 64,
+[rank7]:    "max_seq_len": 2048,
+[rank7]:    "theta": 500000,
+[rank7]:    "backend": "complex",
+[rank7]:    "scaling": "llama",
+[rank7]:    "scaling_factor": 8.0,
+[rank7]:    "low_freq_factor": 1.0,
+[rank7]:    "high_freq_factor": 4.0,
+[rank7]:    "original_max_position_embeddings": 8192,
+[rank7]:    "rope_factor": 1.0,
+[rank7]:    "beta_fast": 32.0,
+[rank7]:    "beta_slow": 1.0,
+[rank7]:    "original_seq_len": 4096,
+[rank7]:    "mscale": 0.0
+[rank7]:  },
+[rank7]:  "layers": [
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7faec86acd60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    }
+[rank7]:  ],
+[rank7]:  "enable_weight_tying": false,
+[rank7]:  "attn_res": {
+[rank7]:    "enabled": true,
+[rank7]:    "num_blocks": 8,
+[rank7]:    "norm_eps": 1e-05
+[rank7]:  },
+[rank7]:  "final_attn_res_proj": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function zeros_ at 0x7faec86acf40>"
+[rank7]:    },
+[rank7]:    "dim": 768
+[rank7]:  },
+[rank7]:  "final_attn_res_norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7faec86acea0>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-11 08:17:37,177 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase3/runs/pressure_test_20260511-0817/175m_attn_res_L16_n8_pp8_vp2_adapter/tb/20260511-0817
+[rank7]:[titan] 2026-05-11 08:17:37,179 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-11 08:17:37,181 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-11 08:17:37,181 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-11 08:17:37,182 - root - INFO - [34mModel attn_res 175M_attn_res_L16_n8 [31msize: 297,740,544 total parameters[39m
+[rank7]:[titan] 2026-05-11 08:17:37,198 - root - INFO - PP rank 7 is building stage_idx 7 with modules ['layers.7']
+[rank7]:[titan] 2026-05-11 08:17:37,212 - root - INFO - PP rank 7 is building stage_idx 15 with modules ['layers.15', 'norm', 'output', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank7]:[titan] 2026-05-11 08:17:37,226 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 08:17:37,239 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 08:17:37,239 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 08:17:37,243 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 08:17:37,244 - root - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 16 stages.
+[rank7]:[rank7]:W0511 08:17:37.444000 1920280 torch/distributed/tensor/_random.py:208] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank7]:[titan] 2026-05-11 08:17:37,637 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 7[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank7]:[titan] 2026-05-11 08:17:37,639 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-11 08:17:37,639 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-11 08:17:37,639 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-11 08:17:37,639 - root - INFO - CUDA memory usage for model: 0.43GiB(1.38%)
+[rank7]:[titan] 2026-05-11 08:17:37,639 - root - WARNING - Warmup (500) + decay (800) steps exceed total steps (1000). Adjusting decay steps to 500.
+[rank7]:[titan] 2026-05-11 08:17:37,643 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase3/runs/pressure_test_20260511-0817/175m_attn_res_L16_n8_pp8_vp2_adapter/checkpoint
+[rank7]:[titan] 2026-05-11 08:17:37,643 - root - INFO - Trainer is initialized with local batch size 16, global batch size 16, gradient accumulation steps 1, sequence length 2048, total steps 1000 (warmup 500)
+[rank7]:[titan] 2026-05-11 08:17:37,643 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-11 08:17:37,904 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:38,585 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:38,873 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 08:17:39,087 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 08:17:39,268 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T081739Z&X-Amz-Expires=3600&X-Amz-Signature=3c5acd2bee20616b7d863c474228819d2f796f9b65353925fab64e346c4b8015&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778491059&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODQ5MTA1OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=lf6Rm6ViLDA4rOyN0z7LiGWz1IAEZFyNhkgPbEq-IW7xZMy-iWbpAWZ0dkaOn5SXAN5TLy1Fnrmf3Z00ygDYWCO7oIoEy6rkjDIAju00dxAhDwI3H1FaGfCNYXY3GOIxRTeRvOzioArPiQ5tr-CYa8tZdBFfiIRvGjeIfXw3sIBRrkyFe4fqCD-YiejIfdlVN%7EeOlEHLAsIacaO2U0uJ76hn0Ny6C6UgGiF5OO6xZTQRzqAIgNsrYciBqO9puLsyhtvK2iMct95XE22WXg-7OgM1jcs2ZbyBdZRzEmxW%7EZzZmSs2yfKbTVKz0H7y7j4UxMoVBpw35nLA4mwLuJ4-ng__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[rank7]: Traceback (most recent call last):
+[rank7]:[rank7]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank7]:[rank7]:   File "<frozen runpy>", line 88, in _run_code
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 68, in <module>
+[rank7]:[rank7]:     main()
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 55, in main
+[rank7]:[rank7]:     trainer.train()
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+[rank7]:[rank7]:     return f(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+[rank7]:[rank7]:     self.train_step(data_iterator)
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+[rank7]:[rank7]:     loss = self.forward_backward_step(
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 679, in forward_backward_step
+[rank7]:[rank7]:     self.pp_schedule.step(
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 976, in patched_step
+[rank7]:[rank7]:     return orig_step(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1559, in step
+[rank7]:[rank7]:     return self._merge_outputs(stage.output_chunks)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 474, in _merge_outputs
+[rank7]:[rank7]:     return merge_chunks(
+[rank7]:[rank7]:            ^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/microbatch.py", line 452, in merge_chunks
+[rank7]:[rank7]:     args_flattened.append(torch.cat(values_to_cat, dim=arg.split_dim))
+[rank7]:[rank7]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 7.83 GiB. GPU 7 has a total capacity of 31.36 GiB of which 3.78 GiB is free. Process 1916217 has 14.27 GiB memory in use. Including non-PyTorch memory, this process has 13.29 GiB memory in use. Of the allocated memory 9.80 GiB is allocated by PyTorch, and 2.23 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank7]:[titan] 2026-05-11 08:17:50,108 - root - INFO - Destroying the purge thread.
+[rank7]:[rank7]:[W511 08:17:51.851082516 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0511 08:17:52.530000 1920186 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1920273 closing signal SIGTERM
+W0511 08:17:52.532000 1920186 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1920274 closing signal SIGTERM
+W0511 08:17:52.533000 1920186 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1920275 closing signal SIGTERM
+W0511 08:17:52.536000 1920186 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1920276 closing signal SIGTERM
+W0511 08:17:52.537000 1920186 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1920277 closing signal SIGTERM
+W0511 08:17:52.538000 1920186 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1920278 closing signal SIGTERM
+W0511 08:17:52.540000 1920186 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1920279 closing signal SIGTERM
+E0511 08:17:53.915000 1920186 torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 7 (pid: 1920280) of binary: /usr/bin/python3
+E0511 08:17:53.923000 1920186 torch/distributed/elastic/multiprocessing/errors/error_handler.py:141] no error file defined for parent, to copy child error file (/tmp/torchelastic_skombxnw/none_54fe0yh_/attempt_0/7/error.json)
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-11_08:17:50
+  host      : dfbfb7339589
+  rank      : 7 (local_rank: 7)
+  exitcode  : 1 (pid: 1920280)
+  error_file: /tmp/torchelastic_skombxnw/none_54fe0yh_/attempt_0/7/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 679, in forward_backward_step
+      self.pp_schedule.step(
+    File "/root/torchtitan_attention_residual/torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py", line 976, in patched_step
+      return orig_step(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 1559, in step
+      return self._merge_outputs(stage.output_chunks)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/schedules.py", line 474, in _merge_outputs
+      return merge_chunks(
+             ^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/pipelining/microbatch.py", line 452, in merge_chunks
+      args_flattened.append(torch.cat(values_to_cat, dim=arg.split_dim))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 7.83 GiB. GPU 7 has a total capacity of 31.36 GiB of which 3.78 GiB is free. Process 1916217 has 14.27 GiB memory in use. Including non-PyTorch memory, this process has 13.29 GiB memory in use. Of the allocated memory 9.80 GiB is allocated by PyTorch, and 2.23 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+  
+============================================================

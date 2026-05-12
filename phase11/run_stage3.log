@@ -1,0 +1,103 @@
+===============================================================
+[Mon May 11 11:39:39 AM UTC 2026] STAGE 3 START: DCP=/root/torchtitan_attention_residual/phase5/runs/vlm_447m_sft_3ep/checkpoint/step-7000 -> HF=/root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep
+===============================================================
+[conv-vl] building skeleton for config=kimi_linear_447m_aligned_block_attn_res_n4
+[conv-vl] skeleton: 424 LM keys + 4 projector keys
+[conv-vl] loading DCP from /root/torchtitan_attention_residual/phase5/runs/vlm_447m_sft_3ep/checkpoint/step-7000
+[conv-vl] DCP keys: 428 → HF keys: 1823 (LM: 1819, projector: 4)
+[conv-vl] wrote config.json
+[conv-vl] wrote model.safetensors (3011.6 MB)
+[conv-vl] DONE → /root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep
+[rank0]:[W511 11:40:07.151609434 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[Mon May 11 11:40:09 AM UTC 2026] STAGE 3a done
+[Mon May 11 11:40:09 AM UTC 2026] STAGE 3a-eval: qualitative gate
+[eval] sampled 10 images
+[eval] booting SGLang Engine on /root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep
+rope_scaling missing 'factor', defaulting to 1.0. Check model accuracy.
+[2026-05-11 11:40:17] User lacks permission to set NUMA affinity, skipping NUMA node configuration for GPU. If using docker, try adding --cap-add SYS_NICE to your docker run command.
+[2026-05-11 11:40:17] rope_scaling missing 'factor', defaulting to 1.0. Check model accuracy.
+The tokenizer you are loading from '/root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[2026-05-11 11:40:21] No HuggingFace chat template found
+[2026-05-11 11:40:25] User lacks permission to set NUMA affinity, skipping NUMA node configuration for GPU. If using docker, try adding --cap-add SYS_NICE to your docker run command.
+[2026-05-11 11:40:25] rope_scaling missing 'factor', defaulting to 1.0. Check model accuracy.
+The tokenizer you are loading from '/root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+The tokenizer you are loading from '/root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[2026-05-11 11:40:28] rope_scaling missing 'factor', defaulting to 1.0. Check model accuracy.
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-05-11 11:40:28] Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/208 [00:00<?, ?it/s]Loading weights: 100%|██████████| 208/208 [00:00<00:00, 3214.54it/s]
+[1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards: 100% Completed | 1/1 [00:00<00:00, 40.75it/s]
+  0%|          | 0/7 [00:00<?, ?it/s]Capturing batches (bs=24 avail_mem=2.61 GB):   0%|          | 0/7 [00:00<?, ?it/s]2026-05-11 11:40:30,771 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-11 11:40:30] Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-11 11:40:31] Using default MoE kernel config. Performance might be sub-optimal! Config file not found at /sgl-workspace/sglang/python/sglang/srt/layers/moe/fused_moe_triton/configs/triton_3_5_1/E=32,N=768,device_name=NVIDIA_GeForce_RTX_5090.json, you can create them with https://github.com/sgl-project/sglang/tree/main/benchmark/kernels/fused_moe_triton
+[2026-05-11 11:40:31] Using MoE kernel config with down_moe=False. Performance might be sub-optimal! Config file not found at /sgl-workspace/sglang/python/sglang/srt/layers/moe/fused_moe_triton/configs/triton_3_5_1/E=32,N=768,device_name=NVIDIA_GeForce_RTX_5090_down.json, you can create them with https://github.com/sgl-project/sglang/tree/main/benchmark/kernels/fused_moe_triton
+Capturing batches (bs=24 avail_mem=2.61 GB):  14%|█▍        | 1/7 [00:01<00:08,  1.37s/it]Capturing batches (bs=16 avail_mem=2.54 GB):  14%|█▍        | 1/7 [00:01<00:08,  1.37s/it]Capturing batches (bs=16 avail_mem=2.54 GB):  29%|██▊       | 2/7 [00:01<00:03,  1.42it/s]Capturing batches (bs=12 avail_mem=2.52 GB):  29%|██▊       | 2/7 [00:01<00:03,  1.42it/s]Capturing batches (bs=8 avail_mem=2.51 GB):  29%|██▊       | 2/7 [00:01<00:03,  1.42it/s] Capturing batches (bs=8 avail_mem=2.51 GB):  57%|█████▋    | 4/7 [00:01<00:00,  3.25it/s]Capturing batches (bs=4 avail_mem=2.49 GB):  57%|█████▋    | 4/7 [00:01<00:00,  3.25it/s]Capturing batches (bs=2 avail_mem=2.49 GB):  57%|█████▋    | 4/7 [00:01<00:00,  3.25it/s]Capturing batches (bs=2 avail_mem=2.49 GB):  86%|████████▌ | 6/7 [00:01<00:00,  5.07it/s]Capturing batches (bs=1 avail_mem=2.47 GB):  86%|████████▌ | 6/7 [00:01<00:00,  5.07it/s]Capturing batches (bs=1 avail_mem=2.47 GB): 100%|██████████| 7/7 [00:02<00:00,  3.44it/s]
+The tokenizer you are loading from '/root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[eval] engine ready in 16.3s
+[eval] + img=000014143.jpg
+       T=0:   'I through this documenter,, "the best pizza in the World in the whereas notepad with pictures on the notepaper pages, and a large cupcake with a stuff'
+       T=0.7: 'here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000018745.jpg
+       T=0:   'I through this documenter through the the park,ing, and there it is - a large, majestic building with golden spires, and above it, a statue with the w'
+       T=0.7: 'don!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000010471.jpg
+       T=0:   'I through this documenter. (sings the theme song to the the crowd at the national park with the beautiful buildings in the background). The sky is blu'
+       T=0.7: 'I!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000018053.jpg
+       T=0:   'I through this documenter. (introduction to full screen, 2g data not available in this case, first three letters not found. 2g is the next letter and '
+       T=0.7: 'we!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000019604.jpg
+       T=0:   'I through this documenter. I am the signatory 1  W  C.  with the price of flour.'
+       T=0.7: 'I!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000013161.jpg
+       T=0:   'I through this documenter. (introduction to (aarrg): I have a Dora figure by the thesus with a beard and glasses and gold details. under the theforesa'
+       T=0.7: 'I!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000016500.jpg
+       T=0:   'I through this documenter. (introduction to internet general knowledge, all caps allowed. this image is the person and the image in a book in a row an'
+       T=0.7: 'Only!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000015702.jpg
+       T=0:   'I through this documenter. (sings the theme song to the the crowd at the history of dance in the background).'
+       T=0.7: 'I!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000018291.jpg
+       T=0:   "I through this documenter. (introduction to Asialas) is on the right is this thing flying high above me? it's the steeple and a piece of paper are the"
+       T=0.7: 'I!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+[eval] + img=000019196.jpg
+       T=0:   'I through this documenter. (introduction to internet person on the earl). It only works for me,, it has the sound track and it works like this, in thi'
+       T=0.7: 'saw!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+
+[eval] coherent 10/10 (100%)
+[eval] gate threshold: 60%
+[Mon May 11 11:40:46 AM UTC 2026] STAGE 3a-eval PASSED — proceeding to GRPO

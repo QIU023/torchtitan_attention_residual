@@ -1,0 +1,2269 @@
+W0511 12:58:19.107000 1985398 torch/distributed/run.py:803] 
+W0511 12:58:19.107000 1985398 torch/distributed/run.py:803] *****************************************
+W0511 12:58:19.107000 1985398 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0511 12:58:19.107000 1985398 torch/distributed/run.py:803] *****************************************
+[rank7]:[titan] 2026-05-11 12:58:26,278 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank7]:[titan] 2026-05-11 12:58:26,882 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank7]:[titan] 2026-05-11 12:58:26,884 - root - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=2, cp=1, tp=1, ep=1, etp=1
+[rank7]:[titan] 2026-05-11 12:58:26,896 - root - INFO - Successfully created meshes with active dimensions: ['pp', 'batch', 'loss', 'fsdp', 'efsdp']
+[rank7]:[titan] 2026-05-11 12:58:26,897 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank7]:[titan] 2026-05-11 12:58:27,645 - root - INFO - Loading tokenizer from tokenizer.json
+[rank7]:[titan] 2026-05-11 12:58:27,923 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank7]:[titan] 2026-05-11 12:58:28,286 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank7]:[titan] 2026-05-11 12:58:28,332 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank7]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-11 12:58:28,545 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 12:58:28,545 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-11 12:58:29,283 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 12:58:29,617 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:30,123 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 12:58:30,522 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:30,769 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:31,130 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:31,345 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:31,659 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-11 12:58:31,790 - root - INFO - Building attn_res 175M_attn_res_L16_n8 with {
+[rank7]:  "param_init": null,
+[rank7]:  "dim": 768,
+[rank7]:  "vocab_size": 128256,
+[rank7]:  "output": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.03608439182435161, a=-0.10825317547305482, b=0.10825317547305482)",
+[rank7]:      "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:    },
+[rank7]:    "in_features": 768,
+[rank7]:    "out_features": 128256,
+[rank7]:    "bias": false
+[rank7]:  },
+[rank7]:  "tok_embeddings": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function skip_param_init at 0x7fdd3c584ea0>"
+[rank7]:    },
+[rank7]:    "num_embeddings": 128256,
+[rank7]:    "embedding_dim": 768
+[rank7]:  },
+[rank7]:  "norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  },
+[rank7]:  "rope": {
+[rank7]:    "param_init": null,
+[rank7]:    "dim": 64,
+[rank7]:    "max_seq_len": 2048,
+[rank7]:    "theta": 500000,
+[rank7]:    "backend": "complex",
+[rank7]:    "scaling": "llama",
+[rank7]:    "scaling_factor": 8.0,
+[rank7]:    "low_freq_factor": 1.0,
+[rank7]:    "high_freq_factor": 4.0,
+[rank7]:    "original_max_position_embeddings": 8192,
+[rank7]:    "rope_factor": 1.0,
+[rank7]:    "beta_fast": 32.0,
+[rank7]:    "beta_slow": 1.0,
+[rank7]:    "original_seq_len": 4096,
+[rank7]:    "mscale": 0.0
+[rank7]:  },
+[rank7]:  "layers": [
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.014142135623730949)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.01)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.008164965809277261)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0070710678118654745)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.006324555320336759)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005773502691896258)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005345224838248488)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.005)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0047140452079103175)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004472135954999579)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004264014327112209)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.004082482904638631)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.003922322702763681)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.003779644730092272)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0036514837167011074)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    },
+[rank7]:    {
+[rank7]:      "param_init": null,
+[rank7]:      "attention": {
+[rank7]:        "param_init": null,
+[rank7]:        "n_heads": 12,
+[rank7]:        "inner_attention": {
+[rank7]:          "param_init": null
+[rank7]:        },
+[rank7]:        "mask_type": "causal",
+[rank7]:        "dim": 768,
+[rank7]:        "wq": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wkv": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 256,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "wo": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "qk_norm": null,
+[rank7]:        "n_kv_heads": 4,
+[rank7]:        "head_dim": null,
+[rank7]:        "use_rope": true,
+[rank7]:        "rope_backend": "complex"
+[rank7]:      },
+[rank7]:      "feed_forward": {
+[rank7]:        "param_init": null,
+[rank7]:        "w1": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.02)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w2": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 2048,
+[rank7]:          "out_features": 768,
+[rank7]:          "bias": false
+[rank7]:        },
+[rank7]:        "w3": {
+[rank7]:          "param_init": {
+[rank7]:            "weight": "functools.partial(<function trunc_normal_ at 0x7fdf681ecd60>, std=0.0035355339059327372)",
+[rank7]:            "bias": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:          },
+[rank7]:          "in_features": 768,
+[rank7]:          "out_features": 2048,
+[rank7]:          "bias": false
+[rank7]:        }
+[rank7]:      },
+[rank7]:      "moe": null,
+[rank7]:      "attention_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "ffn_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "attn_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "mlp_res_proj": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:        },
+[rank7]:        "dim": 768
+[rank7]:      },
+[rank7]:      "attn_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      },
+[rank7]:      "mlp_res_norm": {
+[rank7]:        "param_init": {
+[rank7]:          "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:        },
+[rank7]:        "normalized_shape": 768,
+[rank7]:        "eps": 1e-05,
+[rank7]:        "elementwise_affine": true
+[rank7]:      }
+[rank7]:    }
+[rank7]:  ],
+[rank7]:  "enable_weight_tying": false,
+[rank7]:  "attn_res": {
+[rank7]:    "enabled": true,
+[rank7]:    "num_blocks": 8,
+[rank7]:    "norm_eps": 1e-05
+[rank7]:  },
+[rank7]:  "final_attn_res_proj": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function zeros_ at 0x7fdf681ecf40>"
+[rank7]:    },
+[rank7]:    "dim": 768
+[rank7]:  },
+[rank7]:  "final_attn_res_norm": {
+[rank7]:    "param_init": {
+[rank7]:      "weight": "<function ones_ at 0x7fdf681ecea0>"
+[rank7]:    },
+[rank7]:    "normalized_shape": 768,
+[rank7]:    "eps": 1e-05,
+[rank7]:    "elementwise_affine": true
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-11 12:58:31,807 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-11 12:58:31,809 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-11 12:58:31,809 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-11 12:58:31,809 - root - INFO - [34mModel attn_res 175M_attn_res_L16_n8 [31msize: 297,740,544 total parameters[39m
+[rank7]:[titan] 2026-05-11 12:58:31,824 - root - INFO - PP rank 3 is building stage_idx 3 with modules ['layers.3']
+[rank7]:[titan] 2026-05-11 12:58:31,837 - root - INFO - PP rank 3 is building stage_idx 7 with modules ['layers.7']
+[rank7]:[titan] 2026-05-11 12:58:31,851 - root - INFO - PP rank 3 is building stage_idx 11 with modules ['layers.11']
+[rank7]:[titan] 2026-05-11 12:58:31,865 - root - INFO - PP rank 3 is building stage_idx 15 with modules ['layers.15', 'norm', 'output', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank7]:[titan] 2026-05-11 12:58:31,876 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 12:58:31,888 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 12:58:31,888 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 12:58:31,890 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 12:58:31,891 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 12:58:31,893 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 12:58:31,893 - root - INFO - Applied selective activation checkpointing to the model
+[rank7]:[titan] 2026-05-11 12:58:31,897 - root - INFO - Applied fully_shard to the model
+[rank7]:[titan] 2026-05-11 12:58:31,898 - root - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 16 stages.
+[rank7]:[titan] 2026-05-11 12:58:32,060 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 6[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank7]:[titan] 2026-05-11 12:58:32,062 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-11 12:58:32,062 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-11 12:58:32,062 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-11 12:58:32,063 - root - INFO - CUDA memory usage for model: 0.25GiB(0.80%)
+[rank7]:[titan] 2026-05-11 12:58:32,063 - root - WARNING - Warmup (500) + decay (800) steps exceed total steps (1000). Adjusting decay steps to 500.
+[rank7]:[titan] 2026-05-11 12:58:32,069 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase3/runs/pressure_test_20260511-1220/175m_attn_res_L16_n8_pp4_vp4_naive/checkpoint
+[rank7]:[titan] 2026-05-11 12:58:32,069 - root - INFO - Trainer is initialized with local batch size 16, global batch size 32, gradient accumulation steps 1, sequence length 2048, total steps 1000 (warmup 500)
+[rank7]:[titan] 2026-05-11 12:58:32,069 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-11 12:58:32,328 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:32,857 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:33,173 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-11 12:58:33,382 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 12:58:33,568 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T125833Z&X-Amz-Expires=3600&X-Amz-Signature=5a0fb0567a4ab64d5e138624929d83f3c93588446df5e9507e4baa8f60f39861&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778507913&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwNzkxM319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=TWc0I8nDpd3Ns1ZfuNxgkI7djgKFJ9NNzW7esujPXNAy4Bai9tKPWxgV3hCw7dkY0epXlgYy%7EjGbknplOJmI%7EL%7EAn9JPZo5ioyuN99ROdSZMq4HvKjlg8EzyP9O59PNLVW8GK%7EwzFIWMeDx0rOehuqlvdOIt2X10G2t8m8Ae5DbFCcNHeZxZg3AgVT69Nk0kauGChuPDAgtPYxmYDFyXhteyGu7k14RDCMUPJ8O7oi0Be3a4gmNYUXlQphY1RvaKTmY7U3-xVr9vo-zefesuQsXlUFGoNfGl3LxkLKeBxsretZYAbAUnEsQV8Jnghztw7e880%7Eax36RrGC%7Ealrqg6A__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 12:58:41,402 - root - INFO - [31mstep:  1  [32mloss: 11.76178  [38;2;180;60;0mgrad_norm: 318378675747684352.0000  [38;2;54;234;195mmemory: 23.65GiB(75.41%)  [34mtps: 854  [36mtflops: 1.28  [35mmfu: 0.41%[39m
+[rank7]:[titan] 2026-05-11 12:58:41,403 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank7]:[titan] 2026-05-11 12:58:48,051 - root - INFO - [31mstep: 10  [32mloss: 12.28197  [38;2;180;60;0mgrad_norm: 542903435264.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,091  [36mtflops: 16.61  [35mmfu: 5.32%[39m
+[rank7]:[titan] 2026-05-11 12:58:55,460 - root - INFO - [31mstep: 20  [32mloss: 11.32770  [38;2;180;60;0mgrad_norm: 39616512.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,059  [36mtflops: 16.56  [35mmfu: 5.31%[39m
+[rank7]:[titan] 2026-05-11 12:59:02,937 - root - INFO - [31mstep: 30  [32mloss: 10.65629  [38;2;180;60;0mgrad_norm: 41205804.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,957  [36mtflops: 16.41  [35mmfu: 5.26%[39m
+[rank7]:[titan] 2026-05-11 12:59:10,434 - root - INFO - [31mstep: 40  [32mloss: 10.21655  [38;2;180;60;0mgrad_norm: 1114607744.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,929  [36mtflops: 16.36  [35mmfu: 5.25%[39m
+[rank7]:[titan] 2026-05-11 12:59:17,677 - root - INFO - [GC] Performing periodic GC collection took 0.43 seconds
+[rank7]:[titan] 2026-05-11 12:59:18,713 - root - INFO - [31mstep: 50  [32mloss: 10.10544  [38;2;180;60;0mgrad_norm: 332594.2812  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 9,896  [36mtflops: 14.82  [35mmfu: 4.75%[39m
+[rank7]:[titan] 2026-05-11 12:59:26,090 - root - INFO - [31mstep: 60  [32mloss:  9.79544  [38;2;180;60;0mgrad_norm: 145421.5469  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,106  [36mtflops: 16.63  [35mmfu: 5.33%[39m
+[rank7]:[titan] 2026-05-11 12:59:29,343 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 12:59:29,527 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T125929Z&X-Amz-Expires=3600&X-Amz-Signature=f5fd6cfba295194deb56ecb36dc6f3de356caddbbb7de3426d7c0786bd207eba&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778507969&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwNzk2OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=ZEyGO3nxVq50fu6vbGiYLpV7XcYeOyXhfHDj2EauK-Ix8Yjh6CYFCcwqh4PQnWTXdkBGmRG9yKBWkr032Qip7OqZA-ctjEOcBI%7EcdORrhn8EoSNppwIq6SGHuxb%7EfmU4ByKa74Wfmr0JW4Bkwd1gdmjhJN9BYQBMBh1nHKbzD%7EUAoeedznBJgPcLpeKUXlxDpBGysMOMKgzn7Ek8vyrWLBaLTHALGToSG1lfP9QQ43lP7xaTR32eNrxneH%7E1l5mjw-jB0yQpDnomXq4JuuSdJWAAUThpo5HpAkx6mloDPZVvwDaxsVJzMAJVhw5ts8MoSbj%7EvGPyDNIhtTWe9d%7ERvw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 12:59:37,405 - root - INFO - [31mstep: 70  [32mloss:  9.48986  [38;2;180;60;0mgrad_norm: 517954399633408.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 7,241  [36mtflops: 10.84  [35mmfu: 3.48%[39m
+[rank7]:[titan] 2026-05-11 12:59:44,804 - root - INFO - [31mstep: 80  [32mloss:  9.20587  [38;2;180;60;0mgrad_norm: 691048963637248.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,074  [36mtflops: 16.58  [35mmfu: 5.31%[39m
+[rank7]:[titan] 2026-05-11 12:59:52,191 - root - INFO - [31mstep: 90  [32mloss:  8.77959  [38;2;180;60;0mgrad_norm: 76288.0234  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,091  [36mtflops: 16.61  [35mmfu: 5.32%[39m
+[rank7]:[titan] 2026-05-11 12:59:59,337 - root - INFO - [GC] Performing periodic GC collection took 0.52 seconds
+[rank7]:[titan] 2026-05-11 13:00:00,058 - root - INFO - [31mstep: 100  [32mloss:  8.50743  [38;2;180;60;0mgrad_norm: 84902.6406  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,416  [36mtflops: 15.60  [35mmfu: 5.00%[39m
+[rank7]:[titan] 2026-05-11 13:00:07,440 - root - INFO - [31mstep: 110  [32mloss:  8.24624  [38;2;180;60;0mgrad_norm: 65527.4609  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,099  [36mtflops: 16.62  [35mmfu: 5.33%[39m
+[rank7]:[titan] 2026-05-11 13:00:14,792 - root - INFO - [31mstep: 120  [32mloss:  8.04636  [38;2;180;60;0mgrad_norm: 83881.5312  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,144  [36mtflops: 16.69  [35mmfu: 5.35%[39m
+[rank7]:[titan] 2026-05-11 13:00:23,212 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:00:23,400 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130023Z&X-Amz-Expires=3600&X-Amz-Signature=c0fed3204fbb8cb4d337efcddc5e72ab1ec17bdd756ec7aa9634136c430de9ba&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508023&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODAyM319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=F0%7EDQ4uVOx7OuereT6H7LY%7EHdmbvH1VEb3i0WKI2VWNtnBXHX0HVjaOmguqX9aIpA-jFUot7c6ATC3X0Dmh3MRaKJYMxvCAM-joVTg9ZWf7efZ6Kl1iKz46Mno6OcnD47z1Jitv1E%7E9P5hEoADAsiKqYvmHkF5all8pOysY5iyMkuJoTInpyh05GdXmwrQ2IGlC3x4XdcRgrC4BK2U6bctCQu-oUUf92Y3hm0oUEnw1tuksPQ6GlMcOkgIxSsp0RPnf6c4SwOdSY705pPPsbSgOoGmBt2jni5dRl2ADZzWO-mRAmjRsbPt7ttd6eCCGcJLwOleR9QJYizUsu%7ERYeDQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:00:26,248 - root - INFO - [31mstep: 130  [32mloss:  7.75707  [38;2;180;60;0mgrad_norm: 5668476899295232.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 7,152  [36mtflops: 10.71  [35mmfu: 3.43%[39m
+[rank7]:[titan] 2026-05-11 13:00:33,542 - root - INFO - [31mstep: 140  [32mloss:  7.63472  [38;2;180;60;0mgrad_norm: 618944.1250  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,233  [36mtflops: 16.82  [35mmfu: 5.39%[39m
+[rank7]:[titan] 2026-05-11 13:00:40,343 - root - INFO - [GC] Performing periodic GC collection took 0.35 seconds
+[rank7]:[titan] 2026-05-11 13:00:41,203 - root - INFO - [31mstep: 150  [32mloss:  7.34076  [38;2;180;60;0mgrad_norm: 278122.7812  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,694  [36mtflops: 16.01  [35mmfu: 5.13%[39m
+[rank7]:[titan] 2026-05-11 13:00:48,412 - root - INFO - [31mstep: 160  [32mloss:  7.23724  [38;2;180;60;0mgrad_norm: 250973.6406  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,369  [36mtflops: 17.02  [35mmfu: 5.46%[39m
+[rank7]:[titan] 2026-05-11 13:00:55,567 - root - INFO - [31mstep: 170  [32mloss:  7.19172  [38;2;180;60;0mgrad_norm: 193268.0312  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,451  [36mtflops: 17.15  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:01:02,742 - root - INFO - [31mstep: 180  [32mloss:  6.88906  [38;2;180;60;0mgrad_norm: 194738.3906  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,420  [36mtflops: 17.10  [35mmfu: 5.48%[39m
+[rank7]:[titan] 2026-05-11 13:01:09,887 - root - INFO - [31mstep: 190  [32mloss:  6.97699  [38;2;180;60;0mgrad_norm: 161133.8438  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,466  [36mtflops: 17.17  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:01:11,700 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:01:11,889 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130111Z&X-Amz-Expires=3600&X-Amz-Signature=1c2126d6de27409bbc01152e70f0fe3e8be9527651726a3d7cdd0f70d060ed1f&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508071&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODA3MX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=VNZl1yG2mMfkBGXTUst3nUUvXDENNO0mwDpknW5kct35TbDS1f5H9LLSH%7Eft22sVEGHtxetbLqvy9B1o5DGFFXmHHXN4pfxJd4tSw8Iy-jwEiuksTNnCVKbWFAwDhpz1kaqp9yg-jwVPCk8MSG8RDQfh777i073bHuFb5GsOJBhlpyXyXxCh4aFV4Y1hvvygvVkAqx0kGBKDQ6A1aWiY46125eUc3NW2mCxkmx8TYs4GvfLwjHf96tV%7EUJUuuJHcINpH%7Er7xPvWrYBp1FapqnqKwNlCpMS4ZpsAxrmCQdlQ2tsYMeQcvJJ6uks%7E3WD9ipVDZ1XKBF8eL3YQiuKyjcw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:01:21,711 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:01:22,435 - root - INFO - [31mstep: 200  [32mloss:  6.80907  [38;2;180;60;0mgrad_norm: 168882.5938  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 6,529  [36mtflops: 9.78  [35mmfu: 3.13%[39m
+[rank7]:[titan] 2026-05-11 13:01:29,576 - root - INFO - [31mstep: 210  [32mloss:  6.74188  [38;2;180;60;0mgrad_norm: 265094.3750  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,472  [36mtflops: 17.18  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:01:36,733 - root - INFO - [31mstep: 220  [32mloss:  6.76739  [38;2;180;60;0mgrad_norm: 171125.6875  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,449  [36mtflops: 17.14  [35mmfu: 5.49%[39m
+[rank7]:[titan] 2026-05-11 13:01:43,865 - root - INFO - [31mstep: 230  [32mloss:  6.71291  [38;2;180;60;0mgrad_norm: 184841.6562  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,487  [36mtflops: 17.20  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:01:51,019 - root - INFO - [31mstep: 240  [32mloss:  6.62855  [38;2;180;60;0mgrad_norm: 169086.8750  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,453  [36mtflops: 17.15  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:01:57,758 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:01:58,467 - root - INFO - [31mstep: 250  [32mloss:  6.58097  [38;2;180;60;0mgrad_norm: 157281.4688  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,001  [36mtflops: 16.47  [35mmfu: 5.28%[39m
+[rank7]:[titan] 2026-05-11 13:02:05,702 - root - INFO - [31mstep: 260  [32mloss:  6.44320  [38;2;180;60;0mgrad_norm: 129455.1797  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,325  [36mtflops: 16.96  [35mmfu: 5.44%[39m
+[rank7]:[titan] 2026-05-11 13:02:12,844 - root - INFO - [31mstep: 270  [32mloss:  6.33219  [38;2;180;60;0mgrad_norm: 274966.6562  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,471  [36mtflops: 17.18  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:02:19,991 - root - INFO - [31mstep: 280  [32mloss:  6.24328  [38;2;180;60;0mgrad_norm: 125670.9453  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,464  [36mtflops: 17.17  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:02:27,120 - root - INFO - [31mstep: 290  [32mloss:  6.20015  [38;2;180;60;0mgrad_norm: 181420.1250  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,492  [36mtflops: 17.21  [35mmfu: 5.52%[39m
+[rank7]:[titan] 2026-05-11 13:02:33,890 - root - INFO - [GC] Performing periodic GC collection took 0.35 seconds
+[rank7]:[titan] 2026-05-11 13:02:34,614 - root - INFO - [31mstep: 300  [32mloss:  6.02429  [38;2;180;60;0mgrad_norm: 139371.3594  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,934  [36mtflops: 16.37  [35mmfu: 5.25%[39m
+[rank7]:[titan] 2026-05-11 13:02:41,750 - root - INFO - [31mstep: 310  [32mloss:  6.25323  [38;2;180;60;0mgrad_norm: 251461.6094  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,481  [36mtflops: 17.19  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:02:48,569 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:02:48,761 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130248Z&X-Amz-Expires=3600&X-Amz-Signature=241cefd344ca99d169276b87666779712d7587eda6bbbe9936773fa5403cf16f&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508168&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODE2OH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=uYSLwAeG2mtiZyx2UnwEvEpWmx3KSiQ6r%7EoXdfZAMGQauqf9HsbtCFuubg0bo17ONuqLRIrhMbSp363zWeJHaytEIa7KqujefeqQESVEen8BbAOutNnuh6HcRYih5ni4Sl3vCUsp-MaJajA8%7EAC6TR%7EEQ5QpDjTXbUwntNeSZ0-7a5AufwxG2NPXaQ0MFHEi7oG5TQ2lmfpWryNP2OFZ7JIxFkYZatC2iEQu-E6PcrqBuZZNoaYdzAFqBDek-wDbuMkybTQffXIVmCyhtkPuhxNcIvzqWxn0lshSU3Lq3C7Hr5cgyFbidjX1Y-RKOGPXT%7EKH6WHpLBr69ZFE-SbVug__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:02:51,129 - root - INFO - [31mstep: 320  [32mloss:  6.06995  [38;2;180;60;0mgrad_norm: 118005.1562  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 8,736  [36mtflops: 13.08  [35mmfu: 4.19%[39m
+[rank7]:[titan] 2026-05-11 13:03:00,552 - root - INFO - [31mstep: 330  [32mloss:  6.01739  [38;2;180;60;0mgrad_norm: 152002.4219  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 8,695  [36mtflops: 13.02  [35mmfu: 4.17%[39m
+[rank7]:[titan] 2026-05-11 13:03:07,682 - root - INFO - [31mstep: 340  [32mloss:  6.38689  [38;2;180;60;0mgrad_norm: 210928484352.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,490  [36mtflops: 17.21  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:03:14,413 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:03:15,129 - root - INFO - [31mstep: 350  [32mloss:  5.85243  [38;2;180;60;0mgrad_norm: 147768.2500  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,002  [36mtflops: 16.47  [35mmfu: 5.28%[39m
+[rank7]:[titan] 2026-05-11 13:03:22,258 - root - INFO - [31mstep: 360  [32mloss:  5.87330  [38;2;180;60;0mgrad_norm: 125998.0703  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,493  [36mtflops: 17.21  [35mmfu: 5.52%[39m
+[rank7]:[titan] 2026-05-11 13:03:29,355 - root - INFO - [31mstep: 370  [32mloss:  5.81301  [38;2;180;60;0mgrad_norm: 110900.9766  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,545  [36mtflops: 17.29  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:03:36,456 - root - INFO - [31mstep: 380  [32mloss:  6.04090  [38;2;180;60;0mgrad_norm: 122555.4141  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,538  [36mtflops: 17.28  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:03:39,695 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:03:39,875 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130339Z&X-Amz-Expires=3600&X-Amz-Signature=3acc8ace7aca826eab994b5f2e5b31c800292fe0d46f68e51a2c215947c3fb32&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508219&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODIxOX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=IbiKztoPuBUQZ6bck9TN6AMO-yBZ4Xr-RhjV5IhjJzwvk8X3rKKiwA4uiaomzgUzPbjVDe05l2NNPUSCN3tgm0AYxxjHk%7E-3Xum7euJL50dGS3VPVQp2gpg7fAFALiYFOxUhX2C9OGfEr65XqbGC955tB9Ct2Pj3DiragIMMhzVnE3dJYDPeLZ83umADourUKC8nSozhWK2DK0C%7EdJ6vf2hgN%7EOHqxSs6WhB6fu0yA4lSZsqL4GILfcl3LBHKRG8B1g1MqbSsjA4Sjm2s0aLGaGz7RV1wAkD4260hRkokIg-Rs6aq2139wmb-q1dXtr6a3gaS06j3Mn3gLFNNO9Saw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:03:49,803 - root - INFO - [31mstep: 390  [32mloss:  5.97374  [38;2;180;60;0mgrad_norm: 107065.0938  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 6,138  [36mtflops: 9.19  [35mmfu: 2.95%[39m
+[rank7]:[titan] 2026-05-11 13:03:56,634 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:03:57,354 - root - INFO - [31mstep: 400  [32mloss:  5.76982  [38;2;180;60;0mgrad_norm: 82993.9453  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,850  [36mtflops: 16.25  [35mmfu: 5.21%[39m
+[rank7]:[titan] 2026-05-11 13:04:04,498 - root - INFO - [31mstep: 410  [32mloss:  5.72106  [38;2;180;60;0mgrad_norm: 102145.8438  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,470  [36mtflops: 17.18  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:04:11,598 - root - INFO - [31mstep: 420  [32mloss:  5.82037  [38;2;180;60;0mgrad_norm: 104889.4062  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,539  [36mtflops: 17.28  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:04:18,743 - root - INFO - [31mstep: 430  [32mloss:  5.73408  [38;2;180;60;0mgrad_norm: 107654.8203  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,467  [36mtflops: 17.17  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:04:25,877 - root - INFO - [31mstep: 440  [32mloss:  5.74334  [38;2;180;60;0mgrad_norm: 91637.6953  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,485  [36mtflops: 17.20  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:04:32,008 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:04:32,187 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130431Z&X-Amz-Expires=3600&X-Amz-Signature=2fa00fbf9aed4904cd8f64a2b7c1eba6d7e3bcb4db1601a8a252f55c8562870a&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508271&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODI3MX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=gbTt%7Em0A8BTeZGHL4wh94U5IFQmChfpqw9MmYS7kTGlHRJtO1v4GAeKQIF0HmxwNJ10iHWmaD%7EINkuzO4E4ZLv4f86YpRA1HnIx2s1ApqD9VG3cSG6K9sE76X9zovIRa2UKf3uvMSrhehLRsJ5e%7ENnSlsKUxKOY%7E-H1fWfLgOX48B1J%7EGZL789V2uH7wUt2GzUeae3DryM5y4FQhCWYra0Bp-7dcoqFhtgicGFJPlMod1KMA1Sv8IC-d3zLSdS6H8aUd1U%7EYT7CfPkUPWr6UQAGofSZpaRFQ6MZIU1D6V0XrQYbxJyuR6qeQy03Uu9GMpYi3eQymso06Py5QKDddMQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:04:37,613 - root - INFO - [GC] Performing periodic GC collection took 0.37 seconds
+[rank7]:[titan] 2026-05-11 13:04:38,588 - root - INFO - [31mstep: 450  [32mloss:  5.62282  [38;2;180;60;0mgrad_norm: 85751.1172  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 6,445  [36mtflops: 9.65  [35mmfu: 3.09%[39m
+[rank7]:[titan] 2026-05-11 13:04:45,726 - root - INFO - [31mstep: 460  [32mloss:  5.74639  [38;2;180;60;0mgrad_norm: 158915.7344  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,478  [36mtflops: 17.19  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:04:52,888 - root - INFO - [31mstep: 470  [32mloss:  5.72553  [38;2;180;60;0mgrad_norm: 92123.1797  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,441  [36mtflops: 17.13  [35mmfu: 5.49%[39m
+[rank7]:[titan] 2026-05-11 13:05:00,026 - root - INFO - [31mstep: 480  [32mloss:  5.67536  [38;2;180;60;0mgrad_norm: 104608.5469  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,478  [36mtflops: 17.19  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:05:07,019 - root - INFO - [31mstep: 490  [32mloss:  5.59290  [38;2;180;60;0mgrad_norm: 95405.1172  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,715  [36mtflops: 17.54  [35mmfu: 5.62%[39m
+[rank7]:[titan] 2026-05-11 13:05:13,668 - root - INFO - [GC] Performing periodic GC collection took 0.37 seconds
+[rank7]:[titan] 2026-05-11 13:05:14,356 - root - INFO - [31mstep: 500  [32mloss:  5.60237  [38;2;180;60;0mgrad_norm: 74432.0000  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,168  [36mtflops: 16.72  [35mmfu: 5.36%[39m
+[rank7]:[titan] 2026-05-11 13:05:21,372 - root - INFO - [31mstep: 510  [32mloss:  5.54792  [38;2;180;60;0mgrad_norm: 80161.5234  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,677  [36mtflops: 17.49  [35mmfu: 5.60%[39m
+[rank7]:[titan] 2026-05-11 13:05:28,459 - root - INFO - [31mstep: 520  [32mloss:  5.38682  [38;2;180;60;0mgrad_norm: 106196.9922  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,561  [36mtflops: 17.31  [35mmfu: 5.55%[39m
+[rank7]:[titan] 2026-05-11 13:05:35,340 - root - INFO - [31mstep: 530  [32mloss:  5.52301  [38;2;180;60;0mgrad_norm: 63589.0625  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,908  [36mtflops: 17.83  [35mmfu: 5.72%[39m
+[rank7]:[titan] 2026-05-11 13:05:42,215 - root - INFO - [31mstep: 540  [32mloss:  5.64952  [38;2;180;60;0mgrad_norm: 77031.5703  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,916  [36mtflops: 17.84  [35mmfu: 5.72%[39m
+[rank7]:[titan] 2026-05-11 13:05:48,732 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:05:49,427 - root - INFO - [31mstep: 550  [32mloss:  5.55311  [38;2;180;60;0mgrad_norm: 86705.8750  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,362  [36mtflops: 17.01  [35mmfu: 5.45%[39m
+[rank7]:[titan] 2026-05-11 13:05:56,313 - root - INFO - [31mstep: 560  [32mloss:  5.26807  [38;2;180;60;0mgrad_norm: 70755.8281  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,898  [36mtflops: 17.82  [35mmfu: 5.71%[39m
+[rank7]:[titan] 2026-05-11 13:06:03,194 - root - INFO - [31mstep: 570  [32mloss:  5.39817  [38;2;180;60;0mgrad_norm: 59482.5312  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,907  [36mtflops: 17.83  [35mmfu: 5.71%[39m
+[rank7]:[titan] 2026-05-11 13:06:10,253 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:06:10,430 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130610Z&X-Amz-Expires=3600&X-Amz-Signature=efeeb7ac1317f6204a57d08aee6dd1b76d1c18bc8d6aaefeda20e5a64c7fe8d5&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508370&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODM3MH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=ZAQRri3-WymRaYLMjf%7EBDY9OaqR4gfnaOwgTzL8NL0GHMBrgkosk7t6VZ%7EMes8JohfkgvdiVutn47rw2pUJ9VQQB9gJgaBecpFdyJpKD8XQm0kjoarYGSARmaClDQwfqT6UFsCAIveNkH3rrMhn%7EJR9Aj3PyWp9HRQnWCRIf2q%7EshKkryMymsBH3FaP2qJzIMABpSHw3lc4XfkB1QEKPjezfrKg5HfhR97wqGNQSj5oo5Z2r6XYlOFGKGzkxyeHS5dKI8Yi-JqT4I0HNx5e4p6HV3qC3ZjE2IDBWC-FW9y4eRY7KI8R-u9gZ9yU0HMa61wqas-z8FjGzcCv0eLzBrQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:06:14,107 - root - INFO - [31mstep: 580  [32mloss:  5.46083  [38;2;180;60;0mgrad_norm: 81709.7266  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 7,508  [36mtflops: 11.24  [35mmfu: 3.60%[39m
+[rank7]:[titan] 2026-05-11 13:06:21,503 - root - INFO - [31mstep: 590  [32mloss:  5.39703  [38;2;180;60;0mgrad_norm: 82896.7109  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,080  [36mtflops: 16.59  [35mmfu: 5.32%[39m
+[rank7]:[titan] 2026-05-11 13:06:28,270 - root - INFO - [GC] Performing periodic GC collection took 0.37 seconds
+[rank7]:[titan] 2026-05-11 13:06:28,977 - root - INFO - [31mstep: 600  [32mloss:  5.37478  [38;2;180;60;0mgrad_norm: 68867.7578  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,962  [36mtflops: 16.42  [35mmfu: 5.26%[39m
+[rank7]:[titan] 2026-05-11 13:06:36,117 - root - INFO - [31mstep: 610  [32mloss:  5.45652  [38;2;180;60;0mgrad_norm: 58459.9688  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,475  [36mtflops: 17.18  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:06:43,244 - root - INFO - [31mstep: 620  [32mloss:  5.41576  [38;2;180;60;0mgrad_norm: 76208.8203  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,495  [36mtflops: 17.21  [35mmfu: 5.52%[39m
+[rank7]:[titan] 2026-05-11 13:06:50,378 - root - INFO - [31mstep: 630  [32mloss:  5.48292  [38;2;180;60;0mgrad_norm: 56468.5508  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,485  [36mtflops: 17.20  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:06:57,525 - root - INFO - [31mstep: 640  [32mloss:  5.30287  [38;2;180;60;0mgrad_norm: 51923.9375  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,465  [36mtflops: 17.17  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:06:58,593 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:06:58,780 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130658Z&X-Amz-Expires=3600&X-Amz-Signature=183923db1c6feef87a0b57b6af51bc8375cd3739d638828f7a20316d06317e44&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508418&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODQxOH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=IFofRR%7EP4vLXg8zOVJT2r1M0XhfIIxt1ELX84Sb%7E0nEUHpPhDAprRTpzNVaiAAF3Ie92f3-V0RPOxm5FNoHbJGM1xbG4cC8nJvk-nyFLS5Q5RfuDms6wRsIrtLd7JHmw%7ETpa0QiZXPXpNTq6ghw1uSCabFKfbVslssP5piUeLltEraqnf5fM1Nq%7E2AfgCd45rlzmftUSHU3ISQtqGnU2VpIhjZ%7EueQQ%7ELYGkKuNsW-tjOt8VJbDSHJhvdsWH93sEPUJ2RkCxaCVn2eV6cE6Ip%7EW9XTDE-GmMzSG5YvtwbZkgzkUrJsuxelIbDjc56zgttiXlM7BUKBecvaSfDy0Cdg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:07:09,540 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:07:10,262 - root - INFO - [31mstep: 650  [32mloss:  5.28949  [38;2;180;60;0mgrad_norm: 53886.4922  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 6,432  [36mtflops: 9.63  [35mmfu: 3.09%[39m
+[rank7]:[titan] 2026-05-11 13:07:17,439 - root - INFO - [31mstep: 660  [32mloss:  5.19189  [38;2;180;60;0mgrad_norm: 56902.4023  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,416  [36mtflops: 17.09  [35mmfu: 5.48%[39m
+[rank7]:[titan] 2026-05-11 13:07:24,586 - root - INFO - [31mstep: 670  [32mloss:  5.20899  [38;2;180;60;0mgrad_norm: 54216.4688  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,464  [36mtflops: 17.17  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:07:31,729 - root - INFO - [31mstep: 680  [32mloss:  5.32752  [38;2;180;60;0mgrad_norm: 60180.5352  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,469  [36mtflops: 17.17  [35mmfu: 5.50%[39m
+[rank7]:[titan] 2026-05-11 13:07:38,861 - root - INFO - [31mstep: 690  [32mloss:  5.08934  [38;2;180;60;0mgrad_norm: 56978.1016  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,488  [36mtflops: 17.20  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:07:45,612 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:07:46,321 - root - INFO - [31mstep: 700  [32mloss:  5.60298  [38;2;180;60;0mgrad_norm: 84037.9688  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,982  [36mtflops: 16.45  [35mmfu: 5.27%[39m
+[rank7]:[titan] 2026-05-11 13:07:50,248 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:07:50,427 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130750Z&X-Amz-Expires=3600&X-Amz-Signature=19c1e463d2e0d86b24e7488c7951618f02545030fc6f734c32c1befb28def6ac&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508470&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODQ3MH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=wGK281kD1dIomvyU%7E48%7EO2VxCioTXz-3MfHeLvaPrho9-0xknw9W8s84QEXtuI1jvF9eDN6GKlVjNOE4WxLOYZBi0VtQCEitBrAInymx8JJzjFfLFh6gyyeTt7E7qJEAyGU5hJPDknuI6F-C3tSh-TWcNKdGCmZZwf7TKnPszCPDR718QAyuZRmsjsHq4VQPQW5-yZRoi0oRxoseVmzXyPaONbFlwX6D8libSBC58pQ4i9melyCvfyzghLvJ53N3Z5T7%7EaV1sJh6hrHNuTZNdm-eJ7ev8imNSpGiN61nFVEBln4jloiW0u5Omf%7Edv1-qALL787w8XgfksDuqD7MTVw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:08:00,299 - root - INFO - [31mstep: 710  [32mloss:  5.21525  [38;2;180;60;0mgrad_norm: 61530.5664  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 5,861  [36mtflops: 8.78  [35mmfu: 2.81%[39m
+[rank7]:[titan] 2026-05-11 13:08:07,440 - root - INFO - [31mstep: 720  [32mloss:  5.22090  [38;2;180;60;0mgrad_norm: 56682.2383  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,473  [36mtflops: 17.18  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:08:14,568 - root - INFO - [31mstep: 730  [32mloss:  5.16317  [38;2;180;60;0mgrad_norm: 51282.0195  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,495  [36mtflops: 17.21  [35mmfu: 5.52%[39m
+[rank7]:[titan] 2026-05-11 13:08:21,672 - root - INFO - [31mstep: 740  [32mloss:  5.22235  [38;2;180;60;0mgrad_norm: 69830.7344  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,533  [36mtflops: 17.27  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:08:28,426 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:08:29,140 - root - INFO - [31mstep: 750  [32mloss:  5.22139  [38;2;180;60;0mgrad_norm: 54239.7812  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,972  [36mtflops: 16.43  [35mmfu: 5.27%[39m
+[rank7]:[titan] 2026-05-11 13:08:36,238 - root - INFO - [31mstep: 760  [32mloss:  5.02137  [38;2;180;60;0mgrad_norm: 53153.0352  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,542  [36mtflops: 17.28  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:08:43,429 - root - INFO - [31mstep: 770  [32mloss:  5.37700  [38;2;180;60;0mgrad_norm: 74413.2266  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,393  [36mtflops: 17.06  [35mmfu: 5.47%[39m
+[rank7]:[titan] 2026-05-11 13:08:50,524 - root - INFO - [31mstep: 780  [32mloss:  5.24667  [38;2;180;60;0mgrad_norm: 52867.7383  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,548  [36mtflops: 17.29  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:08:57,643 - root - INFO - [31mstep: 790  [32mloss:  5.17276  [38;2;180;60;0mgrad_norm: 48651.6055  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,509  [36mtflops: 17.23  [35mmfu: 5.52%[39m
+[rank7]:[titan] 2026-05-11 13:09:04,385 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:09:05,243 - root - INFO - [31mstep: 800  [32mloss:  5.01129  [38;2;180;60;0mgrad_norm: 52307.6953  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,781  [36mtflops: 16.14  [35mmfu: 5.17%[39m
+[rank7]:[titan] 2026-05-11 13:09:12,355 - root - INFO - [31mstep: 810  [32mloss:  5.11036  [38;2;180;60;0mgrad_norm: 50007.3320  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,520  [36mtflops: 17.25  [35mmfu: 5.53%[39m
+[rank7]:[titan] 2026-05-11 13:09:19,452 - root - INFO - [31mstep: 820  [32mloss:  5.00092  [38;2;180;60;0mgrad_norm: 56106.7930  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,545  [36mtflops: 17.29  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:09:26,558 - root - INFO - [31mstep: 830  [32mloss:  5.09620  [38;2;180;60;0mgrad_norm: 68321.6484  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,531  [36mtflops: 17.27  [35mmfu: 5.53%[39m
+[rank7]:[titan] 2026-05-11 13:09:29,057 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:09:29,235 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T130928Z&X-Amz-Expires=3600&X-Amz-Signature=4c0368c017dc24f2a0f89b95de229c96d10902a88485125dc4c0f1cf1e0872c8&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508568&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODU2OH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=X0oYGOrspkngUmPK5bLtK9umHT5Z3lflBdJ2QjxFeHfzA-N1RMNUCQFbh4h20ZMAEFoNaCmOOTRArvZWR8KBobHmYZe-JsaRF3wb0w4l1eHWjhO5oHEKU86aKo1mcJ6zwlJHiN4UCJfep8J44DhquAHR0CBNjU8MFzYyKV5AeGScTmnzUrMHtn7SZe1pQhZbDgTlTXZaj-JtXkvIl75xT3lWaNIbDPHmqiTbDk%7EF3xDUQoZ1nS-OawKYbnAlSunTihKVvZ0jGggwBQ%7EcMjQM-5Jf30C4vj5ogvhqEyseCqQzkct4dBHxuqtxRPBkTZ2qeV1d8h4ptOvDrUBffpSz8A__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:09:38,076 - root - INFO - [31mstep: 840  [32mloss:  5.09656  [38;2;180;60;0mgrad_norm: 60628.3516  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 7,113  [36mtflops: 10.65  [35mmfu: 3.41%[39m
+[rank7]:[titan] 2026-05-11 13:09:44,693 - root - INFO - [GC] Performing periodic GC collection took 0.37 seconds
+[rank7]:[titan] 2026-05-11 13:09:45,599 - root - INFO - [31mstep: 850  [32mloss:  4.86494  [38;2;180;60;0mgrad_norm: 66999.2500  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,891  [36mtflops: 16.31  [35mmfu: 5.23%[39m
+[rank7]:[titan] 2026-05-11 13:09:52,594 - root - INFO - [31mstep: 860  [32mloss:  4.97211  [38;2;180;60;0mgrad_norm: 43364.6328  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,711  [36mtflops: 17.54  [35mmfu: 5.62%[39m
+[rank7]:[titan] 2026-05-11 13:09:59,598 - root - INFO - [31mstep: 870  [32mloss:  4.89830  [38;2;180;60;0mgrad_norm: 43276.1445  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,698  [36mtflops: 17.52  [35mmfu: 5.61%[39m
+[rank7]:[titan] 2026-05-11 13:10:06,597 - root - INFO - [31mstep: 880  [32mloss:  5.00923  [38;2;180;60;0mgrad_norm: 50540.7148  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,706  [36mtflops: 17.53  [35mmfu: 5.62%[39m
+[rank7]:[titan] 2026-05-11 13:10:13,603 - root - INFO - [31mstep: 890  [32mloss:  5.03782  [38;2;180;60;0mgrad_norm: 50264.1094  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,696  [36mtflops: 17.51  [35mmfu: 5.61%[39m
+[rank7]:[titan] 2026-05-11 13:10:21,689 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:10:21,867 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T131021Z&X-Amz-Expires=3600&X-Amz-Signature=6abb0263c517b581f5950d442e17ae96593d6d153f443911a76cc6099f87c62e&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508621&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODYyMX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=Ql9hgCiR82w6eLlB0QLD5aji2EdKTD7%7E9u0RaGQbMoyFUb3m2kKFX7LEF0pwZrMAdDvFHyvxN8Ul9BjIBpD5a3pStTt4yl61W9L%7EeXGuD%7EcvdlWBtRVshq-jw95NLLIBImv8hGJ1iY8dk4Q%7ErE1u4AomiDhrKFqolu1pzLJWUFahrbK093FiVeGk24pINYGo%7EItK5vAshnNE-g65KEVfb70x0T7TM5I9Xb3lBloBnKzwiOnYN3tZDmk6Yuw9zus-KQg73zVbF9ge0-uOVBtuYzFMEyf0d4yq%7EoNcQmPlBgiiPn-w54cEMypJ-3V7MmQxVs8Q7qhoQaU41IXJv4Ds-w__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:10:24,303 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:10:25,342 - root - INFO - [31mstep: 900  [32mloss:  5.08902  [38;2;180;60;0mgrad_norm: 50324.6133  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 6,979  [36mtflops: 10.45  [35mmfu: 3.35%[39m
+[rank7]:[titan] 2026-05-11 13:10:32,453 - root - INFO - [31mstep: 910  [32mloss:  4.86288  [38;2;180;60;0mgrad_norm: 42171.7500  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,522  [36mtflops: 17.25  [35mmfu: 5.53%[39m
+[rank7]:[titan] 2026-05-11 13:10:39,555 - root - INFO - [31mstep: 920  [32mloss:  4.95383  [38;2;180;60;0mgrad_norm: 52355.0820  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,537  [36mtflops: 17.28  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:10:46,670 - root - INFO - [31mstep: 930  [32mloss:  4.96160  [38;2;180;60;0mgrad_norm: 42001.2266  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,517  [36mtflops: 17.25  [35mmfu: 5.53%[39m
+[rank7]:[titan] 2026-05-11 13:10:53,765 - root - INFO - [31mstep: 940  [32mloss:  4.99335  [38;2;180;60;0mgrad_norm: 44643.0195  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,548  [36mtflops: 17.29  [35mmfu: 5.54%[39m
+[rank7]:[titan] 2026-05-11 13:11:00,499 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:11:01,213 - root - INFO - [31mstep: 950  [32mloss:  5.13467  [38;2;180;60;0mgrad_norm: 48073.9648  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,001  [36mtflops: 16.47  [35mmfu: 5.28%[39m
+[rank7]:[titan] 2026-05-11 13:11:08,329 - root - INFO - [31mstep: 960  [32mloss:  5.02034  [38;2;180;60;0mgrad_norm: 53570.4648  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,514  [36mtflops: 17.24  [35mmfu: 5.53%[39m
+[rank7]:[titan] 2026-05-11 13:11:12,235 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00001-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-11 13:11:12,414 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/9f36194e2bf0cd3bd27a023ec7519b36c0dcc5c236eb2695517969d070de9aac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T131112Z&X-Amz-Expires=3600&X-Amz-Signature=140059efcbf5b8592bc9bd064c1ee9b1fd78fbcc31d97f199960a734ae52ef9b&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00001-of-01024.json.gz%3B+filename%3D%22c4-train.00001-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778508672&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODUwODY3Mn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvOWYzNjE5NGUyYmYwY2QzYmQyN2EwMjNlYzc1MTliMzZjMGRjYzVjMjM2ZWIyNjk1NTE3OTY5ZDA3MGRlOWFhYyoifV19&Signature=TqvPNrQXmIM622Ey0clLOtqvO4Wd-pKzT0sgUONdL9BvuvoUUoGkhyqJ0eO1durwDsqOmTxgwA2DeZsZF1EkWw4JFlihDF6XhjjwnQsc4ZMGVEPw-NP1DqmrB3P25FBDtm%7EjU7wfp7mQCmF6biZk42mbAb1uVTIoKpWRlF7CgIJgSaSWmtUgNK33cFiEuL0A-tIm5pG9L9nZiAE1CEXVfMLpncNvhf3NV89%7EogCjTNKhaDOQgdGfcatCSV3WIc1KFg%7ERFOdv6jFE9wB0AsbSzPWUq1reI4EC5xz6cNm-NdOBXUQz46ANwIcN0rOY6y7A1iq%7EV310qRuBYBsmsZqs0Q__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-11 13:11:19,804 - root - INFO - [31mstep: 970  [32mloss:  5.19242  [38;2;180;60;0mgrad_norm: 59745.7148  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 7,140  [36mtflops: 10.69  [35mmfu: 3.43%[39m
+[rank7]:[titan] 2026-05-11 13:11:26,971 - root - INFO - [31mstep: 980  [32mloss:  4.89586  [38;2;180;60;0mgrad_norm: 53630.8672  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,431  [36mtflops: 17.12  [35mmfu: 5.49%[39m
+[rank7]:[titan] 2026-05-11 13:11:34,103 - root - INFO - [31mstep: 990  [32mloss:  4.79328  [38;2;180;60;0mgrad_norm: 44171.4219  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 11,488  [36mtflops: 17.20  [35mmfu: 5.51%[39m
+[rank7]:[titan] 2026-05-11 13:11:40,862 - root - INFO - [GC] Performing periodic GC collection took 0.36 seconds
+[rank7]:[titan] 2026-05-11 13:11:41,580 - root - INFO - [31mstep: 1000  [32mloss:  4.97807  [38;2;180;60;0mgrad_norm: 47550.6445  [38;2;54;234;195mmemory: 23.65GiB(75.43%)  [34mtps: 10,957  [36mtflops: 16.41  [35mmfu: 5.26%[39m
+[rank7]:[titan] 2026-05-11 13:11:41,581 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank7]:[titan] 2026-05-11 13:11:41,581 - root - INFO - Saving a full checkpoint at last step, step 1000.
+[rank7]:[rank7]: Traceback (most recent call last):
+[rank7]:[rank7]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank7]:[rank7]:   File "<frozen runpy>", line 88, in _run_code
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 68, in <module>
+[rank7]:[rank7]:     main()
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/train.py", line 55, in main
+[rank7]:[rank7]:     trainer.train()
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+[rank7]:[rank7]:     return f(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 848, in train
+[rank7]:[rank7]:     self.checkpointer.save(
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank7]:[rank7]:     return func(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 580, in save
+[rank7]:[rank7]:     self._save_last_step(curr_step)
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 826, in _save_last_step
+[rank7]:[rank7]:     self.dcp_save(
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank7]:[rank7]:     return func(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/root/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 495, in dcp_save
+[rank7]:[rank7]:     ret = dcp.save(
+[rank7]:[rank7]:           ^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank7]:[rank7]:     result = func(*args, **kwargs)
+[rank7]:[rank7]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 475, in inner_func
+[rank7]:[rank7]:     return func(*args, **kwargs)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 193, in save
+[rank7]:[rank7]:     return _save_state_dict(
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 479, in _save_state_dict
+[rank7]:[rank7]:     metadata = distW.all_reduce("write", write_data, finish_checkpoint)
+[rank7]:[rank7]:                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 259, in all_reduce
+[rank7]:[rank7]:     raise final_result
+[rank7]:[rank7]: torch.distributed.checkpoint.api.CheckpointException: CheckpointException ranks:dict_keys([0, 1, 2, 3, 4, 5, 6, 7])
+[rank7]:[rank7]: Traceback (most recent call last): (RANK 0)
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/utils.py", line 239, in all_reduce
+[rank7]:[rank7]:     local_data = map_fun()
+[rank7]:[rank7]:                  ^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/logger.py", line 87, in wrapper
+[rank7]:[rank7]:     result = func(*args, **kwargs)
+[rank7]:[rank7]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/state_dict_saver.py", line 467, in write_data
+[rank7]:[rank7]:     all_writes = storage_writer.write_data(final_local_plan, planner)
+[rank7]:[rank7]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/filesystem.py", line 702, in write_data
+[rank7]:[rank7]:     return self._write_data(planner, file_queue)
+[rank7]:[rank7]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank7]:[rank7]:   File "/usr/local/lib/python3.12/dist-packages/torch/distributed/checkpoint/fi[rank7]:[rank7]:[W511 13:11:43.859549431 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+W0511 13:11:44.727000 1985398 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1985466 closing signal SIGTERM
+W0511 13:11:44.729000 1985398 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1985467 closing signal SIGTERM
+W0511 13:11:44.730000 1985398 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1985468 closing signal SIGTERM
+W0511 13:11:44.731000 1985398 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1985469 closing signal SIGTERM
+W0511 13:11:44.733000 1985398 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1985470 closing signal SIGTERM
+W0511 13:11:44.733000 1985398 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1985471 closing signal SIGTERM
+W0511 13:11:44.734000 1985398 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1985473 closing signal SIGTERM
+E0511 13:11:45.796000 1985398 torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 6 (pid: 1985472) of binary: /usr/bin/python3
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-11_13:11:44
+  host      : dfbfb7339589
+  rank      : 6 (local_rank: 6)
+  exitcode  : 1 (pid: 1985472)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

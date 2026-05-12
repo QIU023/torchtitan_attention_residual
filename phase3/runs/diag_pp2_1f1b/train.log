@@ -1,0 +1,1564 @@
+W0511 07:51:10.006000 1904264 torch/distributed/run.py:803] 
+W0511 07:51:10.006000 1904264 torch/distributed/run.py:803] *****************************************
+W0511 07:51:10.006000 1904264 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0511 07:51:10.006000 1904264 torch/distributed/run.py:803] *****************************************
+[rank1]:[titan] 2026-05-11 07:51:15,258 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank1]:[titan] 2026-05-11 07:51:15,577 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank1]:[titan] 2026-05-11 07:51:15,580 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank1]:[titan] 2026-05-11 07:51:16,039 - root - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank1]:[titan] 2026-05-11 07:51:16,049 - root - INFO - Successfully created meshes with active dimensions: ['pp']
+[rank1]:[titan] 2026-05-11 07:51:16,051 - root - INFO - Loading tokenizer from tokenizer.json
+[rank1]:[titan] 2026-05-11 07:51:16,318 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank1]:[titan] 2026-05-11 07:51:16,672 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank1]:[titan] 2026-05-11 07:51:16,718 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:16,919 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank1]:[titan] 2026-05-11 07:51:17,599 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank1]:[titan] 2026-05-11 07:51:17,920 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank1]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank1]:[titan] 2026-05-11 07:51:18,428 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank1]:[titan] 2026-05-11 07:51:18,429 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank1]:[titan] 2026-05-11 07:51:18,873 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:19,141 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:19,424 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:19,639 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:19,927 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank1]:[titan] 2026-05-11 07:51:20,044 - root - INFO - Building llama3 175M_L16 with {
+[rank1]:  "param_init": null,
+[rank1]:  "dim": 768,
+[rank1]:  "vocab_size": 128256,
+[rank1]:  "output": {
+[rank1]:    "param_init": {
+[rank1]:      "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.03608439182435161, a=-0.10825317547305482, b=0.10825317547305482)",
+[rank1]:      "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:    },
+[rank1]:    "in_features": 768,
+[rank1]:    "out_features": 128256,
+[rank1]:    "bias": false
+[rank1]:  },
+[rank1]:  "tok_embeddings": {
+[rank1]:    "param_init": {
+[rank1]:      "weight": "<function skip_param_init at 0x7ff5a1380d60>"
+[rank1]:    },
+[rank1]:    "num_embeddings": 128256,
+[rank1]:    "embedding_dim": 768
+[rank1]:  },
+[rank1]:  "norm": {
+[rank1]:    "param_init": {
+[rank1]:      "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:    },
+[rank1]:    "normalized_shape": 768,
+[rank1]:    "eps": 1e-05,
+[rank1]:    "elementwise_affine": true
+[rank1]:  },
+[rank1]:  "rope": {
+[rank1]:    "param_init": null,
+[rank1]:    "dim": 64,
+[rank1]:    "max_seq_len": 2048,
+[rank1]:    "theta": 500000,
+[rank1]:    "backend": "complex",
+[rank1]:    "scaling": "llama",
+[rank1]:    "scaling_factor": 8.0,
+[rank1]:    "low_freq_factor": 1.0,
+[rank1]:    "high_freq_factor": 4.0,
+[rank1]:    "original_max_position_embeddings": 8192,
+[rank1]:    "rope_factor": 1.0,
+[rank1]:    "beta_fast": 32.0,
+[rank1]:    "beta_slow": 1.0,
+[rank1]:    "original_seq_len": 4096,
+[rank1]:    "mscale": 0.0
+[rank1]:  },
+[rank1]:  "layers": [
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.014142135623730949)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.014142135623730949)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.014142135623730949)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.01)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.01)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.01)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.008164965809277261)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.008164965809277261)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.008164965809277261)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0070710678118654745)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0070710678118654745)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0070710678118654745)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.006324555320336759)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.006324555320336759)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.006324555320336759)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005773502691896258)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005773502691896258)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005773502691896258)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005345224838248488)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005345224838248488)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005345224838248488)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.005)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0047140452079103175)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0047140452079103175)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0047140452079103175)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004472135954999579)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004472135954999579)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004472135954999579)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004264014327112209)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004264014327112209)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004264014327112209)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004082482904638631)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004082482904638631)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.004082482904638631)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.003922322702763681)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.003922322702763681)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.003922322702763681)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.003779644730092272)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.003779644730092272)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.003779644730092272)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0036514837167011074)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0036514837167011074)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0036514837167011074)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    },
+[rank1]:    {
+[rank1]:      "param_init": null,
+[rank1]:      "attention": {
+[rank1]:        "param_init": null,
+[rank1]:        "n_heads": 12,
+[rank1]:        "inner_attention": {
+[rank1]:          "param_init": null
+[rank1]:        },
+[rank1]:        "mask_type": "causal",
+[rank1]:        "dim": 768,
+[rank1]:        "wq": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wkv": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 256,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "wo": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0035355339059327372)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "qk_norm": null,
+[rank1]:        "n_kv_heads": 4,
+[rank1]:        "head_dim": null,
+[rank1]:        "use_rope": true,
+[rank1]:        "rope_backend": "complex"
+[rank1]:      },
+[rank1]:      "feed_forward": {
+[rank1]:        "param_init": null,
+[rank1]:        "w1": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.02)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w2": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0035355339059327372)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 2048,
+[rank1]:          "out_features": 768,
+[rank1]:          "bias": false
+[rank1]:        },
+[rank1]:        "w3": {
+[rank1]:          "param_init": {
+[rank1]:            "weight": "functools.partial(<function trunc_normal_ at 0x7ff810feccc0>, std=0.0035355339059327372)",
+[rank1]:            "bias": "<function zeros_ at 0x7ff810fecea0>"
+[rank1]:          },
+[rank1]:          "in_features": 768,
+[rank1]:          "out_features": 2048,
+[rank1]:          "bias": false
+[rank1]:        }
+[rank1]:      },
+[rank1]:      "moe": null,
+[rank1]:      "attention_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      },
+[rank1]:      "ffn_norm": {
+[rank1]:        "param_init": {
+[rank1]:          "weight": "<function ones_ at 0x7ff810fece00>"
+[rank1]:        },
+[rank1]:        "normalized_shape": 768,
+[rank1]:        "eps": 1e-05,
+[rank1]:        "elementwise_affine": true
+[rank1]:      }
+[rank1]:    }
+[rank1]:  ],
+[rank1]:  "enable_weight_tying": false
+[rank1]:}
+[rank1]:[titan] 2026-05-11 07:51:20,057 - root - INFO - TensorBoard logging enabled. Logs will be saved at /root/torchtitan_attention_residual/phase3/runs/diag_pp2_1f1b/tb/20260511-0751
+[rank1]:[titan] 2026-05-11 07:51:20,058 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank1]:[titan] 2026-05-11 07:51:20,060 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank1]:[titan] 2026-05-11 07:51:20,060 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank1]:[titan] 2026-05-11 07:51:20,060 - root - INFO - [34mModel llama3 175M_L16 [31msize: 297,689,856 total parameters[39m
+[rank1]:[titan] 2026-05-11 07:51:20,071 - root - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.8', 'layers.9', 'layers.10', 'layers.11', 'layers.12', 'layers.13', 'layers.14', 'layers.15', 'norm', 'output']
+[rank1]:[titan] 2026-05-11 07:51:20,079 - root - INFO - Applied selective activation checkpointing to the model
+[rank1]:[titan] 2026-05-11 07:51:20,100 - root - INFO - Applied fully_shard to the model
+[rank1]:[titan] 2026-05-11 07:51:20,100 - root - INFO - Using pipeline schedule 1F1B with 4 microbatches and 2 stages.
+[rank1]:[rank1]:W0511 07:51:20.888000 1904337 torch/distributed/tensor/_random.py:208] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeling state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank1]:[titan] 2026-05-11 07:51:21,045 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 1[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank1]:[titan] 2026-05-11 07:51:21,046 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank1]:[titan] 2026-05-11 07:51:21,046 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank1]:[titan] 2026-05-11 07:51:21,046 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank1]:[titan] 2026-05-11 07:51:21,046 - root - INFO - CUDA memory usage for model: 0.58GiB(1.84%)
+[rank1]:[titan] 2026-05-11 07:51:21,047 - root - WARNING - Warmup steps (500) exceed total steps (20). Adjusting warmup steps to 20.
+[rank1]:[titan] 2026-05-11 07:51:21,047 - root - WARNING - Warmup (20) + decay (16) steps exceed total steps (20). Adjusting decay steps to 0.
+[rank1]:[titan] 2026-05-11 07:51:21,053 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/torchtitan_attention_residual/phase3/runs/diag_pp2_1f1b/checkpoint
+[rank1]:[titan] 2026-05-11 07:51:21,053 - root - INFO - Trainer is initialized with local batch size 4, global batch size 8, gradient accumulation steps 2, sequence length 2048, total steps 20 (warmup 500)
+[rank1]:[titan] 2026-05-11 07:51:21,053 - root - INFO - Training starts at step 1
+[rank1]:[titan] 2026-05-11 07:51:21,297 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:21,679 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:22,111 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-05-11 07:51:22,314 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank1]:[titan] 2026-05-11 07:51:22,501 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260511%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260511T075122Z&X-Amz-Expires=3600&X-Amz-Signature=491e6396135c50d34c9ca1f4381468f911303f722501f177c72fbf2a4b85f141&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778489482&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODQ4OTQ4Mn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=jCXc28Pjf9BaJSiiXZYb5fpYKrdG6JpBWyB%7EGbkZs%7EzHaeIyHl17ObOGeQvMaBsxCqNq1oIvcpQrIb2ZC059h6R796w5Ar57xFQqcHo1PU5NufO12dDZCefjLG7l5LcXrXluK3p%7Euw%7EB6%7EgrIjV4TS0AgVkiL1BPlf-wlc-JgSQpdi-qa1jdGGnieGJtucDmPy5RQgdVuaGp9FwOxb8S%7ER4Qv3JgI2cC0KIDIsZfz5rgBsFuO5%7Ep3ZkKR4AdoNGYVYZv%7EZvSd10wWoPzZ-%7EuumvbzbwlMoWJqlHooBMmSTw%7EjjfqTduILHhZqe7CO2FI7kJt9WsEFvLvkE08POUvhA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank1]:[titan] 2026-05-11 07:51:24,605 - root - INFO - [31mstep:  1  [32mloss: 11.76178  [38;2;180;60;0mgrad_norm:     inf  [38;2;54;234;195mmemory: 10.39GiB(33.15%)  [34mtps: 1,803  [36mtflops: 2.70  [35mmfu: 0.87%[39m
+[rank1]:[titan] 2026-05-11 07:51:24,605 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank1]:[titan] 2026-05-11 07:51:27,843 - root - INFO - [31mstep: 10  [32mloss: 11.76178  [38;2;180;60;0mgrad_norm:     inf  [38;2;54;234;195mmemory: 10.42GiB(33.23%)  [34mtps: 22,776  [36mtflops: 34.10  [35mmfu: 10.93%[39m
+[rank1]:[titan] 2026-05-11 07:51:31,414 - root - INFO - [31mstep: 20  [32mloss: 11.76178  [38;2;180;60;0mgrad_norm:     inf  [38;2;54;234;195mmemory: 10.42GiB(33.23%)  [34mtps: 22,945  [36mtflops: 34.35  [35mmfu: 11.01%[39m
+[rank1]:[titan] 2026-05-11 07:51:31,414 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank1]:[titan] 2026-05-11 07:51:31,414 - root - INFO - Saving a full checkpoint at last step, step 20.
+[rank1]:[titan] 2026-05-11 07:51:36,624 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.08 seconds
+[rank1]:[titan] 2026-05-11 07:51:36,624 - root - INFO - Training completed
+[rank1]:[titan] 2026-05-11 07:51:36,624 - root - INFO - Destroying the purge thread.
+[rank1]:[titan] 2026-05-11 07:51:39,109 - root - INFO - Process group destroyed
