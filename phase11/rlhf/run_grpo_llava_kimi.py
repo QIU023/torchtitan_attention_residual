@@ -133,12 +133,11 @@ async def _async_main(config: _Config) -> None:
     )
 
     # MonarchRPC transport instead of SHM (container ulimit -l = 64KB).
-    from torchstore.transport import TransportType
+    # torchstore 0.1.2 removed TransportType / default_transport_type kwarg;
+    # MonarchRPC is now the default. Use bare LocalRankStrategy().
     await ts.initialize(
         mesh=trainer_mesh,
-        strategy=ts.LocalRankStrategy(
-            default_transport_type=TransportType.MonarchRPC,
-        ),
+        strategy=ts.LocalRankStrategy(),
     )
     trainer.push_model_state_dict.call().get()
     generator.pull_model_state_dict.call(0).get()
