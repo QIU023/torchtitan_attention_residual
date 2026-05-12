@@ -18,6 +18,15 @@ import sys
 import time
 from pathlib import Path
 
+# Pre-import sglang overlays so AutoConfig.register('kimi_attn_res_vl', ...)
+# fires before transformers.AutoConfig.from_pretrained reads the HF
+# config.json model_type.
+try:
+    import sglang.srt.configs.kimi_attn_res_vl  # noqa: F401
+    import sglang.srt.models.attn_res_vl_overlay  # noqa: F401
+except ImportError:
+    pass
+
 
 def is_garbage(text: str) -> tuple[bool, str]:
     """Return (is_garbage, reason)."""
