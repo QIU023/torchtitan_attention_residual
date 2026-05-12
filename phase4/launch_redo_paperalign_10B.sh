@@ -50,29 +50,27 @@ if [[ "${free_gb}" -lt 30 ]]; then
 fi
 echo "[$(date)] starting phase4 redo (free ${free_gb}GB)"
 
-# bf16 baseline for stage 0. FP8 flavor
-# ``kimi_linear_447m_aligned_block_attn_res_n4_fp8`` exists (rowwise
-# recipe via Float8LinearConverter) but currently fails verify_module_protocol
-# because the kimi_linear model uses plain nn.Linear instead of the
-# torchtitan.models.common.linear.Linear subclass introduced in PR 2527.
-# Switching to the Linear protocol is a follow-up: numerically identical
-# rename in ~20 sites of kimi_linear/model.py, isolated from training.
-# Stage 0 runs bf16 to start collecting tokens immediately; FP8 ablation
-# can attach to stage 0-redo-B after the Linear-protocol PR lands.
+# FP8 via the dedicated flavor
+# ``kimi_linear_447m_aligned_block_attn_res_n4_fp8`` (registered in
+# torchtitan/experiments/kimi_linear/config_registry.py) — recipe="rowwise"
+# Float8LinearConverter on all dense Linear (MLA Q/K/V/O, ffn gate/up/down,
+# MoE shared-experts dense FFN, lm_head excluded). KDA Triton path and
+# MoE grouped_mm experts stay bf16. To fall back to bf16, set
+# ``CONFIG=kimi_linear_447m_aligned_block_attn_res_n4`` in this env.
 
 # Training knobs — paper-faithful for 447M aligned variant.
 MODULE="kimi_linear" \
-CONFIG="${CONFIG:-kimi_linear_447m_aligned_block_attn_res_n4}" \
-NGPU=8 \
-STEPS=25500 \
-LOCAL_BS=3 \
-GLOBAL_BS=192 \
-SEQ_LEN=2048 \
-LR=1.5e-3 \
-COMPILE=1 \
-VAL=1 \
-VAL_FREQ=5000 \
-VAL_STEPS=100 \
+CONFIG="${CONFIG:-kimi_linear_447m_aligned_block_attn_res_n4_fp8}" \
+NGPU="${NGPU:-8}" \
+STEPS="${STEPS:-25500}" \
+LOCAL_BS="${LOCAL_BS:-3}" \
+GLOBAL_BS="${GLOBAL_BS:-192}" \
+SEQ_LEN="${SEQ_LEN:-2048}" \
+LR="${LR:-1.5e-3}" \
+COMPILE="${COMPILE:-1}" \
+VAL="${VAL:-1}" \
+VAL_FREQ="${VAL_FREQ:-5000}" \
+VAL_STEPS="${VAL_STEPS:-100}" \
 OUT_DIR="${OUT_DIR}" \
 EXTRA_ARGS_APPEND="\
 --checkpoint.enable \
