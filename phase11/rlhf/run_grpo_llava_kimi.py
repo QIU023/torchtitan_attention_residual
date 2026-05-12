@@ -43,6 +43,45 @@ import torchstore as ts
 from monarch.actor import this_host
 from monarch.spmd import setup_torch_elastic_env_async
 
+# Pre-import sglang overlays so AutoConfig.register('kimi_attn_res_vl', ...)
+# fires before SGLang generator tries to load the HF config of our VLM ckpt.
+# Without this the generator dies with `KeyError: 'kimi_attn_res_vl'` in
+# transformers.AutoConfig.from_pretrained. Idempotent — safe even if the
+# overlays are missing in non-VLM setups (caught by ImportError).
+try:
+    import sglang.srt.configs.kimi_attn_res_vl  # noqa: F401
+    import sglang.srt.models.attn_res_vl_overlay  # noqa: F401
+except ImportError as _e:
+    pass
+
+# Patch sglang ModelRunner.kimi_linear_config to also recognize
+# KimiAttnResVLConfig (which holds a KimiLinearConfig in text_config).
+# Without this, the runner doesn't classify the VLM as "mambaish",
+# fails to attach KDAAttnBackend/HybridLinearAttnBackend, and the
+# linear-attn path in radix_linear_attention.py calls the main
+# flashinfer/triton backend with mixed_qkv/a/b kwargs → TypeError
+# "AttentionBackend.forward() missing 3 required positional arguments:
+# 'q', 'k', and 'v'". This is the root cause of yesterday's GRPO crash.
+try:
+    from sglang.srt.configs.kimi_linear import KimiLinearConfig
+    from sglang.srt.configs.kimi_attn_res_vl import KimiAttnResVLConfig
+    from sglang.srt.model_executor import model_runner as _mr_mod
+
+    def _kimi_linear_config_patched(self):
+        config = self.model_config.hf_config
+        if isinstance(config, KimiLinearConfig):
+            return config
+        # VLM wrapper: text_config holds the kimi_linear LM config.
+        if isinstance(config, KimiAttnResVLConfig):
+            inner = getattr(config, "text_config", None)
+            if isinstance(inner, KimiLinearConfig):
+                return inner
+        return None
+
+    _mr_mod.ModelRunner.kimi_linear_config = property(_kimi_linear_config_patched)
+except ImportError as _e:
+    pass
+
 from torchtitan.config import Configurable
 from torchtitan.experiments.rl.actors.grader import Grader
 from torchtitan.experiments.rl.actors.sglang_generator import SGLangGenerator
