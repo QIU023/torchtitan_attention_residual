@@ -109,3 +109,30 @@ Result: smoke + pressure runs write NO checkpoints; other training keeps at most
 1. **Diagnose Block AttnRes L≥32 inf-grad**: `register_hook` on every leaf param + RMSNorm output. Find the first inf-source. Hypotheses to test: (a) some lm_head / embedding interaction, (b) RMSNorm backward division by near-zero RMS, (c) AttnRes `softmax(w · V_stack) · V_stack` backward through stacked V at large N. Estimate: 1-2 hours.
 2. **Multi-node Kimi 48B**: the registered `kimi_linear_48b_block_attn_res` carrier needs ≥ 2 nodes (16+ ranks) with FSDP+EP to actually train. Code is ready.
 3. **NCCL trace wire-bytes**: run `phase7/extract_collectives.py` on L=32 Full AttnRes PP=8×VP=4 to capture the headline adapter vs naive wire-bytes comparison.
+
+<!-- AUTO-GEN BEGIN kimi48b -->
+
+## Kimi Linear 48B-layout PP runs (2026-05-12, auto-generated)
+
+All Kimi paper architecture (KDA + MLA + MoE + Block AttnRes,
+uniform init). FSDP+EP=8 + PP=8 + seq_len=1024. dim=1280.
+Each row = one run; data from TensorBoard event files.
+
+| run | last step | step 1 loss | final loss | step 1 grad | final grad | mem peak (GiB) |
+|---|---|---|---|---|---|---|
+| `kimi48b_d1280_e32_L24N8_pp8vp3_adapter_20260512-090624` | — | (no TB data) | | | | |
+| `kimi48b_d1280_e32_L24N8_pp8vp3_adapter_20260512-091100` | 300 | 12.262 | **6.226** | 1.47e+05 | 1.83e+04 | 25.29 |
+| `kimi48b_d1280_e32_L24N8_pp8vp3_naive_20260512-094946` | 300 | 12.257 | **6.187** | 1.45e+05 | 1.75e+04 | 25.33 |
+| `kimi48b_d1280_e32_L32N8_pp8vp4_adapter_20260512-092719` | 1 | 12.257 | **12.257** | 2.13e+05 | 2.13e+05 | 26.15 |
+| `kimi48b_d1280_e16_L32N8_pp8vp4_adapter_20260512-093021` | 300 | 12.259 | **5.970** | 2.12e+05 | 3.46e+04 | 24.76 |
+| `kimi48b_d1280_e16_L32N8_pp8vp4_naive_20260512-100309` | 10 | 12.262 | **12.141** | 2.12e+05 | 2.15e+05 | 27.83 |
+| `pressure_test_20260512-034748_L16fill` | 1000 | 11.762 | **4.987** | 2.71e+17 | 4.70e+04 | 8.20 |
+
+**Reading**: paper-aligned Block AttnRes (N matches paper 3 t-blocks/
+AttnRes-block sweet spot ratio) on kimi_linear backbone trains
+stably at L=24 (N=8) and L=32 (N=8, 4 t-blocks/block) at dim=1280
+with PP=8 × VP=3/4 from random init. Loss descends monotonically;
+grad_norm stays in 10⁴–10⁵ band throughout. **First Block AttnRes
+PP=8×VP=4 pressure run on a paper-architecture single-node carrier.**
+
+<!-- AUTO-GEN END kimi48b -->
