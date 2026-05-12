@@ -263,9 +263,11 @@ def main():
 
     init_dist_singleton()
     print(f"[hf->dcp] writing DCP to {args.out_dir}")
-    # Save under the standard "model" key (matches torchtitan trainer
-    # which loads state_dict["model"]).
-    save_state = {"model": model.state_dict()}
+    # Save FLAT state_dict (no "model" wrapper). torchtitan's PolicyTrainer
+    # / dcp.load expects keys like "embed_tokens.weight" at top level, not
+    # "model.embed_tokens.weight". An earlier wrapping {"model": ...} caused
+    # RuntimeError "Missing key in checkpoint state_dict: embed_tokens.weight".
+    save_state = dict(model.state_dict())
     dcp.save(save_state, checkpoint_id=str(args.out_dir))
     print(f"[hf->dcp] DONE — {filled} keys written")
 
