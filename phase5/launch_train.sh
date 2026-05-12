@@ -75,7 +75,7 @@ torchrun \
     --checkpoint.initial_load_path "${STUDENT_CKPT}" \
     --checkpoint.initial_load_model_only \
     --checkpoint.interval "${SAVE_FREQ}" \
-    --checkpoint.keep_latest_k 3 \
+    --checkpoint.keep_latest_k 2 \
     --metrics.save_tb_folder tb \
     --dump_folder "${OUT_DIR}" \
     --compile.enable \

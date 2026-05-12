@@ -62,7 +62,7 @@ EXTRA_ARGS_APPEND="\
 --checkpoint.initial_load_path ${INIT_CKPT} \
 --checkpoint.initial_load_model_only \
 --checkpoint.interval ${SAVE_FREQ:-2500} \
---checkpoint.keep_latest_k ${KEEP_K:-5} \
+--checkpoint.keep_latest_k ${KEEP_K:-2} \
 --lr_scheduler.warmup_steps 500 \
 --lr_scheduler.decay_ratio 0.0 \
 " \

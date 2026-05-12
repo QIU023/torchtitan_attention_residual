@@ -124,6 +124,7 @@ run_one() {
              --parallelism.pipeline_parallel_layers_per_stage "$layers_per_stage" \
              --parallelism.pipeline_parallel_first_stage_less_layers 0 \
              --parallelism.pipeline_parallel_last_stage_less_layers 0 \
+             --checkpoint.no-enable \
              --dump_folder "$out_dir" \
              --metrics.save_tb_folder tb \
              > "$out_dir/train.log" 2>&1)
