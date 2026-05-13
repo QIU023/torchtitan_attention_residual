@@ -157,7 +157,7 @@ def _make_kimi_48b_attn_res_config(num_experts: int) -> "KimiLinearConfig":
 
 def _build_model(cfg):
     """Reuse dump_dummy_hf_ckpt's model builder."""
-    from sglang.srt.models.kimi_block_attn_res import (
+    from sglang.srt.models.attn_res_overlay import (
         KimiBlockAttnResForCausalLM,
     )
     with torch.device("cpu"):

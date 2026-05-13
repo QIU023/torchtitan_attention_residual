@@ -174,7 +174,7 @@ def _build_model(cfg):
     Save each param in its natural dtype; SGLang's loader copies into
     the live param via ``Tensor.copy_``, which auto-promotes/demotes.
     """
-    from sglang.srt.models.kimi_block_attn_res import KimiBlockAttnResForCausalLM
+    from sglang.srt.models.attn_res_overlay import KimiBlockAttnResForCausalLM
     with torch.device("cpu"):
         m = KimiBlockAttnResForCausalLM(cfg)
     with torch.no_grad():
