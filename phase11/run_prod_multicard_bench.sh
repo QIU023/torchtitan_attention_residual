@@ -1,119 +1,97 @@
 #!/usr/bin/env bash
-# 8x 5090 production multi-card AttnRes inference bench.
+# 8x 5090 multi-card AttnRes overlay correctness + perf bench.
 #
-# Validates the AttnRes SGLang overlay on prod-grade model layouts:
-#   1. Kimi Linear 48B-layout (paper) with downscaled MoE expert count
-#      → ~7-28B params, KDA + MLA + MoE hybrid → exercises full overlay path
-#   2. Qwen3 14B + AttnRes overlay
-#      → GQA backbone (no MLA NaN) → cleanest AttnRes-on-vanilla-attention test
+# Goal: validate AttnRes SGLang overlay at production multi-card scale
+# by running the 4-mode comparison (vanilla / naive / two-phase / shard)
+# on two prod-grade dummy ckpts:
 #
-# Both run at TP=8, 4 modes (vanilla / naive / two-phase / shard), with the
-# fp32 MLA fallback env vars active for Kimi (Blackwell SM 12.0 unblock).
+#   * Kimi 48B-layout (paper L=27 d=2304 N=9, ~14B params at num_experts=64)
+#     — exercises full overlay path: KDA + MLA + MoE + AttnRes
+#     — needs fp32 MLA fallback on Blackwell (SM 12.0 RTX 5090)
 #
-# Outputs JSON to phase11/bench_results_prod_<timestamp>/ for paper figures.
+#   * Qwen3-14B + AttnRes overlay (GQA backbone, no MLA)
+#     — cleanest AttnRes-only signal (no MLA NaN risk)
+#
+# What the 4 modes test:
+#   vanilla   — AttnRes bypassed (baseline)
+#   naive     — single-pass aggregator (correctness reference)
+#   two-phase — Phase 1 batched + Phase 2 fused Triton kernel
+#   shard     — two-phase + seq-dim TP shard (AR bytes -58%)
+#
+# Pass criterion: vanilla/naive/two-phase/shard outputs within noise band;
+# two-phase decode tps > naive; shard mode at TP=8 has lower AR bytes.
 #
 # Workflow:
-#   1. Stop stage 0 training (saves first)
-#   2. Generate dummy HF ckpts (CPU/GPU mix; ~5-15 min depending on model size)
-#   3. Bench TP=8 4-mode sweep (per model: ~30-50 min)
-#   4. Restart stage 0 (auto-resumes from latest ckpt)
-#
-# Env knobs:
-#   KIMI_EXPERTS={16,32,64,128,256}  default 32 (~7B, light)
-#                                    64 = ~14B (50% fill of 8x5090)
-#                                    128 = ~28B (80% fill — near paper density)
-#   QWEN3_SIZE={qwen3_7b,qwen3_14b,qwen3_32b}  default qwen3_14b
-#   SKIP_KIMI=1  skip Kimi bench (only Qwen3)
-#   SKIP_QWEN3=1 skip Qwen3 bench (only Kimi)
-#   BENCH_TP=8   TP size for bench (default 8)
-#   BENCH_CTX=4096  prompt length for bench (default 4096)
+#   1. Stop stage 0
+#   2. Dump both ckpts (skipped if dirs already exist)
+#   3. Bench Kimi TP=8 4-mode (~30-50 min)
+#   4. Bench Qwen3 TP=8 4-mode (~20-40 min)
+#   5. Restart stage 0 (auto-resume from latest ckpt + SAVE_FREQ=100)
 
 set -e
 
 WORKSPACE=/workspace/torchtitan_attention_residual
-KIMI_EXPERTS="${KIMI_EXPERTS:-32}"
-QWEN3_SIZE="${QWEN3_SIZE:-qwen3_14b}"
-BENCH_TP="${BENCH_TP:-8}"
-BENCH_CTX="${BENCH_CTX:-4096}"
-SKIP_KIMI="${SKIP_KIMI:-0}"
-SKIP_QWEN3="${SKIP_QWEN3:-0}"
-STAGE0_RESUME="${STAGE0_RESUME:-1}"  # auto-restart stage 0 after bench
-
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BENCH_OUT="$WORKSPACE/phase11/bench_results_prod_$TIMESTAMP"
 mkdir -p "$BENCH_OUT"
 
+# Single fixed prod-grade size per model (no size sweep — this is a
+# correctness/perf comparison across 4 modes, not a scaling study).
+KIMI_CKPT="$WORKSPACE/phase11/hf_kimi_48b_e64_dummy"
+QWEN3_CKPT="$WORKSPACE/phase11/hf_qwen3_14b_attn_res_dummy"
+
 echo "============================================================"
-echo "[$(date)] 8-card TP=$BENCH_TP AttnRes prod bench"
-echo "  Kimi 48B-layout: experts=$KIMI_EXPERTS (skip=$SKIP_KIMI)"
-echo "  Qwen3 size:      $QWEN3_SIZE (skip=$SKIP_QWEN3)"
-echo "  Output dir:      $BENCH_OUT"
+echo "[$(date)] 8-card TP=8 AttnRes overlay bench"
+echo "  Output: $BENCH_OUT"
 echo "============================================================"
 
 # [1] Kill stage 0
-echo "[1] Stop stage 0 training"
+echo "[1] Stop stage 0"
 pkill -9 -f "torchtitan.train" 2>/dev/null || true
 sleep 10
-if pgrep -f "torchtitan.train" | grep -v "/bin/bash" >/dev/null 2>&1; then
-    echo "ERROR: torchtitan procs still running"; exit 1
-fi
-echo "    GPU mem after kill:"
-nvidia-smi --query-gpu=index,memory.used --format=csv,noheader | head -8
+pgrep -f "torchtitan.train" | grep -v "/bin/bash" >/dev/null && { echo "ERROR: stage 0 still alive"; exit 1; } || true
+nvidia-smi --query-gpu=memory.used --format=csv,noheader | head -2
 
-# [2] Dummy ckpt generation
-KIMI_CKPT="$WORKSPACE/phase11/hf_kimi_48b_e${KIMI_EXPERTS}_dummy"
-QWEN3_CKPT="$WORKSPACE/phase11/hf_${QWEN3_SIZE}_attn_res_dummy"
-
-if [[ "$SKIP_KIMI" == "0" && ! -d "$KIMI_CKPT" ]]; then
-    echo "[2a] Dump Kimi 48B-layout (experts=$KIMI_EXPERTS) — may take 5-15 min"
+# [2] Dump dummies
+if [[ ! -d "$KIMI_CKPT" ]]; then
+    echo "[2a] Dump Kimi 48B-layout (num_experts=64, ~14B params, ~28 GB safetensors)"
     python3 "$WORKSPACE/phase11/dump_kimi_48b_attn_res_dummy.py" \
-        --num-experts "$KIMI_EXPERTS" --out "$KIMI_CKPT"
+        --num-experts 64 --out "$KIMI_CKPT"
 fi
-
-if [[ "$SKIP_QWEN3" == "0" && ! -d "$QWEN3_CKPT" ]]; then
-    echo "[2b] Dump Qwen3 ($QWEN3_SIZE) AttnRes — may take 3-10 min"
+if [[ ! -d "$QWEN3_CKPT" ]]; then
+    echo "[2b] Dump Qwen3-14B + AttnRes (~14B params, ~28 GB safetensors)"
     python3 "$WORKSPACE/phase11/dump_qwen3_big_attn_res_dummy.py" \
-        --size "$QWEN3_SIZE" --out "$QWEN3_CKPT"
+        --size qwen3_14b --out "$QWEN3_CKPT"
 fi
 
-# [3] Bench
-if [[ "$SKIP_KIMI" == "0" ]]; then
-    echo "[3a] Bench Kimi 48B-layout TP=$BENCH_TP (~30-50 min, 4 modes)"
-    # Kimi needs fp32 MLA fallback on Blackwell (RTX 5090 SM 12.0)
-    ATTNRES_MLA_FP32_FALLBACK=1 ATTNRES_FP32_NORM=1 ATTNRES_INPUT_CLAMP=32 \
-    python3 "$WORKSPACE/phase11/bench_attn_res.py" \
-        --model "$KIMI_CKPT" \
-        --tp "$BENCH_TP" \
-        --prefill "$BENCH_CTX" --decode 256 \
-        --out "$BENCH_OUT/kimi_48b_e${KIMI_EXPERTS}_tp${BENCH_TP}.json" \
-        || echo "WARN: Kimi bench failed (continuing)"
-fi
+# [3] Bench Kimi TP=8 (needs fp32 MLA fallback on 5090)
+echo "[3] Kimi TP=8 4-mode bench (fp32 MLA fallback on)"
+ATTNRES_MLA_FP32_FALLBACK=1 ATTNRES_FP32_NORM=1 ATTNRES_INPUT_CLAMP=32 \
+python3 "$WORKSPACE/phase11/bench_attn_res.py" \
+    --model "$KIMI_CKPT" --tp 8 \
+    --prefill 4096 --decode 256 \
+    --out "$BENCH_OUT/kimi_48b_e64_tp8.json" \
+    || echo "WARN: Kimi bench failed"
 
-if [[ "$SKIP_QWEN3" == "0" ]]; then
-    echo "[3b] Bench Qwen3 ($QWEN3_SIZE) TP=$BENCH_TP (~30-50 min, 4 modes)"
-    # Qwen3 uses GQA, no MLA → no fallback needed; cleanest AttnRes signal
-    python3 "$WORKSPACE/phase11/bench_attn_res.py" \
-        --model "$QWEN3_CKPT" \
-        --tp "$BENCH_TP" \
-        --prefill "$BENCH_CTX" --decode 256 \
-        --out "$BENCH_OUT/${QWEN3_SIZE}_tp${BENCH_TP}.json" \
-        || echo "WARN: Qwen3 bench failed (continuing)"
-fi
+# [4] Bench Qwen3 TP=8 (no MLA, no fallback needed)
+echo "[4] Qwen3-14B TP=8 4-mode bench (GQA, no MLA fallback)"
+python3 "$WORKSPACE/phase11/bench_attn_res.py" \
+    --model "$QWEN3_CKPT" --tp 8 \
+    --prefill 4096 --decode 256 \
+    --out "$BENCH_OUT/qwen3_14b_tp8.json" \
+    || echo "WARN: Qwen3 bench failed"
 
-# [4] Resume stage 0 if requested (auto-resumes from latest ckpt in dump_folder)
-if [[ "$STAGE0_RESUME" == "1" ]]; then
-    echo "[4] Restart stage 0 (auto-resumes from latest ckpt)"
-    cd "$WORKSPACE"
-    LOCAL_BS=4 GLOBAL_BS=384 LR=1.5e-3 WARMUP=150 STEPS=12750 SAVE_FREQ=100 \
-        OUT_DIR="$WORKSPACE/phase4/runs/lm_447m_fp8_paperalign_C" \
-        nohup bash phase4/launch_redo_paperalign_10B.sh \
-        > "$WORKSPACE/phase4/fp8_paperalign_C.log" 2>&1 &
-    STAGE0_PID=$!
-    echo "    stage 0 restarted pid=$STAGE0_PID (SAVE_FREQ=100)"
-fi
+# [5] Restart stage 0 (auto-resume from latest ckpt)
+echo "[5] Restart stage 0 (SAVE_FREQ=100, auto-resume)"
+cd "$WORKSPACE"
+LOCAL_BS=4 GLOBAL_BS=384 LR=1.5e-3 WARMUP=150 STEPS=12750 SAVE_FREQ=100 \
+    OUT_DIR="$WORKSPACE/phase4/runs/lm_447m_fp8_paperalign_C" \
+    nohup bash phase4/launch_redo_paperalign_10B.sh \
+    > "$WORKSPACE/phase4/fp8_paperalign_C.log" 2>&1 &
+echo "    stage 0 restarted pid=$!"
 
 echo
 echo "============================================================"
-echo "[$(date)] DONE — bench at $BENCH_OUT"
+echo "[$(date)] DONE — results at $BENCH_OUT"
 echo "============================================================"
 ls -la "$BENCH_OUT"
