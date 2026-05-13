@@ -105,6 +105,7 @@ def _make_kimi_48b_attn_res_config(num_experts: int) -> "KimiLinearConfig":
     cfg = KimiLinearConfig(
         vocab_size=163840,
         hidden_size=d,
+        max_position_embeddings=32768,  # supports up to 32K context bench
         tie_word_embeddings=False,  # paper: lm_head separate from embedding
         num_hidden_layers=n_layers,
         # Dense FFN at layer 0 (first_k_dense_replace=1); paper uses 9216
