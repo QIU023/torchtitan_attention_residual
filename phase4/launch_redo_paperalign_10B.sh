@@ -74,10 +74,10 @@ VAL_STEPS="${VAL_STEPS:-100}" \
 OUT_DIR="${OUT_DIR}" \
 EXTRA_ARGS_APPEND="\
 --checkpoint.enable \
---checkpoint.interval 2500 \
---checkpoint.keep_latest_k 2 \
---lr_scheduler.warmup_steps 500 \
---lr_scheduler.decay_ratio 0.8 \
---lr_scheduler.min_lr_factor 0.1 \
+--checkpoint.interval ${SAVE_FREQ:-200} \
+--checkpoint.keep_latest_k ${KEEP_K:-2} \
+--lr_scheduler.warmup_steps ${WARMUP:-500} \
+--lr_scheduler.decay_ratio ${DECAY_RATIO:-0.8} \
+--lr_scheduler.min_lr_factor ${MIN_LR_FACTOR:-0.1} \
 " \
 bash "${SCRIPT_DIR}/launch_fsdp_small.sh"
