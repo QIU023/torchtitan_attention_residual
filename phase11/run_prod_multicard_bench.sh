@@ -71,6 +71,7 @@ for CTX in 4096 16384; do
     python3 "$WORKSPACE/phase11/bench_attn_res.py" \
         --model "$KIMI_CKPT" --tp 8 \
         --prefill "$CTX" --decode 256 \
+        --disable-cuda-graph \
         --out "$BENCH_OUT/kimi_48b_e64_tp8_ctx${CTX}.json" \
         || echo "WARN: Kimi bench ctx=$CTX failed"
 done
@@ -89,6 +90,7 @@ for CTX in 4096 16384; do
     python3 "$WORKSPACE/phase11/bench_attn_res.py" \
         --model "$QWEN3_CKPT" --tp 8 \
         --prefill "$CTX" --decode 256 \
+        --disable-cuda-graph \
         --out "$BENCH_OUT/qwen3_14b_tp8_ctx${CTX}.json" \
         || echo "WARN: Qwen3 bench ctx=$CTX failed"
 done
