@@ -37,7 +37,7 @@ mkdir -p "$BENCH_OUT"
 
 # Single fixed prod-grade size per model (no size sweep — this is a
 # correctness/perf comparison across 4 modes, not a scaling study).
-KIMI_CKPT="$WORKSPACE/phase11/hf_kimi_48b_e64_dummy"
+KIMI_CKPT="$WORKSPACE/phase11/hf_kimi_48b_e32_dummy"
 QWEN3_CKPT="$WORKSPACE/phase11/hf_qwen3_14b_attn_res_dummy"
 
 echo "============================================================"
@@ -54,9 +54,9 @@ nvidia-smi --query-gpu=memory.used --format=csv,noheader | head -2
 
 # [2] Dump dummies
 if [[ ! -d "$KIMI_CKPT" ]]; then
-    echo "[2a] Dump Kimi 48B-layout (num_experts=64, ~14B params, ~28 GB safetensors)"
+    echo "[2a] Dump Kimi 48B-layout (num_experts=32, ~7B params, ~14 GB safetensors)"
     python3 "$WORKSPACE/phase11/dump_kimi_48b_attn_res_dummy.py" \
-        --num-experts 64 --out "$KIMI_CKPT"
+        --num-experts 32 --out "$KIMI_CKPT"
 fi
 if [[ ! -d "$QWEN3_CKPT" ]]; then
     echo "[2b] Dump Qwen3-14B + AttnRes (~14B params, ~28 GB safetensors)"
