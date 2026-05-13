@@ -64,22 +64,34 @@ if [[ ! -d "$QWEN3_CKPT" ]]; then
         --size qwen3_14b --out "$QWEN3_CKPT"
 fi
 
-# [3] Bench Kimi TP=8 (needs fp32 MLA fallback on 5090)
-echo "[3] Kimi TP=8 4-mode bench (fp32 MLA fallback on)"
-ATTNRES_MLA_FP32_FALLBACK=1 ATTNRES_FP32_NORM=1 ATTNRES_INPUT_CLAMP=32 \
-python3 "$WORKSPACE/phase11/bench_attn_res.py" \
-    --model "$KIMI_CKPT" --tp 8 \
-    --prefill 4096 --decode 256 \
-    --out "$BENCH_OUT/kimi_48b_e64_tp8.json" \
-    || echo "WARN: Kimi bench failed"
+# [3] Bench Kimi TP=8 — ctx sweep 4K + 16K (perf scaling)
+for CTX in 4096 16384; do
+    echo "[3.$CTX] Kimi TP=8 4-mode bench @ ctx=$CTX (fp32 MLA fallback on)"
+    ATTNRES_MLA_FP32_FALLBACK=1 ATTNRES_FP32_NORM=1 ATTNRES_INPUT_CLAMP=32 \
+    python3 "$WORKSPACE/phase11/bench_attn_res.py" \
+        --model "$KIMI_CKPT" --tp 8 \
+        --prefill "$CTX" --decode 256 \
+        --out "$BENCH_OUT/kimi_48b_e64_tp8_ctx${CTX}.json" \
+        || echo "WARN: Kimi bench ctx=$CTX failed"
+done
 
-# [4] Bench Qwen3 TP=8 (no MLA, no fallback needed)
-echo "[4] Qwen3-14B TP=8 4-mode bench (GQA, no MLA fallback)"
-python3 "$WORKSPACE/phase11/bench_attn_res.py" \
-    --model "$QWEN3_CKPT" --tp 8 \
-    --prefill 4096 --decode 256 \
-    --out "$BENCH_OUT/qwen3_14b_tp8.json" \
-    || echo "WARN: Qwen3 bench failed"
+# [3-mem] Memory probe at TP=8 shard=0 vs shard=1
+echo "[3-mem] Kimi TP=8 memory probe (shard=0 vs shard=1)"
+ATTNRES_MLA_FP32_FALLBACK=1 \
+python3 "$WORKSPACE/phase11/probe_memory.py" \
+    --model "$KIMI_CKPT" --tp 8 --prefill 16384 \
+    --out "$BENCH_OUT/kimi_48b_e64_tp8_memprobe.json" \
+    || echo "WARN: memprobe failed (probe_memory.py optional)"
+
+# [4] Bench Qwen3 TP=8 — ctx sweep 4K + 16K
+for CTX in 4096 16384; do
+    echo "[4.$CTX] Qwen3-14B TP=8 4-mode bench @ ctx=$CTX (GQA, no MLA)"
+    python3 "$WORKSPACE/phase11/bench_attn_res.py" \
+        --model "$QWEN3_CKPT" --tp 8 \
+        --prefill "$CTX" --decode 256 \
+        --out "$BENCH_OUT/qwen3_14b_tp8_ctx${CTX}.json" \
+        || echo "WARN: Qwen3 bench ctx=$CTX failed"
+done
 
 # [5] Restart stage 0 (auto-resume from latest ckpt)
 echo "[5] Restart stage 0 (SAVE_FREQ=100, auto-resume)"
