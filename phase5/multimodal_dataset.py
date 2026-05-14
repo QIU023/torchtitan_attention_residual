@@ -57,7 +57,21 @@ class LlavaPretrainDataset(IterableDataset):
         dp_rank: int,
         dp_world_size: int,
         max_caption_tokens: int = MAX_CAPTION_TOKENS_DEFAULT,
+        split: str = "train",
+        val_samples: int = 512,
+        infinite: bool = True,
     ):
+        """
+        Args:
+            split: "train" uses records[:-val_samples]; "val" uses the last
+                ``val_samples`` records. The two index sets are disjoint and
+                deterministic — the held-out val set is never seen by training.
+            val_samples: Size of the held-out validation tail. If 0, the full
+                dataset is used for "train" and "val" is empty.
+            infinite: When True the iterator loops forever (training). When
+                False it yields a single pass (validation), so a val pass
+                terminates instead of streaming indefinitely.
+        """
         self.json_path = json_path
         self.images_dir = Path(images_dir)
         self.tokenizer = tokenizer
@@ -65,6 +79,11 @@ class LlavaPretrainDataset(IterableDataset):
         self.dp_rank = dp_rank
         self.dp_world_size = dp_world_size
         self.max_caption_tokens = max_caption_tokens
+        if split not in ("train", "val"):
+            raise ValueError(f"split must be 'train' or 'val'; got {split!r}")
+        self.split = split
+        self.val_samples = val_samples
+        self.infinite = infinite
 
         if not os.path.isfile(json_path):
             raise FileNotFoundError(json_path)
@@ -73,7 +92,17 @@ class LlavaPretrainDataset(IterableDataset):
 
         # Load full record list once (it's ~558K records, ~100 MB JSON).
         with open(json_path, "r") as f:
-            self.records = json.load(f)
+            all_records = json.load(f)
+
+        # Deterministic held-out split: training never sees the val tail.
+        if val_samples > 0 and val_samples < len(all_records):
+            if split == "train":
+                self.records = all_records[:-val_samples]
+            else:
+                self.records = all_records[-val_samples:]
+        else:
+            # val_samples == 0 (or pathologically large): no held-out split.
+            self.records = all_records if split == "train" else []
 
     def __iter__(self) -> Iterator[dict[str, torch.Tensor]]:
         wi = get_worker_info()
@@ -94,7 +123,7 @@ class LlavaPretrainDataset(IterableDataset):
             eos = 128_001
 
         while True:
-            for idx in range(my_offset, len(self.records), total_stride):
+            for idx in range(my_offset, len(self.records), total_stride):  # noqa: B007
                 rec = self.records[idx]
                 # LLaVA-Pretrain record format:
                 #   {"id": "...", "image": "00000/000000000.jpg",
@@ -148,6 +177,11 @@ class LlavaPretrainDataset(IterableDataset):
                     "input_ids": torch.tensor(input_ids, dtype=torch.long),
                     "labels": torch.tensor(labels, dtype=torch.long),
                 }
+
+            # Validation dataloaders make a single pass and then stop, so the
+            # val loop terminates. Training loops forever.
+            if not self.infinite:
+                break
 
     # Stateful protocol — minimal no-op for continued pretraining
     def state_dict(self) -> dict[str, Any]:

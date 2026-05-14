@@ -33,6 +33,9 @@ OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/mm_full_finetune}"
 NGPU="${NGPU:-4}"
 LOG_FREQ="${LOG_FREQ:-10}"
 SAVE_FREQ="${SAVE_FREQ:-1000}"
+VAL_FREQ="${VAL_FREQ:-50}"          # held-out val-loss every N steps (0 disables)
+VAL_SAMPLES="${VAL_SAMPLES:-512}"   # size of deterministic held-out val tail
+VAL_BATCHES="${VAL_BATCHES:-24}"    # val batches consumed per forward-only pass
 
 if [[ ! -d "${STUDENT_CKPT}" ]]; then
     echo "ERROR: student ckpt not found: ${STUDENT_CKPT}" >&2; exit 1
@@ -61,6 +64,9 @@ torchrun \
     --mm.tokenizer "${TOKENIZER}" \
     --mm.cache-dir "${CACHE_DIR}" \
     --mm.proj-lr-mult "${PROJ_LR_MULT}" \
+    --mm.val-samples "${VAL_SAMPLES}" \
+    --mm.val-freq "${VAL_FREQ}" \
+    --mm.val-batches "${VAL_BATCHES}" \
     --module kimi_linear --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \

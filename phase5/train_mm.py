@@ -57,6 +57,7 @@ from torchtitan.tools.logging import init_logger, logger  # noqa: E402
 import phase6.torchtitan_pp_backward_hotfix  # noqa: E402,F401
 import phase6.torchtitan_pp_retain_graph_diag  # noqa: E402,F401  diagnostic, env-gated
 from torchtitan.components.dataloader import ParallelAwareDataloader  # noqa: E402
+from torchtitan.distributed import utils as dist_utils  # noqa: E402
 
 from phase5.multimodal_dataset import (  # noqa: E402
     GLOBAL_SEQ_LEN_DEFAULT,
@@ -101,6 +102,20 @@ def _parse_mm_args() -> argparse.Namespace:
                         "[<img>×196] [BOS] [caption]. "
                         "'interior': image block in middle of caption. "
                         "'random': per-record uniform pick of {prefix, interior}.")
+    p.add_argument("--mm.val-samples", dest="mm_val_samples", type=int,
+                   default=512,
+                   help="Size of the deterministic held-out validation tail "
+                        "carved from the end of the caption JSON. Training "
+                        "uses records[:-val_samples]; val uses the last "
+                        "val_samples records. 0 disables validation.")
+    p.add_argument("--mm.val-freq", dest="mm_val_freq", type=int, default=50,
+                   help="Run a forward-only validation pass every N training "
+                        "steps and log 'val_loss'. Default 50 (frequent so a "
+                        "broken run shows up early in smoke runs).")
+    p.add_argument("--mm.val-batches", dest="mm_val_batches", type=int,
+                   default=24,
+                   help="Number of val batches consumed per validation pass "
+                        "(forward-only). Caps wall-clock cost of each pass.")
     args, remaining = p.parse_known_args()
     sys.argv = [sys.argv[0]] + remaining
     return args
@@ -117,9 +132,15 @@ class MultimodalTrainer(Trainer):
                  tokenizer_path: str, cache_dir: str,
                  proj_lr_mult: float = 1.0,
                  global_seq_len: int = GLOBAL_SEQ_LEN_DEFAULT,
-                 layout: str = "prefix"):
+                 layout: str = "prefix",
+                 val_samples: int = 512,
+                 val_freq: int = 50,
+                 val_batches: int = 24):
         super().__init__(config)
         self._mm_layout = layout
+        self._val_samples = val_samples
+        self._val_freq = val_freq
+        self._val_batches = val_batches
 
         self._global_seq_len = global_seq_len
 
@@ -333,62 +354,117 @@ class MultimodalTrainer(Trainer):
                 vision_model, cache_dir=cache_dir,
             )
 
-        if self._mm_layout == "sft":
-            from phase9.multimodal_sft_dataset import LlavaInstructSFTDataset
-            ds = LlavaInstructSFTDataset(
-                json_path=json_path,
-                images_dir=images_dir,
-                tokenizer=self.mm_tokenizer,
-                image_processor=self.image_processor,
-                dp_rank=dp_rank,
-                dp_world_size=dp_world_size,
-            )
-            logger.info(
-                "mm: dataset = LlavaInstructSFTDataset (sft layout, conversation format)"
-            )
-        elif self._mm_layout == "prefix":
-            ds = LlavaPretrainDataset(
-                json_path=json_path,
-                images_dir=images_dir,
-                tokenizer=self.mm_tokenizer,
-                image_processor=self.image_processor,
-                dp_rank=dp_rank,
-                dp_world_size=dp_world_size,
-            )
-            logger.info("mm: dataset = LlavaPretrainDataset (prefix layout)")
-        else:
-            from phase5.multimodal_dataset_interleave import (
-                InterleavedLlavaPretrainDataset,
-            )
-            ds = InterleavedLlavaPretrainDataset(
-                json_path=json_path,
-                images_dir=images_dir,
-                tokenizer=self.mm_tokenizer,
-                image_processor=self.image_processor,
-                dp_rank=dp_rank,
-                dp_world_size=dp_world_size,
-                layout=self._mm_layout,
-            )
-            logger.info(
-                f"mm: dataset = InterleavedLlavaPretrainDataset (layout={self._mm_layout!r})"
-            )
         pad_id = self.mm_tokenizer.pad_token_id or 0
-        self.dataloader = ParallelAwareDataloader(
-            ds,
+        # Stash dataset-construction params so _build_mm_dataset can build
+        # both the train dataloader and (later) the held-out val dataloader
+        # with identical tokenization / DP-sharding behavior.
+        self._mm_ds_kwargs = dict(
+            json_path=json_path,
+            images_dir=images_dir,
             dp_rank=dp_rank,
             dp_world_size=dp_world_size,
-            batch_size=config.training.local_batch_size,
+        )
+        self._mm_pad_id = pad_id
+        self._mm_local_bs = config.training.local_batch_size
+
+        # ----- train dataloader -----
+        # The "sft" layout uses phase9's LlavaInstructSFTDataset which has no
+        # held-out split support → validation is disabled for that layout.
+        if self._mm_layout == "sft" and self._val_samples > 0:
+            logger.warning(
+                "mm: val: sft layout does not support a held-out split; "
+                "disabling validation (set --mm.val-samples 0 to silence)."
+            )
+            self._val_samples = 0
+
+        train_ds = self._build_mm_dataset(split="train", infinite=True)
+        self.dataloader = ParallelAwareDataloader(
+            train_ds,
+            dp_rank=dp_rank,
+            dp_world_size=dp_world_size,
+            batch_size=self._mm_local_bs,
             collate_fn=lambda b: collate_with_pad(
                 b, pad_id=pad_id, global_seq_len=self._global_seq_len,
             ),
             num_workers=0,
         )
         logger.info(
-            f"mm: replaced dataloader with LlavaPretrainDataset "
-            f"(N={len(ds.records):,}, dp_rank={dp_rank}/{dp_world_size}, "
-            f"local_bs={config.training.local_batch_size}, "
-            f"seq_len={self._global_seq_len})"
+            f"mm: replaced dataloader (train split, "
+            f"N={len(train_ds.records):,}, dp_rank={dp_rank}/{dp_world_size}, "
+            f"local_bs={self._mm_local_bs}, seq_len={self._global_seq_len})"
         )
+
+        # ----- held-out val dataloader (forward-only, single-pass) -----
+        self._val_dataloader = None
+        if self._val_samples > 0 and self._val_freq > 0:
+            val_ds = self._build_mm_dataset(split="val", infinite=True)
+            # infinite=True on the dataset so a val pass capped at
+            # _val_batches never raises StopIteration mid-pass even when the
+            # per-rank val shard is smaller than _val_batches * local_bs.
+            self._val_dataloader = ParallelAwareDataloader(
+                val_ds,
+                dp_rank=dp_rank,
+                dp_world_size=dp_world_size,
+                batch_size=self._mm_local_bs,
+                collate_fn=lambda b: collate_with_pad(
+                    b, pad_id=pad_id, global_seq_len=self._global_seq_len,
+                ),
+                num_workers=0,
+            )
+            logger.info(
+                f"mm: val enabled — held-out tail N={len(val_ds.records):,}, "
+                f"val_freq={self._val_freq}, val_batches={self._val_batches} "
+                f"(disjoint from train split)"
+            )
+        else:
+            logger.info("mm: val disabled (val_samples<=0 or val_freq<=0)")
+
+    def _build_mm_dataset(self, *, split: str, infinite: bool):
+        """Construct the layout-appropriate MM dataset for a given split.
+
+        ``split`` ('train'|'val') selects the disjoint record range; the
+        held-out val tail is deterministic and never seen by training.
+        ``sft`` layout has no split support and only ever uses 'train'.
+        """
+        k = self._mm_ds_kwargs
+        if self._mm_layout == "sft":
+            from phase9.multimodal_sft_dataset import LlavaInstructSFTDataset
+            ds = LlavaInstructSFTDataset(
+                tokenizer=self.mm_tokenizer,
+                image_processor=self.image_processor,
+                **k,
+            )
+            logger.info(
+                "mm: dataset = LlavaInstructSFTDataset (sft layout, conversation format)"
+            )
+        elif self._mm_layout == "prefix":
+            ds = LlavaPretrainDataset(
+                tokenizer=self.mm_tokenizer,
+                image_processor=self.image_processor,
+                split=split,
+                val_samples=self._val_samples,
+                infinite=infinite,
+                **k,
+            )
+            logger.info(f"mm: dataset = LlavaPretrainDataset (prefix layout, split={split})")
+        else:
+            from phase5.multimodal_dataset_interleave import (
+                InterleavedLlavaPretrainDataset,
+            )
+            ds = InterleavedLlavaPretrainDataset(
+                tokenizer=self.mm_tokenizer,
+                image_processor=self.image_processor,
+                layout=self._mm_layout,
+                split=split,
+                val_samples=self._val_samples,
+                infinite=infinite,
+                **k,
+            )
+            logger.info(
+                f"mm: dataset = InterleavedLlavaPretrainDataset "
+                f"(layout={self._mm_layout!r}, split={split})"
+            )
+        return ds
 
     # ------------------------------------------------------------------
     # Multimodal injection point: post_dataloading_process.
@@ -476,6 +552,130 @@ class MultimodalTrainer(Trainer):
             self._mm_projector_stash = None
         return loss
 
+    # ------------------------------------------------------------------
+    # Held-out validation: periodic forward-only val loss.
+    # ------------------------------------------------------------------
+    def train_step(self, data_iterator):
+        """Run the standard train step, then maybe a forward-only val pass.
+
+        ``self.step`` was already incremented by ``Trainer.train()`` before
+        this is called, so ``self.step`` here is the just-completed step.
+        Validation runs *after* optimizers.step()/zero_grad() inside
+        ``train_step``, so grad state is already clean before the val pass.
+        """
+        super().train_step(data_iterator)
+        if (
+            self._val_dataloader is not None
+            and self._val_freq > 0
+            and (self.step == 1 or self.step % self._val_freq == 0)
+        ):
+            self._run_validation(self.step)
+
+    @torch.no_grad()
+    def _run_validation(self, step: int) -> None:
+        """Forward-only mean cross-entropy on the held-out val split.
+
+        Pure 1D FSDP only (pp=1/tp=1). All DP ranks run the same number of
+        val batches in lockstep so the dist_sum collective at the end never
+        hangs. Optimizer / RNG / dataloader-position / grad state are all
+        left untouched: we never call backward, never step the optimizer,
+        never touch the training dataloader, and reseed nothing. The model
+        is flipped to eval() for the pass and restored to train() after.
+        """
+        if self.parallel_dims.pp_enabled:
+            # Phase 5 is pure-1D-FSDP by design; PP val would need the
+            # pp_schedule.eval() path. Skip rather than risk a hang.
+            logger.warning("mm: val: PP enabled — skipping val pass (pure-FSDP only)")
+            return
+
+        parallel_dims = self.parallel_dims
+        model = self.model_parts[0]
+        was_training = model.training
+        vt_was_training = (
+            self.vision_tower.training if self.vision_tower is not None else None
+        )
+        proj_was_training = (
+            self.projector.training if self.projector is not None else None
+        )
+        model.eval()
+        if self.vision_tower is not None:
+            self.vision_tower.eval()
+        if self.projector is not None:
+            self.projector.eval()
+
+        local_loss_sum = torch.zeros((), dtype=torch.float32, device=self.device)
+        local_valid_tokens = torch.zeros((), dtype=torch.int64, device=self.device)
+        n_batches = 0
+
+        # Fresh iterator over the val dataloader each pass — the training
+        # dataloader's iterator (data_iterator in train()) is a separate
+        # object and is never advanced here.
+        val_iter = iter(self._val_dataloader)
+        try:
+            for _ in range(self._val_batches):
+                try:
+                    input_dict, labels = next(val_iter)
+                except StopIteration:
+                    break
+                for k, v in input_dict.items():
+                    if isinstance(v, torch.Tensor):
+                        input_dict[k] = v.to(self.device)
+                labels = labels.to(self.device)
+
+                self._mm_projector_stash = None
+                # Reuse the MM post_dataloading_process: it injects
+                # vision_embeds exactly as in training. Under no_grad the
+                # detached leaf carries no graph; we clear the stash after.
+                inputs, labels, extra_inputs, extra_kwargs = (
+                    self.post_dataloading_process(input_dict, labels)
+                )
+                self._mm_projector_stash = None
+
+                with self.train_context():
+                    pred = model(inputs, **extra_inputs, **extra_kwargs)
+                    loss_sum = self.loss_fn(pred, labels)
+                del pred
+
+                local_loss_sum += loss_sum.detach().float()
+                local_valid_tokens += (labels != IGNORE_INDEX).sum()
+                n_batches += 1
+        finally:
+            # Always restore the original train/eval modes, even on error.
+            if was_training:
+                model.train()
+            if vt_was_training:
+                self.vision_tower.train()
+            if proj_was_training:
+                self.projector.train()
+            self._mm_projector_stash = None
+
+        # Reduce loss-sum and token-count across DP ranks, then divide so
+        # the reported number is a true global mean CE (matches training's
+        # loss accounting). dist_sum runs on every rank → no hang.
+        if parallel_dims.dp_enabled:
+            batch_mesh = parallel_dims.get_mesh("batch")
+            global_loss_sum = dist_utils.dist_sum(local_loss_sum, batch_mesh)
+            global_valid_tokens = dist_utils.dist_sum(
+                local_valid_tokens, batch_mesh
+            )
+        else:
+            global_loss_sum = float(local_loss_sum.item())
+            global_valid_tokens = float(local_valid_tokens.item())
+
+        if global_valid_tokens > 0:
+            val_loss = float(global_loss_sum) / float(global_valid_tokens)
+        else:
+            val_loss = float("nan")
+
+        # Log under a grep-able key. metrics_processor.log_validation also
+        # writes 'validation_metrics/loss' to TB.
+        logger.info(f"mm: val_loss={val_loss:.4f} step={step} (n_batches={n_batches})")
+        if hasattr(self, "metrics_processor") and self.metrics_processor is not None:
+            try:
+                self.metrics_processor.log_validation(loss=val_loss, step=step)
+            except Exception as e:  # pragma: no cover - logging best-effort
+                logger.warning(f"mm: val: metrics_processor.log_validation failed: {e}")
+
 
 # ----------------------------------------------------------------------
 # Entry point
@@ -500,6 +700,9 @@ def main():
         proj_lr_mult=mm_args.mm_proj_lr_mult,
         global_seq_len=mm_args.mm_global_seq_len,
         layout=mm_args.mm_layout,
+        val_samples=mm_args.mm_val_samples,
+        val_freq=mm_args.mm_val_freq,
+        val_batches=mm_args.mm_val_batches,
     )
     trainer.train()
     if torch.distributed.is_initialized():
