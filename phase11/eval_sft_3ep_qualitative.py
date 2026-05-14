@@ -22,11 +22,29 @@ HISTORY (2026-05-12 GRPO v16 reward collapse):
 from __future__ import annotations
 
 import argparse
+import os
 import random
 import re
 import sys
 import time
 from pathlib import Path
+
+# Block AttnRes residual-stream magnitude grows unboundedly with depth
+# (see phase11/VISION_INJECTION_BUG_RCA.md). On Blackwell (RTX 5090,
+# SM 12.0) flashinfer_mla's bf16 internals overflow to NaN on the deep
+# MLA layers — and with the VLM the merged image-token embeddings enter
+# the LM ~40x larger than text embeds, so the first MLA layer (0-idx 3)
+# already NaNs. Two complementary mitigations, both required:
+#   - ATTNRES_MLA_FP32_FALLBACK=1  : fp32 eager MLA on the EXTEND/prefill
+#                                    path (attn_res_overlay._mla_forward_fp32).
+#   - decode_attention_backend=torch_native : eager SDPA for the decode
+#                                    path (flashinfer_mla still NaNs at
+#                                    decode; the fp32 fallback is
+#                                    prefill-only). Set on the Engine
+#                                    below.
+# Set the env flag here so it is in place before the SGLang scheduler
+# subprocess is spawned.
+os.environ.setdefault("ATTNRES_MLA_FP32_FALLBACK", "1")
 
 # Pre-import sglang overlays so AutoConfig.register('kimi_attn_res_vl', ...)
 # fires before transformers.AutoConfig.from_pretrained reads the HF
@@ -82,10 +100,20 @@ def main():
         tp_size=1,
         dtype="bfloat16",
         attention_backend="flashinfer",
+        # flashinfer_mla bf16-NaNs on the deep AttnRes MLA layers at
+        # decode on Blackwell; the ATTNRES_MLA_FP32_FALLBACK fp32 path is
+        # prefill-only. Route decode-mode MLA through eager SDPA. See the
+        # module-level comment + phase11/VISION_INJECTION_BUG_RCA.md.
+        decode_attention_backend="torch_native",
         linear_attn_backend="triton",
         trust_remote_code=True,
         log_level="warning",
         disable_radix_cache=True,
+        # torch_native attention has no init_cuda_graph_state, so CUDA
+        # graph capture raises NotImplementedError. Disable it — this is
+        # a small qualitative gate (a few dozen short generations), the
+        # per-step latency hit is irrelevant here.
+        disable_cuda_graph=True,
     )
     print(f"[eval] engine ready in {time.perf_counter()-t0:.1f}s")
 

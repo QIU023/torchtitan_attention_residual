@@ -241,14 +241,26 @@ def main():
 
     # Build the COMBINED state dict. DCP keys are saved with the same
     # top-level layout the trainer constructed: LM keys flat at top
-    # level + ``mm_projector.projector.*`` for the trained projector.
+    # level + ``mm_state.projector.*`` for the trained projector.
+    #
+    # NOTE (2026-05-14): the projector now lives under ``mm_state.``
+    # because phase5/train_mm.py registers it via ``_MMStateWrapper``
+    # under the checkpointer key ``"mm_state"`` — its ``state_dict()``
+    # emits ``{"projector": <model_sd>, "proj_optim": ..., "lm_optim":
+    # ...}``, so DCP keys come out as ``mm_state.projector.fc1.weight``
+    # etc. (The old ``mm_projector.projector.*`` prefix this converter
+    # was written for predates that wrapper.) We only request the
+    # ``mm_state.projector.*`` weights here — optimizer state
+    # (``mm_state.proj_optim.*`` / ``mm_state.lm_optim.*``) is not
+    # needed for an HF inference checkpoint, and DCP's partial-load
+    # happily skips keys absent from the request dict.
     lm_sd = lm.state_dict()
-    mm_sd = mm_projector.state_dict()
+    mm_sd = mm_projector.state_dict()  # keys: projector.fc1.weight, ...
     combined: dict[str, torch.Tensor] = {}
     for k, v in lm_sd.items():
         combined[k] = v
     for k, v in mm_sd.items():
-        combined[f"mm_projector.{k}"] = v
+        combined[f"mm_state.{k}"] = v
 
     print(
         f"[conv-vl] skeleton: {len(lm_sd)} LM keys + {len(mm_sd)} projector keys"
@@ -262,11 +274,19 @@ def main():
     }[args.dtype]
 
     # Split combined back into LM vs projector for separate handling.
+    # Projector keys come back as ``mm_state.projector.fc1.weight`` etc.
+    # (see the _MMStateWrapper note above). We rename them to the final
+    # HF form ``mm_projector.projector.fc1.weight`` that the SGLang
+    # attn_res_vl overlay loader expects.
     lm_state: dict[str, torch.Tensor] = {}
     projector_state: dict[str, torch.Tensor] = {}
     for k, v in combined.items():
-        if k.startswith("mm_projector."):
-            projector_state[k] = v
+        if k.startswith("mm_state.projector."):
+            hf_k = "mm_projector." + k[len("mm_state."):]
+            projector_state[hf_k] = v
+        elif k.startswith("mm_state."):
+            # optimizer state etc. — not requested, but be defensive.
+            continue
         else:
             lm_state[k] = v
 

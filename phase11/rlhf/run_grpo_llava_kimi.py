@@ -344,6 +344,15 @@ def main():
     config.trainer.parallelism.data_parallel_shard_degree = 4
     config.generator.parallelism.tensor_parallel_degree = 4
     config.generator.gpu_memory_limit = 0.85
+    # Block AttnRes residual stream grows unboundedly with depth; on
+    # Blackwell (SM 12.0) flashinfer_mla bf16-NaNs at the deep MLA
+    # layers. ATTNRES_MLA_FP32_FALLBACK=1 (env, below) handles prefill;
+    # decode needs eager SDPA. Without this the rollout generator emits
+    # all-`!` garbage and reward collapses to -1.0 (the v16 GRPO
+    # failure). See phase11/VISION_INJECTION_BUG_RCA.md.
+    config.generator.backend.decode_attention_backend = "torch_native"
+    # torch_native has no CUDA-graph support — disable graph capture.
+    config.generator.compile.cuda_graph = False
     config.generator.weight_sync_method = "disk"
     config.generator.weight_sync_disk_path = (
         config.dump_folder + "/sglang_weights"
