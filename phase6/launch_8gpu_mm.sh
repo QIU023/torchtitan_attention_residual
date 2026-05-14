@@ -66,6 +66,11 @@ TRACE_TIER="${TRACE_TIER:-}"
 TRACE_STEPS="${TRACE_STEPS:-50}"
 PROJ_LR_MULT="${PROJ_LR_MULT:-50.0}"
 LR="${LR:-1e-5}"
+# SFT-safety: explicit max_norm=1.0 (also torchtitan's default; but make it
+# overridable per-recipe so callers can tighten it for stuck-loss recipes
+# where grad-norm is chronically large pre-clip — e.g. v11 4D mesh SFT
+# 2026-05-05 saw grad_norm ~40k-80k due to projector LR explosion).
+MAX_NORM="${MAX_NORM:-1.0}"
 WARMUP="${WARMUP:-10}"
 LOG_FREQ="${LOG_FREQ:-1}"
 SAVE_FREQ="${SAVE_FREQ:-999999}"
@@ -239,6 +244,7 @@ torchrun \
     --training.local_batch_size "$LOCAL_BS" \
     --training.global_batch_size "$GLOBAL_BS" \
     --training.seq_len "$SEQ_LEN" \
+    --training.max_norm "$MAX_NORM" \
     --optimizer.lr "$LR" \
     --lr_scheduler.warmup_steps "$WARMUP" \
     --lr_scheduler.total_steps "$STEPS" \

@@ -8,6 +8,16 @@ with non-letters indicating the model didn't attend to the image).
 Exits with code 0 if **at least 6/10 samples produce coherent text
 that starts with a letter and has < 30% '!' density**; nonzero
 otherwise. This is the gate before launching the GRPO stage.
+
+HISTORY (2026-05-12 GRPO v16 reward collapse):
+  The 2026-05-11 run passed coherent=10/10 but downstream GRPO immediately
+  saw reward_mean=-1.000 for 20+ steps. Root cause: this gate used `OR`
+  (line 106) between T=0 and T=0.7, so any sample where greedy emitted
+  coherent English but the T=0.7 sampler EOS-trapped to `word!!!!!!!` was
+  still counted "coherent". GRPO uses T=0.7 sampling, so we must AND the
+  two so a sample only passes if BOTH temperatures are non-garbage. Also
+  switched to the exact GRPO prompt template (matches `run_grpo_llava_kimi.py`
+  L193) so the gate exercises the same code path as GRPO rollouts.
 """
 from __future__ import annotations
 
@@ -82,10 +92,14 @@ def main():
     coherent = 0
     fail_reasons: list[str] = []
     for i, img in enumerate(selected):
+        # Match the exact GRPO prompt template (run_grpo_llava_kimi.py L193)
+        # so this gate exercises the same code path as GRPO rollouts.
+        # GRPO system prompt: see LlavaCaptionTask._SYSTEM_PROMPT.
         prompt = (
-            "You are a helpful vision assistant. Describe the image in "
-            "one short sentence.\n\n<image>\nUser: Describe the image.\n"
-            "Assistant:"
+            "You are a helpful vision assistant. Describe the image in one "
+            "short\nsentence (5 to 30 words). Begin with a capital letter and "
+            "end with a\nperiod.\n\n<image>\nUser: Describe the image briefly."
+            "\nAssistant:"
         )
         # Greedy
         out = e.generate(
@@ -94,7 +108,7 @@ def main():
         )
         text_greedy = out.get("text", "").strip()
         garbage_g, reason_g = is_garbage(text_greedy)
-        # Sampling
+        # Sampling (this matches GRPO's actual rollout temperature/top_p).
         out2 = e.generate(
             prompt=prompt, image_data=str(img),
             sampling_params={"temperature": 0.7, "top_p": 0.95, "max_new_tokens": 50, "stop": []},
@@ -102,8 +116,11 @@ def main():
         text_sample = out2.get("text", "").strip()
         garbage_s, reason_s = is_garbage(text_sample)
 
-        # Count as coherent if EITHER temperature produces non-garbage
-        sample_coherent = (not garbage_g) or (not garbage_s)
+        # Sample is coherent ONLY IF BOTH temperatures produce non-garbage.
+        # Previous OR-gate allowed broken-for-GRPO ckpts through because
+        # greedy decoding can be coherent while T=0.7 EOS-traps to `!!!!`,
+        # but GRPO uses T=0.7 so reward immediately collapses to -1.0.
+        sample_coherent = (not garbage_g) and (not garbage_s)
         if sample_coherent:
             coherent += 1
             mark = "+"

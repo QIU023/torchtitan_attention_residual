@@ -69,8 +69,8 @@ SEQ_LEN="${SEQ_LEN:-2048}" \
 LR="${LR:-1.5e-3}" \
 COMPILE="${COMPILE:-1}" \
 VAL="${VAL:-1}" \
-VAL_FREQ="${VAL_FREQ:-5000}" \
-VAL_STEPS="${VAL_STEPS:-100}" \
+VAL_FREQ="${VAL_FREQ:-100}" \
+VAL_STEPS="${VAL_STEPS:-10}" \
 OUT_DIR="${OUT_DIR}" \
 EXTRA_ARGS_APPEND="\
 --checkpoint.enable \

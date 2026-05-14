@@ -25,6 +25,10 @@ GLOBAL_BS="${GLOBAL_BS:-32}"
 SEQ_LEN="${SEQ_LEN:-260}"   # 196 vision + ~60 text + bos/eos
 LR="${LR:-1e-5}"            # full-param fine-tune from already-trained ckpt: small LR
 PROJ_LR_MULT="${PROJ_LR_MULT:-50.0}"  # projector starts random — needs much higher LR
+MAX_NORM="${MAX_NORM:-1.0}"  # explicit grad-clip (torchtitan default also 1.0).
+                              # SFT v11 4D mesh 2026-05-05 saw chronic grad_norm 40k-80k
+                              # which clipping CAN'T rescue — keep this <=1.0 and lower
+                              # PROJ_LR_MULT if loss stays stuck.
 OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/mm_full_finetune}"
 NGPU="${NGPU:-4}"
 LOG_FREQ="${LOG_FREQ:-10}"
@@ -63,6 +67,7 @@ torchrun \
     --training.local_batch_size "${LOCAL_BS}" \
     --training.global_batch_size "${GLOBAL_BS}" \
     --training.seq_len "${SEQ_LEN}" \
+    --training.max_norm "${MAX_NORM}" \
     --optimizer.lr "${LR}" \
     --lr_scheduler.warmup_steps 200 \
     --lr_scheduler.total_steps "${STEPS}" \
