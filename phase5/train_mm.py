@@ -274,70 +274,190 @@ class MultimodalTrainer(Trainer):
             # Separate AdamW for the projector — torchtitan's LambdaLR was
             # built for the LM's original param groups only and asserts
             # strict zip(groups, lr_values), so we can't add_param_group.
-            # A standalone AdamW appended to OptimizersContainer.optimizers
-            # is stepped by the same optimizers.step() loop without a
-            # scheduler entry (projector keeps a fixed LR).
+            #
+            # IMPORTANT: we deliberately do NOT append this to
+            # ``OptimizersContainer.optimizers``. The container's
+            # ``state_dict()`` does ``map(get_optimizer_state_dict,
+            # self.model_parts, self.optimizers)`` — ``map`` truncates to
+            # the shorter iterable, so with model_parts=[lm] and
+            # optimizers=[lm_opt, proj_opt] the projector optimizer is
+            # silently DROPPED from every checkpoint (and if model_parts
+            # ever had ≥2 entries — e.g. PP — the projector optimizer
+            # would instead be paired with the LM model and crash inside
+            # ``get_optimizer_state_dict`` with ``KeyError: 0`` because
+            # the projector's params are absent from the LM's FQN map).
+            # The projector is stepped explicitly in ``train_step`` and
+            # checkpointed via the dedicated ``_MMStateWrapper`` below.
             proj_lr = config.optimizer.lr * proj_lr_mult
             proj_optim = torch.optim.AdamW(
                 list(self.projector.parameters()),
                 lr=proj_lr,
                 betas=(0.9, 0.95), weight_decay=0.01,
             )
-            self.optimizers.optimizers.append(proj_optim)
             self._proj_optim = proj_optim
             logger.info(
-                f"mm: appended projector AdamW (lr={proj_lr}, fixed) to "
-                f"OptimizersContainer; total inner optimizers="
-                f"{len(self.optimizers.optimizers)}"
+                f"mm: built standalone projector AdamW (lr={proj_lr}, fixed); "
+                f"stepped explicitly in train_step, not via OptimizersContainer"
             )
 
-            # Register projector + its optimizer with the checkpointer so
-            # full-state resume preserves them. Without this, every
-            # ``--checkpoint.initial_load_model_only`` resume after a
-            # KDA Triton crash resets the projector to fresh-random init,
-            # costing ~50-100 steps of re-alignment work. With this hook
-            # the projector survives any same-dump_folder auto-resume.
+            # Register projector + its optimizer + the LM optimizer with
+            # the checkpointer via a single robust wrapper.
+            #
+            # Why we also override the LM optimizer's checkpoint entry:
+            # ``OptimizersContainer.state_dict()`` calls upstream
+            # ``get_optimizer_state_dict(lm_model, lm_optim)``, which
+            # builds an FQN→param-id map by *object identity* between
+            # ``lm_optim.param_groups`` and ``lm_model.named_parameters()``.
+            # With ``tie_word_embeddings=True`` the embed/lm_head weight is
+            # a shared tensor; the bundled FSDP2 wrap + a subsequent
+            # ``initial_load_model_only`` checkpoint load can leave the
+            # optimizer holding a parameter object that is no longer the
+            # one yielded by ``named_parameters()`` → ``KeyError: 0`` on
+            # the tied embedding's param-id, crashing every step-N save.
+            # ``_robust_optim_state_dict`` rebuilds that mapping at save
+            # time and falls back to positional FQN matching, which is
+            # correct for the full-parameter SFT param ordering and
+            # immune to identity drift.
             from torch.distributed.checkpoint.stateful import Stateful  # noqa: E402
 
-            class _ProjectorWrapper(Stateful):
-                def __init__(self_w, projector, proj_optim):
+            lm_model = self.model_parts[0]
+
+            def _robust_optim_state_dict(model, optim):
+                """FQN-keyed optimizer state_dict immune to param-identity
+                drift between ``optim.param_groups`` and
+                ``model.named_parameters()`` (tied weights / FSDP bundle /
+                post-load reassignment)."""
+                from itertools import chain
+
+                osd = optim.state_dict()  # {"state": {pid: ...}, "param_groups": [...]}
+                opt_params = list(
+                    chain.from_iterable(
+                        g["params"] for g in optim.param_groups
+                    )
+                )
+                model_named = list(model.named_parameters())
+                id_to_fqn = {id(p): n for n, p in model_named}
+                # pid → FQN, by identity first, positional fallback second.
+                pid_to_fqn = {}
+                for pid, p in enumerate(opt_params):
+                    fqn = id_to_fqn.get(id(p))
+                    if fqn is None and pid < len(model_named):
+                        fqn = model_named[pid][0]
+                    if fqn is None:
+                        raise RuntimeError(
+                            f"mm: cannot resolve FQN for optimizer param "
+                            f"#{pid} (model has {len(model_named)} named "
+                            f"params, optimizer has {len(opt_params)})"
+                        )
+                    pid_to_fqn[pid] = fqn
+                state_by_fqn = {
+                    pid_to_fqn[pid]: st for pid, st in osd["state"].items()
+                }
+                pgs = []
+                for g in osd["param_groups"]:
+                    g = dict(g)
+                    g["params"] = [pid_to_fqn[pid] for pid in g["params"]]
+                    pgs.append(g)
+                return {"state": state_by_fqn, "param_groups": pgs}
+
+            def _robust_load_optim_state_dict(model, optim, sd):
+                """Inverse of ``_robust_optim_state_dict``: map FQN-keyed
+                state back onto the optimizer's current param ids."""
+                from itertools import chain
+
+                opt_params = list(
+                    chain.from_iterable(
+                        g["params"] for g in optim.param_groups
+                    )
+                )
+                model_named = list(model.named_parameters())
+                id_to_fqn = {id(p): n for n, p in model_named}
+                fqn_to_pid = {}
+                for pid, p in enumerate(opt_params):
+                    fqn = id_to_fqn.get(id(p))
+                    if fqn is None and pid < len(model_named):
+                        fqn = model_named[pid][0]
+                    if fqn is not None:
+                        fqn_to_pid[fqn] = pid
+                state_by_pid = {
+                    fqn_to_pid[fqn]: st
+                    for fqn, st in sd["state"].items()
+                    if fqn in fqn_to_pid
+                }
+                pgs = []
+                for g in sd["param_groups"]:
+                    g = dict(g)
+                    g["params"] = [
+                        fqn_to_pid[fqn]
+                        for fqn in g["params"]
+                        if fqn in fqn_to_pid
+                    ]
+                    pgs.append(g)
+                optim.load_state_dict({"state": state_by_pid, "param_groups": pgs})
+
+            class _MMStateWrapper(Stateful):
+                """Single checkpointer entry that robustly saves/loads the
+                projector weights, the projector optimizer, AND the LM
+                optimizer (replacing the brittle ``OptimizersContainer``
+                ``OPTIMIZER`` entry — see class comment above)."""
+
+                def __init__(self_w, projector, proj_optim, lm_model, lm_optim):
                     self_w.projector = projector
                     self_w.proj_optim = proj_optim
+                    self_w.lm_model = lm_model
+                    self_w.lm_optim = lm_optim
 
                 def state_dict(self_w):
                     from torch.distributed.checkpoint.state_dict import (
                         get_model_state_dict,
-                        get_optimizer_state_dict,
                     )
                     return {
                         "projector": get_model_state_dict(self_w.projector),
-                        "proj_optim": get_optimizer_state_dict(
+                        "proj_optim": _robust_optim_state_dict(
                             self_w.projector, self_w.proj_optim,
+                        ),
+                        "lm_optim": _robust_optim_state_dict(
+                            self_w.lm_model, self_w.lm_optim,
                         ),
                     }
 
                 def load_state_dict(self_w, sd):
                     from torch.distributed.checkpoint.state_dict import (
                         set_model_state_dict,
-                        set_optimizer_state_dict,
                     )
                     if "projector" in sd:
                         set_model_state_dict(
                             self_w.projector, model_state_dict=sd["projector"],
                         )
                     if "proj_optim" in sd:
-                        set_optimizer_state_dict(
-                            self_w.projector, self_w.proj_optim,
-                            optim_state_dict=sd["proj_optim"],
+                        _robust_load_optim_state_dict(
+                            self_w.projector, self_w.proj_optim, sd["proj_optim"],
+                        )
+                    if "lm_optim" in sd:
+                        _robust_load_optim_state_dict(
+                            self_w.lm_model, self_w.lm_optim, sd["lm_optim"],
                         )
 
             if hasattr(self, "checkpointer") and self.checkpointer is not None:
-                self.checkpointer.states["mm_projector"] = _ProjectorWrapper(
-                    self.projector, proj_optim,
+                # The container holds exactly one inner optimizer (the LM
+                # AdamW) — we route its checkpoint through the robust
+                # wrapper and drop the container's brittle OPTIMIZER entry.
+                lm_optim = self.optimizers.optimizers[0]
+                self.checkpointer.states["mm_state"] = _MMStateWrapper(
+                    self.projector, proj_optim, lm_model, lm_optim,
                 )
-                logger.info("mm: projector + proj_optim registered with checkpointer")
+                # Remove the OptimizersContainer's OPTIMIZER entry so DCP
+                # never calls its identity-fragile state_dict(). Safe: the
+                # LM optimizer state is now fully covered by "mm_state".
+                self.checkpointer.states.pop("optimizer", None)
+                logger.info(
+                    "mm: registered _MMStateWrapper (projector + proj_optim "
+                    "+ lm_optim) with checkpointer; dropped brittle "
+                    "OptimizersContainer OPTIMIZER entry"
+                )
         else:
             self.projector = None
+            self._proj_optim = None
 
         # ----- Replace dataloader -----
         # Tokenizer is enough on every rank; the image processor is only
@@ -562,8 +682,19 @@ class MultimodalTrainer(Trainer):
         this is called, so ``self.step`` here is the just-completed step.
         Validation runs *after* optimizers.step()/zero_grad() inside
         ``train_step``, so grad state is already clean before the val pass.
+
+        The projector optimizer is NOT in the OptimizersContainer (see the
+        __init__ comment on why), so it is stepped here explicitly. The
+        deferred projector backward in ``forward_backward_step`` accumulates
+        grads into the projector params across all microbatches of this
+        step; we step once and zero once, mirroring the container's
+        per-step step()/zero_grad() cadence for the LM optimizer.
         """
         super().train_step(data_iterator)
+        proj_optim = getattr(self, "_proj_optim", None)
+        if proj_optim is not None:
+            proj_optim.step()
+            proj_optim.zero_grad(set_to_none=True)
         if (
             self._val_dataloader is not None
             and self._val_freq > 0
