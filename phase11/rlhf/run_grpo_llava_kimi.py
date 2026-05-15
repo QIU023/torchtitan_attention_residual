@@ -143,6 +143,31 @@ def _bootstrap_with_torchstore_patch(orig_bootstrap):
     return _wrapped
 
 
+def _make_sys_path_bootstrap():
+    """Bootstrap that re-establishes the parent's sys.path inside a
+    spawned subprocess. Provisioner already does this for GPU-allocating
+    meshes; this is the no-GPU analogue used for grader_mesh, whose
+    actors otherwise can't deserialize args referencing modules outside
+    standard site-packages (e.g. ``llava_caption_task`` in phase11/rlhf,
+    referenced via the pickled ``task.reward_function`` bound method).
+    """
+    import os
+    import sys
+    captured = [p for p in list(sys.path) if p and os.path.isdir(p)]
+
+    def _bootstrap():
+        import os as _os
+        import sys as _sys
+        for p in reversed(captured):
+            if p and p not in _sys.path:
+                _sys.path.insert(0, p)
+        existing = _os.environ.get("PYTHONPATH", "")
+        new = ":".join(captured)
+        _os.environ["PYTHONPATH"] = (new + ":" + existing) if existing else new
+
+    return _bootstrap
+
+
 # Apply to the main process at import time.
 _patch_torchstore_controller()
 
@@ -212,7 +237,12 @@ async def _async_main(config: _Config) -> None:
     generator_mesh = this_host().spawn_procs(
         per_host={"gpus": 4}, bootstrap=generator_bootstrap,
     )
-    grader_mesh = this_host().spawn_procs()
+    # grader_mesh has no Provisioner bootstrap (CPU-only mesh), so spawned
+    # subprocesses get a fresh sys.path missing phase11/rlhf — pickle of
+    # task.reward_function then can't find ``llava_caption_task``.
+    # Hand-rolled sys-path bootstrap + torchstore patch wrapper.
+    grader_bootstrap = _bootstrap_with_torchstore_patch(_make_sys_path_bootstrap())
+    grader_mesh = this_host().spawn_procs(bootstrap=grader_bootstrap)
 
     await setup_torch_elastic_env_async(trainer_mesh)
     await setup_torch_elastic_env_async(generator_mesh)
