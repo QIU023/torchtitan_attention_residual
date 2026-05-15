@@ -45,6 +45,12 @@ from pathlib import Path
 # Set the env flag here so it is in place before the SGLang scheduler
 # subprocess is spawned.
 os.environ.setdefault("ATTNRES_MLA_FP32_FALLBACK", "1")
+# Excluded from fp8 quant — see bench_inference_dtype.py for rationale.
+# Harmless when not running fp8 (Fp8Config isn't constructed).
+os.environ.setdefault(
+    "SGLANG_FP8_IGNORED_LAYERS",
+    "attn_res_proj,mlp_res_proj,final_attn_res_proj,mlp.experts",
+)
 
 # Pre-import sglang overlays so AutoConfig.register('kimi_attn_res_vl', ...)
 # fires before transformers.AutoConfig.from_pretrained reads the HF

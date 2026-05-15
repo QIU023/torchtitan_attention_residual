@@ -36,6 +36,25 @@ from pathlib import Path
 # Both env knobs that our SFT eval already sets — keep matrix apples-to-apples
 # unless explicitly overridden.
 os.environ.setdefault("ATTNRES_MLA_FP32_FALLBACK", "1")
+# Exclude AttnRes pseudo-query projections (Linear(D, 1)) from fp8 quant.
+# attn_res.py:128 docstring: "filter via filter_fqns to keep AttnRes
+# pseudo-queries in high precision — the zero-init carrier story relies
+# on small deltas accumulating, which rowwise FP8 quantization noise
+# would destroy". Empirically, on RTX 5090 the fp8-quantized 1×D weights
+# also crash phase-1 einsum's cuBLAS strided batched bf16 GEMM with
+# CUBLAS_STATUS_EXECUTION_FAILED. Comma-separated; matches by dotted-
+# component substring (Fp8Config + utils._module_path_match).
+os.environ.setdefault(
+    "SGLANG_FP8_IGNORED_LAYERS",
+    # AttnRes pseudo-queries (see above) +
+    # mlp.experts: skip fp8 path for the MoE — even with
+    # UPSTREAM_PR_LIST #8's shmem-shrink config, the fp8 fused-MoE
+    # Triton kernel hits "illegal memory access" on Blackwell (RTX 5090).
+    # Falls back to UnquantizedFusedMoEMethod (bf16 MoE), which preserves
+    # fp8 weight quant on the dense Linear layers (q/k/v/o, mlp gate/up/down)
+    # while keeping MoE numerically safe.
+    "attn_res_proj,mlp_res_proj,final_attn_res_proj,mlp.experts",
+)
 
 # Pre-import sglang overlays so AutoConfig.register('kimi_attn_res_vl', ...)
 # fires before transformers reads the HF config.

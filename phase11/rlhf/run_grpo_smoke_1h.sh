@@ -14,6 +14,10 @@ cd /workspace/torchtitan_attention_residual
 
 export PYTHONPATH="${PWD}/torchtitan:${PWD}"
 export ATTNRES_MLA_FP32_FALLBACK=1
+# Exclude AttnRes pseudo-query projections from fp8 quant. Harmless in
+# bf16-only smoke; required if anyone later tries `--quantization fp8`
+# on this launcher (would otherwise crash phase-1 einsum's cuBLAS GEMM).
+export SGLANG_FP8_IGNORED_LAYERS="attn_res_proj,mlp_res_proj,final_attn_res_proj,mlp.experts"
 # Bypass SGLang's POSIX-SHM bridge for multimodal payloads (UPSTREAM_PR_LIST
 # #1). The SHM bridge races against monarch's actor lifecycle (producer
 # unlinks /psm_xxx via resource_tracker before the scheduler's

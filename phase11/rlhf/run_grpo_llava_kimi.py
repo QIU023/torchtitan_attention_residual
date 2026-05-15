@@ -38,6 +38,15 @@ from typing import Optional
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
 
+# Exclude AttnRes pseudo-query projections (Linear D->1) from fp8 quant.
+# attn_res.py:128 docstring + empirical fp8 phase-1 einsum cuBLAS crash
+# on Blackwell. Set before SGLang Engine boots in the generator subprocess.
+# Harmless when fp8 quant isn't used.
+os.environ.setdefault(
+    "SGLANG_FP8_IGNORED_LAYERS",
+    "attn_res_proj,mlp_res_proj,final_attn_res_proj,mlp.experts",
+)
+
 import torch
 import torchstore as ts
 from monarch.actor import this_host

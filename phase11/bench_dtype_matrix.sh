@@ -5,7 +5,7 @@
 #   A: bf16   + torch_native decode (current baseline; coherent path)
 #   B: fp16   + torch_native decode (fp16 dynamic-range stress-test)
 #   C: bf16   + fp8 weight-only quant + torch_native decode (weight-quant)
-set -euo pipefail
+set -uo pipefail   # NOTE: no -e — keep going if one config fails (we want all 3 results).
 cd /workspace/torchtitan_attention_residual
 
 MODEL=${MODEL:-${PWD}/phase5/runs/mm_sft_447m_full/hf_step3100}
@@ -25,7 +25,7 @@ run() {
         --model-path "${MODEL}" \
         --num-samples "${N}" \
         --max-new-tokens "${TOKS}" \
-        "$@" 2>&1 | tee "${log}"
+        "$@" 2>&1 | tee "${log}" || echo "[matrix] ${tag} FAILED (continuing)"
 }
 
 run A_bf16_torchnative \

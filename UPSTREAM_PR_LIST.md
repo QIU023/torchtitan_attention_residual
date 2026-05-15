@@ -192,6 +192,8 @@ trace catalog. Needs lifting into a standalone proposal.
 
 **Target**: `sgl-project/sglang` :: `python/sglang/srt/layers/attention/mamba/causal_conv1d_triton.py`
 
+**Status**: implemented in fork (`qiu023/sglang` `attention_residual_inference` commit `a6c46168a`). Smoke-verified on hf_step3100: fp16 path 44.5 tok/s coherent 8/8 (vs bf16 baseline 44.6). bf16 regression-clean.
+
 **Symptom**: booting an SGLang Engine with `dtype="float16"` for any
 KDA-using model (Kimi-Linear and friends) crashes at first KDA layer
 with:
@@ -224,6 +226,8 @@ or use `tl.where` instead of `if/else` for the single-tensor select.
 **Target**: `sgl-project/sglang` ::
 `python/sglang/srt/layers/moe/moe_runner/triton_utils/fused_moe_triton_kernels.py`
 
+**Status**: **partial** — implemented in fork (`qiu023/sglang` `attention_residual_inference` commit `a6c46168a`). The shmem-shrink helper `_maybe_shrink_config_for_sm120` does fix the OutOfResources crash (verified: kernel launches now succeed). **However**, the shrunk config (BLOCK_M=64, num_stages=2, num_warps=4) still triggers a downstream "Triton Error [CUDA]: an illegal memory access" inside the fp8 fused-MoE kernel on RTX 5090 — likely a separate issue with the kernel's pipelining or expert-token-counting under reduced num_stages on SM 12.0 (needs deeper Triton-level debugging than this PR scope). Smoke workaround: skip MoE quant entirely via `SGLANG_FP8_IGNORED_LAYERS=...,mlp.experts` so MoE stays bf16; fp8 weight-only on dense Linear (q/k/v/o, mlp gate/up/down) still works (38.9 tok/s coherent 8/8 vs bf16 baseline 44.6). Filing this PR makes that workaround unnecessary for users who only need fp8 dense-Linear, AND lays groundwork for a follow-up PR that finishes the Blackwell MoE path.
+
 **Symptom**: `Engine(dtype="bfloat16", quantization="fp8", ...)` for a
 Kimi-Linear MoE model on Blackwell (RTX 5090, SM 12.0) crashes at
 first MoE forward with:
@@ -250,6 +254,36 @@ target, gated by `device_capability == (12, 0)` and
 `shared_memory_per_block < 128KB`.
 
 **Effort**: ~2 hours including autotune sweep.
+
+---
+
+## #9 — AttnRes block-aggregation einsums crash cuBLAS strided batched bf16 GEMM under fp8 paths
+
+**Target**: `sgl-project/sglang` :: `python/sglang/srt/layers/attn_res.py` (in our overlay) — but the upstream-relevant story is the cuBLAS GEMM behaviour itself, see "Why upstream" below.
+
+**Status**: implemented in fork (`qiu023/sglang` `attention_residual_inference` commit `a6c46168a`). Smoke-verified: fp8 weight-only path now coherent 8/8 on hf_step3100 (38.9 tok/s) vs prior CUBLAS_STATUS_EXECUTION_FAILED.
+
+**Patch**: replace three einsums of the form `("[q]n..., n...d -> [q]...d")` (small N=8 contraction → large D=1024 output) in `block_attn_res()`, vectorised `block_attn_res_phase1()`, and the per-query fallback, with manual `(weights.unsqueeze(-1) * V).sum(dim=0)`. Bypasses cuBLAS's strided batched GEMM entirely (the natural einsum decomposition for this shape lands there). bf16 path: identical FLOPs, no measurable throughput change (44.6 → 44.6 tok/s); fp8 path: now works.
+
+**Why this is partly an upstream concern**: the cuBLAS error itself is `CUBLAS_STATUS_EXECUTION_FAILED on cublasGemmStridedBatchedEx CUDA_R_16BF` only when an upstream tensor came out of an fp8 dequant path — same shapes/strides, same dtype, same kernel — works fine in pure bf16, fails after fp8. Either:
+* an alignment requirement of the cuBLAS Blackwell bf16 GEMM kernel that fp8 dequant violates (would benefit cuBLAS / driver-side handling), or
+* a stride/storage assumption SGLang's fp8 dequant path produces that cuBLAS rejects (would benefit a `.contiguous()` insertion in the dequant return path).
+
+The overlay-side `.contiguous()` defense was tried first — does NOT fix it (rules out simple contiguity). The manual-broadcast fix sidesteps the GEMM but doesn't explain *why* cuBLAS rejects this specific combination. A reproducer is straightforward: any model with an fp8-quantized layer feeding into `torch.einsum("n..., n...d -> ...d", w, V)` with N≤16 and D≥512 on RTX 5090.
+
+**Effort**: 1 hour for the overlay-side fix (already done, committed in fork). Untangling the cuBLAS-side root cause is a separate investigation — may belong on the cuBLAS/driver side, not SGLang.
+
+---
+
+## #10 — `Fp8MoEMethod` does not pass `ignored_layers` filter cleanly for partial-MoE skip
+
+(Tentative — needs more investigation before filing.)
+
+**Symptom**: `Fp8Config.get_quant_method` does honor `ignored_layers` for both `LinearBase` and `FusedMoE` (returns `UnquantizedFusedMoEMethod`), and the env knob `SGLANG_FP8_IGNORED_LAYERS=...,mlp.experts` is the documented escape hatch. Works correctly. **However**, if PR #8 lands a "best-effort" Blackwell MoE that still ICAs (the open-issue note in #8), the only practical config for fp8 weight-only on Blackwell becomes "mlp.experts in the ignored list" — which is fine but silent: there's no warning that the user is paying for fp8 quant on dense Linear *only* and getting bf16 MoE under the hood.
+
+**Proposal**: when `Fp8Config.get_quant_method` returns `UnquantizedFusedMoEMethod` for a `FusedMoE` layer due to `ignored_layers`, log a one-line INFO so users understand their effective quant scheme. ~10 lines of logging.
+
+**Status**: not implemented; flagged for future filing if/when PR #8's downstream ICA is resolved (otherwise this is the only viable fp8 path on Blackwell consumer cards and warrants user-facing visibility).
 
 ---
 
