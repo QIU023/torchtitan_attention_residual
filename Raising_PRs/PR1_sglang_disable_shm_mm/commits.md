@@ -1,5 +1,12 @@
 # Backing commits — PR #1 `SGLANG_DISABLE_SHM_MM`
 
+## Discovered in
+
+**Phase 11** — VLM SGLang Engine boot under Monarch actor mesh
+(`phase11/rlhf/run_grpo_*.py`). First reproduced when the GRPO actor
+mesh provisioner unlinked `/psm_*` before the SGLang scheduler subprocess
+opened it; `FileNotFoundError: '/psm_xxx'` hard-killed engine startup.
+
 ## Fork source
 
 | Field | Value |

@@ -1,5 +1,14 @@
 # Backing commits — PR #4 `parallelize_fn` signature stability
 
+## Discovered in
+
+**Phase 11** — RLHF / GRPO entry-point on Kimi-Linear AttnRes
+(`phase11/rlhf/run_grpo_kimi_attn_res.py`). The first call to
+`PolicyTrainer._build_model` with a non-Qwen3 model_spec failed at
+trainer construction with `TypeError: parallelize_kimi_linear()
+missing 4 required positional arguments`. Workaround at launcher
+boundary; clean fix proposed for upstream `trainer.py`.
+
 ## Fork source
 
 | Field | Value |
