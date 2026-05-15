@@ -14,6 +14,12 @@ VLM pretrain/SFT/GRPO pipeline run.
 | 4 | torchtitan | `parallelize_fn` signature stability for `experiments.rl.PolicyTrainer` | 1-line + adapter trait | S | low | Ready |
 | 5 | sglang | Block AttnRes inference overlay (Kimi + Qwen3 carriers) | full new model class + `layers/attn_res.py` | L | high | Research-track |
 | 6 | sglang | RS+merge+AG seq-shard fusion documented as a feature | docs + model-hook examples | M | low | Documented in our overlay; needs upstream deciding generality |
+| 7 | sglang | KDA `causal_conv1d_triton` fp16 dtype type-join fix | 1-kernel patch + regression test | XS | low | Ready (verified in fork commit `a6c46168a`) |
+| 8 | sglang | fp8 weight-only MoE fused kernel Blackwell shmem autotune | autotune row + downstream ICA followup | S | medium | Partial (shmem-shrink in `a6c46168a`); downstream ICA needs deeper Triton debug |
+| 9 | sglang | AttnRes block-aggregation einsum bypass for fp8 dequant cuBLAS failure | 3-call manual broadcast+sum | XS | low | Ready (fork commit `a6c46168a`); cuBLAS root cause separate issue |
+| 10 | sglang | `Fp8Config.get_quant_method` user-visible warning when MoE silently falls back to bf16 | ~10-line logging | XS | low | Tentative (gated on #8 landing) |
+| 11 | pytorch/torchstore | sync-endpoint dispatch policy — allow async caller via flag / endpoint declaration | ~30-line patch + endpoint API | S | medium | Workaround live (Controller monkeypatch in `phase11/rlhf/run_grpo_llava_kimi.py`); upstream form needs API design |
+| 12 | torchtitan | engine-agnostic `Generator` abstraction in `experiments.rl` + SGLang reference impl | new module (~600 lines) + RFC | L | medium | Code ready (fork's `experiments/rl/{actors/sglang_generator.py,plugin.py,models/sglang_wrapper.py}` + `RFC_SGLANG_GENERATOR.md`); needs upstream design discussion. Depends on #4 landing first. |
 
 ---
 
@@ -287,6 +293,99 @@ The overlay-side `.contiguous()` defense was tried first — does NOT fix it (ru
 
 ---
 
+## #11 — torchstore sync-endpoint dispatch policy (async caller opt-in)
+
+**Target**: `pytorch/torchstore` :: endpoint dispatch policy.
+
+**Symptom**: torchstore's `Controller` rejects an async caller hitting a
+sync endpoint (and vice versa). Concrete blocker: in our GRPO RL loop
+(`phase11/rlhf/run_grpo_llava_kimi.py`), the actor mesh's `Generator`
+is async (SGLang Engine returns a coroutine), but torchstore's 5
+endpoints used for weight-sync and state-broadcast (`put`, `get`,
+`broadcast`, `barrier`, `shutdown`) are declared sync. Result: hard
+exception at the first cross-mesh call. The runtime API has no
+documented escape hatch.
+
+**Our workaround** (in fork: `phase11/rlhf/run_grpo_llava_kimi.py`):
+monkey-patch the `Controller` at process start in BOTH the main
+process AND every Monarch-spawned subprocess to wrap the 5 sync
+endpoints into thin async-coroutine adapters. **0 performance impact**
+(the adapters are passthrough), but the patching machinery is fragile —
+adding a new endpoint upstream silently breaks our wrapper.
+
+**Same pattern as PR #1**: upstream-side strict policy, add an opt-in
+flag for callers that know what they're doing. Two viable upstream
+shapes:
+
+1. **Endpoint-level declaration** (preferred): let endpoint authors
+   declare `dispatch_mode={sync, async, auto}`. `auto` accepts either
+   and wraps internally. Backwards-compatible (default `sync` keeps
+   today's behavior).
+
+2. **Env-gated bulk override**: `TORCHSTORE_ALLOW_MIXED_SYNC_ASYNC=1`
+   relaxes the dispatch policy globally. Lighter to land, less clean
+   long-term.
+
+**Suggested upstream form**: file an issue with the GRPO repro
+(actor mesh = SGLang async, controller mesh = torchstore sync,
+5-endpoint cross-mesh exchange), let torchstore maintainers decide
+between (1) and (2) above. Patch follows the chosen direction.
+
+**Why this isn't trivially landable**: API design choice — pure
+dispatch-mode-on-endpoint is cleaner but more invasive; env flag
+is simpler but lasting (env-config debt). Upstream call.
+
+**Status**: workaround live in fork; issue not yet filed. ~30 line
+patch once API direction decided.
+
+---
+
+## #12 — Engine-agnostic `Generator` abstraction in `experiments.rl` + SGLang reference impl
+
+**Target**: `pytorch/torchtitan` :: `torchtitan/experiments/rl/` (new
+modules + RFC). **Zero core changes** — entirely within `experiments/`.
+
+**Scope** (in our fork: torchtitan `attention_residual_dev` branch,
+9 commits accumulating to ~600 lines + an RFC doc):
+
+- `experiments/rl/actors/sglang_generator.py` — concrete SGLang Engine
+  Generator implementing the abstract `Generator` contract (`generate`,
+  `update_weights_from_dcp`, `shutdown`).
+- `experiments/rl/actors/eager_generator.py` — fallback eager
+  PyTorch generation Generator (no SGLang dependency). Useful for
+  smoke tests + CI + environments where SGLang isn't installed.
+- `experiments/rl/models/sglang_wrapper.py` — SGLang HF-config bridge.
+- `experiments/rl/plugin.py` — engine-agnostic plugin registry.
+- `experiments/rl/RFC_SGLANG_GENERATOR.md` — design doc.
+
+**Why upstream**: torchtitan's existing `experiments/rl` is tightly
+coupled to Qwen3 + a hardcoded generation backend. Engine-agnostic
+`Generator` lets RL trainers swap the rollout backend (SGLang for
+production, eager for CI, vLLM in the future) without touching
+trainer / actor / store code. Same shape as torchtitan's existing
+`Tokenizer` / `Optimizer` plugin pattern.
+
+**Why this isn't trivially landable**: new abstraction layer requires
+upstream design discussion. Reviewer concerns expected:
+- Generator interface granularity (per-call vs streaming vs batched)
+- How `update_weights_from_dcp` fits the existing trainer-side
+  checkpoint conventions
+- Whether SGLang dependency is opt-in (it is in our impl — gated by
+  successful `import sglang`)
+
+**Depends on**: PR #4 (parallelize_fn signature stability) needs to
+land first, otherwise the Generator can't drive a non-Qwen3
+trainer's `_build_model`.
+
+**Suggested upstream form**: file the RFC first (the
+`RFC_SGLANG_GENERATOR.md` in our fork is the seed), let torchtitan
+team weigh in on interface boundaries before code review.
+
+**Status**: code complete, runs in our overnight GRPO chain. RFC
+ready to file standalone. Code PR follows RFC discussion.
+
+---
+
 ## What's NOT on this list (and why)
 
 - **fp32 MLA fallback "as a flag"** — too narrow. The flashinfer issue
@@ -300,14 +399,31 @@ The overlay-side `.contiguous()` defense was tried first — does NOT fix it (ru
   the underlying kernel. Real fix is upstream `fla-core` /
   `fused_moe_triton` numerical-edge-case hardening — that's a deep
   investigation, not a PR ready to file.
+- **`grader_mesh` `sys.path` bootstrap fix** — our own launcher bug, not
+  a Monarch upstream concern. Fixed in fork.
 
 ## Recommended order
 
-1. **#4** first (1-day torchtitan PR, low risk, removes a pain point for
-   anyone trying to RL-train non-Qwen3 models)
-2. **#1** in parallel (30-min sglang PR, gated env var)
-3. **#3 issue** without the fix (let flashinfer team weigh in on how they
-   want to expose fp32-scoring)
-4. **#6** as a design RFC (no code change yet)
-5. **#5** after the algorithm has a paper or arxiv writeup to point to
-6. **#2** after #5 lands
+Filing strategy after 2026-05-15 inventory refresh:
+
+1. **#1** first (30-min sglang env-gated PR; fork already has the patch
+   in `74083ffae`; smallest possible first contribution to build
+   reviewer credibility).
+2. **#4** next (1-day torchtitan PR, low risk, removes a pain point for
+   anyone trying to RL-train non-Qwen3 models). Required prerequisite
+   for #12.
+3. **#7** in parallel with #4 (1-hour sglang kernel + test; fork patch
+   in `a6c46168a`; unblocks fp16 inference for the Kimi-Linear family).
+4. **#3 issue** without the fix (let flashinfer team weigh in on how they
+   want to expose fp32-scoring).
+5. **#9 issue** with the manual broadcast+sum as a workaround + the
+   cuBLAS reproducer pointing toward driver-side investigation.
+6. **#11 issue** for torchstore (API design discussion).
+7. **#8** with the partial shmem-shrink patch (downstream ICA followup
+   tracked separately).
+8. **#6** as a design RFC (no code change yet).
+9. **#12 RFC** for the engine-agnostic Generator abstraction (depends
+   on #4 landing); code PR follows RFC discussion.
+10. **#5** after the algorithm has a paper or arxiv writeup to point to.
+11. **#2** after #5 lands.
+12. **#10** if/when #8's downstream ICA is resolved.
