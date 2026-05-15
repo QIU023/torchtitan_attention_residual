@@ -1,0 +1,35 @@
+{
+  "phase": 11,
+  "task": "rlhf-grpo-kimi-attnres-vlm",
+  "framework": "torchtitan + monarch + sglang",
+  "engine": "sglang",
+  "method": "grpo",
+  "task_dataset": "LLaVA-Pretrain captions, BLEU-1 reward vs gold",
+  "model_backbone": "Kimi-Linear 447M Block AttnRes (KDA + MLA + MoE)",
+  "model_multimodal": "SigLIP-Base + MLP projector",
+  "model_dtype": "bfloat16",
+  "quantization": "none",
+  "ckpt_dcp": "/workspace/torchtitan_attention_residual/phase5/runs/mm_sft_447m_full/checkpoint/step-3100",
+  "ckpt_hf":  "/workspace/torchtitan_attention_residual/phase5/runs/mm_sft_447m_full/hf_step3100",
+  "num_steps": 60,
+  "num_episodes_per_step": 4,
+  "parallelism": {
+    "trainer_mesh":   {"pp": 1, "dp": 4, "tp": 1, "ep": 1, "cp": 1, "ranks": "0-3 on GPU 0-3 (1 GPU each, FSDP shard)"},
+    "generator_mesh": {"pp": 1, "dp": 1, "tp": 4, "ep": 1, "cp": 1, "ranks": "4-7 on GPU 4-7 (shared, lead actor TP=4)"},
+    "grader_mesh":    {"pp": 1, "dp": 1, "tp": 1, "ep": 1, "cp": 1, "ranks": "spawn_procs() default — CPU-only mesh"},
+    "cross_mesh":     "torchstore push (trainer 4 → store) + pull (store → generator TP shard) every step",
+    "scale_out_relevant": "FSDP DP all-gather/reduce-scatter (trainer mesh) + torchstore RPC weight broadcast every step",
+    "scale_out_NOT_relevant": "TP=4 all-reduce inside generator mesh (intra-node NVLink only)"
+  },
+  "workarounds_active": [
+    "ATTNRES_MLA_FP32_FALLBACK=1 — fp32 eager MLA on prefill (workaround for flashinfer_mla bf16 NaN on large AttnRes activations)",
+    "decode_attention_backend=torch_native — eager SDPA for decode MLA (same root cause)",
+    "disable_cuda_graph=True — torch_native has no cuda_graph support",
+    "SGLANG_DISABLE_SHM_MM=1 — inline pickle for multimodal payloads (avoid monarch-lifecycle SHM race)",
+    "SGLANG_FP8_IGNORED_LAYERS=attn_res_proj,mlp_res_proj,final_attn_res_proj,mlp.experts — fp8 unused here but env is set for safety",
+    "torchstore Controller monkeypatch — promote 5 sync @endpoint to async (monarch sync/async mix rejection)",
+    "grader_mesh sys.path bootstrap — propagate phase11/rlhf for LlavaCaptionTask pickle",
+    "AttnRes block-aggregation einsums → manual broadcast+sum (cuBLAS bypass; bf16 unaffected)"
+  ],
+  "ts_utc": "20260515T074648"
+}
