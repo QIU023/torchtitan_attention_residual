@@ -3,7 +3,7 @@
 ## Discovered in
 
 **Phase 11** — fp8 quantization sweep on RTX 5090 for the Kimi-Linear
-AttnRes inference benchmark (`phase11/bench_inference_dtype.py`). The
+AttnRes inference benchmark (`phase11_rlhf_grpo_infra/bench_inference_dtype.py`). The
 fp8 row crashed at first MoE forward with `OutOfResources: out of
 resource: shared memory`. The shmem-shrink helper was added inline
 during the sweep to unblock the bench.

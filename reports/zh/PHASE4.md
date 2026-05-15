@@ -19,7 +19,7 @@
 
 ## 2. 交付物
 
-### 2.1 工作区（`phase4/`，**不**进 PR）
+### 2.1 工作区（`phase4_kimi_attnres_lm_pretrain/`，**不**进 PR）
 
 | 文件 | 作用 |
 |---|---|
@@ -33,7 +33,7 @@
 
 ### 2.2 进 PR 的代码（`torchtitan/experiments/kimi_linear/`）
 
-独立 experiment，不挂在 `attn_res/` 上。理由（`phase4/README.md`）：DSv3 MLA 看上去像但不一样（`mla_use_nope=True`、特定 head dims、`q_lora_rank=null`、init scales、norm 位置都飘）；KDA 是新算子；KDA:MLA = 3:1 + first-N-dense 的 per-layer 调度是 Kimi 专属。`attn_res/` 留作 Llama3/DSv3 测试床；`kimi_linear/` 是生产目标。
+独立 experiment，不挂在 `attn_res/` 上。理由（`phase4_kimi_attnres_lm_pretrain/README.md`）：DSv3 MLA 看上去像但不一样（`mla_use_nope=True`、特定 head dims、`q_lora_rank=null`、init scales、norm 位置都飘）；KDA 是新算子；KDA:MLA = 3:1 + first-N-dense 的 per-layer 调度是 Kimi 专属。`attn_res/` 留作 Llama3/DSv3 测试床；`kimi_linear/` 是生产目标。
 
 | 文件 | 作用 |
 |---|---|
@@ -160,7 +160,7 @@ PP+adapter val_loss 与 FSDP AttnRes 在 ~0.005 nat 内对齐（小于 FSDP 的 
 | 7 500 | — | 3.7186 |
 | **10 000** | **3.41367** | — |
 
-Val_loss 几乎不动（baseline 3.73 → 现在 ~3.71）；train 已掉到 ~3.41 但 val plateau 真实存在。**停止标准**（`phase4/README.md`）：
+Val_loss 几乎不动（baseline 3.73 → 现在 ~3.71）；train 已掉到 ~3.41 但 val plateau 真实存在。**停止标准**（`phase4_kimi_attnres_lm_pretrain/README.md`）：
 
 1. PRIMARY：`val ≤ 3.0` → 停跑回 Phase 5
 2. PLATEAU：20K 连续步 (= 8 个 validator checkpoint) val 无 ≥ 0.05 改善 → 停跑用最佳 ckpt 重启 Phase 5
@@ -237,11 +237,11 @@ step 3 680 已经低于原 Phase 4 step 12 500 的 train loss（3.84），步数
 - 架构 port：[model.py](../../torchtitan/torchtitan/experiments/kimi_linear/model.py)、[attn_res_model.py](../../torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py)、[pipeline_adapter.py](../../torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py)、[parallelize.py](../../torchtitan/torchtitan/experiments/kimi_linear/parallelize.py)、[config_registry.py](../../torchtitan/torchtitan/experiments/kimi_linear/config_registry.py)
 - HF 参考（不 import）：[reference/](../../torchtitan/torchtitan/experiments/kimi_linear/reference/)
 - 训练日志：
-  - Problem A baseline：`phase4/runs/kimi_436m_baseline_fsdp_overnight/{train,eval}.log`
-  - Problem A AttnRes：`phase4/runs/kimi_436m_block_attn_res_fsdp_overnight/{train,eval}.log`
-  - Problem B PP+adapter：`phase4/runs/kimi_pp_adapter_bench/adapter_pp/{train,eval}.log`
-  - 100K 续跑：`phase4/runs/kimi_436m_block_attn_res_fsdp_100k/train.log`
-  - paperhparams 从头跑：`phase4/runs/kimi_436m_block_attn_res_fsdp_paperhparams/train.log`
-- 对比图：`phase4/runs/kimi_pp_adapter_bench/comparison.png`
-- Launchers：`phase4/launch_{fsdp_small,pp4_kimi,continuation_100k,from_scratch_paperhparams}.sh`
-- 子实验 README：`phase4/experiments/{kimi_436m_attnres,kimi_pp_adapter}/README.md`
+  - Problem A baseline：`phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_baseline_fsdp_overnight/{train,eval}.log`
+  - Problem A AttnRes：`phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_overnight/{train,eval}.log`
+  - Problem B PP+adapter：`phase4_kimi_attnres_lm_pretrain/runs/kimi_pp_adapter_bench/adapter_pp/{train,eval}.log`
+  - 100K 续跑：`phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_100k/train.log`
+  - paperhparams 从头跑：`phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_paperhparams/train.log`
+- 对比图：`phase4_kimi_attnres_lm_pretrain/runs/kimi_pp_adapter_bench/comparison.png`
+- Launchers：`phase4_kimi_attnres_lm_pretrain/launch_{fsdp_small,pp4_kimi,continuation_100k,from_scratch_paperhparams}.sh`
+- 子实验 README：`phase4_kimi_attnres_lm_pretrain/experiments/{kimi_436m_attnres,kimi_pp_adapter}/README.md`

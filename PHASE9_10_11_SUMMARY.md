@@ -32,12 +32,12 @@ loop.
 ### 9-A: SFT (LLaVA-Pretrain captions)
 
 * **Data**: LLaVA-Pretrain-558K (LAION/CC/SBU image-caption pairs).
-* **Trainer**: torchtitan FSDP=8 from `phase4/.../step-12500` (the
+* **Trainer**: torchtitan FSDP=8 from `phase4_kimi_attnres_lm_pretrain/.../step-12500` (the
   447m-active / 1.4B-total Kimi Linear AttnRes ckpt).
 * **Recipe**: 500 steps, LR 2e-5, GBS=64, SEQ=260. Mirror of the
   436m phase 9-A but on the new aligned-dim ckpt.
 * **Result**: loss 5.05 → 3.03 in 500 steps. Final ckpt at
-  `phase5/runs/sft_v_fsdp8_447m_llava_pretrain/checkpoint/step-500`.
+  `phase5_vlm_multimodal_sft/runs/sft_v_fsdp8_447m_llava_pretrain/checkpoint/step-500`.
 * **Engineering**: corrected by user — original 436m phase 9-A was
   *not* COCO-based; it was a fine-tune-style continued-pretrain on
   the same LLaVA-Pretrain captions with different hyperparameters.
@@ -53,8 +53,8 @@ loop.
 
 ### 9-C (originally PPO): rolled forward into Phase 11 RLHF framework
 
-The 436m-era PPO scaffolding (`phase9/ppo_smoke_no_vllm.py`,
-`phase9/ppo_actor_ref_real_ckpt.py`) covered fabric-trace patterns
+The 436m-era PPO scaffolding (`phase9_post_training_ppo_trace/ppo_smoke_no_vllm.py`,
+`phase9_post_training_ppo_trace/ppo_actor_ref_real_ckpt.py`) covered fabric-trace patterns
 and dual-1.4B fwd+bwd. Real production PPO with rollout engine is
 the Phase 11 RLHF framework deliverable below.
 
@@ -67,13 +67,13 @@ the Phase 11 RLHF framework deliverable below.
 | Stage | Content | Output |
 | --- | --- | --- |
 | A | SGLang fork submodule + `attention_residual_inference` branch | `sglang/` submodule |
-| B | DCP → HF kimi_linear safetensors converter | `phase10/dcp_to_hf_kimi_attn_res.py` |
+| B | DCP → HF kimi_linear safetensors converter | `phase10_ckpt_dcp_to_hf/dcp_to_hf_kimi_attn_res.py` |
 | C | `KimiBlockAttnResForCausalLM` SGLang model class | `models/attn_res_overlay.py` |
-| D | 4D forward-only inference fabric trace | `phase5/runs/inference_torchtitan_phase4_step8000/` |
-| E | Training ↔ inference fabric asymmetry analysis | `phase10/TRAINING_INFERENCE_FABRIC_ASYMMETRY.md` |
-| F | Real PPO smoke (kimi_linear actor + frozen ref, 4D) | `phase5/runs/ppo_real_torchtitan/` |
-| G | Cross-regime aggregate fabric report | `phase10/PHASE10_FABRIC_REPORT.md` |
-| H–L | Two-phase RS+AG demo, autoregressive decode, sustained workload sweep | `phase5/runs/{two_phase_*,inference_*,workload_*}/` |
+| D | 4D forward-only inference fabric trace | `phase5_vlm_multimodal_sft/runs/inference_torchtitan_phase4_step8000/` |
+| E | Training ↔ inference fabric asymmetry analysis | `phase10_ckpt_dcp_to_hf/TRAINING_INFERENCE_FABRIC_ASYMMETRY.md` |
+| F | Real PPO smoke (kimi_linear actor + frozen ref, 4D) | `phase5_vlm_multimodal_sft/runs/ppo_real_torchtitan/` |
+| G | Cross-regime aggregate fabric report | `phase10_ckpt_dcp_to_hf/PHASE10_FABRIC_REPORT.md` |
+| H–L | Two-phase RS+AG demo, autoregressive decode, sustained workload sweep | `phase5_vlm_multimodal_sft/runs/{two_phase_*,inference_*,workload_*}/` |
 
 The deliverable was **structural inference infrastructure**: convert
 training ckpt to HF, register the model class with SGLang, demonstrate
@@ -86,7 +86,7 @@ labels) is deferred upstream.
 
 ### 11-A: SGLang AttnRes inference optimization
 
-See `phase11/SGLANG_ATTNRES_INFERENCE_SUMMARY.md` for the full
+See `phase11_rlhf_grpo_infra/SGLANG_ATTNRES_INFERENCE_SUMMARY.md` for the full
 report. Headline numbers:
 
 * **Decode tps recovery: +27%** from a Phase-2 fused Triton kernel
@@ -153,8 +153,8 @@ guards. Plus a real **SDPA-based fallback for `varlen_attn`** that
 unblocks the entire RL trainer on torch 2.9 — this is the single
 patch that converts the env-compat from "framework imports OK" to
 "end-to-end RL loop runs". Documented in
-`phase11/TORCHTITAN_VAST_AI_PATCHES.md` and exported as a clean
-diff at `phase11/torchtitan_vast_ai_env_compat.patch`.
+`phase11_rlhf_grpo_infra/TORCHTITAN_VAST_AI_PATCHES.md` and exported as a clean
+diff at `phase11_rlhf_grpo_infra/torchtitan_vast_ai_env_compat.patch`.
 
 ---
 
@@ -162,15 +162,15 @@ diff at `phase11/torchtitan_vast_ai_env_compat.patch`.
 
 | Artifact | Location | Size |
 | --- | --- | --- |
-| 447m aligned LM ckpt (final) | `phase4/runs/.../step-12500` (DCP) + `phase11/hf_aligned_447m_step12500/` (HF safetensors) | 17 GB DCP, 3 GB HF |
-| Multimodal pretrain ckpt (final) | `phase5/runs/v_fsdp8_447m_aligned_continue_from_step12500/checkpoint/step-2500` | 17 GB DCP |
-| LLaVA-Pretrain SFT ckpt (final) | `phase5/runs/sft_v_fsdp8_447m_llava_pretrain/checkpoint/step-500` | 33 GB DCP |
+| 447m aligned LM ckpt (final) | `phase4_kimi_attnres_lm_pretrain/runs/.../step-12500` (DCP) + `phase11_rlhf_grpo_infra/hf_aligned_447m_step12500/` (HF safetensors) | 17 GB DCP, 3 GB HF |
+| Multimodal pretrain ckpt (final) | `phase5_vlm_multimodal_sft/runs/v_fsdp8_447m_aligned_continue_from_step12500/checkpoint/step-2500` | 17 GB DCP |
+| LLaVA-Pretrain SFT ckpt (final) | `phase5_vlm_multimodal_sft/runs/sft_v_fsdp8_447m_llava_pretrain/checkpoint/step-500` | 33 GB DCP |
 | SGLang AttnRes inference fork | `sglang@attention_residual_inference` (3 commits) | 3 files, 2.2K LoC |
 | RLHF framework upstream PR draft | `torchtitan@phase11_kimi_linear_447m_aligned/experiments/rl/` (RFC + new files) | 4 files |
-| NCCL trace catalog (phase 11) | `phase11/trace_*` (5 dirs) + `phase11/rlhf/trace_*` (3 dirs) | ~5 MB compressed |
-| Bench results (3 sweeps) | `phase11/bench_results*/` | 50 KB |
-| Profile traces (kineto) | `phase11/profile_results/` | 80 MB |
-| Reports | `phase11/{PHASE11_SGLANG_REPORT,SGLANG_ATTNRES_INFERENCE_SUMMARY,PROFILING_REPORT,SGLANG_ATTNRES_AUDIT,B5_ATTNRES_INFERENCE_KV_CACHE,TORCHTITAN_VAST_AI_PATCHES}.md` | 30K each |
+| NCCL trace catalog (phase 11) | `phase11_rlhf_grpo_infra/trace_*` (5 dirs) + `phase11_rlhf_grpo_infra/rlhf/trace_*` (3 dirs) | ~5 MB compressed |
+| Bench results (3 sweeps) | `phase11_rlhf_grpo_infra/bench_results*/` | 50 KB |
+| Profile traces (kineto) | `phase11_rlhf_grpo_infra/profile_results/` | 80 MB |
+| Reports | `phase11_rlhf_grpo_infra/{PHASE11_SGLANG_REPORT,SGLANG_ATTNRES_INFERENCE_SUMMARY,PROFILING_REPORT,SGLANG_ATTNRES_AUDIT,B5_ATTNRES_INFERENCE_KV_CACHE,TORCHTITAN_VAST_AI_PATCHES}.md` | 30K each |
 
 ---
 
@@ -182,7 +182,7 @@ diff at `phase11/torchtitan_vast_ai_env_compat.patch`.
    that uses standard SDPA. Would let our 447m AttnRes train under
    the RL framework. ~1-2 hours.
 2. **Multimodal SGLang VLM model class**: SigLIP + projector wired
-   into the SGLang AttnRes overlay. Mirror of `phase5/multimodal_model.py`
+   into the SGLang AttnRes overlay. Mirror of `phase5_vlm_multimodal_sft/multimodal_model.py`
    on the inference side. ~half-day.
 3. **Upstream PR series**: SGLang AttnRes inference (filed as 2 RFCs
    first per maintainer convention), torchtitan RL `SGLangGenerator`

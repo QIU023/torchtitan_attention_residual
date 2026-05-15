@@ -16,28 +16,28 @@
 - **Pipeline**: `extract_collectives.py` → `expand_to_flows.py` →
   `flows_to_ixia.py` end-to-end, with axis heuristic.
 - **IXIA-ready artifacts**: 11 `ixia_config.json` files, ~30 KB each.
-- **Loss curves**: `phase8/eval_results/loss_curves.png` (v11 / v12 /
+- **Loss curves**: `phase8_vqa_eval/eval_results/loss_curves.png` (v11 / v12 /
   SFT side-by-side).
-- **See**: `phase7/FINAL_CATALOG.md`.
+- **See**: `phase7_nccl_traffic_catalog/FINAL_CATALOG.md`.
 
 ## Phase 8 — VQA Eval (Qualitative)
 - **Quantitative eval (lmms-eval) deferred**: 2-3 day setup not in
   18h budget.
 - **Qualitative eval done**: 5 COCO images × 5 prompts × 3 ckpts (v11,
-  v12, SFT-490) via `phase5/generate_caption.py` greedy decode.
+  v12, SFT-490) via `phase5_vlm_multimodal_sft/generate_caption.py` greedy decode.
 - **Result**: SFT-490 produces coherent multi-sentence captions
   (e.g. "3-D model of a red double-decker bus, parked on the
   street"); v11/v12 base produce fragmented number lists. Confirms
   SFT successfully transferred instruction-following capability.
-- **See**: `phase8/eval_results/qual_vqa_summary.md`.
+- **See**: `phase8_vqa_eval/eval_results/qual_vqa_summary.md`.
 
 ## Phase 9-A — SFT (LLaVA-Instruct-150K)
 - **Result**: 1 epoch (490 steps) on LLaVA-Instruct-150K from v11
   step-5000, GBS=320 LBS=160 micro=8 SEQ=579, mesh same as v11
   (FSDP=2×PP=2×TP=2×EP=2), LR=2e-5.
 - **Final loss 1.60** (started 2.66 — proper next-token shift fix
-  in `phase9/multimodal_sft_dataset.py`).
-- **Ckpt**: `phase5/runs/sft_v11_llava_instruct_150k_4d/checkpoint/step-490`
+  in `phase9_post_training_ppo_trace/multimodal_sft_dataset.py`).
+- **Ckpt**: `phase5_vlm_multimodal_sft/runs/sft_v11_llava_instruct_150k_4d/checkpoint/step-490`
   (16 GB, DCP shards).
 - **Bug found + fixed**: original SFT dataset returned labels of
   same length and alignment as input_ids (no shift), yielding
@@ -45,7 +45,7 @@
   `LlavaPretrainDataset` pattern (`full[:-1]` / `full[1:]`).
 
 ## Phase 9-B — PPO Trace (vLLM-free smoke captured)
-- **Status**: ✓ done. `phase9/ppo_smoke_no_vllm.py` runs 50-step
+- **Status**: ✓ done. `phase9_post_training_ppo_trace/ppo_smoke_no_vllm.py` runs 50-step
   toy-MLP PPO with actor on ranks 0-3 sub-mesh and frozen ref on
   ranks 4-7 sub-mesh. Cross-mesh KL exchange via world_pg
   Broadcast captures the **unique RLHF fabric signature** that
@@ -54,23 +54,23 @@
   - 800 nranks=8 Broadcast <1 KB (cross-mesh KL — NEW pattern)
   - 800 nranks=4 AllReduce 16-256 MB (actor sub-mesh grad sync)
   - 400 nranks=4 AllReduce 1-64 KB + 400 <1 KB (small-msg AR)
-- **Trace**: `phase5/runs/ppo_smoke_no_vllm/tier_b_trace/`
+- **Trace**: `phase5_vlm_multimodal_sft/runs/ppo_smoke_no_vllm/tier_b_trace/`
   (ixia_config.json, 6.3 KB; 8 nccl-rank-*.log.gz, ~600 B each).
 - **Limitations**: random-init MLP (not real LM), no actual rollout
   (uses fixed batch as "rollout"), mock reward. Captures fabric
   pattern only, not RLHF training quality. To upgrade: load v11
   step-5000 ckpt twice (DCP load is non-trivial under 4D mesh) and
   do real `model.generate` rollout — see
-  `phase9/PPO_TRACE_DEFERRED.md` for the recommended next step.
+  `phase9_post_training_ppo_trace/PPO_TRACE_DEFERRED.md` for the recommended next step.
 
 ## Disk Discipline (lessons learned)
 - Two ENOSPC incidents during retry-loop runs filled `/root` to 100%
   and bricked Bash tool calls.
 - Mitigations now in place:
-  - `phase6/launch_8gpu_mm.sh` retry-loop pre-flight (`free_gb >= 32 GB`)
+  - `phase6_upstream_pr_prep/launch_8gpu_mm.sh` retry-loop pre-flight (`free_gb >= 32 GB`)
   - Per-attempt cleanup of `tier_b_trace/nccl-rank-*.log`
   - Trace only on first attempt
-- Codified in `phase6/DISK_DISCIPLINE.md`.
+- Codified in `phase6_upstream_pr_prep/DISK_DISCIPLINE.md`.
 
 ## Hardware utilization summary
 
@@ -97,7 +97,7 @@ batch density.
 ## Phase 10 — Inference + RLHF fabric (separate effort)
 
 After phases 7/8/9 closed, a new Phase 10 was added covering the
-inference and RLHF fabric — see `phase10/PHASE10_FABRIC_REPORT.md`
+inference and RLHF fabric — see `phase10_ckpt_dcp_to_hf/PHASE10_FABRIC_REPORT.md`
 for the standalone deliverable. Stages:
 
 - A: SGLang fork submodule + branch (PR-ready scaffolding).
@@ -109,12 +109,12 @@ for the standalone deliverable. Stages:
   deliverable.
 - D: forward-only inference fabric trace at FSDP=4 × TP=2 × EP=2;
   captures the **inference signature** (zero ReduceScatter).
-- E: `phase10/TRAINING_INFERENCE_FABRIC_ASYMMETRY.md` — first-of-
+- E: `phase10_ckpt_dcp_to_hf/TRAINING_INFERENCE_FABRIC_ASYMMETRY.md` — first-of-
   kind training/inference fabric asymmetry analysis for Block AttnRes.
 - F: real PPO smoke (kimi_linear AttnRes actor + frozen ref) at
   FSDP=4 × TP=2 × EP=2; captures **RLHF fabric** (training + inference
   half-overlap).
-- G: `phase10/PHASE10_FABRIC_REPORT.md` — cross-regime aggregate.
+- G: `phase10_ckpt_dcp_to_hf/PHASE10_FABRIC_REPORT.md` — cross-regime aggregate.
 
 This supersedes the Phase 9-B "vLLM blocker" stance — see Phase 10
 Stage F for what was actually delivered (real PPO without vLLM, on

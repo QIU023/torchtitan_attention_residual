@@ -10,7 +10,7 @@ WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 TORCHTITAN_DIR="${WORKSPACE_DIR}/torchtitan"
 
 STUDENT_CONFIG="${STUDENT_CONFIG:-kimi_linear_436m_block_attn_res_n4}"
-STUDENT_CKPT="${STUDENT_CKPT:-${WORKSPACE_DIR}/phase4/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500}"
+STUDENT_CKPT="${STUDENT_CKPT:-${WORKSPACE_DIR}/phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500}"
 FILTERED="${FILTERED:-${SCRIPT_DIR}/scored/filtered.jsonl}"
 STEPS="${STEPS:-30000}"
 LOCAL_BS="${LOCAL_BS:-3}"

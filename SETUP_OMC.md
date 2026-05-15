@@ -45,7 +45,7 @@ plugin does not change auth.
 
 These three commands run in the Claude Code REPL, **not** in bash. They modify
 `~/.claude/` globally, so they're a per-developer one-time setup, not part of
-`phase2/setup_env.sh`:
+`phase2_attnres_baseline_loss/setup_env.sh`:
 
 ```text
 /plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
@@ -93,7 +93,7 @@ plugin state live outside the worktree.
 | Iterate on RFC drafts (`RFC_DRAFT_v3.md`) | `team 2:executor` | Plan → draft → critic loop, two agents |
 | Launch + babysit phase 6 v10 pretraining | `ralph: ...` | Persistent verify-then-fix until step target hit; tolerates NCCL hangs |
 | Run the 8-GPU alignment matrix end-to-end | `autopilot:` + `/oh-my-claudecode:run-8gpu-alignment` | 4–5 variant launches, sequential by GPU contention |
-| Collect tier_a/b/c NCCL traces and rebuild `pattern_catalog.md` | `/oh-my-claudecode:nccl-trace-tier` | Wraps `phase7/run_tier_b_a_traces.sh` + `extract_collectives.py` |
+| Collect tier_a/b/c NCCL traces and rebuild `pattern_catalog.md` | `/oh-my-claudecode:nccl-trace-tier` | Wraps `phase7_nccl_traffic_catalog/run_tier_b_a_traces.sh` + `extract_collectives.py` |
 | Bump `torchtitan/` submodule pointer after a fork merge | `/oh-my-claudecode:bump-torchtitan-submodule` | Encodes the "submodule is a gitlink, not a worktree" rule from `.gitignore` |
 | Long ambiguous research request ("port AttnRes to Kimi K2") | `deep-interview` then `ralplan` | Forces the spec out before any code lands |
 
@@ -106,13 +106,13 @@ Three seed skills live under `.omc/skills/` and are invokable as soon as OMC is
 installed. They are intentionally thin wrappers around the existing
 `phase{6,7}/*.sh` scripts so the shell entry points stay the source of truth.
 
-- `run-8gpu-alignment` — drive `phase6/run_8gpu_alignment_matrix.sh`, parse the
+- `run-8gpu-alignment` — drive `phase6_upstream_pr_prep/run_8gpu_alignment_matrix.sh`, parse the
   per-variant `alignment_8gpu_*.txt` reports, summarize PASS/FAIL per cell.
 - `bump-torchtitan-submodule` — fetch fork, choose target SHA, update gitlink,
   smoke `pytest tests/unit_tests/test_attn_res.py`, write the commit message in
   the style of `753026c phase 6: bump submodule pointer to 84d42c9`.
-- `nccl-trace-tier` — run `phase7/run_tier_b_a_traces.sh` for a chosen tier,
-  call `extract_collectives.py`, regenerate `phase7/pattern_catalog.md`.
+- `nccl-trace-tier` — run `phase7_nccl_traffic_catalog/run_tier_b_a_traces.sh` for a chosen tier,
+  call `extract_collectives.py`, regenerate `phase7_nccl_traffic_catalog/pattern_catalog.md`.
 
 Add new skills with `/skill add <name>` (interactive) or by dropping a
 `.omc/skills/<name>/SKILL.md` following the frontmatter format documented in
@@ -131,7 +131,7 @@ the OMC repo (`skills/AGENTS.md`).
 
 ## Not changed by this integration
 
-- `phase2/setup_env.sh` and the conda env (`attnres`) — OMC has nothing to do
+- `phase2_attnres_baseline_loss/setup_env.sh` and the conda env (`attnres`) — OMC has nothing to do
   with the training stack.
 - `torchtitan/` submodule pointer — OMC does not touch git state on its own;
   the `bump-torchtitan-submodule` skill is opt-in and human-driven.

@@ -4,7 +4,7 @@
 **Target surface**: endpoint dispatch policy (likely
 `torchstore/controller.py` + endpoint declaration API).
 **Fork reference**: workaround live as a runtime Controller monkey-patch in
-`phase11/rlhf/run_grpo_llava_kimi.py` (both main process and
+`phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py` (both main process and
 Monarch-spawned subprocesses).
 **Effort**: file the **issue first** (~1 hour); patch shape ≈ 30 lines
 pending upstream API decision.
@@ -60,7 +60,7 @@ maintainer's preferred shape.
 
 ### Our workaround
 
-In `phase11/rlhf/run_grpo_llava_kimi.py` we monkey-patch the
+In `phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py` we monkey-patch the
 `Controller` at process start in BOTH the main process AND every
 Monarch-spawned subprocess to wrap the 5 sync endpoints into thin
 async-coroutine adapters. **0 performance impact** (pure wrappers),

@@ -34,7 +34,7 @@ Non-goals: beating LLaVA-1.5 / 1.6 on benchmarks (the 436M LM is 10–20× small
 
 ## 2. What shipped
 
-### 2.1 Workspace (`phase5/`, **not** in the torchtitan PR)
+### 2.1 Workspace (`phase5_vlm_multimodal_sft/`, **not** in the torchtitan PR)
 
 | File | Role |
 |---|---|
@@ -58,7 +58,7 @@ No new production code in `torchtitan/`. Arm 1 reuses:
 
 ### 2.3 The deprecated KD phase
 
-`phase5_distillation_deprecated/` (sibling of `phase5/` at workspace root): MiniPLM-style knowledge distillation experiment, abandoned. Preserved as a negative-result writeup; not part of the current dual-arm phase.
+`phase5_distillation_deprecated/` (sibling of `phase5_vlm_multimodal_sft/` at workspace root): MiniPLM-style knowledge distillation experiment, abandoned. Preserved as a negative-result writeup; not part of the current dual-arm phase.
 
 ---
 
@@ -126,16 +126,16 @@ Single-stage end-to-end (no separate LLaVA stage-1 projector pretrain). LLaVA-1.
 
 ```bash
 # Step 1: download data + vision tower (~12 GB total, ~30 min on typical bandwidth)
-python phase5/data_prep.py
+python phase5_vlm_multimodal_sft/data_prep.py
 
 # Step 2: smoke run (5 steps, single GPU)
-STEPS=5 LOCAL_BS=2 bash phase5/launch_train.sh
+STEPS=5 LOCAL_BS=2 bash phase5_vlm_multimodal_sft/launch_train.sh
 
 # Step 3: full overnight (~5 h)
-bash phase5/launch_train.sh
+bash phase5_vlm_multimodal_sft/launch_train.sh
 
 # Step 4: eval the resulting ckpt
-bash phase5/eval_caption.sh
+bash phase5_vlm_multimodal_sft/eval_caption.sh
 ```
 
 ---
@@ -180,7 +180,7 @@ Per-block size: `B × T × D × 2 (bf16) = 1 × 258 × 1168 × 2 = 0.6 MB`. Tota
 Arm 2 measures PP-vs-FSDP loss **delta** at matched steps; absolute loss value is irrelevant. Hence three valid init strategies (recommended order **A → B → C**):
 
 - **Strategy A (fresh random init, recommended for first alignment test)**: no checkpoint load. Loss starts ≈ log(vocab) ≈ 11.7, large gradient dynamics → any numerical divergence between PP-adapter and FSDP shows up immediately. Run 1–2 K steps; pass criterion `|Δ| ≤ ` Phase-3 measured FSDP seed-vs-seed band (~0.13 nats).
-- **Strategy B (weak Phase-4 ckpt)**: copy `phase4/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500` (~15 GB) over. Loss starts already-near-floor (~3.7 train), gradients small. Tests the adapter under tiny-grad regime. 3–5 K steps.
+- **Strategy B (weak Phase-4 ckpt)**: copy `phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500` (~15 GB) over. Loss starts already-near-floor (~3.7 train), gradients small. Tests the adapter under tiny-grad regime. 3–5 K steps.
 - **Strategy C (post-retrain ckpt)**: wait for Phase-4 retrain to finish (val ~3.0 target). Most realistic for Arm 1 hand-off but blocks.
 
 ### 5.4 The four engineering gaps (concrete Arm-2 work)
@@ -235,7 +235,7 @@ Treat the checklist as: each item ends up either **fixed** or **confirmed not pr
 
 ## 8. Pointers
 
-- Workspace: [phase5/](../../phase5/) (data_prep, multimodal_dataset, multimodal_model, train_mm, launch_train, eval_caption, README)
-- Self-contained Arm-2 handoff: [phase5/HANDOFF_arm2_pp_adapter.md](../../phase5/HANDOFF_arm2_pp_adapter.md)
+- Workspace: [phase5_vlm_multimodal_sft/](../../phase5_vlm_multimodal_sft/) (data_prep, multimodal_dataset, multimodal_model, train_mm, launch_train, eval_caption, README)
+- Self-contained Arm-2 handoff: [phase5_vlm_multimodal_sft/HANDOFF_arm2_pp_adapter.md](../../phase5_vlm_multimodal_sft/HANDOFF_arm2_pp_adapter.md)
 - LM backbone reused: [torchtitan/experiments/kimi_linear/attn_res_model.py](../../torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py), [torchtitan/experiments/attn_res/pipeline_adapter.py](../../torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py)
 - Deprecated KD: [phase5_distillation_deprecated/](../../phase5_distillation_deprecated/) — preserved as negative result, not part of the current dual-arm phase

@@ -28,7 +28,7 @@ WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TORCHTITAN_DIR="${WORKSPACE_DIR}/torchtitan"
 
 STUDENT_CONFIG="${STUDENT_CONFIG:-kimi_linear_436m_block_attn_res_n4}"
-STUDENT_CKPT="${STUDENT_CKPT:-${WORKSPACE_DIR}/phase4/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500}"
+STUDENT_CKPT="${STUDENT_CKPT:-${WORKSPACE_DIR}/phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500}"
 # Default to local snapshot path (saves transformers from re-fetching
 # into HF cache layout). Falls back to repo_id form if not present.
 if [[ -d "/root/hf_cache/Llama-3.1-8B" && -f "/root/hf_cache/Llama-3.1-8B/config.json" ]]; then

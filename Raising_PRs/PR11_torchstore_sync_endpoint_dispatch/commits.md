@@ -6,7 +6,7 @@
 SGLang Generator is async; torchstore's Controller endpoints used for
 weight-sync / state-broadcast are sync. The first cross-mesh call
 hard-failed at runtime with a sync/async mismatch error.
-`phase11/rlhf/run_grpo_llava_kimi.py` installs a Controller monkey-
+`phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py` installs a Controller monkey-
 patch at process start (and in every Monarch-spawned subprocess) to
 wrap the 5 sync endpoints as async-coroutine adapters.
 
@@ -37,7 +37,7 @@ replaced by an upstream-side API for declaring dispatch mode.
 
 ## What the fork's workaround does (for reference in the issue body)
 
-The Controller monkey-patch in `phase11/rlhf/run_grpo_llava_kimi.py`:
+The Controller monkey-patch in `phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py`:
 
 1. Imports `torchstore.Controller`.
 2. For each of the 5 sync endpoints (`put`, `get`, `broadcast`,

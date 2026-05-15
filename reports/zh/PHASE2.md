@@ -16,7 +16,7 @@
 
 ## 2. 交付物
 
-**工作区脚本**（`phase2/`，**不**进 torchtitan PR）：
+**工作区脚本**（`phase2_attnres_baseline_loss/`，**不**进 torchtitan PR）：
 
 | 文件 | 作用 |
 |---|---|
@@ -131,8 +131,8 @@
 
 ## 7. 索引
 
-- 训练日志：`phase2/runs/{baseline,attn_res}/train.log`、`runs/ablation/*/train.log`
-- 图：`phase2/runs/comparison.png`、`runs/ablation/comparison.png`、`runs_1_8th/comparison.png`
-- Smoke：`phase2/smoke_test_attn_res.py`
-- Runbook：`phase2/README.md`
+- 训练日志：`phase2_attnres_baseline_loss/runs/{baseline,attn_res}/train.log`、`runs/ablation/*/train.log`
+- 图：`phase2_attnres_baseline_loss/runs/comparison.png`、`runs/ablation/comparison.png`、`runs_1_8th/comparison.png`
+- Smoke：`phase2_attnres_baseline_loss/smoke_test_attn_res.py`
+- Runbook：`phase2_attnres_baseline_loss/README.md`
 - 代码：[torchtitan/experiments/attn_res/](../../torchtitan/torchtitan/experiments/attn_res/)

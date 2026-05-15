@@ -19,7 +19,7 @@ Two end-to-end "problems" run on top of the port:
 
 ## 2. What shipped
 
-### 2.1 Workspace (`phase4/`, **not** in the torchtitan PR)
+### 2.1 Workspace (`phase4_kimi_attnres_lm_pretrain/`, **not** in the torchtitan PR)
 
 | File | Role |
 |---|---|
@@ -33,7 +33,7 @@ Two end-to-end "problems" run on top of the port:
 
 ### 2.2 Production code (`torchtitan/experiments/kimi_linear/`)
 
-Standalone experiment, not bolted onto `attn_res/`. Justification (from `phase4/README.md`): DSv3 MLA looks similar but isn't identical (`mla_use_nope=True`, specific head dims, `q_lora_rank=null`, init scales, norm placements drift); KDA is novel; the per-layer KDA:MLA = 3:1 + first-N-dense schedule is Kimi-specific. `attn_res/` stays the Llama3/DSv3 testbed; `kimi_linear/` is the production target.
+Standalone experiment, not bolted onto `attn_res/`. Justification (from `phase4_kimi_attnres_lm_pretrain/README.md`): DSv3 MLA looks similar but isn't identical (`mla_use_nope=True`, specific head dims, `q_lora_rank=null`, init scales, norm placements drift); KDA is novel; the per-layer KDA:MLA = 3:1 + first-N-dense schedule is Kimi-specific. `attn_res/` stays the Llama3/DSv3 testbed; `kimi_linear/` is the production target.
 
 | File | Role |
 |---|---|
@@ -160,7 +160,7 @@ Trajectory so far (rank 0):
 | 7 500 | — | 3.7186 |
 | **10 000** | **3.41367** | — |
 
-Val_loss is barely moving from baseline 3.73; train loss has dropped to ~3.41 but val plateau is real. **Stop criteria** documented in `phase4/README.md`:
+Val_loss is barely moving from baseline 3.73; train loss has dropped to ~3.41 but val plateau is real. **Stop criteria** documented in `phase4_kimi_attnres_lm_pretrain/README.md`:
 
 1. PRIMARY: `val ≤ 3.0` → stop, return to Phase 5.
 2. PLATEAU: no ≥ 0.05 improvement over 20 K consecutive steps (8 validator checkpoints) → stop with best ckpt; restart Phase 5 with that.
@@ -237,11 +237,11 @@ These deviations are **identical between baseline and AttnRes arms**, so they ca
 - Architecture port: [model.py](../../torchtitan/torchtitan/experiments/kimi_linear/model.py), [attn_res_model.py](../../torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py), [pipeline_adapter.py](../../torchtitan/torchtitan/experiments/kimi_linear/pipeline_adapter.py), [parallelize.py](../../torchtitan/torchtitan/experiments/kimi_linear/parallelize.py), [config_registry.py](../../torchtitan/torchtitan/experiments/kimi_linear/config_registry.py).
 - HF reference (NOT imported): [reference/](../../torchtitan/torchtitan/experiments/kimi_linear/reference/).
 - Run logs:
-  - Problem A baseline: `phase4/runs/kimi_436m_baseline_fsdp_overnight/{train,eval}.log`
-  - Problem A AttnRes: `phase4/runs/kimi_436m_block_attn_res_fsdp_overnight/{train,eval}.log`
-  - Problem B PP+adapter: `phase4/runs/kimi_pp_adapter_bench/adapter_pp/{train,eval}.log`
-  - Continuation 100K: `phase4/runs/kimi_436m_block_attn_res_fsdp_100k/train.log`
-  - From-scratch paper hparams: `phase4/runs/kimi_436m_block_attn_res_fsdp_paperhparams/train.log`
-- Comparison plot: `phase4/runs/kimi_pp_adapter_bench/comparison.png`.
-- Launchers: `phase4/launch_{fsdp_small,pp4_kimi,continuation_100k,from_scratch_paperhparams}.sh`.
-- Sub-experiment READMEs: `phase4/experiments/{kimi_436m_attnres,kimi_pp_adapter}/README.md`.
+  - Problem A baseline: `phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_baseline_fsdp_overnight/{train,eval}.log`
+  - Problem A AttnRes: `phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_overnight/{train,eval}.log`
+  - Problem B PP+adapter: `phase4_kimi_attnres_lm_pretrain/runs/kimi_pp_adapter_bench/adapter_pp/{train,eval}.log`
+  - Continuation 100K: `phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_100k/train.log`
+  - From-scratch paper hparams: `phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_paperhparams/train.log`
+- Comparison plot: `phase4_kimi_attnres_lm_pretrain/runs/kimi_pp_adapter_bench/comparison.png`.
+- Launchers: `phase4_kimi_attnres_lm_pretrain/launch_{fsdp_small,pp4_kimi,continuation_100k,from_scratch_paperhparams}.sh`.
+- Sub-experiment READMEs: `phase4_kimi_attnres_lm_pretrain/experiments/{kimi_436m_attnres,kimi_pp_adapter}/README.md`.

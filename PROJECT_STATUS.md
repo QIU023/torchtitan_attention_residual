@@ -16,16 +16,16 @@ post-train, inference, and RLHF regimes.
 | Phase | Goal | Status | Headline artifacts |
 |---|---|---|---|
 | 1 | Repository scaffold + AttnRes math reference | ✓ done | `torchtitan/torchtitan/experiments/attn_res/` |
-| 2 | Single-GPU loss-curve alignment vs baseline | ✓ done | `phase2/README.md` + Llama3-175M curves |
-| 3 | Pipeline-parallel integration + cross-stage cache adapter | ✓ done | `phase3/adapter_design.md` + `experiments/attn_res/pipeline_adapter.py` |
+| 2 | Single-GPU loss-curve alignment vs baseline | ✓ done | `phase2_attnres_baseline_loss/README.md` + Llama3-175M curves |
+| 3 | Pipeline-parallel integration + cross-stage cache adapter | ✓ done | `phase3_attnres_pp_integration/adapter_design.md` + `experiments/attn_res/pipeline_adapter.py` |
 | 4 | Kimi Linear (48B-A3B faithful) port + scale-up | ✓ done | `experiments/kimi_linear/`; phase4 step-8000 ckpt |
-| 5 | Multimodal AttnRes-Kimi-VL dual-arm validation | ✓ done | `phase5/train_mm.py` + LLaVA-Pretrain + Arms 1/2 |
-| 6 | Pre-merge infra completeness for upstream PR | ✓ done | `phase6/launch_8gpu_mm.sh` + alignment matrix + cache-adapter ablation |
-| 7 | NCCL fabric pattern catalog under 3D-5D parallelism | ✓ done | `phase7/FINAL_CATALOG.md` + 8+ ixia_config.json |
-| 8 | VQA evaluation (qualitative) | ✓ qual / ✗ quant | `phase8/eval_results/qual_vqa_summary.md` |
-| 9-A | SFT post-training | ✓ done | `phase5/runs/sft_v11_llava_instruct_150k_4d/checkpoint/step-490` |
-| 9-B | PPO toy (cross-mesh KL fabric) | ✓ done | `phase5/runs/ppo_smoke_no_vllm/` |
-| 10 | SGLang inference + RLHF fabric (12 stages A-L) | ✓ done | `phase10/PHASE10_FABRIC_REPORT.md` + 12 stage MDs |
+| 5 | Multimodal AttnRes-Kimi-VL dual-arm validation | ✓ done | `phase5_vlm_multimodal_sft/train_mm.py` + LLaVA-Pretrain + Arms 1/2 |
+| 6 | Pre-merge infra completeness for upstream PR | ✓ done | `phase6_upstream_pr_prep/launch_8gpu_mm.sh` + alignment matrix + cache-adapter ablation |
+| 7 | NCCL fabric pattern catalog under 3D-5D parallelism | ✓ done | `phase7_nccl_traffic_catalog/FINAL_CATALOG.md` + 8+ ixia_config.json |
+| 8 | VQA evaluation (qualitative) | ✓ qual / ✗ quant | `phase8_vqa_eval/eval_results/qual_vqa_summary.md` |
+| 9-A | SFT post-training | ✓ done | `phase5_vlm_multimodal_sft/runs/sft_v11_llava_instruct_150k_4d/checkpoint/step-490` |
+| 9-B | PPO toy (cross-mesh KL fabric) | ✓ done | `phase5_vlm_multimodal_sft/runs/ppo_smoke_no_vllm/` |
+| 10 | SGLang inference + RLHF fabric (12 stages A-L) | ✓ done | `phase10_ckpt_dcp_to_hf/PHASE10_FABRIC_REPORT.md` + 12 stage MDs |
 
 Total ~50 NCCL trace runs catalogued; 12+ ixia_config.json files.
 
@@ -34,17 +34,17 @@ Total ~50 NCCL trace runs catalogued; 12+ ixia_config.json files.
 | Stage | Content | Status | Output |
 |---|---|---|---|
 | A | SGLang fork submodule + Python deps | ✓ | sglang submodule on `attention_residual_inference` branch |
-| B | DCP → HF kimi_linear conversion | ✓ | `phase10/dcp_to_hf_kimi_attn_res.py` + 2.6 GB safetensors |
+| B | DCP → HF kimi_linear conversion | ✓ | `phase10_ckpt_dcp_to_hf/dcp_to_hf_kimi_attn_res.py` + 2.6 GB safetensors |
 | C | `kimi_block_attn_res.py` SGLang model class | ✓ structurally / ✗ runtime | 409-LOC PR-ready file on fork; can't run due to sgl_kernel env |
-| D | 4D forward-only inference fabric trace | ✓ | `phase5/runs/inference_torchtitan_phase4_step8000/` |
-| E | Training ↔ inference fabric asymmetry analysis | ✓ | `phase10/TRAINING_INFERENCE_FABRIC_ASYMMETRY.md` |
-| F | Real PPO smoke (kimi_linear actor + frozen ref) | ✓ | `phase5/runs/ppo_real_torchtitan/` |
-| G | Cross-regime aggregate fabric report | ✓ | `phase10/PHASE10_FABRIC_REPORT.md` |
+| D | 4D forward-only inference fabric trace | ✓ | `phase5_vlm_multimodal_sft/runs/inference_torchtitan_phase4_step8000/` |
+| E | Training ↔ inference fabric asymmetry analysis | ✓ | `phase10_ckpt_dcp_to_hf/TRAINING_INFERENCE_FABRIC_ASYMMETRY.md` |
+| F | Real PPO smoke (kimi_linear actor + frozen ref) | ✓ | `phase5_vlm_multimodal_sft/runs/ppo_real_torchtitan/` |
+| G | Cross-regime aggregate fabric report | ✓ | `phase10_ckpt_dcp_to_hf/PHASE10_FABRIC_REPORT.md` |
 | H | Phase 10 cross-references in phase 7 catalog | ✓ | catalog updated |
-| I | Two-phase TP RS+AG synthetic demo | ✓ | `phase5/runs/two_phase_tp_{allreduce,rs_ag}/` |
-| J | Autoregressive (growing-prefix) inference | ✓ | `phase5/runs/inference_autoregressive_growing/` |
-| K | Two-phase RS+AG injection in real-model context | ✓ | `phase5/runs/inference_two_phase_real/` |
-| L | Sustained inference workload sweep (4 shapes) | ✓ | `phase5/runs/workload_{short_high_bs,mid,long,prod}/` |
+| I | Two-phase TP RS+AG synthetic demo | ✓ | `phase5_vlm_multimodal_sft/runs/two_phase_tp_{allreduce,rs_ag}/` |
+| J | Autoregressive (growing-prefix) inference | ✓ | `phase5_vlm_multimodal_sft/runs/inference_autoregressive_growing/` |
+| K | Two-phase RS+AG injection in real-model context | ✓ | `phase5_vlm_multimodal_sft/runs/inference_two_phase_real/` |
+| L | Sustained inference workload sweep (4 shapes) | ✓ | `phase5_vlm_multimodal_sft/runs/workload_{short_high_bs,mid,long,prod}/` |
 | M | commId-aware axis labels | deferred | needs upstream `torch.distributed` PR |
 
 ## Production-grade gaps (next-machine TODO)
@@ -91,7 +91,7 @@ Total ~50 NCCL trace runs catalogued; 12+ ixia_config.json files.
    `apply_tp_kimi_linear`. ~1 day work + numerical equivalence test.
 
 5. **commId-aware axis labels** — heuristic in
-   `phase7/expand_to_flows.py` conflates PP and EP at `nranks=2`
+   `phase7_nccl_traffic_catalog/expand_to_flows.py` conflates PP and EP at `nranks=2`
    `Send/Recv`. Clean fix is upstream `torch.distributed` PR to
    expose `group_name` in NCCL trace lines.
 
@@ -153,20 +153,20 @@ If sgl_kernel cu124+py312 wheel **still** has no SM 120 binary
    Slower (no fused norm) but bypasses sgl_kernel for our model
    class. ~4-6h with numerical equivalence test.
 
-The fallback decision lives in `phase11/` (next session) once we see
+The fallback decision lives in `phase11_rlhf_grpo_infra/` (next session) once we see
 which sgl_kernel wheel resolution we get on the target box.
 
 ## What's runnable on a fresh CUDA 12 + Python 3.12 box (no code change)
 
 - All `phase{2,3,4,5,6}` training paths (single-GPU through 4D)
-- `phase6/launch_8gpu_mm.sh` (SFT / pretrain) and
+- `phase6_upstream_pr_prep/launch_8gpu_mm.sh` (SFT / pretrain) and
   `phase{6,9}/run_*_pretrain.sh`
-- `phase10/run_inference_torchtitan.sh` (4D forward-only inference)
-- `phase10/run_ppo_real.sh` (PPO smoke at 4D mesh)
-- `phase10/run_two_phase_*.sh` (RS+AG fabric demos, real + synthetic)
-- `phase10/run_workload_sweep.sh` (sustained workload sweep)
-- `phase10/run_autoregressive.sh` (growing-prefix autoregressive)
-- `phase10/dcp_to_hf_kimi_attn_res.py` (DCP→HF conversion)
+- `phase10_ckpt_dcp_to_hf/run_inference_torchtitan.sh` (4D forward-only inference)
+- `phase10_ckpt_dcp_to_hf/run_ppo_real.sh` (PPO smoke at 4D mesh)
+- `phase10_ckpt_dcp_to_hf/run_two_phase_*.sh` (RS+AG fabric demos, real + synthetic)
+- `phase10_ckpt_dcp_to_hf/run_workload_sweep.sh` (sustained workload sweep)
+- `phase10_ckpt_dcp_to_hf/run_autoregressive.sh` (growing-prefix autoregressive)
+- `phase10_ckpt_dcp_to_hf/dcp_to_hf_kimi_attn_res.py` (DCP→HF conversion)
 
 The above already produced the full fabric catalog on the current
 machine. The remaining unmade products require **either** a fresh env
@@ -183,13 +183,13 @@ torchtitan_attention_residual/
 ├── torchtitan/            # submodule, fork of pytorch/torchtitan
 ├── sglang/                # submodule, fork of sgl-project/sglang on
 │                          # branch attention_residual_inference
-├── phase2-phase4/         # single-GPU + PP + Kimi Linear scaffolding
-├── phase5/
+├── phase2-phase4_kimi_attnres_lm_pretrain/         # single-GPU + PP + Kimi Linear scaffolding
+├── phase5_vlm_multimodal_sft/
 │   ├── train_mm.py, multimodal_*.py, generate_caption.py
 │   ├── runs/README.md     # categorical index of ~50 run dirs
 │   └── runs/{v11_4d_*, v12_4d_*, sft_v11_*, inference_*, ppo_*,
 │              workload_*, two_phase_*, ...}
-├── phase6/                # ACTIVE: launch_8gpu_mm.sh +
+├── phase6_upstream_pr_prep/                # ACTIVE: launch_8gpu_mm.sh +
 │                          # run_v11_pretrain.sh, run_v12_pretrain.sh
 │   ├── alignment_archive/
 │   ├── cache_adapter_ablation/
@@ -198,11 +198,11 @@ torchtitan_attention_residual/
 │   ├── torchtitan_patches/
 │   ├── logs/
 │   └── utils/
-├── phase7/                # FINAL_CATALOG.md + extract/expand/ixia
+├── phase7_nccl_traffic_catalog/                # FINAL_CATALOG.md + extract/expand/ixia
 │                          # pipeline scripts
-├── phase8/                # qual VQA eval
-├── phase9/                # SFT (run_sft_pretrain.sh) + ppo toy
-└── phase10/               # 12 stages of inference + RLHF fabric:
+├── phase8_vqa_eval/                # qual VQA eval
+├── phase9_post_training_ppo_trace/                # SFT (run_sft_pretrain.sh) + ppo toy
+└── phase10_ckpt_dcp_to_hf/               # 12 stages of inference + RLHF fabric:
     ├── PHASE10_FABRIC_REPORT.md
     ├── TRAINING_INFERENCE_FABRIC_ASYMMETRY.md
     ├── TWO_PHASE_TP_FABRIC_DEMO.md

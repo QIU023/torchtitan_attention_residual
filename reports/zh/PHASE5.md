@@ -33,7 +33,7 @@
 
 ## 2. 交付物
 
-### 2.1 工作区（`phase5/`，**不**进 PR）
+### 2.1 工作区（`phase5_vlm_multimodal_sft/`，**不**进 PR）
 
 | 文件 | 作用 |
 |---|---|
@@ -57,7 +57,7 @@
 
 ### 2.3 废弃的 KD phase
 
-`phase5_distillation_deprecated/`（工作区根下的 `phase5/` 兄弟目录）：MiniPLM 风格知识蒸馏实验，已废弃。保留作为负面结果记录；不属于当前双 arm phase。
+`phase5_distillation_deprecated/`（工作区根下的 `phase5_vlm_multimodal_sft/` 兄弟目录）：MiniPLM 风格知识蒸馏实验，已废弃。保留作为负面结果记录；不属于当前双 arm phase。
 
 ---
 
@@ -124,16 +124,16 @@ SigLIP-Base-Patch16-224（冻结，~92M params）
 
 ```bash
 # Step 1: 数据 + vision tower（~12 GB，普通带宽 ~30 分钟）
-python phase5/data_prep.py
+python phase5_vlm_multimodal_sft/data_prep.py
 
 # Step 2: smoke（5 步，单卡）
-STEPS=5 LOCAL_BS=2 bash phase5/launch_train.sh
+STEPS=5 LOCAL_BS=2 bash phase5_vlm_multimodal_sft/launch_train.sh
 
 # Step 3: 全过夜（~5h）
-bash phase5/launch_train.sh
+bash phase5_vlm_multimodal_sft/launch_train.sh
 
 # Step 4: eval ckpt
-bash phase5/eval_caption.sh
+bash phase5_vlm_multimodal_sft/eval_caption.sh
 ```
 
 ---
@@ -178,7 +178,7 @@ bash phase5/eval_caption.sh
 Arm 2 测的是 PP-vs-FSDP loss **delta**（相同步数），绝对 loss 无关。所以三个 init 策略都行（推荐顺序 **A → B → C**）：
 
 - **Strategy A（随机 init，推荐先做）**：不加载 ckpt。loss 起步 ≈ log(vocab) ≈ 11.7，梯度动力学大 → PP-adapter 与 FSDP 任何数值偏差立刻显形。跑 1-2K 步；通过标准 `|Δ| ≤` Phase 3 测得的 FSDP seed-vs-seed 噪声带（~0.13 nats）。
-- **Strategy B（弱 Phase 4 ckpt）**：把 `phase4/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500`（~15 GB）拷过去。loss 起步已接近底部（~3.7 train），梯度小。测 adapter 在小梯度 regime 下行为。3-5K 步。
+- **Strategy B（弱 Phase 4 ckpt）**：把 `phase4_kimi_attnres_lm_pretrain/runs/kimi_436m_block_attn_res_fsdp_overnight/checkpoint/step-12500`（~15 GB）拷过去。loss 起步已接近底部（~3.7 train），梯度小。测 adapter 在小梯度 regime 下行为。3-5K 步。
 - **Strategy C（续跑后 ckpt）**：等 Phase 4 续跑跑完（val ~3.0 目标）。最贴近 Arm 1 hand-off 现实，但阻塞。
 
 ### 5.4 4 个工程 gap（Arm 2 的具体工作）
@@ -233,7 +233,7 @@ Arm 2 测的是 PP-vs-FSDP loss **delta**（相同步数），绝对 loss 无关
 
 ## 8. 索引
 
-- 工作区：[phase5/](../../phase5/)（data_prep、multimodal_dataset、multimodal_model、train_mm、launch_train、eval_caption、README）
-- Arm 2 自包含 handoff：[phase5/HANDOFF_arm2_pp_adapter.md](../../phase5/HANDOFF_arm2_pp_adapter.md)
+- 工作区：[phase5_vlm_multimodal_sft/](../../phase5_vlm_multimodal_sft/)（data_prep、multimodal_dataset、multimodal_model、train_mm、launch_train、eval_caption、README）
+- Arm 2 自包含 handoff：[phase5_vlm_multimodal_sft/HANDOFF_arm2_pp_adapter.md](../../phase5_vlm_multimodal_sft/HANDOFF_arm2_pp_adapter.md)
 - 复用的 LM 主干：[torchtitan/experiments/kimi_linear/attn_res_model.py](../../torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py)、[torchtitan/experiments/attn_res/pipeline_adapter.py](../../torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py)
 - 废弃的 KD：[phase5_distillation_deprecated/](../../phase5_distillation_deprecated/) —— 保留作为负面结果，不属于当前双 arm phase

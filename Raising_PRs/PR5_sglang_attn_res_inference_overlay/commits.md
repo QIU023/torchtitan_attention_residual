@@ -6,7 +6,7 @@
 torchtitan training-side AttnRes, paper-Table-1 reproduction).
 
 **Inference path**: Phase **11** — SGLang carrier work for the AttnRes
-ckpt (`phase11/eval_*.py` + the full inference benchmark sweep). The
+ckpt (`phase11_rlhf_grpo_infra/eval_*.py` + the full inference benchmark sweep). The
 overlay's modular split into algorithm-core / per-arch carriers
 emerged during Phase 11 as we added Qwen3 after Kimi-Linear to validate
 the algorithm-core's model-agnosticity.

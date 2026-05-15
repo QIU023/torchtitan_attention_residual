@@ -105,7 +105,7 @@ fits the audience / how much detail you want to show.
 
 ## Notes for posting
 
-- **Image to attach** (any version): `phase2/runs/comparison.png` — the
+- **Image to attach** (any version): `phase2_attnres_baseline_loss/runs/comparison.png` — the
   baseline-vs-AttnRes loss curve. Most viewable proof-of-work in one image.
 - LinkedIn truncates at ~210 chars before "see more"; version A is short
   enough that the full text is visible inline. Version B/C work better with

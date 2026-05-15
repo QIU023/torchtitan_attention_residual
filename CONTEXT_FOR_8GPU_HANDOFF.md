@@ -23,7 +23,7 @@ caching adapter for the "<5% PCIe overhead" headline that carries PR #2.
 
 - **Workspace logbook**: `git@github.com:QIU023/torchtitan_attention_residual.git`
   branch `main` (HEAD ~= `4abf51d`). Contains ROOT_PLAN, RFC draft,
-  `phase2/` + `phase3/` playbooks and prior results. **NOT** tracked by
+  `phase2_attnres_baseline_loss/` + `phase3_attnres_pp_integration/` playbooks and prior results. **NOT** tracked by
   torchtitan; this is the project diary + launch scripts.
 - **Fork**: `git@github.com:QIU023/torchtitan.git` branch
   `attention_residual_dev` (HEAD ~= `bfe200e`). All AttnRes code lives
@@ -34,7 +34,7 @@ Clone both as **peers**:
 ```
 ~/work/
 ├── workspace/                    # from torchtitan_attention_residual
-│   └── phase3/go_8gpu.sh         # <-- orchestrator entry point
+│   └── phase3_attnres_pp_integration/go_8gpu.sh         # <-- orchestrator entry point
 └── torchtitan/                   # from QIU023/torchtitan
     └── torchtitan/experiments/attn_res/   # all PR code
 ```
@@ -49,7 +49,7 @@ The fork already has a migration commit (`976132f → bfe200e`) that
 moved AttnRes out of `torchtitan/models/` into
 `torchtitan/experiments/attn_res/`. **Do not revert this.** All new
 code changes must stay inside `torchtitan/experiments/attn_res/` or
-`workspace/phase3/`. The precedent is `experiments/transformers_modeling_backend`
+`workspace/phase3_attnres_pp_integration/`. The precedent is `experiments/transformers_modeling_backend`
 which customizes PP via `ModelSpec.pipelining_fn` without touching core.
 
 If you think you need to modify `torchtitan/distributed/pipeline_parallel.py`
@@ -65,7 +65,7 @@ experiment-local workaround first.
   `forward_attn_res` body. See `experiments/attn_res/model.py`.
 - **HF datasets streaming httpx crash**: mid-run `Cannot send a request,
   as the client has been closed` killed our N=12 ablation at step 8810.
-  **Mitigation**: pre-fetch C4 shards with `phase3/prefetch_c4.py`
+  **Mitigation**: pre-fetch C4 shards with `phase3_attnres_pp_integration/prefetch_c4.py`
   **before** any long training run on the rental box. Do not skip this.
 - **CheckpointManager not on by default**: torchtitan's
   `CheckpointManager.Config.enable` defaults to `False`. The experiment's
@@ -123,7 +123,7 @@ visible. Clone both repos as peers per Section 2.
 
 ### Step 1 — run the orchestrator
 ```bash
-bash ~/work/workspace/phase3/go_8gpu.sh
+bash ~/work/workspace/phase3_attnres_pp_integration/go_8gpu.sh
 ```
 
 What this does:
@@ -152,7 +152,7 @@ subparams). Debug on the fly; do not retreat to single-GPU.
   (Llama3 1.5–2B, 20B tokens). Need to add a new config in
   `experiments/attn_res/config_registry.py`.
 - Loss diverges under adapter ⇒ one of the 5 open unknowns in
-  `phase3/adapter_design.md` is biting. Document what you saw;
+  `phase3_attnres_pp_integration/adapter_design.md` is biting. Document what you saw;
   flag to user. Naive PP (no adapter) still produces a valid, if
   weaker, PR #2 story; that's the fallback.
 
@@ -180,17 +180,17 @@ subparams). Debug on the fly; do not retreat to single-GPU.
   unit tests. Run first before anything expensive.
 
 **In the workspace (at `~/work/workspace/`):**
-- `phase3/README.md` — staging plan
-- `phase3/adapter_design.md` — **read this if the adapter misbehaves**;
+- `phase3_attnres_pp_integration/README.md` — staging plan
+- `phase3_attnres_pp_integration/adapter_design.md` — **read this if the adapter misbehaves**;
   covers state machine, invariants, 5 open unknowns (microbatch keying,
   VP chunk order, backward-hook reliability under `PipelineScheduleMulti`,
   AC interaction, FSDP reshard composition)
-- `phase3/go_8gpu.sh` — the orchestrator
-- `phase3/launch_8gpu_naive.sh` / `launch_8gpu_adapter.sh` — individual
+- `phase3_attnres_pp_integration/go_8gpu.sh` — the orchestrator
+- `phase3_attnres_pp_integration/launch_8gpu_naive.sh` / `launch_8gpu_adapter.sh` — individual
   stage launchers; called by `go_8gpu.sh`
-- `phase3/prefetch_c4.py` — C4 shard prefetch
-- `phase3/compare_pp_vs_single.py` — post-hoc TB comparison
-- `phase3/fake_pg_test.py` — single-GPU fake-PG smoke; **optional**,
+- `phase3_attnres_pp_integration/prefetch_c4.py` — C4 shard prefetch
+- `phase3_attnres_pp_integration/compare_pp_vs_single.py` — post-hoc TB comparison
+- `phase3_attnres_pp_integration/fake_pg_test.py` — single-GPU fake-PG smoke; **optional**,
   use only if you want to reproduce local numerics outside 8-GPU
 - `RFC_DRAFT_v2.md` — draft RFC; do not publish yet, user hasn't okayed
 - `ROOT_PLAN.md` — full original plan incl. hardware decisions and risk
@@ -238,7 +238,7 @@ Before you start, verify (in a read-only way):
 
 When all green, run:
 ```bash
-bash ~/work/workspace/phase3/go_8gpu.sh
+bash ~/work/workspace/phase3_attnres_pp_integration/go_8gpu.sh
 ```
 
 and tell the user what happened.

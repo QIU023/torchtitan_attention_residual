@@ -101,5 +101,5 @@ first rollout call.
       / Ray / SLURM).
 - [ ] Test plan checked locally on both default and opt-in paths.
 - [ ] Link to the discussion in our fork's
-      `phase11/UPSTREAM_PR_LIST.md` so reviewers see the broader
+      `phase11_rlhf_grpo_infra/UPSTREAM_PR_LIST.md` so reviewers see the broader
       context if curious.

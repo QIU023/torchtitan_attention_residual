@@ -14,41 +14,41 @@ model: sonnet
 ## Purpose
 Wrap the phase-7 trace pipeline so a single invocation produces the raw NCCL
 logs, the parsed `collective_summary.csv`, and an updated
-`phase7/pattern_catalog.md` for the requested tier.
+`phase7_nccl_traffic_catalog/pattern_catalog.md` for the requested tier.
 
-Tier semantics (from `phase7/README.md`):
+Tier semantics (from `phase7_nccl_traffic_catalog/README.md`):
 - `tier_a` — quick smoke, ~10 MB raw logs per dir, minutes.
 - `tier_b` — standard catalog input, ~50 MB per dir.
 - `tier_c` — full ablation, ~200 MB per dir, hour+.
 
 Raw `nccl-rank-*.log` files and `collective_summary.csv` are gitignored
-(`.gitignore` lines under `phase5/runs/**/tier_*_trace/`); only
+(`.gitignore` lines under `phase5_vlm_multimodal_sft/runs/**/tier_*_trace/`); only
 `pattern_catalog.md` and the `train.log` tail are committed.
 
 ## Workflow
 
 1. **Pick the tier and the run dir**
    - Default tier: `tier_a` (cheapest).
-   - Default run dir: most recent under `phase5/runs/8gpu_*/` that has no
+   - Default run dir: most recent under `phase5_vlm_multimodal_sft/runs/8gpu_*/` that has no
      existing `tier_${TIER}_trace/`. Ask the user if ambiguous.
 
 2. **Launch the trace**
-   - `TRACE_TIER=tier_${TIER} bash phase6/launch_8gpu_mm.sh <run-dir>`
-     OR `bash phase7/run_tier_b_a_traces.sh` for the canned b→a sequence.
-   - Tee output to `phase7/orchestrator_tiers.log`.
+   - `TRACE_TIER=tier_${TIER} bash phase6_upstream_pr_prep/launch_8gpu_mm.sh <run-dir>`
+     OR `bash phase7_nccl_traffic_catalog/run_tier_b_a_traces.sh` for the canned b→a sequence.
+   - Tee output to `phase7_nccl_traffic_catalog/orchestrator_tiers.log`.
 
 3. **Extract collectives**
-   - `python phase7/extract_collectives.py <run-dir>/tier_${TIER}_trace/`
+   - `python phase7_nccl_traffic_catalog/extract_collectives.py <run-dir>/tier_${TIER}_trace/`
    - This writes `collective_summary.csv` (gitignored, large — that's fine).
 
 4. **Rebuild the catalog**
-   - `python phase7/build_pattern_catalog.py`
-   - Diff `phase7/pattern_catalog.md` vs the prior version; if the diff is
+   - `python phase7_nccl_traffic_catalog/build_pattern_catalog.py`
+   - Diff `phase7_nccl_traffic_catalog/pattern_catalog.md` vs the prior version; if the diff is
      non-trivial (new histogram bucket, new collective op type, distribution
      shift > 5%), summarize the delta in the user-visible response.
 
 5. **Commit (only on user confirmation)**
-   - Stage `phase7/pattern_catalog.md` and the run dir's `train.log`.
+   - Stage `phase7_nccl_traffic_catalog/pattern_catalog.md` and the run dir's `train.log`.
    - Commit style: `phase 7: <tier> trace for <run-dir-tag>, <one-line delta>`.
 
 ## Usage

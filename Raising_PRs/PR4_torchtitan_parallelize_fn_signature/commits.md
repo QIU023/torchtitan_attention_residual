@@ -3,7 +3,7 @@
 ## Discovered in
 
 **Phase 11** — RLHF / GRPO entry-point on Kimi-Linear AttnRes
-(`phase11/rlhf/run_grpo_kimi_attn_res.py`). The first call to
+(`phase11_rlhf_grpo_infra/rlhf/run_grpo_kimi_attn_res.py`). The first call to
 `PolicyTrainer._build_model` with a non-Qwen3 model_spec failed at
 trainer construction with `TypeError: parallelize_kimi_linear()
 missing 4 required positional arguments`. Workaround at launcher
@@ -19,7 +19,7 @@ boundary; clean fix proposed for upstream `trainer.py`.
 | Files implicated | `torchtitan/experiments/rl/actors/trainer.py` (PolicyTrainer._build_model) |
 
 Status: **No fork commit yet to cherry-pick.** PR #4 is a *propose-and-file*
-PR. Our fork carries a per-launcher workaround (`phase11/rlhf/run_grpo_*.py`
+PR. Our fork carries a per-launcher workaround (`phase11_rlhf_grpo_infra/rlhf/run_grpo_*.py`
 constructs the missing kwargs and patches them in), but the cleaner trainer-
 side fix has not been committed to the fork's `trainer.py`.
 
@@ -68,7 +68,7 @@ git push origin experiments-rl-parallelize-fn-signature
 
 ## Why no fork commit was made
 
-The fork's `phase11/rlhf/run_grpo_*.py` launchers solve the problem at
+The fork's `phase11_rlhf_grpo_infra/rlhf/run_grpo_*.py` launchers solve the problem at
 the launcher boundary (each launcher wraps a `parallelize_fn` adapter
 that injects the missing kwargs). That works for our internal use but
 is not the right shape to send upstream — the fix belongs in

@@ -3,7 +3,7 @@
 ## Discovered in
 
 **Phase 11** — fp8 / fp16 / bf16 dtype sweep on `hf_step3100` ckpt for
-the inference benchmarking matrix (`phase11/bench_inference_dtype.py`).
+the inference benchmarking matrix (`phase11_rlhf_grpo_infra/bench_inference_dtype.py`).
 The fp16 row of the matrix failed at SGLang Engine boot with a Triton
 compilation error inside `_causal_conv1d_fwd_kernel`; bf16 and fp32
 rows worked.

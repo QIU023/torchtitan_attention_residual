@@ -3,7 +3,7 @@
 > **STATUS (2026-05-03): RESOLVED in our codebase.** The root cause was NOT
 > in upstream pytorch PP, NOT in AttnRes, and NOT in the recv-buffer alias
 > originally hypothesized. It was the multimodal-training pattern in
-> `phase5/train_mm.py`: the projector ran ONCE per step (in
+> `phase5_vlm_multimodal_sft/train_mm.py`: the projector ran ONCE per step (in
 > `post_dataloading_process`) producing `vision_embeds`, then PP chunked
 > that tensor per microbatch — every chunk routed grad back to the SAME
 > projector grad_fn. Under V≥2+LBS≥3+Interleaved1F1B, mb_0's stage_backward
@@ -25,14 +25,14 @@
 > The proper fix produces the same loss curve as `retain_graph=True`
 > (projector trains correctly) at lower memory (11.4 GiB vs 16.4 GiB).
 >
-> See `phase5/train_mm.py:MultimodalTrainer.post_dataloading_process` and
+> See `phase5_vlm_multimodal_sft/train_mm.py:MultimodalTrainer.post_dataloading_process` and
 > `forward_backward_step` for the implementation.
 
 > **This is a software BUG, not a hardware bottleneck.** The error fires
 > inside the autograd graph traversal logic in pytorch's `pipelining/_backward.py`,
 > independent of which interconnect (PCIe / NVLink / IB) is used. The
 > repro would crash identically on an H100 NVLink box. Distinguish from
-> the PCIe-bandwidth observation in `phase7/THROUGHPUT_BOTTLENECK_ANALYSIS.md`,
+> the PCIe-bandwidth observation in `phase7_nccl_traffic_catalog/THROUGHPUT_BOTTLENECK_ANALYSIS.md`,
 > which is a hardware trade-off (renting RTX 5090 PCIe instead of an
 > NVLink box) — that is not a bug.
 
@@ -160,7 +160,7 @@ to_local, etc.) — the bug exists in the upstream PP + V≥2 path.
 
 ```bash
 # In any torchtitan checkout with a kimi_linear-style flavor + Interleaved1F1B:
-torchrun --nproc_per_node=8 -m phase5.train_mm \
+torchrun --nproc_per_node=8 -m phase5_vlm_multimodal_sft.train_mm \
   --module kimi_linear --config kimi_linear_436m_block_attn_res_n4 \
   --training.local_batch_size 5 \
   --training.global_batch_size 40 \
@@ -311,7 +311,7 @@ upstream-trunk torch before opening the issue.
   `fwd_cache[chunk_id]` as `input_values`; the next step's irecv
   overwrites the buffer; this step's backward walks an autograd graph
   with freed/overwritten saved tensors → crash.
-- 2026-05-03: monkey-patch hotfix (`phase6/torchtitan_pp_backward_hotfix.py`)
+- 2026-05-03: monkey-patch hotfix (`phase6_upstream_pr_prep/torchtitan_pp_backward_hotfix.py`)
   attempted: clone `input_values` after the original `forward_one_chunk`
   computes the output. **Did NOT work**. Cloning AFTER forward breaks
   PP's gradient-recovery path: gradient is accumulated on the original
@@ -330,7 +330,7 @@ upstream-trunk torch before opening the issue.
   - **(B)** ❌ Move buffer cloning earlier: clone INSIDE
     `_retrieve_recv_activations` so the model's forward operates on
     the clone. **Tested 2026-05-03 via vendored stage.py overlay
-    (phase6/torchtitan_pp_patches/), failed.** The clone is non-leaf
+    (phase6_upstream_pr_prep/torchtitan_pp_patches/), failed.** The clone is non-leaf
     and gradient at non-leaf doesn't reach `bwd_cache[chunk_id]` via
     `stage_backward()` — `grads_input` ends up `None` for the clone
     entry, then `get_bwd_send_ops` hits the same secondary error

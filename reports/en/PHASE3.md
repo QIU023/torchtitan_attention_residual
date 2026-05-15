@@ -16,7 +16,7 @@ Acceptance gate: adapter loss matches naive PP within bf16 / NCCL nondeterminism
 
 ## 2. What shipped
 
-### 2.1 Workspace (`phase3/`, **not** in the torchtitan PR)
+### 2.1 Workspace (`phase3_attnres_pp_integration/`, **not** in the torchtitan PR)
 
 | File | Role |
 |---|---|
@@ -199,6 +199,6 @@ peak_cache_bytes(rank R) ≈ |rank_cache_at_entry[R, V-1]| × B × T × D × 2 �
 
 - Production code: [layout.py](../../torchtitan/torchtitan/experiments/attn_res/layout.py), [pipeline_adapter.py](../../torchtitan/torchtitan/experiments/attn_res/pipeline_adapter.py), [model.py](../../torchtitan/torchtitan/experiments/attn_res/model.py).
 - Tests: `torchtitan/experiments/attn_res/tests/test_pipeline_adapter.py` (41+ tests).
-- Run logs: `phase3/runs/{pp4_naive_4gpu,pp4_adapter_4gpu,pp4_adapter_4gpu_smoke1k}/train.log`.
-- Headline plot: `phase3/naive_vs_adapter_loss.png`.
-- Design + handoff log: `phase3/adapter_design.md`, `handoff_status_20260420{,_part2,_part3}.md`, `handoff_status_20260421.md`.
+- Run logs: `phase3_attnres_pp_integration/runs/{pp4_naive_4gpu,pp4_adapter_4gpu,pp4_adapter_4gpu_smoke1k}/train.log`.
+- Headline plot: `phase3_attnres_pp_integration/naive_vs_adapter_loss.png`.
+- Design + handoff log: `phase3_attnres_pp_integration/adapter_design.md`, `handoff_status_20260420{,_part2,_part3}.md`, `handoff_status_20260421.md`.

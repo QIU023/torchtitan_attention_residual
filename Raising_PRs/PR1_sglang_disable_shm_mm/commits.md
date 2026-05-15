@@ -3,7 +3,7 @@
 ## Discovered in
 
 **Phase 11** — VLM SGLang Engine boot under Monarch actor mesh
-(`phase11/rlhf/run_grpo_*.py`). First reproduced when the GRPO actor
+(`phase11_rlhf_grpo_infra/rlhf/run_grpo_*.py`). First reproduced when the GRPO actor
 mesh provisioner unlinked `/psm_*` before the SGLang scheduler subprocess
 opened it; `FileNotFoundError: '/psm_xxx'` hard-killed engine startup.
 

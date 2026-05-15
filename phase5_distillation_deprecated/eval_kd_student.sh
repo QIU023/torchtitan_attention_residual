@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Evaluate KD-distilled student on c4_validation. Adapted from
-# phase4/experiments/kimi_pp_adapter/eval_val.sh — same strategy:
+# phase4_kimi_attnres_lm_pretrain/experiments/kimi_pp_adapter/eval_val.sh — same strategy:
 # re-launch trainer with training.steps = ckpt_step + 1 +
 # --validator.enable, lr_scheduler.total_steps pinned so the 1 train
 # step uses min-LR floor (negligible weight perturbation).

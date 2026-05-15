@@ -8,11 +8,11 @@
 > (paper Section 4.1), with downstream extensions to Kimi-Linear MoE
 > pretraining and multimodal VLM training.
 
-![Phase 2: 174M dense Llama3 baseline vs AttnRes (20 k steps, C4-en, FSDP)](./phase2/runs/comparison.png)
+![Phase 2: 174M dense Llama3 baseline vs AttnRes (20 k steps, C4-en, FSDP)](./phase2_attnres_baseline_loss/runs/comparison.png)
 
 *AttnRes consistently below baseline at every milestone (Δ −0.05 to −0.13),
 reproducing the paper's Table 1 trend on a single-GPU FSDP A/B at matched
-shape and hyperparameters. See `phase2/` for the playbook.*
+shape and hyperparameters. See `phase2_attnres_baseline_loss/` for the playbook.*
 
 This repo is the project logbook / playbook / RFC drafts for an independent,
 end-to-end implementation of **Block Attention Residuals**
@@ -43,7 +43,7 @@ that range.
 | --- | --- | --- |
 | **Phase 0** | Framework selection (torchtitan vs Megatron-LM); PP extension-point survey | ✅ done |
 | **Phase 2** | 174M dense Llama3 single-GPU FSDP A/B (baseline vs AttnRes), 20 k steps on C4-en | ✅ done — RFC evidence |
-| **Phase 3** | Cross-stage caching adapter for `Interleaved1F1B`; 4-GPU PP=4 V=2 naive-vs-adapter parity | ✅ done — see `phase3/` |
+| **Phase 3** | Cross-stage caching adapter for `Interleaved1F1B`; 4-GPU PP=4 V=2 naive-vs-adapter parity | ✅ done — see `phase3_attnres_pp_integration/` |
 | **Phase 4a** | Kimi Linear (KDA + MLA + dense/MoE) torchtitan port + AttnRes wrapper | ✅ done |
 | **Phase 4b** | 436M Kimi Linear FSDP baseline overnight, 12.5 k steps | ✅ done |
 | **Phase 4c** | Kimi Linear + AttnRes + PP cache adapter, 12.5 k step run | ✅ done |
@@ -67,7 +67,7 @@ Same shape, same hyperparameters; only `model_spec` differs:
 | 10000 | 4.3235 | 4.2192 | −0.1043 |
 | 15000 | 3.7368 | 3.6861 | −0.0507 |
 
-Plot: [`phase2/runs/comparison.png`](./phase2/runs/comparison.png).
+Plot: [`phase2_attnres_baseline_loss/runs/comparison.png`](./phase2_attnres_baseline_loss/runs/comparison.png).
 
 ## Phase 3 PP cross-stage caching adapter (4-GPU PP=4 V=2, 1000 steps)
 
@@ -100,9 +100,9 @@ the algorithm or adapter.
 | --- | --- |
 | [`ROOT_PLAN.md`](./ROOT_PLAN.md) | Full phased project plan (hardware, budget, risk register, references to Kimi infra notes) |
 | [`RFC_DRAFT_v3.md`](./RFC_DRAFT_v3.md) | RFC text as posted to issue #3029 |
-| [`phase2/`](./phase2/) | Single-GPU FSDP playbook + results (`runs/comparison.png`) |
-| [`phase3/`](./phase3/) | PP playbook: adapter design notes, fake-PG smoke, 4-GPU launchers, naive-vs-adapter compare plots |
-| [`phase4/`](./phase4/) | Kimi Linear port + 12.5 k step FSDP / PP-adapter overnight runs |
+| [`phase2_attnres_baseline_loss/`](./phase2_attnres_baseline_loss/) | Single-GPU FSDP playbook + results (`runs/comparison.png`) |
+| [`phase3_attnres_pp_integration/`](./phase3_attnres_pp_integration/) | PP playbook: adapter design notes, fake-PG smoke, 4-GPU launchers, naive-vs-adapter compare plots |
+| [`phase4_kimi_attnres_lm_pretrain/`](./phase4_kimi_attnres_lm_pretrain/) | Kimi Linear port + 12.5 k step FSDP / PP-adapter overnight runs |
 | [`docs/`](./docs/) | Cross-cutting design notes (multimodal idea, etc.) |
 | [`reports/`](./reports/) | Written reports (en + zh) for portfolio walkthroughs |
 | [`Attention-Residuals/`](./Attention-Residuals/) | Kimi's reference implementation + paper PDF (vendor copy) |
@@ -133,13 +133,13 @@ scaffolding for the K3-era follow-up.
 ## Disk discipline (operational rules)
 
 Lessons from a 2026-05-03 disk-full incident that wasted ~7 GPU-hours
-(see `phase6/CHECKPOINT_RULES.md` for the full postmortem and the
+(see `phase6_upstream_pr_prep/CHECKPOINT_RULES.md` for the full postmortem and the
 launcher patch). The rules:
 
 1. **Alignment + NCCL trace runs do NOT keep checkpoints.** A 500-step
    alignment or a 50-step trace tier writes a ~15 GB DCP shard that is
    never re-loaded — pure disk drag. Pass `CHECKPOINT_ENABLED=0` to
-   `phase6/launch_8gpu_mm.sh`.
+   `phase6_upstream_pr_prep/launch_8gpu_mm.sh`.
 
 2. **Long pretrain runs use `keep_latest_k=2 interval=500`.** Two
    rolling checkpoints, no historical accumulation. If you want to
@@ -149,18 +149,18 @@ launcher patch). The rules:
 3. **Trace data is the deliverable for short runs.** What gets
    committed: `tb/events.out.tfevents.*` (loss curve), `recipe.json`
    (mesh + recipe), and `tier_*_trace/{nccl-rank-*.log,
-   collective_summary.csv}` packaged into `phase7/archive/*.tar.gz`
-   via `phase7/pack_traces.sh`. The model state itself is throwaway.
+   collective_summary.csv}` packaged into `phase7_nccl_traffic_catalog/archive/*.tar.gz`
+   via `phase7_nccl_traffic_catalog/pack_traces.sh`. The model state itself is throwaway.
 
 4. **Compress + commit + push immediately after each run.**
-   `phase7/auto_publish_watcher.sh` polls run logs and fires
-   `phase7/publish_archive.sh` at known step milestones (alignment
+   `phase7_nccl_traffic_catalog/auto_publish_watcher.sh` polls run logs and fires
+   `phase7_nccl_traffic_catalog/publish_archive.sh` at known step milestones (alignment
    step:500, tier tier_b/a step:50/100, pretrain step:1000/3000/5000).
    Push happens automatically — no manual archive management.
 
 5. **Pre-launch disk check.** Before any run, `df -h /` should report
    ≥ 30 GB free. Below that, do `rm -rf
-   phase5/runs/8gpu_*_seed*/checkpoint/` (alignment ckpts that
+   phase5_vlm_multimodal_sft/runs/8gpu_*_seed*/checkpoint/` (alignment ckpts that
    shouldn't have existed in the first place) before launching.
 
 ## Development methodology

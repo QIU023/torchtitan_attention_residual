@@ -180,10 +180,10 @@ not novel to this work):
 | `RFC_DRAFT_v3.md` | Current draft (post-worthy, awaiting user OK) |
 | `RFC_DRAFT_v2.md` | Kept for reference; longer first draft |
 | `RFC_ISSUE_DRAFT.md` | Earlier pre-Phase-2 sketch |
-| `phase2/runs/ablation/comparison.png` | 4-way loss curve plot, the "money shot" for PR #1 |
-| `phase2/plot_ablation.py` | Re-runnable ablation plotter |
-| `phase2/runs/attn_res/train.log` | Raw log for the N=6 primary run |
-| `phase2/runs/ablation/llama3_150m_attn_res_n{3,12}/train.log` | Ablation raw logs |
+| `phase2_attnres_baseline_loss/runs/ablation/comparison.png` | 4-way loss curve plot, the "money shot" for PR #1 |
+| `phase2_attnres_baseline_loss/plot_ablation.py` | Re-runnable ablation plotter |
+| `phase2_attnres_baseline_loss/runs/attn_res/train.log` | Raw log for the N=6 primary run |
+| `phase2_attnres_baseline_loss/runs/ablation/llama3_150m_attn_res_n{3,12}/train.log` | Ablation raw logs |
 | `torchtitan/experiments/attn_res/README.md` | In-repo experiment overview (linked from RFC) |
 | `torchtitan/experiments/attn_res/pipeline_adapter.py` | The adapter being discussed in §PP-story |
 

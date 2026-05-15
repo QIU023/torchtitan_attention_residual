@@ -92,7 +92,7 @@ def block_attn_res(blocks, partial, proj, norm):
 
 ### 3.3 多模态 KimiMultimodal
 
-**File**: `kimi_linear/multimodal_model.py` + `phase5/multimodal_model.py`
+**File**: `kimi_linear/multimodal_model.py` + `phase5_vlm_multimodal_sft/multimodal_model.py`
 
 ```
 SigLIP-Base/patch16-224 (frozen, 93M) 
@@ -130,7 +130,7 @@ AttnRes 跨 PP stage 时，每个 stage 把它的 partial_block commit 进 block
 
 ### Phase 3 PP 压力测试结果
 
-**`phase3/PRESSURE_TEST_REPORT_2026-05-12.md`** — L=16 Block AttnRes 三组 shape 全对齐：
+**`phase3_attnres_pp_integration/PRESSURE_TEST_REPORT_2026-05-12.md`** — L=16 Block AttnRes 三组 shape 全对齐：
 
 | PP shape | LBS | GBS | naive loss @1000 | adapter loss @1000 | Δ |
 |---|---|---|---|---|---|
@@ -157,7 +157,7 @@ Max |Δ| = 0.00438 vs naive-vs-naive 重跑 nondeterminism 范围 0.06-0.13 → 
 - `/sgl-workspace/sglang/python/sglang/srt/configs/kimi_attn_res_vl.py` — VLM config 注册
 - `/sgl-workspace/sglang/python/sglang/srt/models/attn_res_vl_overlay.py` — forward 实现 + KV cache 集成
 
-### KV cache 设计 (`phase11/B5_ATTNRES_INFERENCE_KV_CACHE.md`)
+### KV cache 设计 (`phase11_rlhf_grpo_infra/B5_ATTNRES_INFERENCE_KV_CACHE.md`)
 
 **关键发现**: AttnRes 的 block reps 是**单 forward 内部的局部变量**，跨 step 不需要任何 cache。Cross-step recurrence 由标准 KV cache (KDA delta state + MLA past_kv) 负责。AttnRes 推理时不增加 cache footprint。
 
@@ -169,7 +169,7 @@ Max |Δ| = 0.00438 vs naive-vs-naive 重跑 nondeterminism 范围 0.06-0.13 → 
    - Phase 2: online-softmax per layer
 3. **Sequence-dim TP shard**: reduce-scatter + all-gather 融合 → AR wire bytes **−58%**
 
-### 性能 (`phase11/PROFILING_REPORT.md`)
+### 性能 (`phase11_rlhf_grpo_infra/PROFILING_REPORT.md`)
 
 | 场景 | naive | optimized | 改进 |
 |---|---|---|---|
@@ -190,7 +190,7 @@ Max |Δ| = 0.00438 vs naive-vs-naive 重跑 nondeterminism 范围 0.06-0.13 → 
 
 ## 6. Checkpoint converters
 
-### `phase11/hf_to_dcp_kimi_attn_res.py` (HF → DCP, LM-only)
+### `phase11_rlhf_grpo_infra/hf_to_dcp_kimi_attn_res.py` (HF → DCP, LM-only)
 
 - 反 phase10 forward converter
 - 关键映射:
@@ -200,7 +200,7 @@ Max |Δ| = 0.00438 vs naive-vs-naive 重跑 nondeterminism 范围 0.06-0.13 → 
 - 输出 **flat state_dict**（不是 `{"model": ...}` 嵌套），trainer 期望 flat
 - 424/424 keys，meta device 49.12 B 参数总量验过
 
-### `phase11/dcp_to_hf_kimi_attn_res_vl.py` (DCP → HF, VLM)
+### `phase11_rlhf_grpo_infra/dcp_to_hf_kimi_attn_res_vl.py` (DCP → HF, VLM)
 
 - 扩展 phase10 LM converter，加 `mm_projector.projector.*` + `config.json` 引用 vision tower
 - Vision tower frozen 全程，不进 DCP；推理 startup 从 HF 重新加载
@@ -229,12 +229,12 @@ Max |Δ| = 0.00438 vs naive-vs-naive 重跑 nondeterminism 范围 0.06-0.13 → 
 
 ## 8. 基准
 
-**File**: `phase11/bench_attn_res.py` (80行)
+**File**: `phase11_rlhf_grpo_infra/bench_attn_res.py` (80行)
 
 - 4 modes: vanilla / naive / two-phase (default) / shard
 - workload: 1024 prefill + 256 decode, 5 timed runs after 2 warmup
 - metrics: TTFT (ms), decode tps (mean ± stdev)
-- 用法: `python phase11/bench_attn_res.py --model phase11/hf/lm_base --tp 1`
+- 用法: `python phase11_rlhf_grpo_infra/bench_attn_res.py --model phase11_rlhf_grpo_infra/hf/lm_base --tp 1`
 
 **Top GPU kernels** (TP=1 4K prefill + 64 decode profile):
 - cuBLAS gemvx (MLA/MoE projection): 19.4% + 14.9%

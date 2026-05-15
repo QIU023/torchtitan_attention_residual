@@ -70,7 +70,7 @@ Same-step train-loss milestones (from TensorBoard, ±50-step window):
 | 12500 | 3.9395 | 3.8697 | −0.0699 |
 | 15000 | 3.7368 | 3.6861 | −0.0507 |
 
-The `Δ` stays negative at every milestone, with the magnitude narrowing as both runs approach cosine end (expected: AttnRes's "equivalent 1.25× compute" becomes harder to distinguish when both runs are near their loss floor at this size). Full 20k step comparison plot will be attached; scripts in `phase2/` reproduce end-to-end.
+The `Δ` stays negative at every milestone, with the magnitude narrowing as both runs approach cosine end (expected: AttnRes's "equivalent 1.25× compute" becomes harder to distinguish when both runs are near their loss floor at this size). Full 20k step comparison plot will be attached; scripts in `phase2_attnres_baseline_loss/` reproduce end-to-end.
 
 Throughput / memory (single GPU FSDP, no PP, no torch.compile):
 

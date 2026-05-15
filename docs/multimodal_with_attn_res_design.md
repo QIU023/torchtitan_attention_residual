@@ -268,7 +268,7 @@ respecting the maintainer's rule:
    under `phase5_distillation_deprecated/` (renamed from
    `phase5_distillation/` after the pivot).
 4. **Path F: speculative-decoding draft A/B** — Phase 5 (the new
-   multimodal phase; takes over the `phase5/` slot).
+   multimodal phase; takes over the `phase5_vlm_multimodal_sft/` slot).
    * AttnRes-Kimi-436M draft vs Llama-3.2-1B draft.
    * Frozen LLaVA-Next-8B (or Llama-3.1-8B-Base for text-only ablation).
    * Acceptance rate + wall-clock speedup on COCO captioning + VQAv2.

@@ -4,7 +4,7 @@
 > `phase5_distillation_deprecated/` after the project pivoted away
 > from "use the 436M Kimi student as the multimodal LM backbone."
 > The actual Phase 5 (current, multimodal AttnRes work — Path D
-> Q-Former + Path F speculative draft) lives at `phase5/`. See
+> Q-Former + Path F speculative draft) lives at `phase5_vlm_multimodal_sft/`. See
 > `docs/multimodal_with_attn_res_design.md`.
 
 This phase tested two paths to lower the Phase 4 Kimi Linear 436M

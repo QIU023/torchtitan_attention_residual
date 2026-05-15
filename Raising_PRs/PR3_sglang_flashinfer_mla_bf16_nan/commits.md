@@ -3,7 +3,7 @@
 ## Discovered in
 
 **Phase 11** — first SGLang inference smoke for the Kimi-Linear AttnRes
-1.4B-active ckpt (`phase11/eval_sft_3ep_qualitative.py`). The engine
+1.4B-active ckpt (`phase11_rlhf_grpo_infra/eval_sft_3ep_qualitative.py`). The engine
 booted, but the very first prefill returned NaN logits from the
 deepest MLA layer. Switching to fp32 eager via the fork's
 `attn_res_overlay` workaround unblocked the smoke immediately, but the

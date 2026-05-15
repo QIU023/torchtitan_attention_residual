@@ -16,7 +16,7 @@ In addition, sweep `num_blocks` ∈ {3, 6, 12} so the RFC PR description has a s
 
 ## 2. What shipped
 
-**Workspace scripts** (`phase2/`, NOT part of the torchtitan PR):
+**Workspace scripts** (`phase2_attnres_baseline_loss/`, NOT part of the torchtitan PR):
 
 | File | Role |
 |---|---|
@@ -131,8 +131,8 @@ The first `n12` attempt (`llama3_175m_attn_res_n12_crashed_20260419/`) died on a
 
 ## 7. Pointers
 
-- Run logs: `phase2/runs/{baseline,attn_res}/train.log`, `runs/ablation/*/train.log`.
-- Plots: `phase2/runs/comparison.png`, `runs/ablation/comparison.png`, `runs_1_8th/comparison.png`.
-- Smoke test: `phase2/smoke_test_attn_res.py`.
-- Runbook: `phase2/README.md`.
+- Run logs: `phase2_attnres_baseline_loss/runs/{baseline,attn_res}/train.log`, `runs/ablation/*/train.log`.
+- Plots: `phase2_attnres_baseline_loss/runs/comparison.png`, `runs/ablation/comparison.png`, `runs_1_8th/comparison.png`.
+- Smoke test: `phase2_attnres_baseline_loss/smoke_test_attn_res.py`.
+- Runbook: `phase2_attnres_baseline_loss/README.md`.
 - Code: [torchtitan/experiments/attn_res/](../../torchtitan/torchtitan/experiments/attn_res/).

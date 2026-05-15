@@ -18,7 +18,7 @@ VLM pretrain/SFT/GRPO pipeline run.
 | 8 | sglang | fp8 weight-only MoE fused kernel Blackwell shmem autotune | autotune row + downstream ICA followup | S | medium | Partial (shmem-shrink in `a6c46168a`); downstream ICA needs deeper Triton debug |
 | 9 | sglang | AttnRes block-aggregation einsum bypass for fp8 dequant cuBLAS failure | 3-call manual broadcast+sum | XS | low | Ready (fork commit `a6c46168a`); cuBLAS root cause separate issue |
 | 10 | sglang | `Fp8Config.get_quant_method` user-visible warning when MoE silently falls back to bf16 | ~10-line logging | XS | low | Tentative (gated on #8 landing) |
-| 11 | pytorch/torchstore | sync-endpoint dispatch policy — allow async caller via flag / endpoint declaration | ~30-line patch + endpoint API | S | medium | Workaround live (Controller monkeypatch in `phase11/rlhf/run_grpo_llava_kimi.py`); upstream form needs API design |
+| 11 | pytorch/torchstore | sync-endpoint dispatch policy — allow async caller via flag / endpoint declaration | ~30-line patch + endpoint API | S | medium | Workaround live (Controller monkeypatch in `phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py`); upstream form needs API design |
 | 12 | torchtitan | engine-agnostic `Generator` abstraction in `experiments.rl` + SGLang reference impl | new module (~600 lines) + RFC | L | medium | Code ready (fork's `experiments/rl/{actors/sglang_generator.py,plugin.py,models/sglang_wrapper.py}` + `RFC_SGLANG_GENERATOR.md`); needs upstream design discussion. Depends on #4 landing first. |
 
 ---
@@ -77,8 +77,8 @@ wants to avoid disk-side mmap during async data loading.
 
 **Target**: `sgl-project/sglang` (issue) + `flashinfer-ai/flashinfer` (fix)
 
-**Repro** (in our fork: `phase11/VISION_INJECTION_BUG_RCA.md` +
-`phase11/SGLANG_PR_PROPOSALS.md`):
+**Repro** (in our fork: `phase11_rlhf_grpo_infra/VISION_INJECTION_BUG_RCA.md` +
+`phase11_rlhf_grpo_infra/SGLANG_PR_PROPOSALS.md`):
 
 ```
 Model: Kimi Linear AttnRes (1.4B-active)
@@ -110,7 +110,7 @@ general.
 
 **Target**: `pytorch/torchtitan` :: `torchtitan/experiments/rl/actors/trainer.py`
 
-**Problem** (in our fork: `phase11/rlhf/run_grpo_kimi_attn_res.py` workaround):
+**Problem** (in our fork: `phase11_rlhf_grpo_infra/rlhf/run_grpo_kimi_attn_res.py` workaround):
 
 `PolicyTrainer._build_model` calls `model_spec.parallelize_fn(model,
 parallel_dims=, parallelism=, compile_config=)` — but core
@@ -299,14 +299,14 @@ The overlay-side `.contiguous()` defense was tried first — does NOT fix it (ru
 
 **Symptom**: torchstore's `Controller` rejects an async caller hitting a
 sync endpoint (and vice versa). Concrete blocker: in our GRPO RL loop
-(`phase11/rlhf/run_grpo_llava_kimi.py`), the actor mesh's `Generator`
+(`phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py`), the actor mesh's `Generator`
 is async (SGLang Engine returns a coroutine), but torchstore's 5
 endpoints used for weight-sync and state-broadcast (`put`, `get`,
 `broadcast`, `barrier`, `shutdown`) are declared sync. Result: hard
 exception at the first cross-mesh call. The runtime API has no
 documented escape hatch.
 
-**Our workaround** (in fork: `phase11/rlhf/run_grpo_llava_kimi.py`):
+**Our workaround** (in fork: `phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py`):
 monkey-patch the `Controller` at process start in BOTH the main
 process AND every Monarch-spawned subprocess to wrap the 5 sync
 endpoints into thin async-coroutine adapters. **0 performance impact**

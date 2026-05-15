@@ -80,9 +80,9 @@
 
 | Artifact | 内容 |
 |---|---|
-| `phase11/bench_results_h100/` | 4-mode tps × ctx 5 × TP 3 × Kimi + Qwen3 |
-| `phase11/PROFILING_REPORT_H100.md` | 跟 5090 对照表 (kernel breakdown, AR bytes, tps Δ) |
-| `phase11/PR_FP32_FALLBACK_NECESSITY.md` | **关键决定**：fp32 fallback 是 Blackwell-only 还是 universal |
+| `phase11_rlhf_grpo_infra/bench_results_h100/` | 4-mode tps × ctx 5 × TP 3 × Kimi + Qwen3 |
+| `phase11_rlhf_grpo_infra/PROFILING_REPORT_H100.md` | 跟 5090 对照表 (kernel breakdown, AR bytes, tps Δ) |
+| `phase11_rlhf_grpo_infra/PR_FP32_FALLBACK_NECESSITY.md` | **关键决定**：fp32 fallback 是 Blackwell-only 还是 universal |
 | Cross-arch chart for paper | Decode tps vs context (H100 / 5090) |
 | Triton kernel coverage table | 验证 Phase-2 kernel 在 H100 上 also 98% hit rate |
 
@@ -121,7 +121,7 @@
 
 ## 2.1 已 ran 的 PP 配置完整 grid
 
-来源：`phase3/PRESSURE_TEST_REPORT_2026-05-12.md` + `phase3/runs/`
+来源：`phase3_attnres_pp_integration/PRESSURE_TEST_REPORT_2026-05-12.md` + `phase3_attnres_pp_integration/runs/`
 
 ### Llama3 175M backbone (历史 carrier)
 

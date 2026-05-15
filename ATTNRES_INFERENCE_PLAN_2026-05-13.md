@@ -237,7 +237,7 @@ def block_attn_res(blocks, partial, proj, norm, final_norm):
 3. **bench 加 verification check** ← 30 min 防再翻车
 
 **Stage 0 完成（~4 天后）**：
-4. 用新 LM ckpt 重跑 phase5/phase11 SFT → 测试 fp32 fallback 在新 ckpt 下的 inference 表现
+4. 用新 LM ckpt 重跑 phase5_vlm_multimodal_sft/phase11 SFT → 测试 fp32 fallback 在新 ckpt 下的 inference 表现
 5. 决定方案 C 要不要做（依据：B 修复后 inference quality 是否仍有问题）
 
 **永远不做**：

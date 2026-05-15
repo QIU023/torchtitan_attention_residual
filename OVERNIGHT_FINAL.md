@@ -65,7 +65,7 @@ Same -60% pattern under 3D mesh (TP×PP×EP).
 ## Reports written
 
 * `PHASE9_10_11_SUMMARY.md` — comprehensive cross-phase report (root)
-* `phase11/SGLANG_ATTNRES_INFERENCE_SUMMARY.md` — PR-targeted SGLang AttnRes summary
+* `phase11_rlhf_grpo_infra/SGLANG_ATTNRES_INFERENCE_SUMMARY.md` — PR-targeted SGLang AttnRes summary
 * `REPORTS_INDEX.md` — navigation across all docs
 * This file — overnight-specific summary
 

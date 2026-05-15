@@ -84,7 +84,7 @@ Chain a 17,500-step continuation on both baseline and AttnRes arms
 resuming from step 12,500 ckpts. Problem B runs in parallel if GPU
 free; else sequential. This closes plank 2.
 
-Launcher: `phase4/experiments/kimi_436m_attnres/launch_continue_30k.sh`.
+Launcher: `phase4_kimi_attnres_lm_pretrain/experiments/kimi_436m_attnres/launch_continue_30k.sh`.
 Important subtlety: the launcher pins `--lr_scheduler.total_steps
 12500` on the continuation so the original cosine schedule is
 preserved. Without that pin torchtitan rebuilds the LR lambda over

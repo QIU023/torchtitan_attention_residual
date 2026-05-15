@@ -11,7 +11,7 @@ RL trace work that the user explicitly de-prioritised ("不要为了采 trace
 * **VLM SFT 447M** on **LLaVA-Instruct-150K** completed end-to-end:
   loss **2.22 → 1.42** over 1200 steps, FSDP=8, SEQ=512 LBS=4 GBS=64,
   ~1.7h wall (after one CUDA-assert recovery via SEED=43 resume).
-  Final ckpt at `phase5/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/step-1200`.
+  Final ckpt at `phase5_vlm_multimodal_sft/runs/sft_v_fsdp8_447m_aligned_llava_instruct_150k/checkpoint/step-1200`.
 
 * **SGLang VLM serving works end-to-end** ✅ — Engine boots in 25s
   on the converted ckpt, SigLIP+projector+KDA+MLA+MoE all dispatch
@@ -35,10 +35,10 @@ RL trace work that the user explicitly de-prioritised ("不要为了采 trace
 | sglang model | `sglang/srt/models/attn_res_vl_overlay.py` | `KimiAttnResVLForConditionalGeneration`: HF SigLIP + 2-layer MLP projector + `KimiBlockAttnResForCausalLM` |
 | sglang processor | `sglang/srt/multimodal/processors/attn_res_vl.py` | Host-side image-token splice (bypasses LlavaProcessor's text-level `<image>` requirement) |
 | torchtitan trainer | `torchtitan/experiments/rl/actors/trainer.py` | `dcp_initial_load_path` opt-in, skips HF state_dict_adapter |
-| converter | `phase11/dcp_to_hf_kimi_attn_res_vl.py` | DCP → HF safetensors for VLM (LM keys via phase10 helpers + projector passthrough) |
-| RL launcher | `phase11/rlhf/run_grpo_kimi_attn_res.py` | GRPO/PPO entry-point on the 447M Kimi AttnRes LM (text-only, real research weights) |
-| smoke tests | `phase11/smoke_lm_only.py`, `smoke_vlm_load.py`, `smoke_vlm_engine.py` | Triaged sanity tests; LM-only passes |
-| pipeline | `phase11/run_sft_447m_llava_instruct_150k.sh`, `post_sft_vlm_smoke.sh`, `auto_post_sft.sh` | End-to-end SFT → DCP→HF → Engine smoke → eval, hands-off |
+| converter | `phase11_rlhf_grpo_infra/dcp_to_hf_kimi_attn_res_vl.py` | DCP → HF safetensors for VLM (LM keys via phase10 helpers + projector passthrough) |
+| RL launcher | `phase11_rlhf_grpo_infra/rlhf/run_grpo_kimi_attn_res.py` | GRPO/PPO entry-point on the 447M Kimi AttnRes LM (text-only, real research weights) |
+| smoke tests | `phase11_rlhf_grpo_infra/smoke_lm_only.py`, `smoke_vlm_load.py`, `smoke_vlm_engine.py` | Triaged sanity tests; LM-only passes |
+| pipeline | `phase11_rlhf_grpo_infra/run_sft_447m_llava_instruct_150k.sh`, `post_sft_vlm_smoke.sh`, `auto_post_sft.sh` | End-to-end SFT → DCP→HF → Engine smoke → eval, hands-off |
 
 PR-link to open:
 * sglang fork: https://github.com/QIU023/sglang/pull/new/vlm-sglang-overlay
@@ -138,7 +138,7 @@ converter trick).
 ## Disk + daemons
 
 * SFT final ckpt: 30 GB at `step-1200`
-* HF VLM safetensors: 3.0 GB at `phase11/hf_aligned_447m_vlm_sft1200/`
+* HF VLM safetensors: 3.0 GB at `phase11_rlhf_grpo_infra/hf_aligned_447m_vlm_sft1200/`
 * COCO train2017: 19 GB at `/workspace/.hf_home/coco_train2017/`
 * Disk: 155 GB / 200 GB used (78%)
 
@@ -151,13 +151,13 @@ Daemons stopped: ckpt_watchdog (PID 1370839), auto_post_sft
 
 ```bash
 # Resume the VLM serving debug
-CUDA_VISIBLE_DEVICES=7 python3 phase11/smoke_vlm_engine.py \
-    --model-path phase11/hf_aligned_447m_vlm_sft1200 --tp-size 1
+CUDA_VISIBLE_DEVICES=7 python3 phase11_rlhf_grpo_infra/smoke_vlm_engine.py \
+    --model-path phase11_rlhf_grpo_infra/hf_aligned_447m_vlm_sft1200 --tp-size 1
 # (Currently fails inside RadixLinearAttention.forward; LM-only smoke works.)
 
 # Run RL on real research weights (text-only, GRPO smoke)
-python3 phase11/rlhf/run_grpo_kimi_attn_res.py \
-    --dcp-load-path phase4/runs/kimi_447m_aligned_block_attn_res_fsdp_paperhparams/checkpoint/step-12500 \
-    --hf-model-path phase11/hf_aligned_447m_vlm_sft1200 \
+python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_kimi_attn_res.py \
+    --dcp-load-path phase4_kimi_attnres_lm_pretrain/runs/kimi_447m_aligned_block_attn_res_fsdp_paperhparams/checkpoint/step-12500 \
+    --hf-model-path phase11_rlhf_grpo_infra/hf_aligned_447m_vlm_sft1200 \
     --num-steps 50 --kl-coef 0.05  # PPO with frozen ref
 ```
