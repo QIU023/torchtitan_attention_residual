@@ -188,6 +188,71 @@ trace catalog. Needs lifting into a standalone proposal.
 
 ---
 
+## #7 — KDA `causal_conv1d_triton` rejects fp16 dtype
+
+**Target**: `sgl-project/sglang` :: `python/sglang/srt/layers/attention/mamba/causal_conv1d_triton.py`
+
+**Symptom**: booting an SGLang Engine with `dtype="float16"` for any
+KDA-using model (Kimi-Linear and friends) crashes at first KDA layer
+with:
+
+```
+triton.compiler.errors.CompilationError: at 105:8:
+AssertionError("Mismatched type for col0 between then block
+                (<['256'], bf16>) and else block (<['256'], fp16>)")
+```
+
+The `_causal_conv1d_fwd_kernel` has a branch (`if HAS_INITIAL_STATES:
+... if load_init_state: ...`) where one side loads from a buffer that
+got promoted to bf16 while the other carries the user's fp16 model
+dtype — the type-merge for the `tl.if/else` join fails.
+
+**Why upstream**: blocks fp16 inference for the whole Kimi-Linear /
+hybrid-linear-attention model family. Doesn't matter at training
+(everyone trains in bf16) but appears whenever someone tries fp16
+inference for memory/throughput.
+
+**Fix sketch**: cast both branches to a common dtype before the join,
+or use `tl.where` instead of `if/else` for the single-tensor select.
+
+**Effort**: 1 hour (one kernel + one regression test).
+
+---
+
+## #8 — fp8 weight-only MoE fused kernel exceeds RTX 5090 shared memory
+
+**Target**: `sgl-project/sglang` ::
+`python/sglang/srt/layers/moe/moe_runner/triton_utils/fused_moe_triton_kernels.py`
+
+**Symptom**: `Engine(dtype="bfloat16", quantization="fp8", ...)` for a
+Kimi-Linear MoE model on Blackwell (RTX 5090, SM 12.0) crashes at
+first MoE forward with:
+
+```
+triton.runtime.errors.OutOfResources: out of resource: shared memory,
+Required: 147456, Hardware limit: 101376
+```
+
+The fp8 fused-MoE kernel was tuned for SM 9.0+ (Hopper/H100, ≥228KB
+shared memory). RTX 5090 (Blackwell consumer, 100KB shared memory) is
+underestimated — block sizes and `num_stages` need a smaller-shmem
+tuning autoconfig path.
+
+**Why upstream**: Blackwell consumer cards (RTX 5090 / 5080) are
+becoming common rental hardware, and fp8 weight-only quantization is a
+key throughput win. Without this, Kimi-Linear-class MoE models can't be
+fp8-served on these cards at all — the fall-through to bf16 weights
+defeats the quantization point.
+
+**Fix sketch**: add a `BLOCK_SIZE_M=64` (or smaller) + `num_stages=2`
+(or 1) tuning row to `_get_default_config` for Blackwell consumer
+target, gated by `device_capability == (12, 0)` and
+`shared_memory_per_block < 128KB`.
+
+**Effort**: ~2 hours including autotune sweep.
+
+---
+
 ## What's NOT on this list (and why)
 
 - **fp32 MLA fallback "as a flag"** — too narrow. The flashinfer issue
