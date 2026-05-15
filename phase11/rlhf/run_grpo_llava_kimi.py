@@ -82,6 +82,70 @@ try:
 except ImportError as _e:
     pass
 
+# Patch torchstore 0.1.2's Controller class so monarch will spawn it.
+# monarch's actor_mesh.py:1587 raises ValueError when an Actor mixes
+# sync and async @endpoint methods. Controller defines 5 sync endpoints
+# (get_controller_strategy, locate_volumes, notify_put, keys,
+# notify_delete) and 2 async (init, teardown). Promote the sync ones to
+# async coroutine functions — bodies don't await, so the wrap is
+# semantically a no-op. Done in-file (NOT a version pin or
+# site-packages edit) so the sglang/monarch/torchstore environment
+# versions are unchanged.
+#
+# CRITICAL: this patch must run in EVERY process that instantiates
+# Controller. The main process is patched at import time. Spawned
+# trainer/generator subprocesses get a fresh interpreter, so their
+# bootstrap callback re-applies the patch (see _bootstrap_with_torchstore_patch).
+def _patch_torchstore_controller():
+    try:
+        import functools
+        import inspect
+        from torchstore.controller import Controller
+
+        sync_names = (
+            "get_controller_strategy",
+            "locate_volumes",
+            "notify_put",
+            "keys",
+            "notify_delete",
+        )
+
+        def _asyncify(fn):
+            if inspect.iscoroutinefunction(fn):
+                return fn
+
+            @functools.wraps(fn)
+            async def _async_wrapper(*args, _fn=fn, **kwargs):
+                return _fn(*args, **kwargs)
+
+            return _async_wrapper
+
+        for name in sync_names:
+            ep = getattr(Controller, name, None)
+            if ep is None:
+                continue
+            method = getattr(ep, "_method", None)
+            if method is None or inspect.iscoroutinefunction(method):
+                continue
+            ep._method = _asyncify(method)
+    except (ImportError, AttributeError):
+        pass
+
+
+def _bootstrap_with_torchstore_patch(orig_bootstrap):
+    """Wrap a Provisioner bootstrap callable so spawned subprocesses
+    apply the torchstore Controller patch before any actor instantiation.
+    """
+    def _wrapped():
+        _patch_torchstore_controller()
+        orig_bootstrap()
+
+    return _wrapped
+
+
+# Apply to the main process at import time.
+_patch_torchstore_controller()
+
 from torchtitan.config import Configurable
 from torchtitan.experiments.rl.actors.grader import Grader
 from torchtitan.experiments.rl.actors.sglang_generator import SGLangGenerator
@@ -135,6 +199,11 @@ async def _async_main(config: _Config) -> None:
     provisioner = Provisioner(total_gpus=8)
     trainer_bootstrap = provisioner.allocate(4)
     generator_bootstrap, gen_gpu_ids = provisioner.allocate_shared(4)
+    # Wrap bootstraps so spawned subprocesses also patch torchstore.Controller
+    # (the main-process patch above doesn't propagate through monarch's
+    # spawn_procs, which uses fresh interpreters).
+    trainer_bootstrap = _bootstrap_with_torchstore_patch(trainer_bootstrap)
+    generator_bootstrap = _bootstrap_with_torchstore_patch(generator_bootstrap)
     logger.info(f"Generator mesh shares GPUs: {gen_gpu_ids}")
 
     trainer_mesh = this_host().spawn_procs(
