@@ -116,6 +116,9 @@ def _parse_mm_args() -> argparse.Namespace:
                    default=24,
                    help="Number of val batches consumed per validation pass "
                         "(forward-only). Caps wall-clock cost of each pass.")
+    p.add_argument("--mm.freeze-lm", dest="mm_freeze_lm", action="store_true",
+                   help="Freeze LM params (only train MLP projector). "
+                        "Stage-1 LLaVA recipe: alignment-only training.")
     args, remaining = p.parse_known_args()
     sys.argv = [sys.argv[0]] + remaining
     return args
@@ -135,12 +138,29 @@ class MultimodalTrainer(Trainer):
                  layout: str = "prefix",
                  val_samples: int = 512,
                  val_freq: int = 50,
-                 val_batches: int = 24):
+                 val_batches: int = 24,
+                 freeze_lm: bool = False):
         super().__init__(config)
         self._mm_layout = layout
         self._val_samples = val_samples
         self._val_freq = val_freq
         self._val_batches = val_batches
+        self._freeze_lm = freeze_lm
+
+        # Stage-1 LLaVA recipe: freeze ALL LM params so only the MLP
+        # projector trains (vision tower is already frozen above the
+        # super().__init__ chain). The LM optimizer still exists and
+        # steps every iteration, but with zero grads its m/v stay at
+        # zero so weights don't drift. Memory waste is ~3.4GB of AdamW
+        # state per rank for 447M params — acceptable for stage-1 since
+        # vision+projector only need ~3GB extra.
+        if freeze_lm:
+            n_frozen = 0
+            for part in self.model_parts:
+                for p in part.parameters():
+                    p.requires_grad_(False)
+                    n_frozen += p.numel()
+            logger.info(f"mm: STAGE-1 freeze-lm enabled, froze {n_frozen:,} LM params")
 
         self._global_seq_len = global_seq_len
 
@@ -834,6 +854,7 @@ def main():
         val_samples=mm_args.mm_val_samples,
         val_freq=mm_args.mm_val_freq,
         val_batches=mm_args.mm_val_batches,
+        freeze_lm=mm_args.mm_freeze_lm,
     )
     trainer.train()
     if torch.distributed.is_initialized():
