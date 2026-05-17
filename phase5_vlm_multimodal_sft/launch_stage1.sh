@@ -23,6 +23,13 @@
 
 set -euo pipefail
 
+# Disable core dumps in child processes. NCCL watchdog drops 8-12GB cores
+# per rank on KDA crashes (task #46). With auto-retry, 8 ranks × 4 crashes
+# accumulates 100GB+ of cores we never inspect — they fill the disk and
+# trigger the panic watchdog. Disable at launcher level; gdb users can
+# override with `ulimit -c unlimited` before invoking the script.
+ulimit -c 0
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TORCHTITAN_DIR="${WORKSPACE_DIR}/torchtitan"

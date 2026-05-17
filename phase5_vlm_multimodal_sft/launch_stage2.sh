@@ -29,6 +29,9 @@
 
 set -euo pipefail
 
+# Disable core dumps in child processes (see launch_stage1.sh comment).
+ulimit -c 0
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TORCHTITAN_DIR="${WORKSPACE_DIR}/torchtitan"

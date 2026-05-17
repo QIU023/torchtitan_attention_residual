@@ -56,6 +56,16 @@ panic() {
     pkill -KILL -f 'train_mm' 2>/dev/null || true
     pkill -KILL -f 'run_grpo_' 2>/dev/null || true
 
+    # NCCL/torch crashes drop 8-12GB core dumps to /var/lib/vastai_kaalia/data/.
+    # 8 ranks × repeated KDA crashes = 100GB+ accumulation, which itself fills the
+    # disk. We've never opened these in gdb (Python tracebacks in stage logs are
+    # enough), so clear them on panic to free the most space possible.
+    if [[ -d /var/lib/vastai_kaalia/data ]]; then
+        local before=$(du -sb /var/lib/vastai_kaalia/data/core-* 2>/dev/null | awk '{s+=$1} END {printf "%.0fG", s/1024/1024/1024}')
+        rm -f /var/lib/vastai_kaalia/data/core-* 2>/dev/null
+        echo "  cleared core dumps from /var/lib/vastai_kaalia/data (was ~${before:-0G})"
+    fi
+
     sleep 5
     local final=$(free_gb)
     echo "[$(now)] PANIC complete. free now=${final}G"
