@@ -11,7 +11,7 @@ VLM pretrain/SFT/GRPO pipeline run.
 | 1 | sglang | `SGLANG_DISABLE_SHM_MM` env to force CPU mm transport | 9-line patch | XS | low | Ready |
 | 2 | sglang | base64 data-URL support in `attn_res_vl` image loader | 6-line patch | XS | low | Ready (depends on #5) |
 | 3 | sglang | flashinfer_mla bf16 NaN — repro + fp32 fallback knob | issue + ~150-line patch | M | medium | Ready (issue), patch needs scoping discussion |
-| 4 | torchtitan | `parallelize_fn` signature stability for `experiments.rl.PolicyTrainer` | 1-line + adapter trait | S | low | Ready |
+| 4 | torchtitan | `parallelize_fn` signature stability for `experiments.rl.PolicyTrainer` | 1-line + adapter trait | S | low | ⛔ **OBSOLETED 2026-05-17** — upstream `627f4a31 [rl] Trainer refactor` (2026-04-20) already widened the kwargs. Do not file. |
 | 5 | sglang | Block AttnRes inference overlay (Kimi + Qwen3 carriers) | full new model class + `layers/attn_res.py` | L | high | Research-track |
 | 6 | sglang | RS+merge+AG seq-shard fusion documented as a feature | docs + model-hook examples | M | low | Documented in our overlay; needs upstream deciding generality |
 | 7 | sglang | KDA `causal_conv1d_triton` fp16 dtype type-join fix | 1-kernel patch + regression test | XS | low | Ready (verified in fork commit `a6c46168a`) |
@@ -106,7 +106,16 @@ general.
 
 ---
 
-## #4 — `parallelize_fn` signature stability for `experiments.rl.PolicyTrainer`
+## #4 — `parallelize_fn` signature stability for `experiments.rl.PolicyTrainer` (⛔ OBSOLETED 2026-05-17)
+
+> **OBSOLETED-BY-UPSTREAM 2026-05-17.** Upstream commit `627f4a31 [rl]
+> Trainer refactor` (2026-04-20) already widened the
+> `parallelize_fn` kwargs surface. Do not file this PR. Fork
+> reconciliation (delete launcher-side `parallelize_fn` adapter
+> wrappers to avoid double-kwarg injection) tracked in
+> `Raising_PRs/FORK_REBASE_TASK.md`. PR #12 (engine-agnostic
+> Generator) is now unblocked since this prerequisite is already
+> upstream.
 
 **Target**: `pytorch/torchtitan` :: `torchtitan/experiments/rl/actors/trainer.py`
 
@@ -404,26 +413,30 @@ ready to file standalone. Code PR follows RFC discussion.
 
 ## Recommended order
 
-Filing strategy after 2026-05-15 inventory refresh:
+Filing strategy refreshed 2026-05-17 after PR #4 obsoleted-by-upstream:
 
 1. **#1** first (30-min sglang env-gated PR; fork already has the patch
    in `74083ffae`; smallest possible first contribution to build
-   reviewer credibility).
-2. **#4** next (1-day torchtitan PR, low risk, removes a pain point for
-   anyone trying to RL-train non-Qwen3 models). Required prerequisite
-   for #12.
-3. **#7** in parallel with #4 (1-hour sglang kernel + test; fork patch
-   in `a6c46168a`; unblocks fp16 inference for the Kimi-Linear family).
-4. **#3 issue** without the fix (let flashinfer team weigh in on how they
+   reviewer credibility). **Already branched locally** awaiting push.
+2. **#7** in parallel with #1 (1-hour sglang kernel + test; fork patch
+   file-isolated from `a6c46168a` already branched locally; unblocks
+   fp16 inference for the Kimi-Linear family).
+3. **#3 issue** without the fix (let flashinfer team weigh in on how they
    want to expose fp32-scoring).
-5. **#9 issue** with the manual broadcast+sum as a workaround + the
-   cuBLAS reproducer pointing toward driver-side investigation.
-6. **#11 issue** for torchstore (API design discussion).
-7. **#8** with the partial shmem-shrink patch (downstream ICA followup
+4. **#11 issue** for torchstore (API design discussion).
+5. **#8** with the partial shmem-shrink patch (downstream ICA followup
    tracked separately).
-8. **#6** as a design RFC (no code change yet).
-9. **#12 RFC** for the engine-agnostic Generator abstraction (depends
-   on #4 landing); code PR follows RFC discussion.
-10. **#5** after the algorithm has a paper or arxiv writeup to point to.
-11. **#2** after #5 lands.
-12. **#10** if/when #8's downstream ICA is resolved.
+6. **#6** as a design RFC (no code change yet).
+7. **#5** after the algorithm has a paper or arxiv writeup to point to
+   (Kimi K-series release).
+8. **#9 issue** with the manual broadcast+sum as a workaround + the
+   cuBLAS reproducer pointing toward driver-side investigation. File
+   alongside or fold into #5.
+9. **#2** after #5 lands (or fold into #5 as a day-1 processor feature).
+10. **#12 RFC** for the engine-agnostic Generator abstraction.
+    **Unblocked** — the upstream `627f4a31` refactor that obsoleted #4
+    satisfies #12's prerequisite. File the RFC anytime; code PR follows
+    RFC discussion.
+11. **#10** if/when #8's downstream ICA is resolved.
+
+~~**#4** — obsoleted by upstream `627f4a31` on 2026-05-17. Do not file.~~
