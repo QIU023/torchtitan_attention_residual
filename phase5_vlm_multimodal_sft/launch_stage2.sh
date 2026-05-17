@@ -43,10 +43,11 @@ VISION="${VISION:-google/siglip-base-patch16-224}"
 TOKENIZER="${TOKENIZER:-NousResearch/Meta-Llama-3.1-8B}"
 CACHE_DIR="${CACHE_DIR:-/workspace/.hf_home}"
 
-STEPS="${STEPS:-5200}"          # ceil(665000 / 128) ≈ 1 epoch
-LOCAL_BS="${LOCAL_BS:-16}"      # 16 × 8 = 128 effective batch
-GLOBAL_BS="${GLOBAL_BS:-128}"
+STEPS="${STEPS:-10400}"         # ceil(665000 / 64) ≈ 1 epoch @ smaller gbs
+LOCAL_BS="${LOCAL_BS:-8}"       # 8 × 8 = 64 effective batch — OOM-safe on 5090 32GB w/ seq=580 full-param
+GLOBAL_BS="${GLOBAL_BS:-64}"
 SEQ_LEN="${SEQ_LEN:-580}"       # 196 vision + 384 text — must match LlavaInstructSFTDataset default
+WARMUP_STEPS="${WARMUP_STEPS:-312}"  # ~3% of 10400
 LR="${LR:-2e-5}"                # LLaVA-1.5 paper SFT LR
 PROJ_LR_MULT="${PROJ_LR_MULT:-1.0}"
 MAX_NORM="${MAX_NORM:-1.0}"
@@ -101,7 +102,8 @@ exec /usr/local/bin/torchrun \
     --training.max_norm "${MAX_NORM}" \
     --parallelism.data_parallel_shard_degree "${NGPU}" \
     --optimizer.lr "${LR}" \
-    --lr_scheduler.warmup_steps 156 \
+    --lr_scheduler.warmup_steps "${WARMUP_STEPS}" \
+    --activation_checkpoint.mode full \
     --lr_scheduler.decay_ratio 0.2 \
     --lr_scheduler.min_lr_factor 0.1 \
     --checkpoint.enable \

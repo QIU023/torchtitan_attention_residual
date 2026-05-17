@@ -39,10 +39,11 @@ VISION="${VISION:-google/siglip-base-patch16-224}"
 TOKENIZER="${TOKENIZER:-NousResearch/Meta-Llama-3.1-8B}"
 CACHE_DIR="${CACHE_DIR:-/workspace/.hf_home}"
 
-STEPS="${STEPS:-2180}"          # ceil(558000 / 256) ≈ 1 epoch
-LOCAL_BS="${LOCAL_BS:-32}"      # 32 × 8 = 256 effective batch
-GLOBAL_BS="${GLOBAL_BS:-256}"
+STEPS="${STEPS:-8720}"          # ceil(558000 / 64) ≈ 1 epoch @ smaller gbs
+LOCAL_BS="${LOCAL_BS:-8}"       # 8 × 8 = 64 effective batch — OOM-safe on 5090 32GB
+GLOBAL_BS="${GLOBAL_BS:-64}"
 SEQ_LEN="${SEQ_LEN:-260}"       # 196 vision + ~60 text + bos/eos
+WARMUP_STEPS="${WARMUP_STEPS:-260}"  # ~3% of 8720
 LR="${LR:-1e-3}"                # LLaVA-1.5 paper projector LR; LM frozen so doesn't matter
 PROJ_LR_MULT="${PROJ_LR_MULT:-1.0}"
 MAX_NORM="${MAX_NORM:-1.0}"
@@ -98,7 +99,8 @@ exec /usr/local/bin/torchrun \
     --training.max_norm "${MAX_NORM}" \
     --parallelism.data_parallel_shard_degree "${NGPU}" \
     --optimizer.lr "${LR}" \
-    --lr_scheduler.warmup_steps 66 \
+    --lr_scheduler.warmup_steps "${WARMUP_STEPS}" \
+    --activation_checkpoint.mode full \
     --lr_scheduler.decay_ratio 0.0 \
     --lr_scheduler.min_lr_factor 1.0 \
     --checkpoint.enable \
