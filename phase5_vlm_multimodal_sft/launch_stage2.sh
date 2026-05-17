@@ -54,6 +54,7 @@ OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/stage2_instruct_sft_447m}"
 NGPU="${NGPU:-8}"
 LOG_FREQ="${LOG_FREQ:-10}"
 SAVE_FREQ="${SAVE_FREQ:-500}"
+KEEP_K="${KEEP_K:-1}"           # k=1 to minimize disk during overnight pipeline
 
 # Pre-flight validations
 if [[ ! -d "${STAGE1_CKPT}" ]]; then
@@ -105,7 +106,7 @@ exec /usr/local/bin/torchrun \
     --lr_scheduler.min_lr_factor 0.1 \
     --checkpoint.enable \
     --checkpoint.interval "${SAVE_FREQ}" \
-    --checkpoint.keep_latest_k 2 \
+    --checkpoint.keep_latest_k "${KEEP_K}" \
     --checkpoint.initial_load_path "${STAGE1_CKPT}" \
     --checkpoint.initial_load_model_only \
     --metrics.log_freq "${LOG_FREQ}" \

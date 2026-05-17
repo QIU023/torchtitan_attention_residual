@@ -50,6 +50,7 @@ OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/stage1_alignment_447m}"
 NGPU="${NGPU:-8}"
 LOG_FREQ="${LOG_FREQ:-10}"
 SAVE_FREQ="${SAVE_FREQ:-500}"
+KEEP_K="${KEEP_K:-1}"           # k=1 to minimize disk during overnight pipeline
 VAL_FREQ="${VAL_FREQ:-100}"
 VAL_SAMPLES="${VAL_SAMPLES:-512}"
 VAL_BATCHES="${VAL_BATCHES:-16}"
@@ -99,7 +100,7 @@ exec /usr/local/bin/torchrun \
     --lr_scheduler.min_lr_factor 1.0 \
     --checkpoint.enable \
     --checkpoint.interval "${SAVE_FREQ}" \
-    --checkpoint.keep_latest_k 2 \
+    --checkpoint.keep_latest_k "${KEEP_K}" \
     --checkpoint.initial_load_path "${STUDENT_CKPT}" \
     --checkpoint.initial_load_model_only \
     --metrics.log_freq "${LOG_FREQ}" \
