@@ -62,7 +62,22 @@ class LlavaInstructSFTDataset(IterableDataset):
         dp_rank: int,
         dp_world_size: int,
         text_len: int = GLOBAL_SFT_TEXT_LEN_DEFAULT,
+        split: str = "train",
+        val_samples: int = 0,
+        infinite: bool = True,
     ):
+        """Streams mix665k records, with optional held-out val split.
+
+        Args:
+            split: "train" uses records[:-val_samples]; "val" uses the last
+                ``val_samples`` records. The two index sets are disjoint and
+                deterministic — held-out val is never seen by training.
+            val_samples: Size of the held-out validation tail. 0 disables
+                splitting (legacy single-pass behavior).
+            infinite: When True the iterator loops forever (training). When
+                False it yields a single pass (validation), so val loop
+                terminates instead of streaming indefinitely.
+        """
         self.json_path = json_path
         self.images_dir = Path(images_dir)
         self.tokenizer = tokenizer
@@ -71,6 +86,9 @@ class LlavaInstructSFTDataset(IterableDataset):
         self.dp_world_size = dp_world_size
         self.text_len = text_len
         self.seq_len = N_VISION_TOKENS + text_len
+        self.split = split
+        self.val_samples = val_samples
+        self.infinite = infinite
 
         if not os.path.isfile(json_path):
             raise FileNotFoundError(json_path)
@@ -78,7 +96,21 @@ class LlavaInstructSFTDataset(IterableDataset):
             raise FileNotFoundError(self.images_dir)
 
         with open(json_path, "r") as f:
-            self.records = json.load(f)
+            all_records = json.load(f)
+        if val_samples > 0:
+            # mix665k clusters the ~40K text-only records at the END of the
+            # JSON. A naive records[-N:] tail gives an all-text val split that
+            # this dataset skips entirely (no 'image' key) → val_iter hangs.
+            # Filter to image-only records first, then take the tail.
+            image_records = [r for r in all_records if r.get("image")]
+            if split == "train":
+                self.records = image_records[:-val_samples]
+            elif split == "val":
+                self.records = image_records[-val_samples:]
+            else:
+                raise ValueError(f"split must be 'train' or 'val', got {split!r}")
+        else:
+            self.records = all_records
 
     def _tokenize_turn(self, role: str, text: str) -> list[int]:
         """Tokenize one turn with a small role marker. ``<image>`` tag
@@ -151,7 +183,11 @@ class LlavaInstructSFTDataset(IterableDataset):
         while True:
             for idx in range(my_offset, len(self.records), total_stride):
                 rec = self.records[idx]
-                img_path = self.images_dir / rec["image"]
+                # mix665k has ~40K text-only records (no "image" key); skip.
+                img_rel = rec.get("image")
+                if not img_rel:
+                    continue
+                img_path = self.images_dir / img_rel
                 if not img_path.is_file():
                     continue
                 conversations = rec.get("conversations", [])
@@ -195,3 +231,7 @@ class LlavaInstructSFTDataset(IterableDataset):
                     "input_ids": torch.tensor(input_ids, dtype=torch.long),
                     "labels": torch.tensor(labels, dtype=torch.long),
                 }
+            # Validation dataloaders make a single pass and stop, so the val
+            # loop terminates. Training loops forever.
+            if not self.infinite:
+                break

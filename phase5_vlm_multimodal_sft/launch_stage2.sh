@@ -94,8 +94,9 @@ exec /usr/local/bin/torchrun \
     --mm.proj-lr-mult "${PROJ_LR_MULT}" \
     --mm.global-seq-len "${SEQ_LEN}" \
     --mm.layout sft \
-    --mm.val-samples 0 \
-    --mm.val-freq 0 \
+    --mm.val-samples ${VAL_SAMPLES:-512} \
+    --mm.val-freq ${VAL_FREQ:-200} \
+    --mm.val-batches ${VAL_BATCHES:-16} \
     --module kimi_linear --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \

@@ -508,14 +508,9 @@ class MultimodalTrainer(Trainer):
         self._mm_local_bs = config.training.local_batch_size
 
         # ----- train dataloader -----
-        # The "sft" layout uses phase9's LlavaInstructSFTDataset which has no
-        # held-out split support → validation is disabled for that layout.
-        if self._mm_layout == "sft" and self._val_samples > 0:
-            logger.warning(
-                "mm: val: sft layout does not support a held-out split; "
-                "disabling validation (set --mm.val-samples 0 to silence)."
-            )
-            self._val_samples = 0
+        # As of 2026-05-17 the "sft" layout (LlavaInstructSFTDataset) supports
+        # held-out train/val splits via the same val_samples/split kwargs as
+        # LlavaPretrainDataset.
 
         train_ds = self._build_mm_dataset(split="train", infinite=True)
         self.dataloader = ParallelAwareDataloader(
@@ -572,10 +567,14 @@ class MultimodalTrainer(Trainer):
             ds = LlavaInstructSFTDataset(
                 tokenizer=self.mm_tokenizer,
                 image_processor=self.image_processor,
+                split=split,
+                val_samples=self._val_samples,
+                infinite=infinite,
                 **k,
             )
             logger.info(
-                "mm: dataset = LlavaInstructSFTDataset (sft layout, conversation format)"
+                f"mm: dataset = LlavaInstructSFTDataset (sft layout, split={split}, "
+                f"val_samples={self._val_samples})"
             )
         elif self._mm_layout == "prefix":
             ds = LlavaPretrainDataset(
