@@ -29,4 +29,4 @@ fixes to land. Each subdir is a self-contained patch kit with:
 
 | Dir | Target | Reason | Upstream | Status |
 |---|---|---|---|---|
-| [`fla_fused_norm_gate_sm120_kda/`](fla_fused_norm_gate_sm120_kda/) | fla 0.5.0 / `fla/modules/fused_norm_gate.py` | KDA `o_norm` device-side assert on Blackwell sm_120 + Triton 3.6.0 — every ~2500 SFT steps | [PR #796 mirror; our PR draft → Raising_PRs/PR13](../Raising_PRs/PR13_fla_fused_norm_gate_sm120_kda_crash/) | 🟢 **Applied 2026-05-17 20:02** |
+| [`fla_fused_norm_gate_sm120_kda/`](fla_fused_norm_gate_sm120_kda/) | fla 0.5.0 / `fla/modules/fused_norm_gate.py` | KDA `o_norm` device-side assert on Blackwell sm_120 + Triton 3.6.0 — every ~650 SFT steps | [PR #796 mirror; our PR draft → Raising_PRs/PR13](../Raising_PRs/PR13_fla_fused_norm_gate_sm120_kda_crash/) | 🔴 **Tested 2026-05-17 20:13–20:42, ROLLED BACK 20:44** — patch did not fix crash; bug deeper than PR #796 mirror |

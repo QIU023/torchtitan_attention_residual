@@ -61,6 +61,28 @@ bash rollback.sh
 3. If the next retry runs past step 5000 without an assert, the patch
    works; let stage 2 train through.
 
+## Validation result (2026-05-17 20:13–20:44) — FAILED, ROLLED BACK
+
+Two stage-2 attempts ran on the patched live file (md5 verified `337e8cf7`):
+
+| Attempt | Resume ckpt | Steps before crash | Crash signature |
+|---|---|---|---|
+| 1 (pre-patch process) | step-2000 | 650 (to step 2650) | `fused_norm_gate.py:669` device-side assert |
+| 2 (post-patch fresh process) | step-2500 | 650 (to step 3150) | **same** `fused_norm_gate.py:669` device-side assert |
+
+Both attempts crashed after **exactly 650 step lines** (= 650 SFT steps), independent of whether the patched fla was loaded. The fix did not move the crash window. Rolled back to upstream `47074c8b...` at 20:44.
+
+What this tells us:
+- The bug is **not** the NB-in-autotune-key autotuner crash from PR #796 (otherwise removing NB from the key would have helped).
+- The bug is **not** the `BS < BT` overlapping-writes issue (otherwise capping NS would have helped).
+- The crash pattern (~650 steps regardless of resume point) suggests something **input-dependent** — possibly NaN/Inf propagating from a specific sample in the dataset shard, FP8 quant scale corruption, or a different state-space accumulation issue we haven't identified.
+
+Next investigation steps (handed off to `../../Raising_PRs/PR13_fla_fused_norm_gate_sm120_kda_crash/PR.md`):
+- Run with `CUDA_LAUNCH_BLOCKING=1` to get the real fault site (current async trace points at fwd but bwd kernel is more likely).
+- Check whether the same data shard's step 650 reproduces deterministically.
+- Look for NaN/Inf in `o_norm` input — the `b_var = 0` → `1/sqrt(eps)` path might saturate.
+- Disable FP8 quant on the affected layers and see if the window changes.
+
 ## Upstream tracker
 
 - Mirror of [PR #796](https://github.com/fla-org/flash-linear-attention/pull/796)
