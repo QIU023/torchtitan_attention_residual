@@ -18,6 +18,7 @@ a section on where they couple end-to-end.
 | [`04_world_models.md`](04_world_models.md) | **World models** — predict future state/frame (NEW 2026-05-17) | Considering future-state prediction as an auxiliary head or replacement objective |
 | [`05_couplings_end_to_end.md`](05_couplings_end_to_end.md) | **Couplings** — when 2+ of the above tie together as end-to-end systems | E.g. DriveDreamer-2 (VLA+WM), GAIA-2 (video+WM+BEV), AutoVLA (video+VLA) |
 | [`06_strategy_workplan.md`](06_strategy_workplan.md) | **Strategy + workplan** — base choice, asset inventory, phased plan, interview pitch | Deciding what to actually build first |
+| [`07_time_attnres_recipe.md`](07_time_attnres_recipe.md) | **Time-AttnRes initial direction** — concrete code-level recipe for Patterns A/B, validation experiments, risk register | Implementing Time-AttnRes (not surveying alternatives) |
 | [`references.md`](references.md) | Consolidated bibliography | When you need a paper link |
 
 ## Topic relationship graph
@@ -56,4 +57,14 @@ a section on where they couple end-to-end.
 - **Highest-ceiling architectural bet**: Spatio-Temporal AttnRes as the core mechanism in a long-context video VLM (Tier C of 01) — Kimi-Linear's KDA + AttnRes is genuinely well-matched here.
 - **Out of scope for a single-node 5090 setup**: SANA-WM / GAIA-2 / LeWorldModel-scale video pretraining. Document the limitation, don't try.
 
-Detailed base-choice, asset inventory, and work-plan are in [`06_strategy_workplan.md`](06_strategy_workplan.md).
+Detailed base-choice, asset inventory, and work-plan are in [`06_strategy_workplan.md`](06_strategy_workplan.md). The code-level recipe for the Time-AttnRes architecture extension is in [`07_time_attnres_recipe.md`](07_time_attnres_recipe.md) — that's an *initial-direction* doc (not a survey).
+
+## Doc-type convention
+
+| Type | Purpose | Tone | Examples here |
+|---|---|---|---|
+| **Survey / research** | Landscape, citations, comparison tables | descriptive | `01`–`05` topic files |
+| **Strategy** | Choices, tradeoffs, recommendation | argumentative | `06_strategy_workplan.md` |
+| **Initial direction** | Concrete recipe, code stubs, experiment plan | actionable | `07_time_attnres_recipe.md` |
+
+Initial-direction docs are subject to revision as experiments run; they are *not* the same as research surveys.
