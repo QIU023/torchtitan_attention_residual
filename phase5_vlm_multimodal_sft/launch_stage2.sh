@@ -106,7 +106,6 @@ exec /usr/local/bin/torchrun \
     --parallelism.data_parallel_shard_degree "${NGPU}" \
     --optimizer.lr "${LR}" \
     --lr_scheduler.warmup_steps "${WARMUP_STEPS}" \
-    --activation_checkpoint.mode full \
     --lr_scheduler.decay_ratio 0.2 \
     --lr_scheduler.min_lr_factor 0.1 \
     --checkpoint.enable \
