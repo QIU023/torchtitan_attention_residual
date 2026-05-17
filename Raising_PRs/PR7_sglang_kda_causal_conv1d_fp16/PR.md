@@ -109,6 +109,62 @@ commit `a6c46168a`):
 
 No regression observed on existing bf16 / fp32 paths.
 
+### Direct-kernel smoke (RTX 4070Ti, SM 8.9, torch 2.11.0+cu130, triton 3.6.0)
+
+To isolate the patch from full-Engine boot infrastructure (which on
+some SM tiers depends on `sgl_kernel` wheels not always shipped for
+that arch), a kernel-level smoke covers both prefill
+(`_causal_conv1d_fwd_kernel`) and decode (`_causal_conv1d_update_kernel`)
+across the dtype matrix that real Kimi-Linear/KDA inference exercises.
+KERNEL_WIDTH = 4 = `short_conv_kernel_size` from the Kimi-Linear
+HF config.
+
+```text
+Prefill (_causal_conv1d_fwd_kernel):
+  baseline_bf16_bf16             PASS
+  bug_repro_fp16_x_bf16_state    PASS   ← production scenario (this PR)
+  inverted_bf16_x_fp16_state     FAIL   ← see "Follow-up" below
+  all_fp16                       PASS
+
+Decode (_causal_conv1d_update_kernel):
+  baseline_bf16_bf16             PASS
+  bug_repro_fp16_x_bf16_state    PASS   ← production scenario (this PR)
+  inverted_bf16_x_fp16_state     PASS   ← decode path is symmetrically clean
+  all_fp16                       PASS
+```
+
+The smoke scripts live in the filing folder:
+`Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_kernel_{direct,decode}_fp16.py`.
+
+### Interaction with fp8 weight-only quantization
+
+`causal_conv1d` only consumes activations; SGLang's fp8 quant is
+weight-only and leaves activations at the requested model dtype.
+That means:
+
+- `--quantization fp8 --dtype bfloat16` → kernel sees `x=bf16`,
+  `conv_states=bf16` — baseline path, unaffected by this PR.
+- `--quantization fp8 --dtype float16` → kernel sees `x=fp16`,
+  `conv_states=bf16` — exactly the bug this PR fixes, verified by
+  the prefill smoke above.
+
+So fp8 inference picks the fix up for free; no separate fp8 work is
+required for this kernel.
+
+### Follow-up (out of scope for this PR)
+
+The prefill kernel has a structurally analogous SSA type-join in the
+write-back path (lines around `tl.store(conv_states_ptrs_target,
+new_conv_state, mask)`) where `new_conv_state` is sourced from
+`tl.load(x_ptrs, ...)` in the `state_len <= seqlen` branch but from
+`tl.where(mask, conv_state, loaded_x)` in the `load_init_state`
+branch. Triggering it requires the inverse-dtype configuration
+(`x.dtype=bf16` + `conv_states.dtype=fp16`), which SGLang's defaults
+(`SGLANG_MAMBA_CONV_DTYPE=bfloat16` regardless of model dtype) do
+not produce in current code. Keeping this PR scoped to the
+production-hit site; a symmetric fix for write-back is a clean
+follow-up if anyone ever wants to override the cache dtype.
+
 ### Reference downstream usage
 
 Hit while bringing up SGLang Engine for AttnRes-Kimi-Linear inference

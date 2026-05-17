@@ -1,5 +1,29 @@
 # PR #4 — `parallelize_fn` signature stability for `experiments.rl.PolicyTrainer`
 
+> **STATUS: OBSOLETED-BY-UPSTREAM (2026-05-17 audit)**
+>
+> Upstream commit `627f4a31 [rl] Trainer refactor (#2985)` (2026-04-20) already
+> widened `PolicyTrainer._build_model`'s `parallelize_fn` call to include
+> `training`, `ac_config`, `dump_folder` — exactly the three kwargs this PR
+> proposed. All `parallelize_*` functions in `torchtitan/models/{qwen3,
+> qwen3_vl,deepseek_v3,llama3}/parallelize.py` already accept the matching
+> wide signature uniformly.
+>
+> The only extra kwarg PR.md proposed (`model_converters`) has zero references
+> anywhere in upstream — adding it would be net-new feature work, not
+> signature stability, and out of scope for this PR.
+>
+> **Action: do not file.** Our fork's `PolicyTrainer` (commit `5cc52d0b` on
+> `attention_residual_dev`) still uses the narrow 3-arg call because the fork
+> hasn't merged upstream since 2026-04-12. A separate fork-rebase task
+> tracks the trainer.py reconciliation (delete the launcher-side wrapper
+> shim in `phase11_rlhf_grpo_infra/rlhf/run_grpo_*.py` lines 258-285; it will
+> double-inject kwargs after merge).
+>
+> Original PR draft preserved below for the historical record only.
+
+---
+
 **Target repo**: `pytorch/torchtitan`
 **Target file**: `torchtitan/experiments/rl/actors/trainer.py` (function `PolicyTrainer._build_model`)
 **Fork reference**: torchtitan `attention_residual_dev` branch; pattern lives in fork's `experiments/rl/actors/trainer.py`.

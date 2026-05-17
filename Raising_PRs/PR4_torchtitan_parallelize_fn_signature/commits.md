@@ -1,5 +1,10 @@
 # Backing commits — PR #4 `parallelize_fn` signature stability
 
+> **OBSOLETED-BY-UPSTREAM 2026-05-17.** See `PR.md` header. Upstream
+> `627f4a31` (2026-04-20) already widened the kwargs. Do not file. Fork
+> reconciliation tracked separately (delete launcher-side `parallelize_fn`
+> wrapper after upstream merge to avoid double-kwarg injection).
+
 ## Discovered in
 
 **Phase 11** — RLHF / GRPO entry-point on Kimi-Linear AttnRes
