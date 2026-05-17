@@ -1,0 +1,71 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-12_15:44_211
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 318, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 314, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 138, in _async_main
+    await ts.initialize(
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 75, in initialize
+    controller = await _controller(store_name)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 110, in _controller
+    return await get_or_spawn_controller(store_name, Controller)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 151, in mark_complete
+    func, value = set_result, await coro
+                              ^^^^^^^^^^
+monarch._src.actor.actor_mesh.ActorError: Actor call controller_controller.get_or_spawn failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1293, in handle
+    result = the_method(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 830, in get_or_spawn
+    mesh = proc.spawn(name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 381, in spawn
+    return self._spawn_nonblocking(name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 448, in _spawn_nonblocking
+    return self._spawn_nonblocking_on(self._proc_mesh, name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 501, in _spawn_nonblocking_on
+    mesh = ActorMesh(Class, name, actor_mesh, self._region.as_shape(), self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1595, in __init__
+    raise ValueError(
+ValueError: <class 'torchstore.controller.Controller'> mixes both async and sync endpoints.Synchronous endpoints cannot be mixed with async endpoints because they can cause the asyncio loop to deadlock if they wait.sync: ['get_controller_strategy', 'keys', 'locate_volumes', 'notify_delete', 'notify_put'] async: ['init', 'teardown']
+
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=57286 at time 2026-05-12 15:44:40.962448:
+The actor <monarch._src.actor.actor_mesh.RootClientActor client> and all its descendants have failed:
+  undeliverable message error:
+  	description: delivery of message from sender to dest failed
+  	sender: unix:@Vn1emsuaKqxV5hTJuoLBLw28,local,client[0]
+  	dest: unix:@Vn1emsuaKqxV5hTJuoLBLw28,anon_0-1BFapBWnwVGM,comm-1m1vaJCdM8uW[0][13147652568889606402<hyperactor_mesh::comm::multicast::CastMessage>]
+  	message type: hyperactor_mesh::comm::multicast::CastMessage
+  	headers: hyperactor_mesh::casting::cast_actor_mesh_id=proc_agent,hyperactor::mailbox::headers::send_timestamp=2026-05-12T15:44:40.563271778+00:00,hyperactor::mailbox::headers::rust_message_type=hyperactor_mesh::comm::multicast::CastMessage,hyperactor::ordering::seq_info=019e1cdc-7a3d-77e2-a606-643f511dc1ea:5
+  	data: CastMessage{"dest":{"selection":{"All":"True"},"slice":{"offset":0,"sizes":[],"strides":[]}},"message":{"actor_mesh_id":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","data":{"bindings":"[[104803[...106 chars] CRC:9378325a 5b 5b 31 30 34 38 30 33 [...98 bytes]","message":{"encoded":{"Multipart":{"body":"[19,0,0,[...14557652 chars] CRC:f54f1147 5b 31 39 2c 30 2c 30 2c [...14557644 bytes]","parts":[]}},"typehash":12983742011630525178}},"dest_port":{"actor_name":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","port":12421042491547118789},"headers":"[3,0,181[...519 chars] CRC:9d91681f 5b 33 2c 30 2c 31 38 31 [...511 bytes]","sender":"[[{\"Unix[...59 chars] CRC:23e2ffef 5b 5b 7b 22 55 6e 69 78 [...51 bytes]","shape":{"labels":[],"slice":{"offset":0,"sizes":[],"strides":[]}}}}
+  	error: broken link: failed to enqueue in MailboxClient when processing buffer: channel closed with reason Some("session unix:/tmp/.tmphQiVEI/anon_0-1BFapBWnwVGM.2bf2accc41a03a8e: server closed")
+
+Exception ignored in atexit callback: <function _init_client_context.<locals>.<lambda> at 0x74f8ccb62ca0>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 444, in <lambda>
+    atexit.register(lambda: shutdown_context().get(timeout=5.0))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+KeyboardInterrupt: 

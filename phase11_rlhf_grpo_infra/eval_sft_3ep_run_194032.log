@@ -1,0 +1,48 @@
+[eval] sampled 10 images
+[eval] booting SGLang Engine on /root/torchtitan_attention_residual/phase11/hf/vlm_sft_3ep
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 405, in from_pretrained
+    config_class = CONFIG_MAPPING[config_dict["model_type"]]
+                   ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 105, in __getitem__
+    raise KeyError(key)
+KeyError: 'kimi_attn_res_vl'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11/eval_sft_3ep_qualitative.py", line 120, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/eval_sft_3ep_qualitative.py", line 61, in main
+    e = Engine(
+        ^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 186, in __init__
+    server_args = self.server_args_class(**kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 371, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 836, in __post_init__
+    self._handle_piecewise_cuda_graph()
+  File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 1202, in _handle_piecewise_cuda_graph
+    if self.get_model_config().is_piecewise_cuda_graph_disabled_model:
+       ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 6735, in get_model_config
+    self.model_config = ModelConfig.from_server_args(self)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/configs/model_config.py", line 319, in from_server_args
+    return ModelConfig(
+           ^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/configs/model_config.py", line 169, in __init__
+    self.hf_config = get_config(
+                     ^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3356, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers/config.py", line 79, in get_config
+    config = AutoConfig.from_pretrained(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 407, in from_pretrained
+    raise ValueError(
+ValueError: The checkpoint you are trying to load has model type `kimi_attn_res_vl` but Transformers does not recognize this architecture. This could be because of an issue with the checkpoint, or because your version of Transformers is out of date.
+
+You can update Transformers with the command `pip install --upgrade transformers`. If this does not work, and the checkpoint is very new, then there may not be a release version that supports this model yet. In this case, you can get the most up-to-date code by installing Transformers from source with the command `pip install git+https://github.com/huggingface/transformers.git`

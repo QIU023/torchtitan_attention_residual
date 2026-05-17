@@ -1,0 +1,489 @@
+============================================================
+[Wed May 13 07:17:02 AM UTC 2026] 8-card TP=8 AttnRes overlay bench
+  Output: /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702
+============================================================
+[1] Stop stage 0
+665 MiB
+3 MiB
+[2a] Dump Kimi 48B-layout (num_experts=64, ~14B params, ~28 GB safetensors)
+[1/3] Kimi 48B-layout cfg: L=27 d=2304 H=32 experts=64(8) AttnRes N=9
+[2/3] total params: 13,778,611,712 (~13.8 B)
+      safetensors size estimate: ~27.6 GB
+[3/3] safetensors: 5627 tensors -> /workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e64_dummy/model.safetensors
+      config.json -> /workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e64_dummy/config.json
+
+Done. Smoke-load with:
+  python3 -c "import sglang as sgl; e = sgl.Engine(model_path='/workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e64_dummy', skip_tokenizer_init=True, tp_size=8, dtype='bfloat16', attention_backend='flashinfer', linear_attn_backend='triton'); print(e.generate({'input_ids':[[1,2,3,4]]}, {'max_new_tokens':4}))"
+[2b] Dump Qwen3-14B + AttnRes (~14B params, ~28 GB safetensors)
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[1/3] qwen3_14b: L=40 d=5120 H=40/8 (GQA) ff=13824 AttnRes N=10
+[2/3] total params: 12,567,127,040 (~12.6 B); safetensors ~25.1 GB
+[3/3] safetensors: 605 tensors -> /workspace/torchtitan_attention_residual/phase11/hf_qwen3_14b_attn_res_dummy/model.safetensors
+      config.json -> /workspace/torchtitan_attention_residual/phase11/hf_qwen3_14b_attn_res_dummy/config.json
+[3.4096] Kimi TP=8 4-mode bench @ ctx=4096 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=4 avail_mem=10.57 GB): 100%|██████████| 42/42 [00:05<00:00,  8.28it/s]
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 369, in generate
+    ret = self.loop.run_until_complete(generator.__anext__())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 555, in generate_request
+    async for response in self._handle_batch_request(obj, request):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1388, in _handle_batch_request
+    tokenized_objs = await self._batch_tokenize_and_process(batch_size, obj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1089, in _batch_tokenize_and_process
+    return [await self._tokenize_one_request(obj[i]) for i in range(batch_size)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 810, in _tokenize_one_request
+    self._validate_one_request(obj, input_ids)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 835, in _validate_one_request
+    raise ValueError(
+ValueError: The input (4096 tokens) is longer than the model's context length (2048 tokens).
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=4 avail_mem=9.89 GB): 100%|██████████| 42/42 [00:06<00:00,  6.94it/s]
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 369, in generate
+    ret = self.loop.run_until_complete(generator.__anext__())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 555, in generate_request
+    async for response in self._handle_batch_request(obj, request):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1388, in _handle_batch_request
+    tokenized_objs = await self._batch_tokenize_and_process(batch_size, obj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1089, in _batch_tokenize_and_process
+    return [await self._tokenize_one_request(obj[i]) for i in range(batch_size)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 810, in _tokenize_one_request
+    self._validate_one_request(obj, input_ids)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 835, in _validate_one_request
+    raise ValueError(
+ValueError: The input (4096 tokens) is longer than the model's context length (2048 tokens).
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=4 avail_mem=8.95 GB): 100%|██████████| 42/42 [00:06<00:00,  6.48it/s]
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 369, in generate
+    ret = self.loop.run_until_complete(generator.__anext__())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 555, in generate_request
+    async for response in self._handle_batch_request(obj, request):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1388, in _handle_batch_request
+    tokenized_objs = await self._batch_tokenize_and_process(batch_size, obj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1089, in _batch_tokenize_and_process
+    return [await self._tokenize_one_request(obj[i]) for i in range(batch_size)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 810, in _tokenize_one_request
+    self._validate_one_request(obj, input_ids)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 835, in _validate_one_request
+    raise ValueError(
+ValueError: The input (4096 tokens) is longer than the model's context length (2048 tokens).
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=4 avail_mem=10.10 GB): 100%|██████████| 42/42 [00:07<00:00,  5.90it/s]
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 369, in generate
+    ret = self.loop.run_until_complete(generator.__anext__())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 555, in generate_request
+    async for response in self._handle_batch_request(obj, request):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1388, in _handle_batch_request
+    tokenized_objs = await self._batch_tokenize_and_process(batch_size, obj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1089, in _batch_tokenize_and_process
+    return [await self._tokenize_one_request(obj[i]) for i in range(batch_size)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 810, in _tokenize_one_request
+    self._validate_one_request(obj, input_ids)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 835, in _validate_one_request
+    raise ValueError(
+ValueError: The input (4096 tokens) is longer than the model's context length (2048 tokens).
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702/kimi_48b_e64_tp8_ctx4096.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[3.16384] Kimi TP=8 4-mode bench @ ctx=16384 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=4 avail_mem=10.57 GB): 100%|██████████| 42/42 [00:04<00:00,  8.48it/s]
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 369, in generate
+    ret = self.loop.run_until_complete(generator.__anext__())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 555, in generate_request
+    async for response in self._handle_batch_request(obj, request):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1388, in _handle_batch_request
+    tokenized_objs = await self._batch_tokenize_and_process(batch_size, obj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1089, in _batch_tokenize_and_process
+    return [await self._tokenize_one_request(obj[i]) for i in range(batch_size)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 810, in _tokenize_one_request
+    self._validate_one_request(obj, input_ids)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 835, in _validate_one_request
+    raise ValueError(
+ValueError: The input (16384 tokens) is longer than the model's context length (2048 tokens).
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=4 avail_mem=9.89 GB): 100%|██████████| 42/42 [00:06<00:00,  6.65it/s]
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 369, in generate
+    ret = self.loop.run_until_complete(generator.__anext__())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 555, in generate_request
+    async for response in self._handle_batch_request(obj, request):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1388, in _handle_batch_request
+    tokenized_objs = await self._batch_tokenize_and_process(batch_size, obj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1089, in _batch_tokenize_and_process
+    return [await self._tokenize_one_request(obj[i]) for i in range(batch_size)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 810, in _tokenize_one_request
+    self._validate_one_request(obj, input_ids)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 835, in _validate_one_request
+    raise ValueError(
+ValueError: The input (16384 tokens) is longer than the model's context length (2048 tokens).
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=4 avail_mem=8.19 GB): 100%|██████████| 42/42 [00:07<00:00,  5.51it/s]
+Traceback (most recent call last):
+  File "<string>", line 29, in <module>
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 369, in generate
+    ret = self.loop.run_until_complete(generator.__anext__())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 555, in generate_request
+    async for response in self._handle_batch_request(obj, request):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1388, in _handle_batch_request
+    tokenized_objs = await self._batch_tokenize_and_process(batch_size, obj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 1089, in _batch_tokenize_and_process
+    return [await self._tokenize_one_request(obj[i]) for i in range(batch_size)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 810, in _tokenize_one_request
+    self._validate_one_request(obj, input_ids)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tokenizer_manager.py", line 835, in _validate_one_request
+    raise ValueError(
+ValueError: The input (16384 tokens) is longer than the model's context length (2048 tokens).
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+                        ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/models/attn_res_overlay.py", line 202, in __init__
+    super().__init__(
+  File "/sgl-workspace/sglang/python/sglang/srt/models/kimi_linear.py", line 456, in __init__
+    self.block_sparse_moe = KimiMoE(
+                            ^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/models/kimi_linear.py", line 92, in __init__
+    self.experts = get_moe_impl_class(quant_config)(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/moe/fused_moe_triton/layer.py", line 286, in __init__
+    self.quant_method.create_weights(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/quantization/unquant.py", line 197, in create_weights
+    torch.empty(num_experts, w13_weight_n, w13_weight_k, dtype=params_dtype),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_device.py", line 116, in __torch_function__
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 72.00 MiB. GPU 4 has a total capacity of 31.36 GiB of which 72.25 MiB is free. Process 226237 has 29.32 GiB memory in use. Including non-PyTorch memory, this process has 1.95 GiB memory in use. Of the allocated memory 1.18 GiB is allocated by PyTorch, and 16.58 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:34:11] Received sigquit from a child process. It usually means the child failed.
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702/kimi_48b_e64_tp8_ctx16384.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[3-mem] Kimi TP=8 memory probe (shard=0 vs shard=1)
+usage: probe_memory.py [-h] [--model MODEL] [--tp TP] [--prefill PREFILL]
+                       [--shard SHARD]
+probe_memory.py: error: unrecognized arguments: --out /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702/kimi_48b_e64_tp8_memprobe.json
+WARN: memprobe failed (probe_memory.py optional)
+[4.4096] Qwen3-14B TP=8 4-mode bench @ ctx=4096 (GQA, no MLA)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    self.quant_method.create_weights(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/quantization/unquant.py", line 121, in create_weights
+    torch.empty(
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_device.py", line 116, in __torch_function__
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 34.00 MiB. GPU 5 has a total capacity of 31.36 GiB of which 40.25 MiB is free. Process 226238 has 29.84 GiB memory in use. Including non-PyTorch memory, this process has 1.47 GiB memory in use. Of the allocated memory 678.55 MiB is allocated by PyTorch, and 51.45 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:34:32] Received sigquit from a child process. It usually means the child failed.
+[rank7]:[W513 07:34:32.337579116 TCPStore.cpp:125] [c10d] recvValue failed on SocketImpl(fd=95, addr=[localhost]:51396, remote=[localhost]:36945): Connection reset by peer
+Exception raised from recvBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:679 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x718220f7305d in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x6a91532 (0x7181673a5532 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #2: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x273 (0x7181673a3413 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #3: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x4a5 (0x718149b8f8c5 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0xecdb4 (0x71839e508db4 in /usr/lib/x86_64-linux-gnu/libstdc++.so.6)
+frame #5: <unknown function> + 0x9caa4 (0x7183a1cf4aa4 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+frame #6: __clone + 0x44 (0x7183a1d81a64 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+
+[rank7]:[W513 07:34:32.339152770 ProcessGroupNCCL.cpp:1826] [PG ID 0 PG GUID 0 Rank 7] Failed to check the "should dump" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Connection reset by peer
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Compiling num tokens (num_tokens=288):  45%|████▌     | 19/42 [00:33<00:03,  6.05it/s]
+Compiling num tokens (num_tokens=256):  45%|████▌     | 19/42 [00:33<00:03,  6.05it/s]
+Compiling num tokens (num_tokens=240):  45%|████▌     | 19/42 [00:33<00:03,  6.05it/s]
+Compiling num tokens (num_tokens=240):  52%|█████▏    | 22/42 [00:33<00:02,  8.47it/s]
+Compiling num tokens (num_tokens=224):  52%|█████▏    | 22/42 [00:33<00:02,  8.47it/s]
+Compiling num tokens (num_tokens=208):  52%|█████▏    | 22/42 [00:33<00:02,  8.47it/s]
+Compiling num tokens (num_tokens=192):  52%|█████▏    | 22/42 [00:33<00:02,  8.47it/s]
+Compiling num tokens (num_tokens=176):  52%|█████▏    | 22/42 [00:33<00:02,  8.47it/s]
+Compiling num tokens (num_tokens=176):  62%|██████▏   | 26/42 [00:33<00:01, 12.05it/s]
+Compiling num tokens (num_tokens=160):  62%|██████▏   | 26/42 [00:33<00:01, 12.05it/s]
+Compiling num tokens (num_tokens=144):  62%|██████▏   | 26/42 [00:33<00:01, 12.05it/s]
+Compiling num tokens (num_tokens=128):  62%|██████▏   | 26/42 [00:33<00:01, 12.05it/s]
+Compiling num tokens (num_tokens=112):  62%|██████▏   | 26/42 [00:33<00:01, 12.05it/s]
+Compiling num tokens (num_tokens=112):  71%|███████▏  | 30/42 [00:33<00:00, 15.47it/s]
+Compiling num tokens (num_tokens=96):  71%|███████▏  | 30/42 [00:33<00:00, 15.47it/s] 
+Compiling num tokens (num_tokens=80):  71%|███████▏  | 30/42 [00:34<00:00, 15.47it/s]
+Compiling num tokens (num_tokens=64):  71%|███████▏  | 30/42 [00:34<00:00, 15.47it/s]/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 8 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=32 avail_mem=4.08 GB):  83%|████████▎ | 35/42 [00:12<00:04,  1.58it/s]
+Capturing num tokens (num_tokens=28 avail_mem=4.05 GB):  83%|████████▎ | 35/42 [00:12<00:04,  1.58it/s]
+Capturing num tokens (num_tokens=28 avail_mem=4.05 GB):  86%|████████▌ | 36/42 [00:12<00:02,  2.08it/s]
+Capturing num tokens (num_tokens=24 avail_mem=3.99 GB):  86%|████████▌ | 36/42 [00:12<00:02,  2.08it/s]
+Capturing num tokens (num_tokens=24 avail_mem=3.99 GB):  88%|████████▊ | 37/42 [00:14<00:03,  1.31it/s]
+Capturing num tokens (num_tokens=20 avail_mem=3.95 GB):  88%|████████▊ | 37/42 [00:14<00:03,  1.31it/s]
+Capturing num tokens (num_tokens=20 avail_mem=3.95 GB):  90%|█████████ | 38/42 [00:15<00:03,  1.04it/s]
+Capturing num tokens (num_tokens=16 avail_mem=3.89 GB):  90%|█████████ | 38/42 [00:15<00:03,  1.04it/s]
+Capturing num tokens (num_tokens=16 avail_mem=3.89 GB):  93%|█████████▎| 39/42 [00:16<00:03,  1.04s/it]
+Capturing num tokens (num_tokens=12 avail_mem=3.84 GB):  93%|█████████▎| 39/42 [00:16<00:03,  1.04s/it]
+Capturing num tokens (num_tokens=12 avail_mem=3.84 GB):  95%|█████████▌| 40/42 [00:18<00:02,  1.23s/it]
+Capturing num tokens (num_tokens=8 avail_mem=3.78 GB):  95%|█████████▌| 40/42 [00:18<00:02,  1.23s/it] 
+Capturing num tokens (num_tokens=8 avail_mem=3.78 GB):  98%|█████████▊| 41/42 [00:18<00:00,  1.07it/s]
+Capturing num tokens (num_tokens=4 avail_mem=3.71 GB):  98%|█████████▊| 41/42 [00:18<00:00,  1.07it/s]
+Capturing num tokens (num_tokens=4 avail_mem=3.71 GB): 100%|██████████| 42/42 [00:19<00:00,  1.42it/s]
+Capturing num tokens (num_tokens=4 avail_mem=3.71 GB): 100%|██████████| 42/42 [00:19<00:00,  2.21it/s]
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 8 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702/qwen3_14b_tp8_ctx4096.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase         49.96 ± 55.39     148.37 ± 29.87
+shard                (failed)                 
+[4.16384] Qwen3-14B TP=8 4-mode bench @ ctx=16384 (GQA, no MLA)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/usr/local/lib/python3.12/dist-packages/torch/fx/graph_module.py", line 461, in __call__
+    raise e
+  File "/usr/local/lib/python3.12/dist-packages/torch/fx/graph_module.py", line 447, in __call__
+    return super(self.cls, obj).__call__(*args, **kwargs)  # type: ignore[misc]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<eval_with_key>.92", line 19, in forward
+    embedding = torch.nn.functional.embedding(long, l_fn_self_modules_embed_tokens_parameters_weight_);  long = l_fn_self_modules_embed_tokens_parameters_weight_ = None
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/functional.py", line 2567, in embedding
+    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 1 has a total capacity of 31.36 GiB of which 10.06 MiB is free. Including non-PyTorch memory, this process has 8.55 GiB memory in use. Process 264991 has 20.34 GiB memory in use. Process 271398 has 2.43 GiB memory in use. Of the allocated memory 7.40 GiB is allocated by PyTorch, with 76.00 MiB allocated in private pools (e.g., CUDA Graphs), and 298.87 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:40:50] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 768, in initialize
+    self.init_attention_backend()
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 2285, in init_attention_backend
+    self.attn_backend = self._get_attention_backend()
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 2330, in _get_attention_backend
+    attn_backend = self._get_attention_backend_from_str(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 2347, in _get_attention_backend_from_str
+    full_attention_backend = ATTENTION_BACKENDS[backend_str](self)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/attention/attention_registry.py", line 45, in create_flashinfer_backend
+    return FlashInferAttnBackend(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/attention/flashinfer_backend.py", line 202, in __init__
+    global_workspace_buffer = torch.empty(
+                              ^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 384.00 MiB. GPU 4 has a total capacity of 31.36 GiB of which 260.00 MiB is free. Process 264994 has 21.11 GiB memory in use. Including non-PyTorch memory, this process has 9.48 GiB memory in use. Process 275927 has 502.00 MiB memory in use. Of the allocated memory 8.46 GiB is allocated by PyTorch, and 260.35 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:41:19] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=32 avail_mem=10.20 GB):  83%|████████▎ | 35/42 [00:20<00:00,  7.87it/s]
+Capturing num tokens (num_tokens=28 avail_mem=10.18 GB):  83%|████████▎ | 35/42 [00:20<00:00,  7.87it/s]
+Capturing num tokens (num_tokens=28 avail_mem=10.18 GB):  86%|████████▌ | 36/42 [00:20<00:00,  7.62it/s]
+Capturing num tokens (num_tokens=24 avail_mem=10.17 GB):  86%|████████▌ | 36/42 [00:20<00:00,  7.62it/s]
+Capturing num tokens (num_tokens=24 avail_mem=10.17 GB):  88%|████████▊ | 37/42 [00:20<00:00,  7.19it/s]
+Capturing num tokens (num_tokens=20 avail_mem=10.15 GB):  88%|████████▊ | 37/42 [00:20<00:00,  7.19it/s]
+Capturing num tokens (num_tokens=20 avail_mem=10.15 GB):  90%|█████████ | 38/42 [00:21<00:00,  5.71it/s]
+Capturing num tokens (num_tokens=16 avail_mem=10.13 GB):  90%|█████████ | 38/42 [00:21<00:00,  5.71it/s]
+Capturing num tokens (num_tokens=16 avail_mem=10.13 GB):  93%|█████████▎| 39/42 [00:21<00:00,  5.46it/s]
+Capturing num tokens (num_tokens=12 avail_mem=10.12 GB):  93%|█████████▎| 39/42 [00:21<00:00,  5.46it/s]
+Capturing num tokens (num_tokens=12 avail_mem=10.12 GB):  95%|█████████▌| 40/42 [00:21<00:00,  6.18it/s]
+Capturing num tokens (num_tokens=8 avail_mem=10.10 GB):  95%|█████████▌| 40/42 [00:21<00:00,  6.18it/s] 
+Capturing num tokens (num_tokens=8 avail_mem=10.10 GB):  98%|█████████▊| 41/42 [00:21<00:00,  6.81it/s]
+Capturing num tokens (num_tokens=4 avail_mem=10.08 GB):  98%|█████████▊| 41/42 [00:21<00:00,  6.81it/s]
+Capturing num tokens (num_tokens=4 avail_mem=10.08 GB): 100%|██████████| 42/42 [00:21<00:00,  7.27it/s]
+Capturing num tokens (num_tokens=4 avail_mem=10.08 GB): 100%|██████████| 42/42 [00:21<00:00,  1.93it/s]
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 8 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+EOFError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<string>", line 14, in <module>
+  File "/sgl-workspace/sglang/python/sglang/utils.py", line 406, in __call__
+    return module(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 204, in __init__
+    ) = self._launch_subprocesses(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 762, in _launch_subprocesses
+    scheduler_init_result.wait_for_ready()
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 619, in wait_for_ready
+    infos = _wait_for_scheduler_ready(scheduler_pipe_readers, scheduler_procs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 1243, in _wait_for_scheduler_ready
+    raise _scheduler_died_error(i, scheduler_procs[i])
+RuntimeError: Rank 0 scheduler died during initialization (exit code: -9). If exit code is -9 (SIGKILL), a common cause is the OS OOM killer. Run `dmesg -T | grep -i oom` to check.
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702/qwen3_14b_tp8_ctx16384.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[5] Restart stage 0 (SAVE_FREQ=100, auto-resume)
+    stage 0 restarted pid=304947
+
+============================================================
+[Wed May 13 07:44:07 AM UTC 2026] DONE — results at /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702
+============================================================
+total 20
+drwxr-xr-x  2 root root  170 May 13 07:44 .
+drwxr-xr-x 24 root root 4096 May 13 07:40 ..
+-rw-r--r--  1 root root  369 May 13 07:34 kimi_48b_e64_tp8_ctx16384.json
+-rw-r--r--  1 root root  367 May 13 07:29 kimi_48b_e64_tp8_ctx4096.json
+-rw-r--r--  1 root root  372 May 13 07:44 qwen3_14b_tp8_ctx16384.json
+-rw-r--r--  1 root root  935 May 13 07:39 qwen3_14b_tp8_ctx4096.json

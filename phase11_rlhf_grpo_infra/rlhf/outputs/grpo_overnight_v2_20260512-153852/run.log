@@ -1,0 +1,23 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 319, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 315, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 90, in _async_main
+    task = LlavaCaptionTask(
+           ^^^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/llava_caption_task.py", line 89, in __init__
+    with open(json_path, "r") as f:
+         ^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/.hf_home/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json'

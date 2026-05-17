@@ -1,0 +1,74 @@
+{
+  "args": {
+    "model": "/workspace/torchtitan_attention_residual/phase11/hf_qwen3_14b_attn_res_dummy",
+    "tp": 8,
+    "prefill": 4096,
+    "decode": 256,
+    "warmup": 2,
+    "timed": 5,
+    "disable_cuda_graph": false,
+    "out": "/workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-081429/qwen3_14b_tp8_ctx4096.json"
+  },
+  "modes": {
+    "vanilla": {
+      "prefill_ttft_ms_mean": 34.63706320035271,
+      "prefill_ttft_ms_stdev": 3.300900524756481,
+      "decode_tps_mean": 183.06943819114565,
+      "decode_tps_stdev": 1.928535906478464,
+      "prefill_ttft_raw": [
+        35.771523995208554,
+        32.21380600007251,
+        36.82424200815149,
+        30.235827987780795,
+        38.13991601055022
+      ],
+      "decode_tps_raw": [
+        183.894280062281,
+        179.8923850303239,
+        183.2626772452756,
+        183.21751403889013,
+        185.08033457895758
+      ]
+    },
+    "naive": {
+      "prefill_ttft_ms_mean": 34.47335419768933,
+      "prefill_ttft_ms_stdev": 2.2487560105350637,
+      "decode_tps_mean": 160.58281072711176,
+      "decode_tps_stdev": 0.6415937491049764,
+      "prefill_ttft_raw": [
+        37.98778899363242,
+        33.88434699445497,
+        31.74401201249566,
+        34.549809992313385,
+        34.20081299555022
+      ],
+      "decode_tps_raw": [
+        159.6721646042211,
+        160.17010124876617,
+        160.8192414602257,
+        161.11281294427195,
+        161.13973337807394
+      ]
+    },
+    "shard": {
+      "prefill_ttft_ms_mean": 36.05246179795358,
+      "prefill_ttft_ms_stdev": 6.281072962641242,
+      "decode_tps_mean": 119.28646839038117,
+      "decode_tps_stdev": 0.36284891657200086,
+      "prefill_ttft_raw": [
+        36.65141700184904,
+        31.561436000629328,
+        33.59116199135315,
+        46.680280996952206,
+        31.778012998984195
+      ],
+      "decode_tps_raw": [
+        119.53195983680935,
+        119.13250893787188,
+        118.93567504723791,
+        119.79425484542591,
+        119.03794328456084
+      ]
+    }
+  }
+}

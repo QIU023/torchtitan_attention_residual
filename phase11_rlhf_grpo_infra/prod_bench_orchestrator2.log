@@ -1,0 +1,455 @@
+============================================================
+[Wed May 13 07:33:12 AM UTC 2026] 8-card TP=8 AttnRes overlay bench
+  Output: /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073312
+============================================================
+[1] Stop stage 0
+21559 MiB
+21559 MiB
+[3.4096] Kimi TP=8 4-mode bench @ ctx=4096 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    return self._op(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/radix_linear_attention.py", line 134, in unified_linear_attention_with_output
+    ret = forward_batch.attn_backend.forward(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py", line 924, in forward
+    return self.forward_extend(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py", line 875, in forward_extend
+    return self.linear_attn_backend.forward_extend(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/attention/linear/kda_backend.py", line 208, in forward_extend
+    q = causal_conv1d_fn(
+        ^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/attention/mamba/causal_conv1d_triton.py", line 439, in causal_conv1d_fn
+    out = torch.empty_like(x)
+          ^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 1 has a total capacity of 31.36 GiB of which 10.25 MiB is free. Including non-PyTorch memory, this process has 29.79 GiB memory in use. Process 231135 has 1.54 GiB memory in use. Of the allocated memory 28.21 GiB is allocated by PyTorch, with 254.00 MiB allocated in private pools (e.g., CUDA Graphs), and 93.23 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:34:32] SIGQUIT received. signum=None, frame=None. It usually means one child failed.
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+                         ^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 508, in __init__
+    self.initialize(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 733, in initialize
+    self.init_memory_pool(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 762, in init_memory_pool
+    self.memory_pool_config = self._resolve_memory_pool_config(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 741, in _resolve_memory_pool_config
+    config = configurator.calculate_pool_sizes(available_bytes, page_size)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 175, in calculate_pool_sizes
+    return MemoryPoolConfig(max_total_num_tokens=max_total_num_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 44, in __post_init__
+    raise RuntimeError(msg)
+RuntimeError: Not enough memory. Please try to increase --mem-fraction-static.
+
+[2026-05-13 07:35:01] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing batches (bs=24 avail_mem=4.73 GB):  57%|█████▋    | 8/14 [00:05<00:01,  3.06it/s]
+Capturing batches (bs=16 avail_mem=4.70 GB):  57%|█████▋    | 8/14 [00:05<00:01,  3.06it/s]
+Capturing batches (bs=16 avail_mem=4.70 GB):  64%|██████▍   | 9/14 [00:05<00:01,  3.56it/s]
+Capturing batches (bs=12 avail_mem=4.68 GB):  64%|██████▍   | 9/14 [00:05<00:01,  3.56it/s]
+Capturing batches (bs=12 avail_mem=4.68 GB):  71%|███████▏  | 10/14 [00:05<00:00,  4.07it/s]
+Capturing batches (bs=8 avail_mem=4.65 GB):  71%|███████▏  | 10/14 [00:05<00:00,  4.07it/s] 
+Capturing batches (bs=8 avail_mem=4.65 GB):  79%|███████▊  | 11/14 [00:05<00:00,  4.39it/s]
+Capturing batches (bs=4 avail_mem=4.63 GB):  79%|███████▊  | 11/14 [00:05<00:00,  4.39it/s]
+Capturing batches (bs=4 avail_mem=4.63 GB):  86%|████████▌ | 12/14 [00:05<00:00,  4.74it/s]
+Capturing batches (bs=2 avail_mem=4.60 GB):  86%|████████▌ | 12/14 [00:05<00:00,  4.74it/s]
+Capturing batches (bs=2 avail_mem=4.60 GB):  93%|█████████▎| 13/14 [00:05<00:00,  5.01it/s]
+Capturing batches (bs=1 avail_mem=4.58 GB):  93%|█████████▎| 13/14 [00:05<00:00,  5.01it/s]
+Capturing batches (bs=1 avail_mem=4.58 GB): 100%|██████████| 14/14 [00:06<00:00,  3.55it/s]
+Capturing batches (bs=1 avail_mem=4.58 GB): 100%|██████████| 14/14 [00:06<00:00,  2.18it/s]
+
+  0%|          | 0/42 [00:00<?, ?it/s]
+Compiling num tokens (num_tokens=2048):   0%|          | 0/42 [00:00<?, ?it/s]/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 8 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 508, in __init__
+    self.initialize(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 733, in initialize
+    self.init_memory_pool(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 762, in init_memory_pool
+    self.memory_pool_config = self._resolve_memory_pool_config(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 741, in _resolve_memory_pool_config
+    config = configurator.calculate_pool_sizes(available_bytes, page_size)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 175, in calculate_pool_sizes
+    return MemoryPoolConfig(max_total_num_tokens=max_total_num_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 44, in __post_init__
+    raise RuntimeError(msg)
+RuntimeError: Not enough memory. Please try to increase --mem-fraction-static.
+
+[2026-05-13 07:36:24] Received sigquit from a child process. It usually means the child failed.
+[2026-05-13 07:36:24] Received sigquit from a child process. It usually means the child failed.
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073312/kimi_48b_e64_tp8_ctx4096.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[3.16384] Kimi TP=8 4-mode bench @ ctx=16384 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers/config.py", line 79, in get_config
+    config = AutoConfig.from_pretrained(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 374, in from_pretrained
+    config_dict, unused_kwargs = PreTrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/configuration_utils.py", line 673, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/configuration_utils.py", line 728, in _get_config_dict
+    resolved_config_file = cached_file(
+                           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/hub.py", line 278, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/hub.py", line 473, in cached_files
+    raise OSError(f"{e}") from e
+OSError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': '/workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e64_dummy'. Use `repo_type` argument if needed.
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers/config.py", line 79, in get_config
+    config = AutoConfig.from_pretrained(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 374, in from_pretrained
+    config_dict, unused_kwargs = PreTrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/configuration_utils.py", line 673, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/configuration_utils.py", line 728, in _get_config_dict
+    resolved_config_file = cached_file(
+                           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/hub.py", line 278, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/hub.py", line 473, in cached_files
+    raise OSError(f"{e}") from e
+OSError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': '/workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e64_dummy'. Use `repo_type` argument if needed.
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers/config.py", line 79, in get_config
+    config = AutoConfig.from_pretrained(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 374, in from_pretrained
+    config_dict, unused_kwargs = PreTrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/configuration_utils.py", line 673, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/configuration_utils.py", line 728, in _get_config_dict
+    resolved_config_file = cached_file(
+                           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/hub.py", line 278, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/hub.py", line 473, in cached_files
+    raise OSError(f"{e}") from e
+OSError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': '/workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e64_dummy'. Use `repo_type` argument if needed.
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073312/kimi_48b_e64_tp8_ctx16384.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla           31.57 ± 2.11     180.55 ± 2.18
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[3-mem] Kimi TP=8 memory probe (shard=0 vs shard=1)
+usage: probe_memory.py [-h] [--model MODEL] [--tp TP] [--prefill PREFILL]
+                       [--shard SHARD]
+probe_memory.py: error: unrecognized arguments: --out /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073312/kimi_48b_e64_tp8_memprobe.json
+WARN: memprobe failed (probe_memory.py optional)
+[4.4096] Qwen3-14B TP=8 4-mode bench @ ctx=4096 (GQA, no MLA)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen3_attn_res_overlay.py", line 124, in __init__
+    super().__init__(
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen3.py", line 346, in __init__
+    self.mlp = Qwen3MLP(
+               ^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen2.py", line 73, in __init__
+    self.gate_up_proj = MergedColumnParallelLinear(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/linear.py", line 529, in __init__
+    super().__init__(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/linear.py", line 353, in __init__
+    self.quant_method.create_weights(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/quantization/unquant.py", line 121, in create_weights
+    torch.empty(
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_device.py", line 116, in __torch_function__
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 34.00 MiB. GPU 2 has a total capacity of 31.36 GiB of which 2.19 MiB is free. Process 249574 has 20.88 GiB memory in use. Process 253102 has 8.98 GiB memory in use. Including non-PyTorch memory, this process has 1.47 GiB memory in use. Of the allocated memory 678.55 MiB is allocated by PyTorch, and 51.45 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:39:02] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    self.initialize(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 733, in initialize
+    self.init_memory_pool(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 762, in init_memory_pool
+    self.memory_pool_config = self._resolve_memory_pool_config(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 741, in _resolve_memory_pool_config
+    config = configurator.calculate_pool_sizes(available_bytes, page_size)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 175, in calculate_pool_sizes
+    return MemoryPoolConfig(max_total_num_tokens=max_total_num_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 44, in __post_init__
+    raise RuntimeError(msg)
+RuntimeError: Not enough memory. Please try to increase --mem-fraction-static.
+
+[2026-05-13 07:39:30] Received sigquit from a child process. It usually means the child failed.
+[2026-05-13 07:39:30] Received sigquit from a child process. It usually means the child failed.
+[2026-05-13 07:39:30] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Failed to load generation config for /workspace/torchtitan_attention_residual/phase11/hf_qwen3_14b_attn_res_dummy: /workspace/torchtitan_attention_residual/phase11/hf_qwen3_14b_attn_res_dummy does not appear to have a file named generation_config.json. Checkout 'https://huggingface.co//workspace/torchtitan_attention_residual/phase11/hf_qwen3_14b_attn_res_dummy/tree/main' for available files.. Proceeding without generation config.
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 508, in __init__
+    self.initialize(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 733, in initialize
+    self.init_memory_pool(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 762, in init_memory_pool
+    self.memory_pool_config = self._resolve_memory_pool_config(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 741, in _resolve_memory_pool_config
+    config = configurator.calculate_pool_sizes(available_bytes, page_size)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 175, in calculate_pool_sizes
+    return MemoryPoolConfig(max_total_num_tokens=max_total_num_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 44, in __post_init__
+    raise RuntimeError(msg)
+RuntimeError: Not enough memory. Please try to increase --mem-fraction-static.
+
+[2026-05-13 07:40:26] Received sigquit from a child process. It usually means the child failed.
+[2026-05-13 07:40:26] Received sigquit from a child process. It usually means the child failed.
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073312/qwen3_14b_tp8_ctx4096.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[4.16384] Qwen3-14B TP=8 4-mode bench @ ctx=16384 (GQA, no MLA)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen3_attn_res_overlay.py", line 124, in __init__
+    super().__init__(
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen3.py", line 331, in __init__
+    self.self_attn = Qwen3Attention(
+                     ^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen3.py", line 115, in __init__
+    self.qkv_proj = QKVParallelLinear(
+                    ^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/linear.py", line 968, in __init__
+    super().__init__(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/linear.py", line 353, in __init__
+    self.quant_method.create_weights(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/quantization/unquant.py", line 121, in create_weights
+    torch.empty(
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_device.py", line 116, in __torch_function__
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 5 has a total capacity of 31.36 GiB of which 8.06 MiB is free. Process 263833 has 8.55 GiB memory in use. Process 264995 has 20.34 GiB memory in use. Including non-PyTorch memory, this process has 2.43 GiB memory in use. Of the allocated memory 1.55 GiB is allocated by PyTorch, and 131.37 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:40:50] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+                         ^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 508, in __init__
+    self.initialize(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 733, in initialize
+    self.init_memory_pool(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 762, in init_memory_pool
+    self.memory_pool_config = self._resolve_memory_pool_config(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 741, in _resolve_memory_pool_config
+    config = configurator.calculate_pool_sizes(available_bytes, page_size)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 175, in calculate_pool_sizes
+    return MemoryPoolConfig(max_total_num_tokens=max_total_num_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 44, in __post_init__
+    raise RuntimeError(msg)
+RuntimeError: Not enough memory. Please try to increase --mem-fraction-static.
+
+[2026-05-13 07:41:16] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen3_attn_res_overlay.py", line 124, in __init__
+    super().__init__(
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen3.py", line 346, in __init__
+    self.mlp = Qwen3MLP(
+               ^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/models/qwen2.py", line 73, in __init__
+    self.gate_up_proj = MergedColumnParallelLinear(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/linear.py", line 529, in __init__
+    super().__init__(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/linear.py", line 353, in __init__
+    self.quant_method.create_weights(
+  File "/sgl-workspace/sglang/python/sglang/srt/layers/quantization/unquant.py", line 121, in create_weights
+    torch.empty(
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_device.py", line 116, in __torch_function__
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 34.00 MiB. GPU 6 has a total capacity of 31.36 GiB of which 2.19 MiB is free. Process 264996 has 22.48 GiB memory in use. Including non-PyTorch memory, this process has 2.24 GiB memory in use. Process 278370 has 3.95 GiB memory in use. Process 279534 has 2.66 GiB memory in use. Of the allocated memory 1.37 GiB is allocated by PyTorch, and 118.17 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 07:41:48] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+                         ^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 508, in __init__
+    self.initialize(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 733, in initialize
+    self.init_memory_pool(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 762, in init_memory_pool
+    self.memory_pool_config = self._resolve_memory_pool_config(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 741, in _resolve_memory_pool_config
+    config = configurator.calculate_pool_sizes(available_bytes, page_size)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 175, in calculate_pool_sizes
+    return MemoryPoolConfig(max_total_num_tokens=max_total_num_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 44, in __post_init__
+    raise RuntimeError(msg)
+RuntimeError: Not enough memory. Please try to increase --mem-fraction-static.
+
+[2026-05-13 07:42:21] Received sigquit from a child process. It usually means the child failed.
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073312/qwen3_14b_tp8_ctx16384.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[5] Restart stage 0 (SAVE_FREQ=100, auto-resume)
+    stage 0 restarted pid=289692
+
+============================================================
+[Wed May 13 07:42:21 AM UTC 2026] DONE — results at /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073312
+============================================================
+total 20
+drwxr-xr-x  2 root root  170 May 13 07:42 .
+drwxr-xr-x 24 root root 4096 May 13 07:40 ..
+-rw-r--r--  1 root root  930 May 13 07:38 kimi_48b_e64_tp8_ctx16384.json
+-rw-r--r--  1 root root  367 May 13 07:36 kimi_48b_e64_tp8_ctx4096.json
+-rw-r--r--  1 root root  372 May 13 07:42 qwen3_14b_tp8_ctx16384.json
+-rw-r--r--  1 root root  370 May 13 07:40 qwen3_14b_tp8_ctx4096.json

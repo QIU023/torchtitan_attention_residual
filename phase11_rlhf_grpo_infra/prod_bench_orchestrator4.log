@@ -1,0 +1,172 @@
+============================================================
+[Wed May 13 07:40:48 AM UTC 2026] 8-card TP=8 AttnRes overlay bench
+  Output: /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-074048
+============================================================
+[1] Stop stage 0
+20840 MiB
+20840 MiB
+[3.4096] Kimi TP=8 4-mode bench @ ctx=4096 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tp_worker.py", line 260, in __init__
+    self._init_model_runner()
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/tp_worker.py", line 345, in _init_model_runner
+    self._model_runner = ModelRunner(
+                         ^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 481, in __init__
+    pre_model_load_memory = self.init_torch_distributed()
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 1106, in init_torch_distributed
+    torch.get_device_module(self.device).set_device(self.gpu_id)
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 638, in set_device
+    torch._C._cuda_setDevice(device)
+torch.AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+[2026-05-13 07:41:20] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 508, in __init__
+    self.initialize(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner.py", line 733, in initialize
+    self.init_memory_pool(pre_model_load_memory)
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 762, in init_memory_pool
+    self.memory_pool_config = self._resolve_memory_pool_config(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py", line 741, in _resolve_memory_pool_config
+    config = configurator.calculate_pool_sizes(available_bytes, page_size)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 175, in calculate_pool_sizes
+    return MemoryPoolConfig(max_total_num_tokens=max_total_num_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/sgl-workspace/sglang/python/sglang/srt/model_executor/pool_configurator.py", line 44, in __post_init__
+    raise RuntimeError(msg)
+RuntimeError: Not enough memory. Please try to increase --mem-fraction-static.
+
+[2026-05-13 07:41:50] Received sigquit from a child process. It usually means the child failed.
+[2026-05-13 07:41:50] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 459, in run
+    return self.fn.run(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 240, in run
+    benchmark()
+  File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 229, in benchmark
+    timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 164, in _bench
+    return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/triton/testing.py", line 152, in do_bench
+    cache = runtime.driver.active.get_empty_cache_for_benchmark()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/triton/backends/nvidia/driver.py", line 761, in get_empty_cache_for_benchmark
+    return torch.empty(int(cache_size // 4), dtype=torch.int, device='cuda')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 256.00 MiB. GPU 3 has a total capacity of 31.36 GiB of which 88.56 MiB is free. Process 278367 has 12.63 GiB memory in use. Including non-PyTorch memory, this process has 9.00 GiB memory in use. Process 286033 has 6.19 GiB memory in use. Process 290533 has 3.42 GiB memory in use. Of the allocated memory 8.17 GiB is allocated by PyTorch, and 64.45 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Failed to load generation config for /workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e32_dummy: /workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e32_dummy does not appear to have a file named generation_config.json. Checkout 'https://huggingface.co//workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e32_dummy/tree/main' for available files.. Proceeding without generation config.
+rope_scaling missing 'factor', defaulting to 1.0. Check model accuracy.
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-074048/kimi_48b_e64_tp8_ctx4096.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla              (failed)                 
+naive                (failed)                 
+two-phase            (failed)                 
+shard                (failed)                 
+[3.16384] Kimi TP=8 4-mode bench @ ctx=16384 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Multi-thread loading shards: 100% Completed | 1/1 [00:01<00:00,  1.71s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:01<00:00,  1.71s/it]
+2026-05-13 07:43:37,720 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:37 TP1] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-13 07:43:37,796 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:37 TP5] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-13 07:43:37,814 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:37 TP4] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-13 07:43:38,067 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:38 TP6] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-13 07:43:38,248 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:38 TP0] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-13 07:43:38,384 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:38 TP3] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-13 07:43:38,428 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:38 TP7] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-13 07:43:38,890 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:43:38 TP2] Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-13 07:44:02] Subprocess scheduler_0 (pid=293899) crashed with exit code -9. Triggering SIGQUIT for cleanup...
+[2026-05-13 07:44:02] SIGQUIT received. signum=None, frame=None. It usually means one child failed.
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+EOFError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<string>", line 14, in <module>
+  File "/sgl-workspace/sglang/python/sglang/utils.py", line 406, in __call__
+    return module(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 204, in __init__
+    ) = self._launch_subprocesses(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 762, in _launch_subprocesses
+    scheduler_init_result.wait_for_ready()
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 619, in wait_for_ready
+    infos = _wait_for_scheduler_ready(scheduler_pipe_readers, scheduler_procs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 1243, in _wait_for_scheduler_ready
+    raise _scheduler_died_error(i, scheduler_procs[i])
+RuntimeError: Rank 0 scheduler died during initialization (exit code: -9). If exit code is -9 (SIGKILL), a common cause is the OS OOM killer. Run `dmesg -T | grep -i oom` to check.
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+phase11/run_prod_multicard_bench.sh: line 68: 293524 Killed                  ATTNRES_MLA_FP32_FALLBACK=1 ATTNRES_FP32_NORM=1 ATTNRES_INPUT_CLAMP=32 python3 "$WORKSPACE/phase11/bench_attn_res.py" --model "$KIMI_CKPT" --tp 8 --prefill "$CTX" --decode 256 --disable-cuda-graph --out "$BENCH_OUT/kimi_48b_e64_tp8_ctx${CTX}.json"
+WARN: Kimi bench ctx=16384 failed
+[3-mem] Kimi TP=8 memory probe (shard=0 vs shard=1)
+usage: probe_memory.py [-h] [--model MODEL] [--tp TP] [--prefill PREFILL]
+                       [--shard SHARD]
+probe_memory.py: error: unrecognized arguments: --out /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-074048/kimi_48b_e64_tp8_memprobe.json

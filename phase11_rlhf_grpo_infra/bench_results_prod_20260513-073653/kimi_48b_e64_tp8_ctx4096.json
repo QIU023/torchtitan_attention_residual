@@ -1,0 +1,34 @@
+{
+  "args": {
+    "model": "/workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e32_dummy",
+    "tp": 8,
+    "prefill": 4096,
+    "decode": 256,
+    "warmup": 2,
+    "timed": 5,
+    "disable_cuda_graph": false,
+    "out": "/workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-073653/kimi_48b_e64_tp8_ctx4096.json"
+  },
+  "modes": {
+    "two-phase": {
+      "prefill_ttft_ms_mean": 35.163389999070205,
+      "prefill_ttft_ms_stdev": 5.171295487680434,
+      "decode_tps_mean": 137.51195773350565,
+      "decode_tps_stdev": 28.41145307926481,
+      "prefill_ttft_raw": [
+        42.212466010823846,
+        28.94032499170862,
+        32.163992000278085,
+        38.1467889965279,
+        34.35337799601257
+      ],
+      "decode_tps_raw": [
+        166.2237285890986,
+        163.38625863483256,
+        132.06170968623118,
+        128.72580183160358,
+        97.16228992576241
+      ]
+    }
+  }
+}

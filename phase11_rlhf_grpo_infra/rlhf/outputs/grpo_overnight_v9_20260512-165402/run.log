@@ -1,0 +1,148 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-12_16:54_545
+[SGLangGenerator pid=86057 rank=2] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=85317 rank=1] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=86797 rank=3] non-lead actor — Engine lives on rank 0 only; idling.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+[SGLangGenerator pid=84204] CUDA_VISIBLE_DEVICES=4,5,6,7  torch.cuda.device_count()=4
+[SGLangGenerator pid=84204] free mem: GPU0=33.1GB/33.7GB GPU1=33.1GB/33.7GB GPU2=33.1GB/33.7GB GPU3=33.1GB/33.7GB
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=83395 at time 2026-05-12 16:54:30.535559:
+The actor <root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 405, in from_pretrained
+      config_class = CONFIG_MAPPING[config_dict["model_type"]]
+                     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 105, in __getitem__
+      raise KeyError(key)
+  KeyError: 'kimi_attn_res_vl'
+
+  During handling of the above exception, another exception occurred:
+
+  Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1215, in handle
+      self.instance = Class(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/sglang_generator.py", line 289, in __init__
+      self._engine = Engine(**engine_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 186, in __init__
+      server_args = self.server_args_class(**kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "<string>", line 371, in __init__
+    File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 836, in __post_init__
+      self._handle_piecewise_cuda_graph()
+    File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 1202, in _handle_piecewise_cuda_graph
+      if self.get_model_config().is_piecewise_cuda_graph_disabled_model:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 6735, in get_model_config
+      self.model_config = ModelConfig.from_server_args(self)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/configs/model_config.py", line 319, in from_server_args
+      return ModelConfig(
+             ^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/configs/model_config.py", line 169, in __init__
+      self.hf_config = get_config(
+                       ^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3356, in wrapper
+      result = func(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers/config.py", line 79, in get_config
+      config = AutoConfig.from_pretrained(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 407, in from_pretrained
+      raise ValueError(
+  ValueError: The checkpoint you are trying to load has model type `kimi_attn_res_vl` but Transformers does not recognize this architecture. This could be because of an issue with the checkpoint, or because your version of Transformers is out of date.
+
+  You can update Transformers with the command `pip install --upgrade transformers`. If this does not work, and the checkpoint is very new, then there may not be a release version that supports this model yet. In this case, you can get the most up-to-date code by installing Transformers from source with the command `pip install git+https://github.com/huggingface/transformers.git`
+
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 318, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 314, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 143, in _async_main
+    generator.pull_model_state_dict.call(0).get()
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._rust_bindings.monarch_hyperactor.supervision.SupervisionError: Endpoint call generator.pull_model_state_dict() failed, The actor <root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 405, in from_pretrained
+      config_class = CONFIG_MAPPING[config_dict["model_type"]]
+                     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 105, in __getitem__
+      raise KeyError(key)
+  KeyError: 'kimi_attn_res_vl'
+
+  During handling of the above exception, another exception occurred:
+
+  Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1215, in handle
+      self.instance = Class(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/sglang_generator.py", line 289, in __init__
+      self._engine = Engine(**engine_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/entrypoints/engine.py", line 186, in __init__
+      server_args = self.server_args_class(**kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "<string>", line 371, in __init__
+    File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 836, in __post_init__
+      self._handle_piecewise_cuda_graph()
+    File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 1202, in _handle_piecewise_cuda_graph
+      if self.get_model_config().is_piecewise_cuda_graph_disabled_model:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/server_args.py", line 6735, in get_model_config
+      self.model_config = ModelConfig.from_server_args(self)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/configs/model_config.py", line 319, in from_server_args
+      return ModelConfig(
+             ^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/configs/model_config.py", line 169, in __init__
+      self.hf_config = get_config(
+                       ^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3356, in wrapper
+      result = func(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^
+    File "/sgl-workspace/sglang/python/sglang/srt/utils/hf_transformers/config.py", line 79, in get_config
+      config = AutoConfig.from_pretrained(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/configuration_auto.py", line 407, in from_pretrained
+      raise ValueError(
+  ValueError: The checkpoint you are trying to load has model type `kimi_attn_res_vl` but Transformers does not recognize this architecture. This could be because of an issue with the checkpoint, or because your version of Transformers is out of date.
+
+  You can update Transformers with the command `pip install --upgrade transformers`. If this does not work, and the checkpoint is very new, then there may not be a release version that supports this model yet. In this case, you can get the most up-to-date code by installing Transformers from source with the command `pip install git+https://github.com/huggingface/transformers.git`
+

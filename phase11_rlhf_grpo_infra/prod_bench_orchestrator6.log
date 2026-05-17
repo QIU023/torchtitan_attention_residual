@@ -1,0 +1,205 @@
+============================================================
+[Wed May 13 08:14:29 AM UTC 2026] 8-card TP=8 AttnRes overlay bench
+  Output: /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-081429
+============================================================
+[1] Stop stage 0
+0 MiB
+0 MiB
+[2a] Dump Kimi 48B-layout (num_experts=8, ~4B params, ~8 GB safetensors)
+[1/3] Kimi 48B-layout cfg: L=27 d=2304 H=32 experts=8(8) AttnRes N=9
+[2/3] total params: 3,469,850,704 (~3.5 B)
+      safetensors size estimate: ~6.9 GB
+[3/3] safetensors: 1259 tensors -> /workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e8_dummy/model.safetensors
+      config.json -> /workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e8_dummy/config.json
+
+Done. Smoke-load with:
+  python3 -c "import sglang as sgl; e = sgl.Engine(model_path='/workspace/torchtitan_attention_residual/phase11/hf_kimi_48b_e8_dummy', skip_tokenizer_init=True, tp_size=8, dtype='bfloat16', attention_backend='flashinfer', linear_attn_backend='triton'); print(e.generate({'input_ids':[[1,2,3,4]]}, {'max_new_tokens':4}))"
+[3.4096] Kimi TP=8 4-mode bench @ ctx=4096 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-081429/kimi_48b_e64_tp8_ctx4096.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla           34.97 ± 8.99     196.86 ± 1.53
+naive             47.94 ± 6.06     180.84 ± 1.94
+two-phase         49.30 ± 3.41     171.47 ± 0.48
+shard             43.36 ± 0.72     171.05 ± 0.55
+
+AttnRes (two-phase) overhead vs vanilla: prefill +41.0% TTFT, decode -12.9% throughput
+Two-phase speedup vs naive: prefill 0.97× (48ms → 49ms)
+[3.16384] Kimi TP=8 4-mode bench @ ctx=16384 (fp32 MLA fallback on)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-081429/kimi_48b_e64_tp8_ctx16384.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla           51.87 ± 2.23     181.39 ± 0.47
+naive             48.15 ± 2.05     166.77 ± 0.55
+two-phase         50.52 ± 3.64     161.46 ± 0.62
+shard             46.52 ± 3.63     160.64 ± 0.49
+
+AttnRes (two-phase) overhead vs vanilla: prefill +-2.6% TTFT, decode -11.0% throughput
+Two-phase speedup vs naive: prefill 0.95× (48ms → 51ms)
+[3-mem] Kimi TP=8 memory probe (shard=0 vs shard=1)
+usage: probe_memory.py [-h] [--model MODEL] [--tp TP] [--prefill PREFILL]
+                       [--shard SHARD]
+probe_memory.py: error: unrecognized arguments: --out /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-081429/kimi_48b_e64_tp8_memprobe.json
+WARN: memprobe failed (probe_memory.py optional)
+[4.4096] Qwen3-14B TP=8 4-mode bench @ ctx=4096 (GQA, no MLA)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<eval_with_key>.255", line 932, in forward
+    submod_72 = self.submod_72(getitem_367, s33, l_fn_self_modules_layers_modules_35_modules_self_attn_modules_o_proj_parameters_weight_, getitem_368, getitem_350, getitem_351, getitem_352, l_fn_self_modules_layers_modules_35_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_35_modules_post_attention_layernorm_parameters_weight_, l_fn_self_modules_layers_modules_35_modules_mlp_modules_gate_up_proj_parameters_weight_, l_fn_self_modules_layers_modules_35_modules_mlp_modules_down_proj_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_attn_res_proj_parameters_weight_, getitem_25, getitem_66, getitem_107, getitem_148, getitem_189, getitem_230, getitem_271, getitem_312, getitem_353, l_fn_self_modules_layers_modules_36_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_attn_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_attn_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_attn_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_input_layernorm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_self_attn_modules_qkv_proj_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_self_attn_modules_q_norm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_self_attn_modules_k_norm_parameters_weight_, l_fn_self_modules_layers_modules_0_modules_self_attn_modules_rotary_emb_buffers_cos_sin_cache_, l_args_1_);  getitem_367 = l_fn_self_modules_layers_modules_35_modules_self_attn_modules_o_proj_parameters_weight_ = getitem_368 = getitem_350 = getitem_351 = getitem_352 = l_fn_self_modules_layers_modules_35_modules_mlp_res_norm_parameters_weight_ = l_fn_self_modules_layers_modules_35_modules_post_attention_layernorm_parameters_weight_ = l_fn_self_modules_layers_modules_35_modules_mlp_modules_gate_up_proj_parameters_weight_ = l_fn_self_modules_layers_modules_35_modules_mlp_modules_down_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_attn_res_norm_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_37_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_37_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_38_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_38_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_39_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_39_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_input_layernorm_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_self_attn_modules_qkv_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_self_attn_modules_q_norm_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_self_attn_modules_k_norm_parameters_weight_ = None
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/compilation/cuda_piecewise_backend.py", line 175, in __call__
+    output = entry.runnable(*args)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/fx/graph_module.py", line 949, in call_wrapped
+    return self._wrapped_call(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/fx/graph_module.py", line 459, in __call__
+    raise e.with_traceback(None)  # noqa: B904
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 400.00 MiB. GPU 0 has a total capacity of 31.36 GiB of which 362.25 MiB is free. Including non-PyTorch memory, this process has 30.99 GiB memory in use. Of the allocated memory 29.62 GiB is allocated by PyTorch, with 3.32 GiB allocated in private pools (e.g., CUDA Graphs), and 469.59 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 08:32:26] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+
+Wrote results -> /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-081429/qwen3_14b_tp8_ctx4096.json
+
+Mode                TTFT (ms)       Decode tps
+--------------------------------------------------
+vanilla           34.64 ± 3.30     183.07 ± 1.93
+naive             34.47 ± 2.25     160.58 ± 0.64
+two-phase            (failed)                 
+shard             36.05 ± 6.28     119.29 ± 0.36
+[4.16384] Qwen3-14B TP=8 4-mode bench @ ctx=16384 (GQA, no MLA)
+
+============================================================
+MODE: vanilla   env: {'SGLANG_ATTN_RES_BYPASS': '1'}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+Capturing num tokens (num_tokens=80 avail_mem=4.08 GB):  71%|███████▏  | 30/42 [00:02<00:00, 15.52it/s]
+Capturing num tokens (num_tokens=80 avail_mem=4.08 GB):  76%|███████▌  | 32/42 [00:02<00:00, 15.44it/s]
+Capturing num tokens (num_tokens=64 avail_mem=4.06 GB):  76%|███████▌  | 32/42 [00:02<00:00, 15.44it/s]
+Capturing num tokens (num_tokens=48 avail_mem=4.05 GB):  76%|███████▌  | 32/42 [00:02<00:00, 15.44it/s]
+Capturing num tokens (num_tokens=48 avail_mem=4.05 GB):  81%|████████  | 34/42 [00:02<00:00, 15.65it/s]
+Capturing num tokens (num_tokens=32 avail_mem=4.04 GB):  81%|████████  | 34/42 [00:02<00:00, 15.65it/s]
+Capturing num tokens (num_tokens=28 avail_mem=4.02 GB):  81%|████████  | 34/42 [00:02<00:00, 15.65it/s]
+Capturing num tokens (num_tokens=28 avail_mem=4.02 GB):  86%|████████▌ | 36/42 [00:03<00:00, 15.55it/s]
+Capturing num tokens (num_tokens=24 avail_mem=4.01 GB):  86%|████████▌ | 36/42 [00:03<00:00, 15.55it/s]
+Capturing num tokens (num_tokens=20 avail_mem=3.99 GB):  86%|████████▌ | 36/42 [00:03<00:00, 15.55it/s]
+Capturing num tokens (num_tokens=20 avail_mem=3.99 GB):  90%|█████████ | 38/42 [00:03<00:00, 15.75it/s]
+Capturing num tokens (num_tokens=16 avail_mem=3.97 GB):  90%|█████████ | 38/42 [00:03<00:00, 15.75it/s]
+Capturing num tokens (num_tokens=12 avail_mem=3.96 GB):  90%|█████████ | 38/42 [00:03<00:00, 15.75it/s]
+Capturing num tokens (num_tokens=12 avail_mem=3.96 GB):  95%|█████████▌| 40/42 [00:03<00:00, 15.81it/s]
+Capturing num tokens (num_tokens=8 avail_mem=3.95 GB):  95%|█████████▌| 40/42 [00:03<00:00, 15.81it/s] 
+Capturing num tokens (num_tokens=4 avail_mem=3.93 GB):  95%|█████████▌| 40/42 [00:03<00:00, 15.81it/s]
+Capturing num tokens (num_tokens=4 avail_mem=3.93 GB): 100%|██████████| 42/42 [00:03<00:00, 15.91it/s]
+Capturing num tokens (num_tokens=4 avail_mem=3.93 GB): 100%|██████████| 42/42 [00:03<00:00, 12.24it/s]
+[2026-05-13 08:35:32] Subprocess scheduler_2 (pid=405809) crashed with exit code -9. Triggering SIGQUIT for cleanup...
+[2026-05-13 08:35:32] SIGQUIT received. signum=None, frame=None. It usually means one child failed.
+
+============================================================
+MODE: naive   env: {'SGLANG_ATTN_RES_NAIVE_PATH': '1'}
+============================================================
+
+============================================================
+MODE: two-phase   env: {}
+============================================================
+STDOUT (tail):
+
+STDERR (tail):
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<eval_with_key>.255", line 932, in forward
+    submod_72 = self.submod_72(getitem_367, s33, l_fn_self_modules_layers_modules_35_modules_self_attn_modules_o_proj_parameters_weight_, getitem_368, getitem_350, getitem_351, getitem_352, l_fn_self_modules_layers_modules_35_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_35_modules_post_attention_layernorm_parameters_weight_, l_fn_self_modules_layers_modules_35_modules_mlp_modules_gate_up_proj_parameters_weight_, l_fn_self_modules_layers_modules_35_modules_mlp_modules_down_proj_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_attn_res_proj_parameters_weight_, getitem_25, getitem_66, getitem_107, getitem_148, getitem_189, getitem_230, getitem_271, getitem_312, getitem_353, l_fn_self_modules_layers_modules_36_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_attn_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_attn_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_attn_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_mlp_res_proj_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_37_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_38_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_attn_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_39_modules_mlp_res_norm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_input_layernorm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_self_attn_modules_qkv_proj_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_self_attn_modules_q_norm_parameters_weight_, l_fn_self_modules_layers_modules_36_modules_self_attn_modules_k_norm_parameters_weight_, l_fn_self_modules_layers_modules_0_modules_self_attn_modules_rotary_emb_buffers_cos_sin_cache_, l_args_1_);  getitem_367 = l_fn_self_modules_layers_modules_35_modules_self_attn_modules_o_proj_parameters_weight_ = getitem_368 = getitem_350 = getitem_351 = getitem_352 = l_fn_self_modules_layers_modules_35_modules_mlp_res_norm_parameters_weight_ = l_fn_self_modules_layers_modules_35_modules_post_attention_layernorm_parameters_weight_ = l_fn_self_modules_layers_modules_35_modules_mlp_modules_gate_up_proj_parameters_weight_ = l_fn_self_modules_layers_modules_35_modules_mlp_modules_down_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_attn_res_norm_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_37_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_37_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_38_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_38_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_39_modules_attn_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_39_modules_mlp_res_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_input_layernorm_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_self_attn_modules_qkv_proj_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_self_attn_modules_q_norm_parameters_weight_ = l_fn_self_modules_layers_modules_36_modules_self_attn_modules_k_norm_parameters_weight_ = None
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/compilation/cuda_piecewise_backend.py", line 175, in __call__
+    output = entry.runnable(*args)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/fx/graph_module.py", line 949, in call_wrapped
+    return self._wrapped_call(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/fx/graph_module.py", line 459, in __call__
+    raise e.with_traceback(None)  # noqa: B904
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 400.00 MiB. GPU 1 has a total capacity of 31.36 GiB of which 362.19 MiB is free. Including non-PyTorch memory, this process has 30.99 GiB memory in use. Of the allocated memory 29.62 GiB is allocated by PyTorch, with 3.32 GiB allocated in private pools (e.g., CUDA Graphs), and 469.59 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+
+[2026-05-13 08:37:59] Received sigquit from a child process. It usually means the child failed.
+
+============================================================
+MODE: shard   env: {'SGLANG_ATTN_RES_SEQ_SHARD': '1'}
+============================================================
+phase11/run_prod_multicard_bench.sh: line 87: 405649 Killed                  python3 "$WORKSPACE/phase11/bench_attn_res.py" --model "$QWEN3_CKPT" --tp 8 --prefill "$CTX" --decode 256 --out "$BENCH_OUT/qwen3_14b_tp8_ctx${CTX}.json"
+WARN: Qwen3 bench ctx=16384 failed
+[5] Restart stage 0 (SAVE_FREQ=100, auto-resume)
+    stage 0 restarted pid=419436
+
+============================================================
+[Wed May 13 08:39:15 AM UTC 2026] DONE — results at /workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-081429
+============================================================
+total 20
+drwxr-xr-x  2 root root  131 May 13 08:34 .
+drwxr-xr-x 27 root root 4096 May 13 08:37 ..
+-rw-r--r--  1 root root 2599 May 13 08:28 kimi_48b_e64_tp8_ctx16384.json
+-rw-r--r--  1 root root 2599 May 13 08:22 kimi_48b_e64_tp8_ctx4096.json
+-rw-r--r--  1 root root 2043 May 13 08:34 qwen3_14b_tp8_ctx4096.json

@@ -1,0 +1,59 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-12_17:19_405
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 357, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 353, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 149, in _async_main
+    await setup_torch_elastic_env_async(generator_mesh)
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/spmd/__init__.py", line 62, in setup_torch_elastic_env_async
+    am = proc_mesh.spawn("_SPMDActor", SPMDActor)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 381, in spawn
+    return self._spawn_nonblocking(name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 448, in _spawn_nonblocking
+    return self._spawn_nonblocking_on(self._proc_mesh, name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 473, in _spawn_nonblocking_on
+    init_message = _create_endpoint_message(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 653, in _create_endpoint_message
+    pickling_state = pickle(
+                     ^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/pickle.py", line 124, in torch_dump
+    pickler.dump(obj)
+  File "/usr/local/lib/python3.12/dist-packages/cloudpickle/cloudpickle.py", line 1313, in dump
+    return super().dump(obj)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 415, in task
+    hy_proc_mesh = await hy_proc_mesh_task
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/host_mesh.py", line 197, in task
+    return await hy_host_mesh.spawn_nonblocking(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: error spawning proc mesh: statuses: Timeout(30.00068004s)=0..4
+Exception ignored in atexit callback: <function _init_client_context.<locals>.<lambda> at 0x7979f16ce160>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 444, in <lambda>
+    atexit.register(lambda: shutdown_context().get(timeout=5.0))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+TimeoutError: 

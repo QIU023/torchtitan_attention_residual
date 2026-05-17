@@ -1,0 +1,34 @@
+{
+  "args": {
+    "model": "/workspace/torchtitan_attention_residual/phase11/hf_qwen3_14b_attn_res_dummy",
+    "tp": 8,
+    "prefill": 4096,
+    "decode": 256,
+    "warmup": 2,
+    "timed": 5,
+    "disable_cuda_graph": false,
+    "out": "/workspace/torchtitan_attention_residual/phase11/bench_results_prod_20260513-071702/qwen3_14b_tp8_ctx4096.json"
+  },
+  "modes": {
+    "two-phase": {
+      "prefill_ttft_ms_mean": 49.96433460328262,
+      "prefill_ttft_ms_stdev": 55.38837515797832,
+      "decode_tps_mean": 148.3740676550237,
+      "decode_tps_stdev": 29.868181230476043,
+      "prefill_ttft_raw": [
+        148.81677301309537,
+        31.459859004826285,
+        22.688529003062285,
+        25.004914990859106,
+        21.851597004570067
+      ],
+      "decode_tps_raw": [
+        171.11957317609426,
+        158.71760883999514,
+        95.87954950652644,
+        158.32734061611146,
+        157.82626613639118
+      ]
+    }
+  }
+}

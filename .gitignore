@@ -130,6 +130,25 @@ phase5_distillation_deprecated/miniplm/scored/
 # Phase 11: random-init dummy HF checkpoints (large, regenerable)
 phase11/hf_*/
 phase11/__pycache__/
+
+# Catch-all for large training artifacts (any path).
+# The existing rules above target old phase4/, phase5/ layouts; the
+# new wrappers are phase4_kimi_attnres_lm_pretrain/, phase5_vlm_multimodal_sft/,
+# phase10_ckpt_dcp_to_hf/, phase11_rlhf_grpo_infra/. Blocking binaries
+# by extension is a backstop against accidental ckpt commits.
+*.distcp
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.ckpt
+**/__pycache__/
+
+# Phase 4/5/10/11 new-layout ckpt dirs (parallel to old rules above).
+phase4_*/runs/**/checkpoint/step-*/
+phase5_*/runs/**/checkpoint/step-*/
+phase10_*/hf_*/model.safetensors
+phase11_*/runs/**/checkpoint/step-*/
 # Phase 11 NCCL traces: keep recipe + run.log + ixia + gzipped artifacts;
 # drop raw csv/log (regenerable from .gz, large unzipped).
 phase11/trace_*/nccl-rank-*.log

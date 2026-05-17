@@ -1,0 +1,250 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-12_16:13_514
+[SGLangGenerator pid=65007 rank=2] non-lead actor — Engine lives on rank 0 only; idling.
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=62345 at time 2026-05-12 16:14:15.393236:
+The actor <root> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1197, in handle
+      args, kwargs = PicklingState(message, local_state).unpickle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ModuleNotFoundError: No module named 'llava_caption_task'
+
+[SGLangGenerator pid=63896 rank=1] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=65747 rank=3] non-lead actor — Engine lives on rank 0 only; idling.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+/usr/local/lib/python3.12/dist-packages/torch/__init__.py:1617: UserWarning: Please use the new API settings to control TF32 behavior, such as torch.backends.cudnn.conv.fp32_precision = 'tf32' or torch.backends.cuda.matmul.fp32_precision = 'ieee'. Old settings, e.g, torch.backends.cuda.matmul.allow_tf32 = True, torch.backends.cudnn.allow_tf32 = True, allowTF32CuDNN() and allowTF32CuBLAS() will be deprecated after Pytorch 2.9. Please see https://pytorch.org/docs/main/notes/cuda.html#tensorfloat-32-tf32-on-ampere-and-later-devices (Triggered internally at /pytorch/aten/src/ATen/Context.cpp:80.)
+  _C._set_float32_matmul_precision(precision)
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+/usr/local/lib/python3.12/dist-packages/torch/__init__.py:1617: UserWarning: Please use the new API settings to control TF32 behavior, such as torch.backends.cudnn.conv.fp32_precision = 'tf32' or torch.backends.cuda.matmul.fp32_precision = 'ieee'. Old settings, e.g, torch.backends.cuda.matmul.allow_tf32 = True, torch.backends.cudnn.allow_tf32 = True, allowTF32CuDNN() and allowTF32CuBLAS() will be deprecated after Pytorch 2.9. Please see https://pytorch.org/docs/main/notes/cuda.html#tensorfloat-32-tf32-on-ampere-and-later-devices (Triggered internally at /pytorch/aten/src/ATen/Context.cpp:80.)
+  _C._set_float32_matmul_precision(precision)
+/usr/local/lib/python3.12/dist-packages/torch/__init__.py:1617: UserWarning: Please use the new API settings to control TF32 behavior, such as torch.backends.cudnn.conv.fp32_precision = 'tf32' or torch.backends.cuda.matmul.fp32_precision = 'ieee'. Old settings, e.g, torch.backends.cuda.matmul.allow_tf32 = True, torch.backends.cudnn.allow_tf32 = True, allowTF32CuDNN() and allowTF32CuBLAS() will be deprecated after Pytorch 2.9. Please see https://pytorch.org/docs/main/notes/cuda.html#tensorfloat-32-tf32-on-ampere-and-later-devices (Triggered internally at /pytorch/aten/src/ATen/Context.cpp:80.)
+  _C._set_float32_matmul_precision(precision)
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+/usr/local/lib/python3.12/dist-packages/torch/__init__.py:1617: UserWarning: Please use the new API settings to control TF32 behavior, such as torch.backends.cudnn.conv.fp32_precision = 'tf32' or torch.backends.cuda.matmul.fp32_precision = 'ieee'. Old settings, e.g, torch.backends.cuda.matmul.allow_tf32 = True, torch.backends.cudnn.allow_tf32 = True, allowTF32CuDNN() and allowTF32CuBLAS() will be deprecated after Pytorch 2.9. Please see https://pytorch.org/docs/main/notes/cuda.html#tensorfloat-32-tf32-on-ampere-and-later-devices (Triggered internally at /pytorch/aten/src/ATen/Context.cpp:80.)
+  _C._set_float32_matmul_precision(precision)
+activation_checkpoint.mode=selective ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+Ignore import error when loading sglang.srt.models.afmoe: operator torchvision::nms does not exist
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 318, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 314, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 142, in _async_main
+    trainer.push_model_state_dict.call().get()
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._src.actor.actor_mesh.ActorError: Actor call trainer.push_model_state_dict failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1247, in handle
+    assert self._saved_error is not None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+Ignore import error when loading sglang.srt.models.apertus: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.arcee: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.baichuan: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.bailing_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.bailing_moe_linear: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.bailing_moe_nextn: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.bert: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.chatglm: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.clip: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.commandr: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.dbrx: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.deepseek: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.deepseek_janus_pro: Could not import module 'PreTrainedModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.deepseek_nextn: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.deepseek_ocr: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.deepseek_v2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.deepseek_vl2: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.dflash: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.dots_ocr: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.dots_vlm: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.dots_vlm_vit: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.ernie4: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.ernie45_moe_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.ernie45_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.ernie4_eagle: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.exaone: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.exaone4: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.exaone_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.exaone_moe_mtp: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.falcon_h1: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.gemma2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.gemma2_reward: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.gemma3_causal: Could not import module 'PreTrainedModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma3_mm: Could not import module 'PreTrainedModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma3n_audio: Could not import module 'Gemma3nAudioConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma3n_causal: Could not import module 'Gemma3nTextConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma3n_mm: Could not import module 'Gemma3nAudioConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma4_audio: Could not import module 'Gemma4AudioConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma4_causal: Could not import module 'Gemma4TextConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma4_mm: Could not import module 'Gemma4AudioConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.gemma4_vision: Could not import module 'Gemma4VisionConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.glm4: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glm4_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glm4_moe_lite: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glm4_moe_nextn: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glm4v: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glm4v_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glm_ocr: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glm_ocr_nextn: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.glmasr: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.gpt2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.gpt_bigcode: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.gpt_j: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.gpt_oss: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.granite: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.granitemoe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.granitemoehybrid: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.grok: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.hunyuan: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.hunyuan_v3: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.hunyuan_v3_nextn: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.idefics2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.internlm2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.internlm2_reward: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.interns1: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.interns1pro: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.internvl: Could not import module 'PreTrainedModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.iquest_loopcoder: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.jet_nemotron: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.jet_vlm: Could not import module 'SiglipVisionModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.kimi_k25: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.kimi_linear: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.kimi_vl: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.kimi_vl_moonvit: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.lfm2: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.lfm2_moe: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.lfm2_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.lightonocr: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.llada2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.llama: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.llama4: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.llama_classification: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.llama_eagle: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.llama_eagle3: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.llama_embedding: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.llama_reward: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.llava: Could not import module 'CLIPVisionModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.llavavid: Could not import module 'CLIPVisionModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.longcat_flash: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.longcat_flash_nextn: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.midashenglm: Could not load this library: /usr/local/lib/python3.12/dist-packages/torchaudio/lib/_torchaudio.abi3.so
+Ignore import error when loading sglang.srt.models.mimo: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mimo_audio: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mimo_mtp: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mimo_v2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mimo_v2_nextn: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.mimo_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mindspore: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.minicpm: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.minicpm3: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.minicpmo: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.minicpmv: operator torchvision::nms does not exist
+[rank0]:[W512 16:14:17.408289484 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[rank2]:[W512 16:14:17.408575957 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[rank1]:[W512 16:14:17.418925912 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[rank3]:[W512 16:14:18.607716723 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Ignore import error when loading sglang.srt.models.minimax_m2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.ministral3: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mistral: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mistral_eagle: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mistral_large_3: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mistral_large_3_eagle: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mixtral: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mixtral_quant: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mllama: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.mllama4: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.moss_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.nano_nemotron_vl: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.nemotron_h: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.nemotron_h_mtp: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.nemotron_nas: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.nvila: Could not import module 'SiglipVisionModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.nvila_lite: Could not import module 'SiglipVisionModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.olmo: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.olmo2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.olmoe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.opt: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.orion: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.paddleocr_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.parakeet: Could not import module 'ParakeetEncoder'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.persimmon: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.phi: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.phi3_small: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.phi4mm: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.phimoe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.pixtral: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.points_v15_chat: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.qwen: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2_5_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2_audio: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2_classification: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2_eagle: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2_rm: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen2_vl: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen3: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen3_5: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.qwen3_5_mtp: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen3_asr: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.qwen3_classification: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen3_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen3_next: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.qwen3_next_mtp: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen3_omni_moe: Could not import module 'PreTrainedModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.qwen3_rm: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.qwen3_vl: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.qwen3_vl_moe: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.radio: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.roberta: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.sarashina2_vision: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.sarvam_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.sdar: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.sdar_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.siglip: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.siglip2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.solar: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.stablelm: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.starcoder2: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.step3_vl: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.step3_vl_10b: Could not import module 'AutoProcessor'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.step3p5: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.step3p5_mtp: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.teleflm: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.torch_native_llama: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.transformers: Could not import module 'PreTrainedModel'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.utils: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.voxtral: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.whisper: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.xverse: Could not import module 'LlamaConfig'. Are this object's requirements defined correctly?
+Ignore import error when loading sglang.srt.models.xverse_moe: operator torchvision::nms does not exist
+Ignore import error when loading sglang.srt.models.yivl: Could not import module 'CLIPVisionModel'. Are this object's requirements defined correctly?
+
+thread 'monarch-pytokio-worker-363' (63890) panicked at monarch_hyperactor/src/actor.rs:1526:14:
+Unable to send panic message: MailboxSenderError { location: Unbound(ActorId(ProcId(Unix(Bound("hO8BlaAJCZ6RnmCIpkoOk9ru" (abstract))), "anon_0-11tRXig9e4gY"), "generator-1ohqZoNhGX4X", 0), "hyperactor::actor::Signal"), kind: Mailbox(MailboxError { actor_id: ActorId(ProcId(Unix(Bound("hO8BlaAJCZ6RnmCIpkoOk9ru" (abstract))), "anon_0-11tRXig9e4gY"), "generator-1ohqZoNhGX4X", 0), kind: OwnerTerminated(Stopped("stop host")) }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

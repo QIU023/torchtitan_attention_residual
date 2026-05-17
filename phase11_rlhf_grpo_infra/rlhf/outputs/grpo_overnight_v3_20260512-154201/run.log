@@ -1,0 +1,42 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-12_15:42_799
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 319, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 315, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11/rlhf/run_grpo_llava_kimi.py", line 136, in _async_main
+    from torchstore.transport import TransportType
+ImportError: cannot import name 'TransportType' from 'torchstore.transport' (/usr/local/lib/python3.12/dist-packages/torchstore/transport/__init__.py)
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=51141 at time 2026-05-12 15:42:19.733890:
+The actor <monarch._src.actor.actor_mesh.RootClientActor client> and all its descendants have failed:
+  undeliverable message error:
+  	description: delivery of message from sender to dest failed
+  	sender: unix:@qgJVozP1QBtRP9lIvDM2tPNf,local,client[0]
+  	dest: unix:@qgJVozP1QBtRP9lIvDM2tPNf,anon_0-1uRuqdF96mBc,comm-1GUeysobWBMP[0][13147652568889606402<hyperactor_mesh::comm::multicast::CastMessage>]
+  	message type: hyperactor_mesh::comm::multicast::CastMessage
+  	headers: hyperactor_mesh::casting::cast_actor_mesh_id=proc_agent,hyperactor::mailbox::headers::send_timestamp=2026-05-12T15:42:19.332064904+00:00,hyperactor::mailbox::headers::rust_message_type=hyperactor_mesh::comm::multicast::CastMessage,hyperactor::ordering::seq_info=019e1cda-53fe-79d1-986d-6eb139425f08:5
+  	data: CastMessage{"dest":{"selection":{"All":"True"},"slice":{"offset":0,"sizes":[],"strides":[]}},"message":{"actor_mesh_id":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","data":{"bindings":"[[104803[...106 chars] CRC:9378325a 5b 5b 31 30 34 38 30 33 [...98 bytes]","message":{"encoded":{"Multipart":{"body":"[19,0,0,[...14557639 chars] CRC:fcbeeffa 5b 31 39 2c 30 2c 30 2c [...14557631 bytes]","parts":[]}},"typehash":12983742011630525178}},"dest_port":{"actor_name":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","port":12421042491547118789},"headers":"[3,0,181[...518 chars] CRC:809e5e53 5b 33 2c 30 2c 31 38 31 [...510 bytes]","sender":"[[{\"Unix[...59 chars] CRC:baa22818 5b 5b 7b 22 55 6e 69 78 [...51 bytes]","shape":{"labels":[],"slice":{"offset":0,"sizes":[],"strides":[]}}}}
+  	error: broken link: failed to enqueue in MailboxClient when processing buffer: channel closed with reason Some("session unix:/tmp/.tmpKMYJNM/anon_0-1uRuqdF96mBc.d4775c93435e79be: server closed")
+
+Exception ignored in atexit callback: <function _init_client_context.<locals>.<lambda> at 0x7cbe77702c00>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 444, in <lambda>
+    atexit.register(lambda: shutdown_context().get(timeout=5.0))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+KeyboardInterrupt: 
