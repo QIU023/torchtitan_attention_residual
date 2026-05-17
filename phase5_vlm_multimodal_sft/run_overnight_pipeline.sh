@@ -157,7 +157,7 @@ run_stage1() {
     while (( attempt < STAGE1_MAX_ATTEMPTS )); do
         attempt=$((attempt + 1))
         check_deadline
-        check_disk 40
+        check_disk 18
         log "stage 1 attempt ${attempt}/${STAGE1_MAX_ATTEMPTS} (latest stage1 ckpt: $(latest_ckpt "${STAGE1_OUT}"))"
         STUDENT_CKPT="${s0_ckpt}" \
         STUDENT_CONFIG="${CONFIG_NAME}" \
@@ -199,7 +199,7 @@ run_stage2() {
     while (( attempt < STAGE2_MAX_ATTEMPTS )); do
         attempt=$((attempt + 1))
         check_deadline
-        check_disk 40
+        check_disk 18
         log "stage 2 attempt ${attempt}/${STAGE2_MAX_ATTEMPTS} (latest stage2 ckpt: $(latest_ckpt "${STAGE2_OUT}"))"
         STAGE1_CKPT="${s1_ckpt}" \
         STUDENT_CONFIG="${CONFIG_NAME}" \
