@@ -50,7 +50,10 @@ OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/stage1_alignment_447m}"
 NGPU="${NGPU:-8}"
 LOG_FREQ="${LOG_FREQ:-10}"
 SAVE_FREQ="${SAVE_FREQ:-500}"
-KEEP_K="${KEEP_K:-1}"           # k=1 to minimize disk during overnight pipeline
+KEEP_K="${KEEP_K:-2}"           # torchtitan requires k>=2 (refuses k=1 at init,
+                                # see torchtitan/components/checkpoint.py:378).
+                                # Orchestrator trims older stage1 dir after
+                                # stage2 starts, so peak disk stays bounded.
 VAL_FREQ="${VAL_FREQ:-100}"
 VAL_SAMPLES="${VAL_SAMPLES:-512}"
 VAL_BATCHES="${VAL_BATCHES:-16}"

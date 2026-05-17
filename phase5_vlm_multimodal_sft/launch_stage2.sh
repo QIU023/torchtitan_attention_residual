@@ -54,7 +54,7 @@ OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/stage2_instruct_sft_447m}"
 NGPU="${NGPU:-8}"
 LOG_FREQ="${LOG_FREQ:-10}"
 SAVE_FREQ="${SAVE_FREQ:-500}"
-KEEP_K="${KEEP_K:-1}"           # k=1 to minimize disk during overnight pipeline
+KEEP_K="${KEEP_K:-2}"           # torchtitan requires k>=2 (see launch_stage1.sh comment)
 
 # Pre-flight validations
 if [[ ! -d "${STAGE1_CKPT}" ]]; then
