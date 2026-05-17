@@ -157,9 +157,9 @@ run_stage1() {
         exit 5
     fi
     log "stage 1 done. latest ckpt: $(latest_ckpt "${STAGE1_OUT}")"
-    # Stage 0 weights are now baked into stage 1 — free disk before stage 2
-    trim_ckpts_to_latest "${STAGE0_OUT}"
-    log "disk after stage 0 trim: $(free_gb)G"
+    # NOTE: deliberately do NOT trim stage 0 ckpts here. User reserves
+    # the decision to keep/delete LM pretrain ckpts (rule: orchestrator
+    # only deletes what it produced). See memory feedback-dont-autodelete-stage0-ckpts.
     state_set "stage1_done"
 }
 
