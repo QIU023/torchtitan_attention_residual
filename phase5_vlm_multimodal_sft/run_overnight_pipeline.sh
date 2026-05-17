@@ -134,6 +134,13 @@ stop_stage0() {
 }
 
 # ---- step 3: stage 1 alignment ----
+# torchtitan + fla has a known KDA Triton crash that hits every ~2500 steps
+# (task #46). Each retry resumes from latest ckpt; we cap attempts so a real
+# bug doesn't infinite-loop, but a high cap absorbs the expected KDA cycles.
+STAGE1_MAX_ATTEMPTS="${STAGE1_MAX_ATTEMPTS:-15}"
+STAGE2_MAX_ATTEMPTS="${STAGE2_MAX_ATTEMPTS:-15}"
+RETRY_GRACE_SECONDS="${RETRY_GRACE_SECONDS:-30}"
+
 run_stage1() {
     check_deadline
     check_disk 40
@@ -145,22 +152,34 @@ run_stage1() {
         exit 4
     fi
     log "using stage 0 ckpt: ${s0_ckpt}"
-    STUDENT_CKPT="${s0_ckpt}" \
-    STUDENT_CONFIG="${CONFIG_NAME}" \
-    OUT_DIR="${STAGE1_OUT}" \
-    bash "${SCRIPT_DIR}/launch_stage1.sh" > "${LOG_DIR}/stage1.log" 2>&1
-    local rc=$?
-    if (( rc != 0 )); then
-        log "ABORT: stage 1 exited rc=${rc}; tail of log:"
-        tail -50 "${LOG_DIR}/stage1.log"
-        state_set "ABORTED_S1_RUN"
-        exit 5
-    fi
-    log "stage 1 done. latest ckpt: $(latest_ckpt "${STAGE1_OUT}")"
-    # NOTE: deliberately do NOT trim stage 0 ckpts here. User reserves
-    # the decision to keep/delete LM pretrain ckpts (rule: orchestrator
-    # only deletes what it produced). See memory feedback-dont-autodelete-stage0-ckpts.
-    state_set "stage1_done"
+
+    local attempt=0
+    while (( attempt < STAGE1_MAX_ATTEMPTS )); do
+        attempt=$((attempt + 1))
+        check_deadline
+        check_disk 40
+        log "stage 1 attempt ${attempt}/${STAGE1_MAX_ATTEMPTS} (latest stage1 ckpt: $(latest_ckpt "${STAGE1_OUT}"))"
+        STUDENT_CKPT="${s0_ckpt}" \
+        STUDENT_CONFIG="${CONFIG_NAME}" \
+        OUT_DIR="${STAGE1_OUT}" \
+        bash "${SCRIPT_DIR}/launch_stage1.sh" > "${LOG_DIR}/stage1_attempt${attempt}.log" 2>&1
+        local rc=$?
+        if (( rc == 0 )); then
+            log "stage 1 completed (attempt ${attempt})"
+            log "stage 1 done. latest ckpt: $(latest_ckpt "${STAGE1_OUT}")"
+            # NOTE: deliberately do NOT trim stage 0 ckpts here.
+            # User reserves keep/delete decision for LM pretrain ckpts.
+            state_set "stage1_done"
+            return 0
+        fi
+        log "stage 1 attempt ${attempt} failed rc=${rc}; tail of log:"
+        tail -30 "${LOG_DIR}/stage1_attempt${attempt}.log" | grep -E 'Error|error|RuntimeError|step:' | tail -10
+        log "sleeping ${RETRY_GRACE_SECONDS}s before retry; torchtitan auto-resumes from latest ckpt"
+        sleep "${RETRY_GRACE_SECONDS}"
+    done
+    log "ABORT: stage 1 exhausted ${STAGE1_MAX_ATTEMPTS} attempts"
+    state_set "ABORTED_S1_RUN"
+    exit 5
 }
 
 # ---- step 4: stage 2 SFT ----
@@ -175,22 +194,34 @@ run_stage2() {
         exit 6
     fi
     log "using stage 1 ckpt: ${s1_ckpt}"
-    STAGE1_CKPT="${s1_ckpt}" \
-    STUDENT_CONFIG="${CONFIG_NAME}" \
-    OUT_DIR="${STAGE2_OUT}" \
-    bash "${SCRIPT_DIR}/launch_stage2.sh" > "${LOG_DIR}/stage2.log" 2>&1
-    local rc=$?
-    if (( rc != 0 )); then
-        log "ABORT: stage 2 exited rc=${rc}; tail of log:"
-        tail -50 "${LOG_DIR}/stage2.log"
-        state_set "ABORTED_S2_RUN"
-        exit 7
-    fi
-    log "stage 2 done. latest ckpt: $(latest_ckpt "${STAGE2_OUT}")"
-    # Stage 1 weights are baked into stage 2 — free disk before HF conv
-    trim_ckpts_to_latest "${STAGE1_OUT}"
-    log "disk after stage 1 trim: $(free_gb)G"
-    state_set "stage2_done"
+
+    local attempt=0
+    while (( attempt < STAGE2_MAX_ATTEMPTS )); do
+        attempt=$((attempt + 1))
+        check_deadline
+        check_disk 40
+        log "stage 2 attempt ${attempt}/${STAGE2_MAX_ATTEMPTS} (latest stage2 ckpt: $(latest_ckpt "${STAGE2_OUT}"))"
+        STAGE1_CKPT="${s1_ckpt}" \
+        STUDENT_CONFIG="${CONFIG_NAME}" \
+        OUT_DIR="${STAGE2_OUT}" \
+        bash "${SCRIPT_DIR}/launch_stage2.sh" > "${LOG_DIR}/stage2_attempt${attempt}.log" 2>&1
+        local rc=$?
+        if (( rc == 0 )); then
+            log "stage 2 completed (attempt ${attempt})"
+            log "stage 2 done. latest ckpt: $(latest_ckpt "${STAGE2_OUT}")"
+            trim_ckpts_to_latest "${STAGE1_OUT}"
+            log "disk after stage 1 trim: $(free_gb)G"
+            state_set "stage2_done"
+            return 0
+        fi
+        log "stage 2 attempt ${attempt} failed rc=${rc}; tail of log:"
+        tail -30 "${LOG_DIR}/stage2_attempt${attempt}.log" | grep -E 'Error|error|RuntimeError|step:' | tail -10
+        log "sleeping ${RETRY_GRACE_SECONDS}s before retry; torchtitan auto-resumes from latest ckpt"
+        sleep "${RETRY_GRACE_SECONDS}"
+    done
+    log "ABORT: stage 2 exhausted ${STAGE2_MAX_ATTEMPTS} attempts"
+    state_set "ABORTED_S2_RUN"
+    exit 7
 }
 
 # ---- step 5: DCP→HF ----
