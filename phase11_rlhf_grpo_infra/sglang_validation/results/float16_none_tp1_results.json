@@ -1,0 +1,250 @@
+[
+  {
+    "test": "BOOT",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "boot_s": 50.10089294804493
+  },
+  {
+    "test": "V1",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "n_compared": 100,
+    "kl_mean": 0.0032518267559058255,
+    "kl_p50": 0.00023814831179175212,
+    "kl_p95": 0.021456471791945958,
+    "kl_max": 0.07004155144564138,
+    "wall_s": 4.43
+  },
+  {
+    "test": "V7",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "total_tokens": 430,
+    "total_seconds": 9.62184305296978,
+    "tok_per_s": 44.68998274371983,
+    "per_prompt_s_mean": 1.2027303816212225,
+    "per_prompt_s_max": 1.516673523990903,
+    "wall_s": 9.62
+  },
+  {
+    "test": "V8",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "results": [
+      {
+        "bs": 1,
+        "dt_s": 1.426598071004264,
+        "total_tokens": 64,
+        "tok_per_s": 44.8619700957164
+      },
+      {
+        "bs": 4,
+        "dt_s": 2.496962099976372,
+        "total_tokens": 174,
+        "tok_per_s": 69.68467803401842
+      },
+      {
+        "bs": 8,
+        "dt_s": 2.598978772002738,
+        "total_tokens": 430,
+        "tok_per_s": 165.4496006785957
+      },
+      {
+        "bs": 16,
+        "dt_s": 2.908706297981553,
+        "total_tokens": 904,
+        "tok_per_s": 310.791089711366
+      },
+      {
+        "bs": 32,
+        "dt_s": 3.768613694992382,
+        "total_tokens": 1868,
+        "tok_per_s": 495.672985130352
+      }
+    ],
+    "wall_s": 13.2
+  },
+  {
+    "test": "V11",
+    "status": "partial",
+    "dtype": "float16_none_tp1",
+    "results": [
+      {
+        "label": "empty",
+        "error": "texts cannot be empty and tokenizer must be initialized"
+      },
+      {
+        "label": "single_char",
+        "text": ". 1. (Chemical) To cause to be bearded; to be of the like shape and form,",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "single_word",
+        "text": "! My name is Jocelyn and I am a 2017 graduate of the University of North Carolin",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "chinese",
+        "text": "I am a new member.",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "japanese",
+        "text": "What is it?",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "mixed_lang",
+        "text": "45- 1.",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "emoji",
+        "text": "sign emoji.",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "whitespace_only",
+        "text": "=\u201d1\u2033]The following is a list of all the known issues that have been reported by ",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "repeated_char",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "bracket_tokens",
+        "text": "to the operator.\n[22:48] What is the meaning of the letters in [BOSSEAD]?",
+        "bad": false,
+        "reason": ""
+      }
+    ],
+    "wall_s": 3.61
+  },
+  {
+    "test": "V13",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "n_chunks": 32,
+    "final_text": " the shape, the shape, the color, the smell, the sound, the smell, the taste, th",
+    "bad": false,
+    "reason": "",
+    "wall_s": 0.72
+  },
+  {
+    "test": "V5",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "results": [
+      {
+        "label": "4K",
+        "n_chars": 4096,
+        "dt_s": 0.4648724750149995,
+        "text_tail": "ea and two and a half years ago, have made remarkable advances in the study",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "8K",
+        "n_chars": 8192,
+        "dt_s": 0.4653545699547976,
+        "text_tail": "!!!!!!!!!!!!!!!!",
+        "bad": true,
+        "reason": "garbage_prefix('!!!!!!')"
+      },
+      {
+        "label": "16K",
+        "n_chars": 16384,
+        "dt_s": 0.4948914819979109,
+        "text_tail": "chanics. The history of mathematics begins with the ancient Egyptians. Sumerian",
+        "bad": false,
+        "reason": ""
+      }
+    ],
+    "wall_s": 1.43
+  },
+  {
+    "test": "V6",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "results": [
+      {
+        "max_new": 1024,
+        "n_tok_out": 1024,
+        "dt_s": 22.349012653983664,
+        "text_tail": "he beach and play with my dog. I love to go to the beach and",
+        "tok_per_s": 45.81857891683972,
+        "bad": false,
+        "reason": "",
+        "collapse": false
+      },
+      {
+        "max_new": 2048,
+        "n_tok_out": 2048,
+        "dt_s": 44.76622290897649,
+        "text_tail": "ove to go to the beach and play with my dog. I love to go to",
+        "tok_per_s": 45.74877813936222,
+        "bad": false,
+        "reason": "",
+        "collapse": false
+      },
+      {
+        "max_new": 4096,
+        "n_tok_out": 4096,
+        "dt_s": 89.85327140596928,
+        "text_tail": " with my dog. I love to go to the beach and play with my dog",
+        "tok_per_s": 45.58542984477121,
+        "bad": false,
+        "reason": "",
+        "collapse": false
+      }
+    ],
+    "wall_s": 156.97
+  },
+  {
+    "test": "V14",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "text": "What is 2+2?\nAssistant: What is a 4?\nAssistant",
+    "bad": false,
+    "reason": "",
+    "wall_s": 0.46
+  },
+  {
+    "test": "V15",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "text": "160",
+    "regex_pass": true,
+    "wall_s": 0.38
+  },
+  {
+    "test": "V2",
+    "status": "no_routing_data",
+    "dtype": "float16_none_tp1",
+    "text1": " 1) Put the eggs in a",
+    "wall_s": 0.37
+  },
+  {
+    "test": "V10",
+    "status": "ok",
+    "dtype": "float16_none_tp1",
+    "duration_s": 60.102045674051624,
+    "n_prompts": 95,
+    "n_bad": 0,
+    "total_tokens": 2704,
+    "tok_per_s": 44.99014916504616,
+    "last_text_tail": "1 2 3 4 5 6 2 3 2 2 2 2 2 2 2 2",
+    "wall_s": 60.1
+  }
+]

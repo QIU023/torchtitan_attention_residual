@@ -1,0 +1,250 @@
+[
+  {
+    "test": "BOOT",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "boot_s": 52.15105492202565
+  },
+  {
+    "test": "V1",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "n_compared": 100,
+    "kl_mean": 0.015791863329806345,
+    "kl_p50": 0.005687381358595792,
+    "kl_p95": 0.05457032283798336,
+    "kl_max": 0.19182080699291656,
+    "wall_s": 4.29
+  },
+  {
+    "test": "V7",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "total_tokens": 395,
+    "total_seconds": 10.129322421038523,
+    "tok_per_s": 38.99569818999819,
+    "per_prompt_s_mean": 1.2661653026298154,
+    "per_prompt_s_max": 1.6423617399996147,
+    "wall_s": 10.13
+  },
+  {
+    "test": "V8",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "results": [
+      {
+        "bs": 1,
+        "dt_s": 1.634609189000912,
+        "total_tokens": 64,
+        "tok_per_s": 39.15308957679198
+      },
+      {
+        "bs": 4,
+        "dt_s": 1.9281906919786707,
+        "total_tokens": 174,
+        "tok_per_s": 90.24003731780526
+      },
+      {
+        "bs": 8,
+        "dt_s": 2.1804688320262358,
+        "total_tokens": 452,
+        "tok_per_s": 207.29486859024337
+      },
+      {
+        "bs": 16,
+        "dt_s": 2.6237943270243704,
+        "total_tokens": 774,
+        "tok_per_s": 294.99263415124034
+      },
+      {
+        "bs": 32,
+        "dt_s": 3.3641069359728135,
+        "total_tokens": 1681,
+        "tok_per_s": 499.6868506244133
+      }
+    ],
+    "wall_s": 11.73
+  },
+  {
+    "test": "V11",
+    "status": "partial",
+    "dtype": "bfloat16_fp8_tp1",
+    "results": [
+      {
+        "label": "empty",
+        "error": "texts cannot be empty and tokenizer must be initialized"
+      },
+      {
+        "label": "single_char",
+        "text": ". 1. (Chem.) A substance that is formed by the reaction of hydrogen and oxygen i",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "single_word",
+        "text": "! My name is Jocelyn and I am a 2017 graduate of the University of North Carolin",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "chinese",
+        "text": ", \u4f46\u8fd9\u6b21\u90fd\u8981\u8981\u8981\u8981\u8981\u3002.\nI am going to teach English in the US for",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "japanese",
+        "text": "I can't log in to my account.",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "mixed_lang",
+        "text": "45- 1.",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "emoji",
+        "text": "sign in or register now!\nDo you want to be notified when we add new content like",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "whitespace_only",
+        "text": "=\u201d1, 2] The following is a list of all the possible meanings of the letters in t",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "repeated_char",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "bracket_tokens",
+        "text": "to me.\n[21:30] What is the meaning of the letters B1?",
+        "bad": false,
+        "reason": ""
+      }
+    ],
+    "wall_s": 4.73
+  },
+  {
+    "test": "V13",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "n_chunks": 32,
+    "final_text": " the shape, the shape, the color, the smell, the sound, the smell, the taste, th",
+    "bad": false,
+    "reason": "",
+    "wall_s": 0.83
+  },
+  {
+    "test": "V5",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "results": [
+      {
+        "label": "4K",
+        "n_chars": 4096,
+        "dt_s": 0.43599129002541304,
+        "text_tail": "ea and two and a half years ago, have made a remarkable contribution to the",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "8K",
+        "n_chars": 8192,
+        "dt_s": 0.4309335080324672,
+        "text_tail": "and Babylonian mathematician, Sumerian mathematician and astronomer Sumer",
+        "bad": false,
+        "reason": ""
+      },
+      {
+        "label": "16K",
+        "n_chars": 16384,
+        "dt_s": 0.45458811498247087,
+        "text_tail": "chanics. The history of mathematics begins with the ancient Egyptians. Sumerian",
+        "bad": false,
+        "reason": ""
+      }
+    ],
+    "wall_s": 1.32
+  },
+  {
+    "test": "V6",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "results": [
+      {
+        "max_new": 1024,
+        "n_tok_out": 1024,
+        "dt_s": 26.03421258198796,
+        "text_tail": "pend time with my family. I love to travel. I love to travel",
+        "tok_per_s": 39.33285851358781,
+        "bad": false,
+        "reason": "",
+        "collapse": false
+      },
+      {
+        "max_new": 2048,
+        "n_tok_out": 1846,
+        "dt_s": 46.92254812299507,
+        "text_tail": "avel. I love to travel. I love to spend time with my family.",
+        "tok_per_s": 39.34142696515966,
+        "bad": false,
+        "reason": "",
+        "collapse": false
+      },
+      {
+        "max_new": 4096,
+        "n_tok_out": 1846,
+        "dt_s": 46.53515798505396,
+        "text_tail": "avel. I love to travel. I love to spend time with my family.",
+        "tok_per_s": 39.66893161924783,
+        "bad": false,
+        "reason": "",
+        "collapse": false
+      }
+    ],
+    "wall_s": 119.49
+  },
+  {
+    "test": "V14",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "text": "4/5/19 10:00 AM - 12:00",
+    "bad": false,
+    "reason": "",
+    "wall_s": 0.42
+  },
+  {
+    "test": "V15",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "text": "160",
+    "regex_pass": true,
+    "wall_s": 0.4
+  },
+  {
+    "test": "V2",
+    "status": "no_routing_data",
+    "dtype": "bfloat16_fp8_tp1",
+    "text1": " 1) Put the eggs in a",
+    "wall_s": 0.43
+  },
+  {
+    "test": "V10",
+    "status": "ok",
+    "dtype": "bfloat16_fp8_tp1",
+    "duration_s": 60.10044170898618,
+    "n_prompts": 83,
+    "n_bad": 0,
+    "total_tokens": 2318,
+    "tok_per_s": 38.56876811694737,
+    "last_text_tail": " when he was 12 years old. He was a very",
+    "wall_s": 60.1
+  }
+]
