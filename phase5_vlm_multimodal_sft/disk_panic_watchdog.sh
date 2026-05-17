@@ -74,6 +74,15 @@ panic() {
 }
 
 while true; do
+    # Proactive cleanup every cycle: NCCL crashes during training drop
+    # 8-12GB core dumps per rank to /var/lib/vastai_kaalia/data/. With ulimit -c 0
+    # in launchers these should never appear, but if anything bypasses
+    # the ulimit (e.g., systemd-coredump pattern), this catches them
+    # before they accumulate. Cheap (just an ls + rm) and harmless.
+    if [[ -d /var/lib/vastai_kaalia/data ]]; then
+        rm -f /var/lib/vastai_kaalia/data/core-* 2>/dev/null
+    fi
+
     local_free=$(free_gb)
     if (( local_free < PANIC_GB )); then
         panic "${local_free}"
