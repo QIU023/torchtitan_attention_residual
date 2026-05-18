@@ -231,6 +231,30 @@ run_stage2() {
     exit 7
 }
 
+# ---- step 4.5: eval on final stage 2 ckpt (LLaVA benchmark suite, OCR skipped) ----
+run_eval() {
+    check_deadline
+    check_disk 30
+    log "step 4.5: eval final stage 2 ckpt on LLaVA benchmark suite"
+    local s2_ckpt=$(latest_ckpt "${STAGE2_OUT}")
+    if [[ -z "${s2_ckpt}" ]]; then
+        log "WARN: no stage 2 ckpt for eval; skip"
+        state_set "eval_skipped"
+        return 0
+    fi
+    local eval_dir="${SCRIPT_DIR}/eval_benchmarks/runs/overnight_$(date +%Y%m%d-%H%M%S)_$(basename ${s2_ckpt})"
+    STAGE2_CKPT="${s2_ckpt}" \
+    RUN_DIR="${eval_dir}" \
+    bash "${SCRIPT_DIR}/eval_benchmarks/run_all_evals.sh" \
+        > "${LOG_DIR}/eval_overnight.log" 2>&1
+    local rc=$?
+    if (( rc != 0 )); then
+        log "WARN: eval rc=${rc} (partial results may still be useful); continuing pipeline"
+    fi
+    log "eval done. results: ${eval_dir}"
+    state_set "eval_done"
+}
+
 # ---- step 5: DCP→HF ----
 convert_to_hf() {
     check_deadline
@@ -272,9 +296,11 @@ launch_grpo() {
     log "step 6: launch GRPO multimodal smoke"
     cd "${WORKSPACE_DIR}"
     PYTHONPATH="${WORKSPACE_DIR}:${WORKSPACE_DIR}/torchtitan${PYTHONPATH:+:${PYTHONPATH}}" \
+    # Bumped 30 → ${GRPO_NUM_STEPS:-400} for overnight thorough run. Orchestrator
+    # deadline (DEADLINE_HOURS) will kill if it exceeds budget.
     /usr/bin/python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py \
         --model-path "${HF_OUT}" \
-        --num-steps 30 \
+        --num-steps "${GRPO_NUM_STEPS:-400}" \
         > "${LOG_DIR}/grpo.log" 2>&1
     local rc=$?
     if (( rc != 0 )); then
@@ -304,7 +330,8 @@ log "resume from state: ${state}"
 [[ "${state}" == "download_done" ]] && stop_stage0 && state=$(state_get) || true
 [[ "${state}" == "stage0_stopped" ]] && run_stage1 && state=$(state_get) || true
 [[ "${state}" == "stage1_done" ]] && run_stage2 && state=$(state_get) || true
-[[ "${state}" == "stage2_done" ]] && convert_to_hf && state=$(state_get) || true
+[[ "${state}" == "stage2_done" ]] && run_eval && state=$(state_get) || true
+[[ "${state}" == "eval_done" || "${state}" == "eval_skipped" ]] && convert_to_hf && state=$(state_get) || true
 [[ "${state}" == "hf_done" ]] && launch_grpo && state=$(state_get) || true
 
 log "PIPELINE END — final state: $(state_get)"
