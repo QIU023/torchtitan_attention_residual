@@ -191,11 +191,23 @@ class EvalRunner:
         # AttnRes has no kv-cache exposed in torchtitan; for short
         # max_new_tokens (≤64) this is acceptable and matches the model's
         # train-time forward exactly.
+        #
+        # NOTE on FSDP lock-step: each ``self.lm(...)`` issues an
+        # all-gather collective when ``fsdp_reshard_after_forward=always``
+        # (the default), requiring every rank to call it the same number
+        # of times. Two safeguards keep us in sync:
+        #   (a) launcher sets ``--parallelism.fsdp_reshard_after_forward
+        #       never`` so the params stay gathered after the first
+        #       forward → subsequent forwards do not issue all-gather.
+        #   (b) ``run_benchmark`` pads ``my_indices`` to the same length
+        #       across ranks (dummy slots replay the first record), so
+        #       every rank issues the same number of ``generate()`` calls
+        #       even when the global record count is not divisible by
+        #       world size.
+        # Both together let us safely keep the EOS early-stop below
+        # without risking the rank-out-of-records stall we hit in the
+        # smoke runs.
         for _ in range(max_new_tokens):
-            # IMPORTANT: pad vision_embeds slot count is fixed at
-            # N_VISION_TOKENS in the prompt; the appended generated tokens
-            # have NO image sentinels so image_mask stays 196-wide on the
-            # first axis but expanded over the longer T dim.
             cur_ids = torch.cat([
                 input_ids,
                 torch.tensor([generated], dtype=torch.long, device=self.device)
@@ -207,7 +219,6 @@ class EvalRunner:
                 vision_embeds=vision_embeds,
                 image_mask=cur_mask,
             )
-            # Last-token logits: (1, V).
             next_id = int(logits[0, -1].argmax().item())
             if next_id == self.eos_id:
                 break
@@ -365,10 +376,21 @@ def run_benchmark(
     my_idx = runner.my_indices(len(records))
     logger.info(f"eval[{name}]: rank {runner.rank} handles {len(my_idx)} records")
 
+    # If this rank has any -1 padding slots, build a small dummy record
+    # (re-using the first valid record on rank 0) so the rank can still
+    # call generate() on the padding step and keep FSDP collectives in
+    # sync with the busy ranks. Predictions for padding slots are
+    # discarded (NOT written to preds_rankN.jsonl).
+    dummy_rec: dict[str, Any] | None = None
+    for rec in records:
+        dummy_rec = rec
+        break
+
     preds: list[dict[str, Any]] = []
     t0 = time.time()
     for n, i in enumerate(my_idx):
-        rec = records[i]
+        is_pad = (i < 0)
+        rec = records[i] if not is_pad else dummy_rec
         try:
             img = image_loader(rec)
             q = prompt_builder(rec)
@@ -379,8 +401,9 @@ def run_benchmark(
             )
         except Exception as e:
             pred = f"<ERROR: {type(e).__name__}: {str(e)[:80]}>"
-            logger.warning(f"eval[{name}]: rank {runner.rank} record {rec.get('id')} failed: {e!r}")
-        preds.append({"id": rec.get("id"), "pred": pred, "gt": rec.get("gt")})
+            logger.warning(f"eval[{name}]: rank {runner.rank} record {rec.get('id') if rec else None} failed: {e!r}")
+        if not is_pad:
+            preds.append({"id": rec.get("id"), "pred": pred, "gt": rec.get("gt")})
         if (n + 1) % progress_every == 0:
             dt = time.time() - t0
             rate = (n + 1) / dt

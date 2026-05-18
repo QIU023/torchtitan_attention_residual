@@ -119,6 +119,7 @@ run_bench () {
         --training.seq_len "${SEQ_LEN}" \
         --training.max_norm 1.0 \
         --parallelism.data_parallel_shard_degree "${NGPU}" \
+        --parallelism.fsdp_reshard_after_forward never \
         --optimizer.lr 1e-5 \
         --lr_scheduler.warmup_steps 1 \
         --lr_scheduler.decay_ratio 0.2 \

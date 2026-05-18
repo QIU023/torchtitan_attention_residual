@@ -298,9 +298,14 @@ launch_grpo() {
     PYTHONPATH="${WORKSPACE_DIR}:${WORKSPACE_DIR}/torchtitan${PYTHONPATH:+:${PYTHONPATH}}" \
     # Bumped 30 → ${GRPO_NUM_STEPS:-400} for overnight thorough run. Orchestrator
     # deadline (DEADLINE_HOURS) will kill if it exceeds budget.
+    # Default GRPO task expects LLaVA-Pretrain caption JSON. We have mix665k
+    # Instruct on disk (schema-compatible: image + conversations[from=gpt]).
+    # First gpt response serves as the "gold caption" for the reward model.
     /usr/bin/python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py \
         --model-path "${HF_OUT}" \
         --num-steps "${GRPO_NUM_STEPS:-400}" \
+        --llava-json "${GRPO_JSON:-/workspace/.hf_home/LLaVA-Instruct/llava_v1_5_mix665k.json}" \
+        --llava-images "${GRPO_IMAGES:-/workspace/.hf_home/LLaVA-Instruct/images}" \
         > "${LOG_DIR}/grpo.log" 2>&1
     local rc=$?
     if (( rc != 0 )); then

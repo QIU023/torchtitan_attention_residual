@@ -31,7 +31,10 @@ SPLITS = ("random", "popular", "adversarial")
 
 
 def _load_records(limit: int | None = None) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
+    """Load all 3 splits; if ``limit`` is given, take ``limit//3`` per split
+    (stratified) so the F1 number reflects all 3 difficulty regimes.
+    """
+    per_split: dict[str, list[dict[str, Any]]] = {s: [] for s in SPLITS}
     for split in SPLITS:
         path = POPE_DIR / f"coco_pope_{split}.json"
         with open(path) as f:
@@ -40,15 +43,22 @@ def _load_records(limit: int | None = None) -> list[dict[str, Any]]:
                 if not line:
                     continue
                 rec = json.loads(line)
-                out.append({
+                per_split[split].append({
                     "id": f"{split}:{rec['question_id']}",
                     "split": split,
                     "image": rec["image"],
                     "question": rec["text"],
-                    "gt": rec["label"].strip().lower(),  # "yes" or "no"
+                    "gt": rec["label"].strip().lower(),
                 })
-                if limit and len(out) >= limit:
-                    return out
+    if limit:
+        cap = max(1, limit // len(SPLITS))
+        out: list[dict[str, Any]] = []
+        for split in SPLITS:
+            out.extend(per_split[split][:cap])
+        return out
+    out = []
+    for split in SPLITS:
+        out.extend(per_split[split])
     return out
 
 
