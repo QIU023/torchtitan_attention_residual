@@ -53,7 +53,7 @@ sys.path.insert(0, str(_WS / "torchtitan"))
 
 # Reuse the LM converter's helpers without importing it as a module
 # (the existing script is a __main__ entry-point, not packaged).
-_LM_CONV = _WS / "phase10" / "dcp_to_hf_kimi_attn_res.py"
+_LM_CONV = _WS / "phase10_ckpt_dcp_to_hf" / "dcp_to_hf_kimi_attn_res.py"
 _spec = importlib.util.spec_from_file_location("dcp_lm_conv", _LM_CONV)
 _lm_conv = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_lm_conv)

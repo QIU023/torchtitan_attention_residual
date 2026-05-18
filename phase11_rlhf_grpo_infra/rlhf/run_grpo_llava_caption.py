@@ -55,12 +55,56 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-# Make the in-tree task module importable without installing.
+# Make the in-tree task module + torchtitan package importable without installing.
+# Bypass any PYTHONPATH/cwd namespace-package ambiguity by inserting the explicit
+# torchtitan repo path BEFORE any torchtitan import.
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
+_REPO_ROOT = _HERE.parent.parent  # phase11_rlhf_grpo_infra/rlhf/ → repo root
+_TORCHTITAN_DIR = _REPO_ROOT / "torchtitan"
+if (_TORCHTITAN_DIR / "torchtitan" / "__init__.py").is_file():
+    sys.path.insert(0, str(_TORCHTITAN_DIR))
+sys.path.insert(0, str(_REPO_ROOT))
 
 import torch
 import torchstore as ts
+# ── torchstore Controller monkeypatch ────────────────────────────────────
+# Monarch's actor_mesh requires all @endpoint methods on a class to be
+# *consistently* async or sync. torchstore 0.1.2 Controller mixes 2 async
+# (init, teardown) with 5 sync (get_controller_strategy, locate_volumes,
+# notify_put, keys, notify_delete). This crashes with
+#     ValueError: <class 'torchstore.controller.Controller'> mixes both
+#     async and sync endpoints.
+# at actor instantiation. Promote the 5 sync ones to async wrappers
+# (they don't actually do async work — Monarch only checks the signature).
+# This is the same workaround recipe.json from trace_grpo_kimi_attnres_
+# 20260515T074648 referenced as "torchstore Controller monkeypatch —
+# promote 5 sync @endpoint to async". It went missing when the file
+# was edited later; restored here.
+try:
+    from torchstore.controller import Controller as _TSController
+    from monarch.actor import endpoint as _ts_endpoint
+    for _name in ("get_controller_strategy", "locate_volumes",
+                  "notify_put", "keys", "notify_delete"):
+        _ep = _TSController.__dict__.get(_name)
+        if _ep is None:
+            continue
+        # EndpointProperty wraps the underlying fn in `._method`.
+        _src_func = getattr(_ep, "_method", None) or getattr(_ep, "_func", None) or _ep
+        if asyncio.iscoroutinefunction(_src_func):
+            continue
+        def _make_async(fn):
+            async def _async_wrapper(self, *a, **kw):
+                return fn(self, *a, **kw)
+            _async_wrapper.__name__ = fn.__name__
+            _async_wrapper.__qualname__ = getattr(fn, "__qualname__", fn.__name__)
+            return _async_wrapper
+        setattr(_TSController, _name, _ts_endpoint(_make_async(_src_func)))
+except Exception as _e:
+    import warnings as _w
+    _w.warn(f"torchstore Controller monkeypatch failed: {_e}")
+# ─────────────────────────────────────────────────────────────────────────
+
 from monarch.actor import this_host
 from monarch.spmd import setup_torch_elastic_env_async
 
@@ -169,10 +213,27 @@ class Provisioner:
             os.environ["VIRTUAL_ENV"] = venv
             existing_pp = os.environ.get("PYTHONPATH", "")
             new_pp_parts = list(propagated_paths)
+            # Belt-and-suspenders: ensure the torchtitan package dir is
+            # on PYTHONPATH for the spawned monarch actor, even if the
+            # parent's sys.path snapshot missed it (e.g. when launched
+            # without PYTHONPATH set in the parent shell).
+            _hard_paths = [
+                "/workspace/torchtitan_attention_residual",
+                "/workspace/torchtitan_attention_residual/torchtitan",
+            ]
+            for p in _hard_paths:
+                if p not in new_pp_parts and os.path.isdir(p):
+                    new_pp_parts.insert(0, p)
             for p in existing_pp.split(os.pathsep):
                 if p and p not in new_pp_parts:
                     new_pp_parts.append(p)
             os.environ["PYTHONPATH"] = os.pathsep.join(new_pp_parts)
+            # Mirror into sys.path so imports below take effect immediately
+            # in this worker (before subprocess respawn for monarch).
+            import sys as _sys
+            for p in reversed(_hard_paths):
+                if p not in _sys.path:
+                    _sys.path.insert(0, p)
             venv_bin = f"{venv}/bin"
             existing_path = os.environ.get("PATH", "")
             if venv_bin not in existing_path.split(os.pathsep):
@@ -211,6 +272,26 @@ class Provisioner:
             # torchstore + monarch (the runtime needs these too,
             # but they may already be loaded by Monarch's bootstrap).
             import torchstore  # noqa: F401
+            # Apply torchstore Controller sync→async monkeypatch in this
+            # worker (mirrors what runs in main process at module import).
+            # Critical: trainer.push_model_state_dict instantiates the
+            # Controller inside an actor that doesn't import the main
+            # script, so the patch must be re-applied here.
+            try:
+                from phase11_rlhf_grpo_infra.rlhf import (
+                    torchstore_controller_monkeypatch as _tcm,
+                )
+            except Exception as _e:  # noqa: F841
+                import importlib.util as _iu
+                _spec = _iu.spec_from_file_location(
+                    "torchstore_controller_monkeypatch",
+                    "/workspace/torchtitan_attention_residual/"
+                    "phase11_rlhf_grpo_infra/rlhf/"
+                    "torchstore_controller_monkeypatch.py",
+                )
+                if _spec is not None:
+                    _m = _iu.module_from_spec(_spec)
+                    _spec.loader.exec_module(_m)
 
         return _bootstrap
 
@@ -409,39 +490,55 @@ def main():
                    default="/workspace/.hf_home/LLaVA-Pretrain")
     args = p.parse_args()
 
-    # ModelSpec selection.
-    #
-    # Architectural note: torchtitan's ``PolicyTrainer`` is currently
-    # Qwen3-specific. Its ``_build_model`` does:
-    #
-    #     assert isinstance(
-    #         model_spec.model.layers[0].attention.inner_attention,
-    #         VarlenAttention.Config,
-    #     )
-    #
-    # which assumes Qwen3-style ``.layers[0].attention.inner_attention``
-    # access at config time. Our Kimi Linear AttnRes (KDA + MLA) has a
-    # different structure (no ``.attention.inner_attention`` field) so
-    # PolicyTrainer can't load our 447m AttnRes ckpt as-is.
-    #
-    # Filing this as a separate upstream RFC ("make PolicyTrainer
-    # model-agnostic"). Until that lands, we use Qwen3-0.6B for the
-    # framework + NCCL-trace deliverable. The SGLangGenerator and the
-    # multimodal task pieces are unchanged — when PolicyTrainer
-    # supports a non-Qwen3 model_spec, swapping the trainer side is
-    # a one-config edit.
-    from torchtitan.models.qwen3 import model_registry as qwen3_registry
-    # 0.6B_varlen + our SDPA fallback for varlen_attn the torch 2.9 ``varlen_attn`` stub
-    # raise. Upstream defaults to ``0.6B_varlen`` which requires
-    # torch ≥2.10 nightly. ``0.6B`` uses standard flash attention
-    # which is bundled with torch 2.9 stable.
-    flavor = os.environ.get("RLHF_FLAVOR", "0.6B_varlen")
-    model_spec = qwen3_registry(flavor)
-    # Mirror upstream simple_grpo_sum_digits.py: swap in the RL-side
-    # parallelize fn (the one in models/qwen3 expects training-side
-    # kwargs that PolicyTrainer doesn't supply at RL time).
-    from torchtitan.experiments.rl.models.parallelize import parallelize_qwen3
-    model_spec.parallelize_fn = parallelize_qwen3
+    # ModelSpec selection — Kimi-Linear 447M AttnRes (the model we actually
+    # trained via stage 2 SFT). PolicyTrainer's earlier hard assert on
+    # VarlenAttention was relaxed to a soft warning (torchtitan/experiments/
+    # rl/actors/trainer.py:252-277), so non-Qwen3 specs build + parallelize
+    # fine. The 2026-05-15 trace_grpo_kimi_attnres run confirmed Kimi runs
+    # 60+ steps cleanly; the Qwen3-fallback that briefly lived here was
+    # based on the older hard-assert that no longer exists.
+    flavor = os.environ.get("RLHF_FLAVOR",
+                            "kimi_linear_447m_aligned_block_attn_res_n4")
+    if flavor.startswith("kimi"):
+        from torchtitan.experiments.kimi_linear import (
+            config_registry as kimi_registry,
+        )
+        from torchtitan.experiments.kimi_linear.parallelize import (
+            parallelize_kimi_linear as _orig_kl_parallelize,
+        )
+        from torchtitan.config.configs import (
+            TrainingConfig, ActivationCheckpointConfig,
+        )
+        from torchtitan.protocols.model_converter import ModelConvertersContainer
+        spec_builder = getattr(kimi_registry, flavor, None)
+        if spec_builder is None:
+            raise ValueError(f"Unknown kimi flavor: {flavor}")
+        trainer_cfg = spec_builder()
+        model_spec = trainer_cfg.model_spec
+        # Wrap parallelize: PolicyTrainer's RL path only passes (model,
+        # parallel_dims, parallelism, compile_config). The original
+        # parallelize_kimi_linear also needs training/model_converters/
+        # ac_config/dump_folder for SFT-time wiring. For RL inference-side
+        # forwards, sensible no-op defaults suffice.
+        def _kl_rl_parallelize(model, *, parallel_dims, parallelism,
+                               compile_config=None, **_kw):
+            return _orig_kl_parallelize(
+                model,
+                parallel_dims=parallel_dims,
+                parallelism=parallelism,
+                compile_config=compile_config,
+                training=TrainingConfig(),
+                model_converters=ModelConvertersContainer.Config(),
+                ac_config=ActivationCheckpointConfig(),
+                dump_folder="/tmp/_rl_kimi_parallelize_no_dump",
+            )
+        model_spec.parallelize_fn = _kl_rl_parallelize
+    else:
+        # Optional: keep Qwen3 path available via RLHF_FLAVOR override.
+        from torchtitan.models.qwen3 import model_registry as qwen3_registry
+        from torchtitan.experiments.rl.models.parallelize import parallelize_qwen3
+        model_spec = qwen3_registry(flavor)
+        model_spec.parallelize_fn = parallelize_qwen3
     logger.info(f"Loaded ModelSpec: name={model_spec.name} flavor={model_spec.flavor}")
     logger.info(
         "NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for "
