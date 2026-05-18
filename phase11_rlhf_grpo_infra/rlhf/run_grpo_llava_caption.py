@@ -296,6 +296,55 @@ class Provisioner:
         return _bootstrap
 
 
+def _make_grader_bootstrap() -> Callable[[], None]:
+    """Build a sys.path/PYTHONPATH bootstrap for grader_mesh workers.
+
+    Mirrors what ``Provisioner._make_bootstrap`` does for GPU meshes
+    (minus the CUDA pinning + heavy torch pre-imports we don't need
+    for a CPU rule-based grader), so the grader actor's pickle
+    deserialization can resolve:
+      * ``llava_caption_task`` (in phase11_rlhf_grpo_infra/rlhf, not on
+        site-packages)
+      * ``torchtitan.experiments.rl.types.Episode`` (in the local
+        torchtitan repo, not on site-packages either if the parent
+        runs out of a non-installed checkout)
+    Without this, ``grader.score.call(episodes).get()`` aborts with
+    ``ModuleNotFoundError: No module named 'torchtitan.experiments'``
+    in the actor; the parent then tears down all meshes and the
+    trainer's TCPStore peers disconnect, producing the rank-1/2/3
+    "recvValue failed" cascade that masks the real root cause.
+    """
+    captured = [p for p in list(sys.path) if p and os.path.isdir(p)]
+    venv = os.environ.get("VIRTUAL_ENV") or sys.prefix
+
+    def _bootstrap() -> None:
+        import os as _os
+        import sys as _sys
+        hard_paths = [
+            "/workspace/torchtitan_attention_residual",
+            "/workspace/torchtitan_attention_residual/torchtitan",
+            "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf",
+        ]
+        for p in reversed(hard_paths):
+            if _os.path.isdir(p) and p not in _sys.path:
+                _sys.path.insert(0, p)
+        for p in reversed(captured):
+            if p and p not in _sys.path:
+                _sys.path.insert(0, p)
+        existing = _os.environ.get("PYTHONPATH", "")
+        merged: list[str] = []
+        for p in hard_paths + captured:
+            if p and p not in merged and _os.path.isdir(p):
+                merged.append(p)
+        for p in existing.split(_os.pathsep):
+            if p and p not in merged:
+                merged.append(p)
+        _os.environ["PYTHONPATH"] = _os.pathsep.join(merged)
+        _os.environ["VIRTUAL_ENV"] = venv
+
+    return _bootstrap
+
+
 def _log_samples(episodes: list[Episode], task: LlavaCaptionTask) -> None:
     """Log first sample per group with reward + gold."""
     seen: set[str] = set()
@@ -317,6 +366,17 @@ class _Config(Configurable.Config):
 
     model_spec: Optional[ModelSpec] = None
     hf_assets_path: str = ""
+    # Optional torchtitan-native DCP checkpoint directory. When set,
+    # the trainer loads weights from here (skipping the HF↔torchtitan
+    # state_dict adapter remap entirely). Required for Kimi-Linear
+    # AttnRes since no state_dict_adapter ships for it; the safetensors
+    # at ``hf_assets_path`` are only consumed by the SGLang generator
+    # (which has its own HF loader path), while the trainer needs the
+    # DCP that stage 2 SFT wrote. Without this, the trainer runs on
+    # random-init weights, immediately overwrites the generator's good
+    # weights on step 1 with garbage, and rewards collapse / NaN
+    # explodes within a few steps.
+    dcp_initial_load_path: str = ""
     num_steps: int = 50
     dump_folder: str = "phase11_rlhf_grpo_infra/rlhf/outputs"
     num_episodes_per_step: int = 4
@@ -357,7 +417,24 @@ async def _async_main(config: _Config) -> None:
         per_host={"gpus": 4},
         bootstrap=generator_bootstrap,
     )
-    grader_mesh = this_host().spawn_procs()  # CPU-only mesh
+    # grader_mesh is CPU-only and would normally be spawned with no
+    # bootstrap. But Monarch's spawn_procs() creates fresh Python
+    # interpreters whose sys.path is the system default — they do NOT
+    # inherit the parent's sys.path additions for phase11_rlhf_grpo_infra/rlhf,
+    # the local torchtitan repo, or any editable installs. The grader
+    # actor's incoming pickled message references types from those
+    # paths (``Episode`` from ``torchtitan.experiments.rl.types``,
+    # ``task.reward_function`` bound method from ``llava_caption_task``),
+    # so unpickling raises ``ModuleNotFoundError: No module named
+    # 'torchtitan.experiments'`` and the actor aborts before any user
+    # code runs. The trainer mesh then loses its TCPStore peer when
+    # the parent process tears down on the supervision error → cascade
+    # of "TCPStore recvValue failed" on trainer ranks 1/2/3.
+    # Fix: hand-roll a sys.path bootstrap for the grader mesh (mirrors
+    # ``run_grpo_llava_kimi.py::_make_sys_path_bootstrap``).
+    grader_mesh = this_host().spawn_procs(
+        bootstrap=_make_grader_bootstrap(),
+    )
 
     # torchelastic env must be set per-mesh BEFORE the actors are
     # spawned so the trainer/generator processes inherit
@@ -373,6 +450,7 @@ async def _async_main(config: _Config) -> None:
         hf_assets_path=config.hf_assets_path,
         transfer_dtype=config.generator.model_dtype,
         kl_coef=config.kl_coef,
+        dcp_initial_load_path=config.dcp_initial_load_path,
     )
     generator = generator_mesh.spawn(
         "generator",
@@ -488,6 +566,12 @@ def main():
                    default="/workspace/.hf_home/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json")
     p.add_argument("--llava-images",
                    default="/workspace/.hf_home/LLaVA-Pretrain")
+    p.add_argument("--dcp-initial-load-path", default="",
+                   help="Optional torchtitan-native DCP ckpt for trainer "
+                        "model init (e.g. phase5_vlm_multimodal_sft/runs/"
+                        "stage2_instruct_sft_447m/checkpoint/step-5200). "
+                        "Required for Kimi (no state_dict_adapter), "
+                        "otherwise trainer runs on random weights.")
     args = p.parse_args()
 
     # ModelSpec selection — Kimi-Linear 447M AttnRes (the model we actually
@@ -549,6 +633,7 @@ def main():
     config = _Config()
     config.model_spec = model_spec
     config.hf_assets_path = args.model_path
+    config.dcp_initial_load_path = args.dcp_initial_load_path
     config.num_steps = args.num_steps
     config.text_only = args.text_only
     config.llava_json_path = args.llava_json

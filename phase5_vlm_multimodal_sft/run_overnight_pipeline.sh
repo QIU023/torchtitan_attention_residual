@@ -295,17 +295,43 @@ launch_grpo() {
     check_deadline
     log "step 6: launch GRPO multimodal smoke"
     cd "${WORKSPACE_DIR}"
-    PYTHONPATH="${WORKSPACE_DIR}:${WORKSPACE_DIR}/torchtitan${PYTHONPATH:+:${PYTHONPATH}}" \
+    # Env vars (see phase11_rlhf_grpo_infra/rlhf/run_grpo_kimi_attnres_with_trace.sh):
+    #  * SGLANG_DISABLE_SHM_MM=1 — inline-pickle multimodal payloads to
+    #    avoid the monarch-lifecycle SHM race (sglang's MMItem __setstate__
+    #    re-attaches to a SharedMemory object that has already been unlinked
+    #    by the sender's GC → ``FileNotFoundError: /psm_XXXX`` in the TP0
+    #    scheduler, which crashes the generator mesh, which makes the
+    #    trainer's TCPStore peer disappear → cascade).
+    #  * ATTNRES_MLA_FP32_FALLBACK=1 + decode_attention_backend=torch_native —
+    #    AttnRes flashinfer_mla bf16 NaNs on large prefill activations.
+    #  * SGLANG_FP8_IGNORED_LAYERS — defensive, no fp8 in this run.
+    # The default DCP ckpt for trainer init is the same stage-2 SFT step
+    # that produced HF_OUT (so trainer + generator start from the same
+    # weights). Without this the trainer is random-init and step-1
+    # push_model_state_dict overwrites the generator's good weights with
+    # garbage.
+    export SGLANG_DISABLE_SHM_MM=1
+    export ATTNRES_MLA_FP32_FALLBACK=1
+    export SGLANG_FP8_IGNORED_LAYERS="attn_res_proj,mlp_res_proj,final_attn_res_proj,mlp.experts"
+    local _grpo_dcp="${GRPO_DCP_CKPT:-${STAGE2_OUT}/checkpoint/step-5200}"
+    if [[ ! -d "${_grpo_dcp}" ]]; then
+        log "WARN: GRPO_DCP_CKPT=${_grpo_dcp} not found; trainer will run on random init"
+        _grpo_dcp=""
+    else
+        log "GRPO trainer DCP init: ${_grpo_dcp}"
+    fi
     # Bumped 30 → ${GRPO_NUM_STEPS:-400} for overnight thorough run. Orchestrator
     # deadline (DEADLINE_HOURS) will kill if it exceeds budget.
     # Default GRPO task expects LLaVA-Pretrain caption JSON. We have mix665k
     # Instruct on disk (schema-compatible: image + conversations[from=gpt]).
     # First gpt response serves as the "gold caption" for the reward model.
+    PYTHONPATH="${WORKSPACE_DIR}:${WORKSPACE_DIR}/torchtitan${PYTHONPATH:+:${PYTHONPATH}}" \
     /usr/bin/python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py \
         --model-path "${HF_OUT}" \
         --num-steps "${GRPO_NUM_STEPS:-400}" \
         --llava-json "${GRPO_JSON:-/workspace/.hf_home/LLaVA-Instruct/llava_v1_5_mix665k.json}" \
         --llava-images "${GRPO_IMAGES:-/workspace/.hf_home/LLaVA-Instruct/images}" \
+        ${_grpo_dcp:+--dcp-initial-load-path "${_grpo_dcp}"} \
         > "${LOG_DIR}/grpo.log" 2>&1
     local rc=$?
     if (( rc != 0 )); then
