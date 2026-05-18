@@ -25,7 +25,7 @@ except ImportError:
     sys.exit(1)
 
 
-PHASE3 = Path("/workspace/torchtitan_attention_residual/phase3")
+PHASE3 = Path("/workspace/torchtitan_attention_residual/phase3_attnres_pp_integration")
 REPORT = PHASE3 / "PRESSURE_TEST_REPORT_2026-05-12.md"
 MARK_BEGIN = "<!-- AUTO-GEN BEGIN kimi48b -->"
 MARK_END = "<!-- AUTO-GEN END kimi48b -->"
@@ -48,6 +48,17 @@ def extract_stats(tb_dir: Path) -> dict | None:
     tps = acc.Scalars("throughput(tps)") if "throughput(tps)" in tags else []
     if not losses:
         return None
+    # tps @ step 250 (steady-state benchmark step for adapter-vs-naive comparison);
+    # fall back to the closest available step within ±10 if 250 wasn't logged.
+    tps_at_250 = None
+    if tps:
+        exact = [e for e in tps if e.step == 250]
+        if exact:
+            tps_at_250 = exact[0].value
+        else:
+            near = [e for e in tps if 240 <= e.step <= 260]
+            if near:
+                tps_at_250 = sum(e.value for e in near) / len(near)
     return {
         "n_steps_logged": len(losses),
         "last_step": losses[-1].step,
@@ -57,6 +68,7 @@ def extract_stats(tb_dir: Path) -> dict | None:
         "last_grad": grads[-1].value if grads else None,
         "mem_peak_gib": max(m.value for m in mems) if mems else None,
         "tps_steady": tps[-1].value if tps else None,
+        "tps_at_250": tps_at_250,
     }
 
 
@@ -89,22 +101,23 @@ def render_section(stats_per_run: list[tuple[str, dict | None]]) -> str:
     lines.append("uniform init). FSDP+EP=8 + PP=8 + seq_len=1024. dim=1280.")
     lines.append("Each row = one run; data from TensorBoard event files.")
     lines.append("")
-    lines.append("| run | last step | step 1 loss | final loss | step 1 grad | final grad | mem peak (GiB) |")
-    lines.append("|---|---|---|---|---|---|---|")
+    lines.append("| run | last step | step 1 loss | final loss | step 1 grad | final grad | mem peak (GiB) | tps @ step 250 |")
+    lines.append("|---|---|---|---|---|---|---|---|")
     for label, st in stats_per_run:
         if st is None:
-            lines.append(f"| `{label}` | — | (no TB data) | | | | |")
+            lines.append(f"| `{label}` | — | (no TB data) | | | | | |")
             continue
         if "error" in st:
-            lines.append(f"| `{label}` | error: {st['error'][:40]} | | | | | |")
+            lines.append(f"| `{label}` | error: {st['error'][:40]} | | | | | | |")
             continue
         s1l = f"{st['step1_loss']:.3f}" if st['step1_loss'] is not None else "—"
         lol = f"{st['last_loss']:.3f}" if st['last_loss'] is not None else "—"
         s1g = f"{st['step1_grad']:.2e}" if st['step1_grad'] is not None else "—"
         log = f"{st['last_grad']:.2e}" if st['last_grad'] is not None else "—"
         mem = f"{st['mem_peak_gib']:.2f}" if st['mem_peak_gib'] is not None else "—"
+        tps250 = f"{st['tps_at_250']:.0f}" if st.get('tps_at_250') is not None else "—"
         lines.append(
-            f"| `{label}` | {st['last_step']} | {s1l} | **{lol}** | {s1g} | {log} | {mem} |"
+            f"| `{label}` | {st['last_step']} | {s1l} | **{lol}** | {s1g} | {log} | {mem} | {tps250} |"
         )
     lines.append("")
     lines.append("**Reading**: paper-aligned Block AttnRes (N matches paper 3 t-blocks/")

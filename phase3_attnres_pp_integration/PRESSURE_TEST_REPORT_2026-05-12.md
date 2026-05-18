@@ -118,15 +118,15 @@ All Kimi paper architecture (KDA + MLA + MoE + Block AttnRes,
 uniform init). FSDP+EP=8 + PP=8 + seq_len=1024. dim=1280.
 Each row = one run; data from TensorBoard event files.
 
-| run | last step | step 1 loss | final loss | step 1 grad | final grad | mem peak (GiB) |
-|---|---|---|---|---|---|---|
-| `kimi48b_d1280_e32_L24N8_pp8vp3_adapter_20260512-090624` | — | (no TB data) | | | | |
-| `kimi48b_d1280_e32_L24N8_pp8vp3_adapter_20260512-091100` | 300 | 12.262 | **6.226** | 1.47e+05 | 1.83e+04 | 25.29 |
-| `kimi48b_d1280_e32_L24N8_pp8vp3_naive_20260512-094946` | 300 | 12.257 | **6.187** | 1.45e+05 | 1.75e+04 | 25.33 |
-| `kimi48b_d1280_e32_L32N8_pp8vp4_adapter_20260512-092719` | 1 | 12.257 | **12.257** | 2.13e+05 | 2.13e+05 | 26.15 |
-| `kimi48b_d1280_e16_L32N8_pp8vp4_adapter_20260512-093021` | 300 | 12.259 | **5.970** | 2.12e+05 | 3.46e+04 | 24.76 |
-| `kimi48b_d1280_e16_L32N8_pp8vp4_naive_20260512-100309` | 300 | 12.262 | **5.959** | 2.12e+05 | 4.56e+04 | 27.93 |
-| `pressure_test_20260512-034748_L16fill` | 1000 | 11.762 | **4.987** | 2.71e+17 | 4.70e+04 | 8.20 |
+| run | last step | step 1 loss | final loss | step 1 grad | final grad | mem peak (GiB) | tps @ step 250 |
+|---|---|---|---|---|---|---|---|
+| `kimi48b_d1280_e32_L24N8_pp8vp3_adapter_20260512-090624` | — | (no TB data) | | | | | |
+| `kimi48b_d1280_e32_L24N8_pp8vp3_adapter_20260512-091100` | 300 | 12.262 | **6.226** | 1.47e+05 | 1.83e+04 | 25.29 | 1189 |
+| `kimi48b_d1280_e32_L24N8_pp8vp3_naive_20260512-094946` | 300 | 12.257 | **6.187** | 1.45e+05 | 1.75e+04 | 25.33 | 1192 |
+| `kimi48b_d1280_e32_L32N8_pp8vp4_adapter_20260512-092719` | 1 | 12.257 | **12.257** | 2.13e+05 | 2.13e+05 | 26.15 | — |
+| `kimi48b_d1280_e16_L32N8_pp8vp4_adapter_20260512-093021` | 300 | 12.259 | **5.970** | 2.12e+05 | 3.46e+04 | 24.76 | 1101 |
+| `kimi48b_d1280_e16_L32N8_pp8vp4_naive_20260512-100309` | 300 | 12.262 | **5.959** | 2.12e+05 | 4.56e+04 | 27.93 | 1072 |
+| `pressure_test_20260512-034748_L16fill` | 1000 | 11.762 | **4.987** | 2.71e+17 | 4.70e+04 | 8.20 | 4638 |
 
 **Reading**: paper-aligned Block AttnRes (N matches paper 3 t-blocks/
 AttnRes-block sweet spot ratio) on kimi_linear backbone trains
