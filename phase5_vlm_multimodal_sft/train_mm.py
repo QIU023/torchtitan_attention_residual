@@ -95,6 +95,11 @@ def _parse_mm_args() -> argparse.Namespace:
                    help="Fixed sequence length for collate (PP P2P shape "
                         "stability). Default 258 = 196 vision + 1 bos + 60 "
                         "caption + 1 eos.")
+    p.add_argument("--mm.text-len", dest="mm_text_len",
+                   type=int, default=0,
+                   help="Text-budget tokens for sft-layout (LlavaInstructSFTDataset). "
+                        "Total seq = 196 vision + text_len. 0 = use dataset default "
+                        "(384). Set to 828 for seq=1024, 1852 for seq=2048.")
     p.add_argument("--mm.layout", dest="mm_layout", default="prefix",
                    choices=("prefix", "interior", "random", "sft"),
                    help="Image-token layout policy in input_ids. "
@@ -139,13 +144,17 @@ class MultimodalTrainer(Trainer):
                  val_samples: int = 512,
                  val_freq: int = 50,
                  val_batches: int = 24,
-                 freeze_lm: bool = False):
+                 freeze_lm: bool = False,
+                 text_len: int = 0):
         super().__init__(config)
         self._mm_layout = layout
         self._val_samples = val_samples
         self._val_freq = val_freq
         self._val_batches = val_batches
         self._freeze_lm = freeze_lm
+        # text_len > 0 overrides LlavaInstructSFTDataset's default (384).
+        # Total seq_len = 196 vision + text_len.
+        self._mm_text_len = text_len
 
         # Stage-1 LLaVA recipe: freeze ALL LM params so only the MLP
         # projector trains (vision tower is already frozen above the
@@ -563,14 +572,19 @@ class MultimodalTrainer(Trainer):
         """
         k = self._mm_ds_kwargs
         if self._mm_layout == "sft":
-            from phase9_post_training_ppo_trace.multimodal_sft_dataset import LlavaInstructSFTDataset
+            from phase9_post_training_ppo_trace.multimodal_sft_dataset import (
+                LlavaInstructSFTDataset, GLOBAL_SFT_TEXT_LEN_DEFAULT,
+            )
+            sft_kwargs = dict(k)
+            if self._mm_text_len > 0:
+                sft_kwargs["text_len"] = self._mm_text_len
             ds = LlavaInstructSFTDataset(
                 tokenizer=self.mm_tokenizer,
                 image_processor=self.image_processor,
                 split=split,
                 val_samples=self._val_samples,
                 infinite=infinite,
-                **k,
+                **sft_kwargs,
             )
             logger.info(
                 f"mm: dataset = LlavaInstructSFTDataset (sft layout, split={split}, "
@@ -854,6 +868,7 @@ def main():
         val_freq=mm_args.mm_val_freq,
         val_batches=mm_args.mm_val_batches,
         freeze_lm=mm_args.mm_freeze_lm,
+        text_len=mm_args.mm_text_len,
     )
     trainer.train()
     if torch.distributed.is_initialized():
