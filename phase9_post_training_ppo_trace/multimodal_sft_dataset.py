@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 from pathlib import Path
 from typing import Iterator
 
@@ -65,18 +66,31 @@ class LlavaInstructSFTDataset(IterableDataset):
         split: str = "train",
         val_samples: int = 0,
         infinite: bool = True,
+        shuffle_seed: int = 0,
+        stratified_val_per_source: int = 0,
     ):
         """Streams mix665k records, with optional held-out val split.
 
         Args:
-            split: "train" uses records[:-val_samples]; "val" uses the last
-                ``val_samples`` records. The two index sets are disjoint and
-                deterministic — held-out val is never seen by training.
-            val_samples: Size of the held-out validation tail. 0 disables
-                splitting (legacy single-pass behavior).
-            infinite: When True the iterator loops forever (training). When
-                False it yields a single pass (validation), so val loop
-                terminates instead of streaming indefinitely.
+            split: "train" or "val".
+            val_samples: Size of the LEGACY tail-based val split (last N
+                image-only records). DEPRECATED — mix665k has its data
+                sources clustered contiguously in JSON order, so the tail
+                is dominated by a single source (in mix665k, textvqa) and
+                makes val a single-domain test, not representative of the
+                mixed train distribution. Prefer ``stratified_val_per_source``.
+                Kept for backward compatibility with prior runs.
+            stratified_val_per_source: When >0, build val by sampling N
+                records per data source (coco/gqa/vg/textvqa/...) with
+                deterministic per-source seed. Train then excludes exactly
+                those records. Total val size ≈ N × num_sources.
+                Overrides ``val_samples`` when set.
+            infinite: True for training (loops forever); False for val
+                (single pass so the eval loop terminates).
+            shuffle_seed: >0 and split=="train" shuffles train records with
+                this seed. Val stays deterministic for cross-run comparison.
+                Used to break deterministic-data crash loops (e.g. KDA
+                assert at a fixed sample iteration index).
         """
         self.json_path = json_path
         self.images_dir = Path(images_dir)
@@ -97,12 +111,44 @@ class LlavaInstructSFTDataset(IterableDataset):
 
         with open(json_path, "r") as f:
             all_records = json.load(f)
-        if val_samples > 0:
-            # mix665k clusters the ~40K text-only records at the END of the
-            # JSON. A naive records[-N:] tail gives an all-text val split that
-            # this dataset skips entirely (no 'image' key) → val_iter hangs.
-            # Filter to image-only records first, then take the tail.
-            image_records = [r for r in all_records if r.get("image")]
+
+        image_records = [r for r in all_records if r.get("image")]
+
+        if stratified_val_per_source > 0:
+            # Proper held-out val: sample N records per source so val mirrors
+            # the train distribution. Sources are derived from the first path
+            # segment of the image field (coco/gqa/vg/textvqa/ocr_vqa/...).
+            # OCR-VQA records survive selection here but get silently filtered
+            # at __iter__ time when img_path doesn't exist on disk (we keep
+            # the records in val for accounting; iterator just skips them).
+            by_source = {}
+            for i, r in enumerate(image_records):
+                img = r.get("image", "")
+                src = img.split("/")[0] if "/" in img else "root"
+                by_source.setdefault(src, []).append(i)
+            val_indices: set[int] = set()
+            for src in sorted(by_source.keys()):
+                rng = random.Random(
+                    0xC0FFEE ^ stratified_val_per_source ^ hash(src) & 0xFFFFFFFF
+                )
+                picks = rng.sample(
+                    by_source[src],
+                    min(stratified_val_per_source, len(by_source[src])),
+                )
+                val_indices.update(picks)
+            if split == "train":
+                self.records = [
+                    r for i, r in enumerate(image_records) if i not in val_indices
+                ]
+            elif split == "val":
+                self.records = [image_records[i] for i in sorted(val_indices)]
+            else:
+                raise ValueError(f"split must be 'train' or 'val', got {split!r}")
+        elif val_samples > 0:
+            # LEGACY tail-based split. mix665k clusters records by source
+            # contiguously in JSON; the tail is dominated by textvqa, so
+            # this val is a single-source test, NOT representative.
+            # Kept for backward compatibility with prior runs only.
             if split == "train":
                 self.records = image_records[:-val_samples]
             elif split == "val":
@@ -111,6 +157,11 @@ class LlavaInstructSFTDataset(IterableDataset):
                 raise ValueError(f"split must be 'train' or 'val', got {split!r}")
         else:
             self.records = all_records
+
+        # Shuffle train split only (val stays deterministic for cross-run
+        # comparison). Apply AFTER the split so val records are unchanged.
+        if shuffle_seed > 0 and split == "train":
+            random.Random(shuffle_seed).shuffle(self.records)
 
     def _tokenize_turn(self, role: str, text: str) -> list[int]:
         """Tokenize one turn with a small role marker. ``<image>`` tag

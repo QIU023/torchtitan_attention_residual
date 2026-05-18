@@ -38,7 +38,8 @@ NGPU="${NGPU:-8}"
 LOCAL_BS="${LOCAL_BS:-8}"
 GLOBAL_BS="${GLOBAL_BS:-64}"
 SEQ_LEN="${SEQ_LEN:-580}"
-VAL_SAMPLES="${VAL_SAMPLES:-512}"
+VAL_SAMPLES="${VAL_SAMPLES:-0}"
+VAL_STRAT_PER_SOURCE="${VAL_STRAT_PER_SOURCE:-64}"  # ~5 sources × 64 = ~320 records
 VAL_BATCHES="${VAL_BATCHES:-32}"   # more batches for a tighter eval
 
 # Use a TEMP dump folder so we don't clobber the source ckpt dir's state file
@@ -70,6 +71,7 @@ exec /usr/local/bin/torchrun \
     --mm.global-seq-len "${SEQ_LEN}" \
     --mm.layout sft \
     --mm.val-samples "${VAL_SAMPLES}" \
+    --mm.val-stratified-per-source "${VAL_STRAT_PER_SOURCE}" \
     --mm.val-freq 1 \
     --mm.val-batches "${VAL_BATCHES}" \
     --module kimi_linear --config "${STUDENT_CONFIG}" \

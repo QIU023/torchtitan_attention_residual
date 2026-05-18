@@ -124,6 +124,23 @@ def _parse_mm_args() -> argparse.Namespace:
     p.add_argument("--mm.freeze-lm", dest="mm_freeze_lm", action="store_true",
                    help="Freeze LM params (only train MLP projector). "
                         "Stage-1 LLaVA recipe: alignment-only training.")
+    p.add_argument("--mm.shuffle-seed", dest="mm_shuffle_seed", type=int,
+                   default=0,
+                   help="Train-split shuffle seed for LlavaInstructSFTDataset. "
+                        "0 (default): no shuffle (deterministic stride). "
+                        ">0: shuffle train records with this seed. Val split "
+                        "stays deterministic so eval is comparable. Use to "
+                        "rotate data ordering across retries when a specific "
+                        "sample triggers a deterministic crash at a fixed "
+                        "training step (e.g. KDA chunk-state assert).")
+    p.add_argument("--mm.val-stratified-per-source", dest="mm_val_strat",
+                   type=int, default=0,
+                   help="When >0, build val by sampling N records per data "
+                        "source (coco/gqa/vg/textvqa/...) for a representative "
+                        "held-out set. Total val size ≈ N × num_sources. "
+                        "Overrides --mm.val-samples (which is the legacy "
+                        "single-domain tail split). Recommended for any new "
+                        "run on multi-source datasets like mix665k.")
     args, remaining = p.parse_known_args()
     sys.argv = [sys.argv[0]] + remaining
     return args
@@ -145,7 +162,9 @@ class MultimodalTrainer(Trainer):
                  val_freq: int = 50,
                  val_batches: int = 24,
                  freeze_lm: bool = False,
-                 text_len: int = 0):
+                 text_len: int = 0,
+                 shuffle_seed: int = 0,
+                 val_stratified_per_source: int = 0):
         super().__init__(config)
         self._mm_layout = layout
         self._val_samples = val_samples
@@ -155,6 +174,12 @@ class MultimodalTrainer(Trainer):
         # text_len > 0 overrides LlavaInstructSFTDataset's default (384).
         # Total seq_len = 196 vision + text_len.
         self._mm_text_len = text_len
+        # shuffle_seed > 0 applies only to sft-layout train split; val stays
+        # deterministic. Used to break deterministic-data crash loops.
+        self._mm_shuffle_seed = shuffle_seed
+        # val_stratified_per_source > 0 overrides legacy tail-based val split.
+        # Picks N records per source so val is representative of mixed train.
+        self._mm_val_strat = val_stratified_per_source
 
         # Stage-1 LLaVA recipe: freeze ALL LM params so only the MLP
         # projector trains (vision tower is already frozen above the
@@ -584,11 +609,15 @@ class MultimodalTrainer(Trainer):
                 split=split,
                 val_samples=self._val_samples,
                 infinite=infinite,
+                shuffle_seed=self._mm_shuffle_seed,
+                stratified_val_per_source=self._mm_val_strat,
                 **sft_kwargs,
             )
             logger.info(
                 f"mm: dataset = LlavaInstructSFTDataset (sft layout, split={split}, "
-                f"val_samples={self._val_samples})"
+                f"val_samples={self._val_samples}, "
+                f"stratified_val_per_source={self._mm_val_strat}, "
+                f"shuffle_seed={self._mm_shuffle_seed}, N={len(ds.records):,})"
             )
         elif self._mm_layout == "prefix":
             ds = LlavaPretrainDataset(
@@ -869,6 +898,8 @@ def main():
         val_batches=mm_args.mm_val_batches,
         freeze_lm=mm_args.mm_freeze_lm,
         text_len=mm_args.mm_text_len,
+        shuffle_seed=mm_args.mm_shuffle_seed,
+        val_stratified_per_source=mm_args.mm_val_strat,
     )
     trainer.train()
     if torch.distributed.is_initialized():

@@ -16,6 +16,19 @@
 #   - --mm.global-seq-len 580              196 vision + 384 text (dataset default)
 #   - --checkpoint.initial_load_path STAGE1_CKPT (carries projector forward)
 #
+# Evaluation methodology (paper-aligned):
+#   LLaVA-1.5 stage 2 does NOT use in-training val_loss. The standard is:
+#     1. Train on FULL mix665k (no carve-out)
+#     2. After training, run downstream benchmark eval suite:
+#        VQAv2 test-dev, GQA test-dev-balanced, TextVQA val, POPE,
+#        ScienceQA-IMG, MMBench, MM-Vet, LLaVA-Bench-Wild, MMMU
+#   We follow this. Defaults: VAL_SAMPLES=0, VAL_STRAT_PER_SOURCE=0,
+#   VAL_FREQ=0 (no val in training). The val machinery in train_mm.py is
+#   kept for optional debugging only (set VAL_STRAT_PER_SOURCE=64 +
+#   VAL_FREQ=200 if you want a tiny in-training health probe — it does
+#   NOT reflect benchmark quality).
+#   See: phase5_vlm_multimodal_sft/eval_benchmarks/ (TODO: pipeline pending).
+#
 # Expected wall clock: ~3-5h on 8×5090 (665K samples, multi-turn, gbs128).
 #
 # Prereqs:
@@ -97,9 +110,11 @@ exec /usr/local/bin/torchrun \
     --mm.global-seq-len "${SEQ_LEN}" \
     --mm.layout sft \
     --mm.text-len "${TEXT_LEN}" \
-    --mm.val-samples ${VAL_SAMPLES:-512} \
-    --mm.val-freq ${VAL_FREQ:-200} \
-    --mm.val-batches ${VAL_BATCHES:-16} \
+    --mm.val-samples ${VAL_SAMPLES:-0} \
+    --mm.val-stratified-per-source ${VAL_STRAT_PER_SOURCE:-0} \
+    --mm.val-freq ${VAL_FREQ:-0} \
+    --mm.val-batches ${VAL_BATCHES:-0} \
+    --mm.shuffle-seed ${MM_SHUFFLE_SEED:-0} \
     --module kimi_linear --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \

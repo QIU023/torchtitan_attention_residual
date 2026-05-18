@@ -200,10 +200,17 @@ run_stage2() {
         attempt=$((attempt + 1))
         check_deadline
         check_disk 18
-        log "stage 2 attempt ${attempt}/${STAGE2_MAX_ATTEMPTS} (latest stage2 ckpt: $(latest_ckpt "${STAGE2_OUT}"))"
+        # Rotate train-split shuffle seed per attempt so a deterministic
+        # data-driven crash (e.g. KDA assert at a fixed step caused by a
+        # specific mix665k sample at that iteration index) does NOT recur
+        # forever. Seed 0 = no shuffle; we start at 1 so even attempt 1
+        # differs from the original deterministic order tested in v2.
+        log "stage 2 attempt ${attempt}/${STAGE2_MAX_ATTEMPTS} (latest stage2 ckpt: $(latest_ckpt "${STAGE2_OUT}"), MM_SHUFFLE_SEED=${attempt})"
         STAGE1_CKPT="${s1_ckpt}" \
         STUDENT_CONFIG="${CONFIG_NAME}" \
         OUT_DIR="${STAGE2_OUT}" \
+        MM_SHUFFLE_SEED="${attempt}" \
+        SAVE_FREQ="${STAGE2_SAVE_FREQ:-200}" \
         bash "${SCRIPT_DIR}/launch_stage2.sh" > "${LOG_DIR}/stage2_attempt${attempt}.log" 2>&1
         local rc=$?
         if (( rc == 0 )); then
