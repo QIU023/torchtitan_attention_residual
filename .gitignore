@@ -127,6 +127,31 @@ phase10/hf_ckpt_*/
 Thumbs.db
 phase5_distillation_deprecated/miniplm/scored/
 
+# 2026-05-19: phase dirs were renamed from phase{2,3,4,5}/ to long suffix
+# names (phase2_attnres_baseline_loss, phase3_attnres_pp_integration,
+# phase4_kimi_attnres_lm_pretrain, phase5_vlm_multimodal_sft). Old patterns
+# above (phase3/runs/**, etc.) no longer match. Mirror the same rules for
+# the new dir names. Keep precious stage 0/1/2 ckpts via path-specific
+# allow-list below.
+phase2_attnres_baseline_loss/runs/**/tb/
+phase2_attnres_baseline_loss/runs/**/checkpoint/
+phase2_attnres_baseline_loss/runs/**/comm_traces/
+
+phase3_attnres_pp_integration/runs/**/tb/
+phase3_attnres_pp_integration/runs/**/checkpoint/
+phase3_attnres_pp_integration/runs/**/comm_traces/
+
+phase4_kimi_attnres_lm_pretrain/runs/
+phase5_vlm_multimodal_sft/runs/
+phase5_vlm_multimodal_sft/eval_benchmarks/runs/
+
+# Whitelist the headline train logs from old phase{3,4} runs (matches the
+# old patterns' allow-list spirit). Stage 0/1/2 ckpts themselves are NOT
+# whitelisted — they're huge and ignored by the umbrella rule above.
+!phase3_attnres_pp_integration/runs/**/train.log
+!phase4_kimi_attnres_lm_pretrain/runs/**/train.log
+!phase5_vlm_multimodal_sft/runs/**/train.log
+
 # Phase 11: random-init dummy HF checkpoints (large, regenerable)
 phase11/hf_*/
 phase11/__pycache__/
