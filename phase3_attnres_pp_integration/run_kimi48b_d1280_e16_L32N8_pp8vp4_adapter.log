@@ -1,0 +1,175 @@
+===============================================================
+[Tue May 12 09:30:21 AM UTC 2026] kimi 48B-layout d1280 e16 L32 N8 PP=8 VP=4 adapter START
+===============================================================
+W0512 09:30:22.388000 41860 torch/distributed/run.py:851] 
+W0512 09:30:22.388000 41860 torch/distributed/run.py:851] *****************************************
+W0512 09:30:22.388000 41860 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0512 09:30:22.388000 41860 torch/distributed/run.py:851] *****************************************
+[rank7]:[titan] 2026-05-12 09:30:27,725 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank7]:[titan] 2026-05-12 09:30:28,969 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank7]:[titan] 2026-05-12 09:30:28,971 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank7]:[titan] 2026-05-12 09:30:29,494 - root - INFO - Building device mesh with parallelism: pp=8, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+[rank7]:[titan] 2026-05-12 09:30:29,507 - root - INFO - Successfully created meshes with active dimensions: ['pp']
+[rank7]:[titan] 2026-05-12 09:30:29,508 - root - INFO - Loading tokenizer from tokenizer.json
+[rank7]:[titan] 2026-05-12 09:30:29,763 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank7]:[titan] 2026-05-12 09:30:30,125 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank7]:[titan] 2026-05-12 09:30:30,177 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank7]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-12 09:30:30,347 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-12 09:30:30,348 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank7]:[titan] 2026-05-12 09:30:30,882 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-12 09:30:31,313 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:31,865 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-12 09:30:32,215 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:32,437 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:32,779 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:32,951 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:33,295 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank7]:[titan] 2026-05-12 09:30:33,433 - root - INFO - Building kimi_linear kimi_linear_48b_attnres_e16_d1280_L32_N8 with {
+[rank7]:  "vocab_size": 163840,
+[rank7]:  "hidden_size": 1280,
+[rank7]:  "tie_word_embeddings": false,
+[rank7]:  "num_hidden_layers": 32,
+[rank7]:  "intermediate_size": 5120,
+[rank7]:  "num_attention_heads": 32,
+[rank7]:  "num_key_value_heads": 32,
+[rank7]:  "q_lora_rank": null,
+[rank7]:  "kv_lora_rank": 640,
+[rank7]:  "qk_nope_head_dim": 32,
+[rank7]:  "qk_rope_head_dim": 16,
+[rank7]:  "v_head_dim": 32,
+[rank7]:  "mla_use_nope": true,
+[rank7]:  "rope_theta": 10000.0,
+[rank7]:  "kda_num_heads": 32,
+[rank7]:  "kda_head_dim": 32,
+[rank7]:  "kda_short_conv_kernel_size": 4,
+[rank7]:  "kda_layers": [
+[rank7]:    1,
+[rank7]:    2,
+[rank7]:    3,
+[rank7]:    5,
+[rank7]:    6,
+[rank7]:    7,
+[rank7]:    9,
+[rank7]:    10,
+[rank7]:    11,
+[rank7]:    13,
+[rank7]:    14,
+[rank7]:    15,
+[rank7]:    17,
+[rank7]:    18,
+[rank7]:    19,
+[rank7]:    21,
+[rank7]:    22,
+[rank7]:    23,
+[rank7]:    25,
+[rank7]:    26,
+[rank7]:    27,
+[rank7]:    29,
+[rank7]:    30,
+[rank7]:    31
+[rank7]:  ],
+[rank7]:  "full_attn_layers": [
+[rank7]:    4,
+[rank7]:    8,
+[rank7]:    12,
+[rank7]:    16,
+[rank7]:    20,
+[rank7]:    24,
+[rank7]:    28,
+[rank7]:    32
+[rank7]:  ],
+[rank7]:  "num_experts": 16,
+[rank7]:  "num_experts_per_token": 8,
+[rank7]:  "moe_intermediate_size": 1024,
+[rank7]:  "moe_renormalize": true,
+[rank7]:  "moe_router_activation_func": "sigmoid",
+[rank7]:  "num_shared_experts": 1,
+[rank7]:  "routed_scaling_factor": 2.446,
+[rank7]:  "first_k_dense_replace": 1,
+[rank7]:  "moe_layer_freq": 1,
+[rank7]:  "use_grouped_topk": true,
+[rank7]:  "num_expert_group": 1,
+[rank7]:  "topk_group": 1,
+[rank7]:  "rms_norm_eps": 1e-05,
+[rank7]:  "hidden_act": "silu",
+[rank7]:  "initializer_range": 0.02,
+[rank7]:  "__spec__": {
+[rank7]:    "num_blocks": 8,
+[rank7]:    "model_class": "KimiLinearAttnResModel"
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-12 09:30:33,482 - root - INFO - TensorBoard logging enabled. Logs will be saved at /workspace/torchtitan_attention_residual/phase3/runs/kimi48b_d1280_e16_L32N8_pp8vp4_adapter_20260512-093021/tb/20260512-0930
+[rank7]:[titan] 2026-05-12 09:30:33,483 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-12 09:30:33,484 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 09:30:33,484 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 09:30:33,485 - root - INFO - [34mModel kimi_linear kimi_linear_48b_attnres_e16_d1280_L32_N8 [31msize: 2,686,318,848 total parameters[39m
+[rank7]:[titan] 2026-05-12 09:30:33,529 - root - INFO - PP rank 7 is building stage_idx 7 with modules ['layers.7']
+[rank7]:[titan] 2026-05-12 09:30:33,570 - root - INFO - PP rank 7 is building stage_idx 15 with modules ['layers.15']
+[rank7]:[titan] 2026-05-12 09:30:33,610 - root - INFO - PP rank 7 is building stage_idx 23 with modules ['layers.23']
+[rank7]:[titan] 2026-05-12 09:30:33,651 - root - INFO - PP rank 7 is building stage_idx 31 with modules ['layers.31', 'norm', 'lm_head', 'final_attn_res_proj', 'final_attn_res_norm']
+[rank7]:[titan] 2026-05-12 09:30:33,665 - root - INFO - Using pipeline schedule Interleaved1F1B with 32 microbatches and 32 stages.
+[rank7]:[titan] 2026-05-12 09:30:33,683 - root - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 7[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank7]:[titan] 2026-05-12 09:30:33,684 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 09:30:33,684 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 09:30:33,684 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-12 09:30:33,684 - root - INFO - CUDA memory usage for model: 1.88GiB(5.99%)
+[rank7]:[titan] 2026-05-12 09:30:33,685 - root - WARNING - Warmup steps (500) exceed total steps (300). Adjusting warmup steps to 300.
+[rank7]:[titan] 2026-05-12 09:30:33,685 - root - WARNING - Warmup (300) + decay (240) steps exceed total steps (300). Adjusting decay steps to 0.
+[rank7]:[titan] 2026-05-12 09:30:33,688 - root - INFO - Trainer is initialized with local batch size 32, global batch size 32, gradient accumulation steps 1, sequence length 1024, total steps 300 (warmup 500)
+[rank7]:[titan] 2026-05-12 09:30:33,689 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-12 09:30:33,905 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:34,285 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:34,580 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 09:30:34,759 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 09:30:34,971 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T093034Z&X-Amz-Expires=3600&X-Amz-Signature=8e040e13b4f930e07bca530cddbcbc452651ee0534c5a24f8396778c0c5389f4&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778581834&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU4MTgzNH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=Fk%7EFbdFq7KHohLAimHIM0dman1RY0MSawada3UJ6%7EStJzPo3m9y8%7Egv3-dUdrKq1dPWHWnZ8RFnNcLl%7EMOybRc3czpMl1G6cidquJ1tKCZ2kt%7EXFM5F0Un%7EYt-Tw71nfcjI8t-O26omlcjodPjzKKkaLLGnqb%7EkFbzy19GAke52KbD4ASvDFEBVhQIw3guwcFF2mrmBVDDw7ySBoKx3Mt8weiARsdB9yog5E0cHJUMPnSOn6mGGU5%7E1OCrWPdXXP7l0wkdAg0zb7HMZyDpRZ3Y8cOScjJSa3PyKwx25tgZEmb3mwDqgxAsNzbTGrlpyNpP56NLCQg7MlzA9JpGv3%7Ew__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-12 09:30:48,724 - root - INFO - [31mstep:  1  [32mloss: 12.25927  [38;2;180;60;0mgrad_norm: 212098.4844  [38;2;54;234;195mmemory: 21.03GiB(67.07%)  [34mtps: 269  [36mtflops: 4.03  [35mmfu: 1.29%[39m
+[rank7]:[titan] 2026-05-12 09:30:48,724 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank7]:[titan] 2026-05-12 09:31:22,834 - root - INFO - [31mstep: 10  [32mloss: 12.13489  [38;2;180;60;0mgrad_norm: 214996.7188  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,081  [36mtflops: 16.20  [35mmfu: 5.19%[39m
+[rank7]:[titan] 2026-05-12 09:32:01,417 - root - INFO - [31mstep: 20  [32mloss: 10.18973  [38;2;180;60;0mgrad_norm: 94843.9688  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,062  [36mtflops: 15.91  [35mmfu: 5.10%[39m
+[rank7]:[titan] 2026-05-12 09:32:39,141 - root - INFO - [31mstep: 30  [32mloss:  9.02392  [38;2;180;60;0mgrad_norm: 49449.5312  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,086  [36mtflops: 16.27  [35mmfu: 5.22%[39m
+[rank7]:[titan] 2026-05-12 09:33:16,322 - root - INFO - [31mstep: 40  [32mloss:  8.12265  [38;2;180;60;0mgrad_norm: 29514.4648  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,102  [36mtflops: 16.51  [35mmfu: 5.29%[39m
+[rank7]:[titan] 2026-05-12 09:33:49,623 - root - INFO - [GC] Performing periodic GC collection took 0.02 seconds
+[rank7]:[titan] 2026-05-12 09:33:53,437 - root - INFO - [31mstep: 50  [32mloss:  7.78620  [38;2;180;60;0mgrad_norm: 18667.8848  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,104  [36mtflops: 16.54  [35mmfu: 5.30%[39m
+[rank7]:[titan] 2026-05-12 09:34:30,443 - root - INFO - [31mstep: 60  [32mloss:  7.90956  [38;2;180;60;0mgrad_norm: 20390.8496  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,107  [36mtflops: 16.59  [35mmfu: 5.32%[39m
+[rank7]:[titan] 2026-05-12 09:34:41,852 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 09:34:42,072 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T093441Z&X-Amz-Expires=3600&X-Amz-Signature=b0f4e47ab0f0b50777be7ef4fa7509b37a6273b7ab2aa8ff64d38bfbb0c63e25&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778582081&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU4MjA4MX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=egVczNLpU-O-Fl4hBkIT5SHBtEEk3xJSPL40lnPKkgwmAyRcrvlzZotKzL7ao18qTIfFIkrMXnOWLy-LmKQpEy4yw0N8AYEAHZUIJok-8K6rByXupJO4jLvVMjQFBQyA0Ek5HwXqDutVsCwe0WrYDJ6fviF3rxSNNxdSGXcHN5-VlgsOkdkN1j9tep9xYcjHjybnR0MqDKHlcDvq8WtUVKyKny6ZGF2W8nCwUEd5WXia%7Ec-U0nsMUg5UxS%7EJjRy6xkKKT2q7Wl%7EuXeSkr-lNqlydkyMAZzCHLUTel2wBnkEu7i5nIsd8V%7ELCd-K-xtPs%7EATnzlAp9YidXOl2fVh3Ww__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-12 09:35:08,265 - root - INFO - [31mstep: 70  [32mloss:  7.80497  [38;2;180;60;0mgrad_norm: 20718.3750  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,083  [36mtflops: 16.23  [35mmfu: 5.20%[39m
+[rank7]:[titan] 2026-05-12 09:35:44,804 - root - INFO - [31mstep: 80  [32mloss:  8.04395  [38;2;180;60;0mgrad_norm: 35820.8047  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,121  [36mtflops: 16.80  [35mmfu: 5.38%[39m
+[rank7]:[titan] 2026-05-12 09:36:21,317 - root - INFO - [31mstep: 90  [32mloss:  7.83031  [38;2;180;60;0mgrad_norm: 26122.5938  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,122  [36mtflops: 16.81  [35mmfu: 5.39%[39m
+[rank7]:[titan] 2026-05-12 09:36:54,202 - root - INFO - [GC] Performing periodic GC collection took 0.01 seconds
+[rank7]:[titan] 2026-05-12 09:36:57,977 - root - INFO - [31mstep: 100  [32mloss:  7.55457  [38;2;180;60;0mgrad_norm: 53037.5859  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,117  [36mtflops: 16.74  [35mmfu: 5.37%[39m
+[rank7]:[titan] 2026-05-12 09:37:34,647 - root - INFO - [31mstep: 110  [32mloss:  7.46348  [38;2;180;60;0mgrad_norm: 33597.4648  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,117  [36mtflops: 16.74  [35mmfu: 5.37%[39m
+[rank7]:[titan] 2026-05-12 09:38:11,523 - root - INFO - [31mstep: 120  [32mloss:  7.24118  [38;2;180;60;0mgrad_norm: 35761.0508  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,111  [36mtflops: 16.65  [35mmfu: 5.34%[39m
+[rank7]:[titan] 2026-05-12 09:38:37,774 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 09:38:37,982 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T093837Z&X-Amz-Expires=3600&X-Amz-Signature=10879582ec36427495c53f45f334425325f6d764b162cca543455cae0eecb2b1&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778582317&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU4MjMxN319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=Y9X%7ElXYSM2unv6Wolf6qOXC9V0Bi36vVdDSXPgEtuXEZCNMIo7mxfpaqJI%7ElxAgAhXv2UAoLRo%7EmUGPuWNsFo73TbzjXHbfwwmsbSzQuc8UF2I2d8scVGaeZQSiiJeNqyfkKIs6sdCPdZgIL4XncUXRLE2LUVpIr9NEQZQm3Bn0ytx2zVEfKtCfGrcZNfw%7E075FE3IfmxcnbkuHF9tODnTUT87EySltvVy5GVpKfb%7Epmuv-1UDaSSQBU%7ELHjYHPI16JrZ4QHGV8k%7EzP6mkfd-3NtGfEGN0rgSyVZi6XAsnN2WKXob56JYGQVZXroLdfja4RlS992mB6C4r1aUtlbYA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-12 09:38:49,897 - root - INFO - [31mstep: 130  [32mloss:  6.94112  [38;2;180;60;0mgrad_norm: 44642.7109  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,067  [36mtflops: 16.00  [35mmfu: 5.13%[39m
+[rank7]:[titan] 2026-05-12 09:39:26,397 - root - INFO - [31mstep: 140  [32mloss:  6.87416  [38;2;180;60;0mgrad_norm: 74112.4375  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,122  [36mtflops: 16.82  [35mmfu: 5.39%[39m
+[rank7]:[titan] 2026-05-12 09:39:59,057 - root - INFO - [GC] Performing periodic GC collection took 0.01 seconds
+[rank7]:[titan] 2026-05-12 09:40:02,796 - root - INFO - [31mstep: 150  [32mloss:  6.57959  [38;2;180;60;0mgrad_norm: 61589.0078  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,125  [36mtflops: 16.86  [35mmfu: 5.41%[39m
+[rank7]:[titan] 2026-05-12 09:40:39,469 - root - INFO - [31mstep: 160  [32mloss:  6.60986  [38;2;180;60;0mgrad_norm: 61139.1055  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,117  [36mtflops: 16.74  [35mmfu: 5.36%[39m
+[rank7]:[titan] 2026-05-12 09:41:15,637 - root - INFO - [31mstep: 170  [32mloss:  6.61122  [38;2;180;60;0mgrad_norm: 31125.1426  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,133  [36mtflops: 16.97  [35mmfu: 5.44%[39m
+[rank7]:[titan] 2026-05-12 09:41:52,225 - root - INFO - [31mstep: 180  [32mloss:  6.55453  [38;2;180;60;0mgrad_norm: 32833.2305  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,120  [36mtflops: 16.78  [35mmfu: 5.38%[39m
+[rank7]:[titan] 2026-05-12 09:42:28,989 - root - INFO - [31mstep: 190  [32mloss:  6.60627  [38;2;180;60;0mgrad_norm: 37942.6719  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,114  [36mtflops: 16.70  [35mmfu: 5.35%[39m
+[rank7]:[titan] 2026-05-12 09:42:36,708 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 09:42:36,924 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T094236Z&X-Amz-Expires=3600&X-Amz-Signature=48f2c8a2144095718a69630f7999a3ce3a68549685a4ac863d3c41be51c46f0c&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778582556&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU4MjU1Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=nXXsIibUzh%7ECjghgFJytf4edM0MWJIxK3Z4EVHfY%7ESqf2lnScXqVCUd6OlPcB%7EqSPgcBDqpr07pV4uD8rXJSi%7E3oEqQcBAaMrd1s1IyO2FAY3SvQLJRinu7nniHnr6k8TnRojVk0W34Jh7loDo%7Ea3eO5NiO7iDKHY4FvgRyfVHpkyhbFXQKPjzFluLUK9UB5Vfz6v9ms5ZGpZrLFt4M7-dScpMimm7x7AnseWzSWYnxmkpbcTqOTw6ahPn5jeQqvvD9RWh68moDIxXcfYKb9ounhjDZmw9yFE4lxalHy7WS%7EG01Za7-coktsBw14c2K2yPiX7t8Dx1bGqa7MEqPQGg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[titan] 2026-05-12 09:43:03,537 - root - INFO - [GC] Performing periodic GC collection took 0.01 seconds
+[rank7]:[titan] 2026-05-12 09:43:07,343 - root - INFO - [31mstep: 200  [32mloss:  6.51794  [38;2;180;60;0mgrad_norm: 34387.8242  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,068  [36mtflops: 16.01  [35mmfu: 5.13%[39m
+[rank7]:[titan] 2026-05-12 09:43:44,565 - root - INFO - [31mstep: 210  [32mloss:  6.51718  [38;2;180;60;0mgrad_norm: 33080.3008  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,100  [36mtflops: 16.49  [35mmfu: 5.29%[39m
+[rank7]:[titan] 2026-05-12 09:44:21,828 - root - INFO - [31mstep: 220  [32mloss:  6.36751  [38;2;180;60;0mgrad_norm: 40747.1484  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,099  [36mtflops: 16.47  [35mmfu: 5.28%[39m
+[rank7]:[titan] 2026-05-12 09:44:59,357 - root - INFO - [31mstep: 230  [32mloss:  6.32425  [38;2;180;60;0mgrad_norm: 40751.2227  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,092  [36mtflops: 16.36  [35mmfu: 5.24%[39m
+[rank7]:[titan] 2026-05-12 09:45:36,390 - root - INFO - [31mstep: 240  [32mloss:  6.49306  [38;2;180;60;0mgrad_norm: 28990.8418  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,106  [36mtflops: 16.58  [35mmfu: 5.31%[39m
+[rank7]:[titan] 2026-05-12 09:46:09,752 - root - INFO - [GC] Performing periodic GC collection took 0.01 seconds
+[rank7]:[titan] 2026-05-12 09:46:13,587 - root - INFO - [31mstep: 250  [32mloss:  6.40796  [38;2;180;60;0mgrad_norm: 32598.9648  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,101  [36mtflops: 16.50  [35mmfu: 5.29%[39m
+[rank7]:[titan] 2026-05-12 09:46:51,073 - root - INFO - [31mstep: 260  [32mloss:  6.38497  [38;2;180;60;0mgrad_norm: 25210.0684  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,093  [36mtflops: 16.38  [35mmfu: 5.25%[39m
+[rank7]:[titan] 2026-05-12 09:47:28,549 - root - INFO - [31mstep: 270  [32mloss:  6.15141  [38;2;180;60;0mgrad_norm: 29677.4883  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,093  [36mtflops: 16.38  [35mmfu: 5.25%[39m
+[rank7]:[titan] 2026-05-12 09:48:06,062 - root - INFO - [31mstep: 280  [32mloss:  6.11245  [38;2;180;60;0mgrad_norm: 25500.5684  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,092  [36mtflops: 16.36  [35mmfu: 5.24%[39m
+[rank7]:[titan] 2026-05-12 09:48:43,434 - root - INFO - [31mstep: 290  [32mloss:  6.01572  [38;2;180;60;0mgrad_norm: 32102.3340  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,096  [36mtflops: 16.43  [35mmfu: 5.26%[39m
+[rank7]:[titan] 2026-05-12 09:49:16,965 - root - INFO - [GC] Performing periodic GC collection took 0.01 seconds
+[rank7]:[titan] 2026-05-12 09:49:20,807 - root - INFO - [31mstep: 300  [32mloss:  5.96955  [38;2;180;60;0mgrad_norm: 34605.4922  [38;2;54;234;195mmemory: 24.76GiB(78.97%)  [34mtps: 1,096  [36mtflops: 16.42  [35mmfu: 5.26%[39m
+[rank7]:[titan] 2026-05-12 09:49:20,808 - root - INFO - Training completed
+[rank7]:[titan] 2026-05-12 09:49:22,844 - root - INFO - Process group destroyed
+
+===============================================================
+[Tue May 12 09:49:25 AM UTC 2026] DONE — out dir: /workspace/torchtitan_attention_residual/phase3/runs/kimi48b_d1280_e16_L32N8_pp8vp4_adapter_20260512-093021
+===============================================================

@@ -1,0 +1,690 @@
+W0517 12:53:38.350000 893719 torch/distributed/run.py:851] 
+W0517 12:53:38.350000 893719 torch/distributed/run.py:851] *****************************************
+W0517 12:53:38.350000 893719 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0517 12:53:38.350000 893719 torch/distributed/run.py:851] *****************************************
+[rank0]:[titan] 2026-05-17 12:53:45,989 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-05-17 12:53:45,992 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=8, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-05-17 12:53:46,005 - root - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'fsdp', 'efsdp']
+[rank0]:[titan] 2026-05-17 12:53:46,005 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-05-17 12:53:46,530 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-05-17 12:53:46,795 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-05-17 12:53:47,092 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:47,127 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:47,282 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:47,283 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:[titan] 2026-05-17 12:53:47,719 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:47,995 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:48,499 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:48,783 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:48,973 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:49,307 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:49,465 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:49,741 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:49,820 - root - INFO - Building kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 with {
+[rank0]:  "vocab_size": 163840,
+[rank0]:  "hidden_size": 1024,
+[rank0]:  "tie_word_embeddings": true,
+[rank0]:  "num_hidden_layers": 16,
+[rank0]:  "intermediate_size": 768,
+[rank0]:  "num_attention_heads": 16,
+[rank0]:  "num_key_value_heads": 16,
+[rank0]:  "q_lora_rank": null,
+[rank0]:  "kv_lora_rank": 512,
+[rank0]:  "qk_nope_head_dim": 64,
+[rank0]:  "qk_rope_head_dim": 32,
+[rank0]:  "v_head_dim": 64,
+[rank0]:  "mla_use_nope": true,
+[rank0]:  "rope_theta": 10000.0,
+[rank0]:  "kda_num_heads": 16,
+[rank0]:  "kda_head_dim": 64,
+[rank0]:  "kda_short_conv_kernel_size": 4,
+[rank0]:  "kda_layers": [
+[rank0]:    1,
+[rank0]:    2,
+[rank0]:    3,
+[rank0]:    5,
+[rank0]:    6,
+[rank0]:    7,
+[rank0]:    9,
+[rank0]:    10,
+[rank0]:    11,
+[rank0]:    13,
+[rank0]:    14,
+[rank0]:    15
+[rank0]:  ],
+[rank0]:  "full_attn_layers": [
+[rank0]:    4,
+[rank0]:    8,
+[rank0]:    12,
+[rank0]:    16
+[rank0]:  ],
+[rank0]:  "num_experts": 32,
+[rank0]:  "num_experts_per_token": 8,
+[rank0]:  "moe_intermediate_size": 768,
+[rank0]:  "moe_renormalize": true,
+[rank0]:  "moe_router_activation_func": "sigmoid",
+[rank0]:  "num_shared_experts": 1,
+[rank0]:  "routed_scaling_factor": 2.446,
+[rank0]:  "first_k_dense_replace": 1,
+[rank0]:  "moe_layer_freq": 1,
+[rank0]:  "use_grouped_topk": false,
+[rank0]:  "num_expert_group": 1,
+[rank0]:  "topk_group": 1,
+[rank0]:  "rms_norm_eps": 1e-05,
+[rank0]:  "hidden_act": "silu",
+[rank0]:  "initializer_range": 0.02,
+[rank0]:  "__spec__": {
+[rank0]:    "num_blocks": 4,
+[rank0]:    "model_class": "KimiLinearAttnResModel"
+[rank0]:  }
+[rank0]:}
+[rank0]:[titan] 2026-05-17 12:53:49,844 - root - INFO - Float8 training active with recipe rowwise
+[rank0]:[titan] 2026-05-17 12:53:49,859 - root - INFO - Swapped to Float8Linear layers with enable_fsdp_float8_all_gather=False
+[rank0]:[titan] 2026-05-17 12:53:49,861 - root - INFO - TensorBoard logging enabled. Logs will be saved at /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/tb/20260517-1253
+[rank0]:[titan] 2026-05-17 12:53:49,861 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank0]:[titan] 2026-05-17 12:53:49,862 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-17 12:53:49,862 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-17 12:53:49,863 - root - INFO - [34mModel kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 [31msize: 1,409,320,896 total parameters[39m
+[rank0]:[titan] 2026-05-17 12:53:49,863 - root - WARNING - activation_checkpoint.mode=full ignored — Kimi Linear Phase 4c skips AC. Set mode=none to silence this warning.
+[rank0]:[titan] 2026-05-17 12:53:49,949 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank0]:[titan] 2026-05-17 12:53:50,081 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-17 12:53:50,081 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-17 12:53:50,081 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-05-17 12:53:50,081 - root - INFO - CUDA memory usage for model: 0.74GiB(2.35%)
+[rank0]:[titan] 2026-05-17 12:53:50,098 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint
+[rank0]:[titan] 2026-05-17 12:53:50,098 - root - INFO - Trainer is initialized with local batch size 8, global batch size 64, gradient accumulation steps 1, sequence length 260, total steps 8720 (warmup 260)
+[rank0]:[titan] 2026-05-17 12:53:50,099 - root - INFO - mm: STAGE-1 freeze-lm enabled, froze 1,409,320,896 LM params
+[rank0]:[titan] 2026-05-17 12:53:50,099 - root - INFO - mm: loading vision_tower google/siglip-base-patch16-224
+[rank0]:[titan] 2026-05-17 12:53:50,261 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:50,292 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:
+[rank0]:Loading weights:   0%|          | 0/408 [00:00<?, ?it/s][rank0]:
+[rank0]:Loading weights:  94%|█████████▍| 385/408 [00:00<00:00, 3745.53it/s]
+[rank0]:Loading weights: 100%|██████████| 408/408 [00:00<00:00, 3774.55it/s]
+[rank0]:[titan] 2026-05-17 12:53:50,568 - root - INFO - mm: vision_tower hidden_size=768, frozen
+[rank0]:[titan] 2026-05-17 12:53:50,724 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:50,878 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:50,912 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:51,067 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:51,222 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:51,254 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:51,409 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:51,574 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:51,729 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:51,884 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:52,039 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:52,221 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:52,374 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:52,405 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:52,563 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:52,717 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:52,748 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:52,903 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:52,936 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:53,099 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:53,131 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:53,292 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:53,450 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:53,778 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:53,809 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:53,971 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-17 12:53:54,006 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:54,167 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-17 12:53:54,367 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:55,304 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-17 12:53:55,326 - phase5_vlm_multimodal_sft.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank0]:[titan] 2026-05-17 12:53:55,326 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank0]:[titan] 2026-05-17 12:53:55,327 - root - INFO - mm: lm_dim=1024
+[rank0]:[titan] 2026-05-17 12:53:55,349 - root - INFO - mm: projector built, params=1,837,056
+[rank0]:[titan] 2026-05-17 12:53:55,354 - root - INFO - mm: projector wrapped with FSDP2 over batch mesh size=8 (grad sync across DP ranks)
+[rank0]:[titan] 2026-05-17 12:53:55,354 - root - INFO - mm: built standalone projector AdamW (lr=0.001, fixed); stepped explicitly in train_step, not via OptimizersContainer
+[rank0]:[titan] 2026-05-17 12:53:55,354 - root - INFO - mm: registered _MMStateWrapper (projector + proj_optim + lm_optim) with checkpointer; dropped brittle OptimizersContainer OPTIMIZER entry
+[rank0]:[titan] 2026-05-17 12:53:56,358 - root - INFO - mm: dataset = LlavaPretrainDataset (prefix layout, split=train)
+[rank0]:[titan] 2026-05-17 12:53:56,358 - root - INFO - mm: replaced dataloader (train split, N=557,616, dp_rank=0/8, local_bs=8, seq_len=258)
+[rank0]:[titan] 2026-05-17 12:53:57,577 - root - INFO - mm: dataset = LlavaPretrainDataset (prefix layout, split=val)
+[rank0]:[titan] 2026-05-17 12:53:57,577 - root - INFO - mm: val enabled — held-out tail N=512, val_freq=100, val_batches=16 (disjoint from train split)
+[rank0]:[titan] 2026-05-17 12:53:57,582 - root - WARNING - checkpoint.initial_load_path is provided but the checkpoint.folder exists. Checkpointer will use the checkpoints from the checkpoint.folder /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint.
+[rank0]:[titan] 2026-05-17 12:53:57,582 - root - INFO - Loading the checkpoint from /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-2500.
+[rank0]:[titan] 2026-05-17 12:53:59,746 - root - INFO - [GC] GC collection for checkpoint loading. took 0.33 seconds
+[rank0]:[titan] 2026-05-17 12:53:59,746 - root - INFO - Finished loading the checkpoint in 2.16 seconds.
+[rank0]:[titan] 2026-05-17 12:53:59,747 - root - INFO - Training starts at step 2501
+[rank0]:[rank0]:W0517 12:54:03.218000 893793 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank0]:[titan] 2026-05-17 12:54:20,958 - root - INFO - [31mstep: 2510  [32mloss:  3.22132  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 664  [36mtflops: 4.96  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:54:40,566 - root - INFO - [31mstep: 2520  [32mloss:  3.28056  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:55:00,165 - root - INFO - [31mstep: 2530  [32mloss:  3.19275  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:55:19,747 - root - INFO - [31mstep: 2540  [32mloss:  3.32352  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:55:37,374 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 12:55:39,325 - root - INFO - [31mstep: 2550  [32mloss:  3.11436  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:55:58,852 - root - INFO - [31mstep: 2560  [32mloss:  3.03814  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,057  [36mtflops: 7.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:56:18,406 - root - INFO - [31mstep: 2570  [32mloss:  3.15198  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:56:37,934 - root - INFO - [31mstep: 2580  [32mloss:  3.12071  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,057  [36mtflops: 7.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:56:57,485 - root - INFO - [31mstep: 2590  [32mloss:  3.18884  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:57:15,115 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 12:57:17,068 - root - INFO - [31mstep: 2600  [32mloss:  3.31431  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:57:33,242 - root - INFO - mm: val_loss=3.1871 step=2600 (n_batches=16)
+[rank0]:[titan] 2026-05-17 12:57:33,242 - root - INFO - [33mvalidate step: 2600  [32mloss:  3.1871  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 12:57:52,777 - root - INFO - [31mstep: 2610  [32mloss:  3.11466  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,057  [36mtflops: 7.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:58:12,315 - root - INFO - [31mstep: 2620  [32mloss:  2.97283  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:58:31,889 - root - INFO - [31mstep: 2630  [32mloss:  3.08276  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:58:51,457 - root - INFO - [31mstep: 2640  [32mloss:  3.37604  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:59:09,087 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 12:59:11,046 - root - INFO - [31mstep: 2650  [32mloss:  3.23359  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:59:30,625 - root - INFO - [31mstep: 2660  [32mloss:  3.21394  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 12:59:50,175 - root - INFO - [31mstep: 2670  [32mloss:  3.04571  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:00:09,717 - root - INFO - [31mstep: 2680  [32mloss:  3.17017  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:00:29,274 - root - INFO - [31mstep: 2690  [32mloss:  3.05267  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:00:46,937 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:00:48,889 - root - INFO - [31mstep: 2700  [32mloss:  3.25269  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:01:05,031 - root - INFO - mm: val_loss=3.1765 step=2700 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:01:05,032 - root - INFO - [33mvalidate step: 2700  [32mloss:  3.1765  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:01:24,531 - root - INFO - [31mstep: 2710  [32mloss:  2.85503  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,059  [36mtflops: 7.90  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:01:44,101 - root - INFO - [31mstep: 2720  [32mloss:  3.11749  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:02:03,628 - root - INFO - [31mstep: 2730  [32mloss:  3.12684  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,057  [36mtflops: 7.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:02:23,172 - root - INFO - [31mstep: 2740  [32mloss:  3.08557  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:02:40,808 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:02:42,773 - root - INFO - [31mstep: 2750  [32mloss:  3.13322  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:03:02,279 - root - INFO - [31mstep: 2760  [32mloss:  3.36842  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,058  [36mtflops: 7.90  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:03:21,850 - root - INFO - [31mstep: 2770  [32mloss:  3.07842  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:03:41,476 - root - INFO - [31mstep: 2780  [32mloss:  3.31989  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:04:01,050 - root - INFO - [31mstep: 2790  [32mloss:  3.28444  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:04:18,662 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:04:20,625 - root - INFO - [31mstep: 2800  [32mloss:  3.05871  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:04:36,813 - root - INFO - mm: val_loss=3.1937 step=2800 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:04:36,814 - root - INFO - [33mvalidate step: 2800  [32mloss:  3.1937  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:04:56,460 - root - INFO - [31mstep: 2810  [32mloss:  3.12825  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:05:16,001 - root - INFO - [31mstep: 2820  [32mloss:  3.24196  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:05:35,571 - root - INFO - [31mstep: 2830  [32mloss:  3.09200  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:05:55,118 - root - INFO - [31mstep: 2840  [32mloss:  3.18976  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:06:12,782 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:06:14,738 - root - INFO - [31mstep: 2850  [32mloss:  3.05510  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:06:34,351 - root - INFO - [31mstep: 2860  [32mloss:  3.26507  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:06:53,937 - root - INFO - [31mstep: 2870  [32mloss:  3.23860  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:07:13,491 - root - INFO - [31mstep: 2880  [32mloss:  3.00367  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:07:33,017 - root - INFO - [31mstep: 2890  [32mloss:  3.43644  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,057  [36mtflops: 7.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:07:50,656 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:07:52,626 - root - INFO - [31mstep: 2900  [32mloss:  3.09865  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:08:08,773 - root - INFO - mm: val_loss=3.1746 step=2900 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:08:08,774 - root - INFO - [33mvalidate step: 2900  [32mloss:  3.1746  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:08:28,320 - root - INFO - [31mstep: 2910  [32mloss:  3.04122  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:08:47,992 - root - INFO - [31mstep: 2920  [32mloss:  3.21826  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:09:07,562 - root - INFO - [31mstep: 2930  [32mloss:  3.06867  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:09:27,157 - root - INFO - [31mstep: 2940  [32mloss:  2.79834  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:09:44,812 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:09:46,780 - root - INFO - [31mstep: 2950  [32mloss:  3.27759  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:10:06,334 - root - INFO - [31mstep: 2960  [32mloss:  3.09013  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:10:25,901 - root - INFO - [31mstep: 2970  [32mloss:  2.92307  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:10:45,523 - root - INFO - [31mstep: 2980  [32mloss:  3.06786  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:11:05,133 - root - INFO - [31mstep: 2990  [32mloss:  2.98722  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:11:22,774 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:11:24,736 - root - INFO - [31mstep: 3000  [32mloss:  3.15932  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:11:40,884 - root - INFO - mm: val_loss=3.1576 step=3000 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:11:40,884 - root - INFO - [33mvalidate step: 3000  [32mloss:  3.1576  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:11:40,885 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[titan] 2026-05-17 13:11:47,240 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.01 seconds
+[rank0]:[titan] 2026-05-17 13:11:47,241 - root - INFO - Finished saving the checkpoint (or staging if async is enabled) in 6.36 seconds.
+[rank0]:[titan] 2026-05-17 13:11:47,241 - root - INFO - Checkpointer is deleting /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-2000.
+[rank0]:[titan] 2026-05-17 13:11:47,294 - root - INFO - Checkpointer deleted /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-2000 in 0.05 seconds.
+[rank0]:[titan] 2026-05-17 13:12:06,928 - root - INFO - [31mstep: 3010  [32mloss:  3.15641  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 793  [36mtflops: 5.92  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:12:26,558 - root - INFO - [31mstep: 3020  [32mloss:  3.07531  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:12:46,217 - root - INFO - [31mstep: 3030  [32mloss:  3.16887  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:13:05,818 - root - INFO - [31mstep: 3040  [32mloss:  2.93242  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:13:23,490 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:13:25,455 - root - INFO - [31mstep: 3050  [32mloss:  3.20440  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:13:45,069 - root - INFO - [31mstep: 3060  [32mloss:  3.41394  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:14:04,638 - root - INFO - [31mstep: 3070  [32mloss:  3.23832  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:14:24,218 - root - INFO - [31mstep: 3080  [32mloss:  3.05342  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:14:43,791 - root - INFO - [31mstep: 3090  [32mloss:  3.05788  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:15:01,457 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:15:03,431 - root - INFO - [31mstep: 3100  [32mloss:  3.08266  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:15:19,638 - root - INFO - mm: val_loss=3.1594 step=3100 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:15:19,639 - root - INFO - [33mvalidate step: 3100  [32mloss:  3.1594  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:15:39,221 - root - INFO - [31mstep: 3110  [32mloss:  3.06799  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:15:58,828 - root - INFO - [31mstep: 3120  [32mloss:  2.98575  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:16:18,481 - root - INFO - [31mstep: 3130  [32mloss:  3.11835  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:16:38,068 - root - INFO - [31mstep: 3140  [32mloss:  3.12750  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:16:55,730 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:16:57,722 - root - INFO - [31mstep: 3150  [32mloss:  3.24880  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:17:17,352 - root - INFO - [31mstep: 3160  [32mloss:  3.33232  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:17:36,952 - root - INFO - [31mstep: 3170  [32mloss:  2.89184  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:17:56,588 - root - INFO - [31mstep: 3180  [32mloss:  3.04687  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:18:16,211 - root - INFO - [31mstep: 3190  [32mloss:  3.08923  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:18:33,916 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:18:35,876 - root - INFO - [31mstep: 3200  [32mloss:  3.21781  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:18:52,100 - root - INFO - mm: val_loss=3.1573 step=3200 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:18:52,100 - root - INFO - [33mvalidate step: 3200  [32mloss:  3.1573  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:19:11,719 - root - INFO - [31mstep: 3210  [32mloss:  3.32055  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:19:31,395 - root - INFO - [31mstep: 3220  [32mloss:  2.92281  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:19:50,999 - root - INFO - [31mstep: 3230  [32mloss:  3.03529  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:20:10,661 - root - INFO - [31mstep: 3240  [32mloss:  2.96202  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:20:28,381 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:20:30,368 - root - INFO - [31mstep: 3250  [32mloss:  3.01805  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:20:49,975 - root - INFO - [31mstep: 3260  [32mloss:  3.03678  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:21:09,619 - root - INFO - [31mstep: 3270  [32mloss:  3.11731  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:21:29,271 - root - INFO - [31mstep: 3280  [32mloss:  3.39808  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:21:48,878 - root - INFO - [31mstep: 3290  [32mloss:  3.17791  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:22:06,593 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:22:08,556 - root - INFO - [31mstep: 3300  [32mloss:  3.03083  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:22:24,766 - root - INFO - mm: val_loss=3.1614 step=3300 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:22:24,767 - root - INFO - [33mvalidate step: 3300  [32mloss:  3.1614  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:22:44,371 - root - INFO - [31mstep: 3310  [32mloss:  3.16225  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:23:04,068 - root - INFO - [31mstep: 3320  [32mloss:  3.23518  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:23:23,731 - root - INFO - [31mstep: 3330  [32mloss:  3.27026  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:23:43,325 - root - INFO - [31mstep: 3340  [32mloss:  2.95363  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:24:00,983 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:24:02,990 - root - INFO - [31mstep: 3350  [32mloss:  3.12083  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:24:22,589 - root - INFO - [31mstep: 3360  [32mloss:  2.99924  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:24:42,195 - root - INFO - [31mstep: 3370  [32mloss:  2.99051  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:25:01,859 - root - INFO - [31mstep: 3380  [32mloss:  3.06936  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:25:21,480 - root - INFO - [31mstep: 3390  [32mloss:  3.11859  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:25:39,126 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:25:41,112 - root - INFO - [31mstep: 3400  [32mloss:  3.07091  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:25:57,302 - root - INFO - mm: val_loss=3.1473 step=3400 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:25:57,302 - root - INFO - [33mvalidate step: 3400  [32mloss:  3.1473  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:26:16,916 - root - INFO - [31mstep: 3410  [32mloss:  3.14215  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:26:36,505 - root - INFO - [31mstep: 3420  [32mloss:  3.18774  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:26:56,146 - root - INFO - [31mstep: 3430  [32mloss:  3.19238  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:27:15,814 - root - INFO - [31mstep: 3440  [32mloss:  3.07374  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:27:33,545 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:27:35,508 - root - INFO - [31mstep: 3450  [32mloss:  3.13855  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:27:55,150 - root - INFO - [31mstep: 3460  [32mloss:  2.98836  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:28:14,823 - root - INFO - [31mstep: 3470  [32mloss:  2.96679  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:28:34,418 - root - INFO - [31mstep: 3480  [32mloss:  3.07799  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:28:54,087 - root - INFO - [31mstep: 3490  [32mloss:  3.04631  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:29:11,794 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:29:13,783 - root - INFO - [31mstep: 3500  [32mloss:  3.04729  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:29:30,060 - root - INFO - mm: val_loss=3.1571 step=3500 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:29:30,061 - root - INFO - [33mvalidate step: 3500  [32mloss:  3.1571  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:29:30,061 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[titan] 2026-05-17 13:30:00,735 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.01 seconds
+[rank0]:[titan] 2026-05-17 13:30:00,736 - root - INFO - Finished saving the checkpoint (or staging if async is enabled) in 30.68 seconds.
+[rank0]:[titan] 2026-05-17 13:30:00,737 - root - INFO - Checkpointer is deleting /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-2500.
+[rank0]:[titan] 2026-05-17 13:30:00,808 - root - INFO - Checkpointer deleted /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-2500 in 0.07 seconds.
+[rank0]:[titan] 2026-05-17 13:30:20,515 - root - INFO - [31mstep: 3510  [32mloss:  2.97378  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 409  [36mtflops: 3.05  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:30:40,247 - root - INFO - [31mstep: 3520  [32mloss:  3.21936  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:30:59,919 - root - INFO - [31mstep: 3530  [32mloss:  3.03341  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:31:19,604 - root - INFO - [31mstep: 3540  [32mloss:  3.09253  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:31:37,379 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:31:39,360 - root - INFO - [31mstep: 3550  [32mloss:  3.15068  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,045  [36mtflops: 7.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:31:59,018 - root - INFO - [31mstep: 3560  [32mloss:  3.02524  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:32:18,738 - root - INFO - [31mstep: 3570  [32mloss:  3.24282  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:32:38,504 - root - INFO - [31mstep: 3580  [32mloss:  3.10643  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,044  [36mtflops: 7.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:32:58,218 - root - INFO - [31mstep: 3590  [32mloss:  3.36737  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:33:15,996 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:33:17,990 - root - INFO - [31mstep: 3600  [32mloss:  2.94182  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,044  [36mtflops: 7.79  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:33:34,216 - root - INFO - mm: val_loss=3.1577 step=3600 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:33:34,217 - root - INFO - [33mvalidate step: 3600  [32mloss:  3.1577  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:33:53,915 - root - INFO - [31mstep: 3610  [32mloss:  3.16806  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:34:13,622 - root - INFO - [31mstep: 3620  [32mloss:  3.07565  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:34:33,319 - root - INFO - [31mstep: 3630  [32mloss:  3.06845  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:34:53,005 - root - INFO - [31mstep: 3640  [32mloss:  3.01469  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:35:10,707 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:35:12,700 - root - INFO - [31mstep: 3650  [32mloss:  3.08251  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:35:32,371 - root - INFO - [31mstep: 3660  [32mloss:  3.24054  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:35:52,046 - root - INFO - [31mstep: 3670  [32mloss:  3.19881  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:36:11,674 - root - INFO - [31mstep: 3680  [32mloss:  3.04154  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:36:31,341 - root - INFO - [31mstep: 3690  [32mloss:  2.98628  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:36:49,073 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:36:51,045 - root - INFO - [31mstep: 3700  [32mloss:  3.25066  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:37:07,259 - root - INFO - mm: val_loss=3.1447 step=3700 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:37:07,259 - root - INFO - [33mvalidate step: 3700  [32mloss:  3.1447  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:37:26,917 - root - INFO - [31mstep: 3710  [32mloss:  3.20535  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:37:46,586 - root - INFO - [31mstep: 3720  [32mloss:  2.84959  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:38:06,257 - root - INFO - [31mstep: 3730  [32mloss:  3.07986  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:38:25,913 - root - INFO - [31mstep: 3740  [32mloss:  3.05833  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:38:43,698 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:38:45,680 - root - INFO - [31mstep: 3750  [32mloss:  3.21027  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,044  [36mtflops: 7.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:39:05,393 - root - INFO - [31mstep: 3760  [32mloss:  3.15098  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:39:25,076 - root - INFO - [31mstep: 3770  [32mloss:  3.08763  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:39:44,700 - root - INFO - [31mstep: 3780  [32mloss:  3.12330  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:40:04,452 - root - INFO - [31mstep: 3790  [32mloss:  2.97687  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,045  [36mtflops: 7.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:40:22,205 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:40:24,193 - root - INFO - [31mstep: 3800  [32mloss:  2.80702  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:40:40,545 - root - INFO - mm: val_loss=3.1419 step=3800 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:40:40,545 - root - INFO - [33mvalidate step: 3800  [32mloss:  3.1419  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:41:00,204 - root - INFO - [31mstep: 3810  [32mloss:  3.22103  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:41:19,897 - root - INFO - [31mstep: 3820  [32mloss:  3.03211  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:41:39,641 - root - INFO - [31mstep: 3830  [32mloss:  3.10194  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,045  [36mtflops: 7.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:41:59,356 - root - INFO - [31mstep: 3840  [32mloss:  3.26878  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:42:17,116 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:42:19,075 - root - INFO - [31mstep: 3850  [32mloss:  2.88394  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:42:38,739 - root - INFO - [31mstep: 3860  [32mloss:  2.98689  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:42:58,384 - root - INFO - [31mstep: 3870  [32mloss:  3.06267  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:43:18,115 - root - INFO - [31mstep: 3880  [32mloss:  2.98758  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:43:37,797 - root - INFO - [31mstep: 3890  [32mloss:  3.13318  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:43:55,533 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:43:57,499 - root - INFO - [31mstep: 3900  [32mloss:  3.08005  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:44:13,786 - root - INFO - mm: val_loss=3.1289 step=3900 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:44:13,787 - root - INFO - [33mvalidate step: 3900  [32mloss:  3.1289  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:44:33,434 - root - INFO - [31mstep: 3910  [32mloss:  3.00389  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:44:53,101 - root - INFO - [31mstep: 3920  [32mloss:  3.01069  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:45:12,936 - root - INFO - [31mstep: 3930  [32mloss:  3.10753  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,041  [36mtflops: 7.77  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:45:32,647 - root - INFO - [31mstep: 3940  [32mloss:  3.08454  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:45:50,362 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:45:52,345 - root - INFO - [31mstep: 3950  [32mloss:  2.95636  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:46:12,080 - root - INFO - [31mstep: 3960  [32mloss:  2.92231  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:46:31,770 - root - INFO - [31mstep: 3970  [32mloss:  2.94291  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:46:51,490 - root - INFO - [31mstep: 3980  [32mloss:  3.00384  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:47:11,211 - root - INFO - [31mstep: 3990  [32mloss:  2.79850  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:47:29,012 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:47:31,006 - root - INFO - [31mstep: 4000  [32mloss:  2.89133  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,043  [36mtflops: 7.78  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:47:47,302 - root - INFO - mm: val_loss=3.1301 step=4000 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:47:47,302 - root - INFO - [33mvalidate step: 4000  [32mloss:  3.1301  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:47:47,302 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[titan] 2026-05-17 13:48:00,055 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.02 seconds
+[rank0]:[titan] 2026-05-17 13:48:00,056 - root - INFO - Finished saving the checkpoint (or staging if async is enabled) in 12.75 seconds.
+[rank0]:[titan] 2026-05-17 13:48:00,057 - root - INFO - Checkpointer is deleting /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-3000.
+[rank0]:[titan] 2026-05-17 13:48:00,121 - root - INFO - Checkpointer deleted /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-3000 in 0.06 seconds.
+[rank0]:[titan] 2026-05-17 13:48:19,812 - root - INFO - [31mstep: 4010  [32mloss:  3.19814  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 635  [36mtflops: 4.74  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:48:39,478 - root - INFO - [31mstep: 4020  [32mloss:  3.03391  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:48:59,136 - root - INFO - [31mstep: 4030  [32mloss:  3.21142  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:49:18,756 - root - INFO - [31mstep: 4040  [32mloss:  2.85565  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:49:36,437 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:49:38,403 - root - INFO - [31mstep: 4050  [32mloss:  3.04959  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:49:58,096 - root - INFO - [31mstep: 4060  [32mloss:  3.14792  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:50:17,741 - root - INFO - [31mstep: 4070  [32mloss:  3.02762  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:50:37,421 - root - INFO - [31mstep: 4080  [32mloss:  2.86124  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:50:57,158 - root - INFO - [31mstep: 4090  [32mloss:  2.79791  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:51:14,893 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:51:16,869 - root - INFO - [31mstep: 4100  [32mloss:  3.19553  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:51:33,043 - root - INFO - mm: val_loss=3.1308 step=4100 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:51:33,043 - root - INFO - [33mvalidate step: 4100  [32mloss:  3.1308  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:51:52,676 - root - INFO - [31mstep: 4110  [32mloss:  3.05327  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:52:12,317 - root - INFO - [31mstep: 4120  [32mloss:  3.18495  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:52:32,035 - root - INFO - [31mstep: 4130  [32mloss:  2.93995  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:52:51,701 - root - INFO - [31mstep: 4140  [32mloss:  3.28321  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:53:09,422 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:53:11,395 - root - INFO - [31mstep: 4150  [32mloss:  3.25389  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:53:30,998 - root - INFO - [31mstep: 4160  [32mloss:  3.10151  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:53:50,663 - root - INFO - [31mstep: 4170  [32mloss:  2.90931  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:54:10,359 - root - INFO - [31mstep: 4180  [32mloss:  2.96944  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:54:30,088 - root - INFO - [31mstep: 4190  [32mloss:  3.19522  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:54:47,771 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 13:54:49,726 - root - INFO - [31mstep: 4200  [32mloss:  3.02175  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:55:05,913 - root - INFO - mm: val_loss=3.1281 step=4200 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:55:05,913 - root - INFO - [33mvalidate step: 4200  [32mloss:  3.1281  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:55:25,532 - root - INFO - [31mstep: 4210  [32mloss:  3.04723  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:55:45,211 - root - INFO - [31mstep: 4220  [32mloss:  3.17488  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:56:04,880 - root - INFO - [31mstep: 4230  [32mloss:  3.41067  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:56:24,562 - root - INFO - [31mstep: 4240  [32mloss:  2.93643  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:56:42,284 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:56:44,242 - root - INFO - [31mstep: 4250  [32mloss:  3.21405  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:57:03,940 - root - INFO - [31mstep: 4260  [32mloss:  3.13807  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:57:23,731 - root - INFO - [31mstep: 4270  [32mloss:  2.95148  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,043  [36mtflops: 7.79  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:57:43,377 - root - INFO - [31mstep: 4280  [32mloss:  3.15865  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:58:03,009 - root - INFO - [31mstep: 4290  [32mloss:  2.91484  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:58:20,737 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 13:58:22,707 - root - INFO - [31mstep: 4300  [32mloss:  2.94196  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:58:38,938 - root - INFO - mm: val_loss=3.1244 step=4300 (n_batches=16)
+[rank0]:[titan] 2026-05-17 13:58:38,938 - root - INFO - [33mvalidate step: 4300  [32mloss:  3.1244  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 13:58:58,550 - root - INFO - [31mstep: 4310  [32mloss:  3.11661  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:59:18,215 - root - INFO - [31mstep: 4320  [32mloss:  3.10959  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:59:37,779 - root - INFO - [31mstep: 4330  [32mloss:  2.98452  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 13:59:57,441 - root - INFO - [31mstep: 4340  [32mloss:  2.87148  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:00:15,102 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 14:00:17,084 - root - INFO - [31mstep: 4350  [32mloss:  3.01175  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:00:36,691 - root - INFO - [31mstep: 4360  [32mloss:  2.88512  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:00:56,413 - root - INFO - [31mstep: 4370  [32mloss:  2.95878  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:01:16,006 - root - INFO - [31mstep: 4380  [32mloss:  3.06736  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:01:35,763 - root - INFO - [31mstep: 4390  [32mloss:  2.90870  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,045  [36mtflops: 7.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:01:53,507 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:01:55,500 - root - INFO - [31mstep: 4400  [32mloss:  2.87109  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:02:11,768 - root - INFO - mm: val_loss=3.1269 step=4400 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:02:11,768 - root - INFO - [33mvalidate step: 4400  [32mloss:  3.1269  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:02:31,430 - root - INFO - [31mstep: 4410  [32mloss:  3.00102  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:02:51,053 - root - INFO - [31mstep: 4420  [32mloss:  2.94768  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:03:10,704 - root - INFO - [31mstep: 4430  [32mloss:  3.07824  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:03:30,350 - root - INFO - [31mstep: 4440  [32mloss:  3.22236  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:03:48,107 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 14:03:50,065 - root - INFO - [31mstep: 4450  [32mloss:  3.06261  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:04:09,691 - root - INFO - [31mstep: 4460  [32mloss:  2.64024  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:04:29,308 - root - INFO - [31mstep: 4470  [32mloss:  2.99114  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:04:48,957 - root - INFO - [31mstep: 4480  [32mloss:  3.07751  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:05:08,616 - root - INFO - [31mstep: 4490  [32mloss:  3.05600  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:05:26,312 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:05:28,277 - root - INFO - [31mstep: 4500  [32mloss:  2.98778  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:05:44,499 - root - INFO - mm: val_loss=3.1320 step=4500 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:05:44,500 - root - INFO - [33mvalidate step: 4500  [32mloss:  3.1320  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:05:44,500 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[titan] 2026-05-17 14:06:01,288 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.01 seconds
+[rank0]:[titan] 2026-05-17 14:06:01,289 - root - INFO - Finished saving the checkpoint (or staging if async is enabled) in 16.79 seconds.
+[rank0]:[titan] 2026-05-17 14:06:01,289 - root - INFO - Checkpointer is deleting /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-3500.
+[rank0]:[titan] 2026-05-17 14:06:01,352 - root - INFO - Checkpointer deleted /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-3500 in 0.06 seconds.
+[rank0]:[titan] 2026-05-17 14:06:20,897 - root - INFO - [31mstep: 4510  [32mloss:  3.04891  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 567  [36mtflops: 4.23  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:06:40,473 - root - INFO - [31mstep: 4520  [32mloss:  3.01313  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:07:00,095 - root - INFO - [31mstep: 4530  [32mloss:  3.00068  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:07:19,756 - root - INFO - [31mstep: 4540  [32mloss:  3.20923  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:07:37,403 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:07:39,370 - root - INFO - [31mstep: 4550  [32mloss:  3.07449  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:07:58,967 - root - INFO - [31mstep: 4560  [32mloss:  3.20244  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:08:18,562 - root - INFO - [31mstep: 4570  [32mloss:  3.05407  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:08:38,119 - root - INFO - [31mstep: 4580  [32mloss:  2.99869  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:08:57,701 - root - INFO - [31mstep: 4590  [32mloss:  2.99043  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:09:15,359 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:09:17,342 - root - INFO - [31mstep: 4600  [32mloss:  2.96649  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:09:33,447 - root - INFO - mm: val_loss=3.1162 step=4600 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:09:33,448 - root - INFO - [33mvalidate step: 4600  [32mloss:  3.1162  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:09:53,003 - root - INFO - [31mstep: 4610  [32mloss:  3.02929  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:10:12,602 - root - INFO - [31mstep: 4620  [32mloss:  3.00762  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:10:32,207 - root - INFO - [31mstep: 4630  [32mloss:  2.69913  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:10:51,764 - root - INFO - [31mstep: 4640  [32mloss:  3.04373  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:11:09,468 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 14:11:11,444 - root - INFO - [31mstep: 4650  [32mloss:  2.97616  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:11:31,053 - root - INFO - [31mstep: 4660  [32mloss:  2.94396  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:11:50,597 - root - INFO - [31mstep: 4670  [32mloss:  3.12776  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,056  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:12:10,197 - root - INFO - [31mstep: 4680  [32mloss:  3.22050  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:12:29,770 - root - INFO - [31mstep: 4690  [32mloss:  2.96439  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:12:47,457 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:12:49,426 - root - INFO - [31mstep: 4700  [32mloss:  2.83482  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:13:05,573 - root - INFO - mm: val_loss=3.1241 step=4700 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:13:05,574 - root - INFO - [33mvalidate step: 4700  [32mloss:  3.1241  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:13:25,174 - root - INFO - [31mstep: 4710  [32mloss:  3.10155  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:13:44,746 - root - INFO - [31mstep: 4720  [32mloss:  2.97883  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:14:04,302 - root - INFO - [31mstep: 4730  [32mloss:  3.05646  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:14:23,868 - root - INFO - [31mstep: 4740  [32mloss:  3.11505  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:14:41,541 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 14:14:43,523 - root - INFO - [31mstep: 4750  [32mloss:  3.00303  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:15:03,131 - root - INFO - [31mstep: 4760  [32mloss:  3.04851  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:15:22,765 - root - INFO - [31mstep: 4770  [32mloss:  2.98567  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:15:42,430 - root - INFO - [31mstep: 4780  [32mloss:  2.77275  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:16:02,001 - root - INFO - [31mstep: 4790  [32mloss:  2.96731  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:16:19,693 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:16:21,665 - root - INFO - [31mstep: 4800  [32mloss:  3.10139  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:16:37,844 - root - INFO - mm: val_loss=3.1145 step=4800 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:16:37,845 - root - INFO - [33mvalidate step: 4800  [32mloss:  3.1145  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:16:57,404 - root - INFO - [31mstep: 4810  [32mloss:  2.72194  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,055  [36mtflops: 7.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:17:16,990 - root - INFO - [31mstep: 4820  [32mloss:  3.02768  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:17:36,619 - root - INFO - [31mstep: 4830  [32mloss:  3.14877  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:17:56,294 - root - INFO - [31mstep: 4840  [32mloss:  3.05249  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:18:13,984 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 14:18:15,947 - root - INFO - [31mstep: 4850  [32mloss:  3.32222  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:18:35,558 - root - INFO - [31mstep: 4860  [32mloss:  3.01956  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:18:55,167 - root - INFO - [31mstep: 4870  [32mloss:  2.91538  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:19:14,745 - root - INFO - [31mstep: 4880  [32mloss:  3.04671  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,054  [36mtflops: 7.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:19:34,341 - root - INFO - [31mstep: 4890  [32mloss:  2.89393  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,053  [36mtflops: 7.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:19:52,001 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:19:53,963 - root - INFO - [31mstep: 4900  [32mloss:  3.14022  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:20:10,188 - root - INFO - mm: val_loss=3.1299 step=4900 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:20:10,189 - root - INFO - [33mvalidate step: 4900  [32mloss:  3.1299  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:20:29,819 - root - INFO - [31mstep: 4910  [32mloss:  3.30409  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,052  [36mtflops: 7.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:20:49,463 - root - INFO - [31mstep: 4920  [32mloss:  2.92411  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:21:09,179 - root - INFO - [31mstep: 4930  [32mloss:  2.87879  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:21:28,879 - root - INFO - [31mstep: 4940  [32mloss:  3.03122  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:21:46,628 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 14:21:48,609 - root - INFO - [31mstep: 4950  [32mloss:  2.99210  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:22:08,292 - root - INFO - [31mstep: 4960  [32mloss:  2.82748  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:22:27,935 - root - INFO - [31mstep: 4970  [32mloss:  3.14803  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,051  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:22:47,586 - root - INFO - [31mstep: 4980  [32mloss:  2.97446  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:23:07,277 - root - INFO - [31mstep: 4990  [32mloss:  3.01639  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:23:25,041 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:23:26,999 - root - INFO - [31mstep: 5000  [32mloss:  3.29652  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:23:43,255 - root - INFO - mm: val_loss=3.1084 step=5000 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:23:43,256 - root - INFO - [33mvalidate step: 5000  [32mloss:  3.1084  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:23:43,256 - root - INFO - Saving the checkpoint (or staging if async is enabled).
+[rank0]:[titan] 2026-05-17 14:24:03,242 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.02 seconds
+[rank0]:[titan] 2026-05-17 14:24:03,243 - root - INFO - Finished saving the checkpoint (or staging if async is enabled) in 19.99 seconds.
+[rank0]:[titan] 2026-05-17 14:24:03,245 - root - INFO - Checkpointer is deleting /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-4000.
+[rank0]:[titan] 2026-05-17 14:24:03,326 - root - INFO - Checkpointer deleted /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-4000 in 0.08 seconds.
+[rank0]:[titan] 2026-05-17 14:24:22,989 - root - INFO - [31mstep: 5010  [32mloss:  3.18954  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 519  [36mtflops: 3.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:24:42,702 - root - INFO - [31mstep: 5020  [32mloss:  3.20779  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:25:02,383 - root - INFO - [31mstep: 5030  [32mloss:  2.93529  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:25:22,058 - root - INFO - [31mstep: 5040  [32mloss:  3.25180  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:25:39,824 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:25:41,790 - root - INFO - [31mstep: 5050  [32mloss:  3.05251  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:26:01,461 - root - INFO - [31mstep: 5060  [32mloss:  3.03667  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,049  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:26:21,124 - root - INFO - [31mstep: 5070  [32mloss:  3.27809  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,050  [36mtflops: 7.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:26:40,813 - root - INFO - [31mstep: 5080  [32mloss:  2.98677  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:27:00,528 - root - INFO - [31mstep: 5090  [32mloss:  3.06714  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:27:18,308 - root - INFO - [GC] Performing periodic GC collection took 0.03 seconds
+[rank0]:[titan] 2026-05-17 14:27:20,294 - root - INFO - [31mstep: 5100  [32mloss:  3.13015  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,044  [36mtflops: 7.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:27:36,595 - root - INFO - mm: val_loss=3.1001 step=5100 (n_batches=16)
+[rank0]:[titan] 2026-05-17 14:27:36,595 - root - INFO - [33mvalidate step: 5100  [32mloss:  3.1001  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 0[39m
+[rank0]:[titan] 2026-05-17 14:27:56,283 - root - INFO - [31mstep: 5110  [32mloss:  3.07060  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:28:16,022 - root - INFO - [31mstep: 5120  [32mloss:  2.95770  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,046  [36mtflops: 7.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:28:35,716 - root - INFO - [31mstep: 5130  [32mloss:  3.12613  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:28:55,420 - root - INFO - [31mstep: 5140  [32mloss:  3.19119  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,048  [36mtflops: 7.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-17 14:29:13,152 - root - INFO - [GC] Performing periodic GC collection took 0.04 seconds
+[rank0]:[titan] 2026-05-17 14:29:15,131 - root - INFO - [31mstep: 5150  [32mloss:  3.14585  [38;2;180;60;0mgrad_norm:  0.0000  [38;2;54;234;195mmemory:  9.91GiB(31.60%)  [34mtps: 1,047  [36mtflops: 7.82  [35mmfu: N/A[39m
+W0517 14:29:37.597000 893719 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 893793 closing signal SIGTERM
+W0517 14:29:37.603000 893719 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 893794 closing signal SIGTERM
+W0517 14:29:37.605000 893719 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 893795 closing signal SIGTERM
+W0517 14:29:37.607000 893719 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 893796 closing signal SIGTERM
+W0517 14:29:37.611000 893719 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 893797 closing signal SIGTERM
+W0517 14:29:37.616000 893719 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 893798 closing signal SIGTERM
+W0517 14:29:37.621000 893719 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 893799 closing signal SIGTERM
+E0517 14:29:40.093000 893719 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: -6) local_rank: 7 (pid: 893800) of binary: /usr/bin/python3
+E0517 14:29:40.103000 893719 torch/distributed/elastic/multiprocessing/errors/error_handler.py:145] no error file defined for parent, to copy child error file (/tmp/torchelastic_b1jekqcu/none_wybne1s_/attempt_0/7/error.json)
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase5_vlm_multimodal_sft.train_mm FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-17_14:29:40
+  host      : f59652d27037
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 893793)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 893793
+[2]:
+  time      : 2026-05-17_14:29:40
+  host      : f59652d27037
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 893794)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 893794
+[3]:
+  time      : 2026-05-17_14:29:40
+  host      : f59652d27037
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 893795)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 893795
+[4]:
+  time      : 2026-05-17_14:29:40
+  host      : f59652d27037
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 893796)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 893796
+[5]:
+  time      : 2026-05-17_14:29:40
+  host      : f59652d27037
+  rank      : 4 (local_rank: 4)
+  exitcode  : -15 (pid: 893797)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 893797
+[6]:
+  time      : 2026-05-17_14:29:40
+  host      : f59652d27037
+  rank      : 5 (local_rank: 5)
+  exitcode  : -15 (pid: 893798)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 893798
+[7]:
+  time      : 2026-05-17_14:29:40
+  host      : f59652d27037
+  rank      : 6 (local_rank: 6)
+  exitcode  : -15 (pid: 893799)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 893799
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-17_14:29:30
+  host      : f59652d27037
+  rank      : 7 (local_rank: 7)
+  exitcode  : -6 (pid: 893800)
+  error_file: /tmp/torchelastic_b1jekqcu/none_wybne1s_/attempt_0/7/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 713, in train_step
+      super().train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 681, in forward_backward_step
+      loss = super().forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 701, in forward_backward_step
+      pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 338, in forward
+      block_list, partial_block = layer(
+                                  ^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 129, in forward
+      attn_out = self.self_attn(self.input_layernorm(h))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 583, in forward
+      out = _local_linear(self.o_proj, o)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 416, in _local_linear
+      return F.linear(x, weight, bias)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasGemmEx( handle, opa, opb, m, n, k, &falpha, a, CUDA_R_16BF, lda, b, CUDA_R_16BF, ldb, &fbeta, c, std::is_same_v<C_Dtype, float> ? CUDA_R_32F : CUDA_R_16BF, ldc, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+  
+============================================================

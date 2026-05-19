@@ -1,0 +1,132 @@
+[Tue May 12 10:55:23 PM UTC 2026] starting phase4 redo (free 223GB)
+W0512 22:55:25.099000 164805 torch/distributed/run.py:851] 
+W0512 22:55:25.099000 164805 torch/distributed/run.py:851] *****************************************
+W0512 22:55:25.099000 164805 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0512 22:55:25.099000 164805 torch/distributed/run.py:851] *****************************************
+[rank0]:[titan] 2026-05-12 22:55:29,713 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-05-12 22:55:30,910 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-05-12 22:55:30,913 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=8, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-05-12 22:55:30,940 - root - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'fsdp', 'efsdp']
+[rank0]:[titan] 2026-05-12 22:55:30,941 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-05-12 22:55:31,563 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-05-12 22:55:31,831 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-05-12 22:55:32,166 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-12 22:55:32,215 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:32,384 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:55:32,384 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[rank0]:[titan] 2026-05-12 22:55:32,902 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:55:33,181 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:33,551 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:55:33,962 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:34,227 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:34,555 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:34,730 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:35,069 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:55:35,197 - root - INFO - Building kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 with {
+[rank0]:  "vocab_size": 163840,
+[rank0]:  "hidden_size": 1024,
+[rank0]:  "tie_word_embeddings": true,
+[rank0]:  "num_hidden_layers": 16,
+[rank0]:  "intermediate_size": 768,
+[rank0]:  "num_attention_heads": 16,
+[rank0]:  "num_key_value_heads": 16,
+[rank0]:  "q_lora_rank": null,
+[rank0]:  "kv_lora_rank": 512,
+[rank0]:  "qk_nope_head_dim": 64,
+[rank0]:  "qk_rope_head_dim": 32,
+[rank0]:  "v_head_dim": 64,
+[rank0]:  "mla_use_nope": true,
+[rank0]:  "rope_theta": 10000.0,
+[rank0]:  "kda_num_heads": 16,
+[rank0]:  "kda_head_dim": 64,
+[rank0]:  "kda_short_conv_kernel_size": 4,
+[rank0]:  "kda_layers": [
+[rank0]:    1,
+[rank0]:    2,
+[rank0]:    3,
+[rank0]:    5,
+[rank0]:    6,
+[rank0]:    7,
+[rank0]:    9,
+[rank0]:    10,
+[rank0]:    11,
+[rank0]:    13,
+[rank0]:    14,
+[rank0]:    15
+[rank0]:  ],
+[rank0]:  "full_attn_layers": [
+[rank0]:    4,
+[rank0]:    8,
+[rank0]:    12,
+[rank0]:    16
+[rank0]:  ],
+[rank0]:  "num_experts": 32,
+[rank0]:  "num_experts_per_token": 8,
+[rank0]:  "moe_intermediate_size": 768,
+[rank0]:  "moe_renormalize": true,
+[rank0]:  "moe_router_activation_func": "sigmoid",
+[rank0]:  "num_shared_experts": 1,
+[rank0]:  "routed_scaling_factor": 2.446,
+[rank0]:  "first_k_dense_replace": 1,
+[rank0]:  "moe_layer_freq": 1,
+[rank0]:  "use_grouped_topk": false,
+[rank0]:  "num_expert_group": 1,
+[rank0]:  "topk_group": 1,
+[rank0]:  "rms_norm_eps": 1e-05,
+[rank0]:  "hidden_act": "silu",
+[rank0]:  "initializer_range": 0.02,
+[rank0]:  "__spec__": {
+[rank0]:    "num_blocks": 4,
+[rank0]:    "model_class": "KimiLinearAttnResModel"
+[rank0]:  }
+[rank0]:}
+[rank0]:[titan] 2026-05-12 22:55:35,363 - root - INFO - Float8 training active with recipe rowwise
+[rank0]:[titan] 2026-05-12 22:55:35,378 - root - INFO - Swapped to Float8Linear layers with enable_fsdp_float8_all_gather=False
+[rank0]:[titan] 2026-05-12 22:55:35,379 - root - INFO - TensorBoard logging enabled. Logs will be saved at /workspace/torchtitan_attention_residual/phase4/runs/lm_447m_fp8_lbs4/tb/20260512-2255
+[rank0]:[titan] 2026-05-12 22:55:35,380 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank0]:[titan] 2026-05-12 22:55:35,381 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-12 22:55:35,381 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-12 22:55:35,381 - root - INFO - [34mModel kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 [31msize: 1,409,320,896 total parameters[39m
+[rank0]:[titan] 2026-05-12 22:55:35,381 - root - INFO - Compiling the loss function with torch.compile
+[rank0]:[titan] 2026-05-12 22:55:35,412 - root - INFO - Compiled each KimiDecoderLayer with torch.compile (backend=inductor).
+[rank0]:[titan] 2026-05-12 22:55:35,497 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank0]:[titan] 2026-05-12 22:55:35,627 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-12 22:55:35,627 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-12 22:55:35,627 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-05-12 22:55:35,627 - root - INFO - CUDA memory usage for model: 0.74GiB(2.35%)
+[rank0]:[titan] 2026-05-12 22:55:35,645 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/torchtitan_attention_residual/phase4/runs/lm_447m_fp8_lbs4/checkpoint
+[rank0]:[titan] 2026-05-12 22:55:35,645 - root - INFO - Trainer is initialized with local batch size 4, global batch size 192, gradient accumulation steps 6, sequence length 2048, total steps 25500 (warmup 500)
+[rank0]:[titan] 2026-05-12 22:55:35,645 - root - INFO - Training starts at step 1
+[rank0]:[titan] 2026-05-12 22:55:37,899 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:38,490 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:38,759 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:55:38,935 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-05-12 22:55:39,151 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T225538Z&X-Amz-Expires=3600&X-Amz-Signature=a228b886dfa24a36d5edf236c4994e6d0b7e98e2709fd3a1e7b43994d94ba9b1&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778630138&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODYzMDEzOH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=trKEenQX1RQoayPPFHXAeyXNqrr2P96lHD7XQ4I-Su33lm6Y0R7VCTNJgRt0lczQ%7EJ29fgcLeX5LBKoGYfUHoCapXxpR932a-MQPU7nBBitC-cDFSPf-0VDrw%7EH13ld0JK7BwwD4PWUfmRbDceUEtt0scmFrZ8AxObMt607ctzgh-Tck9J0BogZzMQonN6tq9tf144OVPdiYM1xoCbp6LbiDGDzoS1Z5ZVGpCSvtkuYPFrEK6fdO3rjF%7EmT48a1TgEyKWvfb-22X%7EOWPsVDD8dipy-d-Oz%7Eqk2wqTekvydIC7yGsIiMChDPezVhbBXZCSzPkhblONlOvKQVHNLqtDg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[rank0]:W0512 22:56:32.899000 164874 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank0]:[titan] 2026-05-12 22:56:44,778 - root - INFO - [31mstep:  1  [32mloss: 12.21407  [38;2;180;60;0mgrad_norm:  0.1598  [38;2;54;234;195mmemory: 23.97GiB(76.44%)  [34mtps: 708  [36mtflops: 5.37  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-12 22:56:44,780 - root - INFO - Preparing c4_validation dataset from allenai/c4
+[rank0]:[titan] 2026-05-12 22:56:45,150 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-12 22:56:45,199 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:56:45,369 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:56:45,880 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:56:46,148 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:56:46,494 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-12 22:56:46,811 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-12 22:56:47,049 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-validation.00000-of-00008.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-05-12 22:56:47,251 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/dffa9a5aa789525d19e0d6d9473f981585bd51d31019f9ba258b54d311dd5bf2?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T225306Z&X-Amz-Expires=3600&X-Amz-Signature=3dc9024e8b3a636b8eb55ddf57a1399892673b8c7705aa55837d5757468bcf2b&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-validation.00000-of-00008.json.gz%3B+filename%3D%22c4-validation.00000-of-00008.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778629986&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODYyOTk4Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvZGZmYTlhNWFhNzg5NTI1ZDE5ZTBkNmQ5NDczZjk4MTU4NWJkNTFkMzEwMTlmOWJhMjU4YjU0ZDMxMWRkNWJmMioifV19&Signature=jMDAaddhCrQrFt-9om3Yy9eI5uuIcQupQXYZv6F9fDEGZ50Zt8M-eDY-DJ1692B0JwlQYLzpkaX-bW06kNOZipGVgBsXk4Kg5Rb9NyaeZjUicEnq7V5nTIC6J2vQps8trh%7ELiyuqwXwGLvFGOw5PtQMnfLVfaZoXmPcZx30AY%7EteGQ5V0J1lyov9Dgbtx-nXaBJ0b19NkKlxELuCPwk7OtUU3Pjb%7E09Wri6JBSrdWv18um8RmdriiHAB4ztdgcBtyZiegH7z2XjtmvcB0qgzmCuaLdfQtAAsRgGUpiJacf6jN4cgdlhjHAm4mp5kTtv58gcrJAlJvaErIRT0-ZvwSQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:/workspace/torchtitan_attention_residual/torchtitan/torchtitan/distributed/utils.py:442: UserWarning: Set timeout is now only supported for either nccl or gloo.
+[rank0]:  torch.distributed.distributed_c10d._set_pg_timeout(timeout, group)
+[rank0]:[titan] 2026-05-12 22:58:36,177 - root - INFO - [33mvalidate step:  1  [32mloss: 12.2106  [38;2;54;234;195mmemory: 23.97GiB(76.45%)  [34mtps: 7,354[39m
+[rank0]:[titan] 2026-05-12 22:58:36,180 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-05-12 23:00:40,104 - root - INFO - [31mstep: 10  [32mloss: 12.02312  [38;2;180;60;0mgrad_norm:  0.1765  [38;2;54;234;195mmemory: 25.28GiB(80.62%)  [34mtps: 3,570  [36mtflops: 27.04  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-12 23:02:57,823 - root - INFO - [31mstep: 20  [32mloss: 10.48746  [38;2;180;60;0mgrad_norm:  0.3329  [38;2;54;234;195mmemory: 25.28GiB(80.62%)  [34mtps: 3,569  [36mtflops: 27.04  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-12 23:05:15,135 - root - INFO - [31mstep: 30  [32mloss:  9.74344  [38;2;180;60;0mgrad_norm:  0.2273  [38;2;54;234;195mmemory: 25.28GiB(80.62%)  [34mtps: 3,580  [36mtflops: 27.12  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-12 23:07:32,340 - root - INFO - [31mstep: 40  [32mloss:  8.82385  [38;2;180;60;0mgrad_norm:  0.1478  [38;2;54;234;195mmemory: 25.28GiB(80.62%)  [34mtps: 3,582  [36mtflops: 27.14  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-12 23:08:00,141 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank0]:[titan] 2026-05-12 23:08:00,360 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T230800Z&X-Amz-Expires=3600&X-Amz-Signature=b50d25c93ec964c2f080f92996f4d5b4bfbb7117b7aae7da1a073f7b9d49befe&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778630880&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODYzMDg4MH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNjY1NmFhYzA3ODY2OGIwZDVmZWIxY2ZiN2IwNGRlZjA1YmZmNzNlN2UzNzVkMGE2NmUyNTI4MjczMzZhYzFhOCoifV19&Signature=WqDr%7Evcx8amV0plG-MrpNsraLB1CfP19rNvVu2g4Fz3praRND0OZG2Y7bFn78Yn-owS2eahRDUJEbupK6tHYTi6LH0vn29N5plocueRNEnOabKftnBDKYbHYcv-Aykrr6guXdQDo9Ke4XErLTMWUwuLCvMdTNpf9zpAerajlbNxrC3iWrmwr29zPGWlc9zRMofWhIPJ2Pd5havNXDbA-ibOeJ8kPtYhcAE%7Ek2a0B8kkfyAyTXKP0UPTIJ3i%7EhtxFrq2Yp2Wm7EgLEMUEtu6l0mJOg0NLgKTd%7E6xQsUvOj0OW%7E3pWgNHP7iSQ0o0Xeo8O2PakwfI2CRKZbLAC93drvw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank0]:[titan] 2026-05-12 23:09:38,184 - root - INFO - [GC] Performing periodic GC collection took 0.08 seconds
+[rank0]:[titan] 2026-05-12 23:09:51,960 - root - INFO - [31mstep: 50  [32mloss:  8.10427  [38;2;180;60;0mgrad_norm:  0.0709  [38;2;54;234;195mmemory: 25.28GiB(80.62%)  [34mtps: 3,520  [36mtflops: 26.67  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-12 23:12:09,137 - root - INFO - [31mstep: 60  [32mloss:  7.82302  [38;2;180;60;0mgrad_norm:  0.0266  [38;2;54;234;195mmemory: 25.28GiB(80.62%)  [34mtps: 3,583  [36mtflops: 27.14  [35mmfu: N/A[39m
+/workspace/torchtitan_attention_residual/phase4/launch_fsdp_small.sh: line 149: 164805 Killed                  PYTORCH_ALLOC_CONF="expandable_segments:True" torchrun --nproc_per_node="${NGPU}" --rdzv_backend c10d --rdzv_endpoint=localhost:0 --local-ranks-filter 0 --role rank --tee 3 -m torchtitan.train --module "${MODULE}" --config "${CONFIG}" --training.steps "${STEPS}" --training.local_batch_size "${LOCAL_BS}" --training.global_batch_size "${GLOBAL_BS}" --training.seq_len "${SEQ_LEN}" --parallelism.pipeline_parallel_degree 1 --parallelism.data_parallel_shard_degree "${DP_SHARD}" --parallelism.data_parallel_replicate_degree 1 --parallelism.tensor_parallel_degree 1 "${EXTRA_ARGS[@]}" --dump_folder "${OUT_DIR}" --metrics.save_tb_folder tb 2>&1
+     164806 Done                    | tee "${OUT_DIR}/train.log"

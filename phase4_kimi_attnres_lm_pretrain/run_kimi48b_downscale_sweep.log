@@ -1,0 +1,389 @@
+
+===============================================================
+[Tue May 12 08:48:15 AM UTC 2026] kimi_linear_48b_block_attn_res_e32 seq=2048 START
+===============================================================
+  error_file: /tmp/torchelastic_px24e8gk/none_fqf7t3p2/attempt_0/7/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/usr/local/lib/python3.12/dist-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.25 GiB. GPU 7 has a total capacity of 31.36 GiB of which 772.94 MiB is free. Including non-PyTorch memory, this process has 30.59 GiB memory in use. Of the allocated memory 28.87 GiB is allocated by PyTorch, and 584.99 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-12_08:48:50
+  host      : f59652d27037
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 35568)
+  error_file: /tmp/torchelastic_px24e8gk/none_fqf7t3p2/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/usr/local/lib/python3.12/dist-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.25 GiB. GPU 0 has a total capacity of 31.36 GiB of which 722.94 MiB is free. Including non-PyTorch memory, this process has 30.64 GiB memory in use. Of the allocated memory 28.87 GiB is allocated by PyTorch, and 640.18 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+============================================================
+[Tue May 12 08:48:53 AM UTC 2026] kimi_linear_48b_block_attn_res_e32 seq=2048 DONE
+
+===============================================================
+[Tue May 12 08:48:53 AM UTC 2026] kimi_linear_48b_block_attn_res_e16 seq=2048 START
+===============================================================
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 701, in forward_backward_step
+      pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 337, in forward
+      block_list, partial_block = layer(
+                                  ^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 137, in forward
+      ffn_out = self.ffn(self.post_attention_layernorm(h))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 683, in forward
+      return self._moe(x)
+             ^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/models/common/moe.py", line 451, in forward
+      ).to(x.dtype)
+        ^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 72.00 MiB. GPU 1 has a total capacity of 31.36 GiB of which 50.94 MiB is free. Including non-PyTorch memory, this process has 31.30 GiB memory in use. Of the allocated memory 28.88 GiB is allocated by PyTorch, and 339.28 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+============================================================
+[Tue May 12 08:50:36 AM UTC 2026] kimi_linear_48b_block_attn_res_e16 seq=2048 DONE
+
+===============================================================
+[Tue May 12 08:50:36 AM UTC 2026] kimi_linear_48b_block_attn_res_e8 seq=2048 START
+===============================================================
+  error_file: /tmp/torchelastic_e7b0tud4/none_fmgt_5ub/attempt_0/7/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 703, in forward_backward_step
+      loss_sum = self.loss_fn(pred, labels)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/components/loss.py", line 23, in cross_entropy_loss
+      return torch.nn.functional.cross_entropy(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/functional.py", line 3504, in cross_entropy
+      return torch._C._nn.cross_entropy_loss(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.25 GiB. GPU 7 has a total capacity of 31.36 GiB of which 656.94 MiB is free. Including non-PyTorch memory, this process has 30.71 GiB memory in use. Of the allocated memory 29.41 GiB is allocated by PyTorch, and 487.69 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-12_08:50:59
+  host      : f59652d27037
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 37682)
+  error_file: /tmp/torchelastic_e7b0tud4/none_fmgt_5ub/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 703, in forward_backward_step
+      loss_sum = self.loss_fn(pred, labels)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/components/loss.py", line 23, in cross_entropy_loss
+      return torch.nn.functional.cross_entropy(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/functional.py", line 3504, in cross_entropy
+      return torch._C._nn.cross_entropy_loss(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.25 GiB. GPU 1 has a total capacity of 31.36 GiB of which 656.94 MiB is free. Including non-PyTorch memory, this process has 30.71 GiB memory in use. Of the allocated memory 29.41 GiB is allocated by PyTorch, and 487.69 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+============================================================
+[Tue May 12 08:51:02 AM UTC 2026] kimi_linear_48b_block_attn_res_e8 seq=2048 DONE
+
+===============================================================
+[Tue May 12 08:51:02 AM UTC 2026] kimi_linear_48b_block_attn_res_d1280_e32 seq=2048 START
+===============================================================
+[rank7]:    16,
+[rank7]:    20,
+[rank7]:    24,
+[rank7]:    27
+[rank7]:  ],
+[rank7]:  "num_experts": 32,
+[rank7]:  "num_experts_per_token": 8,
+[rank7]:  "moe_intermediate_size": 1024,
+[rank7]:  "moe_renormalize": true,
+[rank7]:  "moe_router_activation_func": "sigmoid",
+[rank7]:  "num_shared_experts": 1,
+[rank7]:  "routed_scaling_factor": 2.446,
+[rank7]:  "first_k_dense_replace": 1,
+[rank7]:  "moe_layer_freq": 1,
+[rank7]:  "use_grouped_topk": true,
+[rank7]:  "num_expert_group": 1,
+[rank7]:  "topk_group": 1,
+[rank7]:  "rms_norm_eps": 1e-05,
+[rank7]:  "hidden_act": "silu",
+[rank7]:  "initializer_range": 0.02,
+[rank7]:  "__spec__": {
+[rank7]:    "num_blocks": 9,
+[rank7]:    "model_class": "KimiLinearAttnResModel"
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-12 08:51:15,180 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-12 08:51:15,181 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:51:15,181 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:51:15,182 - root - INFO - [34mModel kimi_linear kimi_linear_48b_attnres_e32_d1280 [31msize: 3,961,048,960 total parameters[39m
+[rank7]:[titan] 2026-05-12 08:51:15,198 - root - INFO - EP plan wrapped 26 MoE layer experts.
+[rank7]:[titan] 2026-05-12 08:51:15,198 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=8.
+[rank7]:[titan] 2026-05-12 08:51:15,340 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank7]:[titan] 2026-05-12 08:51:15,519 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:51:15,519 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:51:15,520 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-12 08:51:15,520 - root - INFO - CUDA memory usage for model: 1.86GiB(5.94%)
+[rank7]:[titan] 2026-05-12 08:51:15,522 - root - WARNING - Warmup steps (500) exceed total steps (3). Adjusting warmup steps to 3.
+[rank7]:[titan] 2026-05-12 08:51:15,522 - root - WARNING - Warmup (3) + decay (2) steps exceed total steps (3). Adjusting decay steps to 0.
+[rank7]:[titan] 2026-05-12 08:51:15,548 - root - INFO - Trainer is initialized with local batch size 1, global batch size 8, gradient accumulation steps 1, sequence length 2048, total steps 3 (warmup 500)
+[rank7]:[titan] 2026-05-12 08:51:15,548 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-12 08:51:15,765 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:51:16,296 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:51:16,524 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:51:16,705 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00007-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 08:51:16,909 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/52b8eebfc10bc64fe30386652eabc479c504c5f4bc52a0e9cc76d0dcfa797e90?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T085116Z&X-Amz-Expires=3600&X-Amz-Signature=380506d6191b4b95df1599ea5ea21c43bc3c37b866f7d1438b672ed90ada56ba&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00007-of-01024.json.gz%3B+filename%3D%22c4-train.00007-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778579476&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU3OTQ3Nn19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNTJiOGVlYmZjMTBiYzY0ZmUzMDM4NjY1MmVhYmM0NzljNTA0YzVmNGJjNTJhMGU5Y2M3NmQwZGNmYTc5N2U5MCoifV19&Signature=ctmoTMNSOO7gmQpZIgaRUyq4uEc3ZYNIYGnv-zVEWCmHPxvxRDFCiCdB%7E4uGC%7ESN0utWuQjtMpWsE6FfIitf%7EHxIUTvTOCAFjhkLgm7M8ANhamWntFI%7E8Z8n0G1RqWhcWiqWGdrEDvwqtnp9YJ04peu20DOvy4vyMYmSjyuDBIAqJsrXBiD0YDfGBNqy1NpdGdYhDAMMAB3sOFb-BodH4ScKSfAu7LnWQAJTvjvkprHgbe7QNjkR0LDfZk2L0wQnbYRGkkFwMEGivvkLY8c1hrQgmeWYyj4wrCDkCUjt6XIX3pBTaTVaPo0A%7EfMDt4VVMIvhKB65y7clfbMNK9RgVg__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[rank7]:W0512 08:52:01.483000 37997 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1280, out_features=1, bias=False)]
+[rank7]:[titan] 2026-05-12 08:52:02,257 - root - INFO - [31mstep:  1  [32mloss: 12.26220  [38;2;180;60;0mgrad_norm:  1.0086  [38;2;54;234;195mmemory: 22.54GiB(71.89%)  [34mtps: 44  [36mtflops: 0.99  [35mmfu: 0.32%[39m
+[rank7]:[titan] 2026-05-12 08:52:02,257 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank7]:[titan] 2026-05-12 08:52:04,026 - root - INFO - Training completed
+[rank7]:[titan] 2026-05-12 08:52:06,159 - root - INFO - Process group destroyed
+[Tue May 12 08:52:09 AM UTC 2026] kimi_linear_48b_block_attn_res_d1280_e32 seq=2048 DONE
+
+===============================================================
+[Tue May 12 08:52:09 AM UTC 2026] kimi_linear_48b_block_attn_res_d1280_e16 seq=2048 START
+===============================================================
+[rank7]:    16,
+[rank7]:    20,
+[rank7]:    24,
+[rank7]:    27
+[rank7]:  ],
+[rank7]:  "num_experts": 16,
+[rank7]:  "num_experts_per_token": 8,
+[rank7]:  "moe_intermediate_size": 1024,
+[rank7]:  "moe_renormalize": true,
+[rank7]:  "moe_router_activation_func": "sigmoid",
+[rank7]:  "num_shared_experts": 1,
+[rank7]:  "routed_scaling_factor": 2.446,
+[rank7]:  "first_k_dense_replace": 1,
+[rank7]:  "moe_layer_freq": 1,
+[rank7]:  "use_grouped_topk": true,
+[rank7]:  "num_expert_group": 1,
+[rank7]:  "topk_group": 1,
+[rank7]:  "rms_norm_eps": 1e-05,
+[rank7]:  "hidden_act": "silu",
+[rank7]:  "initializer_range": 0.02,
+[rank7]:  "__spec__": {
+[rank7]:    "num_blocks": 9,
+[rank7]:    "model_class": "KimiLinearAttnResModel"
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-12 08:52:21,865 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-12 08:52:21,866 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:52:21,866 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:52:21,867 - root - INFO - [34mModel kimi_linear kimi_linear_48b_attnres_e16_d1280 [31msize: 2,324,737,920 total parameters[39m
+[rank7]:[titan] 2026-05-12 08:52:21,882 - root - INFO - EP plan wrapped 26 MoE layer experts.
+[rank7]:[titan] 2026-05-12 08:52:21,882 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=8.
+[rank7]:[titan] 2026-05-12 08:52:22,021 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank7]:[titan] 2026-05-12 08:52:22,207 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:52:22,207 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:52:22,207 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-12 08:52:22,208 - root - INFO - CUDA memory usage for model: 1.09GiB(3.48%)
+[rank7]:[titan] 2026-05-12 08:52:22,210 - root - WARNING - Warmup steps (500) exceed total steps (3). Adjusting warmup steps to 3.
+[rank7]:[titan] 2026-05-12 08:52:22,210 - root - WARNING - Warmup (3) + decay (2) steps exceed total steps (3). Adjusting decay steps to 0.
+[rank7]:[titan] 2026-05-12 08:52:22,235 - root - INFO - Trainer is initialized with local batch size 1, global batch size 8, gradient accumulation steps 1, sequence length 2048, total steps 3 (warmup 500)
+[rank7]:[titan] 2026-05-12 08:52:22,236 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-12 08:52:22,607 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:52:23,082 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:52:23,310 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:52:23,483 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00007-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 08:52:23,715 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/52b8eebfc10bc64fe30386652eabc479c504c5f4bc52a0e9cc76d0dcfa797e90?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T085223Z&X-Amz-Expires=3600&X-Amz-Signature=dfbf4b3a74c39ffaf698a276d0b7943d89107eb0a27bf2c18b98e614e9c87b50&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00007-of-01024.json.gz%3B+filename%3D%22c4-train.00007-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778579543&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU3OTU0M319LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNTJiOGVlYmZjMTBiYzY0ZmUzMDM4NjY1MmVhYmM0NzljNTA0YzVmNGJjNTJhMGU5Y2M3NmQwZGNmYTc5N2U5MCoifV19&Signature=ejUxZqI9Uh1OouGq0%7ER2qQbWdmOyZnkCn7CxG5siK%7EhwoElOmvDvVbzLtVAErGAXuVFFiwFqXOCHX42w1wpTYDD0anFb0dyESXlmrVj-YL1eJKElUA%7EtFzq8AtgAhpEdJoKnHv2a5b8y2zGu9U1jLrIhmrURVJMMCY3IUm0s768u%7EeaAwiPnYAz4RrSFsVTcRK7GK898Tty1nVi9Jq74iaDk8XxDz9W5%7EWHmSvSaXfvpPs%7ESxYcsaSem3LqJrb%7EDhbnhfeQB4vU8%7ED9PFaOXebWWBaKNACb4rKeFc3ZE61-SNqOz0xagNUXfKEJuxQl3LldKEdDGgHgKM8cgEDGXUw__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[rank7]:W0512 08:52:27.677000 39442 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1280, out_features=1, bias=False)]
+[rank7]:[titan] 2026-05-12 08:52:28,474 - root - INFO - [31mstep:  1  [32mloss: 12.25309  [38;2;180;60;0mgrad_norm:  1.0183  [38;2;54;234;195mmemory: 20.99GiB(66.93%)  [34mtps: 310  [36mtflops: 4.00  [35mmfu: 1.28%[39m
+[rank7]:[titan] 2026-05-12 08:52:28,475 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank7]:[titan] 2026-05-12 08:52:30,189 - root - INFO - Training completed
+[rank7]:[titan] 2026-05-12 08:52:32,344 - root - INFO - Process group destroyed
+[Tue May 12 08:52:35 AM UTC 2026] kimi_linear_48b_block_attn_res_d1280_e16 seq=2048 DONE
+
+===============================================================
+[Tue May 12 08:52:35 AM UTC 2026] kimi_linear_48b_block_attn_res_d1024_e32 seq=2048 START
+===============================================================
+[rank7]:    16,
+[rank7]:    20,
+[rank7]:    24,
+[rank7]:    27
+[rank7]:  ],
+[rank7]:  "num_experts": 32,
+[rank7]:  "num_experts_per_token": 8,
+[rank7]:  "moe_intermediate_size": 1024,
+[rank7]:  "moe_renormalize": true,
+[rank7]:  "moe_router_activation_func": "sigmoid",
+[rank7]:  "num_shared_experts": 1,
+[rank7]:  "routed_scaling_factor": 2.446,
+[rank7]:  "first_k_dense_replace": 1,
+[rank7]:  "moe_layer_freq": 1,
+[rank7]:  "use_grouped_topk": true,
+[rank7]:  "num_expert_group": 1,
+[rank7]:  "topk_group": 1,
+[rank7]:  "rms_norm_eps": 1e-05,
+[rank7]:  "hidden_act": "silu",
+[rank7]:  "initializer_range": 0.02,
+[rank7]:  "__spec__": {
+[rank7]:    "num_blocks": 9,
+[rank7]:    "model_class": "KimiLinearAttnResModel"
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-12 08:52:48,262 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-12 08:52:48,263 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:52:48,263 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:52:48,265 - root - INFO - [34mModel kimi_linear kimi_linear_48b_attnres_e32_d1024 [31msize: 3,165,091,584 total parameters[39m
+[rank7]:[titan] 2026-05-12 08:52:48,279 - root - INFO - EP plan wrapped 26 MoE layer experts.
+[rank7]:[titan] 2026-05-12 08:52:48,279 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=8.
+[rank7]:[titan] 2026-05-12 08:52:48,415 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank7]:[titan] 2026-05-12 08:52:48,589 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:52:48,589 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:52:48,589 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-12 08:52:48,589 - root - INFO - CUDA memory usage for model: 1.49GiB(4.75%)
+[rank7]:[titan] 2026-05-12 08:52:48,591 - root - WARNING - Warmup steps (500) exceed total steps (3). Adjusting warmup steps to 3.
+[rank7]:[titan] 2026-05-12 08:52:48,591 - root - WARNING - Warmup (3) + decay (2) steps exceed total steps (3). Adjusting decay steps to 0.
+[rank7]:[titan] 2026-05-12 08:52:48,618 - root - INFO - Trainer is initialized with local batch size 1, global batch size 8, gradient accumulation steps 1, sequence length 2048, total steps 3 (warmup 500)
+[rank7]:[titan] 2026-05-12 08:52:48,618 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-12 08:52:48,883 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:52:49,419 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:52:49,767 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:52:49,940 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00007-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 08:52:50,151 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/52b8eebfc10bc64fe30386652eabc479c504c5f4bc52a0e9cc76d0dcfa797e90?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T084701Z&X-Amz-Expires=3600&X-Amz-Signature=6c83606581c98fdd3047026f00cab1f106ba2946b568cdd9e8ae664546ad5eb8&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00007-of-01024.json.gz%3B+filename%3D%22c4-train.00007-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778579221&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU3OTIyMX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNTJiOGVlYmZjMTBiYzY0ZmUzMDM4NjY1MmVhYmM0NzljNTA0YzVmNGJjNTJhMGU5Y2M3NmQwZGNmYTc5N2U5MCoifV19&Signature=SVH1sxRE8hIWzbsHXzXblkJFPUcYuA8ZUBdA9liifGQKzIHEpaaiHhd3fKaDxaQzcLcvayhKTkbzAUb82beHXk5V3YY1DFexC5Jbht-3VomKmLf0rtZ3yueiaZBuvai-4M8mnWWCXMQa2-64YEkpICPxVjVjTqt6c84H5QrZzBsE7WRtNnfPaFuCLHltfCUNRdY6a3cWMzh-hz2z39qWIpLGyAYNbAlvg2dcsap47%7EXQT6jxvt62OIV%7EJ97KpclVjz%7ES7lMSrW0q-nYscvbvuOsap7qsdkDxGotKbsE4VMNC2VEmh7qNSzYr63J6sftai0M2z0a%7ExeSsylr4cV37JQ__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[rank7]:W0512 08:52:53.564000 39750 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank7]:[titan] 2026-05-12 08:52:54,307 - root - INFO - [31mstep:  1  [32mloss: 12.20876  [38;2;180;60;0mgrad_norm:  1.0755  [38;2;54;234;195mmemory: 19.89GiB(63.44%)  [34mtps: 339  [36mtflops: 6.17  [35mmfu: 1.98%[39m
+[rank7]:[titan] 2026-05-12 08:52:54,307 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank7]:[titan] 2026-05-12 08:52:55,784 - root - INFO - Training completed
+[rank7]:[titan] 2026-05-12 08:52:57,968 - root - INFO - Process group destroyed
+[Tue May 12 08:53:00 AM UTC 2026] kimi_linear_48b_block_attn_res_d1024_e32 seq=2048 DONE
+
+===============================================================
+[Tue May 12 08:53:00 AM UTC 2026] kimi_linear_48b_block_attn_res_d1024_e16 seq=2048 START
+===============================================================
+[rank7]:    16,
+[rank7]:    20,
+[rank7]:    24,
+[rank7]:    27
+[rank7]:  ],
+[rank7]:  "num_experts": 16,
+[rank7]:  "num_experts_per_token": 8,
+[rank7]:  "moe_intermediate_size": 1024,
+[rank7]:  "moe_renormalize": true,
+[rank7]:  "moe_router_activation_func": "sigmoid",
+[rank7]:  "num_shared_experts": 1,
+[rank7]:  "routed_scaling_factor": 2.446,
+[rank7]:  "first_k_dense_replace": 1,
+[rank7]:  "moe_layer_freq": 1,
+[rank7]:  "use_grouped_topk": true,
+[rank7]:  "num_expert_group": 1,
+[rank7]:  "topk_group": 1,
+[rank7]:  "rms_norm_eps": 1e-05,
+[rank7]:  "hidden_act": "silu",
+[rank7]:  "initializer_range": 0.02,
+[rank7]:  "__spec__": {
+[rank7]:    "num_blocks": 9,
+[rank7]:    "model_class": "KimiLinearAttnResModel"
+[rank7]:  }
+[rank7]:}
+[rank7]:[titan] 2026-05-12 08:53:13,524 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank7]:[titan] 2026-05-12 08:53:13,524 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:53:13,525 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:53:13,526 - root - INFO - [34mModel kimi_linear kimi_linear_48b_attnres_e16_d1024 [31msize: 1,856,042,752 total parameters[39m
+[rank7]:[titan] 2026-05-12 08:53:13,539 - root - INFO - EP plan wrapped 26 MoE layer experts.
+[rank7]:[titan] 2026-05-12 08:53:13,539 - root - INFO - Applied EP plan (per-MoE-layer ExpertParallel) ep_degree=8.
+[rank7]:[titan] 2026-05-12 08:53:13,677 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank7]:[titan] 2026-05-12 08:53:13,850 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank7]:[titan] 2026-05-12 08:53:13,851 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank7]:[titan] 2026-05-12 08:53:13,851 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank7]:[titan] 2026-05-12 08:53:13,851 - root - INFO - CUDA memory usage for model: 1.03GiB(3.29%)
+[rank7]:[titan] 2026-05-12 08:53:13,853 - root - WARNING - Warmup steps (500) exceed total steps (3). Adjusting warmup steps to 3.
+[rank7]:[titan] 2026-05-12 08:53:13,853 - root - WARNING - Warmup (3) + decay (2) steps exceed total steps (3). Adjusting decay steps to 0.
+[rank7]:[titan] 2026-05-12 08:53:13,879 - root - INFO - Trainer is initialized with local batch size 1, global batch size 8, gradient accumulation steps 1, sequence length 2048, total steps 3 (warmup 500)
+[rank7]:[titan] 2026-05-12 08:53:13,879 - root - INFO - Training starts at step 1
+[rank7]:[titan] 2026-05-12 08:53:14,085 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:53:14,618 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:53:14,939 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank7]:[titan] 2026-05-12 08:53:15,115 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00007-of-01024.json.gz "HTTP/1.1 302 Found"
+[rank7]:[titan] 2026-05-12 08:53:15,311 - httpx - INFO - HTTP Request: GET https://cas-bridge.xethub.hf.co/xet-bridge-us/621ffdd236468d709f182a80/52b8eebfc10bc64fe30386652eabc479c504c5f4bc52a0e9cc76d0dcfa797e90?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260512T085315Z&X-Amz-Expires=3600&X-Amz-Signature=5a5437b4c43ed2af746b99d685323dffc6abf0399079c38ad9af78970347bf8c&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00007-of-01024.json.gz%3B+filename%3D%22c4-train.00007-of-01024.json.gz%22%3B&response-content-type=application%2Fgzip&x-amz-checksum-mode=ENABLED&x-id=GetObject&Expires=1778579595&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc3ODU3OTU5NX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82MjFmZmRkMjM2NDY4ZDcwOWYxODJhODAvNTJiOGVlYmZjMTBiYzY0ZmUzMDM4NjY1MmVhYmM0NzljNTA0YzVmNGJjNTJhMGU5Y2M3NmQwZGNmYTc5N2U5MCoifV19&Signature=F34rhtXDhr0Y39leYHXnWBx-uRRGntxEfMeM8li2yE8eFw7wAS5rWBLACyESevrdrYUJLO7nlajhZL9tu3c6Fzy2v-WtUI0GMFOjtkC9EDsd7wFg%7ENXV8VPiYnOVaVEWy-1-ejpGJ3%7E74Go%7EHeeOUlI92ibmwBqo5Db-0GTzR-R7bHsotuFgexQ9U52rjMHv9BOfK%7EKdMOd7MLh6RRvPIZanNHhqzWxcaxNn6tB3kUd8hBZIfseW6DkTPWAHM2KkheY-U5nndO42W82l%7Eu%7EF7Hq11N7-MFKyRY2T7lZYW-as4j2TnYDB8VRP1sjOVqYWvjlvcIGmzjJLS-cxDdxkgA__&Key-Pair-Id=K2L8F4GPSG1IFC "HTTP/1.1 206 Partial Content"
+[rank7]:[rank7]:W0512 08:53:19.040000 40058 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank7]:[titan] 2026-05-12 08:53:19,786 - root - INFO - [31mstep:  1  [32mloss: 12.19886  [38;2;180;60;0mgrad_norm:  1.0668  [38;2;54;234;195mmemory: 18.56GiB(59.20%)  [34mtps: 327  [36mtflops: 3.39  [35mmfu: 1.09%[39m
+[rank7]:[titan] 2026-05-12 08:53:19,786 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank7]:[titan] 2026-05-12 08:53:21,242 - root - INFO - Training completed
+[rank7]:[titan] 2026-05-12 08:53:23,420 - root - INFO - Process group destroyed
+[Tue May 12 08:53:26 AM UTC 2026] kimi_linear_48b_block_attn_res_d1024_e16 seq=2048 DONE
+
+===============================================================
+[Tue May 12 08:53:26 AM UTC 2026] All sweep done.
+===============================================================

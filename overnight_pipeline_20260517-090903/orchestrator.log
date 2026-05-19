@@ -1,0 +1,1746 @@
+[2026-05-17 09:09:03] ============================================================
+[2026-05-17 09:09:03] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 09:09:03] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 09:09:03] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 09:09:03] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 09:09:03] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 09:09:03] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 09:09:03] ============================================================
+[2026-05-17 09:09:03] resume from state: init
+[2026-05-17 09:09:03] step 1: wait for Instruct-665K download to complete
+[2026-05-17 09:09:03] still downloading… (last: 3928000K .......... .....) disk=148G
+[2026-05-17 09:11:03] still downloading… (last: 4504800K .......... .....) disk=144G
+[2026-05-17 09:13:03] still downloading… (last: 5087450K .......... .......... .) disk=144G
+[2026-05-17 09:15:03] still downloading… (last: 5699450K .....) disk=144G
+[2026-05-17 09:17:03] still downloading… (last: 6309200K .......... .....) disk=144G
+[2026-05-17 09:19:03] still downloading… (last: 6897100K .......... .......... .......... .....) disk=144G
+[2026-05-17 09:21:03] still downloading… (last: 7479950K .......... .......... .......... ...) disk=144G
+[2026-05-17 09:23:03] still downloading… (last: 8091400K .......... .......... .......... .........) disk=144G
+[2026-05-17 09:25:03] still downloading… (last: 8343000K .......... .......... ...) disk=144G
+[2026-05-17 09:27:03] still downloading… (last: 8931900K .......... .........) disk=140G
+[2026-05-17 09:29:03] still downloading… (last: 9552500K .......... .......... .......) disk=140G
+[2026-05-17 09:31:03] still downloading… (last: 10060050K .......... .......... .........) disk=140G
+[2026-05-17 09:33:04] still downloading… (last: 10567250K .......... .......... .......... .......... .....) disk=140G
+[2026-05-17 09:35:04] still downloading… (last: 11090500K .......... .......... .......... .......... ...) disk=140G
+[2026-05-17 09:37:04] still downloading… (last: 11666750K .......... .......) disk=140G
+[2026-05-17 09:39:04] still downloading… (last: 12218600K .......... .......... .......... .........) disk=140G
+[2026-05-17 09:41:04] still downloading… (last: 12817550K .......... .......... .......... ...) disk=132G
+[2026-05-17 09:43:04] still downloading… (last: 13328800K .......... .......... .......... .......... .......) disk=132G
+[2026-05-17 09:45:04] still downloading… (last: 13859200K .......... .......... .......... .) disk=132G
+[2026-05-17 09:47:04] still downloading… (last: 14402550K .........) disk=132G
+[2026-05-17 09:49:04] still downloading… (last: 14995100K ...) disk=132G
+[2026-05-17 09:51:04] still downloading… (last: 15465600K .......... .......... .......... .) disk=132G
+[2026-05-17 09:53:04] still downloading… (last: 15995450K .....) disk=132G
+[2026-05-17 09:55:04] still downloading… (last: 16369950K .......... .......... .......... .......... .........) disk=132G
+[2026-05-17 09:57:04] still downloading… (last: 16819750K .......... .......... .......... .......... .) disk=132G
+[2026-05-17 09:59:04] still downloading… (last: 17415050K .....) disk=132G
+[2026-05-17 10:01:05] still downloading… (last: 18032200K .......... .......... ..........) disk=132G
+[2026-05-17 10:03:05] still downloading… (last: 18584450K .......... .......... .......... .......... .....) disk=132G
+[2026-05-17 10:05:05] still downloading… (last: 19124150K .........) disk=132G
+[2026-05-17 10:07:05] still downloading… (last: 19657250K .......... .......... .........) disk=132G
+[2026-05-17 10:09:05] still downloading… (last: 20186950K .......... .......... .......... .......... .) disk=132G
+[2026-05-17 10:11:05] still downloading… (last: 20723550K .......... .......) disk=132G
+[2026-05-17 10:13:05] still downloading… (last: 21279650K .......... ...) disk=124G
+[2026-05-17 10:15:05] still downloading… (last: ) disk=116G
+[2026-05-17 10:17:05] still downloading… (last: 5452950K .......... .......... .) disk=123G
+[2026-05-17 10:19:05] still downloading… (last: 220500K .......... .......... .......... .......... ....) disk=124G
+[2026-05-17 10:21:05] still downloading… (last: 1161450K .......... .......... ..) disk=123G
+[2026-05-17 10:23:06] still downloading… (last: 1877900K .......... .......... .......... ......) disk=123G
+[2026-05-17 10:25:06] still downloading… (last: 2701300K .......... ..) disk=121G
+[2026-05-17 10:27:06] still downloading… (last: 3486100K .......... ..) disk=121G
+[2026-05-17 10:29:06] still downloading… (last: 4264150K .........) disk=117G
+[2026-05-17 10:31:06] still downloading… (last: 5095150K .......... ........) disk=117G
+[2026-05-17 10:33:06] still downloading… (last: 5781650K .......... .......... ..........) disk=117G
+[2026-05-17 10:35:06] still downloading… (last: 6234450K .......... .......... ..........) disk=117G
+[2026-05-17 10:37:06] still downloading… (last: 6785350K ..........) disk=117G
+[2026-05-17 10:39:06] still downloading… (last: 7549500K .......... .......... .......... ......) disk=117G
+[2026-05-17 10:41:06] still downloading… (last: 8351700K .......... .......... .......... .......... ....) disk=117G
+[2026-05-17 10:43:06] still downloading… (last: 9281750K .......... .......... .......... .......... ..) disk=113G
+[2026-05-17 10:45:07] still downloading… (last: 125550K .......... .......... .......... .......... ..........  2%  868K 15m45s) disk=115G
+[2026-05-17 10:47:07] still downloading… (last: 1126550K .......... .......... .......... .....) disk=113G
+[2026-05-17 10:49:07] still downloading… (last: 1995300K .......... .......... .......... .......... .......... 37%) disk=113G
+[2026-05-17 10:51:07] still downloading… (last: 3082000K .......... .......... .......... .........) disk=111G
+[2026-05-17 10:53:07] still downloading… (last: 4167950K .) disk=111G
+[2026-05-17 10:55:07] still downloading… (last: 5244450K .......... .......... .......... .......... ......) disk=107G
+[2026-05-17 10:57:07] download complete
+[2026-05-17 10:57:07] STATE → download_done
+[2026-05-17 10:57:07] step 2: stop stage 0 gracefully
+[2026-05-17 10:57:07] stage 0 PID=814676; sending SIGTERM and waiting for clean shutdown
+[2026-05-17 10:57:47] stage 0 stopped. latest ckpt: /workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C/checkpoint/step-10500
+[2026-05-17 10:57:47] STATE → stage0_stopped
+[2026-05-17 10:57:47] step 3: stage 1 alignment
+[2026-05-17 10:57:47] using stage 0 ckpt: /workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C/checkpoint/step-10500
+[2026-05-17 10:58:03] ABORT: stage 1 exited rc=1; tail of log:
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/config/configurable.py", line 93, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 378, in __init__
+      raise ValueError(
+  ValueError: We need to maintain at least 2 checkpoint replicas, as the last one may be in the process of being saved.
+  
+[7]:
+  time      : 2026-05-17_10:58:00
+  host      : f59652d27037
+  rank      : 7 (local_rank: 7)
+  exitcode  : 1 (pid: 876729)
+  error_file: /tmp/torchelastic_7ft35o3m/none_vn_o4po_/attempt_0/7/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 455, in __init__
+      self.checkpointer = config.checkpoint.build(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/config/configurable.py", line 93, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 378, in __init__
+      raise ValueError(
+  ValueError: We need to maintain at least 2 checkpoint replicas, as the last one may be in the process of being saved.
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-17_10:58:00
+  host      : f59652d27037
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 876725)
+  error_file: /tmp/torchelastic_7ft35o3m/none_vn_o4po_/attempt_0/3/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 455, in __init__
+      self.checkpointer = config.checkpoint.build(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/config/configurable.py", line 93, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/components/checkpoint.py", line 378, in __init__
+      raise ValueError(
+  ValueError: We need to maintain at least 2 checkpoint replicas, as the last one may be in the process of being saved.
+  
+============================================================
+[2026-05-17 10:58:03] STATE → ABORTED_S1_RUN
+[2026-05-17 11:03:46] ============================================================
+[2026-05-17 11:03:46] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 11:03:46] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 11:03:46] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 11:03:46] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 11:03:46] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 11:03:46] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 11:03:46] ============================================================
+[2026-05-17 11:03:46] resume from state: stage0_stopped
+[2026-05-17 11:03:46] step 3: stage 1 alignment
+[2026-05-17 11:03:46] using stage 0 ckpt: /workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C/checkpoint/step-10500
+[2026-05-17 11:04:46] ABORT: stage 1 exited rc=1; tail of log:
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 681, in forward_backward_step
+      loss = super().forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/usr/local/lib/python3.12/dist-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 5.04 GiB. GPU 7 has a total capacity of 31.36 GiB of which 4.10 GiB is free. Including non-PyTorch memory, this process has 27.24 GiB memory in use. Of the allocated memory 26.03 GiB is allocated by PyTorch, and 402.33 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-17_11:04:41
+  host      : f59652d27037
+  rank      : 6 (local_rank: 6)
+  exitcode  : 1 (pid: 877449)
+  error_file: /tmp/torchelastic_wautexik/none_f34yf4sl/attempt_0/6/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 713, in train_step
+      super().train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 681, in forward_backward_step
+      loss = super().forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 711, in forward_backward_step
+      loss.backward()
+    File "/usr/local/lib/python3.12/dist-packages/torch/_tensor.py", line 631, in backward
+      torch.autograd.backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/__init__.py", line 381, in backward
+      _engine_run_backward(
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 5.04 GiB. GPU 6 has a total capacity of 31.36 GiB of which 4.10 GiB is free. Including non-PyTorch memory, this process has 27.24 GiB memory in use. Of the allocated memory 26.03 GiB is allocated by PyTorch, and 402.33 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  
+============================================================
+[2026-05-17 11:04:46] STATE → ABORTED_S1_RUN
+[2026-05-17 11:14:40] ============================================================
+[2026-05-17 11:14:40] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 11:14:40] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 11:14:40] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 11:14:40] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 11:14:40] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 11:14:40] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 11:14:40] ============================================================
+[2026-05-17 11:14:40] resume from state: stage0_stopped
+[2026-05-17 11:14:40] step 3: stage 1 alignment
+[2026-05-17 11:14:40] using stage 0 ckpt: /workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C/checkpoint/step-10500
+[2026-05-17 12:52:18] ABORT: stage 1 exited rc=1; tail of log:
+      attn_out = self.self_attn(self.input_layernorm(h))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 579, in forward
+      o = self.o_norm(o, g_out)  # o * sigmoid(g_out), normed
+          ^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/modules/fused_norm_gate.py", line 1042, in forward
+      return rms_norm_gated(
+             ^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/modules/fused_norm_gate.py", line 857, in rms_norm_gated
+      return LayerNormGatedFunction.apply(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/function.py", line 596, in apply
+      return super().apply(*args, **kwargs)  # type: ignore[misc]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/utils.py", line 227, in wrapper
+      return fn(*processed_args, **processed_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/modules/fused_norm_gate.py", line 659, in forward
+      y, mean, rstd, residual_out = layer_norm_gated_fwd(
+                                    ^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/modules/fused_norm_gate.py", line 488, in layer_norm_gated_fwd
+      layer_norm_gated_fwd_kernel[grid](
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/jit.py", line 370, in <lambda>
+      return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 459, in run
+      return self.fn.run(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 252, in run
+      ret = self.fn.run(
+            ^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/jit.py", line 744, in run
+      kernel.run(grid_0, grid_1, grid_2, stream, kernel.function, kernel.packed_metadata, launch_metadata,
+    File "/usr/local/lib/python3.12/dist-packages/triton/backends/nvidia/driver.py", line 713, in __call__
+      self.launch(gridX, gridY, gridZ, stream, function, self.launch_cooperative_grid, self.launch_pdl,
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+  
+============================================================
+[2026-05-17 12:52:18] STATE → ABORTED_S1_RUN
+[2026-05-17 12:53:37] ============================================================
+[2026-05-17 12:53:37] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 12:53:37] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 12:53:37] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 12:53:37] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 12:53:37] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 12:53:37] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 12:53:37] ============================================================
+[2026-05-17 12:53:37] resume from state: stage0_stopped
+[2026-05-17 12:53:37] step 3: stage 1 alignment
+[2026-05-17 12:53:37] using stage 0 ckpt: /workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C/checkpoint/step-10500
+[2026-05-17 14:29:40] ABORT: stage 1 exited rc=1; tail of log:
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 713, in train_step
+      super().train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 681, in forward_backward_step
+      loss = super().forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 701, in forward_backward_step
+      pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 338, in forward
+      block_list, partial_block = layer(
+                                  ^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 129, in forward
+      attn_out = self.self_attn(self.input_layernorm(h))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 583, in forward
+      out = _local_linear(self.o_proj, o)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 416, in _local_linear
+      return F.linear(x, weight, bias)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasGemmEx( handle, opa, opb, m, n, k, &falpha, a, CUDA_R_16BF, lda, b, CUDA_R_16BF, ldb, &fbeta, c, std::is_same_v<C_Dtype, float> ? CUDA_R_32F : CUDA_R_16BF, ldc, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+  
+============================================================
+[2026-05-17 14:29:40] STATE → ABORTED_S1_RUN
+[2026-05-17 14:33:52] ============================================================
+[2026-05-17 14:33:52] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 14:33:52] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 14:33:52] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 14:33:52] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 14:33:52] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 14:33:52] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 14:33:52] ============================================================
+[2026-05-17 14:33:52] resume from state: stage0_stopped
+[2026-05-17 14:33:52] step 3: stage 1 alignment
+[2026-05-17 14:33:52] using stage 0 ckpt: /workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C/checkpoint/step-10500
+[2026-05-17 14:33:52] stage 1 attempt 1/15 (latest stage1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-5000)
+[2026-05-17 16:10:05] stage 1 attempt 1 failed rc=1; tail of log:
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+[2026-05-17 16:10:05] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 16:10:35] stage 1 attempt 2/15 (latest stage1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-7500)
+[2026-05-17 16:55:17] stage 1 completed (attempt 2)
+[2026-05-17 16:55:17] stage 1 done. latest ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-17 16:55:17] STATE → stage1_done
+[2026-05-17 16:55:17] step 4: stage 2 visual instruction tuning
+[2026-05-17 16:55:17] using stage 1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-17 16:55:17] stage 2 attempt 1/15 (latest stage2 ckpt: )
+[2026-05-17 17:23:42] stage 2 attempt 1 failed rc=1; tail of log:
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+[2026-05-17 17:23:42] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 17:24:12] stage 2 attempt 2/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-500)
+[2026-05-17 17:51:17] stage 2 attempt 2 failed rc=1; tail of log:
+  RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasGemmEx( handle, opa, opb, m, n, k, &falpha, a, CUDA_R_16BF, lda, b, CUDA_R_16BF, ldb, &fbeta, c, std::is_same_v<C_Dtype, float> ? CUDA_R_32F : CUDA_R_16BF, ldc, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+[2026-05-17 17:51:17] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 17:51:47] ABORT: disk free=24G < required=40G
+[2026-05-17 17:51:47] STATE → ABORTED_DISK
+[2026-05-17 17:54:31] ============================================================
+[2026-05-17 17:54:31] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 17:54:31] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 17:54:31] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 17:54:31] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 17:54:31] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 17:54:31] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 17:54:31] ============================================================
+[2026-05-17 17:54:31] resume from state: stage1_done
+[2026-05-17 17:54:31] step 4: stage 2 visual instruction tuning
+[2026-05-17 17:54:31] using stage 1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-17 17:54:32] stage 2 attempt 1/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-1000)
+[2026-05-17 18:21:29] stage 2 attempt 1 failed rc=1; tail of log:
+  RuntimeError: CUDA driver error: device-side assert triggered
+[2026-05-17 18:21:29] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 18:21:59] stage 2 attempt 2/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-1500)
+[2026-05-17 18:50:03] stage 2 attempt 2 failed rc=1; tail of log:
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+[2026-05-17 18:50:03] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 18:50:33] stage 2 attempt 3/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-2000)
+[2026-05-17 19:44:24] ============================================================
+[2026-05-17 19:44:24] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 19:44:24] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 19:44:24] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 19:44:24] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 19:44:24] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 19:44:24] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 19:44:24] ============================================================
+[2026-05-17 19:44:24] resume from state: stage1_done
+[2026-05-17 19:44:24] step 4: stage 2 visual instruction tuning
+[2026-05-17 19:44:24] using stage 1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-17 19:44:24] stage 2 attempt 1/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-2500)
+[2026-05-17 20:12:57] stage 2 attempt 1 failed rc=1; tail of log:
+  torch.AcceleratorError: CUDA error: device-side assert triggered
+  Search for `cudaErrorAssert' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+  CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+[2026-05-17 20:12:57] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 20:13:27] stage 2 attempt 2/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-2500)
+[2026-05-17 20:40:54] stage 2 attempt 2 failed rc=1; tail of log:
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+[2026-05-17 20:40:54] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 20:41:24] stage 2 attempt 3/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-3000)
+[2026-05-17 21:08:53] stage 2 attempt 3 failed rc=1; tail of log:
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+[2026-05-17 21:08:53] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 21:09:23] stage 2 attempt 4/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-3500)
+[2026-05-17 21:36:40] stage 2 attempt 4 failed rc=1; tail of log:
+  RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasGemmEx( handle, opa, opb, m, n, k, &falpha, a, CUDA_R_16BF, lda, b, CUDA_R_16BF, ldb, &fbeta, c, std::is_same_v<C_Dtype, float> ? CUDA_R_32F : CUDA_R_16BF, ldc, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+[2026-05-17 21:36:40] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 21:37:10] stage 2 attempt 5/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-4000)
+[2026-05-17 22:05:29] ============================================================
+[2026-05-17 22:05:29] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-17 22:05:29] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-17 22:05:29] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-17 22:05:29] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-17 22:05:29] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-17 22:05:29] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-17 22:05:29] ============================================================
+[2026-05-17 22:05:29] resume from state: stage1_done
+[2026-05-17 22:05:29] step 4: stage 2 visual instruction tuning
+[2026-05-17 22:05:29] using stage 1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-17 22:05:29] stage 2 attempt 1/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-3500)
+[2026-05-17 22:34:23] stage 2 attempt 1 failed rc=1; tail of log:
+  RuntimeError: CUDA error: CUBLAS_STATUS_EXECUTION_FAILED when calling `cublasGemmEx( handle, opa, opb, m, n, k, &falpha, a, CUDA_R_16BF, lda, b, CUDA_R_16BF, ldb, &fbeta, c, std::is_same_v<C_Dtype, float> ? CUDA_R_32F : CUDA_R_16BF, ldc, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+[2026-05-17 22:34:23] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 22:34:53] stage 2 attempt 2/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-4000)
+[2026-05-17 23:03:20] stage 2 attempt 2 failed rc=1; tail of log:
+  RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasGemmEx( handle, opa, opb, m, n, k, &falpha, a, CUDA_R_16BF, lda, b, CUDA_R_16BF, ldb, &fbeta, c, std::is_same_v<C_Dtype, float> ? CUDA_R_32F : CUDA_R_16BF, ldc, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+[2026-05-17 23:03:21] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 23:03:51] stage 2 attempt 3/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-4500)
+[2026-05-17 23:31:33] stage 2 attempt 3 failed rc=1; tail of log:
+  RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasGemmEx( handle, opa, opb, m, n, k, &falpha, a, CUDA_R_16BF, lda, b, CUDA_R_16BF, ldb, &fbeta, c, std::is_same_v<C_Dtype, float> ? CUDA_R_32F : CUDA_R_16BF, ldc, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+[2026-05-17 23:31:33] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-17 23:32:03] stage 2 attempt 4/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5000)
+[2026-05-18 00:45:43] ============================================================
+[2026-05-18 00:45:43] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-18 00:45:43] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 00:45:43] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 00:45:43] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 00:45:43] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 00:45:43] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 00:45:43] ============================================================
+[2026-05-18 00:45:43] resume from state: stage1_done
+[2026-05-18 00:45:43] step 4: stage 2 visual instruction tuning
+[2026-05-18 00:45:43] using stage 1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-18 00:45:43] stage 2 attempt 1/15 (latest stage2 ckpt: )
+[2026-05-18 01:13:40] stage 2 attempt 1 failed rc=1; tail of log:
+  torch.AcceleratorError: CUDA error: device-side assert triggered
+  Search for `cudaErrorAssert' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+  CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+[2026-05-18 01:13:40] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-18 01:14:10] stage 2 attempt 2/15 (latest stage2 ckpt: )
+[2026-05-18 01:42:06] stage 2 attempt 2 failed rc=1; tail of log:
+  torch.AcceleratorError: CUDA error: device-side assert triggered
+  Search for `cudaErrorAssert' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+  CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+[2026-05-18 01:42:06] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-18 01:42:36] stage 2 attempt 3/15 (latest stage2 ckpt: )
+[2026-05-18 01:46:30] ============================================================
+[2026-05-18 01:46:30] OVERNIGHT PIPELINE START  (deadline 40h)
+[2026-05-18 01:46:30] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 01:46:30] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 01:46:30] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 01:46:30] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 01:46:30] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 01:46:30] ============================================================
+[2026-05-18 01:46:30] resume from state: stage1_done
+[2026-05-18 01:46:30] step 4: stage 2 visual instruction tuning
+[2026-05-18 01:46:30] using stage 1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-18 01:46:30] stage 2 attempt 1/15 (latest stage2 ckpt: , MM_SHUFFLE_SEED=1)
+[2026-05-18 06:45:47] stage 2 attempt 1 failed rc=1; tail of log:
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+[2026-05-18 06:45:47] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-18 06:46:17] stage 2 attempt 2/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-3200, MM_SHUFFLE_SEED=2)
+[2026-05-18 07:13:25] stage 2 attempt 2 failed rc=1; tail of log:
+  torch.AcceleratorError: CUDA error: device-side assert triggered
+  Search for `cudaErrorAssert' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+  CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+[2026-05-18 07:13:25] sleeping 30s before retry; torchtitan auto-resumes from latest ckpt
+[2026-05-18 07:13:55] stage 2 attempt 3/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-3400, MM_SHUFFLE_SEED=3)
+[2026-05-18 09:29:40] ============================================================
+[2026-05-18 09:29:40] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 09:29:40] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 09:29:40] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 09:29:40] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 09:29:40] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 09:29:40] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 09:29:40] ============================================================
+[2026-05-18 09:29:40] resume from state: stage1_done
+[2026-05-18 09:29:40] step 4: stage 2 visual instruction tuning
+[2026-05-18 09:29:40] using stage 1 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m/checkpoint/step-8720
+[2026-05-18 09:29:40] stage 2 attempt 1/15 (latest stage2 ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-3800, MM_SHUFFLE_SEED=1)
+[2026-05-18 11:33:49] stage 2 completed (attempt 1)
+[2026-05-18 11:33:49] stage 2 done. latest ckpt: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200
+[2026-05-18 11:33:49] trim ckpts under /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m: keep step-8720
+[2026-05-18 11:33:49] disk after stage 1 trim: 68G
+[2026-05-18 11:33:49] STATE → stage2_done
+[2026-05-18 11:33:49] step 4.5: eval final stage 2 ckpt on LLaVA benchmark suite
+[2026-05-18 11:52:07] eval done. results: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/overnight_20260518-113349_step-5200
+[2026-05-18 11:52:07] STATE → eval_done
+[2026-05-18 11:52:07] step 5: DCP→HF (multimodal)
+[2026-05-18 11:52:13] ABORT: DCP→HF exited rc=1; tail of log:
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/dcp_to_hf_kimi_attn_res_vl.py", line 59, in <module>
+    _spec.loader.exec_module(_lm_conv)
+  File "<frozen importlib._bootstrap_external>", line 991, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1128, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1186, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/torchtitan_attention_residual/phase10/dcp_to_hf_kimi_attn_res.py'
+E0518 11:52:12.239000 1226300 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 0 (pid: 1226372) of binary: /usr/bin/python3
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase11_rlhf_grpo_infra/dcp_to_hf_kimi_attn_res_vl.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-18_11:52:12
+  host      : f59652d27037
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1226372)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+[2026-05-18 11:52:13] STATE → ABORTED_HF_RUN
+[2026-05-18 11:59:18] ============================================================
+[2026-05-18 11:59:18] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 11:59:18] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 11:59:18] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 11:59:18] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 11:59:18] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 11:59:18] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 11:59:18] ============================================================
+[2026-05-18 11:59:18] resume from state: eval_done
+[2026-05-18 11:59:18] step 5: DCP→HF (multimodal)
+[2026-05-18 11:59:49] DCP→HF done. output: /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 11:59:49] STATE → hf_done
+[2026-05-18 11:59:49] step 6: launch GRPO multimodal smoke
+[2026-05-18 11:59:51] WARN: GRPO exited rc=1; tail of log:
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 67, in <module>
+    from torchtitan.config import Configurable
+ModuleNotFoundError: No module named 'torchtitan'
+[2026-05-18 11:59:51] STATE → GRPO_FAIL_RC1
+[2026-05-18 11:59:51] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 11:59:51] ============================================================
+[2026-05-18 12:04:10] ============================================================
+[2026-05-18 12:04:10] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 12:04:10] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 12:04:10] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 12:04:10] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 12:04:10] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 12:04:10] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 12:04:10] ============================================================
+[2026-05-18 12:04:10] resume from state: hf_done
+[2026-05-18 12:04:10] step 6: launch GRPO multimodal smoke
+[2026-05-18 12:04:15] WARN: GRPO exited rc=1; tail of log:
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Loaded ModelSpec: name=qwen3 flavor=0.6B_varlen
+NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for the framework + trace; the 447m Kimi AttnRes needs a model-agnostic PolicyTrainer (separate RFC).
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 488, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 484, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 264, in _async_main
+    task = LlavaCaptionTask(
+           ^^^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/llava_caption_task.py", line 89, in __init__
+    with open(json_path, "r") as f:
+         ^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/.hf_home/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json'
+[2026-05-18 12:04:15] STATE → GRPO_FAIL_RC1
+[2026-05-18 12:04:15] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 12:04:15] ============================================================
+[2026-05-18 12:04:57] ============================================================
+[2026-05-18 12:04:57] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 12:04:57] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 12:04:57] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 12:04:57] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 12:04:57] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 12:04:57] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 12:04:57] ============================================================
+[2026-05-18 12:04:57] resume from state: hf_done
+[2026-05-18 12:04:57] step 6: launch GRPO multimodal smoke
+[2026-05-18 12:05:14] WARN: GRPO exited rc=1; tail of log:
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Loaded ModelSpec: name=qwen3 flavor=0.6B_varlen
+NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for the framework + trace; the 447m Kimi AttnRes needs a model-agnostic PolicyTrainer (separate RFC).
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-18_12:04_617
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 488, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 484, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 291, in _async_main
+    await setup_torch_elastic_env_async(trainer_mesh)
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/spmd/__init__.py", line 66, in setup_torch_elastic_env_async
+    master_addr, master_port = await am.slice(
+                               ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 151, in mark_complete
+    func, value = set_result, await coro
+                              ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 423, in task
+    await setup_actor.setup.call()
+monarch._src.actor.actor_mesh.ActorError: Actor call setup.setup failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1279, in handle
+    result = await the_method(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 206, in setup
+    user_setup()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 214, in _bootstrap
+    import torchtitan.config  # noqa: F401
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'torchtitan.config'
+
+[2026-05-18 12:05:14] STATE → GRPO_FAIL_RC1
+[2026-05-18 12:05:14] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 12:05:14] ============================================================
+[2026-05-18 12:06:10] ============================================================
+[2026-05-18 12:06:10] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 12:06:10] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 12:06:10] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 12:06:10] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 12:06:10] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 12:06:10] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 12:06:10] ============================================================
+[2026-05-18 12:06:10] resume from state: hf_done
+[2026-05-18 12:06:10] step 6: launch GRPO multimodal smoke
+[2026-05-18 12:06:31] WARN: GRPO exited rc=1; tail of log:
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Loaded ModelSpec: name=qwen3 flavor=0.6B_varlen
+NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for the framework + trace; the 447m Kimi AttnRes needs a model-agnostic PolicyTrainer (separate RFC).
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-18_12:06_478
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 505, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 501, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 335, in _async_main
+    await ts.initialize(mesh=trainer_mesh, strategy=ts.LocalRankStrategy())
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 75, in initialize
+    controller = await _controller(store_name)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 110, in _controller
+    return await get_or_spawn_controller(store_name, Controller)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 151, in mark_complete
+    func, value = set_result, await coro
+                              ^^^^^^^^^^
+monarch._src.actor.actor_mesh.ActorError: Actor call controller_controller.get_or_spawn failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1293, in handle
+    result = the_method(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 830, in get_or_spawn
+    mesh = proc.spawn(name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 381, in spawn
+    return self._spawn_nonblocking(name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 448, in _spawn_nonblocking
+    return self._spawn_nonblocking_on(self._proc_mesh, name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 501, in _spawn_nonblocking_on
+    mesh = ActorMesh(Class, name, actor_mesh, self._region.as_shape(), self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1595, in __init__
+    raise ValueError(
+ValueError: <class 'torchstore.controller.Controller'> mixes both async and sync endpoints.Synchronous endpoints cannot be mixed with async endpoints because they can cause the asyncio loop to deadlock if they wait.sync: ['get_controller_strategy', 'keys', 'locate_volumes', 'notify_delete', 'notify_put'] async: ['init', 'teardown']
+
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=1233908 at time 2026-05-18 12:06:30.218781:
+The actor <monarch._src.actor.actor_mesh.RootClientActor client> and all its descendants have failed:
+  undeliverable message error:
+  	description: delivery of message from sender to dest failed
+  	sender: unix:@m2o5VAFlDJJxr7WyDIJFgzyI,local,client[0]
+  	dest: unix:@m2o5VAFlDJJxr7WyDIJFgzyI,anon_0-1n5t6eAKWSLm,comm-1rbN4usZHsDb[0][13147652568889606402<hyperactor_mesh::comm::multicast::CastMessage>]
+  	message type: hyperactor_mesh::comm::multicast::CastMessage
+  	headers: hyperactor_mesh::casting::cast_actor_mesh_id=proc_agent,hyperactor::mailbox::headers::send_timestamp=2026-05-18T12:06:29.635993762+00:00,hyperactor::mailbox::headers::rust_message_type=hyperactor_mesh::comm::multicast::CastMessage,hyperactor::ordering::seq_info=019e3afa-e59f-7fa2-8384-c7e823e0e1bd:5
+  	data: CastMessage{"dest":{"selection":{"All":"True"},"slice":{"offset":0,"sizes":[],"strides":[]}},"message":{"actor_mesh_id":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","data":{"bindings":"[[104803[...106 chars] CRC:9378325a 5b 5b 31 30 34 38 30 33 [...98 bytes]","message":{"encoded":{"Multipart":{"body":"[19,0,0,[...21869402 chars] CRC:87f70d83 5b 31 39 2c 30 2c 30 2c [...21869394 bytes]","parts":[]}},"typehash":12983742011630525178}},"dest_port":{"actor_name":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","port":12421042491547118789},"headers":"[3,0,181[...519 chars] CRC:432953d3 5b 33 2c 30 2c 31 38 31 [...511 bytes]","sender":"[[{\"Unix[...59 chars] CRC:17a15381 5b 5b 7b 22 55 6e 69 78 [...51 bytes]","shape":{"labels":[],"slice":{"offset":0,"sizes":[],"strides":[]}}}}
+  	error: broken link: failed to enqueue in MailboxClient when processing buffer: channel closed with reason Some("session unix:/tmp/.tmpIvH4ej/anon_0-1n5t6eAKWSLm.b48673cac180e425: server closed")
+
+Exception ignored in atexit callback: <function _init_client_context.<locals>.<lambda> at 0x757adefa5120>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 444, in <lambda>
+    atexit.register(lambda: shutdown_context().get(timeout=5.0))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+KeyboardInterrupt: 
+[2026-05-18 12:06:31] STATE → GRPO_FAIL_RC1
+[2026-05-18 12:06:31] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 12:06:31] ============================================================
+[2026-05-18 13:13:50] ============================================================
+[2026-05-18 13:13:50] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 13:13:50] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 13:13:50] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 13:13:50] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 13:13:50] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 13:13:50] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 13:13:50] ============================================================
+[2026-05-18 13:13:50] resume from state: hf_done
+[2026-05-18 13:13:50] step 6: launch GRPO multimodal smoke
+[2026-05-18 13:14:12] WARN: GRPO exited rc=1; tail of log:
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py:101: UserWarning: torchstore Controller monkeypatch failed: 'EndpointProperty' object has no attribute '__name__'
+  _w.warn(f"torchstore Controller monkeypatch failed: {_e}")
+Loaded ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res_n4
+NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for the framework + trace; the 447m Kimi AttnRes needs a model-agnostic PolicyTrainer (separate RFC).
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-18_13:13_786
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 529, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 525, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 368, in _async_main
+    await ts.initialize(mesh=trainer_mesh, strategy=ts.LocalRankStrategy())
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 75, in initialize
+    controller = await _controller(store_name)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 110, in _controller
+    return await get_or_spawn_controller(store_name, Controller)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 151, in mark_complete
+    func, value = set_result, await coro
+                              ^^^^^^^^^^
+monarch._src.actor.actor_mesh.ActorError: Actor call controller_controller.get_or_spawn failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1293, in handle
+    result = the_method(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 830, in get_or_spawn
+    mesh = proc.spawn(name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 381, in spawn
+    return self._spawn_nonblocking(name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 448, in _spawn_nonblocking
+    return self._spawn_nonblocking_on(self._proc_mesh, name, Class, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/proc_mesh.py", line 501, in _spawn_nonblocking_on
+    mesh = ActorMesh(Class, name, actor_mesh, self._region.as_shape(), self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1595, in __init__
+    raise ValueError(
+ValueError: <class 'torchstore.controller.Controller'> mixes both async and sync endpoints.Synchronous endpoints cannot be mixed with async endpoints because they can cause the asyncio loop to deadlock if they wait.sync: ['get_controller_strategy', 'keys', 'locate_volumes', 'notify_delete', 'notify_put'] async: ['init', 'teardown']
+
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=1245340 at time 2026-05-18 13:14:10.521548:
+The actor <monarch._src.actor.actor_mesh.RootClientActor client> and all its descendants have failed:
+  undeliverable message error:
+  	description: delivery of message from sender to dest failed
+  	sender: unix:@pgEJ3K8RmOgkzEwy44mu40LU,local,client[0]
+  	dest: unix:@pgEJ3K8RmOgkzEwy44mu40LU,anon_0-19MyhqpnSt1b,comm-12rBZBCLDt2a[0][13147652568889606402<hyperactor_mesh::comm::multicast::CastMessage>]
+  	message type: hyperactor_mesh::comm::multicast::CastMessage
+  	headers: hyperactor_mesh::casting::cast_actor_mesh_id=proc_agent,hyperactor::mailbox::headers::send_timestamp=2026-05-18T13:14:09.948219473+00:00,hyperactor::mailbox::headers::rust_message_type=hyperactor_mesh::comm::multicast::CastMessage,hyperactor::ordering::seq_info=019e3b38-dfa0-70b1-a90a-aab18ad9f64c:5
+  	data: CastMessage{"dest":{"selection":{"All":"True"},"slice":{"offset":0,"sizes":[],"strides":[]}},"message":{"actor_mesh_id":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","data":{"bindings":"[[104803[...106 chars] CRC:9378325a 5b 5b 31 30 34 38 30 33 [...98 bytes]","message":{"encoded":{"Multipart":{"body":"[19,0,0,[...21869407 chars] CRC:38de04b2 5b 31 39 2c 30 2c 30 2c [...21869399 bytes]","parts":[]}},"typehash":12983742011630525178}},"dest_port":{"actor_name":"proc_age[...10 chars] CRC:65723370 70 72 6f 63 5f 61 67 65 [...2 bytes]","port":12421042491547118789},"headers":"[3,0,181[...520 chars] CRC:a6bdf2e7 5b 33 2c 30 2c 31 38 31 [...512 bytes]","sender":"[[{\"Unix[...59 chars] CRC:e3f9243e 5b 5b 7b 22 55 6e 69 78 [...51 bytes]","shape":{"labels":[],"slice":{"offset":0,"sizes":[],"strides":[]}}}}
+  	error: broken link: failed to enqueue in MailboxClient when processing buffer: channel closed with reason Some("session unix:/tmp/.tmpUcButB/anon_0-19MyhqpnSt1b.d6e0c60397208036: server closed")
+
+Exception ignored in atexit callback: <function _init_client_context.<locals>.<lambda> at 0x7ea0c77254e0>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 444, in <lambda>
+    atexit.register(lambda: shutdown_context().get(timeout=5.0))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+KeyboardInterrupt: 
+[2026-05-18 13:14:12] STATE → GRPO_FAIL_RC1
+[2026-05-18 13:14:12] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 13:14:12] ============================================================
+[2026-05-18 13:14:47] ============================================================
+[2026-05-18 13:14:47] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 13:14:47] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 13:14:47] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 13:14:47] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 13:14:47] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 13:14:47] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 13:14:47] ============================================================
+[2026-05-18 13:14:47] resume from state: hf_done
+[2026-05-18 13:14:47] step 6: launch GRPO multimodal smoke
+[2026-05-18 13:15:14] WARN: GRPO exited rc=1; tail of log:
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Loaded ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res_n4
+NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for the framework + trace; the 447m Kimi AttnRes needs a model-agnostic PolicyTrainer (separate RFC).
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-18_13:14_494
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=1251089 at time 2026-05-18 13:15:06.564350:
+The actor <root> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1197, in handle
+      args, kwargs = PicklingState(message, local_state).unpickle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ModuleNotFoundError: No module named 'torchtitan.experiments'
+
+[SGLangGenerator pid=1254772 rank=3] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=1254030 rank=1] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=1254402 rank=2] non-lead actor — Engine lives on rank 0 only; idling.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 533, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 529, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 375, in _async_main
+    trainer.push_model_state_dict.call().get()
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._rust_bindings.monarch_hyperactor.supervision.SupervisionError: Endpoint call trainer.push_model_state_dict() failed, The actor <root>.<torchtitan.experiments.rl.actors.trainer.PolicyTrainer trainer{'gpus': 1/4}> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1215, in handle
+      self.instance = Class(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/trainer.py", line 153, in __init__
+      model = self._build_model(model_spec, config, device_type, hf_assets_path)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/trainer.py", line 283, in _build_model
+      model = model_spec.parallelize_fn(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  TypeError: parallelize_kimi_linear() missing 4 required keyword-only arguments: 'training', 'model_converters', 'ac_config', and 'dump_folder'
+
+
+thread 'monarch-pytokio-worker-361' (1252653) panicked at monarch_hyperactor/src/actor.rs:1526:14:
+Unable to send panic message: MailboxSenderError { location: Unbound(ActorId(ProcId(Unix(Bound("6h0Qr2bXtmSkzXIXETB5doAL" (abstract))), "anon_2-1d9VucEwvnmY"), "trainer-1DdtEvh2eiby", 0), "hyperactor::actor::Signal"), kind: Mailbox(MailboxError { actor_id: ActorId(ProcId(Unix(Bound("6h0Qr2bXtmSkzXIXETB5doAL" (abstract))), "anon_2-1d9VucEwvnmY"), "trainer-1DdtEvh2eiby", 0), kind: OwnerTerminated(Stopped("actor mesh controller cleanup")) }) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[rank0]:[W518 13:15:11.433759071 ProcessGroupNCCL.cpp:1575] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[2026-05-18 13:15:14] STATE → GRPO_FAIL_RC1
+[2026-05-18 13:15:14] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 13:15:14] ============================================================
+[2026-05-18 13:16:34] ============================================================
+[2026-05-18 13:16:34] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 13:16:34] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 13:16:34] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 13:16:34] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 13:16:34] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 13:16:34] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 13:16:34] ============================================================
+[2026-05-18 13:16:34] resume from state: hf_done
+[2026-05-18 13:16:34] step 6: launch GRPO multimodal smoke
+[2026-05-18 13:17:05] WARN: GRPO exited rc=1; tail of log:
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Loaded ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res_n4
+NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for the framework + trace; the 447m Kimi AttnRes needs a model-agnostic PolicyTrainer (separate RFC).
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-18_13:16_612
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=1255809 at time 2026-05-18 13:16:56.899152:
+The actor <root> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1197, in handle
+      args, kwargs = PicklingState(message, local_state).unpickle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ModuleNotFoundError: No module named 'torchtitan.experiments'
+
+[SGLangGenerator pid=1257383 rank=2] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=1257012 rank=1] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=1258126 rank=3] non-lead actor — Engine lives on rank 0 only; idling.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+No state_dict_adapter available, skipping initial weight load
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+No state_dict_adapter available, skipping initial weight load
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+No state_dict_adapter available, skipping initial weight load
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+No state_dict_adapter available, skipping initial weight load
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+No state_dict_adapter available, skipping initial weight load
+No state_dict_adapter available, skipping initial weight load
+No state_dict_adapter available, skipping initial weight load
+No state_dict_adapter available, skipping initial weight load
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 558, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 554, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 375, in _async_main
+    trainer.push_model_state_dict.call().get()
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._src.actor.actor_mesh.ActorError: Actor call trainer.push_model_state_dict failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1279, in handle
+    result = await the_method(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/trainer.py", line 434, in push_model_state_dict
+    await ts.put_state_dict(
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 284, in put_state_dict
+    cl = await client(store_name)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 131, in client
+    controller = await _controller(store_name)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torchstore/api.py", line 110, in _controller
+    return await get_or_spawn_controller(store_name, Controller)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 151, in mark_complete
+    func, value = set_result, await coro
+                              ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1595, in __init__
+    raise ValueError(
+ValueError: <class 'torchstore.controller.Controller'> mixes both async and sync endpoints.Synchronous endpoints cannot be mixed with async endpoints because they can cause the asyncio loop to deadlock if they wait.sync: ['get_controller_strategy', 'keys', 'locate_volumes', 'notify_delete', 'notify_put'] async: ['init', 'teardown']
+
+[2026-05-18 13:17:05] STATE → GRPO_FAIL_RC1
+[2026-05-18 13:17:05] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 13:17:05] ============================================================
+[2026-05-18 13:18:28] ============================================================
+[2026-05-18 13:18:28] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 13:18:28] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 13:18:28] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 13:18:28] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 13:18:28] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 13:18:28] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 13:18:28] ============================================================
+[2026-05-18 13:18:28] resume from state: hf_done
+[2026-05-18 13:18:28] step 6: launch GRPO multimodal smoke
+[2026-05-18 13:20:23] WARN: GRPO exited rc=1; tail of log:
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 3934, in run_scheduler_process
+    scheduler.run_event_loop()
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1505, in run_event_loop
+    dispatch_event_loop(self)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 3804, in dispatch_event_loop
+    scheduler.event_loop_overlap()
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1548, in event_loop_overlap
+    recv_reqs = self.recv_requests()
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1647, in recv_requests
+    recv_req = self.recv_from_tokenizer.recv_pyobj(zmq.NOBLOCK)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/zmq/sugar/socket.py", line 990, in recv_pyobj
+    return self._deserialize(msg, pickle.loads)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/zmq/sugar/socket.py", line 828, in _deserialize
+    return load(recvd)
+           ^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/mm_utils.py", line 1564, in __setstate__
+    self._shm_handle = shared_memory.SharedMemory(name=self.shm_name)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/shared_memory.py", line 104, in __init__
+    self._fd = _posixshmem.shm_open(
+               ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/psm_d6258ae3'
+
+[rank0]:[W518 13:20:16.672093929 ProcessGroupNCCL.cpp:1575] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 3 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 578, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 574, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 417, in _async_main
+    result = generator.generate.call(prompts, gold, images).get()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._rust_bindings.monarch_hyperactor.supervision.SupervisionError: Endpoint call generator.generate() failed, The actor <root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}> and all its descendants have failed:
+  the process this actor was running on failed: Killed(sig=3, core)
+[rank3]:[W518 13:20:21.795106267 TCPStore.cpp:125] [c10d] recvValue failed on SocketImpl(fd=101, addr=[f59652d27037]:55982, remote=[f59652d27037]:37127): Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+Exception raised from recvBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:682 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7a015015405d in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x6a914bd (0x79ff705a54bd in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #2: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x273 (0x79ff705a3413 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #3: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x4a5 (0x79ff52d8f8c5 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0xecdb4 (0x7a005026edb4 in /usr/lib/x86_64-linux-gnu/libstdc++.so.6)
+frame #5: <unknown function> + 0x9caa4 (0x7a06319c8aa4 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+frame #6: __clone + 0x44 (0x7a0631a55a64 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+
+[rank3]:[W518 13:20:21.798913267 ProcessGroupNCCL.cpp:1826] [PG ID 0 PG GUID 0(default_pg) Rank 3] Failed to check the "should dump" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+[rank1]:[W518 13:20:21.796412333 TCPStore.cpp:125] [c10d] recvValue failed on SocketImpl(fd=101, addr=[f59652d27037]:55978, remote=[f59652d27037]:37127): Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+Exception raised from recvBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:682 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x74ba1c15405d in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x6a914bd (0x74b855bfe4bd in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #2: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x273 (0x74b855bfc413 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #3: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x4a5 (0x74b8383e88c5 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0xecdb4 (0x74b91c26edb4 in /usr/lib/x86_64-linux-gnu/libstdc++.so.6)
+frame #5: <unknown function> + 0x9caa4 (0x74bf16643aa4 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+frame #6: __clone + 0x44 (0x74bf166d0a64 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+
+[rank1]:[W518 13:20:21.800145114 ProcessGroupNCCL.cpp:1826] [PG ID 0 PG GUID 0(default_pg) Rank 1] Failed to check the "should dump" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+[2026-05-18 13:20:23] STATE → GRPO_FAIL_RC1
+[2026-05-18 13:20:23] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 13:20:23] ============================================================
+[2026-05-18 13:21:35] ============================================================
+[2026-05-18 13:21:35] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 13:21:35] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 13:21:35] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 13:21:35] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 13:21:35] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 13:21:35] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 13:21:35] ============================================================
+[2026-05-18 13:21:35] resume from state: hf_done
+[2026-05-18 13:21:35] step 6: launch GRPO multimodal smoke
+[2026-05-18 13:22:50] WARN: GRPO exited rc=1; tail of log:
+2026-05-18 13:22:27,767 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 13:22:27 TP1] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 13:22:27,769 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 13:22:27 TP2] Unexpected error during package walk: cutlass.cute.experimental
+Capturing batches (bs=80 avail_mem=3.49 GB):   7%|▋         | 1/14 [00:02<00:38,  3.00s/it]Capturing batches (bs=72 avail_mem=3.35 GB):   7%|▋         | 1/14 [00:02<00:38,  3.00s/it]Capturing batches (bs=72 avail_mem=3.35 GB):  14%|█▍        | 2/14 [00:03<00:16,  1.36s/it]Capturing batches (bs=64 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:03<00:16,  1.36s/it]Capturing batches (bs=64 avail_mem=3.32 GB):  21%|██▏       | 3/14 [00:03<00:08,  1.26it/s]Capturing batches (bs=56 avail_mem=3.32 GB):  21%|██▏       | 3/14 [00:03<00:08,  1.26it/s]Capturing batches (bs=56 avail_mem=3.32 GB):  29%|██▊       | 4/14 [00:03<00:05,  1.88it/s]Capturing batches (bs=48 avail_mem=3.29 GB):  29%|██▊       | 4/14 [00:03<00:05,  1.88it/s]Capturing batches (bs=48 avail_mem=3.29 GB):  36%|███▌      | 5/14 [00:03<00:03,  2.59it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  36%|███▌      | 5/14 [00:03<00:03,  2.59it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  43%|████▎     | 6/14 [00:03<00:02,  3.28it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  43%|████▎     | 6/14 [00:03<00:02,  3.28it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:03<00:01,  3.86it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:03<00:01,  3.86it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  57%|█████▋    | 8/14 [00:04<00:01,  4.30it/s]Capturing batches (bs=16 avail_mem=3.22 GB):  57%|█████▋    | 8/14 [00:04<00:01,  4.30it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  57%|█████▋    | 8/14 [00:04<00:01,  4.30it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  71%|███████▏  | 10/14 [00:04<00:00,  6.05it/s]Capturing batches (bs=8 avail_mem=3.18 GB):  71%|███████▏  | 10/14 [00:04<00:00,  6.05it/s] Capturing batches (bs=4 avail_mem=3.17 GB):  71%|███████▏  | 10/14 [00:04<00:00,  6.05it/s]Capturing batches (bs=4 avail_mem=3.17 GB):  86%|████████▌ | 12/14 [00:04<00:00,  7.18it/s]Capturing batches (bs=2 avail_mem=3.15 GB):  86%|████████▌ | 12/14 [00:04<00:00,  7.18it/s]Capturing batches (bs=1 avail_mem=3.14 GB):  86%|████████▌ | 12/14 [00:04<00:00,  7.18it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:04<00:00,  5.90it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:04<00:00,  2.85it/s]
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[2026-05-18 13:22:42 TP0] Scheduler hit an exception: Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 3934, in run_scheduler_process
+    scheduler.run_event_loop()
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1505, in run_event_loop
+    dispatch_event_loop(self)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 3804, in dispatch_event_loop
+    scheduler.event_loop_overlap()
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1548, in event_loop_overlap
+    recv_reqs = self.recv_requests()
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1647, in recv_requests
+    recv_req = self.recv_from_tokenizer.recv_pyobj(zmq.NOBLOCK)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/zmq/sugar/socket.py", line 990, in recv_pyobj
+    return self._deserialize(msg, pickle.loads)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/zmq/sugar/socket.py", line 828, in _deserialize
+    return load(recvd)
+           ^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/mm_utils.py", line 1564, in __setstate__
+    self._shm_handle = shared_memory.SharedMemory(name=self.shm_name)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/shared_memory.py", line 104, in __init__
+    self._fd = _posixshmem.shm_open(
+               ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/psm_f44bb99d'
+
+[rank0]:[W518 13:22:44.747635318 ProcessGroupNCCL.cpp:1575] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 3 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 578, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 574, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 417, in _async_main
+    result = generator.generate.call(prompts, gold, images).get()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._rust_bindings.monarch_hyperactor.supervision.SupervisionError: Endpoint call generator.generate() failed, The actor <root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}> and all its descendants have failed:
+  the process this actor was running on failed: Killed(sig=3, core)
+[2026-05-18 13:22:50] STATE → GRPO_FAIL_RC1
+[2026-05-18 13:22:50] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 13:22:50] ============================================================
+[2026-05-18 13:23:34] ============================================================
+[2026-05-18 13:23:34] OVERNIGHT PIPELINE START  (deadline 18h)
+[2026-05-18 13:23:34] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 13:23:34] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 13:23:34] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 13:23:34] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 13:23:34] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 13:23:34] ============================================================
+[2026-05-18 13:23:34] resume from state: hf_done
+[2026-05-18 13:23:34] step 6: launch GRPO multimodal smoke
+[2026-05-18 13:24:45] WARN: GRPO exited rc=1; tail of log:
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+  0%|          | 0/14 [00:00<?, ?it/s]Capturing batches (bs=80 avail_mem=3.49 GB):   0%|          | 0/14 [00:00<?, ?it/s]2026-05-18 13:24:25,336 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 13:24:25 TP1] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 13:24:25,344 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 13:24:25 TP2] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 13:24:25,348 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 13:24:25 TP3] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 13:24:25,370 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 13:24:25 TP0] Unexpected error during package walk: cutlass.cute.experimental
+Capturing batches (bs=80 avail_mem=3.49 GB):   7%|▋         | 1/14 [00:02<00:29,  2.26s/it]Capturing batches (bs=72 avail_mem=3.35 GB):   7%|▋         | 1/14 [00:02<00:29,  2.26s/it]Capturing batches (bs=72 avail_mem=3.35 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.04s/it]Capturing batches (bs=64 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.04s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.04s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.26it/s]Capturing batches (bs=48 avail_mem=3.29 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.26it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.26it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.61it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.61it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:02<00:01,  3.97it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:02<00:01,  3.97it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.17it/s]Capturing batches (bs=16 avail_mem=3.22 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.17it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.17it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.67it/s]Capturing batches (bs=8 avail_mem=3.18 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.67it/s] Capturing batches (bs=4 avail_mem=3.17 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.67it/s]Capturing batches (bs=4 avail_mem=3.17 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.00it/s]Capturing batches (bs=2 avail_mem=3.15 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.00it/s]Capturing batches (bs=1 avail_mem=3.14 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.00it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  6.96it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  3.64it/s]
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 578, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 574, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 424, in _async_main
+    result = grader.score.call(episodes).get()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._rust_bindings.monarch_hyperactor.supervision.SupervisionError: Endpoint call grader.score() failed, The actor <root> and all its descendants have failed:
+  actor explicitly aborted due to: Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1302, in handle
+      response_port.exception(
+    File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1197, in handle
+      args, kwargs = PicklingState(message, local_state).unpickle()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ModuleNotFoundError: No module named 'torchtitan.experiments'
+
+[rank2]:[W518 13:24:42.601101491 TCPStore.cpp:125] [c10d] recvValue failed on SocketImpl(fd=102, addr=[f59652d27037]:40316, remote=[f59652d27037]:58239): Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+Exception raised from recvBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:682 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x799dd5de105d in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x6a914bd (0x799d0efa54bd in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #2: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x273 (0x799d0efa3413 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #3: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x4a5 (0x799cf178f8c5 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0xecdb4 (0x799e2c10edb4 in /usr/lib/x86_64-linux-gnu/libstdc++.so.6)
+frame #5: <unknown function> + 0x9caa4 (0x79a3cf982aa4 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+frame #6: __clone + 0x44 (0x79a3cfa0fa64 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+
+[rank2]:[W518 13:24:42.602699475 ProcessGroupNCCL.cpp:1826] [PG ID 0 PG GUID 0(default_pg) Rank 2] Failed to check the "should dump" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+[rank1]:[W518 13:24:42.675892417 TCPStore.cpp:125] [c10d] recvValue failed on SocketImpl(fd=102, addr=[f59652d27037]:40332, remote=[f59652d27037]:58239): Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+Exception raised from recvBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:682 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x79ad4015405d in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x6a914bd (0x79abd6fa54bd in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #2: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x273 (0x79abd6fa3413 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #3: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x4a5 (0x79abb978f8c5 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0xecdb4 (0x79acc026edb4 in /usr/lib/x86_64-linux-gnu/libstdc++.so.6)
+frame #5: <unknown function> + 0x9caa4 (0x79b2993d7aa4 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+frame #6: __clone + 0x44 (0x79b299464a64 in /usr/lib/x86_64-linux-gnu/libc.so.6)
+
+[rank1]:[W518 13:24:42.679662548 ProcessGroupNCCL.cpp:1826] [PG ID 0 PG GUID 0(default_pg) Rank 1] Failed to check the "should dump" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+[2026-05-18 13:24:45] STATE → GRPO_FAIL_RC1
+[2026-05-18 13:24:45] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 13:24:45] ============================================================
+[2026-05-18 16:38:40] ============================================================
+[2026-05-18 16:38:40] OVERNIGHT PIPELINE START  (deadline 4h)
+[2026-05-18 16:38:40] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 16:38:40] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 16:38:40] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 16:38:40] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 16:38:40] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 16:38:40] ============================================================
+[2026-05-18 16:38:40] resume from state: hf_done
+[2026-05-18 16:38:40] step 6: launch GRPO multimodal smoke
+[2026-05-18 16:39:06] WARN: GRPO exited rc=1; tail of log:
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._src.actor.actor_mesh.ActorError: Actor call trainer.push_model_state_dict failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1252, in handle
+    raise AssertionError(error_message)
+AssertionError: Actor object is missing when executing method "push_model_state_dict" on actor unix:@QnQ2yzVTy6G0V0OppoTXiVL2,anon_0-1gG1tnaEvTYJ,trainer-151zboRmB9B5[0]. This is due to an earlier error: Actor call trainer.__init__ failed.
+ Traceback of where the remote call failed (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 1215, in handle
+    self.instance = Class(*args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/rl/actors/trainer.py", line 137, in __init__
+    dist_utils.set_determinism(
+  File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/distributed/utils.py", line 167, in set_determinism
+    parallel_dims.get_optional_mesh(dim) for dim in distinct_seed_mesh_dims
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/distributed/parallel_dims.py", line 261, in get_optional_mesh
+    self.build_mesh()
+  File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/distributed/parallel_dims.py", line 173, in build_mesh
+    dataloading_mesh = unflatten_mesh(
+                       ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/distributed/parallel_dims.py", line 149, in unflatten_mesh
+    return world_mesh._unflatten(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/device_mesh.py", line 1381, in _unflatten
+    return self._create_unflatten_mesh(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/device_mesh.py", line 1310, in _create_unflatten_mesh
+    new_group_names = self._init_process_groups(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/device_mesh.py", line 601, in _init_process_groups
+    DeviceMesh._init_one_process_group(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/device_mesh.py", line 569, in _init_one_process_group
+    dim_group = new_group(
+                ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/c10d_logger.py", line 97, in wrapper
+    func_return = func(*args, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/distributed_c10d.py", line 5442, in new_group
+    return _new_group_with_tag(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/distributed_c10d.py", line 5533, in _new_group_with_tag
+    pg, pg_store = _new_process_group_helper(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/distributed_c10d.py", line 2216, in _new_process_group_helper
+    backend_class = _create_process_group_wrapper(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/distributed_c10d.py", line 5139, in _create_process_group_wrapper
+    wrapped_pg = _ProcessGroupWrapper(wrapped_pg, helper_pg)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Backend fake does not yet support sequence numbers.
+.
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 644, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 640, in main
+    asyncio.run(_async_main(config))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 193, in run
+    with Runner(debug=debug, loop_factory=loop_factory) as runner:
+  File "/usr/lib/python3.12/asyncio/runners.py", line 62, in __exit__
+    self.close()
+  File "/usr/lib/python3.12/asyncio/runners.py", line 77, in close
+    loop.close()
+  File "/usr/lib/python3.12/asyncio/unix_events.py", line 68, in close
+    super().close()
+  File "/usr/lib/python3.12/asyncio/selector_events.py", line 104, in close
+    self._close_self_pipe()
+  File "/usr/lib/python3.12/asyncio/selector_events.py", line 114, in _close_self_pipe
+    self._csock.close()
+  File "/usr/lib/python3.12/socket.py", line 504, in close
+    self._real_close()
+  File "/usr/lib/python3.12/socket.py", line 498, in _real_close
+    _ss.close(self)
+KeyboardInterrupt
+[2026-05-18 16:39:06] STATE → GRPO_FAIL_RC1
+[2026-05-18 16:39:06] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 16:39:06] ============================================================
+[2026-05-18 16:39:34] ============================================================
+[2026-05-18 16:39:34] OVERNIGHT PIPELINE START  (deadline 2h)
+[2026-05-18 16:39:34] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 16:39:34] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 16:39:34] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 16:39:34] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 16:39:34] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 16:39:34] ============================================================
+[2026-05-18 16:39:34] resume from state: hf_done
+[2026-05-18 16:39:34] step 6: launch GRPO multimodal smoke
+[2026-05-18 16:40:50] WARN: GRPO exited rc=1; tail of log:
+Capturing batches (bs=80 avail_mem=3.49 GB):   7%|▋         | 1/14 [00:02<00:30,  2.36s/it]Capturing batches (bs=72 avail_mem=3.35 GB):   7%|▋         | 1/14 [00:02<00:30,  2.36s/it]Capturing batches (bs=72 avail_mem=3.35 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.08s/it]Capturing batches (bs=64 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.08s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.08s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.18it/s]Capturing batches (bs=48 avail_mem=3.29 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.18it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.18it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.45it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.45it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:03<00:01,  3.78it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:03<00:01,  3.78it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.05it/s]Capturing batches (bs=16 avail_mem=3.22 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.05it/s]Capturing batches (bs=16 avail_mem=3.22 GB):  64%|██████▍   | 9/14 [00:03<00:01,  4.83it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  64%|██████▍   | 9/14 [00:03<00:01,  4.83it/s]Capturing batches (bs=8 avail_mem=3.18 GB):  64%|██████▍   | 9/14 [00:03<00:01,  4.83it/s] Capturing batches (bs=8 avail_mem=3.18 GB):  79%|███████▊  | 11/14 [00:03<00:00,  6.42it/s]Capturing batches (bs=4 avail_mem=3.17 GB):  79%|███████▊  | 11/14 [00:03<00:00,  6.42it/s]Capturing batches (bs=2 avail_mem=3.15 GB):  79%|███████▊  | 11/14 [00:03<00:00,  6.42it/s]Capturing batches (bs=2 avail_mem=3.15 GB):  93%|█████████▎| 13/14 [00:03<00:00,  7.64it/s]Capturing batches (bs=1 avail_mem=3.14 GB):  93%|█████████▎| 13/14 [00:03<00:00,  7.64it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  6.71it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  3.51it/s]
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[2026-05-18 16:40:39 TP0] Scheduler hit an exception: Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 3934, in run_scheduler_process
+    scheduler.run_event_loop()
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1505, in run_event_loop
+    dispatch_event_loop(self)
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 3804, in dispatch_event_loop
+    scheduler.event_loop_overlap()
+  File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1548, in event_loop_overlap
+    recv_reqs = self.recv_requests()
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/scheduler.py", line 1647, in recv_requests
+    recv_req = self.recv_from_tokenizer.recv_pyobj(zmq.NOBLOCK)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/zmq/sugar/socket.py", line 990, in recv_pyobj
+    return self._deserialize(msg, pickle.loads)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/zmq/sugar/socket.py", line 828, in _deserialize
+    return load(recvd)
+           ^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/srt/managers/mm_utils.py", line 1564, in __setstate__
+    self._shm_handle = shared_memory.SharedMemory(name=self.shm_name)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/multiprocessing/shared_memory.py", line 104, in __init__
+    self._fd = _posixshmem.shm_open(
+               ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/psm_e7373503'
+
+[rank0]:[W518 16:40:41.514693131 ProcessGroupNCCL.cpp:1575] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 3 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+Unhandled monarch error on the root actor, hostname=f59652d27037, PID=1323000 at time 2026-05-18 16:40:46.382349:
+The actor <root>.<monarch._src.spmd.actor.SPMDActor _SPMDActor{'gpus': 0/4}> and all its descendants have failed:
+  the process this actor was running on failed: Killed(sig=3, core)
+Traceback (most recent call last):
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 644, in <module>
+    config.generator.parallelism.tensor_parallel_degree = 4
+    ^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 640, in main
+    
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py", line 483, in _async_main
+    for r in records
+         ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+monarch._rust_bindings.monarch_hyperactor.supervision.SupervisionError: Endpoint call generator.generate() failed, The actor <root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}> and all its descendants have failed:
+  the process this actor was running on failed: Killed(sig=3, core)
+[2026-05-18 16:40:50] STATE → GRPO_FAIL_RC1
+[2026-05-18 16:40:50] PIPELINE END — final state: GRPO_FAIL_RC1
+[2026-05-18 16:40:50] ============================================================
+[2026-05-18 16:41:18] ============================================================
+[2026-05-18 16:41:18] OVERNIGHT PIPELINE START  (deadline 2h)
+[2026-05-18 16:41:18] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 16:41:18] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 16:41:18] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 16:41:18] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 16:41:18] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 16:41:18] ============================================================
+[2026-05-18 16:41:18] resume from state: hf_done
+[2026-05-18 16:41:18] step 6: launch GRPO multimodal smoke
+[2026-05-18 16:41:18] GRPO trainer DCP init: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200
+./phase5_vlm_multimodal_sft/run_overnight_pipeline.sh: line 294: 1334150 Killed                  PYTHONPATH="${WORKSPACE_DIR}:${WORKSPACE_DIR}/torchtitan${PYTHONPATH:+:${PYTHONPATH}}" /usr/bin/python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_caption.py --model-path "${HF_OUT}" --num-steps "${GRPO_NUM_STEPS:-400}" --llava-json "${GRPO_JSON:-/workspace/.hf_home/LLaVA-Instruct/llava_v1_5_mix665k.json}" --llava-images "${GRPO_IMAGES:-/workspace/.hf_home/LLaVA-Instruct/images}" ${_grpo_dcp:+--dcp-initial-load-path "${_grpo_dcp}"} > "${LOG_DIR}/grpo.log" 2>&1
+[2026-05-18 16:42:45] WARN: GRPO exited rc=137; tail of log:
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards: 100% Completed | 1/1 [00:00<00:00, 31.14it/s]
+  0%|          | 0/14 [00:00<?, ?it/s]Capturing batches (bs=80 avail_mem=3.49 GB):   0%|          | 0/14 [00:00<?, ?it/s]2026-05-18 16:42:08,968 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:42:08 TP3] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 16:42:08,979 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:42:08 TP1] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 16:42:08,982 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:42:08 TP2] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 16:42:08,984 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:42:08 TP0] Unexpected error during package walk: cutlass.cute.experimental
+Capturing batches (bs=80 avail_mem=3.49 GB):   7%|▋         | 1/14 [00:02<00:27,  2.15s/it]Capturing batches (bs=72 avail_mem=3.35 GB):   7%|▋         | 1/14 [00:02<00:27,  2.15s/it]Capturing batches (bs=72 avail_mem=3.35 GB):  14%|█▍        | 2/14 [00:02<00:11,  1.01it/s]Capturing batches (bs=64 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:11,  1.01it/s]Capturing batches (bs=56 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:11,  1.01it/s]Capturing batches (bs=56 avail_mem=3.32 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.36it/s]Capturing batches (bs=48 avail_mem=3.29 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.36it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.36it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.72it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.72it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:02<00:01,  4.04it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:02<00:01,  4.04it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.27it/s]Capturing batches (bs=16 avail_mem=3.22 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.27it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.27it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.78it/s]Capturing batches (bs=8 avail_mem=3.18 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.78it/s] Capturing batches (bs=4 avail_mem=3.17 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.78it/s]Capturing batches (bs=4 avail_mem=3.17 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.06it/s]Capturing batches (bs=2 avail_mem=3.15 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.06it/s]Capturing batches (bs=1 avail_mem=3.14 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.06it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  6.88it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  3.74it/s]
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[rank2]:W0518 16:42:42.468000 1335367 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank1]:W0518 16:42:42.468000 1334997 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank0]:W0518 16:42:42.470000 1334627 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank3]:W0518 16:42:42.473000 1335738 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 4 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:267: UserWarning: resource_tracker: '/psm_3f0dfdf6': [Errno 2] No such file or directory: '/psm_3f0dfdf6'
+  warnings.warn('resource_tracker: %r: %s' % (name, e))
+[2026-05-18 16:42:45] STATE → GRPO_FAIL_RC137
+[2026-05-18 16:42:45] PIPELINE END — final state: GRPO_FAIL_RC137
+[2026-05-18 16:42:45] ============================================================
+[2026-05-18 16:42:56] ============================================================
+[2026-05-18 16:42:56] OVERNIGHT PIPELINE START  (deadline 2h)
+[2026-05-18 16:42:56] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 16:42:56] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 16:42:56] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 16:42:56] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 16:42:56] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 16:42:56] ============================================================
+[2026-05-18 16:42:56] resume from state: hf_done
+[2026-05-18 16:42:56] step 6: launch GRPO multimodal smoke
+[2026-05-18 16:42:56] GRPO trainer DCP init: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200
+Terminated
+[2026-05-18 16:45:28] WARN: GRPO exited rc=143; tail of log:
+[2026-05-18 16:43:44 TP3] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 16:43:44,710 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:43:44 TP0] Unexpected error during package walk: cutlass.cute.experimental
+Capturing batches (bs=80 avail_mem=3.49 GB):   7%|▋         | 1/14 [00:02<00:28,  2.18s/it]Capturing batches (bs=72 avail_mem=3.35 GB):   7%|▋         | 1/14 [00:02<00:28,  2.18s/it]Capturing batches (bs=72 avail_mem=3.35 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.01s/it]Capturing batches (bs=64 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.01s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.01s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.33it/s]Capturing batches (bs=48 avail_mem=3.29 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.33it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.33it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.75it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.75it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:02<00:01,  4.14it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:02<00:01,  4.14it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.46it/s]Capturing batches (bs=16 avail_mem=3.22 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.46it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  57%|█████▋    | 8/14 [00:03<00:01,  4.46it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  71%|███████▏  | 10/14 [00:03<00:00,  6.06it/s]Capturing batches (bs=8 avail_mem=3.18 GB):  71%|███████▏  | 10/14 [00:03<00:00,  6.06it/s] Capturing batches (bs=4 avail_mem=3.17 GB):  71%|███████▏  | 10/14 [00:03<00:00,  6.06it/s]Capturing batches (bs=4 avail_mem=3.17 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.34it/s]Capturing batches (bs=2 avail_mem=3.15 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.34it/s]Capturing batches (bs=1 avail_mem=3.14 GB):  86%|████████▌ | 12/14 [00:03<00:00,  7.34it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  7.15it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  3.79it/s]
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[rank0]:W0518 16:44:09.807000 1345856 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank3]:W0518 16:44:09.808000 1346968 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank1]:W0518 16:44:09.809000 1346226 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank2]:W0518 16:44:09.817000 1346597 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[actor=<root>] step   0  loss=-0.0061  reward_mean=-1.000  dt=28.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two people visible in the image.
+[actor=<root>]        cand: These!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image displays a serving of stew in a metal plate, which includes sliced carrots as one of the ingredients.
+[actor=<root>]        cand: What!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The woman in the image is dressed up as a fairy in a white dress with wings, and she is also holding a wand.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two young women sitting on the beach near the umbrella.
+[actor=<root>]        cand: However!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   1  loss=-0.0042  reward_mean=-1.000  dt=19.4s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two street signs visible in the image.
+[actor=<root>]        cand: This!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The stop sign in the image is red and white.
+[actor=<root>]        cand: As!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The woman in the image is standing next to a corner filled with street signs, and she is looking at the directional sign
+[actor=<root>]        cand: X!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The young boy is holding a baseball glove in his hand.
+[actor=<root>]        cand: En!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   2  loss=-0.0061  reward_mean=-1.000  dt=18.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two boys in the image.
+[actor=<root>]        cand: Since!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The kitchen is in the process of being renovated or under construction.
+[actor=<root>]        cand: Over!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two babies in the image.
+[actor=<root>]        cand: 05!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: A giraffe is being fed in the image.
+[actor=<root>]        cand: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   3  loss=-0.0045  reward_mean=-1.000  dt=18.7s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two baseball players in the image.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The exact number of types of scissors is not provided, but the image shows a variety of scissors in various shapes and s
+[actor=<root>]        cand: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two players involved in the frisbee game in the image.
+[actor=<root>]        cand: What!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The train in the image is yellow.
+[actor=<root>]        cand: C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 4 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+[2026-05-18 16:45:28] STATE → GRPO_FAIL_RC143
+[2026-05-18 16:45:28] PIPELINE END — final state: GRPO_FAIL_RC143
+[2026-05-18 16:45:28] ============================================================
+[2026-05-18 16:47:32] ============================================================
+[2026-05-18 16:47:32] OVERNIGHT PIPELINE START  (deadline 2h)
+[2026-05-18 16:47:32] LOG_DIR=/workspace/torchtitan_attention_residual/overnight_pipeline_20260517-090903
+[2026-05-18 16:47:32] STAGE0_OUT=/workspace/torchtitan_attention_residual/phase4_kimi_attnres_lm_pretrain/runs/lm_447m_fp8_paperalign_C
+[2026-05-18 16:47:32] STAGE1_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage1_alignment_447m
+[2026-05-18 16:47:32] STAGE2_OUT=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m
+[2026-05-18 16:47:32] HF_OUT=/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight
+[2026-05-18 16:47:32] ============================================================
+[2026-05-18 16:47:32] resume from state: hf_done
+[2026-05-18 16:47:32] step 6: launch GRPO multimodal smoke
+[2026-05-18 16:47:32] GRPO trainer DCP init: /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200
+Terminated
+[2026-05-18 16:54:18] WARN: GRPO exited rc=143; tail of log:
+[actor=<root>]        gold: The man is holding a surfboard while standing in the water, near the shoreline.
+[actor=<root>]        cand: It!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image is in black and white.
+[actor=<root>]        cand: B!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The people in the image are holding Nintendo Wii remote controls.
+[actor=<root>]        cand: 000!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The dog is wearing a red knitted coat.
+[actor=<root>]        cand: We!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  14  loss=-0.0052  reward_mean=-1.000  dt=16.8s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The child is looking at a round birthday cake on the table.
+[actor=<root>]        cand: It!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a group of cows.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: No, the man is not wearing a helmet in the image. It is an old photograph of a man posing on a motorcycle without a helm
+[actor=<root>]        cand: An!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main object in the bathroom image is a white toilet.
+[actor=<root>]        cand: M!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  15  loss=-0.0064  reward_mean=-1.000  dt=17.9s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a passenger train parked at a train station platform.
+[actor=<root>]        cand: As!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main activity of the person in the image is skateboarding.
+[actor=<root>]        cand: By!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The color of the boat in the image is white.
+[actor=<root>]        cand: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man in the image is eating a slice of pizza, taking a bite and chewing on it.
+[actor=<root>]        cand: If!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  16  loss=-0.0054  reward_mean=-1.000  dt=16.7s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two women playing tennis in the image.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man is positioned on his knees on the surfboard in the ocean.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The bus in the image is red.
+[actor=<root>]        cand: F!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: A cute little puppy is sitting next to the large teddy bear in the image.
+[actor=<root>]        cand: We!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  17  loss=-0.0058  reward_mean=-1.000  dt=16.9s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The dog visible in the image is brown.
+[actor=<root>]        cand: 0!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are multiple people visible in the image, but it is difficult to provide an exact number without seeing the photo.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The tennis player in the image is wearing a yellow shirt and white shorts.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The person in the photo is holding a tennis racket.
+[actor=<root>]        cand: We!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  18  loss=-0.0061  reward_mean=-1.000  dt=17.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a red Stop sign.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: A herd of cows is blocking the road in the image.
+[actor=<root>]        cand: Their!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are four horses visible in the image.
+[actor=<root>]        cand: At!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The woman in the image is standing in a kitchen, preparing a variety of food, and smiling as she does so. One of the spe
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 4 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+[2026-05-18 16:54:18] STATE → GRPO_FAIL_RC143
+[2026-05-18 16:54:18] PIPELINE END — final state: GRPO_FAIL_RC143
+[2026-05-18 16:54:18] ============================================================

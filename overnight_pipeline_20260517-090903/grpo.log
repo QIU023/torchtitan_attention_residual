@@ -1,0 +1,462 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+Loaded ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res_n4
+NOTE: PolicyTrainer is Qwen3-specific upstream — using Qwen3 for the framework + trace; the 447m Kimi AttnRes needs a model-agnostic PolicyTrainer (separate RFC).
+Loaded LlavaCaptionTask with 50000 records
+Generator mesh shares GPUs: [4, 5, 6, 7]
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-18_16:47_170
+[SGLangGenerator pid=1360646 rank=1] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=1361766 rank=3] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=1361394 rank=2] non-lead actor — Engine lives on rank 0 only; idling.
+NCCL version 2.28.9+cuda13.0
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+[SGLangGenerator pid=1360273] CUDA_VISIBLE_DEVICES=4,5,6,7  torch.cuda.device_count()=4
+[SGLangGenerator pid=1360273] free mem: GPU0=33.1GB/33.7GB GPU1=33.1GB/33.7GB GPU2=33.1GB/33.7GB GPU3=33.1GB/33.7GB
+Failed to load generation config for /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight: /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight does not appear to have a file named generation_config.json. Checkout 'https://huggingface.co//workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight/tree/main' for available files.. Proceeding without generation config.
+rope_scaling missing 'factor', defaulting to 1.0. Check model accuracy.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+NCCL version 2.28.9+cuda13.0
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-05-18 16:48:21 TP0] Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-05-18 16:48:21 TP2] Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/208 [00:00<?, ?it/s]Loading weights:   0%|          | 0/208 [00:00<?, ?it/s]Loading weights:   0%|          | 0/208 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-05-18 16:48:21 TP3] Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights: 100%|██████████| 208/208 [00:00<00:00, 3799.97it/s]
+Loading weights: 100%|██████████| 208/208 [00:00<00:00, 2728.52it/s]
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading weights: 100%|██████████| 208/208 [00:00<00:00, 2925.57it/s]
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading weights:   0%|          | 0/208 [00:00<?, ?it/s][transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Loading weights: 100%|██████████| 208/208 [00:00<00:00, 2622.13it/s]
+Multi-thread loading shards: 100% Completed | 1/1 [00:00<00:00, 30.26it/s]
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+  0%|          | 0/14 [00:00<?, ?it/s]Capturing batches (bs=80 avail_mem=3.49 GB):   0%|          | 0/14 [00:00<?, ?it/s]2026-05-18 16:48:24,529 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:48:24 TP1] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 16:48:24,533 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:48:24 TP3] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 16:48:24,540 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:48:24 TP2] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-18 16:48:24,542 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-18 16:48:24 TP0] Unexpected error during package walk: cutlass.cute.experimental
+Capturing batches (bs=80 avail_mem=3.49 GB):   7%|▋         | 1/14 [00:02<00:29,  2.30s/it]Capturing batches (bs=72 avail_mem=3.35 GB):   7%|▋         | 1/14 [00:02<00:29,  2.30s/it]Capturing batches (bs=72 avail_mem=3.35 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.06s/it]Capturing batches (bs=64 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.06s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  14%|█▍        | 2/14 [00:02<00:12,  1.06s/it]Capturing batches (bs=56 avail_mem=3.32 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.21it/s]Capturing batches (bs=48 avail_mem=3.29 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.21it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  29%|██▊       | 4/14 [00:02<00:04,  2.21it/s]Capturing batches (bs=40 avail_mem=3.28 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.47it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  43%|████▎     | 6/14 [00:02<00:02,  3.47it/s]Capturing batches (bs=32 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:03<00:01,  3.61it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  50%|█████     | 7/14 [00:03<00:01,  3.61it/s]Capturing batches (bs=24 avail_mem=3.25 GB):  57%|█████▋    | 8/14 [00:03<00:01,  3.98it/s]Capturing batches (bs=16 avail_mem=3.22 GB):  57%|█████▋    | 8/14 [00:03<00:01,  3.98it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  57%|█████▋    | 8/14 [00:03<00:01,  3.98it/s]Capturing batches (bs=12 avail_mem=3.21 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.50it/s]Capturing batches (bs=8 avail_mem=3.18 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.50it/s] Capturing batches (bs=4 avail_mem=3.17 GB):  71%|███████▏  | 10/14 [00:03<00:00,  5.50it/s]Capturing batches (bs=4 avail_mem=3.17 GB):  86%|████████▌ | 12/14 [00:03<00:00,  6.80it/s]Capturing batches (bs=2 avail_mem=3.15 GB):  86%|████████▌ | 12/14 [00:03<00:00,  6.80it/s]Capturing batches (bs=1 avail_mem=3.14 GB):  86%|████████▌ | 12/14 [00:03<00:00,  6.80it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  6.72it/s]Capturing batches (bs=1 avail_mem=3.14 GB): 100%|██████████| 14/14 [00:03<00:00,  3.52it/s]
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_overnight' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[rank0]:W0518 16:48:49.473000 1359903 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank3]:W0518 16:48:49.474000 1363132 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank1]:W0518 16:48:49.480000 1361017 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank2]:W0518 16:48:49.483000 1362510 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[actor=<root>] step   0  loss=-0.0055  reward_mean=-1.000  dt=27.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two people visible in the image.
+[actor=<root>]        cand: For!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image displays a serving of stew in a metal plate, which includes sliced carrots as one of the ingredients.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The woman in the image is dressed up as a fairy in a white dress with wings, and she is also holding a wand.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two young women sitting on the beach near the umbrella.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   1  loss=-0.0047  reward_mean=-1.000  dt=19.0s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two street signs visible in the image.
+[actor=<root>]        cand: 52!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The stop sign in the image is red and white.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The woman in the image is standing next to a corner filled with street signs, and she is looking at the directional sign
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The young boy is holding a baseball glove in his hand.
+[actor=<root>]        cand: This!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   2  loss=-0.0060  reward_mean=-1.000  dt=17.6s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two boys in the image.
+[actor=<root>]        cand: I!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The kitchen is in the process of being renovated or under construction.
+[actor=<root>]        cand: For!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two babies in the image.
+[actor=<root>]        cand: 0!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: A giraffe is being fed in the image.
+[actor=<root>]        cand: For!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   3  loss=-0.0046  reward_mean=-1.000  dt=18.2s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two baseball players in the image.
+[actor=<root>]        cand: These!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The exact number of types of scissors is not provided, but the image shows a variety of scissors in various shapes and s
+[actor=<root>]        cand: 09!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two players involved in the frisbee game in the image.
+[actor=<root>]        cand: Con!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The train in the image is yellow.
+[actor=<root>]        cand: for!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   4  loss=-0.0052  reward_mean=-1.000  dt=17.6s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The airplane in the image is white.
+[actor=<root>]        cand: 07!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main pieces of furniture in the living room are leather couches, a table, and a brown sofa.
+[actor=<root>]        cand: 3!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a herd of sheep in the middle of a field.
+[actor=<root>]        cand: Computer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man is working at the kitchen counter and washing dishes in the kitchen sink.
+[actor=<root>]        cand: EN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   5  loss=-0.0057  reward_mean=-1.000  dt=17.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main architectural feature of the image is a large, ornate building structure with a prominent clock tower.
+[actor=<root>]        cand: Eng!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image shows an overcast and foggy day, with the lighting indicating that it might be dusk.
+[actor=<root>]        cand: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main subject of this image is a giraffe.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The vase in the image is tinted green.
+[actor=<root>]        cand: As!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   6  loss=-0.0066  reward_mean=-1.000  dt=18.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: Three people are playing Frisbee in the wooded area in the image.
+[actor=<root>]        cand: It!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: Yes, there is a cat in the image, and it is black in color.
+[actor=<root>]        cand: what!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: In the image, there are three types of signs visible: a red stop sign, a do not enter sign, and a one-way sign.
+[actor=<root>]        cand: For!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image shows a whole Italian chicken sandwich, a long sub, with ingredients such as chicken, tomatoes, and other addi
+[actor=<root>]        cand: What!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   7  loss=-0.0056  reward_mean=-1.000  dt=17.4s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The people are standing in a fruit and vegetable market, which offers a variety of fresh produce for sale.
+[actor=<root>]        cand: This!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The clock tower in the image is red.
+[actor=<root>]        cand: 36!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man is performing a one-handed handstand while holding a skateboard in his other hand.
+[actor=<root>]        cand: With!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The box contains a variety of fresh fruits and vegetables such as carrots, and possibly other fruits and vegetables base
+[actor=<root>]        cand: C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   8  loss=-0.0057  reward_mean=-1.000  dt=17.9s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image shows a dress shirt, a jacket (suit coat), and a tie.
+[actor=<root>]        cand: J!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man in the image is wearing a dress shirt, tie, and glasses.
+[actor=<root>]        cand: This!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two women holding trays of donuts in the image.
+[actor=<root>]        cand: There!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a tray of cupcakes.
+[actor=<root>]        cand: This!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step   9  loss=-0.0062  reward_mean=-1.000  dt=17.8s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two baseball players present in the image.
+[actor=<root>]        cand: Calling!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: Yes, there is a woman and a child in the image, both wearing goggles and skiing together.
+[actor=<root>]        cand: For!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The bus is parked in a parking lot.
+[actor=<root>]        cand: It!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The vehicle in the image is a station wagon.
+[actor=<root>]        cand: Can!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  10  loss=-0.0061  reward_mean=-1.000  dt=18.1s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main activity happening in the image is a young male performing a skateboard stunt, specifically jumping off a ledge
+[actor=<root>]        cand: 01!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: On the table, there are a laptop, smartphone, and iPad.
+[actor=<root>]        cand: If!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main activity depicted in the image is a person playing tennis, specifically hitting a tennis ball with their racque
+[actor=<root>]        cand: In!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two women in the image.
+[actor=<root>]        cand: By!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  11  loss=-0.0053  reward_mean=-1.000  dt=16.9s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two elephants in the image.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man is holding tennis rackets in his hands.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main focus of the image is the view through a rain-covered windshield, with the back of a loaded pickup truck and it
+[actor=<root>]        cand: For!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The boat in the image is blue and white.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  12  loss=-0.0065  reward_mean=-1.000  dt=17.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two teams playing in the soccer game.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The primary activity of the person in the image is snowboarding, and they are jumping in the snow, possibly performing t
+[actor=<root>]        cand: How!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The dog in the image is brown.
+[actor=<root>]        cand: With!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The photograph is in black and white.
+[actor=<root>]        cand: v!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  13  loss=-0.0061  reward_mean=-1.000  dt=17.9s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man is holding a surfboard while standing in the water, near the shoreline.
+[actor=<root>]        cand: It!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image is in black and white.
+[actor=<root>]        cand: B!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The people in the image are holding Nintendo Wii remote controls.
+[actor=<root>]        cand: 000!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The dog is wearing a red knitted coat.
+[actor=<root>]        cand: We!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  14  loss=-0.0052  reward_mean=-1.000  dt=16.8s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The child is looking at a round birthday cake on the table.
+[actor=<root>]        cand: It!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a group of cows.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: No, the man is not wearing a helmet in the image. It is an old photograph of a man posing on a motorcycle without a helm
+[actor=<root>]        cand: An!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main object in the bathroom image is a white toilet.
+[actor=<root>]        cand: M!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  15  loss=-0.0064  reward_mean=-1.000  dt=17.9s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a passenger train parked at a train station platform.
+[actor=<root>]        cand: As!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The main activity of the person in the image is skateboarding.
+[actor=<root>]        cand: By!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The color of the boat in the image is white.
+[actor=<root>]        cand: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man in the image is eating a slice of pizza, taking a bite and chewing on it.
+[actor=<root>]        cand: If!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  16  loss=-0.0054  reward_mean=-1.000  dt=16.7s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are two women playing tennis in the image.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The man is positioned on his knees on the surfboard in the ocean.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The bus in the image is red.
+[actor=<root>]        cand: F!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: A cute little puppy is sitting next to the large teddy bear in the image.
+[actor=<root>]        cand: We!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  17  loss=-0.0058  reward_mean=-1.000  dt=16.9s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The dog visible in the image is brown.
+[actor=<root>]        cand: 0!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are multiple people visible in the image, but it is difficult to provide an exact number without seeing the photo.
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The tennis player in the image is wearing a yellow shirt and white shorts.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The person in the photo is holding a tennis racket.
+[actor=<root>]        cand: We!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>] step  18  loss=-0.0061  reward_mean=-1.000  dt=17.3s
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The image features a red Stop sign.
+[actor=<root>]        cand: A!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: A herd of cows is blocking the road in the image.
+[actor=<root>]        cand: Their!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: There are four horses visible in the image.
+[actor=<root>]        cand: At!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[actor=<root>]   [-] reward=-1.000
+[actor=<root>]        gold: The woman in the image is standing in a kitchen, preparing a variety of food, and smiling as she does so. One of the spe
+[actor=<root>]        cand: The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 4 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
