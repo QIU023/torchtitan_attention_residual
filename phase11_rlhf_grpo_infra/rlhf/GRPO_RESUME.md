@@ -165,3 +165,16 @@ end-to-end stably on real COCO data, reward-signal stability fixed. The ONE rema
 substantive improvement is the image-grounding bug above — a recipe/model-wiring fix the user should
 drive (it needs SGLang AttnRes-VL internals knowledge + runtime inspection), not a blind overnight patch.
 The image-blind run was STOPPED (was burning GPU on a null reward); GPUs freed, disk 13G.
+
+### Refinement (ruled out the prompt-placeholder cause) — 2026-05-27 ~18:05
+Checked the SGLang processor: attn_res_vl.py:131-136 AUTO-prepends `<image>\n` per image when the
+prompt has no placeholder, so the 196 vision tokens (SigLIP 14x14) DO get spliced into the sequence
+even though run_grpo_llava_caption.py:482 builds a placeholder-free prompt. So the prompt is NOT the
+bug. The image-blindness is therefore in MULTIMODAL GENERATION CORRECTNESS:
+  - (likely) the DCP→HF converted LM and/or mm_projector is subtly wrong in the SGLang load path, so
+    the model rambles even with valid image tokens present; OR
+  - the projector output / vision-feature dims don't line up, so the merged image embeds are noise.
+Next diagnostic (cheap, decisive): boot the SGLang engine once, run a single caption on a known image,
+and inspect — if `get_image_feature` returns sane embeds + the output is still ungrounded, it's the
+converted-weights/projector path. This is the precise, remaining work item; it needs the AttnRes-VL
+SGLang internals + runtime inspection (not a blind overnight patch).
