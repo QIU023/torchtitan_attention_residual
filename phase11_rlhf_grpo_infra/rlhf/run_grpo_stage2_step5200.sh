@@ -9,6 +9,7 @@
 #
 # Usage:  bash run_grpo_stage2_step5200.sh [NUM_STEPS]   (default 1 = smoke)
 set -euo pipefail
+ulimit -c 0   # no core dumps (a crash here previously dumped 122G to core_pattern)
 cd /workspace/torchtitan_attention_residual
 
 NUM_STEPS="${1:-1}"   # default 1-step smoke; pass 500 for the real run

@@ -10,6 +10,7 @@
 # (torch_native decode has no CUDA graph, so it is slow on purpose) — the
 # run is killed by the timeout and we read the reward trajectory.
 set -euo pipefail
+ulimit -c 0   # no core dumps (a crash here previously dumped 122G to core_pattern)
 cd /workspace/torchtitan_attention_residual
 
 export PYTHONPATH="${PWD}/torchtitan:${PWD}"

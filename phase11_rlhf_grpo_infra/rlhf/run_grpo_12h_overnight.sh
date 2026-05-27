@@ -5,6 +5,7 @@
 # daemon eats disk autonomously); GRPO itself writes NO ckpts (verified). Auto-restart
 # once if it dies before 1h (transient boot crash) — but NOT in a tight loop.
 set -uo pipefail
+ulimit -c 0   # no core dumps (a crash here previously dumped 122G to core_pattern)
 cd /workspace/torchtitan_attention_residual
 LOG=/tmp/grpo_12h_overnight.log
 NUM_STEPS="${1:-220}"   # ~204s/step -> 220 ≈ 12.5h; 12h timeout caps it anyway
