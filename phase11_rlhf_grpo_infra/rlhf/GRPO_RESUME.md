@@ -74,3 +74,30 @@ launched on stub data (would burn GPU on garbage rewards).
 ## Remaining for a REAL converged run
 - Replace stub with the true LLaVA-Pretrain-558K data (scp to the default path; cleanup disk first).
 - Bump `--num-steps` (launcher arg) from 1 to the target (e.g. 500); torch_native decode is slow by design.
+
+## 12h overnight run (2026-05-27 10:34) — REAL DATA
+- **Data:** real COCO val2017 image-caption (5000 pairs, downloaded ~800MB), built into
+  LlavaCaptionTask json at the default path (`/workspace/.hf_home/LLaVA-Pretrain/...`, symlinked
+  `val2017/`). The true LLaVA-558K images (24GB) were too big for the 15G disk; COCO is the
+  disk-safe real-caption substitute (model is a general captioner, so COCO is in-domain enough
+  for BLEU+format reward to give real RL signal).
+- **Launcher:** `run_grpo_12h_overnight.sh 220` → wraps `run_grpo_stage2_step5200.sh` with a
+  12h hard timeout + a disk-watchdog that kills if /workspace < 8G (vastai daemon eats disk).
+  GRPO writes NO ckpts → disk-safe; ~204s/step → ~220 steps in 12h.
+- **Improvement metric:** `reward_mean` per step (grep `step N loss=.. reward_mean=..`). Baseline
+  step 0-1 ≈ -0.60/-0.65. Substantive RL improvement = reward_mean trending up over the run.
+- **Reward values are real now** (vs the earlier stub): BLEU-1(completion, COCO gold) + length + format.
+
+## On interfacing torchtitan PP adapter ↔ veRL (assessment, per request)
+- **torchtitan GRPO (this run):** trainer = torchtitan FSDP + `pipeline_kimi_linear_with_cache_adapter`
+  (the PP adapter — torchtitan pipeline schedule + AttnRes KV-cache adapter); rollout = SGLang via the
+  engine-agnostic Generator monarch actor; weights synced torchstore-RDMA (or DCP→HF).
+- **veRL GRPO (other track):** veRL's own FSDP/Megatron trainer + vLLM/SGLang rollout; data = the
+  on-box `nusc_planning` parquet (7.5G, waypoint reward) for the Qwen2.5-VL VLA — a DIFFERENT model+task.
+- **Feasible interface = shared ROLLOUT + WEIGHT BRIDGE, not a trainer merge.** Both can share the
+  SGLang rollout backend (veRL already supports SGLang) and a DCP↔HF weight bridge. The torchtitan
+  PP adapter is torchtitan-pipeline-specific and does NOT transplant into veRL (veRL would use
+  Megatron-PP). So: keep torchtitan's PP adapter on the trainer side, expose the policy to veRL only
+  via weight-sync + the engine-agnostic generator — NOT by running torchtitan PP stages as veRL actors.
+- **Recommendation:** torchtitan env is stable here (this run trains), so NO switch to veRL needed.
+  veRL stays the fallback for the nusc_planning track if the torchtitan stack regresses.
