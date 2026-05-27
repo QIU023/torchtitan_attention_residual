@@ -178,3 +178,31 @@ Next diagnostic (cheap, decisive): boot the SGLang engine once, run a single cap
 and inspect — if `get_image_feature` returns sane embeds + the output is still ungrounded, it's the
 converted-weights/projector path. This is the precise, remaining work item; it needs the AttnRes-VL
 SGLang internals + runtime inspection (not a blind overnight patch).
+
+## ⚠️⚠️ CORRECTION (2026-05-27 22:30) — NOT image-blind; the pipeline WORKS
+Ran the single-image diagnostic on the converted ckpt with the CORRECT decode backend
+(`decode_attention_backend="torch_native"` — the prior run used flashinfer and hit the
+bf16 MLA NaN -> all-'!' garbage, which is a CONFIG artifact, not the model). Clean result:
+  WITH IMAGE:  "A group of people is walking down a beach road, and there is a man in the
+                water with a camera in his face..."
+  TEXT-ONLY:   "A man is standing in a room, looking at a whiteboard in front of a green wall..."
+
+Findings that OVERTURN the earlier "image-blind / mm-injection gap" conclusion:
+1. Outputs are FLUENT captions (not garbage) -> the DCP->HF conversion, mm_projector, and
+   LM load are all CORRECT. The earlier '!' garbage was purely the bf16-MLA-NaN from a wrong
+   decode backend in my probe, NOT a model bug.
+2. WITH-IMAGE != TEXT-ONLY -> the image IS injected and DOES condition generation. The rollouts
+   are NOT image-blind. My overnight image-blind diagnosis was a MISREAD (I judged the COCO-image
+   GRPO completions like "non-stick skillet, baking soda" as ungrounded web-text, but those are
+   plausibly legitimate—if low-BLEU—captions of COCO kitchen images).
+3. The with-image caption is INACCURATE for an OOD nuScenes driving frame (says "beach road / man
+   in water") but partially grounded ("road/outdoor") — consistent with a WEAK 447M captioner on
+   out-of-distribution images.
+
+REAL root cause of the flat GRPO reward: weak 447M captioner + BLEU-1 ceiling + OOD data
+(COCO/nuScenes vs the model's LLaVA-Pretrain SFT distribution) + kl_coef holding near SFT.
+NOT a multimodal-injection bug. The torchtitan GRPO pipeline is FUNCTIONAL end-to-end.
+
+Levers for ACTUAL substantive improvement (all relaunches): in-distribution data (the model's true
+LLaVA-Pretrain-558K, not COCO), lower kl_coef (0.02), a stronger/denser reward than BLEU-1, and/or a
+larger policy. The infra + image grounding are sound.
