@@ -399,7 +399,20 @@ def main():
     )
     from torchtitan.protocols.model_converter import ModelConvertersContainer
 
-    model_spec = kimi_registry(args.flavor)
+    # The 447m_aligned ckpts were trained with the config_registry "_n4"
+    # variant (num_blocks=4), which model_registry does NOT expose — it only
+    # resolves 447m_aligned block_attn_res -> num_blocks=8 (full_attn_res->16).
+    # Loading the num_blocks=4 ckpt into an 8-block skeleton would run (the
+    # attn_res tensors are shape-invariant to num_blocks) but group the AttnRes
+    # forward differently than training -> wrong logits / degraded reward. So for
+    # "_n4" flavors we source the ModelSpec from config_registry (the exact spec
+    # the SFT + the DCP->HF converter used). Non-_n4 flavors keep model_registry.
+    if args.flavor.endswith("_n4"):
+        from torchtitan.experiments.kimi_linear import config_registry as _cr
+        model_spec = getattr(_cr, args.flavor)().model_spec
+        print(f"[grpo] flavor '{args.flavor}' -> config_registry ModelSpec (num_blocks=4)")
+    else:
+        model_spec = kimi_registry(args.flavor)
     _orig_parallelize = parallelize_kimi_linear
     _adapter_dump_dir = "phase11_rlhf_grpo_infra/rlhf/outputs/grpo_llava_kimi"
 
