@@ -101,3 +101,30 @@ launched on stub data (would burn GPU on garbage rewards).
   via weight-sync + the engine-agnostic generator — NOT by running torchtitan PP stages as veRL actors.
 - **Recommendation:** torchtitan env is stable here (this run trains), so NO switch to veRL needed.
   veRL stays the fallback for the nusc_planning track if the torchtitan stack regresses.
+
+## 12h run v2 status @ 601 steps (2026-05-27 ~15:00) — HONEST findings
+reward_mean windowed avgs (100-step windows): -0.327 / -0.311 / -0.329 / -0.316 / -0.336 /
+-0.299 / (-0.288). **Essentially FLAT** (~-0.32 ± 0.03 noise) with only a faint late uptick;
+loss stable ~O(0.3) (the reward-shaping + kl_coef 0.1 fixed the v1 instability + sparsity, but
+the reward is not climbing substantially). 0 errors, disk 14G stable, dt ~20s/step.
+
+Interpretation (honest): the GRPO infra + recipe are CORRECT and stable on real data — that is the
+solid deliverable. But the **reward is near its ceiling** for this setup: a 447M policy + BLEU-1-vs-
+COCO-human-caption reward is a low, noisy objective, and kl_coef=0.1 keeps the policy near the SFT
+init. So per-step RL gains are marginal, not dramatic.
+
+### TWO limitations the user should weigh in on (NOT auto-fixed to avoid overnight thrash):
+1. **No weight persistence.** This GRPO scaffold writes NO checkpoint (disk-safe by design), so the
+   RL-updated policy is LOST when the run exits — even a real improvement would be unusable. To make
+   the run produce a usable RL'd ckpt, add a final DCP/HF save at the end of the GRPO loop in
+   run_grpo_llava_kimi.py (447M ≈ 3-9GB; 14G free fits one save). REQUIRES a relaunch.
+2. **Flat reward → levers for a bigger gain (each a relaunch):** (a) lower kl_coef 0.1→0.02-0.03
+   (let the policy chase reward — now safe since the reward is dense, unlike v1); (b) stronger/cleaner
+   reward (BLEU-1 is weak; reward length-correctness + a better content metric); (c) the data is COCO
+   not the model's true LLaVA-558K distribution (closer data would give cleaner signal).
+
+### Recommendation
+The current run is the best-conditioned config and is left running (disk-safe, validates 12h stability;
+restarting a 3rd time would lose the accumulated steps). Decide in the morning: if you want a USABLE
+RL'd model, relaunch with (1) a final-save wired in + (2) kl_coef 0.02. The infra is proven; these are
+recipe/scaffold choices, not bugs.
