@@ -128,3 +128,40 @@ The current run is the best-conditioned config and is left running (disk-safe, v
 restarting a 3rd time would lose the accumulated steps). Decide in the morning: if you want a USABLE
 RL'd model, relaunch with (1) a final-save wired in + (2) kl_coef 0.02. The infra is proven; these are
 recipe/scaffold choices, not bugs.
+
+## ⚠️ ROOT CAUSE of flat reward (supersedes the "BLEU ceiling" note) — 2026-05-27 ~17:55
+Inspected the actual rollout completions (the `cand:` lines). From STEP 0 they are
+image-BLIND garbage web-text, e.g.:
+  - "In a large non-stick skillet ... stir together flour, baking soda, and salt ..."
+  - "old-time radio personality to Wine Social host ..."
+  - "No responsibility for typographical errors. Please visit the product description."
+None describe the COCO image. So the SGLang rollout generator is producing ungrounded LM
+text — the policy never sees the image. BLEU vs the real caption ≈ 0, reward stuck ~-0.32,
+and RL CANNOT improve image-captioning when the rollouts ignore the image. (The reward-shaping
++ kl_coef fixes were correct for stability, but irrelevant to this — the signal itself is null.)
+
+This is NOT a tuning ceiling. It is the documented "Multimodal SGLang model class = ❌ remaining
+gap" (README): the image embedding (SigLIP → mm_projector → LM) is not actually conditioning the
+generation. weight-sync is fine (method=disk, path set); the run trains, just on a meaningless reward.
+
+### Precise handoff (where to debug — NOT auto-fixed, needs runtime inspection):
+`/sgl-workspace/sglang/python/sglang/srt/models/attn_res_vl_overlay.py` HAS the machinery
+(KimiAttnResVLProjector, `get_image_feature` l.258, `general_mm_embed_routine` l.220,
+image_token_id=32000). The break is one of:
+1. **Prompt placeholder mismatch** — the rollout prompt must contain exactly N image_token_id(32000)
+   placeholders matching the vision-token count, or `general_mm_embed_routine`'s scatter-merge is a
+   no-op → image-blind. Check how llava_caption_task / the generator builds the prompt (does it inject
+   `<image>` expanded to N=fixed vision tokens? `_NUM_VISION_TOKENS` in attn_res_vl.py).
+2. **Image not passed to the engine** — verify the rollout actually sends pixel data (mm_data /
+   base64 data-url, given SGLANG_DISABLE_SHM_MM=1) and `get_image_feature` is invoked per rollout.
+3. **Converted-LM correctness** — small chance the DCP→HF (num_blocks=4 grouping / projector keys)
+   produced a subtly-wrong model that rambles even with the image. Sanity-check: run ONE caption
+   through the SGLang engine on a known image and see if it's grounded at all.
+
+### What WAS achieved this session (the real deliverable)
+Revived the whole torchtitan multimodal GRPO stack on the scp'd ckpt: 6 boot blockers fixed
+(num_blocks=4 flavor routing, DCP→HF, preprocessor_config, etc.), 1-step + 1100-step runs train
+end-to-end stably on real COCO data, reward-signal stability fixed. The ONE remaining blocker to
+substantive improvement is the image-grounding bug above — a recipe/model-wiring fix the user should
+drive (it needs SGLang AttnRes-VL internals knowledge + runtime inspection), not a blind overnight patch.
+The image-blind run was STOPPED (was burning GPU on a null reward); GPUs freed, disk 13G.
