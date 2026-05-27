@@ -26,4 +26,5 @@ exec /usr/bin/python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py \
     --hf-model-path "$HF" \
     --flavor kimi_linear_447m_aligned_block_attn_res_n4 \
     --num-steps "$NUM_STEPS" \
-    --num-episodes-per-step 4
+    --num-episodes-per-step 4 \
+    --kl-coef 0.1

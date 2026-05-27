@@ -140,14 +140,17 @@ class LlavaCaptionTask:
         Returns:
             Tensor of float32 rewards in roughly [-1, 1.2].
         """
+        # 2026-05-27: GRADED length penalty instead of a hard -1 cliff. The hard
+        # gate made ~75% of rollouts -1.0 (LLaVA-style captions run >30 tokens),
+        # so the reward was sparse and GRPO stalled (flat reward_mean ~-0.6 over
+        # 150 steps). Now BLEU content + format are ALWAYS scored and length is a
+        # smooth penalty -> dense learnable signal so the policy can actually climb
+        # (improve content AND shorten toward the window). Per the "any means to get
+        # substantive RL improvement" directive.
         rewards = []
         for completion in completions:
             n_tokens = len(_tokenise(completion))
-            if n_tokens < 5 or n_tokens > 30:
-                rewards.append(-1.0)
-                continue
-
-            r = _bleu1(completion, expected_answer)
+            r = _bleu1(completion, expected_answer)  # dense content signal [0,1]
 
             stripped = completion.strip()
             if (
@@ -157,6 +160,14 @@ class LlavaCaptionTask:
                 and stripped.count(".") <= 3  # not multi-sentence padding
             ):
                 r += 0.2
+
+            # graded length penalty (smooth, replaces the hard -1 gate)
+            if n_tokens < 5:
+                r -= 0.6 * (5 - n_tokens) / 5.0          # too short -> up to -0.6
+            elif n_tokens > 30:
+                r -= min(1.0, 0.03 * (n_tokens - 30))    # too long -> graded, capped at -1.0
+            if n_tokens == 0:
+                r = -1.0                                  # empty completion
 
             rewards.append(r)
 
