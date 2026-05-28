@@ -187,6 +187,7 @@ from torchtitan.experiments.rl.actors.trainer import PolicyTrainer
 from torchtitan.experiments.rl.types import Episode
 
 from llava_caption_task import LlavaCaptionTask  # noqa: E402
+from gqa_vqa_task import GqaVqaTask  # noqa: E402
 from run_grpo_llava_caption import Provisioner  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -204,6 +205,7 @@ class _Config(Configurable.Config):
     kl_coef: float = 0.0
     llava_json_path: str = "/workspace/.hf_home/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json"
     llava_images_dir: str = "/workspace/.hf_home/LLaVA-Pretrain"
+    task: str = "llava"  # "llava" (caption/BLEU) or "gqa" (VQA exact-match)
 
     trainer: PolicyTrainer.Config = field(default_factory=PolicyTrainer.Config)
     generator: SGLangGenerator.Config = field(default_factory=SGLangGenerator.Config)
@@ -224,11 +226,17 @@ def _log_samples(episodes: list[Episode]) -> None:
 
 
 async def _async_main(config: _Config) -> None:
-    task = LlavaCaptionTask(
-        json_path=config.llava_json_path,
-        images_dir=config.llava_images_dir,
-    )
-    logger.info(f"Loaded LlavaCaptionTask with {len(task)} records")
+    if config.task == "gqa":
+        task = GqaVqaTask(
+            json_path=config.llava_json_path,
+            images_dir=config.llava_images_dir,
+        )
+    else:
+        task = LlavaCaptionTask(
+            json_path=config.llava_json_path,
+            images_dir=config.llava_images_dir,
+        )
+    logger.info(f"Loaded {type(task).__name__} (task={config.task}) with {len(task)} records")
 
     provisioner = Provisioner(total_gpus=8)
     trainer_bootstrap = provisioner.allocate(4)
@@ -387,6 +395,11 @@ def main():
         "--flavor", default="kimi_linear_447m_aligned_block_attn_res",
         help="torchtitan flavor name (LM-only Kimi config)",
     )
+    p.add_argument("--task", default="llava", choices=["llava", "gqa"],
+                   help="llava=caption/BLEU (degenerate, model trained on it); "
+                        "gqa=VQA exact-match (verifiable capability reward)")
+    p.add_argument("--data-json", default="", help="override task json path")
+    p.add_argument("--images-dir", default="", help="override task images dir")
     args = p.parse_args()
 
     from torchtitan.experiments.kimi_linear import model_registry as kimi_registry
@@ -461,6 +474,16 @@ def main():
     config.num_steps = args.num_steps
     config.num_episodes_per_step = args.num_episodes_per_step
     config.kl_coef = args.kl_coef
+    config.task = args.task
+    # GQA default data paths (override with --data-json / --images-dir)
+    if args.task == "gqa":
+        config.llava_json_path = args.data_json or "/workspace/gqa_rl/gqa_testdev.json"
+        config.llava_images_dir = args.images_dir or "/workspace/gqa_rl"
+    else:
+        if args.data_json:
+            config.llava_json_path = args.data_json
+        if args.images_dir:
+            config.llava_images_dir = args.images_dir
 
     config.trainer.parallelism.data_parallel_shard_degree = 4
     config.generator.parallelism.tensor_parallel_degree = 4
