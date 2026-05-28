@@ -229,3 +229,20 @@ Paths to substantive gains (user decision): (1) stronger policy w/ real VQA abil
 Qwen3-VL-4B, easier via veRL track); (2) RL only on captioning at temp~0.3 (modest polish, not new
 capability); (3) accept the validated pipeline as the deliverable (capability gain is gated by base
 model choice).
+
+## GQA greedy eval of the LLaVA-SFT 447M (2026-05-28) — real capability number
+gqa_eval.py (greedy temp=0, torch_native decode), 300 GQA testdev Qs, lenient gold-anywhere match:
+**accuracy = 37/300 = 12.3%**. (SOTA VLMs ~60-65%; ~50% of testdev_balanced is yes/no.)
+
+Samples show the model is a COMPETENT CAPTIONER but a WEAK extractive-VQA answerer — it DESCRIBES
+the scene coherently (visual grounding works) instead of giving the short answer:
+  Q "What appliance is behind the table?" gold=stove -> "Yes, you can see the knife and spoon..."
+  Q "Which color are the shoes?" gold=black -> "The woman is standing in a room with a white wall..."
+  Q "Is the chair in the bottom?" gold=no -> "No, the man is sitting on the ground." (OK, lucky yes/no)
+
+Refines the earlier conclusion: NOT image-blind, NOT useless — at greedy it produces coherent,
+image-grounded captions. It's specifically weak at crisp VQA answering (SFT was caption/describe,
+not extractive QA). The temp-0.8 RL rollouts looked like garbage because sampling degenerates this
+weak model; greedy is coherent. So RL is not hopeless: ~12% of outputs DO contain the gold answer ->
+real (if small) positive signal the v2 reward can amplify, IF rollout temp is lowered (~0.5) to keep
+outputs coherent. Ceiling is low though (12% base, captioner behavior).
