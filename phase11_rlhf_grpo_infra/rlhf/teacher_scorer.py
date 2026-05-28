@@ -36,17 +36,43 @@ class TeacherScorer:
                 ``CUDA_VISIBLE_DEVICES=0,5,6,7``) instead of
                 stacking it on top of the student's card.
         """
-        # Use AutoProcessor + AutoModelForImageTextToText so the loader
-        # routes to the right class based on the model's config.json:
-        #   * LlavaNextForConditionalGeneration for llava-hf/llama3-llava-next-8b-hf
-        #     (CLIP-ViT-L/14-336, hi-res image splitting)
-        #   * LlavaForConditionalGeneration for TIGER-Lab/Mantis-8B-siglip-llama3
-        #     (SigLIP-so400m-384, single-image LLaVA-1.5 arch)
-        # Both expose the same forward signature (input_ids, attention_mask,
-        # pixel_values, [image_sizes]) and return logits of shape [B, T, V],
-        # so the rest of this class is arch-agnostic.
-        from transformers import AutoProcessor, AutoModelForImageTextToText
-        self.proc = AutoProcessor.from_pretrained(model_id)
+        # Loader routes to the right model + processor based on config:
+        #   * llava-hf/llama3-llava-next-8b-hf → LlavaNextProcessor +
+        #     LlavaNextForConditionalGeneration (CLIP-336, hi-res tiling)
+        #   * TIGER-Lab/Mantis-8B-siglip-llama3 → LlavaProcessor (composed
+        #     manually because Mantis ships no processor_config.json, so
+        #     AutoProcessor falls back to bare LlamaTokenizer) +
+        #     LlavaForConditionalGeneration (SigLIP-so400m-384, single-image)
+        # Both processors expose ``.tokenizer`` + ``.apply_chat_template``
+        # and accept ``(images=..., text=...)`` keyword call; both forwards
+        # return ``logits[B, T, V]``. The rest of this class is arch-agnostic.
+        from transformers import (
+            AutoProcessor, AutoTokenizer, AutoImageProcessor,
+            AutoModelForImageTextToText,
+        )
+        try:
+            self.proc = AutoProcessor.from_pretrained(model_id)
+            # Some VLM repos (e.g. Mantis) ship no processor_config.json, so
+            # AutoProcessor silently degrades to a bare tokenizer. Detect
+            # and fall back to manual LlavaProcessor composition.
+            if not hasattr(self.proc, "image_processor"):
+                raise RuntimeError("AutoProcessor returned a tokenizer-only object")
+        except Exception:
+            from transformers import LlavaProcessor, AutoConfig
+            tokenizer = AutoTokenizer.from_pretrained(model_id)
+            image_processor = AutoImageProcessor.from_pretrained(model_id)
+            # LlavaProcessor needs patch_size + vision_feature_select_strategy
+            # to compute num_image_tokens at __call__ time. Pull from the
+            # model's config.json (no separate processor_config.json on
+            # Mantis-style repos).
+            mcfg = AutoConfig.from_pretrained(model_id)
+            patch_size = getattr(mcfg.vision_config, "patch_size", 14)
+            vfs = getattr(mcfg, "vision_feature_select_strategy", "default")
+            self.proc = LlavaProcessor(
+                image_processor=image_processor, tokenizer=tokenizer,
+                patch_size=patch_size,
+                vision_feature_select_strategy=vfs,
+            )
         if max_memory is not None:
             self.model = AutoModelForImageTextToText.from_pretrained(
                 model_id, torch_dtype=dtype,
@@ -105,13 +131,26 @@ class TeacherScorer:
         # placeholder). Wrapping here puts the teacher's own <image>
         # marker in the right spot for LlavaNext's image-token splicing.
         if "<|start_header_id|>" not in prompt_text:
-            conv = [{"role": "user", "content": [
-                {"type": "image"},
-                {"type": "text", "text": prompt_text.strip()},
-            ]}]
-            prompt_text = self.proc.apply_chat_template(
-                conv, add_generation_prompt=True,
-            )
+            try:
+                conv = [{"role": "user", "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": prompt_text.strip()},
+                ]}]
+                prompt_text = self.proc.apply_chat_template(
+                    conv, add_generation_prompt=True,
+                )
+            except (ValueError, AttributeError):
+                # Some VLMs (e.g. Mantis) ship a LlavaProcessor without a
+                # chat_template — fall back to the standard Llama-3-instruct
+                # format with LLaVA's <image> placeholder before the user
+                # question.
+                prompt_text = (
+                    "<|begin_of_text|>"
+                    "<|start_header_id|>user<|end_header_id|>\n\n"
+                    f"<image>\n{prompt_text.strip()}"
+                    "<|eot_id|>"
+                    "<|start_header_id|>assistant<|end_header_id|>\n\n"
+                )
         resp_ids = self.proc.tokenizer(
             response_text, add_special_tokens=False, return_tensors="pt"
         ).input_ids[0]                                    # [T_resp]
