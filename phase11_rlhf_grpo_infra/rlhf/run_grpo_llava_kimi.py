@@ -234,12 +234,21 @@ def _log_samples(episodes: list[Episode]) -> None:
 async def _async_main_opd(config: _Config) -> None:
     """OPD (on-policy distillation) main loop.
 
+    GPU layout (no idle cards):
+      * Trainer rank 0: physical cuda:0 (logical cuda:0) — student only.
+      * Generator TP=4: physical cuda:1-4 (allocate_shared at next_gpu=1).
+      * Teacher device_map: physical cuda:5-7 (logical cuda:1-3 inside
+        trainer process after CVD expansion).
+      * No idle GPUs.
+
     Differences from GRPO main loop:
-      * Trainer is ``LauncherOPDTrainer`` (HF teacher loaded inside the
-        actor), not ``PolicyTrainer``.
-      * Single trainer rank (data_parallel_shard_degree=1) so the
-        teacher's 16 GB lives next to the student's ~5 GB on one card
-        without cross-rank teacher coordination.
+      * ``LauncherOPDTrainer`` (HF teacher inside actor), not
+        ``PolicyTrainer``.
+      * Single trainer rank (``data_parallel_shard_degree=1``) so we
+        avoid cross-rank teacher coordination.
+      * Trainer bootstrap is wrapped to expand ``CUDA_VISIBLE_DEVICES``
+        from ``"0"`` to ``"0,5,6,7"`` so HF accelerate can place the
+        teacher on the otherwise-idle cuda:5-7.
       * No grader actor and no advantage computation. The teacher's
         logits are the entire supervision signal.
     """
@@ -254,15 +263,39 @@ async def _async_main_opd(config: _Config) -> None:
         f"from {config.llava_json_path}"
     )
 
-    # 1 trainer GPU + 7 generator GPUs. The teacher rides on the same GPU
-    # as the trainer (the LauncherOPDTrainer.init_opd_components endpoint
-    # loads it on config.teacher_device, default "cuda:0" = trainer rank 0).
+    # Allocate trainer=1 (cuda:0) + generator_shared=4 (cuda:1-4). cuda:5-7
+    # are left unallocated by Provisioner; the trainer bootstrap wrapper
+    # below will expose them to the trainer process for HF teacher load.
+    TEACHER_PHYS_GPUS = [5, 6, 7]
     provisioner = Provisioner(total_gpus=8)
-    trainer_bootstrap = provisioner.allocate(1)
+    trainer_bootstrap_base = provisioner.allocate(1)
     generator_bootstrap, gen_gpu_ids = provisioner.allocate_shared(4)
+    # Bump Provisioner's next_gpu past the teacher cards so no later
+    # allocation can grab them (defensive — there's no later allocation
+    # in this path, but stays robust if someone adds one).
+    provisioner.next_gpu = 8
+
+    def _expand_cvd_for_teacher(base_bs):
+        """Wrap the trainer bootstrap to extend CUDA_VISIBLE_DEVICES with
+        the teacher cards. Inside the trainer process, ``cuda:0`` still
+        maps to physical GPU 0 (the student card); physical cuda:5,6,7
+        appear as logical cuda:1,2,3 — what HF's accelerate sees when
+        we pass ``max_memory={1: ..., 2: ..., 3: ...}``.
+        """
+        def _wrapped():
+            base_bs()
+            cvd = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
+            extra = ",".join(str(g) for g in TEACHER_PHYS_GPUS)
+            os.environ["CUDA_VISIBLE_DEVICES"] = f"{cvd},{extra}"
+        return _wrapped
+
+    trainer_bootstrap = _expand_cvd_for_teacher(trainer_bootstrap_base)
     trainer_bootstrap = _bootstrap_with_torchstore_patch(trainer_bootstrap)
     generator_bootstrap = _bootstrap_with_torchstore_patch(generator_bootstrap)
-    logger.info(f"OPD generator mesh shares GPUs: {gen_gpu_ids}")
+    logger.info(
+        f"OPD layout: trainer cuda:0 (+teacher dev_map on phys cuda:{TEACHER_PHYS_GPUS}); "
+        f"generator TP=4 on phys cuda:{gen_gpu_ids}; idle=0"
+    )
 
     trainer_mesh = this_host().spawn_procs(
         per_host={"gpus": 1}, bootstrap=trainer_bootstrap,
@@ -300,14 +333,20 @@ async def _async_main_opd(config: _Config) -> None:
     generator.pull_model_state_dict.call(0).get()
 
     # Lazy-load HF teacher + tokenizer + loss fn INSIDE the trainer process.
-    # The init endpoint takes only strings (pickleable across actor boundary).
+    # The init endpoint takes only strings + a small dict (pickleable).
     opd_loss_dir = os.path.dirname(os.path.abspath(__file__))
     tokenizer_path = config.tokenizer_path or config.hf_assets_path
+    # Pin teacher to LOGICAL devices 1,2,3 (= physical cuda:5,6,7 after
+    # the trainer bootstrap CVD expansion). max_memory ~7 GiB / card for
+    # an 8B bf16 model spread across 3 cards leaves ~5 GiB free per card
+    # for activations + KV cache during teacher forward.
+    teacher_max_memory = {1: "7GiB", 2: "7GiB", 3: "7GiB"}
     init_diag = trainer.init_opd_components.call(
         teacher_model_id=config.teacher_model_id,
-        teacher_device=config.teacher_device,
+        teacher_device=config.teacher_device,  # unused when max_memory set
         tokenizer_path=tokenizer_path,
         opd_loss_module_dir=opd_loss_dir,
+        teacher_max_memory=teacher_max_memory,
     ).get()
     logger.info(f"OPD components initialized: {init_diag}")
 

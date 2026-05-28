@@ -17,14 +17,43 @@ TEACHER_ID = "llava-hf/llama3-llava-next-8b-hf"
 
 class TeacherScorer:
     def __init__(self, model_id: str = TEACHER_ID, device: str = "cuda:0",
-                 dtype: torch.dtype = torch.bfloat16):
+                 dtype: torch.dtype = torch.bfloat16,
+                 max_memory: dict | None = None):
+        """Load the teacher VLM once.
+
+        Args:
+            model_id: HF model id.
+            device: target device when single-GPU (e.g. ``"cuda:0"``).
+                Ignored when ``max_memory`` is set (then HF accelerate
+                spreads layers across the keyed devices).
+            dtype: model dtype.
+            max_memory: optional accelerate ``max_memory`` dict
+                (``{device_idx: "10GiB", ...}``). When provided,
+                ``device_map="auto"`` + this map controls layer
+                placement — used by the OPD launcher to put the
+                teacher on the otherwise-idle GPUs (cuda:5-7 mapped
+                into the trainer process's logical 1-3 via
+                ``CUDA_VISIBLE_DEVICES=0,5,6,7``) instead of
+                stacking it on top of the student's card.
+        """
         from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
         self.proc = LlavaNextProcessor.from_pretrained(model_id)
-        self.model = LlavaNextForConditionalGeneration.from_pretrained(
-            model_id, torch_dtype=dtype, device_map=device,
-        )
+        if max_memory is not None:
+            self.model = LlavaNextForConditionalGeneration.from_pretrained(
+                model_id, torch_dtype=dtype,
+                device_map="auto", max_memory=max_memory,
+            )
+            # Track an input device (HF's first-layer device) for tensor
+            # placement at .score time. With max_memory we don't know
+            # the exact device a priori, so probe.
+            first_param_dev = next(self.model.parameters()).device
+            self.device = str(first_param_dev)
+        else:
+            self.model = LlavaNextForConditionalGeneration.from_pretrained(
+                model_id, torch_dtype=dtype, device_map=device,
+            )
+            self.device = device
         self.model.eval()
-        self.device = device
         self.dtype = dtype
 
     @torch.no_grad()

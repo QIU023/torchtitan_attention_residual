@@ -48,17 +48,23 @@ class LauncherOPDTrainer(OPDTrainer):
         teacher_device: str,
         tokenizer_path: str,
         opd_loss_module_dir: str,
+        teacher_max_memory: dict | None = None,
     ) -> dict:
         """Build heavy components inside this trainer's process.
 
         Args:
             teacher_model_id: HF id for the teacher (e.g.
                 ``llava-hf/llama3-llava-next-8b-hf``).
-            teacher_device: CUDA device for the teacher
-                (e.g. ``cuda:0`` — must NOT clash with the student's
-                FSDP shard placement; in our 1-rank Stage-C setup,
-                trainer is on cuda:0 too and the teacher rides along,
-                using ~16 GB of the 32 GB card).
+            teacher_device: CUDA device for the teacher when single-GPU
+                (e.g. ``cuda:0``). Ignored when ``teacher_max_memory``
+                is provided.
+            teacher_max_memory: optional accelerate ``max_memory`` dict
+                (``{device_idx: "10GiB", ...}``). When set, HF
+                ``device_map="auto"`` spreads teacher layers across
+                the keyed devices. Used by the runner to put the
+                teacher on otherwise-idle GPUs (typically cuda:5-7
+                physical → cuda:1-3 logical after the trainer
+                bootstrap remaps ``CUDA_VISIBLE_DEVICES``).
             tokenizer_path: HF model dir whose tokenizer matches the
                 student's vocab (used to decode Episode prompt/response
                 token ids back to text for the teacher's input).
@@ -83,14 +89,25 @@ class LauncherOPDTrainer(OPDTrainer):
         from opd_loss import opd_loss  # noqa: E402
         from transformers import AutoTokenizer  # noqa: E402
 
-        logger.info(
-            f"OPD init: loading teacher {teacher_model_id} on {teacher_device}"
-        )
-        scorer = TeacherScorer(
-            model_id=teacher_model_id,
-            device=teacher_device,
-            dtype=torch.bfloat16,
-        )
+        if teacher_max_memory is not None:
+            logger.info(
+                f"OPD init: loading teacher {teacher_model_id} "
+                f"device_map=auto max_memory={teacher_max_memory}"
+            )
+            scorer = TeacherScorer(
+                model_id=teacher_model_id,
+                dtype=torch.bfloat16,
+                max_memory=teacher_max_memory,
+            )
+        else:
+            logger.info(
+                f"OPD init: loading teacher {teacher_model_id} on {teacher_device}"
+            )
+            scorer = TeacherScorer(
+                model_id=teacher_model_id,
+                device=teacher_device,
+                dtype=torch.bfloat16,
+            )
         self._teacher_score_fn = scorer.score
 
         logger.info(f"OPD init: loading tokenizer from {tokenizer_path}")
