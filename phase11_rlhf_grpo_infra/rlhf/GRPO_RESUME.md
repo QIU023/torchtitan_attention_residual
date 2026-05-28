@@ -206,3 +206,26 @@ NOT a multimodal-injection bug. The torchtitan GRPO pipeline is FUNCTIONAL end-t
 Levers for ACTUAL substantive improvement (all relaunches): in-distribution data (the model's true
 LLaVA-Pretrain-558K, not COCO), lower kl_coef (0.02), a stronger/denser reward than BLEU-1, and/or a
 larger policy. The infra + image grounding are sound.
+
+## GQA VQA-RL result (2026-05-28) — pipeline correct, 447M model is the wall
+Built GqaVqaTask (verifiable exact-match reward) + --task gqa + run_grpo_gqa.sh; ran end-to-end.
+- v1 reward (first-clause + flat -0.2 len penalty): rewards collapsed to all -0.2 -> zero
+  within-group variance -> GRPO advantage 0 -> flat. This zero-variance is ALSO why the earlier
+  caption run was flat (the real root cause of all flat runs).
+- v2 reward (gold-content anywhere + mild len penalty, df2f947): restored variance (std 0.67 unit
+  test) — but run still flat/negative due to the MODEL, not the reward.
+
+Rollouts are garbage: under GRPO sampling (temp 0.8, 8/prompt) the 447M Kimi captioner degenerates
+into off-topic web-text ("Fast & Furious 9...") for GQA Qs whose gold is "stove"/"yes"/"cloth".
+(Greedy temp=0 was coherent in the single-image diag — temp-0.8 on this weak model degenerates.)
+It's also a caption-only model, never instruct-tuned for VQA Q&A -> even coherent it describes, not
+answers -> ~never emits the gold short answer -> all base 0 -> no correct samples for GRPO to amplify.
+
+BOTTOM LINE: GRPO infra + image grounding + verifiable reward all CORRECT (fixed this session:
+num_blocks=4, DCP->HF, preprocessor, reward-collapse; proved not-image-blind). Binding constraint =
+the 447M caption-only policy: too weak/OOD to have VQA capability for RL to amplify.
+
+Paths to substantive gains (user decision): (1) stronger policy w/ real VQA ability (e.g. on-box
+Qwen3-VL-4B, easier via veRL track); (2) RL only on captioning at temp~0.3 (modest polish, not new
+capability); (3) accept the validated pipeline as the deliverable (capability gain is gated by base
+model choice).
