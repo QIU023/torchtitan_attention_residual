@@ -62,8 +62,14 @@ class TeacherScorer:
         """Forward (image, prompt+response) once; return logits + ids at response positions.
 
         Args:
-            image: PIL.Image or path str.
-            prompt_text: already-formatted prompt (e.g. via apply_chat_template).
+            image: PIL.Image, on-disk path, or base64 ``data:image/...`` URL.
+            prompt_text: either a fully chat-templated prompt (must contain
+                ``<|start_header_id|>``, the LLaMA-3 marker) OR a bare user
+                question text. In the latter case (the OPD trainer path),
+                this method wraps it with the teacher's own
+                ``apply_chat_template`` so the ``<image>`` placeholder
+                lands in the right position for LLaVA-NeXT's image-feature
+                splicing.
             response_text: the student's generated text (raw decoded).
 
         Returns:
@@ -72,7 +78,34 @@ class TeacherScorer:
         """
         from PIL import Image
         if isinstance(image, str):
-            image = Image.open(image).convert("RGB")
+            if image.startswith("data:image"):
+                # base64 data URL — that's what SGLang uses when the
+                # launcher passes images inline (see ``_async_main_opd``
+                # in run_grpo_llava_kimi.py — base64 avoids the SHM IPC
+                # race that was the v16 GRPO blocker). The SGLang
+                # generator stores the data URL verbatim in
+                # ``Episode.image_path``, so the trainer sees it here.
+                import base64
+                import io
+                _, b64 = image.split(",", 1)
+                image = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
+            else:
+                image = Image.open(image).convert("RGB")
+        # Auto-wrap bare user text with the LLaVA-NeXT chat template if
+        # the caller passed a plain user question (no LLaMA-3 header
+        # markers). The OPD trainer reaches us with just the user
+        # prompt (decoded from Episode.prompt_token_ids with
+        # skip_special_tokens=True, which strips the original <image>
+        # placeholder). Wrapping here puts the teacher's own <image>
+        # marker in the right spot for LlavaNext's image-token splicing.
+        if "<|start_header_id|>" not in prompt_text:
+            conv = [{"role": "user", "content": [
+                {"type": "image"},
+                {"type": "text", "text": prompt_text.strip()},
+            ]}]
+            prompt_text = self.proc.apply_chat_template(
+                conv, add_generation_prompt=True,
+            )
         resp_ids = self.proc.tokenizer(
             response_text, add_special_tokens=False, return_tensors="pt"
         ).input_ids[0]                                    # [T_resp]

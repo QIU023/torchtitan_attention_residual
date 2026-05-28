@@ -276,17 +276,36 @@ async def _async_main_opd(config: _Config) -> None:
     provisioner.next_gpu = 8
 
     def _expand_cvd_for_teacher(base_bs):
-        """Wrap the trainer bootstrap to extend CUDA_VISIBLE_DEVICES with
-        the teacher cards. Inside the trainer process, ``cuda:0`` still
-        maps to physical GPU 0 (the student card); physical cuda:5,6,7
-        appear as logical cuda:1,2,3 — what HF's accelerate sees when
-        we pass ``max_memory={1: ..., 2: ..., 3: ...}``.
+        """Wrap the trainer bootstrap to (a) extend CUDA_VISIBLE_DEVICES
+        with the teacher cards, and (b) inject the rlhf/ folder into
+        sys.path so the spawned trainer subprocess can unpickle
+        ``LauncherOPDTrainer`` (which lives in rlhf/, not in any
+        site-packages path that Provisioner propagates).
+
+        Inside the trainer process, ``cuda:0`` still maps to physical
+        GPU 0 (the student card); physical cuda:5,6,7 appear as logical
+        cuda:1,2,3 — what HF's accelerate sees when we pass
+        ``max_memory={1: ..., 2: ..., 3: ...}``.
         """
+        rlhf_dir = os.path.dirname(os.path.abspath(__file__))
         def _wrapped():
             base_bs()
             cvd = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
             extra = ",".join(str(g) for g in TEACHER_PHYS_GPUS)
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{cvd},{extra}"
+            # rlhf folder onto sys.path AND PYTHONPATH — base_bs has
+            # already set PYTHONPATH but doesn't include the launcher's
+            # own folder. cloudpickle.loads needs ``import
+            # opd_trainer_launcher`` to resolve.
+            import sys as _sys
+            if rlhf_dir not in _sys.path:
+                _sys.path.insert(0, rlhf_dir)
+            existing_pp = os.environ.get("PYTHONPATH", "")
+            if rlhf_dir not in existing_pp.split(os.pathsep):
+                os.environ["PYTHONPATH"] = (
+                    rlhf_dir + os.pathsep + existing_pp
+                    if existing_pp else rlhf_dir
+                )
         return _wrapped
 
     trainer_bootstrap = _expand_cvd_for_teacher(trainer_bootstrap_base)
