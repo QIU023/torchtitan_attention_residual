@@ -189,6 +189,7 @@ from torchtitan.experiments.rl.types import Episode
 from llava_caption_task import LlavaCaptionTask  # noqa: E402
 from gqa_vqa_task import GqaVqaTask  # noqa: E402
 from llava_opd_task import LlavaOpdTask  # noqa: E402
+from vqa_aligned_opd_task import VqaAlignedOpdTask  # noqa: E402
 from run_grpo_llava_caption import Provisioner  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -220,6 +221,7 @@ class _Config(Configurable.Config):
     # ``{dump_folder}/opd_ckpts/step-N/`` as DCP (no optim state).
     opd_ckpt_interval: int = 0
     opd_ckpt_dir: str = ""  # defaults to dump_folder + "/opd_ckpts" when empty
+    opd_task_type: str = "caption"  # "caption" (LlavaOpdTask) or "vqa" (VqaAlignedOpdTask)
 
     trainer: PolicyTrainer.Config = field(default_factory=PolicyTrainer.Config)
     generator: SGLangGenerator.Config = field(default_factory=SGLangGenerator.Config)
@@ -262,12 +264,18 @@ async def _async_main_opd(config: _Config) -> None:
     """
     from opd_trainer_launcher import LauncherOPDTrainer
 
-    task = LlavaOpdTask(
-        json_path=config.llava_json_path,
-        images_dir=config.llava_images_dir,
-    )
+    if config.opd_task_type == "vqa":
+        task = VqaAlignedOpdTask(
+            json_path=config.llava_json_path,
+            images_dir=config.llava_images_dir,
+        )
+    else:
+        task = LlavaOpdTask(
+            json_path=config.llava_json_path,
+            images_dir=config.llava_images_dir,
+        )
     logger.info(
-        f"OPD task loaded: {len(task)} COCO records "
+        f"OPD task ({config.opd_task_type}) loaded: {len(task)} records "
         f"from {config.llava_json_path}"
     )
 
@@ -679,6 +687,10 @@ def main():
     p.add_argument("--opd-weight-decay", type=float, default=0.01,
                    help="Weight decay for OPD. Default 0.01 (LLaVA-SFT "
                         "convention) vs torchtitan default 0.1.")
+    p.add_argument("--opd-task-type", default="caption", choices=["caption", "vqa"],
+                   help="caption=LlavaOpdTask(fixed 'describe' prompt); "
+                        "vqa=VqaAlignedOpdTask(real VQA questions from mix665k "
+                        "conversations, task-aligned with GQA eval).")
     args = p.parse_args()
 
     from torchtitan.experiments.kimi_linear import model_registry as kimi_registry
@@ -770,6 +782,7 @@ def main():
         config.opd_temperature = args.opd_temperature
         config.opd_ckpt_interval = args.opd_ckpt_interval
         config.opd_ckpt_dir = args.opd_ckpt_dir
+        config.opd_task_type = args.opd_task_type
         # CRITICAL: override the from-scratch LR. Stage D-2/D-3 ran with
         # torchtitan default lr=8e-4 → student weights drifted 80x past
         # what continual distillation tolerates → GQA collapsed 12.3%→0%.
