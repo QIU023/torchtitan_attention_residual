@@ -87,23 +87,31 @@ class GqaVqaTask:
         )
 
     def reward_function(self, completions: list[str], expected_answer: str = "") -> torch.Tensor:
+        # Reward CONTENT (gold answer present anywhere in the output), not just the
+        # first clause — a captioner rambles, so checking only the first clause
+        # collapsed every long answer to the same score (zero within-group variance
+        # -> GRPO advantage 0 -> flat reward). Now diverse rollouts get DIFFERENT
+        # rewards (right-content vs wrong, concise vs rambling) -> learnable gradient
+        # toward "include the correct answer + be concise".
         gold = _norm(expected_answer)
+        gold_toks = set(gold.split())
         rewards = []
         for c in completions:
-            span = _answer_span(c)
-            span_toks = span.split()
-            # correct if the answer span equals gold, or starts with it, or gold
-            # appears as a token in the (short) span.
-            correct = bool(gold) and (
-                span == gold
-                or span.startswith(gold + " ")
-                or (len(gold.split()) == 1 and gold in span_toks)
-            )
-            r = 1.0 if correct else 0.0
-            n = len(_norm(c).split())
+            full = _norm(c)
+            toks = full.split()
+            n = len(toks)
             if n == 0:
-                r = -0.5                    # empty / non-answer
-            elif n > 15:
-                r -= 0.2                    # rambling penalty (encourage concise)
+                rewards.append(-0.5)        # empty / non-answer
+                continue
+            present = bool(gold) and (
+                (" " + gold + " ") in (" " + full + " ")          # phrase match
+                or gold_toks.issubset(set(toks))                  # all gold tokens present
+            )
+            r = 1.0 if present else 0.0
+            span = _answer_span(c)
+            if present and (span == gold or span.startswith(gold + " ")):
+                r += 0.3                     # concise + correct = best
+            if n > 12:
+                r -= min(0.3, 0.02 * (n - 12))  # MILD length penalty (won't collapse)
             rewards.append(r)
         return torch.tensor(rewards, dtype=torch.float32)
