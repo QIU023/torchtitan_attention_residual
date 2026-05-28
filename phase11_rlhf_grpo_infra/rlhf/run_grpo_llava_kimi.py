@@ -212,6 +212,14 @@ class _Config(Configurable.Config):
     teacher_model_id: str = "llava-hf/llama3-llava-next-8b-hf"
     teacher_device: str = "cuda:0"  # rides on the trainer GPU (single-rank OPD)
     tokenizer_path: str = ""  # defaults to hf_assets_path when empty
+    # GKD loss hyperparameters (Agarwal et al. 2024). β=0.5 / T=1.0
+    # match TRL's generalized_jsd_loss defaults (symmetric JSD).
+    opd_beta: float = 0.5
+    opd_temperature: float = 1.0
+    # Ckpt every N OPD steps. 0 disables. Saves to
+    # ``{dump_folder}/opd_ckpts/step-N/`` as DCP (no optim state).
+    opd_ckpt_interval: int = 0
+    opd_ckpt_dir: str = ""  # defaults to dump_folder + "/opd_ckpts" when empty
 
     trainer: PolicyTrainer.Config = field(default_factory=PolicyTrainer.Config)
     generator: SGLangGenerator.Config = field(default_factory=SGLangGenerator.Config)
@@ -369,6 +377,21 @@ async def _async_main_opd(config: _Config) -> None:
     ).get()
     logger.info(f"OPD components initialized: {init_diag}")
 
+    # Inject GKD hyperparameters (β, temperature) into the trainer actor.
+    trainer.set_opd_hyperparams.call(
+        beta=config.opd_beta, temperature=config.opd_temperature,
+    ).get()
+
+    # Resolve ckpt directory (used by the periodic save below).
+    opd_ckpt_dir = config.opd_ckpt_dir or os.path.join(
+        config.dump_folder, "opd_ckpts"
+    )
+    if config.opd_ckpt_interval > 0:
+        Path(opd_ckpt_dir).mkdir(parents=True, exist_ok=True)
+        logger.info(
+            f"OPD ckpt: every {config.opd_ckpt_interval} steps → {opd_ckpt_dir}"
+        )
+
     for step in range(config.num_steps):
         t0 = time.perf_counter()
 
@@ -418,6 +441,16 @@ async def _async_main_opd(config: _Config) -> None:
         if config.log_samples and step % 5 == 0 and episodes:
             cand = episodes[0].text[:200].replace("\n", " ").strip()
             logger.info(f"       sample: {cand}")
+
+        # Periodic ckpt save. (step+1) so the FIRST save lands at step
+        # opd_ckpt_interval-1 (i.e. after ``interval`` real updates),
+        # not at step 0.
+        if (config.opd_ckpt_interval > 0
+                and (step + 1) % config.opd_ckpt_interval == 0):
+            saved = trainer.save_dcp.call(
+                save_dir=opd_ckpt_dir, step=step + 1,
+            ).get()
+            logger.info(f"       ckpt saved at step {step+1}: {saved}")
 
 
 async def _async_main(config: _Config) -> None:
@@ -614,6 +647,18 @@ def main():
     p.add_argument("--tokenizer-path", default="",
                    help="HF tokenizer dir for prompt/response decode "
                         "(defaults to --hf-model-path when empty).")
+    p.add_argument("--opd-beta", type=float, default=0.5,
+                   help="GKD β: 0=reverse-KL(student||teacher), "
+                        "1=forward-KL(teacher||student) classical KD, "
+                        "0.5=symmetric JSD (Agarwal 2024 paper default).")
+    p.add_argument("--opd-temperature", type=float, default=1.0,
+                   help="Softmax temperature for distillation. "
+                        "1.0=no scaling; 2.0=standard dark-knowledge KD.")
+    p.add_argument("--opd-ckpt-interval", type=int, default=0,
+                   help="Save trainer DCP every N OPD steps (0=disabled).")
+    p.add_argument("--opd-ckpt-dir", default="",
+                   help="OPD ckpt root (defaults to "
+                        "{dump_folder}/opd_ckpts when empty).")
     args = p.parse_args()
 
     from torchtitan.experiments.kimi_linear import model_registry as kimi_registry
@@ -701,6 +746,10 @@ def main():
         config.teacher_model_id = args.teacher_model_id
         config.teacher_device = args.teacher_device
         config.tokenizer_path = args.tokenizer_path
+        config.opd_beta = args.opd_beta
+        config.opd_temperature = args.opd_temperature
+        config.opd_ckpt_interval = args.opd_ckpt_interval
+        config.opd_ckpt_dir = args.opd_ckpt_dir
     else:
         if args.data_json:
             config.llava_json_path = args.data_json
