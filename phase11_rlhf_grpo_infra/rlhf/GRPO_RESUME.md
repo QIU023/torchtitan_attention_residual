@@ -246,3 +246,16 @@ not extractive QA). The temp-0.8 RL rollouts looked like garbage because samplin
 weak model; greedy is coherent. So RL is not hopeless: ~12% of outputs DO contain the gold answer ->
 real (if small) positive signal the v2 reward can amplify, IF rollout temp is lowered (~0.5) to keep
 outputs coherent. Ceiling is low though (12% base, captioner behavior).
+
+## Why 12% — phase5 SFT recipe gap (2026-05-28), per phase5 state
+The entire VLM SFT used **LLaVA-Instruct-150K** (conversation/reasoning/detailed-description;
+`run_stage2_continuation.sh` JSON=.../LLaVA-Instruct-150K/llava_instruct_150k.json). ZERO academic
+short-answer VQA data. phase5 README is explicit: SFT was for "integration, not score"; "v1 just does
+captions"; and it flagged the planned follow-on: "can scale to LLaVA-Instruct-665K (VQA + multi-turn)".
+So 12% GQA is the RECIPE (caption/describe SFT, never taught crisp VQA answering), NOT a hard ceiling.
+
+Headroom: (1) FIRST-ORDER — SFT on the LLaVA-1.5-665K mix (VQAv2/GQA/OKVQA/OCRVQA + "answer in one
+word") teaches short-answer VQA -> GQA likely 12% -> ~35-50% (typical small-VLM). (2) SECOND-ORDER —
+447M LM is small + phase4 noted "needs more pretraining tokens", so absolute ceiling is bounded.
+CORRECT ORDER: VQA-format SFT (665K) to lift base capability, THEN RL to amplify. RL on a model that
+doesn't know the answer format is premature (explains the weak GQA-RL signal).
