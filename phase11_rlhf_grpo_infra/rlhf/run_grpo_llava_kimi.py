@@ -377,6 +377,17 @@ async def _async_main_opd(config: _Config) -> None:
     ).get()
     logger.info(f"OPD components initialized: {init_diag}")
 
+    # CRITICAL: load vision tower + projector for the student's forward.
+    # Without this, compute_response_logits sees image_token_id as a
+    # literal text token (no vision embeddings spliced in) → student
+    # trains in a different input distribution than it evals in →
+    # GQA acc collapses (verified Stage D-2: 12.3% → 0.67%).
+    vision_diag = trainer.init_vision_from_hf.call(
+        hf_model_path=config.hf_assets_path,
+        vision_tower_id="google/siglip-base-patch16-224",
+    ).get()
+    logger.info(f"OPD vision components loaded: {vision_diag}")
+
     # Inject GKD hyperparameters (β, temperature) into the trainer actor.
     trainer.set_opd_hyperparams.call(
         beta=config.opd_beta, temperature=config.opd_temperature,

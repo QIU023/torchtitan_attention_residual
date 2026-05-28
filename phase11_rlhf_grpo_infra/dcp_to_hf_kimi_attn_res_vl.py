@@ -229,6 +229,16 @@ def main():
              "engine boot will fail with 'cannot find processor in <out>' "
              "(known bug, 2026-05-11 overnight chain Stage C).",
     )
+    p.add_argument(
+        "--projector-from-hf", type=Path, default=None,
+        help="Optional path to an HF safetensors VLM dir from which to "
+             "load the ``mm_projector.projector.*`` weights. Used when "
+             "the input DCP doesn't carry projector keys (e.g. our "
+             "OPDTrainer.save_dcp emits LM-only, since the trainer "
+             "doesn't hold the projector). When set, the DCP load "
+             "skips the ``mm_state.projector.*`` keys and projector "
+             "weights are pulled from {projector-from-hf}/model.safetensors.",
+    )
     args = p.parse_args()
 
     init_dist()
@@ -259,15 +269,46 @@ def main():
     combined: dict[str, torch.Tensor] = {}
     for k, v in lm_sd.items():
         combined[k] = v
-    for k, v in mm_sd.items():
-        combined[f"mm_state.{k}"] = v
+    # When --projector-from-hf is set, the DCP is expected to be LM-only
+    # (e.g. OPDTrainer.save_dcp output). Skip projector keys in the DCP
+    # load request — we'll pull them from the HF dir below.
+    if args.projector_from_hf is None:
+        for k, v in mm_sd.items():
+            combined[f"mm_state.{k}"] = v
 
     print(
-        f"[conv-vl] skeleton: {len(lm_sd)} LM keys + {len(mm_sd)} projector keys"
+        f"[conv-vl] skeleton: {len(lm_sd)} LM keys + "
+        f"{0 if args.projector_from_hf else len(mm_sd)} projector keys "
+        f"(projector source: "
+        f"{'HF safetensors' if args.projector_from_hf else 'DCP'})"
     )
 
     print(f"[conv-vl] loading DCP from {args.in_dir}")
     dcp.load(combined, checkpoint_id=str(args.in_dir))
+
+    # If the DCP didn't carry the projector, load it from the donor HF dir.
+    if args.projector_from_hf is not None:
+        from safetensors.torch import load_file
+        st_path = args.projector_from_hf / "model.safetensors"
+        if not st_path.is_file():
+            raise FileNotFoundError(
+                f"--projector-from-hf={args.projector_from_hf} has no "
+                f"model.safetensors. Required for projector weights."
+            )
+        donor = load_file(str(st_path))
+        # Donor stores keys as ``mm_projector.projector.fc1.weight`` etc.
+        # Rewrite to the ``mm_state.projector.*`` prefix the rest of this
+        # converter expects when slicing ``combined`` below.
+        n_copied = 0
+        for k, v in donor.items():
+            if k.startswith("mm_projector.projector."):
+                tgt = "mm_state." + k[len("mm_projector."):]
+                combined[tgt] = v
+                n_copied += 1
+        print(
+            f"[conv-vl] loaded {n_copied} projector tensors from "
+            f"{st_path}"
+        )
 
     target_dtype = {
         "bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32,

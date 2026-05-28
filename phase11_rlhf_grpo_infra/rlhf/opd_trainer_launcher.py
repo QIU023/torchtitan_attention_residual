@@ -126,3 +126,97 @@ class LauncherOPDTrainer(OPDTrainer):
             "tokenizer_vocab": v_tok,
             "device": teacher_device,
         }
+
+    @endpoint
+    async def init_vision_from_hf(
+        self,
+        hf_model_path: str,
+        vision_tower_id: str = "google/siglip-base-patch16-224",
+    ) -> dict:
+        """Load SigLIP vision tower + 2-layer projector from the SFT HF dir.
+
+        **Critical for OPD correctness**: ``compute_response_logits``
+        injects ``vision_embeds`` at ``image_token_id`` positions so
+        the student's forward sees the same vision-grounded embeddings
+        as it would at inference. Without this, the student forward
+        treats the spliced ``image_token_id`` repetitions as literal
+        text tokens — a fatal domain shift from training to eval.
+        Symptom (observed 2026-05-28 Stage D-2): GQA 12.3% → 0.67%
+        after 50 OPD steps; outputs degenerate to ``"the the the..."``.
+
+        Bypasses ``PolicyTrainer._load_vision_components``'s DCP-load
+        path (which expects ``mm_projector.projector.*`` keys but the
+        SFT DCP uses ``mm_state.projector.*`` under the 2026-05-14
+        ``_MMStateWrapper``). Loads projector weights directly from
+        ``{hf_model_path}/model.safetensors``.
+
+        Args:
+            hf_model_path: SFT HF VLM dir (e.g.
+                ``phase11_rlhf_grpo_infra/hf/stage2_447m_step5200``).
+                Must contain ``model.safetensors`` with
+                ``mm_projector.projector.{fc1,fc2}.{weight,bias}``.
+            vision_tower_id: HF id for SigLIP. Default matches the
+                stage-1 LLaVA SFT recipe.
+
+        Returns:
+            Diagnostic dict (vision_hidden, llm_hidden, projector_keys_loaded).
+        """
+        from transformers import SiglipVisionModel
+        from safetensors.torch import load_file
+
+        # (1) Vision tower — fresh from HF cache, frozen.
+        logger.info(f"OPD vision: loading SigLIP from {vision_tower_id}")
+        vt = SiglipVisionModel.from_pretrained(vision_tower_id)
+        for p in vt.parameters():
+            p.requires_grad = False
+        vt.eval()
+        vt = vt.to(self.device)
+        self._vision_tower = vt
+        vision_hidden = vt.config.hidden_size
+
+        # (2) Probe LM hidden size (for projector geometry).
+        try:
+            llm_hidden = self.model.embed_tokens.weight.shape[1]
+        except AttributeError:
+            llm_hidden = self.model.tok_embeddings.weight.shape[1]
+
+        # (3) Build 2-layer MLP projector (matches phase5 Projector geometry).
+        class _Projector(torch.nn.Module):
+            def __init__(self, vd, ld):
+                super().__init__()
+                self.fc1 = torch.nn.Linear(vd, ld, bias=True)
+                self.fc2 = torch.nn.Linear(ld, ld, bias=True)
+            def forward(self, x):
+                import torch.nn.functional as F
+                return self.fc2(F.gelu(self.fc1(x)))
+        proj = _Projector(vision_hidden, llm_hidden).to(self.device, torch.bfloat16)
+
+        # (4) Load projector weights from SFT HF safetensors. Keys live
+        #     under ``mm_projector.projector.{fc1,fc2}.{weight,bias}``.
+        import os as _os
+        st_path = _os.path.join(hf_model_path, "model.safetensors")
+        if not _os.path.isfile(st_path):
+            raise FileNotFoundError(
+                f"No model.safetensors at {st_path}; needed for projector weights."
+            )
+        donor = load_file(st_path)
+        proj_sd = {}
+        for k, v in donor.items():
+            if k.startswith("mm_projector.projector."):
+                inner_k = k[len("mm_projector.projector."):]
+                proj_sd[inner_k] = v
+        proj.load_state_dict(proj_sd, strict=True)
+        for p in proj.parameters():
+            p.requires_grad = False
+        proj.eval()
+        self._projector = proj
+
+        logger.info(
+            f"OPD vision: vision_tower {vision_hidden}d -> projector -> "
+            f"{llm_hidden}d ({len(proj_sd)} projector keys loaded)"
+        )
+        return {
+            "vision_hidden": vision_hidden,
+            "llm_hidden": llm_hidden,
+            "projector_keys_loaded": len(proj_sd),
+        }

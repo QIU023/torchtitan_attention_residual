@@ -11,9 +11,12 @@ os.environ.setdefault("SGLANG_DISABLE_SHM_MM", "1")
 os.environ.setdefault("SGLANG_FP8_IGNORED_LAYERS",
                       "attn_res_proj,mlp_res_proj,final_attn_res_proj,mlp.experts")
 
-HF = "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200"
-GQA = "/workspace/gqa_rl/gqa_testdev.json"
-IMGDIR = "/workspace/gqa_rl"
+HF = os.environ.get(
+    "HF_MODEL_PATH",
+    "/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200",
+)
+GQA = os.environ.get("GQA_JSON", "/workspace/gqa_rl/gqa_testdev.json")
+IMGDIR = os.environ.get("GQA_IMG_DIR", "/workspace/gqa_rl")
 N = int(os.environ.get("N_EVAL", "500"))
 
 _ART = {"a", "an", "the"}
