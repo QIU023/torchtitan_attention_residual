@@ -36,20 +36,26 @@ class TeacherScorer:
                 ``CUDA_VISIBLE_DEVICES=0,5,6,7``) instead of
                 stacking it on top of the student's card.
         """
-        from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
-        self.proc = LlavaNextProcessor.from_pretrained(model_id)
+        # Use AutoProcessor + AutoModelForImageTextToText so the loader
+        # routes to the right class based on the model's config.json:
+        #   * LlavaNextForConditionalGeneration for llava-hf/llama3-llava-next-8b-hf
+        #     (CLIP-ViT-L/14-336, hi-res image splitting)
+        #   * LlavaForConditionalGeneration for TIGER-Lab/Mantis-8B-siglip-llama3
+        #     (SigLIP-so400m-384, single-image LLaVA-1.5 arch)
+        # Both expose the same forward signature (input_ids, attention_mask,
+        # pixel_values, [image_sizes]) and return logits of shape [B, T, V],
+        # so the rest of this class is arch-agnostic.
+        from transformers import AutoProcessor, AutoModelForImageTextToText
+        self.proc = AutoProcessor.from_pretrained(model_id)
         if max_memory is not None:
-            self.model = LlavaNextForConditionalGeneration.from_pretrained(
+            self.model = AutoModelForImageTextToText.from_pretrained(
                 model_id, torch_dtype=dtype,
                 device_map="auto", max_memory=max_memory,
             )
-            # Track an input device (HF's first-layer device) for tensor
-            # placement at .score time. With max_memory we don't know
-            # the exact device a priori, so probe.
             first_param_dev = next(self.model.parameters()).device
             self.device = str(first_param_dev)
         else:
-            self.model = LlavaNextForConditionalGeneration.from_pretrained(
+            self.model = AutoModelForImageTextToText.from_pretrained(
                 model_id, torch_dtype=dtype, device_map=device,
             )
             self.device = device
