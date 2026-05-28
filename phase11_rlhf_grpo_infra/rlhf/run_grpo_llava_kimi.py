@@ -670,6 +670,15 @@ def main():
     p.add_argument("--opd-ckpt-dir", default="",
                    help="OPD ckpt root (defaults to "
                         "{dump_folder}/opd_ckpts when empty).")
+    p.add_argument("--opd-lr", type=float, default=1e-5,
+                   help="Learning rate for OPD distillation. torchtitan "
+                        "default is 8e-4 (from-scratch pretraining), "
+                        "which is 80x too high for continual distillation "
+                        "of an already-SFT'd model. DeepSeek-R1-distill "
+                        "uses 5e-6; LLaMA-3 distill 1e-5. Default 1e-5.")
+    p.add_argument("--opd-weight-decay", type=float, default=0.01,
+                   help="Weight decay for OPD. Default 0.01 (LLaVA-SFT "
+                        "convention) vs torchtitan default 0.1.")
     args = p.parse_args()
 
     from torchtitan.experiments.kimi_linear import model_registry as kimi_registry
@@ -761,6 +770,16 @@ def main():
         config.opd_temperature = args.opd_temperature
         config.opd_ckpt_interval = args.opd_ckpt_interval
         config.opd_ckpt_dir = args.opd_ckpt_dir
+        # CRITICAL: override the from-scratch LR. Stage D-2/D-3 ran with
+        # torchtitan default lr=8e-4 → student weights drifted 80x past
+        # what continual distillation tolerates → GQA collapsed 12.3%→0%.
+        config.trainer.optimizer.lr = args.opd_lr
+        config.trainer.optimizer.weight_decay = args.opd_weight_decay
+        logger.info(
+            f"OPD optimizer overrides: lr={args.opd_lr} "
+            f"weight_decay={args.opd_weight_decay} (vs from-scratch "
+            f"defaults lr=8e-4, wd=0.1)"
+        )
     else:
         if args.data_json:
             config.llava_json_path = args.data_json

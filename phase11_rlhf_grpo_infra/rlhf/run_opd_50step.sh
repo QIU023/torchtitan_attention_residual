@@ -52,6 +52,10 @@ NEPS="${NEPS:-4}"
 # GKD hyperparams — defaults match the first 50-step run for direct compare.
 OPD_BETA="${OPD_BETA:-0.5}"
 OPD_T="${OPD_T:-1.0}"
+# LR overrides the from-scratch default (8e-4). 1e-5 matches LLaMA-3
+# continual-distill convention; can override with OPD_LR env if sweeping.
+OPD_LR="${OPD_LR:-1e-5}"
+OPD_WD="${OPD_WD:-0.01}"
 
 exec /usr/bin/python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py \
     --dcp-load-path "$DCP" \
@@ -64,6 +68,8 @@ exec /usr/bin/python3 phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py \
     --num-episodes-per-step "$NEPS" \
     --opd-beta "$OPD_BETA" \
     --opd-temperature "$OPD_T" \
+    --opd-lr "$OPD_LR" \
+    --opd-weight-decay "$OPD_WD" \
     --opd-ckpt-interval "$CKPT_INTERVAL" \
     --opd-ckpt-dir "$CKPT_DIR" \
     --kl-coef 0.0
