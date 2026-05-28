@@ -188,6 +188,7 @@ from torchtitan.experiments.rl.types import Episode
 
 from llava_caption_task import LlavaCaptionTask  # noqa: E402
 from gqa_vqa_task import GqaVqaTask  # noqa: E402
+from llava_opd_task import LlavaOpdTask  # noqa: E402
 from run_grpo_llava_caption import Provisioner  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -205,7 +206,12 @@ class _Config(Configurable.Config):
     kl_coef: float = 0.0
     llava_json_path: str = "/workspace/.hf_home/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json"
     llava_images_dir: str = "/workspace/.hf_home/LLaVA-Pretrain"
-    task: str = "llava"  # "llava" (caption/BLEU) or "gqa" (VQA exact-match)
+    task: str = "llava"  # "llava" (GRPO caption/BLEU), "gqa" (GRPO VQA exact-match), "opd" (on-policy distillation)
+
+    # OPD-only fields (ignored when task != "opd").
+    teacher_model_id: str = "llava-hf/llama3-llava-next-8b-hf"
+    teacher_device: str = "cuda:0"  # rides on the trainer GPU (single-rank OPD)
+    tokenizer_path: str = ""  # defaults to hf_assets_path when empty
 
     trainer: PolicyTrainer.Config = field(default_factory=PolicyTrainer.Config)
     generator: SGLangGenerator.Config = field(default_factory=SGLangGenerator.Config)
@@ -225,7 +231,145 @@ def _log_samples(episodes: list[Episode]) -> None:
         logger.info(f"       cand: {cand}")
 
 
+async def _async_main_opd(config: _Config) -> None:
+    """OPD (on-policy distillation) main loop.
+
+    Differences from GRPO main loop:
+      * Trainer is ``LauncherOPDTrainer`` (HF teacher loaded inside the
+        actor), not ``PolicyTrainer``.
+      * Single trainer rank (data_parallel_shard_degree=1) so the
+        teacher's 16 GB lives next to the student's ~5 GB on one card
+        without cross-rank teacher coordination.
+      * No grader actor and no advantage computation. The teacher's
+        logits are the entire supervision signal.
+    """
+    from opd_trainer_launcher import LauncherOPDTrainer
+
+    task = LlavaOpdTask(
+        json_path=config.llava_json_path,
+        images_dir=config.llava_images_dir,
+    )
+    logger.info(
+        f"OPD task loaded: {len(task)} COCO records "
+        f"from {config.llava_json_path}"
+    )
+
+    # 1 trainer GPU + 7 generator GPUs. The teacher rides on the same GPU
+    # as the trainer (the LauncherOPDTrainer.init_opd_components endpoint
+    # loads it on config.teacher_device, default "cuda:0" = trainer rank 0).
+    provisioner = Provisioner(total_gpus=8)
+    trainer_bootstrap = provisioner.allocate(1)
+    generator_bootstrap, gen_gpu_ids = provisioner.allocate_shared(4)
+    trainer_bootstrap = _bootstrap_with_torchstore_patch(trainer_bootstrap)
+    generator_bootstrap = _bootstrap_with_torchstore_patch(generator_bootstrap)
+    logger.info(f"OPD generator mesh shares GPUs: {gen_gpu_ids}")
+
+    trainer_mesh = this_host().spawn_procs(
+        per_host={"gpus": 1}, bootstrap=trainer_bootstrap,
+    )
+    generator_mesh = this_host().spawn_procs(
+        per_host={"gpus": 4}, bootstrap=generator_bootstrap,
+    )
+
+    await setup_torch_elastic_env_async(trainer_mesh)
+    await setup_torch_elastic_env_async(generator_mesh)
+
+    trainer = trainer_mesh.spawn(
+        "trainer",
+        LauncherOPDTrainer,
+        config.trainer,
+        model_spec=config.model_spec,
+        hf_assets_path=config.hf_assets_path,
+        transfer_dtype=config.generator.model_dtype,
+        kl_coef=0.0,  # OPD: ref-model KL is wasted — teacher KL is the loss
+        dcp_initial_load_path=config.dcp_initial_load_path,
+    )
+    generator = generator_mesh.spawn(
+        "generator",
+        SGLangGenerator,
+        config.generator,
+        model_spec=config.model_spec,
+        model_path=config.hf_assets_path,
+    )
+
+    await ts.initialize(
+        mesh=trainer_mesh,
+        strategy=ts.LocalRankStrategy(),
+    )
+    trainer.push_model_state_dict.call().get()
+    generator.pull_model_state_dict.call(0).get()
+
+    # Lazy-load HF teacher + tokenizer + loss fn INSIDE the trainer process.
+    # The init endpoint takes only strings (pickleable across actor boundary).
+    opd_loss_dir = os.path.dirname(os.path.abspath(__file__))
+    tokenizer_path = config.tokenizer_path or config.hf_assets_path
+    init_diag = trainer.init_opd_components.call(
+        teacher_model_id=config.teacher_model_id,
+        teacher_device=config.teacher_device,
+        tokenizer_path=tokenizer_path,
+        opd_loss_module_dir=opd_loss_dir,
+    ).get()
+    logger.info(f"OPD components initialized: {init_diag}")
+
+    for step in range(config.num_steps):
+        t0 = time.perf_counter()
+
+        records = [
+            task.create_question() for _ in range(config.num_episodes_per_step)
+        ]
+        prompts = [
+            f"{task.get_system_prompt()}\n\n<image>\nUser: {r.prompt_text}\nAssistant:"
+            for r in records
+        ]
+        # OPD has no gold answer — pass empty strings to keep generator API stable.
+        gold = ["" for _ in records]
+        import base64
+        images = []
+        for r in records:
+            with open(r.image_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("ascii")
+            images.append(f"data:image/jpeg;base64,{b64}")
+
+        result = generator.generate.call(prompts, gold, images).get()
+        episodes: list[Episode] = []
+        for _, eps in result:
+            episodes.extend(eps)
+
+        # Skip grader + advantage entirely — OPDTrainer.step ignores both.
+        metrics = trainer.step.call(episodes).get()
+        first_metric = None
+        try:
+            for _, m in metrics:
+                first_metric = m
+                break
+        except TypeError:
+            first_metric = metrics
+        loss = first_metric.get("loss", 0.0) if isinstance(first_metric, dict) else 0.0
+        n_resp = (
+            first_metric.get("num_response_tokens", 0)
+            if isinstance(first_metric, dict) else 0
+        )
+
+        trainer.push_model_state_dict.call().get()
+        generator.pull_model_state_dict.call(step + 1).get()
+
+        dt = time.perf_counter() - t0
+        logger.info(
+            f"step {step:3d}  loss={loss:.4f}  resp_tokens={n_resp}  dt={dt:.1f}s"
+        )
+        if config.log_samples and step % 5 == 0 and episodes:
+            cand = episodes[0].text[:200].replace("\n", " ").strip()
+            logger.info(f"       sample: {cand}")
+
+
 async def _async_main(config: _Config) -> None:
+    # OPD path forks early — different trainer (OPDTrainer not PolicyTrainer),
+    # different mesh allocation (single trainer rank to colocate teacher),
+    # no grader / no advantages. Keep the GRPO path below untouched.
+    if config.task == "opd":
+        await _async_main_opd(config)
+        return
+
     if config.task == "gqa":
         task = GqaVqaTask(
             json_path=config.llava_json_path,
@@ -395,11 +539,23 @@ def main():
         "--flavor", default="kimi_linear_447m_aligned_block_attn_res",
         help="torchtitan flavor name (LM-only Kimi config)",
     )
-    p.add_argument("--task", default="llava", choices=["llava", "gqa"],
+    p.add_argument("--task", default="llava", choices=["llava", "gqa", "opd"],
                    help="llava=caption/BLEU (degenerate, model trained on it); "
-                        "gqa=VQA exact-match (verifiable capability reward)")
+                        "gqa=VQA exact-match (verifiable capability reward); "
+                        "opd=on-policy distillation against an HF teacher "
+                        "(no reward; teacher logits are the supervision).")
     p.add_argument("--data-json", default="", help="override task json path")
     p.add_argument("--images-dir", default="", help="override task images dir")
+    # OPD-only knobs (ignored when --task != opd).
+    p.add_argument("--teacher-model-id", default="llava-hf/llama3-llava-next-8b-hf",
+                   help="HF model id for the OPD teacher (must share Llama-3 "
+                        "base vocab with the student).")
+    p.add_argument("--teacher-device", default="cuda:0",
+                   help="CUDA device for the OPD teacher (default cuda:0 = "
+                        "trainer rank 0; rides on the student's GPU).")
+    p.add_argument("--tokenizer-path", default="",
+                   help="HF tokenizer dir for prompt/response decode "
+                        "(defaults to --hf-model-path when empty).")
     args = p.parse_args()
 
     from torchtitan.experiments.kimi_linear import model_registry as kimi_registry
@@ -475,18 +631,32 @@ def main():
     config.num_episodes_per_step = args.num_episodes_per_step
     config.kl_coef = args.kl_coef
     config.task = args.task
-    # GQA default data paths (override with --data-json / --images-dir)
+    # Task-default data paths (override with --data-json / --images-dir).
     if args.task == "gqa":
         config.llava_json_path = args.data_json or "/workspace/gqa_rl/gqa_testdev.json"
         config.llava_images_dir = args.images_dir or "/workspace/gqa_rl"
+    elif args.task == "opd":
+        config.llava_json_path = (
+            args.data_json or "/workspace/llava_opd/llava_v1_5_mix665k.json"
+        )
+        config.llava_images_dir = args.images_dir or "/workspace/llava_opd/images"
+        config.teacher_model_id = args.teacher_model_id
+        config.teacher_device = args.teacher_device
+        config.tokenizer_path = args.tokenizer_path
     else:
         if args.data_json:
             config.llava_json_path = args.data_json
         if args.images_dir:
             config.llava_images_dir = args.images_dir
 
-    config.trainer.parallelism.data_parallel_shard_degree = 4
-    config.generator.parallelism.tensor_parallel_degree = 4
+    if args.task == "opd":
+        # OPD: single trainer rank (teacher rides on cuda:0 next to student);
+        # generator on cuda:1-4 with TP=4. cuda:5-7 left idle for headroom.
+        config.trainer.parallelism.data_parallel_shard_degree = 1
+        config.generator.parallelism.tensor_parallel_degree = 4
+    else:
+        config.trainer.parallelism.data_parallel_shard_degree = 4
+        config.generator.parallelism.tensor_parallel_degree = 4
     config.generator.gpu_memory_limit = 0.85
     # Block AttnRes residual stream grows unboundedly with depth; on
     # Blackwell (SM 12.0) flashinfer_mla bf16-NaNs at the deep MLA
