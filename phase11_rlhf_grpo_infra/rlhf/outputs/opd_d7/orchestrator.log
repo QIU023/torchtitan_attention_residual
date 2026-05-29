@@ -1,0 +1,59 @@
+===========================================================
+D-7 START @ 2026-05-28 21:40:54
+===========================================================
+[preflight] disk=66G
+[watchdog] PID=138253
+[21:40:54] Phase 1: 300-step OPD → phase11_rlhf_grpo_infra/rlhf/outputs/opd_d7/run_300step.log
+       teacher=Mantis-SigLIP-Llama3  task=caption  lr=1e-5  T=2.0  β=0.5  NEPS=2  ckpt every 50
+       ETA ~4h
+[01:38:53] Phase 1: run exit=0
+total 4
+drwxr-xr-x  8 root root  129 May 29 01:38 .
+drwxr-xr-x 30 root root 4096 May 28 21:42 ..
+drwxr-xr-x  2 root root   55 May 28 23:00 step-100
+drwxr-xr-x  2 root root   55 May 28 23:39 step-150
+drwxr-xr-x  2 root root   55 May 29 00:19 step-200
+drwxr-xr-x  2 root root   55 May 29 00:59 step-250
+drwxr-xr-x  2 root root   55 May 29 01:38 step-300
+drwxr-xr-x  2 root root   55 May 28 22:20 step-50
+[01:38:53] Phase 2: eval cascade
+[01:38:53]   step-50: convert + eval
+[01:41:57]     step-50: 0.1133
+[01:41:57]     disk after cleanup: 40G
+[01:41:57]   step-100: convert + eval
+[01:44:49]     step-100: 0.1200
+[01:44:49]     disk after cleanup: 43G
+[01:44:49]   step-150: convert + eval
+[01:47:42]     step-150: 0.0767
+[01:47:42]     disk after cleanup: 45G
+[01:47:42]   step-200: convert + eval
+[01:50:34]     step-200: 0.0700
+[01:50:34]     disk after cleanup: 42G
+[01:50:34]   step-250: convert + eval
+[01:53:26]     step-250: 0.0400
+[01:53:26]     disk after cleanup: 51G
+[01:53:26]   step-300: convert + eval
+[01:56:20]     step-300: 0.0367
+[01:56:20]     disk after cleanup: 54G
+[01:56:20] Phase 2 DONE. Summary:
+# D-7 OPD Eval Cascade (Mantis SigLIP teacher, caption task, 300 steps)
+
+Baseline (SFT step-5200): **12.3%** (37/300)
+Teacher LLaVA-NeXT-8B upper:  63.7%
+D-4 (CLIP teacher 50 step): 9.3%
+D-6 (Mantis 50 step):       10.67%
+
+| Ckpt | GQA acc | Notes |
+|---|---|---|
+| step-50 | 0.1133 | eval_step50.log |
+| step-100 | 0.1200 | eval_step100.log |
+| step-150 | 0.0767 | eval_step150.log |
+| step-200 | 0.0700 | eval_step200.log |
+| step-250 | 0.0400 | eval_step250.log |
+| step-300 | 0.0367 | eval_step300.log |
+[01:56:20] D-7 DONE
+phase11_rlhf_grpo_infra/rlhf/run_opd_d7.sh: line 160: 138253 Killed                  ( while true; do
+    sleep 90; F=$(df -BG --output=avail /workspace | tail -1 | tr -dc 0-9); if (( F < 12 )); then
+        echo "[watchdog] PANIC: disk ${F}G; killing OPD procs"; pkill -9 -f run_grpo_llava_kimi.py 2> /dev/null; pkill -9 -f dcp_to_hf_kimi_attn_res_vl.py 2> /dev/null; pkill -9 -f gqa_eval.py 2> /dev/null; touch "$D7_DIR/DISK_PANIC"; exit 1;
+    fi;
+done )

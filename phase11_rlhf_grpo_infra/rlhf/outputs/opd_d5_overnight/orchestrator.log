@@ -1,0 +1,42 @@
+============================================================
+D-5 OVERNIGHT @ 2026-05-28 09:31:35
+============================================================
+[preflight] disk = 91G
+[preflight] cuda:0 free = 32110 MiB
+[watchdog] PID=107629
+[09:31:35] Phase 1: 1-step smoke → phase11_rlhf_grpo_infra/rlhf/outputs/opd_d5_overnight/smoke_1step.log
+[09:34:14] Phase 1: smoke exit=0
+[09:34:14] Phase 1: smoke PASSED
+[09:34:14] Phase 2: 600-step OPD run → phase11_rlhf_grpo_infra/rlhf/outputs/opd_d5_overnight/run_600step.log
+       LR=1e-5  T=2.0  β=0.5  NEPS=2  task=vqa  ckpt every 100  ETA ~8h
+[17:41:28] Phase 2: run exit=0
+[17:41:28] Phase 2: ckpts present:
+total 4
+drwxr-xr-x  4 root root   50 May 28 17:41 .
+drwxr-xr-x 27 root root 4096 May 28 09:35 ..
+drwxr-xr-x  2 root root   55 May 28 16:20 step-500
+drwxr-xr-x  2 root root   55 May 28 17:41 step-600
+[17:41:28] Phase 3: eval cascade
+[17:41:28]   step-500: convert + eval
+[17:44:30]     step-500 acc: 0.0033
+[17:44:30]     disk after cleanup: 82G
+[17:44:30]   step-600: convert + eval
+[17:47:30]     step-600 acc: 0.0233
+[17:47:30]     disk after cleanup: 85G
+[17:47:30] Phase 3 DONE. Summary:
+# Stage D-5 OPD Eval Cascade
+
+GQA testdev greedy N=300. Baseline (SFT step-5200): 37/300 = **12.3%**.
+D-4 (50-step caption, lr=1e-5): 28/300 = **9.3%**.
+
+| Ckpt | GQA acc | Notes |
+|---|---|---|
+| step-500 | 0.0033 | eval_step500.log |
+| step-600 | 0.0233 | eval_step600.log |
+[watchdog] stopped
+[17:47:30] ORCHESTRATOR DONE
+phase11_rlhf_grpo_infra/rlhf/run_opd_overnight.sh: line 151: 107629 Killed                  ( while true; do
+    sleep 90; F=$(df -BG --output=avail /workspace | tail -1 | tr -dc '0-9'); if (( F < 12 )); then
+        echo "[watchdog $(date '+%H:%M:%S')] PANIC: disk ${F}G; killing OPD procs"; pkill -9 -f run_grpo_llava_kimi.py 2> /dev/null; pkill -9 -f dcp_to_hf_kimi_attn_res_vl.py 2> /dev/null; pkill -9 -f gqa_eval.py 2> /dev/null; touch "$OVERNIGHT_DIR/DISK_PANIC"; exit 1;
+    fi;
+done )

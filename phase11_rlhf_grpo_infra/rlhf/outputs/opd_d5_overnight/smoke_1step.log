@@ -1,0 +1,397 @@
+Warning: setting HYPERACTOR_CODEC_MAX_FRAME_LENGTH since this needs to be set to enable large RPC calls via Monarch
+[grpo] flavor 'kimi_linear_447m_aligned_block_attn_res_n4' -> config_registry ModelSpec (num_blocks=4)
+ModelSpec: name=kimi_linear flavor=kimi_linear_447m_aligned_block_attn_res_n4
+OPD optimizer overrides: lr=1e-05 weight_decay=0.01 (vs from-scratch defaults lr=8e-4, wd=0.1)
+OPD task (vqa) loaded: 364100 records from /workspace/llava_opd/llava_v1_5_mix665k.json
+OPD layout: trainer cuda:0 (+teacher dev_map on phys cuda:[5, 6, 7]); generator TP=4 on phys cuda:[1, 2, 3, 4]; idle=0
+Monarch internal logs are being written to /tmp/root/monarch_log.log; execution id root_May-28_09:31_618
+[SGLangGenerator pid=109320 rank=2] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=109691 rank=3] non-lead actor — Engine lives on rank 0 only; idling.
+[SGLangGenerator pid=108887 rank=1] non-lead actor — Engine lives on rank 0 only; idling.
+model_spec.model layout is non-standard (no ``.layers[0].attention.inner_attention``). Trainer assumes ``model.build()`` returns nn.Module with ``forward(input_ids, attention_masks=, positions=)``. Continuing best-effort.
+[SGLangGenerator pid=108515] CUDA_VISIBLE_DEVICES=1,2,3,4  torch.cuda.device_count()=4
+[SGLangGenerator pid=108515] free mem: GPU0=33.1GB/33.7GB GPU1=33.1GB/33.7GB GPU2=33.1GB/33.7GB GPU3=33.1GB/33.7GB
+Failed to load generation config for /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200: /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200 does not appear to have a file named generation_config.json. Checkout 'https://huggingface.co//workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200/tree/main' for available files.. Proceeding without generation config.
+rope_scaling missing 'factor', defaulting to 1.0. Check model accuracy.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] [actor=<root>.<torchtitan.experiments.rl.actors.sglang_generator.SGLangGenerator generator{'gpus': 0/4}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Loading weights:   0%|    | 0/208 [00:00<?, ?it/s]Loading weights:   0%|    | 0/208 [00:00<?, ?it/s]Loading weights:   0%|    | 0/208 [00:00<?, ?it/s]Loading weights:   0%|    | 0/208 [00:00<?, ?it/s]Loading weights: 100%|█| 208/208 [00:00<00:00, 271
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading weights:  99%|▉| 205/208 [00:00<00:00, 202Loading weights: 100%|█| 208/208 [00:00<00:00, 204
+Loading weights: 100%|█| 208/208 [00:00<00:00, 261
+Loading weights:  99%|▉| 205/208 [00:00<00:00, 204Loading weights: 100%|█| 208/208 [00:00<00:00, 205
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[transformers] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards: 100% Completed | 1/1 [00:00<00:00, 30.93it/s]
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+[transformers] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:opd_trainer_launcher:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] OPD init: loading teacher llava-hf/llama3-llava-next-8b-hf device_map=auto max_memory={1: '7GiB', 2: '7GiB', 3: '7GiB'}
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: GET https://huggingface.co/api/models/llava-hf/llama3-llava-next-8b-hf/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/processor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/chat_template.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/processor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/processor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/tokenizer_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/tokenizer_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: GET https://huggingface.co/api/models/llava-hf/llama3-llava-next-8b-hf/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: GET https://huggingface.co/api/models/llava-hf/llama3-llava-next-8b-hf/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: GET https://huggingface.co/api/models/llava-hf/llama3-llava-next-8b-hf "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/model.safetensors.index.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/model.safetensors.index.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: GET https://huggingface.co/api/models/llava-hf/llama3-llava-next-8b-hf/revision/main "HTTP/1.1 200 OK"
+Fetching 4 files:   0%|     | 0/4 [00:00<?, ?it/s]Fetching 4 files: 100%|█| 4/4 [00:00<00:00, 6932.7
+Loading weights:   0%|    | 0/687 [00:00<?, ?it/s]Loading weights:   0%| | 2/687 [00:00<01:03, 10.70Loading weights:   1%| | 4/687 [00:00<00:50, 13.60Loading weights:   3%| | 23/687 [00:00<00:09, 69.4Loading weights:   5%| | 34/687 [00:00<00:08, 78.5Loading weights:   7%| | 50/687 [00:00<00:06, 103.Loading weights:   9%| | 61/687 [00:00<00:06, 102.Loading weights:  11%| | 77/687 [00:00<00:05, 115.Loading weights:  13%|▏| 89/687 [00:00<00:05, 112.Loading weights:  15%|▏| 104/687 [00:01<00:05, 114Loading weights:  17%|▏| 116/687 [00:01<00:05, 110Loading weights:  19%|▏| 131/687 [00:01<00:05, 108Loading weights:  22%|▏| 149/687 [00:01<00:04, 123Loading weights:  24%|▏| 162/687 [00:01<00:04, 117Loading weights:  25%|▎| 174/687 [00:01<00:04, 118Loading weights:  27%|▎| 186/687 [00:01<00:04, 110Loading weights:  30%|▎| 203/687 [00:01<00:04, 119Loading weights:  32%|▎| 217/687 [00:02<00:03, 124Loading weights:  33%|▎| 230/687 [00:02<00:03, 126Loading weights:  35%|▎| 243/687 [00:02<00:03, 121Loading weights:  37%|▎| 257/687 [00:02<00:03, 109Loading weights:  40%|▍| 275/687 [00:02<00:03, 119Loading weights:  42%|▍| 288/687 [00:02<00:03, 119Loading weights:  78%|▊| 535/687 [00:02<00:00, 735Loading weights: 100%|█| 687/687 [00:02<00:00, 243
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/llava-hf/llama3-llava-next-8b-hf/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/llava-hf/llama3-llava-next-8b-hf/b041c0d0ea0dd0196d147206c210c8d1752fc2da/generation_config.json "HTTP/1.1 200 OK"
+/usr/local/lib/python3.12/dist-packages/accelerate/utils/modeling.py:1598: UserWarning: The following device_map keys do not match any submodules in the model: ['model.image_newline']
+  warnings.warn(
+INFO:opd_trainer_launcher:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] OPD init: loading tokenizer from /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200
+[transformers] [actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] You are using a model of type `kimi_attn_res_vl` to instantiate a model of type ``. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+[transformers] [actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] The tokenizer you are loading from '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/hf/stage2_447m_step5200' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+INFO:opd_trainer_launcher:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] OPD init done: teacher_vocab=128320, tokenizer_vocab=128256, device=cuda:0
+[actor=<root>] OPD components initialized: ValueMesh({gpus: 1}):
+  (({'gpus': 0/1},
+    {'device': 'cuda:0', 'teacher_vocab': 128320, 'tokenizer_vocab': 128256}),)
+INFO:opd_trainer_launcher:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] OPD vision: loading SigLIP from google/siglip-base-patch16-224
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/model.safetensors "HTTP/1.1 302 Found"
+Loading weights:   0%|    | 0/208 [00:00<?, ?it/s]Loading weights: 100%|█| 208/208 [00:00<00:00, 634
+[transformers] [actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] [1mSiglipVisionModel LOAD REPORT[0m from: google/siglip-base-patch16-224
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.head.weight                                       | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+logit_bias                                                   | UNEXPECTED |  | 
+text_model.head.bias                                         | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+INFO:opd_trainer_launcher:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] OPD vision: vision_tower 768d -> projector -> 1024d (4 projector keys loaded)
+[actor=<root>] OPD vision components loaded: ValueMesh({gpus: 1}):
+  (({'gpus': 0/1},
+    {'llm_hidden': 1024, 'projector_keys_loaded': 4, 'vision_hidden': 768}),)
+INFO:torchtitan.experiments.rl.actors.opd_trainer:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] OPD hyperparams: beta=0.5 temperature=2.0
+[actor=<root>] OPD ckpt: every 1 steps → /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/outputs/opd_50step_ckpts
+2026-05-28 09:32:56,436 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-28 09:32:56 TP0] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-28 09:32:56,437 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+2026-05-28 09:32:56,437 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-28 09:32:56 TP1] Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-28 09:32:56 TP3] Unexpected error during package walk: cutlass.cute.experimental
+2026-05-28 09:32:56,444 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-05-28 09:32:56 TP2] Unexpected error during package walk: cutlass.cute.experimental
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO:root:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1, etp=1
+INFO:root:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] Successfully created meshes with active dimensions: []
+[actor=<root>] step   0  loss=0.1808  resp_tokens=978  dt=55.0s
+[actor=<root>]        sample: 32] There are several things to consider when looking for a new roof for our house in Fluv River. I am not professional in this field so much information available online about roof leak repair compan
+INFO:torchtitan.experiments.rl.actors.opd_trainer:[actor=<root>.<opd_trainer_launcher.LauncherOPDTrainer trainer{'gpus': 0/1}>] OPD ckpt saved: /workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/outputs/opd_50step_ckpts/step-1 (step 1)
+[actor=<root>]        ckpt saved at step 1: ValueMesh({gpus: 1}):
+  (({'gpus': 0/1},
+    '/workspace/torchtitan_attention_residual/phase11_rlhf_grpo_infra/rlhf/outputs/opd_50step_ckpts/step-1'),)
+[rank0]:[W528 09:34:07.732156993 ProcessGroupNCCL.cpp:1575] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Exception ignored in atexit callback: <function _init_client_context.<locals>.<lambda> at 0x77c4072ae0c0>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/actor_mesh.py", line 444, in <lambda>
+    atexit.register(lambda: shutdown_context().get(timeout=5.0))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 117, in get
+    raise e from None
+  File "/usr/local/lib/python3.12/dist-packages/monarch/_src/actor/future.py", line 112, in get
+    v = coro.block_on()
+        ^^^^^^^^^^^^^^^
+TimeoutError: 

@@ -1,0 +1,440 @@
+W0529 08:12:39.989000 162307 torch/distributed/run.py:851] 
+W0529 08:12:39.989000 162307 torch/distributed/run.py:851] *****************************************
+W0529 08:12:39.989000 162307 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0529 08:12:39.989000 162307 torch/distributed/run.py:851] *****************************************
+[rank0]:[titan] 2026-05-29 08:12:53,432 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-05-29 08:12:53,434 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=8, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-05-29 08:12:53,447 - root - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'fsdp', 'efsdp']
+[rank0]:[titan] 2026-05-29 08:12:53,447 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-05-29 08:12:53,990 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-05-29 08:12:54,260 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-05-29 08:12:54,551 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:12:54,588 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:54,746 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:55,244 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:55,517 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:55,859 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:56,170 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:56,360 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:56,552 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:56,714 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:56,991 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:57,071 - root - INFO - Building kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 with {
+[rank0]:  "vocab_size": 163840,
+[rank0]:  "hidden_size": 1024,
+[rank0]:  "tie_word_embeddings": true,
+[rank0]:  "num_hidden_layers": 16,
+[rank0]:  "intermediate_size": 768,
+[rank0]:  "num_attention_heads": 16,
+[rank0]:  "num_key_value_heads": 16,
+[rank0]:  "q_lora_rank": null,
+[rank0]:  "kv_lora_rank": 512,
+[rank0]:  "qk_nope_head_dim": 64,
+[rank0]:  "qk_rope_head_dim": 32,
+[rank0]:  "v_head_dim": 64,
+[rank0]:  "mla_use_nope": true,
+[rank0]:  "rope_theta": 10000.0,
+[rank0]:  "kda_num_heads": 16,
+[rank0]:  "kda_head_dim": 64,
+[rank0]:  "kda_short_conv_kernel_size": 4,
+[rank0]:  "kda_layers": [
+[rank0]:    1,
+[rank0]:    2,
+[rank0]:    3,
+[rank0]:    5,
+[rank0]:    6,
+[rank0]:    7,
+[rank0]:    9,
+[rank0]:    10,
+[rank0]:    11,
+[rank0]:    13,
+[rank0]:    14,
+[rank0]:    15
+[rank0]:  ],
+[rank0]:  "full_attn_layers": [
+[rank0]:    4,
+[rank0]:    8,
+[rank0]:    12,
+[rank0]:    16
+[rank0]:  ],
+[rank0]:  "num_experts": 32,
+[rank0]:  "num_experts_per_token": 8,
+[rank0]:  "moe_intermediate_size": 768,
+[rank0]:  "moe_renormalize": true,
+[rank0]:  "moe_router_activation_func": "sigmoid",
+[rank0]:  "num_shared_experts": 1,
+[rank0]:  "routed_scaling_factor": 2.446,
+[rank0]:  "first_k_dense_replace": 1,
+[rank0]:  "moe_layer_freq": 1,
+[rank0]:  "use_grouped_topk": false,
+[rank0]:  "num_expert_group": 1,
+[rank0]:  "topk_group": 1,
+[rank0]:  "rms_norm_eps": 1e-05,
+[rank0]:  "hidden_act": "silu",
+[rank0]:  "initializer_range": 0.02,
+[rank0]:  "__spec__": {
+[rank0]:    "num_blocks": 4,
+[rank0]:    "model_class": "KimiLinearAttnResModel"
+[rank0]:  }
+[rank0]:}
+[rank0]:[titan] 2026-05-29 08:12:57,097 - root - INFO - Float8 training active with recipe rowwise
+[rank0]:[titan] 2026-05-29 08:12:57,111 - root - INFO - Swapped to Float8Linear layers with enable_fsdp_float8_all_gather=False
+[rank0]:[titan] 2026-05-29 08:12:57,113 - root - INFO - TensorBoard logging enabled. Logs will be saved at /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/phaseA_mix665k_full/tb/20260529-0812
+[rank0]:[titan] 2026-05-29 08:12:57,114 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank0]:[titan] 2026-05-29 08:12:57,114 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-29 08:12:57,114 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-29 08:12:57,115 - root - INFO - [34mModel kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 [31msize: 1,409,320,896 total parameters[39m
+[rank0]:[titan] 2026-05-29 08:12:57,116 - root - INFO - Applied full activation checkpointing to the model
+[rank0]:[titan] 2026-05-29 08:12:57,116 - root - INFO - Applied activation checkpointing mode=full to KimiDecoderLayer stack.
+[rank0]:[titan] 2026-05-29 08:12:57,203 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank0]:[titan] 2026-05-29 08:12:57,338 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-29 08:12:57,338 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-29 08:12:57,338 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-05-29 08:12:57,338 - root - INFO - CUDA memory usage for model: 0.74GiB(2.35%)
+[rank0]:[titan] 2026-05-29 08:12:57,359 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/phaseA_mix665k_full/checkpoint
+[rank0]:[titan] 2026-05-29 08:12:57,359 - root - INFO - Trainer is initialized with local batch size 8, global batch size 128, gradient accumulation steps 2, sequence length 1024, total steps 5200 (warmup 156)
+[rank0]:[titan] 2026-05-29 08:12:57,360 - root - INFO - mm: loading vision_tower google/siglip-base-patch16-224
+[rank0]:[titan] 2026-05-29 08:12:57,523 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:12:57,557 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:57,748 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:12:57,783 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:
+[rank0]:Loading weights:   0%|    | 0/408 [00:00<?, ?it/s][rank0]:[titan] 2026-05-29 08:12:58,014 - root - INFO - mm: vision_tower hidden_size=768, frozen
+[rank0]:
+[rank0]:Loading weights: 100%|█| 408/408 [00:00<00:00, 415
+[rank0]:[titan] 2026-05-29 08:12:58,172 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:58,335 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:12:58,370 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:58,530 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:58,689 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:12:58,726 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:12:58,886 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:59,047 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:59,205 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:59,366 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:59,531 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:59,697 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:12:59,857 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:12:59,893 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:00,051 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:13:00,215 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:13:00,250 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:00,428 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:13:00,464 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:00,694 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:13:00,730 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:00,891 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:13:01,050 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:01,389 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:13:01,424 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:01,585 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:13:01,620 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:01,787 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:13:01,947 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:02,907 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:13:02,929 - phase5_vlm_multimodal_sft.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank0]:[titan] 2026-05-29 08:13:02,929 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank0]:[titan] 2026-05-29 08:13:02,929 - root - INFO - mm: lm_dim=1024
+[rank0]:[titan] 2026-05-29 08:13:02,945 - root - INFO - mm: projector built, params=1,837,056
+[rank0]:[titan] 2026-05-29 08:13:02,951 - root - INFO - mm: projector wrapped with FSDP2 over batch mesh size=8 (grad sync across DP ranks)
+[rank0]:[titan] 2026-05-29 08:13:02,951 - root - INFO - mm: built standalone projector AdamW (lr=2e-05, fixed); stepped explicitly in train_step, not via OptimizersContainer
+[rank0]:[titan] 2026-05-29 08:13:02,951 - root - INFO - mm: registered _MMStateWrapper (projector + proj_optim + lm_optim) with checkpointer; dropped brittle OptimizersContainer OPTIMIZER entry
+[rank0]:[titan] 2026-05-29 08:13:08,228 - root - INFO - mm: dataset = LlavaInstructSFTDataset (sft layout, split=train, val_samples=0, stratified_val_per_source=0, shuffle_seed=42, N=665,298)
+[rank0]:[titan] 2026-05-29 08:13:08,229 - root - INFO - mm: replaced dataloader (train split, N=665,298, dp_rank=0/8, local_bs=8, seq_len=1024)
+[rank0]:[titan] 2026-05-29 08:13:08,229 - root - INFO - mm: val disabled (val_samples<=0 or val_freq<=0)
+[rank0]:[titan] 2026-05-29 08:13:08,233 - root - INFO - Loading the checkpoint from /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200.
+[rank0]:[titan] 2026-05-29 08:13:10,934 - root - INFO - [GC] GC collection for checkpoint loading. took 1.06 seconds
+[rank0]:[titan] 2026-05-29 08:13:10,934 - root - INFO - Finished loading the checkpoint in 2.70 seconds.
+[rank0]:[titan] 2026-05-29 08:13:10,934 - root - INFO - Training starts at step 1
+[rank0]:[rank0]:W0529 08:14:39.426000 162379 torch/distributed/fsdp/_fully_shard/_fsdp_state.py:350] 1 of the 2 modules passed to fully_shard did not run forward before backward, which is error-prone since FSDP post-forward/pre-backward logic will not run for these modules. We recommend passing only modules that run forward together. Modules that did not run forward: [FSDPAttnResProjection(in_features=1024, out_features=1, bias=False)]
+[rank0]:[titan] 2026-05-29 08:14:42,384 - root - INFO - [31mstep:  1  [32mloss:  1.10365  [38;2;180;60;0mgrad_norm:  1.6571  [38;2;54;234;195mmemory: 20.55GiB(65.54%)  [34mtps: 156  [36mtflops: 1.17  [35mmfu: N/A[39m
+[rank0]:/workspace/torchtitan_attention_residual/torchtitan/torchtitan/distributed/utils.py:442: UserWarning: Set timeout is now only supported for either nccl or gloo.
+[rank0]:  torch.distributed.distributed_c10d._set_pg_timeout(timeout, group)
+[rank0]:[titan] 2026-05-29 08:14:42,451 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-05-29 08:15:26,772 - root - INFO - [31mstep: 10  [32mloss:  1.23890  [38;2;180;60;0mgrad_norm:  0.0498  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,322  [36mtflops: 24.96  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:16:15,972 - root - INFO - [31mstep: 20  [32mloss:  1.17597  [38;2;180;60;0mgrad_norm:  0.0458  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,330  [36mtflops: 25.02  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:17:05,204 - root - INFO - [31mstep: 30  [32mloss:  1.17445  [38;2;180;60;0mgrad_norm:  0.0443  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,328  [36mtflops: 25.00  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:17:54,386 - root - INFO - [31mstep: 40  [32mloss:  1.19359  [38;2;180;60;0mgrad_norm:  0.0449  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,331  [36mtflops: 25.03  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:18:39,233 - root - INFO - [GC] Performing periodic GC collection took 0.58 seconds
+[rank0]:[titan] 2026-05-29 08:18:44,247 - root - INFO - [31mstep: 50  [32mloss:  1.10331  [38;2;180;60;0mgrad_norm:  0.0401  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,286  [36mtflops: 24.69  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:19:33,625 - root - INFO - [31mstep: 60  [32mloss:  1.12822  [38;2;180;60;0mgrad_norm:  0.0413  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,318  [36mtflops: 24.93  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:20:23,235 - root - INFO - [31mstep: 70  [32mloss:  0.92685  [38;2;180;60;0mgrad_norm:  0.0396  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,303  [36mtflops: 24.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:21:12,910 - root - INFO - [31mstep: 80  [32mloss:  1.09629  [38;2;180;60;0mgrad_norm:  0.0415  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,298  [36mtflops: 24.78  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:22:02,487 - root - INFO - [31mstep: 90  [32mloss:  1.14449  [38;2;180;60;0mgrad_norm:  0.0406  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,305  [36mtflops: 24.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:22:47,163 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-05-29 08:22:52,092 - root - INFO - [31mstep: 100  [32mloss:  1.10438  [38;2;180;60;0mgrad_norm:  0.0415  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,303  [36mtflops: 24.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:23:41,630 - root - INFO - [31mstep: 110  [32mloss:  1.13529  [38;2;180;60;0mgrad_norm:  0.0403  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,307  [36mtflops: 24.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:24:31,045 - root - INFO - [31mstep: 120  [32mloss:  1.19092  [38;2;180;60;0mgrad_norm:  0.0416  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,316  [36mtflops: 24.91  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:25:20,416 - root - INFO - [31mstep: 130  [32mloss:  1.08820  [38;2;180;60;0mgrad_norm:  0.0406  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,319  [36mtflops: 24.93  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:26:09,843 - root - INFO - [31mstep: 140  [32mloss:  1.05778  [38;2;180;60;0mgrad_norm:  0.0460  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,315  [36mtflops: 24.90  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:26:54,638 - root - INFO - [GC] Performing periodic GC collection took 0.15 seconds
+[rank0]:[titan] 2026-05-29 08:26:59,584 - root - INFO - [31mstep: 150  [32mloss:  1.13622  [38;2;180;60;0mgrad_norm:  0.0410  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,294  [36mtflops: 24.74  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:27:49,020 - root - INFO - [31mstep: 160  [32mloss:  1.08888  [38;2;180;60;0mgrad_norm:  0.0378  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,314  [36mtflops: 24.90  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:28:38,579 - root - INFO - [31mstep: 170  [32mloss:  1.06782  [38;2;180;60;0mgrad_norm:  0.0417  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,306  [36mtflops: 24.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:29:27,958 - root - INFO - [31mstep: 180  [32mloss:  1.12320  [38;2;180;60;0mgrad_norm:  0.0414  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,318  [36mtflops: 24.93  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:30:17,340 - root - INFO - [31mstep: 190  [32mloss:  1.03495  [38;2;180;60;0mgrad_norm:  0.0426  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,318  [36mtflops: 24.92  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:31:02,082 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-05-29 08:31:07,048 - root - INFO - [31mstep: 200  [32mloss:  1.13758  [38;2;180;60;0mgrad_norm:  0.0415  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,296  [36mtflops: 24.76  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:31:56,569 - root - INFO - [31mstep: 210  [32mloss:  1.09701  [38;2;180;60;0mgrad_norm:  0.0427  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,309  [36mtflops: 24.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:32:45,983 - root - INFO - [31mstep: 220  [32mloss:  1.03963  [38;2;180;60;0mgrad_norm:  0.0372  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,316  [36mtflops: 24.91  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:33:35,633 - root - INFO - [31mstep: 230  [32mloss:  1.14003  [38;2;180;60;0mgrad_norm:  0.0421  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,300  [36mtflops: 24.79  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:34:25,230 - root - INFO - [31mstep: 240  [32mloss:  1.01311  [38;2;180;60;0mgrad_norm:  0.0416  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,303  [36mtflops: 24.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:35:09,831 - root - INFO - [GC] Performing periodic GC collection took 0.15 seconds
+[rank0]:[titan] 2026-05-29 08:35:14,809 - root - INFO - [31mstep: 250  [32mloss:  1.03906  [38;2;180;60;0mgrad_norm:  0.0405  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,305  [36mtflops: 24.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:36:04,396 - root - INFO - [31mstep: 260  [32mloss:  1.17365  [38;2;180;60;0mgrad_norm:  0.0416  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,304  [36mtflops: 24.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:36:53,937 - root - INFO - [31mstep: 270  [32mloss:  1.09550  [38;2;180;60;0mgrad_norm:  0.0408  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,307  [36mtflops: 24.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:37:43,448 - root - INFO - [31mstep: 280  [32mloss:  1.09591  [38;2;180;60;0mgrad_norm:  0.0402  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,309  [36mtflops: 24.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:38:32,926 - root - INFO - [31mstep: 290  [32mloss:  1.13561  [38;2;180;60;0mgrad_norm:  0.0429  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,311  [36mtflops: 24.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:39:17,547 - root - INFO - [GC] Performing periodic GC collection took 0.17 seconds
+[rank0]:[titan] 2026-05-29 08:39:22,581 - root - INFO - [31mstep: 300  [32mloss:  1.06892  [38;2;180;60;0mgrad_norm:  0.0419  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,300  [36mtflops: 24.79  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:40:12,046 - root - INFO - [31mstep: 310  [32mloss:  1.14591  [38;2;180;60;0mgrad_norm:  0.0465  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,312  [36mtflops: 24.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:41:01,547 - root - INFO - [31mstep: 320  [32mloss:  1.14737  [38;2;180;60;0mgrad_norm:  0.0437  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,310  [36mtflops: 24.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:41:50,963 - root - INFO - [31mstep: 330  [32mloss:  1.07107  [38;2;180;60;0mgrad_norm:  0.0402  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,316  [36mtflops: 24.91  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:42:40,522 - root - INFO - [31mstep: 340  [32mloss:  1.15087  [38;2;180;60;0mgrad_norm:  0.0448  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,306  [36mtflops: 24.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:43:25,137 - root - INFO - [GC] Performing periodic GC collection took 0.17 seconds
+[rank0]:[titan] 2026-05-29 08:43:30,072 - root - INFO - [31mstep: 350  [32mloss:  1.03988  [38;2;180;60;0mgrad_norm:  0.0387  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,307  [36mtflops: 24.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:44:19,643 - root - INFO - [31mstep: 360  [32mloss:  1.05140  [38;2;180;60;0mgrad_norm:  0.0424  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,305  [36mtflops: 24.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:45:08,990 - root - INFO - [31mstep: 370  [32mloss:  1.17362  [38;2;180;60;0mgrad_norm:  0.0396  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,320  [36mtflops: 24.94  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:45:58,446 - root - INFO - [31mstep: 380  [32mloss:  1.15425  [38;2;180;60;0mgrad_norm:  0.0430  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,313  [36mtflops: 24.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:46:47,917 - root - INFO - [31mstep: 390  [32mloss:  1.08638  [38;2;180;60;0mgrad_norm:  0.0426  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,312  [36mtflops: 24.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:47:32,560 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-05-29 08:47:37,625 - root - INFO - [31mstep: 400  [32mloss:  1.10877  [38;2;180;60;0mgrad_norm:  0.0414  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,296  [36mtflops: 24.76  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:48:27,101 - root - INFO - [31mstep: 410  [32mloss:  1.14135  [38;2;180;60;0mgrad_norm:  0.0417  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,312  [36mtflops: 24.88  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:49:16,485 - root - INFO - [31mstep: 420  [32mloss:  1.13271  [38;2;180;60;0mgrad_norm:  0.0435  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,318  [36mtflops: 24.92  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:50:05,970 - root - INFO - [31mstep: 430  [32mloss:  1.12535  [38;2;180;60;0mgrad_norm:  0.0405  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,311  [36mtflops: 24.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:50:55,426 - root - INFO - [31mstep: 440  [32mloss:  1.18641  [38;2;180;60;0mgrad_norm:  0.0452  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,313  [36mtflops: 24.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:51:40,024 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-05-29 08:51:45,070 - root - INFO - [31mstep: 450  [32mloss:  1.16299  [38;2;180;60;0mgrad_norm:  0.0398  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,300  [36mtflops: 24.79  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:52:34,644 - root - INFO - [31mstep: 460  [32mloss:  1.07894  [38;2;180;60;0mgrad_norm:  0.0432  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,305  [36mtflops: 24.83  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:53:24,258 - root - INFO - [31mstep: 470  [32mloss:  1.08543  [38;2;180;60;0mgrad_norm:  0.0409  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,302  [36mtflops: 24.81  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:54:13,808 - root - INFO - [31mstep: 480  [32mloss:  1.10167  [38;2;180;60;0mgrad_norm:  0.0434  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,307  [36mtflops: 24.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:55:03,228 - root - INFO - [31mstep: 490  [32mloss:  1.16756  [38;2;180;60;0mgrad_norm:  0.0443  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,315  [36mtflops: 24.91  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:55:47,965 - root - INFO - [GC] Performing periodic GC collection took 0.15 seconds
+[rank0]:[titan] 2026-05-29 08:55:53,071 - root - INFO - [31mstep: 500  [32mloss:  1.13925  [38;2;180;60;0mgrad_norm:  0.0429  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,287  [36mtflops: 24.69  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:56:42,528 - root - INFO - [31mstep: 510  [32mloss:  1.19214  [38;2;180;60;0mgrad_norm:  0.0440  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,313  [36mtflops: 24.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:57:32,084 - root - INFO - [31mstep: 520  [32mloss:  1.10838  [38;2;180;60;0mgrad_norm:  0.0408  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,306  [36mtflops: 24.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:58:21,605 - root - INFO - [31mstep: 530  [32mloss:  0.97316  [38;2;180;60;0mgrad_norm:  0.0398  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,309  [36mtflops: 24.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:59:11,199 - root - INFO - [31mstep: 540  [32mloss:  1.16143  [38;2;180;60;0mgrad_norm:  0.0424  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,304  [36mtflops: 24.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 08:59:55,841 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-05-29 09:00:00,824 - root - INFO - [31mstep: 550  [32mloss:  1.08743  [38;2;180;60;0mgrad_norm:  0.0403  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,302  [36mtflops: 24.80  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:00:50,332 - root - INFO - [31mstep: 560  [32mloss:  1.14904  [38;2;180;60;0mgrad_norm:  0.0449  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,309  [36mtflops: 24.86  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:01:39,668 - root - INFO - [31mstep: 570  [32mloss:  1.07719  [38;2;180;60;0mgrad_norm:  0.0419  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,321  [36mtflops: 24.95  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:02:29,222 - root - INFO - [31mstep: 580  [32mloss:  1.03905  [38;2;180;60;0mgrad_norm:  0.0442  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,306  [36mtflops: 24.84  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:03:18,640 - root - INFO - [31mstep: 590  [32mloss:  1.10916  [38;2;180;60;0mgrad_norm:  0.0428  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,316  [36mtflops: 24.91  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:04:03,214 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-05-29 09:04:08,233 - root - INFO - [31mstep: 600  [32mloss:  1.06968  [38;2;180;60;0mgrad_norm:  0.0412  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,304  [36mtflops: 24.82  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:04:57,724 - root - INFO - [31mstep: 610  [32mloss:  1.10790  [38;2;180;60;0mgrad_norm:  0.0409  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,311  [36mtflops: 24.87  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:05:47,170 - root - INFO - [31mstep: 620  [32mloss:  1.22400  [38;2;180;60;0mgrad_norm:  0.0422  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,314  [36mtflops: 24.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:06:36,561 - root - INFO - [31mstep: 630  [32mloss:  1.18361  [38;2;180;60;0mgrad_norm:  0.0423  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,317  [36mtflops: 24.92  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:07:25,943 - root - INFO - [31mstep: 640  [32mloss:  1.10231  [38;2;180;60;0mgrad_norm:  0.0451  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,318  [36mtflops: 24.92  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:08:10,497 - root - INFO - [GC] Performing periodic GC collection took 0.16 seconds
+[rank0]:[titan] 2026-05-29 09:08:15,476 - root - INFO - [31mstep: 650  [32mloss:  1.02660  [38;2;180;60;0mgrad_norm:  0.0409  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,308  [36mtflops: 24.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:09:04,850 - root - INFO - [31mstep: 660  [32mloss:  1.13298  [38;2;180;60;0mgrad_norm:  0.0406  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,318  [36mtflops: 24.93  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:09:54,248 - root - INFO - [31mstep: 670  [32mloss:  1.00681  [38;2;180;60;0mgrad_norm:  0.0394  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,317  [36mtflops: 24.92  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:10:43,690 - root - INFO - [31mstep: 680  [32mloss:  1.23042  [38;2;180;60;0mgrad_norm:  0.0421  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,314  [36mtflops: 24.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:11:33,094 - root - INFO - [31mstep: 690  [32mloss:  1.05669  [38;2;180;60;0mgrad_norm:  0.0416  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,316  [36mtflops: 24.91  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:12:17,843 - root - INFO - [GC] Performing periodic GC collection took 0.17 seconds
+[rank0]:[titan] 2026-05-29 09:12:22,838 - root - INFO - [31mstep: 700  [32mloss:  1.07772  [38;2;180;60;0mgrad_norm:  0.0424  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,294  [36mtflops: 24.74  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:13:12,370 - root - INFO - [31mstep: 710  [32mloss:  1.11673  [38;2;180;60;0mgrad_norm:  0.0414  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,308  [36mtflops: 24.85  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:14:01,822 - root - INFO - [31mstep: 720  [32mloss:  1.07938  [38;2;180;60;0mgrad_norm: 76914.1094  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,313  [36mtflops: 24.89  [35mmfu: N/A[39m
+[rank0]:[titan] 2026-05-29 09:14:51,348 - root - INFO - [31mstep: 730  [32mloss:  1.11044  [38;2;180;60;0mgrad_norm:  0.0406  [38;2;54;234;195mmemory: 21.78GiB(69.44%)  [34mtps: 3,308  [36mtflops: 24.85  [35mmfu: N/A[39m
+W0529 09:14:52.341000 162307 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 162379 closing signal SIGTERM
+W0529 09:14:52.347000 162307 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 162381 closing signal SIGTERM
+W0529 09:14:52.347000 162307 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 162382 closing signal SIGTERM
+W0529 09:14:52.347000 162307 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 162383 closing signal SIGTERM
+W0529 09:14:52.347000 162307 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 162384 closing signal SIGTERM
+W0529 09:14:52.347000 162307 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 162385 closing signal SIGTERM
+W0529 09:14:52.347000 162307 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 162386 closing signal SIGTERM
+E0529 09:14:54.519000 162307 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: -6) local_rank: 1 (pid: 162380) of binary: /usr/bin/python3
+E0529 09:14:54.528000 162307 torch/distributed/elastic/multiprocessing/errors/error_handler.py:145] no error file defined for parent, to copy child error file (/tmp/torchelastic_9njuu8hy/none_8yi66dh7/attempt_0/1/error.json)
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase5_vlm_multimodal_sft.train_mm FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-29_09:14:54
+  host      : f59652d27037
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 162379)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 162379
+[2]:
+  time      : 2026-05-29_09:14:54
+  host      : f59652d27037
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 162381)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 162381
+[3]:
+  time      : 2026-05-29_09:14:54
+  host      : f59652d27037
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 162382)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 162382
+[4]:
+  time      : 2026-05-29_09:14:54
+  host      : f59652d27037
+  rank      : 4 (local_rank: 4)
+  exitcode  : -15 (pid: 162383)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 162383
+[5]:
+  time      : 2026-05-29_09:14:54
+  host      : f59652d27037
+  rank      : 5 (local_rank: 5)
+  exitcode  : -15 (pid: 162384)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 162384
+[6]:
+  time      : 2026-05-29_09:14:54
+  host      : f59652d27037
+  rank      : 6 (local_rank: 6)
+  exitcode  : -15 (pid: 162385)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 162385
+[7]:
+  time      : 2026-05-29_09:14:54
+  host      : f59652d27037
+  rank      : 7 (local_rank: 7)
+  exitcode  : -15 (pid: 162386)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 162386
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-29_09:14:51
+  host      : f59652d27037
+  rank      : 1 (local_rank: 1)
+  exitcode  : -6 (pid: 162380)
+  error_file: /tmp/torchelastic_9njuu8hy/none_8yi66dh7/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 843, in train
+      self.train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 755, in train_step
+      super().train_step(data_iterator)
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 753, in train_step
+      loss = self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/train_mm.py", line 723, in forward_backward_step
+      loss = super().forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/trainer.py", line 701, in forward_backward_step
+      pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 338, in forward
+      block_list, partial_block = layer(
+                                  ^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1885, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1833, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+      return self.checkpoint_fn(  # type: ignore[misc]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/_compile.py", line 54, in inner
+      return disable_fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/utils/checkpoint.py", line 512, in checkpoint
+      ret = function(*args, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/attn_res_model.py", line 129, in forward
+      attn_out = self.self_attn(self.input_layernorm(h))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/torchtitan_attention_residual/torchtitan/torchtitan/experiments/kimi_linear/model.py", line 561, in forward
+      o, _ = kda_fn(
+             ^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/ops/backends/__init__.py", line 192, in wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/ops/kda/chunk.py", line 364, in chunk_kda
+      return ChunkKDAFunction.apply(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/autograd/function.py", line 596, in apply
+      return super().apply(*args, **kwargs)  # type: ignore[misc]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/utils.py", line 227, in wrapper
+      return fn(*processed_args, **processed_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/torch/amp/autocast_mode.py", line 481, in decorate_fwd
+      return fwd(*args, **kwargs)  # pyrefly: ignore [not-callable]
+             ^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/ops/kda/chunk.py", line 61, in forward
+      (o, final_state, g_cumsum, Aqk, Akk, w, u, qg, kg, v_new, h, initial_state) = chunk_kda_fwd(
+                                                                                    ^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/ops/kda/chunk_fwd.py", line 67, in chunk_kda_fwd
+      w, u, qg, kg, Aqk, Akk = chunk_kda_fwd_intra(
+                               ^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/ops/kda/chunk_intra.py", line 836, in chunk_kda_fwd_intra
+      w, u, qg, kg = recompute_w_u_fwd(
+                     ^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/fla/ops/kda/wy_fast.py", line 271, in recompute_w_u_fwd
+      recompute_w_u_fwd_kda_kernel[(NT, B*HV)](
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/jit.py", line 370, in <lambda>
+      return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 459, in run
+      return self.fn.run(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/autotuner.py", line 252, in run
+      ret = self.fn.run(
+            ^^^^^^^^^^^^
+    File "/usr/local/lib/python3.12/dist-packages/triton/runtime/jit.py", line 744, in run
+      kernel.run(grid_0, grid_1, grid_2, stream, kernel.function, kernel.packed_metadata, launch_metadata,
+    File "/usr/local/lib/python3.12/dist-packages/triton/backends/nvidia/driver.py", line 713, in __call__
+      self.launch(gridX, gridY, gridZ, stream, function, self.launch_cooperative_grid, self.launch_pdl,
+  RuntimeError: Triton Error [CUDA]: device-side assert triggered
+  
+============================================================

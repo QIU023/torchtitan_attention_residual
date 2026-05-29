@@ -1,0 +1,548 @@
+[Fri May 29 08:05:52 AM UTC 2026] run_all_evals: ckpt=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200 run_dir=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200
+================================================================
+[Fri May 29 08:05:52 AM UTC 2026] bench=gqa  out=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/gqa  limit=500
+================================================================
+W0529 08:05:53.328000 154028 torch/distributed/run.py:851] 
+W0529 08:05:53.328000 154028 torch/distributed/run.py:851] *****************************************
+W0529 08:05:53.328000 154028 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0529 08:05:53.328000 154028 torch/distributed/run.py:851] *****************************************
+[rank0]:Traceback (most recent call last):
+[rank0]:  File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:  File "<frozen runpy>", line 88, in _run_code
+[rank0]:  File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/score_gqa.py", line 146, in <module>
+[rank0]:    main()
+[rank0]:  File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/score_gqa.py", line 129, in main
+[rank0]:    records, imgs = _load_records(limit=args.limit or None)
+[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:  File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/score_gqa.py", line 55, in _load_records
+[rank0]:    df = pq.read_table(p).to_pandas()
+[rank0]:         ^^^^^^^^^^^^^^^^
+[rank0]:  File "/usr/local/lib/python3.12/dist-packages/pyarrow/parquet/core.py", line 1891, in read_table
+[rank0]:    dataset = ParquetDataset(
+[rank0]:              ^^^^^^^^^^^^^^^
+[rank0]:  File "/usr/local/lib/python3.12/dist-packages/pyarrow/parquet/core.py", line 1471, in __init__
+[rank0]:    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:  File "/usr/local/lib/python3.12/dist-packages/pyarrow/dataset.py", line 790, in dataset
+[rank0]:    return _filesystem_dataset(source, **kwargs)
+[rank0]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:  File "/usr/local/lib/python3.12/dist-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+[rank0]:    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+[rank0]:                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:  File "/usr/local/lib/python3.12/dist-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+[rank0]:    raise FileNotFoundError(path)
+[rank0]:FileNotFoundError: /workspace/.hf_home/eval_data/gqa/testdev_balanced_instructions/testdev-00000-of-00001.parquet
+W0529 08:06:05.401000 154028 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 154096 closing signal SIGTERM
+W0529 08:06:05.403000 154028 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 154098 closing signal SIGTERM
+W0529 08:06:05.405000 154028 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 154099 closing signal SIGTERM
+W0529 08:06:05.405000 154028 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 154100 closing signal SIGTERM
+W0529 08:06:05.405000 154028 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 154101 closing signal SIGTERM
+W0529 08:06:05.407000 154028 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 154102 closing signal SIGTERM
+W0529 08:06:05.407000 154028 torch/distributed/elastic/multiprocessing/api.py:1012] Sending process 154103 closing signal SIGTERM
+E0529 08:06:05.897000 154028 torch/distributed/elastic/multiprocessing/api.py:986] failed (exitcode: 1) local_rank: 1 (pid: 154097) of binary: /usr/bin/python3
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 362, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 990, in main
+    run(args)
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/run.py", line 981, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 170, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/distributed/launcher/api.py", line 317, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+phase5_vlm_multimodal_sft.eval_benchmarks.score_gqa FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 154096)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 154096
+[2]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 154098)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 154098
+[3]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 154099)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 154099
+[4]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 4 (local_rank: 4)
+  exitcode  : -15 (pid: 154100)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 154100
+[5]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 5 (local_rank: 5)
+  exitcode  : -15 (pid: 154101)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 154101
+[6]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 6 (local_rank: 6)
+  exitcode  : -15 (pid: 154102)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 154102
+[7]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 7 (local_rank: 7)
+  exitcode  : -15 (pid: 154103)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 154103
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-29_08:06:05
+  host      : f59652d27037
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 154097)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+[Fri May 29 08:06:06 AM UTC 2026] bench=gqa torchrun FAILED rc=1 (likely one rank crashed); attempting partial-aggregate
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/postprocess.py", line 94, in <module>
+    main()
+  File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/postprocess.py", line 83, in main
+    n_total = total_fn(args.limit)
+              ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/postprocess.py", line 31, in _gqa_total
+    records, _ = _load_records(limit=limit or None)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/score_gqa.py", line 55, in _load_records
+    df = pq.read_table(p).to_pandas()
+         ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyarrow/parquet/core.py", line 1891, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyarrow/parquet/core.py", line 1471, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: /workspace/.hf_home/eval_data/gqa/testdev_balanced_instructions/testdev-00000-of-00001.parquet
+================================================================
+[Fri May 29 08:06:15 AM UTC 2026] bench=mmbench  out=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/mmbench_en_dev  limit=500
+================================================================
+W0529 08:06:16.876000 154257 torch/distributed/run.py:851] 
+W0529 08:06:16.876000 154257 torch/distributed/run.py:851] *****************************************
+W0529 08:06:16.876000 154257 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0529 08:06:16.876000 154257 torch/distributed/run.py:851] *****************************************
+[rank0]:[titan] 2026-05-29 08:06:30,629 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-05-29 08:06:30,631 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=8, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-05-29 08:06:30,651 - root - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'fsdp', 'efsdp']
+[rank0]:[titan] 2026-05-29 08:06:30,651 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-05-29 08:06:32,498 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-05-29 08:06:32,790 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-05-29 08:06:33,092 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:33,250 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:33,421 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:33,904 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:34,181 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:34,512 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:34,876 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:35,080 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:35,252 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:35,432 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:35,698 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:35,776 - root - INFO - Building kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 with {
+[rank0]:  "vocab_size": 163840,
+[rank0]:  "hidden_size": 1024,
+[rank0]:  "tie_word_embeddings": true,
+[rank0]:  "num_hidden_layers": 16,
+[rank0]:  "intermediate_size": 768,
+[rank0]:  "num_attention_heads": 16,
+[rank0]:  "num_key_value_heads": 16,
+[rank0]:  "q_lora_rank": null,
+[rank0]:  "kv_lora_rank": 512,
+[rank0]:  "qk_nope_head_dim": 64,
+[rank0]:  "qk_rope_head_dim": 32,
+[rank0]:  "v_head_dim": 64,
+[rank0]:  "mla_use_nope": true,
+[rank0]:  "rope_theta": 10000.0,
+[rank0]:  "kda_num_heads": 16,
+[rank0]:  "kda_head_dim": 64,
+[rank0]:  "kda_short_conv_kernel_size": 4,
+[rank0]:  "kda_layers": [
+[rank0]:    1,
+[rank0]:    2,
+[rank0]:    3,
+[rank0]:    5,
+[rank0]:    6,
+[rank0]:    7,
+[rank0]:    9,
+[rank0]:    10,
+[rank0]:    11,
+[rank0]:    13,
+[rank0]:    14,
+[rank0]:    15
+[rank0]:  ],
+[rank0]:  "full_attn_layers": [
+[rank0]:    4,
+[rank0]:    8,
+[rank0]:    12,
+[rank0]:    16
+[rank0]:  ],
+[rank0]:  "num_experts": 32,
+[rank0]:  "num_experts_per_token": 8,
+[rank0]:  "moe_intermediate_size": 768,
+[rank0]:  "moe_renormalize": true,
+[rank0]:  "moe_router_activation_func": "sigmoid",
+[rank0]:  "num_shared_experts": 1,
+[rank0]:  "routed_scaling_factor": 2.446,
+[rank0]:  "first_k_dense_replace": 1,
+[rank0]:  "moe_layer_freq": 1,
+[rank0]:  "use_grouped_topk": false,
+[rank0]:  "num_expert_group": 1,
+[rank0]:  "topk_group": 1,
+[rank0]:  "rms_norm_eps": 1e-05,
+[rank0]:  "hidden_act": "silu",
+[rank0]:  "initializer_range": 0.02,
+[rank0]:  "__spec__": {
+[rank0]:    "num_blocks": 4,
+[rank0]:    "model_class": "KimiLinearAttnResModel"
+[rank0]:  }
+[rank0]:}
+[rank0]:[titan] 2026-05-29 08:06:35,801 - root - INFO - Float8 training active with recipe rowwise
+[rank0]:[titan] 2026-05-29 08:06:35,816 - root - INFO - Swapped to Float8Linear layers with enable_fsdp_float8_all_gather=False
+[rank0]:[titan] 2026-05-29 08:06:35,817 - root - INFO - TensorBoard logging enabled. Logs will be saved at /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/mmbench_en_dev/_titan_dump/tb/20260529-0806
+[rank0]:[titan] 2026-05-29 08:06:35,818 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank0]:[titan] 2026-05-29 08:06:35,819 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-29 08:06:35,819 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-29 08:06:35,819 - root - INFO - [34mModel kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 [31msize: 1,409,320,896 total parameters[39m
+[rank0]:[titan] 2026-05-29 08:06:35,900 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank0]:[titan] 2026-05-29 08:06:36,029 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-29 08:06:36,029 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-29 08:06:36,030 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-05-29 08:06:36,030 - root - INFO - CUDA memory usage for model: 0.74GiB(2.35%)
+[rank0]:[titan] 2026-05-29 08:06:36,047 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/mmbench_en_dev/_titan_dump/checkpoint
+[rank0]:[titan] 2026-05-29 08:06:36,047 - root - INFO - Trainer is initialized with local batch size 1, global batch size 8, gradient accumulation steps 1, sequence length 580, total steps 1 (warmup 1)
+[rank0]:[titan] 2026-05-29 08:06:36,047 - root - INFO - mm: loading vision_tower google/siglip-base-patch16-224
+[rank0]:[titan] 2026-05-29 08:06:36,201 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:36,233 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:36,434 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:36,467 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:36,631 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+[rank0]:
+[rank0]:Loading weights:   0%|    | 0/408 [00:00<?, ?it/s][rank0]:
+[rank0]:Loading weights:   5%| | 22/408 [00:00<00:01, 209.[rank0]:
+[rank0]:Loading weights:  11%| | 43/408 [00:00<00:02, 152.[rank0]:
+[rank0]:Loading weights:  15%|▏| 60/408 [00:00<00:02, 132.[rank0]:
+[rank0]:Loading weights:  20%|▏| 82/408 [00:00<00:02, 124.[rank0]:
+[rank0]:Loading weights:  25%|▏| 100/408 [00:00<00:02, 130[rank0]:
+[rank0]:Loading weights:  28%|▎| 114/408 [00:00<00:02, 132[rank0]:
+[rank0]:Loading weights:  34%|▎| 138/408 [00:01<00:02, 119[rank0]:
+[rank0]:Loading weights:  44%|▍| 180/408 [00:01<00:01, 173[rank0]:
+[rank0]:Loading weights:  51%|▌| 209/408 [00:01<00:01, 172[rank0]:
+[rank0]:Loading weights:  59%|▌| 240/408 [00:01<00:00, 192[rank0]:
+[rank0]:Loading weights:  64%|▋| 261/408 [00:01<00:01, 138[rank0]:
+[rank0]:Loading weights:  68%|▋| 278/408 [00:01<00:00, 133[rank0]:
+[rank0]:Loading weights:  88%|▉| 361/408 [00:02<00:00, 247[rank0]:
+[rank0]:Loading weights:  95%|▉| 389/408 [00:02<00:00, 191
+[rank0]:Loading weights: 100%|█| 408/408 [00:02<00:00, 173
+[rank0]:[titan] 2026-05-29 08:06:39,148 - root - INFO - mm: vision_tower hidden_size=768, frozen
+[rank0]:[titan] 2026-05-29 08:06:39,319 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:39,475 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:39,507 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:39,674 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:39,833 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:39,865 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:40,024 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:40,184 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:40,350 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:40,510 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:40,667 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:40,841 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:40,995 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:41,028 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:41,185 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:41,342 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:41,374 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:41,574 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:41,608 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:41,852 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:41,999 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:42,159 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:42,321 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:42,664 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:42,849 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:43,010 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:06:43,159 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:43,320 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:06:43,503 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:44,546 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:06:44,572 - phase5_vlm_multimodal_sft.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank0]:[titan] 2026-05-29 08:06:44,572 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank0]:[titan] 2026-05-29 08:06:44,572 - root - INFO - mm: lm_dim=1024
+[rank0]:[titan] 2026-05-29 08:06:44,589 - root - INFO - mm: projector built, params=1,837,056
+[rank0]:[titan] 2026-05-29 08:06:44,594 - root - INFO - mm: projector wrapped with FSDP2 over batch mesh size=8 (grad sync across DP ranks)
+[rank0]:[titan] 2026-05-29 08:06:44,594 - root - INFO - mm: built standalone projector AdamW (lr=1e-05, fixed); stepped explicitly in train_step, not via OptimizersContainer
+[rank0]:[titan] 2026-05-29 08:06:44,595 - root - INFO - mm: registered _MMStateWrapper (projector + proj_optim + lm_optim) with checkpointer; dropped brittle OptimizersContainer OPTIMIZER entry
+[rank0]:[titan] 2026-05-29 08:06:49,777 - root - INFO - mm: dataset = LlavaInstructSFTDataset (sft layout, split=train, val_samples=0, stratified_val_per_source=0, shuffle_seed=0, N=665,298)
+[rank0]:[titan] 2026-05-29 08:06:49,780 - root - INFO - mm: replaced dataloader (train split, N=665,298, dp_rank=0/8, local_bs=1, seq_len=580)
+[rank0]:[titan] 2026-05-29 08:06:49,780 - root - INFO - mm: val disabled (val_samples<=0 or val_freq<=0)
+[rank0]:[titan] 2026-05-29 08:06:49,788 - root - INFO - Loading the checkpoint from /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200.
+[rank0]:[titan] 2026-05-29 08:06:51,495 - root - INFO - [GC] GC collection for checkpoint loading. took 0.84 seconds
+[rank0]:[titan] 2026-05-29 08:06:51,495 - root - INFO - Finished loading the checkpoint in 1.71 seconds.
+[rank0]:[titan] 2026-05-29 08:06:51,500 - root - INFO - eval: ckpt loaded from /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200
+[rank0]:[titan] 2026-05-29 08:06:51,521 - root - INFO - eval[mmbench_en_dev]: rank 0/8, total records = 500, max_new_tokens=8
+[rank0]:[titan] 2026-05-29 08:06:51,521 - root - INFO - eval[mmbench_en_dev]: rank 0 handles 63 records
+[rank0]:[titan] 2026-05-29 08:07:55,353 - root - INFO - eval[mmbench_en_dev]: rank 0 50/63 (0.78/s, ETA 0.3min)
+[rank0]:[titan] 2026-05-29 08:07:57,664 - root - INFO - eval: rank 0 wrote 63 preds → /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/mmbench_en_dev/preds_rank0.jsonl
+[rank0]:[titan] 2026-05-29 08:07:57,665 - root - INFO - eval[mmbench_en_dev]: rank 0 partial result 0.364
+[Fri May 29 08:08:05 AM UTC 2026] bench=mmbench torchrun done
+{
+  "benchmark": "mmbench_en_dev",
+  "n_total": 500,
+  "n_scored": 500,
+  "n_rank_files": 8,
+  "elapsed_sec": 66.175,
+  "stage": "final",
+  "n": 500,
+  "accuracy": 0.364,
+  "parse_rate": 1.0,
+  "primary_metric": "accuracy",
+  "primary_score": 0.364,
+  "status": "PASS"
+}
+================================================================
+[Fri May 29 08:08:14 AM UTC 2026] bench=pope  out=/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/pope  limit=500
+================================================================
+W0529 08:08:15.725000 158931 torch/distributed/run.py:851] 
+W0529 08:08:15.725000 158931 torch/distributed/run.py:851] *****************************************
+W0529 08:08:15.725000 158931 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0529 08:08:15.725000 158931 torch/distributed/run.py:851] *****************************************
+[rank0]:[titan] 2026-05-29 08:08:29,403 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-05-29 08:08:29,406 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=8, cp=1, tp=1, ep=1, etp=1
+[rank0]:[titan] 2026-05-29 08:08:29,418 - root - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'fsdp', 'efsdp']
+[rank0]:[titan] 2026-05-29 08:08:29,419 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-05-29 08:08:29,958 - root - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-05-29 08:08:30,221 - root - INFO - Preparing c4 dataset from allenai/c4
+[rank0]:[titan] 2026-05-29 08:08:30,532 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:30,568 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:30,732 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:31,203 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:31,487 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:31,827 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:32,155 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:32,386 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:32,717 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:32,876 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:33,156 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:33,238 - root - INFO - Building kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 with {
+[rank0]:  "vocab_size": 163840,
+[rank0]:  "hidden_size": 1024,
+[rank0]:  "tie_word_embeddings": true,
+[rank0]:  "num_hidden_layers": 16,
+[rank0]:  "intermediate_size": 768,
+[rank0]:  "num_attention_heads": 16,
+[rank0]:  "num_key_value_heads": 16,
+[rank0]:  "q_lora_rank": null,
+[rank0]:  "kv_lora_rank": 512,
+[rank0]:  "qk_nope_head_dim": 64,
+[rank0]:  "qk_rope_head_dim": 32,
+[rank0]:  "v_head_dim": 64,
+[rank0]:  "mla_use_nope": true,
+[rank0]:  "rope_theta": 10000.0,
+[rank0]:  "kda_num_heads": 16,
+[rank0]:  "kda_head_dim": 64,
+[rank0]:  "kda_short_conv_kernel_size": 4,
+[rank0]:  "kda_layers": [
+[rank0]:    1,
+[rank0]:    2,
+[rank0]:    3,
+[rank0]:    5,
+[rank0]:    6,
+[rank0]:    7,
+[rank0]:    9,
+[rank0]:    10,
+[rank0]:    11,
+[rank0]:    13,
+[rank0]:    14,
+[rank0]:    15
+[rank0]:  ],
+[rank0]:  "full_attn_layers": [
+[rank0]:    4,
+[rank0]:    8,
+[rank0]:    12,
+[rank0]:    16
+[rank0]:  ],
+[rank0]:  "num_experts": 32,
+[rank0]:  "num_experts_per_token": 8,
+[rank0]:  "moe_intermediate_size": 768,
+[rank0]:  "moe_renormalize": true,
+[rank0]:  "moe_router_activation_func": "sigmoid",
+[rank0]:  "num_shared_experts": 1,
+[rank0]:  "routed_scaling_factor": 2.446,
+[rank0]:  "first_k_dense_replace": 1,
+[rank0]:  "moe_layer_freq": 1,
+[rank0]:  "use_grouped_topk": false,
+[rank0]:  "num_expert_group": 1,
+[rank0]:  "topk_group": 1,
+[rank0]:  "rms_norm_eps": 1e-05,
+[rank0]:  "hidden_act": "silu",
+[rank0]:  "initializer_range": 0.02,
+[rank0]:  "__spec__": {
+[rank0]:    "num_blocks": 4,
+[rank0]:    "model_class": "KimiLinearAttnResModel"
+[rank0]:  }
+[rank0]:}
+[rank0]:[titan] 2026-05-29 08:08:33,264 - root - INFO - Float8 training active with recipe rowwise
+[rank0]:[titan] 2026-05-29 08:08:33,279 - root - INFO - Swapped to Float8Linear layers with enable_fsdp_float8_all_gather=False
+[rank0]:[titan] 2026-05-29 08:08:33,281 - root - INFO - TensorBoard logging enabled. Logs will be saved at /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/pope/_titan_dump/tb/20260529-0808
+[rank0]:[titan] 2026-05-29 08:08:33,281 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[rank0]:[titan] 2026-05-29 08:08:33,282 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-29 08:08:33,282 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-29 08:08:33,283 - root - INFO - [34mModel kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 [31msize: 1,409,320,896 total parameters[39m
+[rank0]:[titan] 2026-05-29 08:08:33,359 - root - INFO - Applied FSDP2 to Kimi Linear model (dp_shard=8, dp_replicate=1).
+[rank0]:[titan] 2026-05-29 08:08:33,492 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-05-29 08:08:33,492 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[rank0]:[titan] 2026-05-29 08:08:33,492 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[rank0]:[titan] 2026-05-29 08:08:33,492 - root - INFO - CUDA memory usage for model: 0.74GiB(2.35%)
+[rank0]:[titan] 2026-05-29 08:08:33,510 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/pope/_titan_dump/checkpoint
+[rank0]:[titan] 2026-05-29 08:08:33,510 - root - INFO - Trainer is initialized with local batch size 1, global batch size 8, gradient accumulation steps 1, sequence length 580, total steps 1 (warmup 1)
+[rank0]:[titan] 2026-05-29 08:08:33,510 - root - INFO - mm: loading vision_tower google/siglip-base-patch16-224
+[rank0]:[titan] 2026-05-29 08:08:33,664 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:33,698 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:33,886 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:33,920 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:
+[rank0]:Loading weights:   0%|    | 0/408 [00:00<?, ?it/s][rank0]:[titan] 2026-05-29 08:08:34,179 - root - INFO - mm: vision_tower hidden_size=768, frozen
+[rank0]:
+[rank0]:Loading weights:  75%|▊| 307/408 [00:00<00:00, 303
+[rank0]:Loading weights: 100%|█| 408/408 [00:00<00:00, 332
+[rank0]:[titan] 2026-05-29 08:08:34,336 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:34,492 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:34,525 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:34,679 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:34,836 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:34,869 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:35,036 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:35,192 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:35,352 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:35,511 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:35,668 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:35,827 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:35,985 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:36,019 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:36,178 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:36,335 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:36,369 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/preprocessor_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:36,524 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:36,558 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:36,728 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/google/siglip-base-patch16-224/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:36,763 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/siglip-base-patch16-224/7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:36,926 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:37,098 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/google/siglip-base-patch16-224/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:37,436 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:37,468 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:37,627 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/NousResearch/Meta-Llama-3.1-8B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[rank0]:[titan] 2026-05-29 08:08:37,660 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NousResearch/Meta-Llama-3.1-8B/1f47e50cdbe801ad8a5174156ec3a0655108fb9f/tokenizer_config.json "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:37,822 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[rank0]:[titan] 2026-05-29 08:08:37,985 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:38,926 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/NousResearch/Meta-Llama-3.1-8B "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-05-29 08:08:38,946 - phase5_vlm_multimodal_sft.sentinel_registry - INFO - sentinel_registry: tokenizer='NousResearch/Meta-Llama-3.1-8B' role='image' id=32000 decoded='utility' reserved=False
+[rank0]:[titan] 2026-05-29 08:08:38,946 - root - INFO - mm: image sentinel resolved via registry → id=32000 (legacy hardcoded value was 32_000)
+[rank0]:[titan] 2026-05-29 08:08:38,946 - root - INFO - mm: lm_dim=1024
+[rank0]:[titan] 2026-05-29 08:08:38,962 - root - INFO - mm: projector built, params=1,837,056
+[rank0]:[titan] 2026-05-29 08:08:38,967 - root - INFO - mm: projector wrapped with FSDP2 over batch mesh size=8 (grad sync across DP ranks)
+[rank0]:[titan] 2026-05-29 08:08:38,967 - root - INFO - mm: built standalone projector AdamW (lr=1e-05, fixed); stepped explicitly in train_step, not via OptimizersContainer
+[rank0]:[titan] 2026-05-29 08:08:38,967 - root - INFO - mm: registered _MMStateWrapper (projector + proj_optim + lm_optim) with checkpointer; dropped brittle OptimizersContainer OPTIMIZER entry
+[rank0]:[titan] 2026-05-29 08:08:44,030 - root - INFO - mm: dataset = LlavaInstructSFTDataset (sft layout, split=train, val_samples=0, stratified_val_per_source=0, shuffle_seed=0, N=665,298)
+[rank0]:[titan] 2026-05-29 08:08:44,031 - root - INFO - mm: replaced dataloader (train split, N=665,298, dp_rank=0/8, local_bs=1, seq_len=580)
+[rank0]:[titan] 2026-05-29 08:08:44,031 - root - INFO - mm: val disabled (val_samples<=0 or val_freq<=0)
+[rank0]:[titan] 2026-05-29 08:08:44,035 - root - INFO - Loading the checkpoint from /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200.
+[rank0]:[titan] 2026-05-29 08:08:46,051 - root - INFO - [GC] GC collection for checkpoint loading. took 0.84 seconds
+[rank0]:[titan] 2026-05-29 08:08:46,052 - root - INFO - Finished loading the checkpoint in 2.02 seconds.
+[rank0]:[titan] 2026-05-29 08:08:46,054 - root - INFO - eval: ckpt loaded from /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/runs/stage2_instruct_sft_447m/checkpoint/step-5200
+[rank0]:[titan] 2026-05-29 08:08:46,075 - root - INFO - eval[pope]: rank 0/8, total records = 498, max_new_tokens=12
+[rank0]:[titan] 2026-05-29 08:08:46,075 - root - INFO - eval[pope]: rank 0 handles 63 records
+[rank0]:[titan] 2026-05-29 08:08:57,646 - root - INFO - eval[pope]: rank 0 50/63 (4.32/s, ETA 0.1min)
+[rank0]:[titan] 2026-05-29 08:08:59,963 - root - INFO - eval: rank 0 wrote 63 preds → /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/pope/preds_rank0.jsonl
+[rank0]:[titan] 2026-05-29 08:08:59,966 - root - INFO - eval[pope]: rank 0 partial result 0.0
+[Fri May 29 08:09:09 AM UTC 2026] bench=pope torchrun done
+{
+  "benchmark": "pope",
+  "n_total": 498,
+  "n_scored": 498,
+  "n_rank_files": 8,
+  "elapsed_sec": 14.082,
+  "stage": "final",
+  "overall": {
+    "n": 498,
+    "accuracy": 0.5,
+    "f1": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "yes_ratio_in_preds": 0.0,
+    "unknown_count": 0
+  },
+  "per_split": {
+    "random": {
+      "n": 166,
+      "accuracy": 0.5,
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "yes_ratio_in_preds": 0.0,
+      "unknown_count": 0
+    },
+    "popular": {
+      "n": 166,
+      "accuracy": 0.5,
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "yes_ratio_in_preds": 0.0,
+      "unknown_count": 0
+    },
+    "adversarial": {
+      "n": 166,
+      "accuracy": 0.5,
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "yes_ratio_in_preds": 0.0,
+      "unknown_count": 0
+    }
+  },
+  "primary_metric": "f1",
+  "primary_score": 0.0,
+  "status": "PASS"
+}
+================================================================
+[Fri May 29 08:09:18 AM UTC 2026] aggregating report → /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/REPORT.md
+================================================================
+/workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/aggregate_report.py:47: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  lines.append(f"- **Generated**: {datetime.utcnow().isoformat()}Z")
+wrote /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/REPORT.md
+[Fri May 29 08:09:18 AM UTC 2026] DONE → /workspace/torchtitan_attention_residual/phase5_vlm_multimodal_sft/eval_benchmarks/runs/20260529-080552_step-5200/REPORT.md

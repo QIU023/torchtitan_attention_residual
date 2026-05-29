@@ -1,0 +1,28 @@
+[teacher-eval] loading teacher (max_memory across cuda:5-7)…
+Fetching 4 files:   0%|     | 0/4 [00:00<?, ?it/s]Fetching 4 files: 100%|█| 4/4 [00:00<00:00, 42799.
+Loading weights:   0%|    | 0/687 [00:00<?, ?it/s]Loading weights:   0%| | 2/687 [00:00<00:51, 13.19Loading weights:   1%| | 5/687 [00:00<00:34, 19.64Loading weights:   2%| | 15/687 [00:00<00:14, 47.8Loading weights:   5%| | 31/687 [00:00<00:07, 86.3Loading weights:   6%| | 43/687 [00:00<00:07, 88.2Loading weights:   9%| | 59/687 [00:00<00:06, 93.4Loading weights:  11%| | 74/687 [00:00<00:05, 106.Loading weights:  13%|▏| 87/687 [00:00<00:05, 109.Loading weights:  15%|▏| 100/687 [00:01<00:05, 114Loading weights:  17%|▏| 114/687 [00:01<00:04, 117Loading weights:  18%|▏| 126/687 [00:01<00:04, 117Loading weights:  20%|▏| 140/687 [00:01<00:04, 110Loading weights:  23%|▏| 158/687 [00:01<00:04, 112Loading weights:  25%|▏| 170/687 [00:01<00:04, 111Loading weights:  26%|▎| 182/687 [00:01<00:04, 112Loading weights:  28%|▎| 194/687 [00:01<00:04, 108Loading weights:  30%|▎| 205/687 [00:02<00:04, 103Loading weights:  32%|▎| 218/687 [00:02<00:04, 109Loading weights:  33%|▎| 230/687 [00:02<00:04, 108Loading weights:  35%|▎| 241/687 [00:02<00:04, 102Loading weights:  37%|▎| 257/687 [00:02<00:03, 109Loading weights:  39%|▍| 268/687 [00:02<00:04, 103Loading weights:  41%|▍| 281/687 [00:02<00:03, 110Loading weights:  43%|▍| 296/687 [00:02<00:03, 119Loading weights:  87%|▊| 601/687 [00:02<00:00, 929Loading weights: 100%|█| 687/687 [00:02<00:00, 229
+/usr/local/lib/python3.12/dist-packages/accelerate/utils/modeling.py:1598: UserWarning: The following device_map keys do not match any submodules in the model: ['model.image_newline']
+  warnings.warn(
+[teacher-eval] loaded on cuda:0
+[teacher-eval] 300 GQA testdev questions, greedy max_new=16
+[teacher-eval] 50/300 acc=0.640 (3.6 q/s, ETA 1.2 min)
+[teacher-eval] 100/300 acc=0.590 (3.7 q/s, ETA 0.9 min)
+[teacher-eval] 150/300 acc=0.573 (3.7 q/s, ETA 0.7 min)
+[teacher-eval] 200/300 acc=0.615 (3.7 q/s, ETA 0.5 min)
+[teacher-eval] 250/300 acc=0.632 (3.7 q/s, ETA 0.2 min)
+[teacher-eval] 300/300 acc=0.637 (3.7 q/s, ETA 0.0 min)
+
+===== TEACHER GQA testdev greedy accuracy: 191/300 = 0.6367 =====
+samples (Q | gold | pred | ok):
+  [OK] 'Is the chair in the bottom of the image?' | 'no' | 'No'
+  [XX] 'What is the busy person walking by?' | 'traffic light' | 'Tree'
+  [XX] 'Who is sitting?' | 'spectators' | 'People'
+  [XX] 'What appliance is behind the table?' | 'stove' | 'Oven'
+  [XX] 'Is there a red bottle or can?' | 'no' | 'Yes'
+  [OK] 'Does the street seem to be narrow?' | 'yes' | 'Yes'
+  [OK] 'What is the soccer player in front of the goal wat' | 'ball' | 'Ball'
+  [OK] 'Which color are the shoes?' | 'black' | 'Black'
+  [XX] 'What is the woman carrying?' | 'umbrella' | 'Nothing'
+  [XX] 'What is the skier riding?' | 'mountain side' | 'Skis'
+  [OK] 'Are the baseball mitt and the belt the same color?' | 'no' | 'No'
+  [XX] 'What are the scissors on?' | 'paper' | 'Carpet'
