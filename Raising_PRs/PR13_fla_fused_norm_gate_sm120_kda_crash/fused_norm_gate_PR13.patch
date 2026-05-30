@@ -1,0 +1,37 @@
+--- a/fla/modules/fused_norm_gate.py
++++ b/fla/modules/fused_norm_gate.py
+@@ -28,7 +28,10 @@
+ )
+ @triton.autotune(
+     configs=[triton.Config({"BT": BT}, num_warps=num_warps) for BT in [16, 32, 64] for num_warps in [4, 8, 16]],
+-    key=["D", "NB", "IS_RMS_NORM", "STORE_RESIDUAL_OUT", "HAS_RESIDUAL", "HAS_WEIGHT"],
++    # PR13: drop phantom "NB" from autotuner key (never used in kernel body;
++    # forces re-autotuning per new T range → autotuner crashes on Blackwell
++    # sm_120 at large grids). Mirrors upstream fla #796.
++    key=["D", "IS_RMS_NORM", "STORE_RESIDUAL_OUT", "HAS_RESIDUAL", "HAS_WEIGHT"],
+     **autotune_cache_kwargs,
+ )
+ @triton.jit
+@@ -195,7 +198,8 @@
+ )
+ @triton.autotune(
+     configs=[triton.Config({"BT": BT}, num_warps=num_warps) for BT in [16, 32, 64] for num_warps in [4, 8, 16]],
+-    key=["D", "NB", "IS_RMS_NORM", "HAS_DRESIDUAL", "HAS_WEIGHT"],
++    # PR13: drop phantom "NB" from autotuner key (bwd kernel). See fwd note above.
++    key=["D", "IS_RMS_NORM", "HAS_DRESIDUAL", "HAS_WEIGHT"],
+     **autotune_cache_kwargs,
+ )
+ @triton.jit
+@@ -562,7 +566,11 @@
+     # cap program count to T so no program is completely idle.
+     # without this, high-SM GPUs (e.g. B200, 160 SMs) with small T would
+     # launch idle programs whose make_block_ptr offsets exceed the tensor shape.
+-    NS = min(get_multiprocessor_count(x.device.index), T)
++    # PR13: additionally cap NS so each program's BS >= the largest autotuned BT
++    # (=64). When BS < BT, adjacent programs' make_block_ptr blocks overlap on
++    # dx and corrupt GPU memory (device-side assert). Same root cause as fla #796.
++    _MAX_BT = 64  # largest BT in the autotuner configs above
++    NS = min(get_multiprocessor_count(x.device.index), max(T // _MAX_BT, 1))
+     BS = math.ceil(T / NS)
+ 
+     dw = torch.empty((NS, D), dtype=torch.float, device=weight.device) if weight is not None else None

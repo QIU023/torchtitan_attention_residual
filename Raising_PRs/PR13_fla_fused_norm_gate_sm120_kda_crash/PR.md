@@ -2,7 +2,16 @@
 
 ## Status
 
-🔴 **Real upstream bug found; minimal repro + fix sketched; patch deferred pending bench validation.**
+🟡 **Patch written + applied locally via vendored shadow (no site-packages edit); bench-validating on seq-KD S5 (seq_len 1536). Upstream filing still pending green local run.**
+
+- **Ready patch diff**: [`fused_norm_gate_PR13.patch`](./fused_norm_gate_PR13.patch) — 3 hunks (fla 0.5.0), unified diff against `fla/modules/fused_norm_gate.py`. `git apply`-able upstream.
+- **Local application (this repo, 2026-05-29)**: vendored a patched copy + a `sitecustomize.py` MetaPathFinder that shadows `fla.modules.fused_norm_gate` at import — installed site-packages fla stays pristine.
+  - `phase5_vlm_multimodal_sft/vendored_fla/fused_norm_gate_patched.py` (patched)
+  - `phase5_vlm_multimodal_sft/vendored_fla/fused_norm_gate_ORIG.py` (pristine, for diffing)
+  - `phase5_vlm_multimodal_sft/vendored_fla/sitecustomize.py` (the shadow finder)
+  - Activated by `run_seqkd_sft_autoresume.sh` prepending `vendored_fla/` to `PYTHONPATH`.
+  - Verified: `import fla.modules.fused_norm_gate` resolves to the vendored file; all autotuner keys NB-free; NS `_MAX_BT` cap present; `from fla.modules import FusedRMSNormGated` OK.
+- **Why applied now**: seq-KD S5 (KDA SFT, distilled mix665k) hit this crash *far* more often at `seq_len=1536` than the historical ~step-2500 cadence — consistent with PR13's mechanism (larger T → more autotuner re-triggering). Crash traceback surfaced in `causal_conv1d_fwd`, but per the async-error note below the corrupting kernel is the `fused_norm_gate` bwd from a prior microbatch. Bench validation = whether S5 @ 1536 now runs crash-free.
 
 ## Where to file
 

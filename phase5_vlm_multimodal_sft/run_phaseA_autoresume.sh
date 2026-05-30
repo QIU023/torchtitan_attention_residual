@@ -22,7 +22,7 @@ cd /workspace/torchtitan_attention_residual
 
 SCRIPT_DIR="phase5_vlm_multimodal_sft"
 OUT_DIR="$(pwd)/${SCRIPT_DIR}/runs/phaseA_mix665k_full"
-INIT_CKPT="$(pwd)/${SCRIPT_DIR}/runs/stage2_instruct_sft_447m/checkpoint/step-5200"
+INIT_CKPT="$(ls -d $(pwd)/${SCRIPT_DIR}/runs/phaseA_mix665k_full/checkpoint/step-* 2>/dev/null | sort -t- -k2 -n | tail -1)"
 LOG_DIR="${OUT_DIR}/autoresume_logs"
 mkdir -p "${OUT_DIR}" "${LOG_DIR}"
 
@@ -40,7 +40,7 @@ latest_ckpt() { ls -d "${OUT_DIR}/checkpoint/step-"* 2>/dev/null | sort -t- -k2 
     while true; do
         sleep 120
         F=$(df -BG --output=avail /workspace | tail -1 | tr -dc 0-9)
-        if (( F < 12 )); then
+        if (( F < 8 )); then
             echo "[watchdog] PANIC disk ${F}G; killing train"
             pkill -9 -f train_mm 2>/dev/null; pkill -9 -f torchrun 2>/dev/null
             touch "${OUT_DIR}/DISK_PANIC"; exit 1
@@ -63,7 +63,7 @@ while (( attempt < MAX_ATTEMPTS )); do
 
     # disk preflight
     F=$(df -BG --output=avail /workspace | tail -1 | tr -dc 0-9)
-    if (( F < 15 )); then
+    if (( F < 10 )); then
         log "ABORT: disk ${F}G < 15G preflight"
         break
     fi
