@@ -151,3 +151,43 @@ Deeper fix (deferred): pick a genuinely-reserved sentinel id in the SFT dataset.
 - Recovery state notes: `/home/seqkd_overnight/STATE.md` + `NOW.txt` (human log of what's running + lessons).
 - `pkill -f train_mm` MATCHES YOUR OWN SHELL → self-kill. Always use bracket trick `pkill -f '[t]rain_mm'`.
 - Verify subagent "SUCCESS" claims independently (two sglang agents falsely reported success before the real build).
+
+---
+
+## 7. STANDARD seq-KD EVAL SPEC (full-N triangle — supersedes any 500-subset smoke)
+
+**Triangle:** student-baseline (pre-seq-KD = SFT-5200) vs student-post-seq-KD vs **teacher (Qwen3-VL-30B-A3B)**.
+ALWAYS run full N (`*_LIMIT=0`); the 500-subset numbers from early smokes are NOT standard.
+
+Pipeline (already in repo, eats DCP directly, no HF convert):
+`phase5_vlm_multimodal_sft/eval_benchmarks/run_all_evals.sh`  BENCHES="mmmu scienceqa mmbench pope gqa"  *_LIMIT=0
+Input: `STAGE2_CKPT=<DCP ckpt>`  (config must be non-fp8 `...n4`).  NGPU=2.
+
+### Core 3 (have baseline anchors — MUST run):
+| Benchmark | full N | metric | student baseline | note |
+|---|---|---|---|---|
+| GQA test-dev-balanced | 12,578 | exact-match acc | **12.3** | data re-downloaded (lmms-lab/GQA parquet) |
+| MMBench-EN-dev | 4,377 | 4-way MC acc | **36.4** | data |
+| POPE (random+popular+adversarial) | 8,910 (~3K×3) | F1 / acc | **50 (always-no → F1=0)** | check yes_ratio for harness bug |
+
+### Breadth (repo supports):
+| Benchmark | full N | metric |
+|---|---|---|
+| ScienceQA-IMG (test) | 2,017 | acc |
+| MMMU (val) | 900 | acc |
+
+### Teacher eval (triangle upper bound) — CRITICAL apples-to-apples:
+Feed Qwen3-VL-30B through the SAME pipeline but with the SAME `max_pixels=1003520` (~1280 tok) used during
+distillation generation. Full-resolution would inflate teacher scores → not comparable.
+
+### eval datasets on /home/.hf_home/eval_data (scorers read these exact paths):
+- gqa/ (testdev_balanced parquet)  — `lmms-lab/GQA` — re-downloaded
+- mmbench/en/ — `lmms-lab/MMBench` — re-downloaded
+- mmmu/data/ (validation parquet) — needs `MMMU/MMMU` val
+- pope/ (+ COCO val2014) ✓ present
+- scienceqa/ ✓ present ; textvqa_val/ ✓ present
+Download helpers (conda-python, DEST=/home): /home/dl_evaldata.sh (priority_a), /home/dl_evaldata_b.sh (GQA+MMBench).
+
+## 8. seq-KD training data
+mix665k full = **665,298 convs** (624,610 with-image + 40,688 text-only); teacher rewrites ALL assistant turns.
+(2026-05-30 full distillation run does exactly this — vs the earlier 30k smoke subset.)
