@@ -27,10 +27,17 @@ import sys
 _DIR = os.path.dirname(os.path.abspath(__file__))
 
 # fully-qualified module name -> patched file in this dir
+# NOTE: causal_conv1d (conv.triton.kernels) and l2norm "drop phantom NB key"
+# patches were REVERTED 2026-05-30 — live A/B showed they REGRESSED the conv
+# crash (old kernel ~339 steps/crash → patched ~30-99 steps/crash). The NB key,
+# though unused in the body, partitions the autotune cache by T-bucket; dropping
+# it reuses one (unsafe-for-some-T) config across all T. The device-side assert
+# is a genuine data-dependent in-kernel OOB, NOT the autotuner — needs a GPU
+# repro to root-cause (deferred to post-seq-KD when GPUs are free).
+# fused_norm_gate (PR13) kept: original, addresses the rarer ~2500-step crash,
+# ran ~500 steps without an observed regression.
 _SHADOWS = {
     "fla.modules.fused_norm_gate": "fused_norm_gate_patched.py",
-    "fla.modules.conv.triton.kernels": "conv_triton_kernels_patched.py",
-    "fla.modules.l2norm": "l2norm_patched.py",
 }
 
 
