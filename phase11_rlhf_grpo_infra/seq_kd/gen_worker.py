@@ -92,6 +92,10 @@ def main():
     ap.add_argument("--chunk", type=int, default=2000, help="conversations per gen batch")
     ap.add_argument("--gpu-mem-util", type=float, default=0.90)
     ap.add_argument("--max-model-len", type=int, default=8192)
+    ap.add_argument("--max-num-seqs", type=int, default=0,
+                    help="vLLM scheduler concurrency cap; 0=vLLM default. "
+                         "Higher saturates GPU on short-answer batches (distill "
+                         "answers are p50=106 tok), big throughput win.")
     ap.add_argument("--max-pixels", type=int, default=1003520,
                     help="Qwen3-VL image-token cap: pixels/(28*28) tokens. "
                          "1003520 -> ~1280 vision tokens. Default Qwen max_pixels "
@@ -141,7 +145,7 @@ def main():
 
     # ---- load teacher (AWQ, single GPU) ----
     log(f"loading {args.model} (AWQ TP=1)…")
-    llm = LLM(
+    _llm_kwargs = dict(
         model=args.model,
         tensor_parallel_size=1,
         gpu_memory_utilization=args.gpu_mem_util,
@@ -151,6 +155,9 @@ def main():
         trust_remote_code=True,
         enforce_eager=False,
     )
+    if args.max_num_seqs > 0:
+        _llm_kwargs["max_num_seqs"] = args.max_num_seqs
+    llm = LLM(**_llm_kwargs)
     processor = AutoProcessor.from_pretrained(args.model, trust_remote_code=True)
     _tok = getattr(processor, "tokenizer", processor)
     sp = SamplingParams(temperature=args.temperature, max_tokens=args.max_new_tokens)
