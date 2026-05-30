@@ -1,0 +1,30 @@
+--- a/fla/modules/l2norm.py
++++ b/fla/modules/l2norm.py
+@@ -75,7 +75,16 @@
+ 
+ @triton.autotune(
+     configs=[triton.Config({"BT": BT}, num_warps=num_warps) for num_warps in [1, 2, 4, 8, 16] for BT in BT_LIST],
+-    key=["D", "NB"],
++    # PR13c: drop phantom "NB" from autotuner key. NB is passed as a constexpr
++    # but never referenced in the kernel body, so it only serves to bust the
++    # autotune cache whenever T crosses a 2048*32-token boundary. On Blackwell
++    # sm_120 (RTX 5090 / B200) + Triton 3.6.0 the re-triggered autotuner crashes
++    # with a device-side assert at large grids. Same root cause #1 as fla #796 /
++    # our PR13 (fused_norm_gate). l2norm has NO grid-overlap bug (#2): the
++    # launcher grid is cdiv(T, BT) (no get_multiprocessor_count NS cap), so
++    # adjacent programs never overlap their make_block_ptr blocks — only the NB
++    # key needs removing here.
++    key=["D"],
+     **autotune_cache_kwargs,
+ )
+ @triton.jit(do_not_specialize=["T"])
+@@ -105,7 +114,8 @@
+ 
+ @triton.autotune(
+     configs=[triton.Config({"BT": BT}, num_warps=num_warps) for num_warps in [1, 2, 4, 8, 16] for BT in BT_LIST],
+-    key=["D", "NB"],
++    # PR13c: drop phantom "NB" from autotuner key (bwd kernel). See fwd note above.
++    key=["D"],
+     **autotune_cache_kwargs,
+ )
+ @triton.jit(do_not_specialize=["T"])

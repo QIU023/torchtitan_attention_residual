@@ -1,0 +1,31 @@
+--- a/fla/modules/conv/triton/kernels.py
++++ b/fla/modules/conv/triton/kernels.py
+@@ -29,7 +29,14 @@
+         for BD in [16, 32, 64, 128]
+         for num_warps in NUM_WARPS_AUTOTUNE
+     ],
+-    key=['D', 'W', 'NB'],
++    # PR13b: drop phantom "NB" from the autotuner key. NB = cdiv(B*T, 1024) is
++    # passed as a constexpr but never referenced in the kernel body below, so it
++    # is a phantom key: it changes with T (e.g. seq_len 1024 vs 1536 fall in
++    # different cdiv(_,1024) buckets) and forces Triton to re-autotune the kernel
++    # per new T range. On Blackwell sm_120 + Triton 3.6.0 the autotuner itself
++    # crashes while benchmarking BD/num_warps variants at large grids -> recurring
++    # device-side assert surfacing in causal_conv1d_fwd. Mirrors upstream fla #796.
++    key=['D', 'W'],
+     **autotune_cache_kwargs,
+ )
+ @triton.jit
+@@ -146,7 +153,11 @@
+         for BD in [16, 32, 64, 128]
+         for num_warps in [4, 8, 16, 32]
+     ],
+-    key=['D', 'W', 'NB'],
++    # PR13b: drop phantom "NB" from the autotuner key (bwd kernel). Same root
++    # cause as the fwd kernel above: NB is a constexpr never used in the body and
++    # changes with T, forcing re-autotuning per new T range that crashes the
++    # Blackwell sm_120 autotuner. See fwd note above; mirrors upstream fla #796.
++    key=['D', 'W'],
+     **autotune_cache_kwargs,
+ )
+ @triton.jit

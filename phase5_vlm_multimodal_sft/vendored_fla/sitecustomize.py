@@ -1,17 +1,21 @@
-"""Shadow fla's buggy `fla.modules.fused_norm_gate` with our PR13-patched copy.
+"""Shadow buggy fla modules with our PR13-series patched copies.
 
 Python auto-imports `sitecustomize` at interpreter startup if it is importable
 on sys.path. This dir is placed on PYTHONPATH by run_seqkd_sft_autoresume.sh,
-so every torchrun worker runs this and picks up the patch — WITHOUT touching
+so every torchrun worker runs this and picks up the patches — WITHOUT touching
 the installed fla package (site-packages stays pristine).
 
-The patch fixes the fla `fused_norm_gate.py` Blackwell sm_120 KDA crash:
-phantom `NB` autotuner key (forces re-autotuning → autotuner crash) + `BS < BT`
-overlapping writes on `dx`. See Raising_PRs/PR13_fla_fused_norm_gate_sm120_kda_crash/.
+Each entry maps a fully-qualified fla module name to our patched copy. A single
+MetaPathFinder at sys.meta_path[0] intercepts the import of those exact module
+names and loads our patched file under the same name (so its relative/absolute
+fla imports resolve normally).
 
-Mechanism: a MetaPathFinder inserted at sys.meta_path[0] intercepts the import
-of exactly `fla.modules.fused_norm_gate` and loads our patched file under that
-fully-qualified name (so its relative/absolute fla imports resolve normally).
+Fixes (all the same Blackwell sm_120 + Triton 3.6.0 bug class — phantom autotuner
+keys forcing re-autotune that crashes, and/or BS<BT make_block_ptr overlap;
+mirrors upstream fla #796):
+  - fla.modules.fused_norm_gate         (PR13  — MLA o_norm gated RMSNorm)
+  - fla.modules.conv.triton.kernels     (PR13b — KDA short-conv causal_conv1d)
+See Raising_PRs/PR13*/ for per-fix diagnosis + git-apply-able patches.
 """
 from __future__ import annotations
 
@@ -20,30 +24,40 @@ import importlib.util
 import os
 import sys
 
-_TARGET = "fla.modules.fused_norm_gate"
-_PATCHED = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "fused_norm_gate_patched.py")
+_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# fully-qualified module name -> patched file in this dir
+_SHADOWS = {
+    "fla.modules.fused_norm_gate": "fused_norm_gate_patched.py",
+    "fla.modules.conv.triton.kernels": "conv_triton_kernels_patched.py",
+    "fla.modules.l2norm": "l2norm_patched.py",
+}
 
 
-class _FusedNormGateShim(importlib.abc.MetaPathFinder):
+class _FlaShim(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname != _TARGET:
+        rel = _SHADOWS.get(fullname)
+        if rel is None:
             return None
-        if not os.path.isfile(_PATCHED):
+        patched = os.path.join(_DIR, rel)
+        if not os.path.isfile(patched):
             return None
-        return importlib.util.spec_from_file_location(fullname, _PATCHED)
+        return importlib.util.spec_from_file_location(fullname, patched)
 
 
-# Only install if fla is the version this patch was written against, and the
-# target isn't already imported (we must win before first import).
 def _install():
-    if _TARGET in sys.modules:
-        return  # too late; leave the installed module in place
-    if any(isinstance(f, _FusedNormGateShim) for f in sys.meta_path):
+    # Don't shadow a module that's already imported (we must win before first
+    # import); install the finder only if not already present.
+    if any(isinstance(f, _FlaShim) for f in sys.meta_path):
         return
-    sys.meta_path.insert(0, _FusedNormGateShim())
+    sys.meta_path.insert(0, _FlaShim())
     if os.environ.get("FLA_SHIM_VERBOSE"):
-        print(f"[fla-shim] redirecting {_TARGET} -> {_PATCHED}", flush=True)
+        already = [m for m in _SHADOWS if m in sys.modules]
+        for m, rel in _SHADOWS.items():
+            tag = " (ALREADY IMPORTED — shadow inactive)" if m in sys.modules else ""
+            print(f"[fla-shim] will redirect {m} -> {rel}{tag}", flush=True)
+        if already:
+            print(f"[fla-shim] WARNING already-imported (shadow missed): {already}", flush=True)
 
 
 try:
