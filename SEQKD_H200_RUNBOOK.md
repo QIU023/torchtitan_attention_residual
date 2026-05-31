@@ -259,3 +259,10 @@ TASKMIX(69% 短答案保原始)未能修复 MMBench —— 因为根因不是啰
 损失 = 标准自回归CE(next-token), ignore_index=-100, **gpt-only**(只算assistant答案token, mask prompt+图+BOS).
 无针对MC/yes-no的专门损失 —— 全是"把答案当文本生成". 做MMBench=生成字母B这个token, 做GQA=生成no这个token, 机制相同, 差异全在训练数据教了什么输出分布.
 => GQA涨/MMBench跌不是模型能力问题, 是数据输出格式覆盖问题. GRPO改不了(它也在同一CE/生成框架上加reward, 学生MC≈随机无信号可放大). 修MMBench/POPE只能靠补MC/判别格式数据.
+
+## 13. 后续增量训练的起点 ckpt (重要,别混)
+- **所有后续(POPE修复增量SFT / GRPO拔高GQA)的起点 = seq-KD产出**:
+  `phase5_vlm_multimodal_sft/runs/seqkd_taskmix_447m/checkpoint/step-5200` (GQA35.1/MMBench27.4, 17G, 备份 /home/seqkd_backups/seqkd_taskmix_step5200)
+- 不要用 sft_5200_base (那是seq-KD的输入/pre-baseline, GQA12.3) —— 从它起会丢掉seq-KD的+22.8pp GQA成果.
+- POPE修复: 从seqkd_taskmix step-5200 增量SFT, 混入平衡yes/no判别数据(POPE-train风格 / GQA的"Is there"子集), 几百~几千步. GRPO/OPD救不了POPE(always-no无正信号可放大).
+- GQA拔高: 从seqkd_taskmix step-5200 GRPO, 可验证exact-match reward (教师61.8有26.7pp空间). 不用OPD(token-JSD已证无效+Qwen vocab不对齐学生Llama3.1).
