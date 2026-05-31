@@ -105,7 +105,29 @@ except ImportError as _e:
 # Controller. The main process is patched at import time. Spawned
 # trainer/generator subprocesses get a fresh interpreter, so their
 # bootstrap callback re-applies the patch (see _bootstrap_with_torchstore_patch).
+def _monarch_major_minor():
+    """(major, minor) of installed torchmonarch, or None if undetectable."""
+    try:
+        from importlib.metadata import version
+        parts = version("torchmonarch").split(".")
+        return (int(parts[0]), int(parts[1]))
+    except Exception:
+        return None
+
+
 def _patch_torchstore_controller():
+    # VERSION GUARD (2026-05-31): the asyncify wrap below is ONLY needed for
+    # monarch 0.1.x, whose actor_mesh raised ValueError when an Actor mixed
+    # sync + async @endpoint methods. monarch >=0.2 (we run 0.5.0 on torch
+    # 2.11) dispatches per-method via inspect.iscoroutinefunction in its
+    # _method_cache and NATIVELY supports mixed sync/async endpoints — so
+    # asyncify-ing torchstore's sync Controller endpoints there is not just
+    # unnecessary but HARMFUL: it turns sync endpoints into coroutines that
+    # torchstore 0.1.2 calls synchronously, hanging get_state_dict forever.
+    # Old torch-2.9 + monarch-0.1.2 envs still hit the original code path.
+    mm = _monarch_major_minor()
+    if mm is not None and mm >= (0, 2):
+        return  # monarch >=0.2: no patch; native mixed sync/async dispatch
     try:
         import functools
         import inspect
