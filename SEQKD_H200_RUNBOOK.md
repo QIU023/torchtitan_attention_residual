@@ -231,3 +231,14 @@ TASKMIX(69% 短答案保原始)未能修复 MMBench —— 因为根因不是啰
 旧 box(纯 blanket)MMBench=27.1, 我们 TASKMIX=27.4 → 几乎相同, 证明 TASKMIX 对 MMBench 无效。
 **eval harness fix:** run_all_evals.sh postprocess/aggregate 必须用 conda python(eval_common import torch);
 原 /usr/bin/python3 导致 rank0_partial+gold未对齐. preds_rank0/1 各全量, re-score 用 postprocess --bench.
+
+## 11. 完整三角 (baseline / seq-KD student / teacher Qwen3-VL@max_pixels=1003520)
+
+| benchmark | baseline sft_5200 | seq-KD student | teacher Qwen3-VL | 学生vs教师gap |
+|---|---|---|---|---|
+| GQA test-dev (12578) | 12.3 | **35.1%** | **61.8%** | -26.7pp(教师可达,有空间) |
+| MMBench-EN (4329) | 36.4 | 27.4% | **90.5%** | 巨大(MC短板) |
+| POPE (9000) | F1=0 | F1=0 | **F1=89.8%** | 巨大(判别短板) |
+
+*教师GQA eval bug: gqa用双parquet按imageId查图(非inline bytes), teacher_eval的_image_loader对每record抛异常->preds空->0.0. 需对齐gqa图片加载(_load_image_table)再重跑教师GQA.
+**洞察:** 教师三轴都强(MMBench90/POPE90)。学生seq-KD后GQA从12->35(教师未知但大涨),但MMBench/POPE仍接近地板->学生的MC/判别能力是真短板, 与训练数据格式覆盖直接相关(mix665k无ABCD-MC、POPE式判别样本少)。
