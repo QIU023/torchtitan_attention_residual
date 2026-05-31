@@ -336,7 +336,7 @@ async def _async_main_opd(config: _Config) -> None:
         per_host={"gpus": 1}, bootstrap=trainer_bootstrap,
     )
     generator_mesh = this_host().spawn_procs(
-        per_host={"gpus": 4}, bootstrap=generator_bootstrap,
+        per_host={"gpus": 1}, bootstrap=generator_bootstrap,
     )
 
     await setup_torch_elastic_env_async(trainer_mesh)
@@ -493,7 +493,7 @@ async def _async_main(config: _Config) -> None:
     logger.info(f"Loaded {type(task).__name__} (task={config.task}) with {len(task)} records")
 
     provisioner = Provisioner(total_gpus=2)
-    trainer_bootstrap = provisioner.allocate(4)
+    trainer_bootstrap = provisioner.allocate(1)
     generator_bootstrap, gen_gpu_ids = provisioner.allocate_shared(1)
     # Wrap bootstraps so spawned subprocesses also patch torchstore.Controller
     # (the main-process patch above doesn't propagate through monarch's
@@ -503,10 +503,10 @@ async def _async_main(config: _Config) -> None:
     logger.info(f"Generator mesh shares GPUs: {gen_gpu_ids}")
 
     trainer_mesh = this_host().spawn_procs(
-        per_host={"gpus": 4}, bootstrap=trainer_bootstrap,
+        per_host={"gpus": 1}, bootstrap=trainer_bootstrap,
     )
     generator_mesh = this_host().spawn_procs(
-        per_host={"gpus": 4}, bootstrap=generator_bootstrap,
+        per_host={"gpus": 1}, bootstrap=generator_bootstrap,
     )
     # grader_mesh has no Provisioner bootstrap (CPU-only mesh), so spawned
     # subprocesses get a fresh sys.path missing phase11_rlhf_grpo_infra/rlhf — pickle of
@@ -803,10 +803,10 @@ def main():
         # OPD: single trainer rank (teacher rides on cuda:0 next to student);
         # generator on cuda:1-4 with TP=4. cuda:5-7 left idle for headroom.
         config.trainer.parallelism.data_parallel_shard_degree = 1
-        config.generator.parallelism.tensor_parallel_degree = 4
+        config.generator.parallelism.tensor_parallel_degree = 1
     else:
-        config.trainer.parallelism.data_parallel_shard_degree = 4
-        config.generator.parallelism.tensor_parallel_degree = 4
+        config.trainer.parallelism.data_parallel_shard_degree = 1
+        config.generator.parallelism.tensor_parallel_degree = 1
     config.generator.gpu_memory_limit = 0.85
     # Block AttnRes residual stream grows unboundedly with depth; on
     # Blackwell (SM 12.0) flashinfer_mla bf16-NaNs at the deep MLA
