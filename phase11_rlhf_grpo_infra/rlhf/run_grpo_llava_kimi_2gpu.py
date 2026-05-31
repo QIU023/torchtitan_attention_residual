@@ -837,6 +837,7 @@ def main():
     # all-`!` garbage and reward collapses to -1.0 (the v16 GRPO
     # failure). See phase11_rlhf_grpo_infra/VISION_INJECTION_BUG_RCA.md.
     config.generator.backend.decode_attention_backend = "torch_native"
+    config.generator.backend.attention_backend = "torch_native"
     # torch_native has no CUDA-graph support — disable graph capture.
     config.generator.compile.cuda_graph = False
     config.generator.weight_sync_method = "disk"
