@@ -71,7 +71,7 @@ PROJ_LR_MULT="${PROJ_LR_MULT:-1.0}"
 MAX_NORM="${MAX_NORM:-1.0}"
 OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/stage2_instruct_sft_447m}"
 NGPU="${NGPU:-8}"
-LOG_FREQ="${LOG_FREQ:-10}"
+LOG_FREQ="${LOG_FREQ:-5}"
 SAVE_FREQ="${SAVE_FREQ:-500}"
 KEEP_K="${KEEP_K:-2}"           # torchtitan requires k>=2 (see launch_stage1.sh comment)
 

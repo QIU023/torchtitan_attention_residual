@@ -191,3 +191,26 @@ Download helpers (conda-python, DEST=/home): /home/dl_evaldata.sh (priority_a), 
 ## 8. seq-KD training data
 mix665k full = **665,298 convs** (624,610 with-image + 40,688 text-only); teacher rewrites ALL assistant turns.
 (2026-05-30 full distillation run does exactly this — vs the earlier 30k smoke subset.)
+
+---
+
+## 9. OPD + GRPO 规划(2026-05-31 决策)
+
+### OPD 教师 — 决策: 先 eval seq-KD(TASKMIX)结果再定
+关键约束: **token-level OPD(JSD)要求师生 logits 同 vocab 对齐**。
+- Qwen3-VL-30B = Qwen 词表,**对不上**学生 Llama-3.1 词表 → 不能直接 token-JSD(除非改 sequence-level)。
+- 旧 OPD 用 Mantis-8B-siglip-llama3(Llama-3 词表 + SigLIP 匹配学生,双对齐),但 **token-JSD 已证无效**(D2-D7, 18× gap)。
+决策流程:
+1. 先让当前 seq-KD(TASKMIX)跑完 + 全量 VQA eval(GQA/MMBench/POPE 三角)。
+2. 若 seq-KD 已接近教师 → OPD 价值低,可跳过直接 GRPO。
+3. 若仍差很多 → 选 OPD 教师:
+   - 要 token-level → **Mantis**(vocab+encoder 双对齐),但**别重蹈 token-JSD**:改 sequence-level 或加 TASKMIX 式 task-length 控制。
+   - 要最强教师 → Qwen3-VL-30B 做 **sequence-level**(学生生成→教师重写/打分→学生学文本),绕过 vocab 对齐(本质是第二轮 seq-KD)。
+- 教训: blanket verbose 重写伤 MC/短答案轴(MMBench -9pp)。任何 OPD/二轮蒸馏都要保 task-appropriate length。
+
+### GRPO reward — 决策: 可验证 exact-match(GQA/VQA 短答案)
+- 入口: `phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py --task gqa`(已有)。
+- reward = 答案 exact-match / gold-content-anywhere + 轻微长度惩罚(防啰嗦)。`rlhf/gqa_vqa_task.py` 已实现。
+- 为什么不用教师打分 reward: 教师偏好啰嗦 → 又把模型拉向 MMBench 掉分的分布;且每 step 跑 30B 太贵。可验证奖励信号干净、对齐我们要拔高的 MC/VQA 轴。
+- 引擎: SGLang(已 build+import 验证, /home/venv/sglang)。注意 run_grpo 硬编码 8-GPU mesh(total_gpus=8 lines~286/495)→ 改 2-GPU。weight-sync=disk, 默认不存 ckpt(要手动 wire final save)。
+- 已知约束: 447M caption-only 基座对 VQA 偏弱(baseline GQA 12.3),RL 能放大但需要 seq-KD/SFT 先把 VQA 格式打好 —— 所以 GRPO 在 seq-KD 之后做顺序正确。
