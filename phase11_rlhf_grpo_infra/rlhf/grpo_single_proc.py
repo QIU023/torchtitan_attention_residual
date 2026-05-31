@@ -1,11 +1,18 @@
-"""Single-process GRPO — no monarch, no torchstore.
+"""Single-process GRPO (CORRECTED) — no monarch, no torchstore.
 
-Monarch's actor-mesh first-rollout spawn hangs ~100% on this box, so the whole
-GRPO loop runs in one process:
-  - policy VLM (frozen SigLIP + trainable Projector + Kimi-Linear AttnRes LM) on
-    cuda:0 for teacher-forcing logprob + backward
-  - sglang Engine on GPU1 (base_gpu_id=1, fa3 backend) for rollout generation
-  - verifiable exact-match GQA reward (pure python)
+Fixes vs the first version:
+  BUG1 (prompt mismatch): rollout + policy now use the SAME token ids. We build
+       prompt_ids = [BOS] + [IMAGE]*196 + text_ids ourselves and pass input_ids
+       to the engine; the engine returns output_ids (the exact action tokens).
+       The policy logprob is computed on prompt_ids + output_ids — byte-identical
+       to what the engine generated.
+  BUG2 (no importance ratio): engine returns per-token old_logprob
+       (return_logprob=True). GRPO clipped surrogate uses ratio = exp(new-old).
+  BUG3 (zero-variance groups): groups whose rewards are all-equal (std≈0) are
+       skipped (no learning signal, and they dominated the flat-reward run).
+
+Speed/VRAM: all `group` completions for a question go through ONE padded policy
+forward (not a python for-loop). Optionally B questions per step.
 
 Modes: load -> gen -> one -> loop.
 """
@@ -23,6 +30,7 @@ LM_CONFIG = "kimi_linear_447m_aligned_block_attn_res_n4"
 VISION = "google/siglip-base-patch16-224"
 TOKENIZER = "NousResearch/Meta-Llama-3.1-8B"
 N_VIS = 196
+IMAGE_TOKEN_ID = 32000
 
 
 def log(*a):
@@ -46,10 +54,6 @@ def build_policy(device="cuda:0"):
     lm = minfo.build().to(device, dt)
     proj = Projector(vision.config.hidden_size, minfo.kimi_config.hidden_size).to(device, dt)
     log(f"dcp.load {DCP}")
-    # popefix DCP was saved by train_mm.py: LM keys under 'model.', projector
-    # under 'mm_state.projector.'. Load into the live tensors in place.
-    # DCP layout (verified): LM keys are TOP-LEVEL (embed_tokens, layers.*, norm,
-    # lm_head, final_attn_res_*); projector under mm_state.projector.*.
     lm_sd = dict(lm.state_dict())  # bare keys match DCP top level
     proj_sd = {f"mm_state.projector.{k}": v for k, v in proj.state_dict().items()}
     load_sd = {**lm_sd, **proj_sd}
@@ -65,26 +69,33 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", default="loop", choices=["load", "gen", "one", "loop"])
     ap.add_argument("--steps", type=int, default=500)
-    ap.add_argument("--group", type=int, default=4)
-    ap.add_argument("--lr", type=float, default=1e-6)
+    ap.add_argument("--group", type=int, default=16)
+    ap.add_argument("--qbatch", type=int, default=2, help="questions per step")
+    ap.add_argument("--lr", type=float, default=5e-6)
+    ap.add_argument("--clip", type=float, default=0.2)
     ap.add_argument("--max-new", type=int, default=16)
+    ap.add_argument("--sync-every", type=int, default=10)
+    ap.add_argument("--save-dcp", default="")
     args = ap.parse_args()
     os.environ.setdefault("ATTNRES_MLA_FP32_FALLBACK", "1")
     os.environ.setdefault("SGLANG_DISABLE_SHM_MM", "1")
     os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
-    # fla KDA Triton kernel JIT-parse fails in sglang venv ("Unsupported
-    # function referenced: next_power_of_2") with a stale triton disk cache;
-    # disabling line-info side-steps the parse path. Verified policy fwd OK.
     os.environ.setdefault("TRITON_DISABLE_LINE_INFO", "1")
 
     import torch
     import torch.nn.functional as F
-    from phase5_vlm_multimodal_sft.multimodal_dataset import IMAGE_TOKEN_ID
 
     dev = "cuda:0"
     vision, lm, proj = build_policy(dev)
     if args.mode == "load":
         log("LOAD OK"); return
+
+    # pre-warm fla KDA kernel before sglang import (deterministic JIT)
+    _ids = torch.randint(0, 1000, (1, 210), device=dev)
+    _emb = torch.zeros(1, N_VIS, proj.fc2.weight.shape[0], device=dev, dtype=torch.bfloat16)
+    with torch.no_grad():
+        lm(_ids, vision_embeds=_emb, image_mask=(_ids == IMAGE_TOKEN_ID))
+    log("fla KDA pre-warmed")
 
     log("sglang Engine GPU1 (fa3)")
     from sglang.srt.models import attn_res_vl_overlay  # noqa
@@ -98,76 +109,142 @@ def main():
     from transformers import AutoTokenizer, AutoProcessor
     from PIL import Image
     tok = AutoTokenizer.from_pretrained(TOKENIZER)
+    bos = tok.bos_token_id
     improc = AutoProcessor.from_pretrained(VISION).image_processor
     recs = json.load(open(GQA))
     rng = random.Random(0)
 
-    def sample():
-        r = rng.choice(recs)
-        p = "<image>\n" + r["question"] + "\nAnswer the question using a single word or phrase."
-        return p, os.path.join(IMG_ROOT, r["image"]), r["answer"].strip().lower()
-
-    if args.mode == "gen":
-        p, img, gold = sample()
-        out = eng.generate(prompt=[p], sampling_params={"temperature": 0.0, "max_new_tokens": args.max_new}, image_data=[img])
-        log("GEN OK:", out[0].get("text"), "| gold:", gold); return
+    def build_prompt_ids(question):
+        text = question + "\nAnswer the question using a single word or phrase."
+        tids = tok(text, add_special_tokens=False).input_ids
+        return ([bos] if bos is not None else []) + [IMAGE_TOKEN_ID] * N_VIS + tids
 
     def pix(img_path):
         im = Image.open(img_path).convert("RGB")
         return improc(images=im, return_tensors="pt").pixel_values.to(dev, torch.bfloat16)
 
-    def grpo_loss(prompt_text, img_path, comps, adv):
-        with torch.no_grad():
-            vf = vision(pixel_values=pix(img_path)).last_hidden_state
-        vemb = proj(vf)  # [1,196,dim]
-        ptxt = prompt_text.replace("<image>", "")
-        pids = tok(ptxt, add_special_tokens=False).input_ids
-        imgids = [IMAGE_TOKEN_ID] * N_VIS
-        total = torch.zeros((), device=dev, dtype=torch.float32)
-        for c, a in zip(comps, adv):
-            aids = tok(c, add_special_tokens=False).input_ids
-            if not aids:
-                continue
-            ids = torch.tensor([imgids + pids + aids], device=dev)
-            mask = (ids == IMAGE_TOKEN_ID)
-            logits = lm(ids, vision_embeds=vemb, image_mask=mask).float()
-            n = len(aids)
-            tgt = ids[0, -n:]
-            pred = logits[0, -n - 1:-1]
-            lp = F.log_softmax(pred, -1).gather(-1, tgt.unsqueeze(-1)).squeeze(-1).sum()
-            total = total - a * lp
-        return total / max(len(comps), 1)
+    def sample():
+        r = rng.choice(recs)
+        return r["question"], os.path.join(IMG_ROOT, r["image"]), r["answer"].strip().lower()
+
+    def reward_of(text, gold):
+        full = " ".join(text.lower().replace(".", " ").split())
+        ok = (" " + gold + " ") in (" " + full + " ") or set(gold.split()).issubset(set(full.split()))
+        r = 1.0 if ok else 0.0
+        wc = len(full.split())
+        if wc > 12:
+            r -= min(0.3, 0.02 * (wc - 12))
+        return r
+
+    def gen_prompt(q):
+        return "<image>\n" + q + "\nAnswer the question using a single word or phrase."
+
+    if args.mode == "gen":
+        q, img, gold = sample()
+        out = eng.generate(prompt=[gen_prompt(q)], image_data=[img],
+                           sampling_params={"temperature": 0.0, "max_new_tokens": args.max_new})
+        log("GEN OK:", out[0].get("text"), "| gold:", gold); return
 
     trainable = [p for p in lm.parameters() if p.requires_grad] + list(proj.parameters())
     opt = torch.optim.AdamW(trainable, lr=args.lr, weight_decay=0.0)
-    log(f"AdamW lr={args.lr} {sum(p.numel() for p in trainable)/1e6:.0f}M params")
+    log(f"AdamW lr={args.lr} clip={args.clip} group={args.group} qbatch={args.qbatch} "
+        f"{sum(p.numel() for p in trainable)/1e6:.0f}M params")
+
+    from phase11_rlhf_grpo_infra.dcp_to_hf_kimi_attn_res_vl import _remap_lm_state_dict
+    from safetensors.torch import save_file
+
+    def sync_weights():
+        hf_sd = _remap_lm_state_dict(lm.state_dict(), torch.bfloat16)
+        for k, v in proj.state_dict().items():
+            hf_sd[f"mm_projector.projector.{k}"] = v.detach().to(torch.bfloat16).contiguous()
+        hf_sd = {k: v.detach().to("cpu", torch.bfloat16).contiguous() for k, v in hf_sd.items()}
+        save_file(hf_sd, HF + "/model.safetensors")
+        eng.update_weights_from_disk(HF)
+
+    def grpo_step():
+        """One optimizer step over qbatch questions × group completions.
+
+        Returns (loss_val, reward_mean, n_groups_used)."""
+        # 1. rollout: collect (prompt_ids, img, [ (out_ids, old_lp_sum, reward) ]) per question
+        samples = []  # list of dict
+        all_rewards = []
+        n_used = 0
+        for _ in range(args.qbatch):
+            q, img, gold = sample()
+            pids = build_prompt_ids(q)
+            outs = eng.generate(prompt=[gen_prompt(q)], image_data=[img], return_logprob=True,
+                                sampling_params={"temperature": 1.0, "max_new_tokens": args.max_new,
+                                                 "n": args.group})
+            outs = outs if isinstance(outs, list) else [outs]
+            comps = []
+            for o in outs:
+                oid = o.get("output_ids") or o["meta_info"].get("output_ids")
+                otl = o["meta_info"].get("output_token_logprobs")  # list of [lp, tok_id, ...]
+                if not oid or not otl:
+                    continue
+                old_lp = [float(x[0]) for x in otl][:len(oid)]
+                rw = reward_of(o.get("text", ""), gold)
+                comps.append((oid, old_lp, rw))
+                all_rewards.append(rw)
+            if len(comps) < 2:
+                continue
+            rws = torch.tensor([c[2] for c in comps])
+            if rws.std() < 1e-5:   # zero-variance group: no signal, skip (BUG3)
+                continue
+            adv = (rws - rws.mean()) / (rws.std() + 1e-6)
+            samples.append((pids, img, comps, adv))
+            n_used += 1
+
+        if not samples:
+            return None, (sum(all_rewards) / max(len(all_rewards), 1)), 0
+
+        # 2. policy forward + GRPO clipped loss (BUG1+BUG2 fixed)
+        opt.zero_grad()
+        total_loss = torch.zeros((), device=dev, dtype=torch.float32)
+        n_terms = 0
+        for pids, img, comps, adv in samples:
+            with torch.no_grad():
+                vemb = proj(vision(pixel_values=pix(img)).last_hidden_state)
+            for (oid, old_lp, _), a in zip(comps, adv.tolist()):
+                ids = torch.tensor([pids + oid], device=dev)
+                logits = lm(ids, vision_embeds=vemb, image_mask=(ids == IMAGE_TOKEN_ID)).float()
+                no = len(oid)
+                tgt = ids[0, -no:]
+                pred = logits[0, -no - 1:-1]
+                new_lp = F.log_softmax(pred, -1).gather(-1, tgt.unsqueeze(-1)).squeeze(-1)
+                old = torch.tensor(old_lp, device=dev)
+                ratio = torch.exp(new_lp - old)
+                unclipped = ratio * a
+                clipped = torch.clamp(ratio, 1 - args.clip, 1 + args.clip) * a
+                # GRPO: maximize min(unclipped, clipped) → minimize -min, mean over tokens
+                total_loss = total_loss - torch.min(unclipped, clipped).mean()
+                n_terms += 1
+        loss = total_loss / max(n_terms, 1)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(trainable, 1.0)
+        opt.step()
+        return loss.item(), (sum(all_rewards) / max(len(all_rewards), 1)), len(samples)
 
     n = 1 if args.mode == "one" else args.steps
     for step in range(n):
         t0 = time.time()
-        p, img, gold = sample()
-        outs = eng.generate(prompt=[p],
-                            sampling_params={"temperature": 1.0, "max_new_tokens": args.max_new, "n": args.group},
-                            image_data=[img])
-        comps = [o["text"] for o in (outs if isinstance(outs, list) else [outs])]
-        rew = []
-        for c in comps:
-            full = " ".join(c.lower().replace(".", " ").split())
-            ok = (" " + gold + " ") in (" " + full + " ") or set(gold.split()).issubset(set(full.split()))
-            r = 1.0 if ok else 0.0
-            wc = len(full.split())
-            if wc > 12:
-                r -= min(0.3, 0.02 * (wc - 12))
-            rew.append(r)
-        rt = torch.tensor(rew, dtype=torch.float32)
-        adv = ((rt - rt.mean()) / (rt.std() + 1e-6)).to(dev)
-        loss = grpo_loss(p, img, comps, adv)
-        opt.zero_grad(); loss.backward()
-        torch.nn.utils.clip_grad_norm_(trainable, 1.0)
-        opt.step()
-        log(f"step {step:3d}  loss={loss.item():.4f}  reward_mean={rt.mean().item():+.3f}  dt={time.time()-t0:.1f}s")
+        lv, rm, ng = grpo_step()
+        lvs = f"{lv:.4f}" if lv is not None else "skip"
+        log(f"step {step:3d}  loss={lvs}  reward_mean={rm:+.3f}  groups={ng}  dt={time.time()-t0:.1f}s")
         if args.mode == "one":
-            log("ONE-STEP OK"); break
+            ts0 = time.time(); sync_weights(); log(f"weight-sync OK dt={time.time()-ts0:.1f}s ONE-STEP OK"); break
+        if (step + 1) % args.sync_every == 0:
+            ts0 = time.time(); sync_weights(); log(f"[sync] step {step+1} dt={time.time()-ts0:.1f}s")
+    if args.save_dcp:
+        import torch.distributed.checkpoint as dcp
+        from torch.distributed.checkpoint import FileSystemWriter
+        os.makedirs(args.save_dcp, exist_ok=True)
+        save_sd = {k: v.detach().cpu() for k, v in lm.state_dict().items()}
+        save_sd.update({f"mm_state.projector.{k}": v.detach().cpu() for k, v in proj.state_dict().items()})
+        # no_dist=True: single-process save without a torch.distributed PG
+        # (plain dcp.save hangs waiting on a default PG that's never inited).
+        dcp.save(save_sd, storage_writer=FileSystemWriter(args.save_dcp), no_dist=True)
+        log(f"saved final policy DCP -> {args.save_dcp}")
     log("DONE")
 
 
