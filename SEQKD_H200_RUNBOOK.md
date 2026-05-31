@@ -242,3 +242,20 @@ TASKMIX(69% 短答案保原始)未能修复 MMBench —— 因为根因不是啰
 
 *教师GQA eval bug: gqa用双parquet按imageId查图(非inline bytes), teacher_eval的_image_loader对每record抛异常->preds空->0.0. 需对齐gqa图片加载(_load_image_table)再重跑教师GQA.
 **洞察:** 教师三轴都强(MMBench90/POPE90)。学生seq-KD后GQA从12->35(教师未知但大涨),但MMBench/POPE仍接近地板->学生的MC/判别能力是真短板, 与训练数据格式覆盖直接相关(mix665k无ABCD-MC、POPE式判别样本少)。
+
+## 12. 三任务机制 + 模型如何拟合 (GQA/MMBench/POPE)
+
+### 任务类型
+- GQA: 开放式VQA短答案。prompt=图+"Q\nAnswer using a single word or phrase"→gold开放词(如"no"). 测视觉关系推理.
+- MMBench: 4-way单选. prompt=图+Q+"A.x/B.x/C.x/D.x"+"Answer with the option's letter directly"→gold字母. 测综合感知+MC格式作答.
+- POPE: yes/no二分类幻觉探测. prompt=图+"Is there a {obj}?"→gold yes/no. 测物体存在判别.
+- 关键: 三者输出分布完全不同(开放生成/选字母/yes-no) → seq-KD推向开放生成使GQA涨、MMBench跌.
+
+### 架构(VLM三段式)
+图→SigLIP-base(冻结93M,识别)→196 vision token→Projector(2层MLP,可训,模态对齐)→拼进文本序列→KimiLinear LM(16层,KDA线性注意力/MLA全注意力交替 + SwiGLU/MoE + Block-AttnRes,推理)→logits.
+多模态融合(attn_res_model.forward): h=embed_tokens(ids); h.masked_scatter(image_mask, vision_embeds) 把196图emb塞进<image>占位符位置; 然后LM统一处理. (sentinel碰撞bug就在这步.)
+
+### 损失 + 拟合机制
+损失 = 标准自回归CE(next-token), ignore_index=-100, **gpt-only**(只算assistant答案token, mask prompt+图+BOS).
+无针对MC/yes-no的专门损失 —— 全是"把答案当文本生成". 做MMBench=生成字母B这个token, 做GQA=生成no这个token, 机制相同, 差异全在训练数据教了什么输出分布.
+=> GQA涨/MMBench跌不是模型能力问题, 是数据输出格式覆盖问题. GRPO改不了(它也在同一CE/生成框架上加reward, 学生MC≈随机无信号可放大). 修MMBench/POPE只能靠补MC/判别格式数据.
