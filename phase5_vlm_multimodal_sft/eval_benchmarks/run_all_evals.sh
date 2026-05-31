@@ -143,7 +143,7 @@ run_bench () {
     # Always post-process: aggregate whatever preds_rank*.jsonl exist and
     # score them. Survives mid-run rank crashes that took down torchrun.
     PYTHONPATH="${WORKSPACE_DIR}:${TORCHTITAN_DIR}${PYTHONPATH:+:${PYTHONPATH}}" \
-    /usr/bin/python3 -m phase5_vlm_multimodal_sft.eval_benchmarks.postprocess \
+    /root/miniconda3/envs/py3.10/bin/python -m phase5_vlm_multimodal_sft.eval_benchmarks.postprocess \
         --bench "${bench}" \
         --output-dir "${out_dir}" \
         --limit "${limit}" 2>&1 | tee -a "${out_dir}/run.log"
@@ -159,7 +159,7 @@ echo "[$(date)] aggregating report → ${RUN_DIR}/REPORT.md"
 echo "================================================================"
 
 PYTHONPATH="${WORKSPACE_DIR}:${TORCHTITAN_DIR}${PYTHONPATH:+:${PYTHONPATH}}" \
-/usr/bin/python3 -m phase5_vlm_multimodal_sft.eval_benchmarks.aggregate_report \
+/root/miniconda3/envs/py3.10/bin/python -m phase5_vlm_multimodal_sft.eval_benchmarks.aggregate_report \
     --run-dir "${RUN_DIR}" \
     --ckpt "${STAGE2_CKPT}" \
     --out "${RUN_DIR}/REPORT.md"

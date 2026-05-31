@@ -214,3 +214,20 @@ mix665k full = **665,298 convs** (624,610 with-image + 40,688 text-only); teache
 - 为什么不用教师打分 reward: 教师偏好啰嗦 → 又把模型拉向 MMBench 掉分的分布;且每 step 跑 30B 太贵。可验证奖励信号干净、对齐我们要拔高的 MC/VQA 轴。
 - 引擎: SGLang(已 build+import 验证, /home/venv/sglang)。注意 run_grpo 硬编码 8-GPU mesh(total_gpus=8 lines~286/495)→ 改 2-GPU。weight-sync=disk, 默认不存 ckpt(要手动 wire final save)。
 - 已知约束: 447M caption-only 基座对 VQA 偏弱(baseline GQA 12.3),RL 能放大但需要 seq-KD/SFT 先把 VQA 格式打好 —— 所以 GRPO 在 seq-KD 之后做顺序正确。
+
+---
+
+## 10. seq-KD(TASKMIX+seq1536)全量 eval 结果 (2026-05-31, 可信/full-N/双box复现)
+
+| benchmark | baseline sft_5200 | seq-KD TASKMIX step-5200 | Δ |
+|---|---|---|---|
+| GQA test-dev-balanced (12578) | 12.3 | **35.09%** | **+22.8pp** ✅ |
+| MMBench-EN-dev (4329, parse 99.5%) | 36.4 | **27.37%** | **−9.0pp** ✗ |
+| POPE (9000) | F1=0 | acc .50 / F1=0 | 持平(always-no) |
+
+**结论(科学事实, 全量+双box复现):** seq-KD 大幅提升开放式 VQA(GQA +23pp)但损害 MC(MMBench −9pp)。
+TASKMIX(69% 短答案保原始)未能修复 MMBench —— 因为根因不是啰嗦化, 而是 **训练数据(mix665k)本就
+缺 MMBench 式 ABCD-MC 格式**(gqa 是开放短答案非 MC), seq-KD/SFT 把模型推向开放生成削弱了 zero-shot MC。
+旧 box(纯 blanket)MMBench=27.1, 我们 TASKMIX=27.4 → 几乎相同, 证明 TASKMIX 对 MMBench 无效。
+**eval harness fix:** run_all_evals.sh postprocess/aggregate 必须用 conda python(eval_common import torch);
+原 /usr/bin/python3 导致 rank0_partial+gold未对齐. preds_rank0/1 各全量, re-score 用 postprocess --bench.
