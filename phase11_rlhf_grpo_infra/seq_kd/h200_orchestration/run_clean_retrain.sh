@@ -86,10 +86,10 @@ run_sft_stage() {   # $1=name  $2=init_ckpt  $3=json  $4=out_dir  $5=steps_cap
         bash "${S5}/launch_stage2.sh" > "${lg}" 2>&1
         rc=$?
         # confirm PROJ_VERIFY actually fired (projector was carried, not reset)
-        if ! grep -qE "PROJ_VERIFY .* OK" "${lg}" 2>/dev/null && [[ -z "$LC" ]]; then
+        if ! grep -qaE "PROJ_VERIFY OK" "${lg}" 2>/dev/null && [[ -z "$LC" ]]; then
             log "[${name}] WARN: no PROJ_VERIFY OK in log on a fresh start — projector may not have loaded"
         fi
-        if (( rc == 0 )) && grep -qE "step:[[:space:]]*${STEPS}\b" "${lg}" 2>/dev/null; then
+        if (( rc == 0 )) && { grep -qaE "Training completed" "${lg}" 2>/dev/null || [[ -f "${out}/checkpoint/step-${STEPS}/.metadata" ]]; }; then
             log "[${name}] COMPLETE attempt=${attempt} latest=$(ls -d ${out}/checkpoint/step-* | sort -t- -k2 -n | tail -1)"
             return 0
         fi
