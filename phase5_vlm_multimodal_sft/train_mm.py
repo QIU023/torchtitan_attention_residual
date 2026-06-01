@@ -141,6 +141,16 @@ def _parse_mm_args() -> argparse.Namespace:
                         "Overrides --mm.val-samples (which is the legacy "
                         "single-domain tail split). Recommended for any new "
                         "run on multi-source datasets like mix665k.")
+    p.add_argument("--mm.pretrain-projector-path", dest="mm_pretrain_projector_path",
+                   default="",
+                   help="DCP ckpt dir (step-N) of a prior stage whose trained "
+                        "projector should be carried into THIS stage. Mirrors "
+                        "LLaVA's --pretrain_mm_mlp_adapter: on a fresh start, "
+                        "explicitly loads mm_state.projector.* from this path "
+                        "into the projector (because --checkpoint."
+                        "initial_load_model_only drops mm_state). HARD-VERIFIES "
+                        "the load (cos~1) or aborts. Leave empty for Stage-1 "
+                        "(projector trained from scratch).")
     args, remaining = p.parse_known_args()
     sys.argv = [sys.argv[0]] + remaining
     return args
@@ -164,7 +174,8 @@ class MultimodalTrainer(Trainer):
                  freeze_lm: bool = False,
                  text_len: int = 0,
                  shuffle_seed: int = 0,
-                 val_stratified_per_source: int = 0):
+                 val_stratified_per_source: int = 0,
+                 pretrain_projector_path: str = ""):
         super().__init__(config)
         self._mm_layout = layout
         self._val_samples = val_samples
@@ -508,6 +519,86 @@ class MultimodalTrainer(Trainer):
                     "mm: registered _MMStateWrapper (projector + proj_optim "
                     "+ lm_optim) with checkpointer; dropped brittle "
                     "OptimizersContainer OPTIMIZER entry"
+                )
+
+            # ----- LLaVA-style explicit projector inheritance (FIX) -----
+            # The cross-stage init uses --checkpoint.initial_load_model_only,
+            # which (checkpoint.py: model_only returns states[MODEL] only)
+            # DROPS the separately-registered mm_state -> the prior stage's
+            # trained projector is NOT carried forward, so every stage would
+            # restart the projector from random init (Stage-1 alignment
+            # wasted; confirmed by cross-ckpt projector cos~0). Mirror LLaVA's
+            # --pretrain_mm_mlp_adapter: on a FRESH start (step 0), explicitly
+            # load the prior stage's projector from its DCP mm_state, then
+            # HARD-VERIFY it actually loaded (cos~1), else abort.
+            self._pretrain_projector_path = pretrain_projector_path
+            if pretrain_projector_path and getattr(self, "step", 0) == 0:
+                import torch.distributed.checkpoint as _dcp
+                from torch.distributed.checkpoint import FileSystemReader as _FSR
+                from torch.distributed.checkpoint.state_dict import (
+                    set_model_state_dict as _set_msd,
+                    get_model_state_dict as _get_msd,
+                    StateDictOptions as _SDO,
+                )
+                import torch.nn.functional as _F
+
+                _reader = _FSR(pretrain_projector_path)
+                _md = _reader.read_metadata()
+                _pk = [
+                    k for k in _md.state_dict_metadata
+                    if k.startswith("mm_state.projector.")
+                ]
+                if not _pk:
+                    raise ValueError(
+                        f"mm: --mm.pretrain-projector-path "
+                        f"{pretrain_projector_path} has no "
+                        f"mm_state.projector.* keys"
+                    )
+                _pdtype = next(self.projector.parameters()).dtype
+                _tgt = {}
+                for _k in _pk:
+                    _m = _md.state_dict_metadata[_k]
+                    _tgt[_k] = torch.empty(
+                        tuple(_m.size),
+                        dtype=getattr(_m.properties, "dtype", torch.float32),
+                    )
+                _dcp.load(_tgt, storage_reader=_reader)
+                _proj_sd = {}
+                for _k, _v in _tgt.items():
+                    if _v.float().abs().max() < 1e-9:
+                        raise RuntimeError(
+                            f"mm: PROJ_VERIFY source projector '{_k}' is "
+                            f"all-zero in {pretrain_projector_path} "
+                            f"(untrained ckpt)"
+                        )
+                    _proj_sd[_k[len("mm_state.projector."):]] = _v.to(_pdtype)
+                _set_msd(
+                    self.projector, model_state_dict=_proj_sd,
+                    options=_SDO(full_state_dict=True, strict=True),
+                )
+                # HARD-VERIFY: loaded projector matches source (cos ~ 1.0),
+                # so a silent drop can never recur unnoticed.
+                _cur = _get_msd(
+                    self.projector, options=_SDO(full_state_dict=True)
+                )
+                for _k, _src in _proj_sd.items():
+                    _a = _cur[_k].float().flatten().cpu()
+                    _b = _src.float().flatten().cpu()
+                    _cos = _F.cosine_similarity(_a[None], _b[None]).item()
+                    if _cos < 0.999:
+                        raise RuntimeError(
+                            f"mm: PROJ_VERIFY FAIL '{_k}' cos={_cos:.5f} "
+                            f"after load (expected ~1.0) — projector did "
+                            f"NOT load"
+                        )
+                    logger.info(
+                        f"mm: PROJ_VERIFY {_k} cos={_cos:.6f} "
+                        f"absmax={_b.abs().max():.5f} OK"
+                    )
+                logger.info(
+                    f"mm: loaded pretrain projector from "
+                    f"{pretrain_projector_path} (LLaVA-style explicit load; "
+                    f"projector carried across stage, NOT reset)"
                 )
         else:
             self.projector = None
@@ -900,6 +991,7 @@ def main():
         text_len=mm_args.mm_text_len,
         shuffle_seed=mm_args.mm_shuffle_seed,
         val_stratified_per_source=mm_args.mm_val_strat,
+        pretrain_projector_path=mm_args.mm_pretrain_projector_path,
     )
     trainer.train()
     if torch.distributed.is_initialized():

@@ -14,7 +14,9 @@
 #   - warmup=156 (~3%)                     paper match
 #   - cosine decay over last 20%           --lr_scheduler.decay_ratio 0.2
 #   - --mm.global-seq-len 580              196 vision + 384 text (dataset default)
-#   - --checkpoint.initial_load_path STAGE1_CKPT (carries projector forward)
+#   - --checkpoint.initial_load_path STAGE1_CKPT (loads LM only — model_only
+#     DROPS mm_state/projector; the projector is carried via the explicit
+#     --mm.pretrain-projector-path below, LLaVA --pretrain_mm_mlp_adapter style)
 #
 # Evaluation methodology (paper-aligned):
 #   LLaVA-1.5 stage 2 does NOT use in-training val_loss. The standard is:
@@ -51,8 +53,8 @@ TORCHTITAN_DIR="${WORKSPACE_DIR}/torchtitan"
 
 # ---- knobs ----
 STUDENT_CONFIG="${STUDENT_CONFIG:-kimi_linear_447m_aligned_block_attn_res_n4_fp8}"
-STAGE1_CKPT="${STAGE1_CKPT:-${SCRIPT_DIR}/runs/stage1_alignment_447m/checkpoint/step-2000}"
-INSTRUCT_DIR="${INSTRUCT_DIR:-/workspace/.hf_home/LLaVA-Instruct}"
+STAGE1_CKPT="${STAGE1_CKPT:-${SCRIPT_DIR}/runs/stage1_alignment_447m/checkpoint/step-8720}"
+INSTRUCT_DIR="${INSTRUCT_DIR:-/home/.hf_home/LLaVA-Instruct}"
 JSON="${JSON:-${INSTRUCT_DIR}/llava_v1_5_mix665k.json}"
 IMAGES="${IMAGES:-${INSTRUCT_DIR}/images}"
 VISION="${VISION:-google/siglip-base-patch16-224}"
@@ -115,6 +117,7 @@ exec /usr/local/bin/torchrun \
     --mm.val-freq ${VAL_FREQ:-0} \
     --mm.val-batches ${VAL_BATCHES:-0} \
     --mm.shuffle-seed ${MM_SHUFFLE_SEED:-0} \
+    --mm.pretrain-projector-path "${PRETRAIN_PROJECTOR_PATH:-${STAGE1_CKPT}}" \
     --module attention_residual --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \
