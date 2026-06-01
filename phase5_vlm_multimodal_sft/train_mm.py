@@ -576,27 +576,35 @@ class MultimodalTrainer(Trainer):
                     self.projector, model_state_dict=_proj_sd,
                     options=_SDO(full_state_dict=True, strict=True),
                 )
-                # HARD-VERIFY: loaded projector matches source (cos ~ 1.0),
-                # so a silent drop can never recur unnoticed.
-                _cur = _get_msd(
-                    self.projector, options=_SDO(full_state_dict=True)
-                )
-                for _k, _src in _proj_sd.items():
-                    _a = _cur[_k].float().flatten().cpu()
-                    _b = _src.float().flatten().cpu()
-                    _cos = _F.cosine_similarity(_a[None], _b[None]).item()
-                    if _cos < 0.999:
-                        raise RuntimeError(
-                            f"mm: PROJ_VERIFY FAIL '{_k}' cos={_cos:.5f} "
-                            f"after load (expected ~1.0) — projector did "
-                            f"NOT load"
-                        )
-                    logger.info(
-                        f"mm: PROJ_VERIFY {_k} cos={_cos:.6f} "
-                        f"absmax={_b.abs().max():.5f} OK"
+                # HARD-VERIFY the load took effect, so a silent drop can never
+                # recur unnoticed. DTensor-safe: only touch the LOCAL shard via
+                # .to_local() (no collective, no full cosine) — any reduce /
+                # full-gather / in-place placement op on an FSDP2 DTensor here
+                # hits "No backend type associated with device type cpu" or the
+                # in-place clamp placement error. The random-init signature is
+                # fc1.bias == fc2.bias == 0 (nn.init.zeros_); a loaded projector
+                # has non-zero biases, so a non-zero local-shard absmax on both
+                # biases proves the projector was actually loaded (not random).
+                _named = dict(self.projector.named_parameters())
+                _zero_bias = []
+                for _k in ("fc1.bias", "fc2.bias", "fc1.weight", "fc2.weight"):
+                    _p = _named.get(_k)
+                    if _p is None:
+                        continue
+                    _loc = _p.detach()
+                    _loc = _loc.to_local() if hasattr(_loc, "to_local") else _loc
+                    _am = float(_loc.abs().max())
+                    logger.info(f"mm: PROJ_VERIFY {_k} local-absmax={_am:.6f}")
+                    if _k.endswith(".bias") and _am < 1e-9:
+                        _zero_bias.append(_k)
+                if _zero_bias:
+                    raise RuntimeError(
+                        f"mm: PROJ_VERIFY FAIL — projector {_zero_bias} still "
+                        f"zero after load from {pretrain_projector_path} "
+                        f"(NOT loaded — would be a random projector)"
                     )
                 logger.info(
-                    f"mm: loaded pretrain projector from "
+                    f"mm: PROJ_VERIFY OK — loaded pretrain projector from "
                     f"{pretrain_projector_path} (LLaVA-style explicit load; "
                     f"projector carried across stage, NOT reset)"
                 )

@@ -126,9 +126,12 @@ exec /usr/local/bin/torchrun \
     --training.seq_len "${SEQ_LEN}" \
     --training.max_norm "${MAX_NORM}" \
     --parallelism.data_parallel_shard_degree "${NGPU}" \
+    --parallelism.data_parallel_replicate_degree 1 \
+    --parallelism.tensor_parallel_degree 1 \
+    --parallelism.pipeline_parallel_degree 1 \
     --optimizer.lr "${LR}" \
     --optimizer.weight_decay 0.0 \
-    --activation_checkpoint.mode none \
+    --activation_checkpoint.mode "${AC_MODE:-none}" \
     --lr_scheduler.warmup_steps "${WARMUP_STEPS}" \
     --lr_scheduler.decay_ratio 0.2 \
     --lr_scheduler.min_lr_factor 0.0 \

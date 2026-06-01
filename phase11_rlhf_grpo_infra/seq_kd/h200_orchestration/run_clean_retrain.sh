@@ -71,14 +71,14 @@ run_sft_stage() {   # $1=name  $2=init_ckpt  $3=json  $4=out_dir  $5=steps_cap
         LC=$(ls -d "${out}/checkpoint/step-"* 2>/dev/null | sort -t- -k2 -n | tail -1)
         log "[${name}] attempt ${attempt}/${MAX_ATTEMPTS}: $([[ -z "$LC" ]] && echo "fresh, projector<-${init}" || echo "auto-resume ${LC}")"
         lg="${ROOT}/logs/clean_${name}_attempt${attempt}.log"
-        STUDENT_CONFIG="${STUDENT_CONFIG}" \
+        AC_MODE="${AC_MODE:-full}" STUDENT_CONFIG="${STUDENT_CONFIG}" \
         STAGE1_CKPT="${LC:-${init}}" \
         JSON="${json}" \
         IMAGES=/home/.hf_home/LLaVA-Instruct/images \
         INSTRUCT_DIR=/home/.hf_home/LLaVA-Instruct \
         CACHE_DIR=/home/.hf_home \
         OUT_DIR="${out}" \
-        NGPU="${NGPU:-2}" GLOBAL_BS="${GLOBAL_BS:-128}" LOCAL_BS="${LOCAL_BS:-16}" \
+        NGPU="${NGPU:-2}" GLOBAL_BS="${GLOBAL_BS:-128}" LOCAL_BS="${LOCAL_BS:-64}" \
         SEQ_LEN="${SEQ_LEN:-1024}" TEXT_LEN="${TEXT_LEN:-828}" LR="${LR:-2e-5}" \
         STEPS="${STEPS}" WARMUP_STEPS="${WARMUP}" \
         SAVE_FREQ="${SAVE_FREQ:-200}" KEEP_K="${KEEP_K:-2}" \
