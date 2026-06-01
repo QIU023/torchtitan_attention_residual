@@ -6,8 +6,12 @@
 set -uo pipefail
 source /home/seqkd_overnight/lib.sh
 
-DISTILLED="${DISTILLED:-${REPO}/phase11_rlhf_grpo_infra/seq_kd/distilled_mix665k_full.json}"
-INIT_CKPT="${INIT_CKPT:-${REPO}/phase5_vlm_multimodal_sft/runs/sft_5200_base/checkpoint/step-5200}"
+# NOTE: projector is now carried from INIT_CKPT into seq-KD via launch_stage2's
+# --mm.pretrain-projector-path (defaults to STAGE1_CKPT). For the CLEAN chain set
+# INIT_CKPT to the Stage-2 output (see run_clean_retrain.sh); the legacy default
+# below points at the (broken-lineage) sft_5200_base only for standalone reruns.
+DISTILLED="${DISTILLED:-${REPO}/phase11_rlhf_grpo_infra/seq_kd/distilled_mix665k_TASKMIX.json}"
+INIT_CKPT="${INIT_CKPT:-${REPO}/phase5_vlm_multimodal_sft/runs/stage2_clean_447m/checkpoint/step-5200}"
 OUT_DIR="${OUT_DIR:-${REPO}/phase5_vlm_multimodal_sft/runs/seqkd_sft_447m}"
 SCRIPT_DIR="${REPO}/phase5_vlm_multimodal_sft"
 LOG_DIR="${ROOT}/logs"
