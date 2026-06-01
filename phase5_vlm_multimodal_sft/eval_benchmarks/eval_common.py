@@ -62,6 +62,158 @@ from torchtitan.tools.logging import init_logger, logger  # noqa: E402
 
 
 # --------------------------------------------------------------------------
+# BUG A FIX — load the trained projector from the eval ckpt's mm_state.
+#
+# Root cause: ``load_ckpt_only`` triggers ``checkpointer.load(step=0)``, which
+# (because the launcher passes ``--checkpoint.initial_load_model_only``) routes
+# through ``Checkpointer._states_to_load(model_only=True)`` →
+# ``return self.states[MODEL].state_dict()`` (torchtitan
+# components/checkpoint.py:787-788). That MODEL entry is ONLY the LM. The
+# trained projector lives in the SEPARATE ``mm_state`` checkpointer entry
+# (registered as ``_MMStateWrapper`` in train_mm.py, DCP keys
+# ``mm_state.projector.{fc1,fc2}.{weight,bias}``), so it is silently dropped.
+# Eval therefore ran the RANDOM-init projector (fc{1,2}.bias == 0 from
+# nn.init.zeros_) → vision = noise → "no visual grounding" was an eval artifact.
+#
+# Fix: after the model-only load restores the LM, explicitly read the four
+# projector tensors out of the eval ckpt's OWN DCP ``mm_state`` (generic — not
+# hardcoded to any single run) and ``copy_`` them into the live projector.
+# A PROJ_VERIFY hard gate then asserts cos≈1 and bias≠0; otherwise it raises so
+# a "trained-but-not-loaded" projector can never again pass silently.
+# --------------------------------------------------------------------------
+_PROJ_DCP_KEYS = (
+    "mm_state.projector.fc1.weight",
+    "mm_state.projector.fc1.bias",
+    "mm_state.projector.fc2.weight",
+    "mm_state.projector.fc2.bias",
+)
+# DCP key -> live Projector submodule param path.
+_PROJ_PARAM_PATH = {
+    "mm_state.projector.fc1.weight": "fc1.weight",
+    "mm_state.projector.fc1.bias": "fc1.bias",
+    "mm_state.projector.fc2.weight": "fc2.weight",
+    "mm_state.projector.fc2.bias": "fc2.bias",
+}
+# cos below this between loaded projector and ckpt source => abort.
+_PROJ_COS_TOL = 0.999
+
+
+def read_projector_from_dcp(ckpt_dir: str) -> dict[str, torch.Tensor]:
+    """Read the four trained projector tensors from a torchtitan DCP folder.
+
+    Works for ANY ckpt produced by this pipeline (the projector is always
+    saved under the ``mm_state`` entry), so it generalizes beyond any single
+    run. Loads on CPU in the current (possibly distributed) process; only the
+    four small projector tensors are materialized.
+    """
+    import torch.distributed.checkpoint as dcp
+    from torch.distributed.checkpoint import FileSystemReader
+
+    reader = FileSystemReader(ckpt_dir)
+    md = reader.read_metadata()
+    sd_meta = md.state_dict_metadata
+    missing = [k for k in _PROJ_DCP_KEYS if k not in sd_meta]
+    if missing:
+        raise RuntimeError(
+            f"PROJ_VERIFY: ckpt {ckpt_dir!r} is missing projector keys "
+            f"{missing} in its DCP mm_state — cannot load the trained "
+            f"projector. (Available mm_state keys: "
+            f"{[k for k in sd_meta if k.startswith('mm_state')][:8]})"
+        )
+    target: dict[str, torch.Tensor] = {}
+    for k in _PROJ_DCP_KEYS:
+        tmd = sd_meta[k]
+        target[k] = torch.empty(tmd.size, dtype=tmd.properties.dtype)
+    dcp.load(target, storage_reader=reader)
+    return target
+
+
+def _projector_param(projector, dotted: str) -> torch.Tensor:
+    obj = projector
+    parts = dotted.split(".")
+    for p in parts[:-1]:
+        obj = getattr(obj, p)
+    return getattr(obj, parts[-1])
+
+
+def _to_full(t: torch.Tensor) -> torch.Tensor:
+    """DTensor -> full tensor (dp=1 Replicate => full == local)."""
+    if hasattr(t, "full_tensor"):
+        try:
+            return t.full_tensor()
+        except Exception:
+            pass
+    return t
+
+
+@torch.no_grad()
+def _cos(a: torch.Tensor, b: torch.Tensor) -> float:
+    a = _to_full(a).detach().float().reshape(-1).cpu()
+    b = _to_full(b).detach().float().reshape(-1).cpu()
+    return float(torch.nn.functional.cosine_similarity(a, b, dim=0))
+
+
+@torch.no_grad()
+def inject_and_verify_projector(projector, ckpt_dir: str) -> dict:
+    """Overwrite ``projector`` with the trained tensors from ``ckpt_dir``'s
+    DCP mm_state, then HARD-GATE the result (PROJ_VERIFY).
+
+    Raises ``RuntimeError`` if, after injection, any tensor's cos to the source
+    is below ``_PROJ_COS_TOL`` or either bias is exactly zero (the random-init
+    signature). This guarantees eval can never again silently run a
+    random / unloaded projector.
+    """
+    ref = read_projector_from_dcp(ckpt_dir)
+    report = {"ckpt": ckpt_dir, "pre_cos": {}, "post_cos": {}, "bias_absmax": {}}
+
+    for dcp_key, ppath in _PROJ_PARAM_PATH.items():
+        live = _projector_param(projector, ppath)
+        report["pre_cos"][ppath] = _cos(live, ref[dcp_key])
+
+    for dcp_key, ppath in _PROJ_PARAM_PATH.items():
+        live = _projector_param(projector, ppath)
+        if hasattr(live, "to_local") and hasattr(live, "device_mesh"):
+            # DTensor (FSDP-sharded projector). The ref is the FULL tensor;
+            # shard it to match the live DTensor's mesh + placements so we
+            # write only this rank's local shard (e.g. fc1.weight (1024,768)
+            # → (512,768) per rank under dp=2). Using ``distribute_tensor``
+            # guarantees the shard boundaries match the live param exactly.
+            from torch.distributed.tensor import distribute_tensor
+            full = ref[dcp_key].to(
+                device=live.to_local().device, dtype=live.dtype,
+            )
+            sharded = distribute_tensor(
+                full, device_mesh=live.device_mesh, placements=live.placements,
+            )
+            live.to_local().copy_(sharded.to_local())
+        else:
+            live.copy_(ref[dcp_key].to(device=live.device, dtype=live.dtype))
+
+    for dcp_key, ppath in _PROJ_PARAM_PATH.items():
+        live = _projector_param(projector, ppath)
+        report["post_cos"][ppath] = _cos(live, ref[dcp_key])
+        if ppath.endswith(".bias"):
+            report["bias_absmax"][ppath] = float(
+                _to_full(live).detach().float().abs().max().item()
+            )
+
+    logger.info("PROJ_VERIFY " + json.dumps(report))
+
+    # --- HARD GATE ---
+    bad_cos = {p: c for p, c in report["post_cos"].items() if c < _PROJ_COS_TOL}
+    zero_bias = {p: v for p, v in report["bias_absmax"].items() if v == 0.0}
+    if bad_cos or zero_bias:
+        raise RuntimeError(
+            "PROJ_VERIFY FAILED — trained projector did NOT load correctly "
+            f"(this is bug A: eval would run a random projector). "
+            f"post_cos below {_PROJ_COS_TOL}: {bad_cos}; "
+            f"zero biases (random-init signature): {zero_bias}. "
+            f"Source ckpt: {ckpt_dir!r}. Aborting to avoid silent garbage eval."
+        )
+    return report
+
+
+# --------------------------------------------------------------------------
 # CKPT-loaded trainer: minimal subclass that swaps out train()
 # --------------------------------------------------------------------------
 class _LoadedTrainer(MultimodalTrainer):
@@ -85,6 +237,21 @@ class _LoadedTrainer(MultimodalTrainer):
                 f"could not be loaded. Verify the directory contains "
                 f"__*_*.distcp files and was produced by torchtitan."
             )
+        # --- BUG A FIX ---
+        # ``checkpointer.load(step=0)`` with ``initial_load_model_only`` only
+        # restored the LM (the MODEL entry); the trained projector lives in the
+        # separate ``mm_state`` entry and was dropped. Explicitly inject it from
+        # the SAME ckpt's DCP mm_state and hard-gate (PROJ_VERIFY). See module
+        # docstring above ``inject_and_verify_projector`` for the full root cause.
+        if self.projector is not None:
+            ckpt_dir = self.checkpointer.initial_load_path
+            if not ckpt_dir:
+                raise RuntimeError(
+                    "BUG A FIX: projector exists but checkpointer has no "
+                    "initial_load_path — cannot locate mm_state to load the "
+                    "trained projector. Pass --checkpoint.initial_load_path."
+                )
+            inject_and_verify_projector(self.projector, ckpt_dir)
         # Set models to eval mode globally.
         for part in self.model_parts:
             part.eval()
