@@ -39,7 +39,7 @@ fi
 # so Adam m/v are preserved (no fresh-Adam cold start) and the
 # scheduler picks up at the right step in the new cosine curve.
 
-MODULE="kimi_linear" \
+MODULE="attention_residual" \
 CONFIG="kimi_linear_436m_block_attn_res_n4" \
 NGPU="${NGPU:-4}" \
 STEPS="${STEPS:-45000}" \

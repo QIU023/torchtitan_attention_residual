@@ -105,7 +105,7 @@ torchrun \
     --mm.cache-dir "${CACHE_DIR}" \
     --mm.proj-lr-mult "${PROJ_LR_MULT}" \
     --mm.global-seq-len "${MM_GLOBAL_SEQ_LEN}" \
-    --module kimi_linear --config "${CONFIG}" \
+    --module attention_residual --config "${CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \
     --training.local_batch_size "${LOCAL_BS}" \

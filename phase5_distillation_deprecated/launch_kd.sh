@@ -58,7 +58,7 @@ mkdir -p "${OUT_DIR}"
 # student from Phase 4's last ckpt without writing into that folder
 # (KD writes ckpts into ``--dump_folder/checkpoint`` instead).
 TT_ARGS=(
-    --module kimi_linear
+    --module attention_residual
     --config "${STUDENT_CONFIG}"
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B"
     --training.steps "${STEPS}"

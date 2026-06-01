@@ -111,7 +111,7 @@ run_bench () {
         --mm.val-stratified-per-source 0 \
         --mm.val-freq 0 \
         --mm.val-batches 0 \
-        --module kimi_linear --config "${STUDENT_CONFIG}" \
+        --module attention_residual --config "${STUDENT_CONFIG}" \
         --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
         --training.steps "${TARGET_STEPS}" \
         --training.local_batch_size "${LOCAL_BS}" \

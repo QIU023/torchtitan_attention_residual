@@ -114,7 +114,7 @@ run_one() {
              --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
              --local-ranks-filter 7 --role rank --tee 3 \
              -m torchtitan.train \
-             --module attn_res --config "llama3_${cfg}" \
+             --module attention_residual --config "llama3_${cfg}" \
              --training.steps "$STEPS" \
              --training.local_batch_size "$lbs" \
              --training.global_batch_size "$gbs" \

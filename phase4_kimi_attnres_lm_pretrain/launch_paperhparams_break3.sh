@@ -51,7 +51,7 @@ PEAK_LR="${PEAK_LR:-3e-4}"
 WARMUP="${WARMUP:-12700}"
 STEPS="${STEPS:-18000}"
 
-MODULE="kimi_linear" \
+MODULE="attention_residual" \
 CONFIG="kimi_linear_436m_block_attn_res_n4" \
 NGPU="${NGPU:-4}" \
 STEPS="${STEPS}" \

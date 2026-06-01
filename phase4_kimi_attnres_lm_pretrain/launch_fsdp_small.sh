@@ -21,11 +21,11 @@
 # What this launcher runs:
 #
 # Uses existing ``torchtitan/experiments/attn_res/`` flavors (Llama3
-# backbone + AttnRes) via ``--module attn_res --config <flavor>``. These
+# backbone + AttnRes) via ``--module attention_residual --config <flavor>``. These
 # are ModelSpec-complete and train end-to-end today. Once the Kimi Linear
 # ModelSpec integration lands (Phase 4c: ``KimiLinearModel(BaseModel)``
 # + ``KimiLinearConfig(BaseModel.Config)`` shim), swap to
-# ``--module kimi_linear --config kimi_linear_<size>_<variant>``.
+# ``--module attention_residual --config kimi_linear_<size>_<variant>``.
 #
 # Scaling-law flavors available TODAY (Llama3 backbone):
 #   llama3_175m_baseline              # 12L dense Llama3, no AttnRes
@@ -57,7 +57,7 @@
 #       bash phase4_kimi_attnres_lm_pretrain/launch_fsdp_small.sh
 #
 #   # Kimi Linear flavor (after Phase 4c ModelSpec integration lands):
-#   MODULE=kimi_linear CONFIG=kimi_linear_528m_block_attn_res \
+#   MODULE=attention_residual CONFIG=kimi_linear_528m_block_attn_res \
 #       STEPS=100000 bash phase4_kimi_attnres_lm_pretrain/launch_fsdp_small.sh
 #
 # ------------------------------------------------------------------------
@@ -68,7 +68,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TORCHTITAN_DIR="${TORCHTITAN_DIR:-${SCRIPT_DIR}/../torchtitan}"
 
 # ---- knobs ----
-MODULE="${MODULE:-attn_res}"                            # attn_res (today) | kimi_linear (Phase 4c)
+MODULE="${MODULE:-attention_residual}"                            # attn_res (today) | kimi_linear (Phase 4c)
 CONFIG="${CONFIG:-llama3_175m_attn_res_L16_n8}"
 NGPU="${NGPU:-8}"
 STEPS="${STEPS:-1000}"

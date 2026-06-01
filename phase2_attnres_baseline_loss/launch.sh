@@ -108,7 +108,7 @@ torchrun --nproc_per_node=${NGPU} --rdzv_backend c10d \\
     --rdzv_endpoint="localhost:0" \\
     --local-ranks-filter ${LOG_RANK} --role rank --tee 3 \\
     -m torchtitan.train \\
-    --module attn_res \\
+    --module attention_residual \\
     --config ${config_name} \\
     --training.steps ${STEPS} \\
     --training.local_batch_size ${LOCAL_BS} \\

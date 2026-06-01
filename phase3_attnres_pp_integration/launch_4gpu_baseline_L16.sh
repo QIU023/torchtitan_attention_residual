@@ -75,7 +75,7 @@ torchrun \
     --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
     --local-ranks-filter 3 --role rank --tee 3 \
     -m torchtitan.train \
-    --module attn_res --config "${CONFIG}" \
+    --module attention_residual --config "${CONFIG}" \
     --training.steps "${STEPS}" \
     --training.local_batch_size "${LOCAL_BS}" \
     --training.global_batch_size "${GLOBAL_BS}" \

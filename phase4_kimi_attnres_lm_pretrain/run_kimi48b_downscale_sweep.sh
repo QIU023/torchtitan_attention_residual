@@ -31,7 +31,7 @@ run_one() {
         --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
         --local-ranks-filter 7 --role rank --tee 3 \
         -m torchtitan.train \
-        --module kimi_linear --config "$flavor" \
+        --module attention_residual --config "$flavor" \
         --training.steps 3 \
         --training.local_batch_size 1 \
         --training.global_batch_size 8 \

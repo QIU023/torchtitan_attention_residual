@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PHASE4_DIR="${SCRIPT_DIR}/../.."
 
 OUT_DIR="${OUT_DIR:-${PHASE4_DIR}/runs/kimi_pp_adapter_bench/adapter_pp}" \
-MODULE=kimi_linear \
+MODULE=attention_residual \
 CONFIG=kimi_linear_436m_block_attn_res \
 NGPU=4 \
 STEPS=12500 \

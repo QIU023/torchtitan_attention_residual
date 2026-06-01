@@ -59,7 +59,7 @@ echo "[$(date)] starting phase4 redo (free ${free_gb}GB)"
 # ``CONFIG=kimi_linear_447m_aligned_block_attn_res_n4`` in this env.
 
 # Training knobs — paper-faithful for 447M aligned variant.
-MODULE="kimi_linear" \
+MODULE="attention_residual" \
 CONFIG="${CONFIG:-kimi_linear_447m_aligned_block_attn_res_n4_fp8}" \
 NGPU="${NGPU:-8}" \
 STEPS="${STEPS:-25500}" \

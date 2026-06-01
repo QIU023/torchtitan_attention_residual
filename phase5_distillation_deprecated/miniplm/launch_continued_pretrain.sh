@@ -39,7 +39,7 @@ torchrun \
     --local-ranks-filter 0 --role rank --tee 3 \
     -m phase5_distillation_deprecated.miniplm.train_continued_pretrain \
     --miniplm.filtered "${FILTERED}" \
-    --module kimi_linear --config "${STUDENT_CONFIG}" \
+    --module attention_residual --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \
     --training.local_batch_size "${LOCAL_BS}" \

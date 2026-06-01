@@ -40,7 +40,7 @@ torchrun \
     --rdzv_endpoint=localhost:0 \
     --local-ranks-filter 0 --role rank --tee 3 \
     -m torchtitan.train \
-    --module kimi_linear \
+    --module attention_residual \
     --config kimi_linear_436m_block_attn_res_n4 \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${NEXT}" \

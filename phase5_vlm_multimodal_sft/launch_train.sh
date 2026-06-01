@@ -67,7 +67,7 @@ torchrun \
     --mm.val-samples "${VAL_SAMPLES}" \
     --mm.val-freq "${VAL_FREQ}" \
     --mm.val-batches "${VAL_BATCHES}" \
-    --module kimi_linear --config "${STUDENT_CONFIG}" \
+    --module attention_residual --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \
     --training.local_batch_size "${LOCAL_BS}" \

@@ -34,7 +34,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TORCHTITAN_DIR="${TORCHTITAN_DIR:-${SCRIPT_DIR}/../torchtitan}"
 
-MODULE="${MODULE:-kimi_linear}"
+MODULE="${MODULE:-attention_residual}"
 CONFIG="${CONFIG:-kimi_linear_436m_block_attn_res}"
 NGPU="${NGPU:-4}"
 STEPS="${STEPS:-100}"

@@ -91,7 +91,7 @@ rm -rf "$OUT1"
          --nproc_per_node=8 --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
          --local-ranks-filter 7 --role rank --tee 3 \
          -m torchtitan.train \
-         --module kimi_linear --config kimi_linear_48b_block_attn_res_d1280_e32_L24_N8 \
+         --module attention_residual --config kimi_linear_48b_block_attn_res_d1280_e32_L24_N8 \
          --training.steps 300 \
          --training.local_batch_size 24 \
          --training.global_batch_size 24 \
@@ -122,7 +122,7 @@ rm -rf "$OUT2"
          --nproc_per_node=8 --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
          --local-ranks-filter 7 --role rank --tee 3 \
          -m torchtitan.train \
-         --module kimi_linear --config kimi_linear_48b_block_attn_res_d1280_e16_L32_N8 \
+         --module attention_residual --config kimi_linear_48b_block_attn_res_d1280_e16_L32_N8 \
          --training.steps 300 \
          --training.local_batch_size 32 \
          --training.global_batch_size 32 \

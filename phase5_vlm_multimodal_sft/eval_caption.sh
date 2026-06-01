@@ -34,7 +34,7 @@ torchrun \
     --mm.vision-model google/siglip-base-patch16-224 \
     --mm.tokenizer NousResearch/Meta-Llama-3.1-8B \
     --mm.cache-dir /root/hf_cache \
-    --module kimi_linear --config kimi_linear_436m_block_attn_res_n4 \
+    --module attention_residual --config kimi_linear_436m_block_attn_res_n4 \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${NEXT}" \
     --training.local_batch_size 8 --training.global_batch_size 32 \

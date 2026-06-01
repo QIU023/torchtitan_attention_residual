@@ -42,7 +42,7 @@ exec /usr/local/bin/torchrun \
     --role rank \
     --tee 3 \
     -m torchtitan.train \
-    --module kimi_linear \
+    --module attention_residual \
     --config kimi_linear_447m_aligned_block_attn_res_n4_fp8 \
     --training.steps 12750 \
     --training.local_batch_size 4 \

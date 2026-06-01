@@ -55,7 +55,7 @@ while [ $ITER -lt $MAX_ITER ]; do
         --mm.cache-dir /root/hf_cache \
         --mm.proj-lr-mult 50.0 \
         --mm.global-seq-len 258 \
-        --module kimi_linear --config kimi_linear_436m_block_attn_res_n4 \
+        --module attention_residual --config kimi_linear_436m_block_attn_res_n4 \
         --hf_assets_path "$WORKSPACE_DIR/torchtitan/assets/hf/Llama-3.1-8B" \
         --training.steps 5000 \
         --training.local_batch_size 30 \

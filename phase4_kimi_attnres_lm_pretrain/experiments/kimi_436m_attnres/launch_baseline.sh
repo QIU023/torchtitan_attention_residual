@@ -14,7 +14,7 @@ PHASE4_DIR="${SCRIPT_DIR}/../.."
 
 # Hand-off to the standard FSDP launcher with Problem A's pinned config.
 OUT_DIR="${OUT_DIR:-${PHASE4_DIR}/runs/kimi_436m_baseline_fsdp_overnight}" \
-MODULE=kimi_linear \
+MODULE=attention_residual \
 CONFIG=kimi_linear_436m_baseline \
 NGPU=4 \
 STEPS=12500 \

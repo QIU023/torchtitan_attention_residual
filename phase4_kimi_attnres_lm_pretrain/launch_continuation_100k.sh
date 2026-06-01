@@ -44,7 +44,7 @@ if [[ ! -d "${INIT_CKPT}" ]]; then
 fi
 
 # Pass-through to the existing FSDP launcher with continuation knobs.
-MODULE="kimi_linear" \
+MODULE="attention_residual" \
 CONFIG="kimi_linear_436m_block_attn_res_n4" \
 NGPU="${NGPU:-4}" \
 STEPS="${STEPS:-87500}" \

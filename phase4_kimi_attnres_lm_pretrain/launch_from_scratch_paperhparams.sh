@@ -34,7 +34,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 OUT_DIR="${OUT_DIR:-${SCRIPT_DIR}/runs/kimi_436m_block_attn_res_fsdp_paperhparams}"
 
-MODULE="${MODULE:-kimi_linear}" \
+MODULE="${MODULE:-attention_residual}" \
 CONFIG="${CONFIG:-kimi_linear_436m_block_attn_res_n4}" \
 NGPU="${NGPU:-4}" \
 STEPS="${STEPS:-12500}" \

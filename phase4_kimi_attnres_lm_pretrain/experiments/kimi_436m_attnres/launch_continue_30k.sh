@@ -81,7 +81,7 @@ run_arm() {
     fi
 
     OUT_DIR="${out_dir}" \
-    MODULE=kimi_linear \
+    MODULE=attention_residual \
     CONFIG="${config}" \
     NGPU=4 \
     STEPS="${STEPS}" \
