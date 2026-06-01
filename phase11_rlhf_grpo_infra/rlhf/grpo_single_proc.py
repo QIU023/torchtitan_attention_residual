@@ -76,6 +76,9 @@ def main():
     ap.add_argument("--max-new", type=int, default=16)
     ap.add_argument("--sync-every", type=int, default=10)
     ap.add_argument("--save-dcp", default="")
+    ap.add_argument("--data", default=GQA, help="RL prompt json [{image,question,answer}]")
+    ap.add_argument("--task", default="gqa", choices=["gqa", "pope"],
+                    help="pope = strict yes/no reward (1/0); gqa = substring match")
     args = ap.parse_args()
     os.environ.setdefault("ATTNRES_MLA_FP32_FALLBACK", "1")
     os.environ.setdefault("SGLANG_DISABLE_SHM_MM", "1")
@@ -111,7 +114,7 @@ def main():
     tok = AutoTokenizer.from_pretrained(TOKENIZER)
     bos = tok.bos_token_id
     improc = AutoProcessor.from_pretrained(VISION).image_processor
-    recs = json.load(open(GQA))
+    recs = json.load(open(args.data))
     rng = random.Random(0)
 
     def build_prompt_ids(question):
@@ -129,6 +132,12 @@ def main():
 
     def reward_of(text, gold):
         full = " ".join(text.lower().replace(".", " ").split())
+        if args.task == "pope":
+            # strict yes/no: parse first yes/no token; reward 1 iff it matches gold
+            toks = full.split()
+            hy = "yes" in toks; hn = "no" in toks
+            pred = "yes" if (hy and not hn) else ("no" if (hn and not hy) else "unknown")
+            return 1.0 if pred == gold else 0.0
         ok = (" " + gold + " ") in (" " + full + " ") or set(gold.split()).issubset(set(full.split()))
         r = 1.0 if ok else 0.0
         wc = len(full.split())
@@ -136,8 +145,12 @@ def main():
             r -= min(0.3, 0.02 * (wc - 12))
         return r
 
+    _instr = ("\nAnswer the question using a single word: yes or no."
+              if args.task == "pope"
+              else "\nAnswer the question using a single word or phrase.")
+
     def gen_prompt(q):
-        return "<image>\n" + q + "\nAnswer the question using a single word or phrase."
+        return "<image>\n" + q + _instr
 
     if args.mode == "gen":
         q, img, gold = sample()
