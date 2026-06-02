@@ -15,7 +15,7 @@ Filing flow per PR:
 
 ---
 
-## Current PRs (11 active + 1 obsoleted)
+## Current PRs (12 active + 1 obsoleted)
 
 | # | Folder | Target | Title | Discovered | Status |
 |---|---|---|---|---|---|
@@ -31,6 +31,7 @@ Filing flow per PR:
 | 10 | `PR10_sglang_fp8moe_ignored_layers_warning/` | sglang | `Fp8Config.get_quant_method` user-visible warning on silent bf16 fallback | Phase 11 | 🔵 Tentative — file only if PR #8 downstream ICA stays unresolved long-term |
 | 11 | `PR11_torchstore_sync_endpoint_dispatch/` | pytorch/torchstore | sync-endpoint dispatch policy: async caller opt-in | Phase 11 | 🟠 Issue ready; FILING.md drafted. |
 | 14 | `PR14_torchtitan_opd_trainer_on_policy_distillation/` | torchtitan | `OPDTrainer` (GKD on-policy distillation) sibling to `PolicyTrainer` | Phase 11 | 🟡 Design + commits.md drafted; foundation (TRL JSD adapter + HF teacher scorer) validated on fork; trainer assembly (C.2/C.3) pending |
+| 15 | `PR15_sglang_kimi_linear_mamba_radix_cache/` | sglang | Register Kimi-Linear (KDA) for `MambaRadixCache`; stop force-disabling its radix | Phase 11 (radix RCA 2026-06-02) | 🟢 Backing commit pushed (`QIU023/sglang@c3b588019`); **validated on official Kimi-Linear-48B-A3B** (MambaRadixCache hit; radix-ON vs OFF greedy 4/4 identical); mainline lacks it / force-disables. Hand-port register block + elif to upstream/main. = UPSTREAM_PR_LIST.md #13 |
 
 **Legend**: 🚀 branch pushed · 🟢 branched locally (push pending) · ✅ ready to file (no local branch yet) · 🟡 ready but conditional (depends on another PR or hand-port) · 🟠 issue / RFC first, patch deferred · 🔵 tentative / wait · ⛔ obsoleted
 
