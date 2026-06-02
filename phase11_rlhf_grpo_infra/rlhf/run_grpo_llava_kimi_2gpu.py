@@ -573,16 +573,38 @@ async def _async_main(config: _Config) -> None:
     trainer.push_model_state_dict.call().get()
     generator.pull_model_state_dict.call(0).get()
 
+    # Periodic + final DCP checkpointing for the GRPO policy. The original
+    # GRPO loop never saved — an 8h run would train then vanish on exit. We
+    # reuse the trainer actor's ``save_dcp`` (same call the OPD path uses).
+    # Interval/dir come from config (``opd_ckpt_*`` are generic DCP-save
+    # knobs) or the GRPO_CKPT_INTERVAL env (default 25). Each save is a
+    # resume point: on restart, point --dcp-load-path at the latest step-N.
+    grpo_ckpt_dir = config.opd_ckpt_dir or os.path.join(
+        config.dump_folder, "grpo_ckpts"
+    )
+    grpo_ckpt_interval = config.opd_ckpt_interval or int(
+        os.environ.get("GRPO_CKPT_INTERVAL", "25")
+    )
+    Path(grpo_ckpt_dir).mkdir(parents=True, exist_ok=True)
+    logger.info(
+        f"GRPO ckpt: every {grpo_ckpt_interval} steps + final → {grpo_ckpt_dir}"
+    )
+
     for step in range(config.num_steps):
         t0 = time.perf_counter()
 
         records = [
             task.create_question() for _ in range(config.num_episodes_per_step)
         ]
-        # Embed <image>\n placeholder in the prompt so SGLang's
-        # multimodal processor splices vision tokens at that point.
+        # EXACT match to the working sgl_gqa eval prompt (45% GQA): the
+        # attn_res_vl processor wants <image> FIRST + NO stray "\n" after it
+        # (BOS-after-image). The old "{system}\n\n<image>\nUser:" format put
+        # <image> after text + a stray newline → processor didn't splice the
+        # vision tokens → image-blind rollouts (rambling garbage, ~3% reward).
+        # Keep USER:/ASSISTANT: uppercase + the single-word instruction.
         prompts = [
-            f"{task.get_system_prompt()}\n\n<image>\nUser: {r.prompt_text}\nAssistant:"
+            f"<image>USER: {r.prompt_text}\n"
+            f"Answer the question using a single word or phrase.\nASSISTANT:"
             for r in records
         ]
         gold = [r.gold_caption for r in records]
@@ -624,6 +646,32 @@ async def _async_main(config: _Config) -> None:
             for ep in group:
                 ep.advantage = (ep.reward - mean_r) / std_r
 
+        # [DIAG] deterministic evidence for the "advantage≈0 from low intra-group
+        # reward variance" hypothesis. Measures: per-group reward std, degenerate
+        # (all-same-reward → std≈0 → zero advantage) group fraction, |advantage|
+        # distribution, and overall reward balance. If degenerate_groups is high
+        # and mean|adv| is tiny, GRPO has no signal (group-variance collapse).
+        _stds = []
+        _degen = 0
+        for _g in groups.values():
+            _rs = [float(e.reward) for e in _g]
+            _m = sum(_rs) / max(len(_rs), 1)
+            _sd = (sum((x - _m) ** 2 for x in _rs) / max(len(_rs), 1)) ** 0.5
+            _stds.append(_sd)
+            if _sd < 1e-3:
+                _degen += 1
+        _advs = [abs(float(e.advantage)) for e in episodes if e.advantage is not None]
+        _gsz = len(episodes) / max(len(groups), 1)
+        _npos = sum(1 for e in episodes if float(e.reward) > 0)
+        logger.info(
+            f"  [diag] groups={len(groups)} grp_size={_gsz:.1f} "
+            f"mean_reward_std={sum(_stds) / max(len(_stds), 1):.4f} "
+            f"degen_groups={_degen}/{len(groups)} "
+            f"mean|adv|={sum(_advs) / max(len(_advs), 1):.4f} "
+            f"frac|adv|<0.01={sum(1 for a in _advs if a < 0.01) / max(len(_advs), 1):.2f} "
+            f"reward+:{_npos}/{len(episodes)}"
+        )
+
         metrics = trainer.step.call(episodes).get()
         first_metric = None
         try:
@@ -645,6 +693,20 @@ async def _async_main(config: _Config) -> None:
         )
         if config.log_samples and step % 5 == 0:
             _log_samples(episodes)
+
+        # Periodic save (a resume point + the artifact if time-capped mid-run).
+        if grpo_ckpt_interval > 0 and (step + 1) % grpo_ckpt_interval == 0:
+            saved = trainer.save_dcp.call(
+                save_dir=grpo_ckpt_dir, step=step + 1,
+            ).get()
+            logger.info(f"       GRPO ckpt saved at step {step+1}: {saved}")
+
+    # Final save (loop exited): always persist the last policy even if
+    # num_steps wasn't a multiple of the interval.
+    final_saved = trainer.save_dcp.call(
+        save_dir=grpo_ckpt_dir, step=config.num_steps,
+    ).get()
+    logger.info(f"GRPO final ckpt saved at step {config.num_steps}: {final_saved}")
 
 
 def main():
@@ -715,8 +777,8 @@ def main():
                         "conversations, task-aligned with GQA eval).")
     args = p.parse_args()
 
-    from torchtitan.experiments.kimi_linear import model_registry as kimi_registry
-    from torchtitan.experiments.kimi_linear.parallelize import (
+    from torchtitan.experiments.attention_residual.kimi_linear import model_registry as kimi_registry
+    from torchtitan.experiments.attention_residual.kimi_linear.parallelize import (
         parallelize_kimi_linear,
     )
     from torchtitan.config import (
@@ -734,7 +796,7 @@ def main():
     # "_n4" flavors we source the ModelSpec from config_registry (the exact spec
     # the SFT + the DCP->HF converter used). Non-_n4 flavors keep model_registry.
     if args.flavor.endswith("_n4"):
-        from torchtitan.experiments.kimi_linear import config_registry as _cr
+        from torchtitan.experiments.attention_residual.kimi_linear import config_registry as _cr
         model_spec = getattr(_cr, args.flavor)().model_spec
         print(f"[grpo] flavor '{args.flavor}' -> config_registry ModelSpec (num_blocks=4)")
     else:
@@ -829,8 +891,20 @@ def main():
     else:
         config.trainer.parallelism.data_parallel_shard_degree = 1
         config.generator.parallelism.tensor_parallel_degree = 1
-    config.generator.gpu_memory_limit = 0.85
-    config.trainer.optimizer.lr = 1e-6
+    config.generator.gpu_memory_limit = 0.9
+    # GRPO lr: 1e-6 was too conservative (78 steps flat, policy didn't move);
+    # bumped to 5e-6 (still 160× below the 8e-4 that collapsed GQA). Env-tunable.
+    config.trainer.optimizer.lr = float(os.environ.get("GRPO_LR", "5e-6"))
+    # GQA answers are short; the reward credits the gold word in a concise span
+    # and penalizes rambling >12 tokens. max_new=100 let the model ramble (and
+    # combined with the old broken prompt, produced blind garbage). Cap to 32
+    # (eval used 16) so rollouts are short, like the answer distribution.
+    config.generator.sampling.max_new_tokens = int(os.environ.get("GRPO_MAX_NEW", "32"))
+    # REQUIRED for the KDA/AttnRes multimodal model: radix prefix cache drops
+    # the spliced <image> embeddings → image-blind rollouts (verified: radix ON
+    # → rambling garbage, reward ~3%; OFF → grounded ~45%). The standalone eval
+    # always set this; the generator Engine omitted it → the real GRPO bug.
+    config.generator.backend.disable_radix_cache = True
     config.trainer.optimizer.weight_decay = 0.0
     # Block AttnRes residual stream grows unboundedly with depth; on
     # Blackwell (SM 12.0) flashinfer_mla bf16-NaNs at the deep MLA

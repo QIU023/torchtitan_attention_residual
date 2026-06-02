@@ -715,8 +715,8 @@ def main():
                         "conversations, task-aligned with GQA eval).")
     args = p.parse_args()
 
-    from torchtitan.experiments.kimi_linear import model_registry as kimi_registry
-    from torchtitan.experiments.kimi_linear.parallelize import (
+    from torchtitan.experiments.attention_residual.kimi_linear import model_registry as kimi_registry
+    from torchtitan.experiments.attention_residual.kimi_linear.parallelize import (
         parallelize_kimi_linear,
     )
     from torchtitan.config import (
@@ -734,7 +734,7 @@ def main():
     # "_n4" flavors we source the ModelSpec from config_registry (the exact spec
     # the SFT + the DCP->HF converter used). Non-_n4 flavors keep model_registry.
     if args.flavor.endswith("_n4"):
-        from torchtitan.experiments.kimi_linear import config_registry as _cr
+        from torchtitan.experiments.attention_residual.kimi_linear import config_registry as _cr
         model_spec = getattr(_cr, args.flavor)().model_spec
         print(f"[grpo] flavor '{args.flavor}' -> config_registry ModelSpec (num_blocks=4)")
     else:

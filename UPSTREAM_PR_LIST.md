@@ -3,7 +3,7 @@
 Inventory of changes in this fork that are scope-bounded enough to upstream.
 Ordered by **effort × value** (smallest, most-likely-to-land first).
 
-Last updated: 2026-05-10. Status reflects the state as of the overnight
+Last updated: 2026-06-01. Status reflects the state as of the overnight
 VLM pretrain/SFT/GRPO pipeline run.
 
 | # | Target repo | Title | Scope | Effort | Risk | Status |
@@ -20,6 +20,7 @@ VLM pretrain/SFT/GRPO pipeline run.
 | 10 | sglang | `Fp8Config.get_quant_method` user-visible warning when MoE silently falls back to bf16 | ~10-line logging | XS | low | Tentative (gated on #8 landing) |
 | 11 | pytorch/torchstore | sync-endpoint dispatch policy — allow async caller via flag / endpoint declaration | ~30-line patch + endpoint API | S | medium | Workaround live (Controller monkeypatch in `phase11_rlhf_grpo_infra/rlhf/run_grpo_llava_kimi.py`); upstream form needs API design |
 | 12 | torchtitan | engine-agnostic `Generator` abstraction in `experiments.rl` + SGLang reference impl | new module (~600 lines) + RFC | L | medium | Code ready (fork's `experiments/rl/{actors/sglang_generator.py,plugin.py,models/sglang_wrapper.py}` + `RFC_SGLANG_GENERATOR.md`); needs upstream design discussion. Depends on #4 landing first. |
+| 13 | sglang | **Kimi-Linear (KDA) → `MambaRadixCache` wiring** — radix prefix-cache correctness for KDA (+ first multimodal linear-attn validation) | `register_linear_attn_model(...)` + caveat fixes (layer_id / page_size=1) + tests | S | medium | **Root-caused + likely-priority (2026-06-01)** — see §#13. |
 
 ---
 
@@ -440,3 +441,57 @@ Filing strategy refreshed 2026-05-17 after PR #4 obsoleted-by-upstream:
 11. **#10** if/when #8's downstream ICA is resolved.
 
 ~~**#4** — obsoleted by upstream `627f4a31` on 2026-05-17. Do not file.~~
+
+---
+
+## #13 — Kimi-Linear (KDA) → `MambaRadixCache` wiring (radix prefix-cache correctness)
+
+**Target**: `sgl-project/sglang` (model registration + scheduler hybrid-cache selection).
+
+**Bug (root-caused 2026-06-01, code-grounded)**: a KDA/Kimi-Linear model with
+radix cache enabled produces **fluent but image-blind / context-detached
+generation** (GQA reward collapsed ~45%→~3% in our GRPO rollouts). Root cause is
+NOT the multimodal image hash (that path is correct — `item.hash`→pad_value→
+radix key). It is that **KDA's recurrent SSM state is incompatible with plain
+`RadixCache` prefix reuse**: on a prefix hit, `kda_backend.py:195`
+(`has_initial_state = extend_prefix_lens > 0`) reads a recurrent state from a slot
+that was never checkpointed at that prefix boundary → dirty state → the reused
+prefix (which contains the image segment) is silently corrupted. The fork wired
+KDA to the hybrid **backend + `HybridLinearKVPool`** (`model_runner.py:2182-2218`)
+but `is_hybrid_ssm` (`scheduler.py:793-801`) only triggers `MambaRadixCache` for
+gdn/mamba2/`register_linear_attn_model(uses_mamba_radix_cache=True)` — Kimi-Linear
+matches none (the registry call is never made repo-wide) → it silently falls back
+to plain `RadixCache` (no SSM-state checkpoint). Backend went mamba-route,
+prefix-cache went plain-route = mismatch. **Implies even text-only KDA breaks on a
+prefix hit** (multimodal just makes it most visible). `disable_radix_cache=True`
+→ ChunkCache → prefix always empty → KDA recomputes from scratch → correct (our
+current temp mitigation; ~single-digit % throughput cost for short prompts).
+
+**Fix (A, recommended)**: register Kimi-Linear into the linear-attn registry —
+`register_linear_attn_model(LinearAttnModelSpec(config_class=KimiLinearConfig,
+uses_mamba_radix_cache=True, support_mamba_cache=True, unwrap_text_config=True,
+...))` — so `is_hybrid_ssm=True` → `MambaRadixCache` (state checkpoint/fork at
+radix nodes). `unwrap_text_config=True` lets a VLM-wrapper config
+(`KimiAttnResVLConfig`) resolve its inner `KimiLinearConfig`. Caveats to validate
+at smoke: page_size=1 (Mamba radix v0), overlap-schedule auto-off, chunk
+alignment for short (196-img-tok) seqs, layer_id alignment (`_collect_attention_layers`
+vs `mamba2_layer_cache(layer_id)`). Implemented in worktree `sglang_radixfix`
+(branch `radix-mamba-kimi`).
+
+**Why upstream / priority**: #12867 (Hybrid Linear LLMs) lists Kimi-Linear as a
+target but is **inactive with no one on the Kimi-Linear radix part**; the
+MambaRadixCache infra is already merged (#11214 v0; #22326 checkpointing; #20415
+unified refactor). Qwen3-Next/GDN auto-gets it via `hybrid_gdn_config`;
+**Kimi-Linear needs exactly this registration, which no upstream PR has done.**
+Bonus novelty: this is also the **first multimodal linear-attention + radix**
+validation (MambaRadixCache × multimodal mm-hash together — no upstream model
+exercises both).
+
+**Validation plan**: after the fix, smoke on (1) the canonical upstream
+**Kimi-Linear-48B-A3B-Instruct** (text, ~96GB bf16 → 2×H200 or TP2; also reveals
+whether mainline already wires it) and (2) our AttnRes VLM (radix ON + same-image
+n>1 sampling must stay grounded; text-only shared-long-prefix two-request
+consistency; A/B vs `disable_radix_cache=True`).
+
+**Refs**: sglang #12867, #11214, #22326, #20415; PyTorch blog "Hybrid Models Meet
+SGLang"; model `moonshotai/Kimi-Linear-48B-A3B-Instruct`.

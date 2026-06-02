@@ -584,10 +584,10 @@ def main():
     flavor = os.environ.get("RLHF_FLAVOR",
                             "kimi_linear_447m_aligned_block_attn_res_n4")
     if flavor.startswith("kimi"):
-        from torchtitan.experiments.kimi_linear import (
+        from torchtitan.experiments.attention_residual.kimi_linear import (
             config_registry as kimi_registry,
         )
-        from torchtitan.experiments.kimi_linear.parallelize import (
+        from torchtitan.experiments.attention_residual.kimi_linear.parallelize import (
             parallelize_kimi_linear as _orig_kl_parallelize,
         )
         from torchtitan.config.configs import (

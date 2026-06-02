@@ -129,10 +129,21 @@ def remap_one(name: str, tensor: torch.Tensor) -> list[tuple[str, torch.Tensor]]
 
 
 def build_skeleton_state_dict(config_name: str):
-    from torchtitan.experiments.kimi_linear import config_registry
-    from torchtitan.experiments.kimi_linear.attn_res_model import (
-        KimiLinearAttnResModel,
-    )
+    try:
+        # post-refactor layout (commit d46db1d): kimi_linear is a subpackage
+        # of the merged ``attention_residual`` experiment.
+        from torchtitan.experiments.attention_residual.kimi_linear import (
+            config_registry,
+        )
+        from torchtitan.experiments.attention_residual.kimi_linear.attn_res_model import (
+            KimiLinearAttnResModel,
+        )
+    except ModuleNotFoundError:
+        # legacy layout (pre-refactor standalone experiment).
+        from torchtitan.experiments.kimi_linear import config_registry
+        from torchtitan.experiments.kimi_linear.attn_res_model import (
+            KimiLinearAttnResModel,
+        )
     builder = getattr(config_registry, config_name, None)
     if builder is None:
         raise NotImplementedError(
@@ -220,6 +231,12 @@ def make_hf_config(kimi_config) -> dict:
         # AttnRes (custom — used by our extension)
         "attn_res_enabled": True,
         "attn_res_num_blocks": 4,
+        # MoE routing convention: this model was TRAINED with torchtitan
+        # ``MoE.score_before_experts=True`` (gate weight on expert INPUT,
+        # pre-SwiGLU). The SGLang AttnRes overlay reads this to enable the
+        # FusedMoE ``apply_router_weight_on_input`` path. Stock Kimi-Linear
+        # leaves this False (standard score-after, weight on output).
+        "moe_score_before_experts": True,
     }
 
 
