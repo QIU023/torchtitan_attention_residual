@@ -84,11 +84,12 @@ def _determine_tensor_transport_mode(server_args: ServerArgs) -> TensorTransport
 - [x] Static: `py_compile` on patched file (passes on Python 3.12).
 - [x] Default behaviour unchanged: env unset → no code path change in
       the function below the early return.
-- [ ] Functional smoke: launch SGLang Engine multimodal model under
-      `SGLANG_DISABLE_SHM_MM=1`, verify it boots and serves an image
-      generation request without `FileNotFoundError`. (We have run
-      this end-to-end in our fork under Monarch RL actor mesh; happy
-      to provide a containerised reproducer on request.)
+- [x] Functional smoke: verified end-to-end under `SGLANG_DISABLE_SHM_MM=1`
+      in a 12h multimodal RL post-training run on a Monarch actor mesh
+      (SGLang generator on a disjoint sub-mesh serving a Block AttnRes
+      Kimi-Linear VLM with SigLIP vision tower; 601 GRPO steps, no
+      SHM-related crashes / `FileNotFoundError`). Happy to provide a
+      containerised reproducer on request.
 
 ## Backwards compatibility
 
