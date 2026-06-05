@@ -12,6 +12,7 @@
 | Base | `sgl-project/sglang:main` |
 | Head | `QIU023/sglang:pr15-kimi-mamba-radix` |
 | Commit | `1f532d4b3` (1 commit, +52/-5 across `configs/kimi_linear.py` + `server_args.py`) |
+| Base | branched directly off `upstream/main` HEAD `ed85bcf8c` (2026-05-21); no rebase needed; py_compile clean |
 | Validation | **4/4 byte-identical greedy A/B** on official 48B incl. shared-long-prefix pair; MambaRadixCache selected at scheduler |
 | Cross-link | #12867 (target), #11214 (MambaRadixCache v0), #22326 (checkpointing), #20415 (unified hybrid radix refactor) |
 

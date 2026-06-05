@@ -11,7 +11,8 @@
 | Target repo | https://github.com/sgl-project/sglang |
 | Base | `sgl-project/sglang:main` |
 | Head | `QIU023/sglang:pr7-kda-causal-conv1d-fp16` |
-| Commit | `4dfd8cf27` (1 commit, +38/-27 in `causal_conv1d_triton.py`) |
+| Commit | `240ee84c5` (1 commit, +38/-25 in `causal_conv1d_triton.py`) |
+| Base | rebased onto `upstream/main` HEAD `ed85bcf8c` (2026-05-21); SPDX header preserved; py_compile clean. GPU smoke (6/7 PASS on RTX 4070Ti SM 8.9) was run on the pre-rebase state; can re-run on request — the kernel patch is self-contained so functional behavior is invariant under the upstream code drift around it. |
 | Verification | 6/7 dtype cases PASS on 4070Ti — see `smoke_kernel_direct_fp16.py` + `smoke_kernel_decode_fp16.py` |
 | Cross-link | none required (orthogonal to PR #1 / #8) |
 

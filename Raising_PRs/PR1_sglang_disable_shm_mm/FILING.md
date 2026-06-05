@@ -11,7 +11,8 @@
 | Target repo | https://github.com/sgl-project/sglang |
 | Base | `sgl-project/sglang:main` |
 | Head | `QIU023/sglang:pr1-disable-shm-mm` |
-| Commit | `6d3718439` (1 commit, +9/-0 in `tokenizer_manager.py`) |
+| Commit | `4bcf838df` (1 commit, +9/-0 in `tokenizer_manager.py`) |
+| Base | rebased onto `upstream/main` HEAD `ed85bcf8c` (2026-05-21); py_compile clean |
 | Cross-link | (none — independent of other PRs) |
 
 ## To open the PR
