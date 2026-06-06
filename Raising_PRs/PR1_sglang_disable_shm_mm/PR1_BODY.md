@@ -21,16 +21,33 @@ unchanged when the env is not set.
 ## Modifications
 
 Register `SGLANG_DISABLE_SHM_MM` (`EnvBool`, default off) in `srt/environ.py` and honour
-it at the top of `_determine_tensor_transport_mode` — when set, return `"default"`
-(inline-pickle, no SHM segment):
+it at the top of `_determine_tensor_transport_mode`. Type `server_args` as
+`Optional[ServerArgs]` and fold a defensive `None` check into the same return — when
+either side is true, return `"default"` (inline-pickle, no SHM segment):
 
 ```python
-if envs.SGLANG_DISABLE_SHM_MM.get():
-    return "default"
+def _determine_tensor_transport_mode(
+    server_args: Optional[ServerArgs],
+) -> TensorTransportMode:
+    if server_args is None or envs.SGLANG_DISABLE_SHM_MM.get():
+        # Fallback to default CPU transport when SHM /psm_* races the parent
+        # process-tree lifecycle or server_args is None
+        return "default"
+    is_cross_node = server_args.dist_init_addr
+    ...
 ```
 
-`+4`, two files (`environ.py`, `tokenizer_manager.py`). Env unset → `cuda_ipc` path
-selected exactly as before.
+`+7 / -1`, two files (`environ.py +1`, `tokenizer_manager.py +6 / -1`). Env unset
+**and** `server_args` non-`None` → `cuda_ipc` / `dist_init_addr` paths selected exactly
+as before.
+
+The `Optional` + `None`-on-same-return shape is per reviewer feedback: a sibling caller
+(`get_global_server_args()`) returns `None` during early imports / offline scripts /
+some unit-test paths; without the check the function crashed with
+`AttributeError: 'NoneType' object has no attribute 'dist_init_addr'` when the env was
+unset. Falling back to `"default"` is the safe, conservative behavior in those paths
+too — it never creates a `/psm_*` segment, so there is nothing for any subsequent
+teardown to invalidate.
 
 | | env unset (default) | `SGLANG_DISABLE_SHM_MM=1` |
 |---|---|---|
