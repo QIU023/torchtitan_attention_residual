@@ -6,11 +6,11 @@
 
 | Item | Link / value |
 |---|---|
-| Fork branch | https://github.com/QIU023/sglang/tree/pr8-fp8-moe-blackwell-shmem |
-| Open-PR URL | https://github.com/QIU023/sglang/pull/new/pr8-fp8-moe-blackwell-shmem |
+| Fork branch | https://github.com/QIU023/sglang/tree/yiqiaoq/fp8-moe-blackwell-shmem |
+| Open-PR URL | https://github.com/QIU023/sglang/pull/new/yiqiaoq/fp8-moe-blackwell-shmem |
 | Target repo | https://github.com/sgl-project/sglang |
 | Base | `sgl-project/sglang:main` |
-| Head | `QIU023/sglang:pr8-fp8-moe-blackwell-shmem` |
+| Head | `QIU023/sglang:yiqiaoq/fp8-moe-blackwell-shmem` |
 | Commit | `46592d9cf` (1 commit, +107/-0 in `fused_moe_triton_kernels.py`) |
 | Verification | static (py_compile); hot-path GPU smoke needs SM 12.0 (RTX 5090 — we have a fork-side benchmark in `phase11_rlhf_grpo_infra/bench_inference_dtype.py`) |
 | Cross-link | Cite **PR #10** as the documented downstream consumer-facing warning that we'd want filed if/when the deeper "illegal memory access" fp8-MoE kernel bug stays unresolved |
@@ -19,15 +19,15 @@
 
 ```bash
 cd sglang
-git push origin pr8-fp8-moe-blackwell-shmem
+git push origin yiqiaoq/fp8-moe-blackwell-shmem
 ```
 
 (Visible/irreversible — requires explicit user OK.)
 
 ## To open the PR
 
-1. Open https://github.com/QIU023/sglang/pull/new/pr8-fp8-moe-blackwell-shmem after push
-2. Confirm base = `sgl-project/sglang:main`, head = `QIU023/sglang:pr8-fp8-moe-blackwell-shmem`
+1. Open https://github.com/QIU023/sglang/pull/new/yiqiaoq/fp8-moe-blackwell-shmem after push
+2. Confirm base = `sgl-project/sglang:main`, head = `QIU023/sglang:yiqiaoq/fp8-moe-blackwell-shmem`
 3. Title + body below
 
 ---

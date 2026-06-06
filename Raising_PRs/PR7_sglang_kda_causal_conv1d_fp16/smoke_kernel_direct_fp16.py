@@ -12,7 +12,7 @@ Pre-patch (upstream/main):
         Mismatched type for col0 between then block (bf16)
         and else block (fp16)
 
-Post-patch (commit 4dfd8cf27 on ``pr7-kda-causal-conv1d-fp16``):
+Post-patch (commit 4dfd8cf27 on ``yiqiaoq/kda-causal-conv1d-fp16``):
     Kernel compiles + runs; output has the same dtype as x (fp16).
 
 Why this is more rigorous than an Engine boot smoke:

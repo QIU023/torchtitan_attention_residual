@@ -12,7 +12,7 @@ Pre-patch behaviour (upstream/main):
             and else block (fp16)
 
 Post-patch (our fork's ``a6c46168a`` isolated as commit ``4dfd8cf27``
-on branch ``pr7-kda-causal-conv1d-fp16``):
+on branch ``yiqiaoq/kda-causal-conv1d-fp16``):
     Boot succeeds; greedy decode yields tokens (random because of
     ``load_format=dummy``, but the engine doesn't crash).
 

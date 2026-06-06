@@ -83,7 +83,7 @@ batches (extra serialize + copy). This is the intended lifecycle-safety trade-of
 
 ## Checklist
 
-- [x] Format your code according to the [Format code with pre-commit](https://docs.sglang.io/developer_guide/contribution_guide.html#format-code-with-pre-commit).
+- [x] Format your code according to the [Format code with pre-commit](https://docs.sglang.io/developer_guide/contribution_guide.html#format-code-with-pre-commit). *(Verified locally against sglang's pinned hook versions on the 2 patched files: `isort 7.0.0`, `black 26.1.0`, `ruff 0.15.1` with sglang's `--select=F401,F821`, `codespell 2.4.1`, `trailing-whitespace`, `end-of-file-fixer`, `check-ast` — all clean.)*
 - [ ] Add unit tests according to the [Run and add unit tests](https://docs.sglang.io/developer_guide/contribution_guide.html#run-and-add-unit-tests). *(No CI-registered test in this PR — the IPC lifecycle race needs a multi-process GPU harness. A self-contained, GPU-free reproducer is linked in Modifications; happy to add a registered test if maintainers prefer.)*
 - [ ] Update documentation according to [Write documentations](https://docs.sglang.io/developer_guide/contribution_guide.html#write-documentations).
 - [x] Provide accuracy and speed benchmark results according to [Test the accuracy](https://docs.sglang.io/developer_guide/contribution_guide.html#test-the-accuracy) and [Benchmark the speed](https://docs.sglang.io/developer_guide/contribution_guide.html#benchmark-the-speed). *(N/A — transport-only; rationale above.)*

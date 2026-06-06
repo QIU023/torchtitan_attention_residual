@@ -4,7 +4,7 @@
 > since been prepared and pushed; the **source of truth** is now:
 > - **Title** → see [`FILING.md`](./FILING.md): `[srt/managers] Add SGLANG_DISABLE_SHM_MM to fall back to default transport when /psm_* races parent process-tree lifecycle`
 > - **Body** → [`PR1_BODY.md`](./PR1_BODY.md) (sglang official template)
-> - **As filed**: `QIU023/sglang:pr1-disable-shm-mm` @ `f98e867c02`, **2 files / +4**.
+> - **As filed**: `QIU023/sglang:yiqiaoq/disable-shm-mm` @ `f98e867c02`, **2 files / +4**.
 >
 > Do **not** act on the stale specifics below — they were revised during filing:
 > - Framing is **not** "single-node" — it's *any parent-managed process tree* (Ray / SLURM / Monarch).

@@ -4,7 +4,7 @@
 > describe the original raw-`os.environ` patch (`74083ffae`). **As actually filed**, the
 > change was hand-ported *idiomatically* (registered in `srt/environ.py`, read via
 > `envs.SGLANG_DISABLE_SHM_MM.get()`), rebased onto current `upstream/main` (`4ef081b903`),
-> and pushed as a single commit **`f98e867c02`** on `QIU023/sglang:pr1-disable-shm-mm`
+> and pushed as a single commit **`f98e867c02`** on `QIU023/sglang:yiqiaoq/disable-shm-mm`
 > (**2 files / +4**). Do **not** cherry-pick `74083ffae` as-is — it predates the rewrite.
 > Source of truth: [`FILING.md`](./FILING.md) + [`PR1_BODY.md`](./PR1_BODY.md).
 
