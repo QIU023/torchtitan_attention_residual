@@ -1,5 +1,17 @@
 # PR #1 — `SGLANG_DISABLE_SHM_MM` env to force CPU mm transport
 
+> ⚠️ **Historical scoping note — superseded.** This was the *initial* draft. The PR has
+> since been prepared and pushed; the **source of truth** is now:
+> - **Title** → see [`FILING.md`](./FILING.md): `[srt/managers] Add SGLANG_DISABLE_SHM_MM to fall back to default transport when /psm_* races parent process-tree lifecycle`
+> - **Body** → [`PR1_BODY.md`](./PR1_BODY.md) (sglang official template)
+> - **As filed**: `QIU023/sglang:pr1-disable-shm-mm` @ `f98e867c02`, **2 files / +4**.
+>
+> Do **not** act on the stale specifics below — they were revised during filing:
+> - Framing is **not** "single-node" — it's *any parent-managed process tree* (Ray / SLURM / Monarch).
+> - Patch is **idiomatic**: `SGLANG_DISABLE_SHM_MM = EnvBool(False)` in `srt/environ.py`, read via `envs.SGLANG_DISABLE_SHM_MM.get()` (not raw `os.environ.get`).
+> - **No `docs/` change** — upstream pre-commit rejects edits under legacy `docs/`; drop the "one-paragraph docs note" idea below.
+> - Reproducer lives in **this** repo (`./repro_disable_shm_mm_race.py`), **not** sglang `examples/`.
+
 **Target repo**: `sgl-project/sglang`
 **Target file**: `python/sglang/srt/managers/tokenizer_manager.py` (function `_determine_tensor_transport_mode`)
 **Fork reference**: commit `74083ffae` on `attention_residual_inference` branch.
@@ -10,7 +22,8 @@
 
 ## Suggested PR title
 
-> Add `SGLANG_DISABLE_SHM_MM` env to force CPU multimodal transport in single-node setups
+> ~~Add `SGLANG_DISABLE_SHM_MM` env to force CPU multimodal transport in single-node setups~~
+> **(superseded)** → final title: `[srt/managers] Add SGLANG_DISABLE_SHM_MM to fall back to default transport when /psm_* races parent process-tree lifecycle`
 
 ---
 
@@ -82,6 +95,13 @@ Plus a one-paragraph note in the multimodal serving docs:
 2. With env set — repro a single-node Monarch actor mesh that wraps
    the SGLang Engine; confirm boot succeeds and inline pickle
    transport is selected.
+3. **Deterministic minimal repro** (no GPU, stdlib only):
+   `./repro_disable_shm_mm_race.py` runs three back-to-back demos in
+   one invocation — `demo_shm_race` (crash on `cuda_ipc`),
+   `demo_default_no_race` (no `/psm_*` created on `"default"`,
+   race structurally impossible), `demo_gate` (env-gate decision).
+   See [`PR1_BODY.md`](./PR1_BODY.md) "Validation" section for the
+   final sample output.
 
 ### Reference downstream usage
 

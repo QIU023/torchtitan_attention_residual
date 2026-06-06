@@ -2,7 +2,7 @@
 
 ## Status
 
-🟡 **Re-prepared 2026-06-05; local commit ready; force-push + open pending.**
+🟢 **Force-pushed 2026-06-06 (`origin/pr1-disable-shm-mm` @ `8f861043e4`); PR not yet opened on GitHub.**
 
 | Item | Link / value |
 |---|---|
@@ -11,8 +11,8 @@
 | Target repo | https://github.com/sgl-project/sglang |
 | Base | `sgl-project/sglang:main` @ `4ef081b903` (2026-06-05) |
 | Head | `QIU023/sglang:pr1-disable-shm-mm` |
-| Commit | `3f4e2a3fb4` (1 commit, **3 files / +90**) |
-| Prior HEADs | `4bcf838df` (raw-os) → `cbf984255d` (rebased) → `c381a13905` (idiomatic) → `3f4e2a3fb4` (deterministic repro) |
+| Commit | `8f861043e4` (1 commit, **2 files / +4** — `environ.py +1`, `tokenizer_manager.py +3`). Code identical to `f98e867c02`; subject describes both the action (`Add SGLANG_DISABLE_SHM_MM`) and the trigger (`when /psm_* races parent process-tree lifecycle`) without "opt-out" framing; body links the strengthened reproducer. |
+| Prior HEADs | `4bcf838df` (raw-os) → `cbf984255d` (rebased) → `c381a13905` (idiomatic) → `3f4e2a3fb4` (repro in examples) → `464687ebe3` (repro removed) → `f98e867c02` (trimmed verbose comments) → `79ce6540c1` (body links 3-demo reproducer) → `4009857ba5` (Fix-first phrasing) → `8f861043e4` (Add + trigger-clause phrasing) |
 | Cross-link | (none — independent of other PRs) |
 
 > **Re-prepared 2026-06-05.** Three changes vs. the old single-hunk version:
@@ -22,15 +22,22 @@
 >    `SGLANG_DISABLE_SHM_MM = EnvBool(False)` in `srt/environ.py` (VLM Item CUDA IPC
 >    Transport group) and read it via `envs.SGLANG_DISABLE_SHM_MM.get()` instead of a
 >    raw `os.environ.get` — heads off the predictable "use environ.py" review bounce.
-> 3. **Added a GPU-free, stdlib-only reproducer** at
->    `examples/runtime/multimodal/repro_disable_shm_mm_race.py`. The producer runs as
->    its own interpreter so *its* resource_tracker unlinks the segment on exit —
->    deterministic, faithful to the Ray/SLURM/Monarch per-worker teardown.
+> 3. **Wrote a GPU-free, stdlib-only reproducer** — but kept it in **this** repo at
+>    `Raising_PRs/PR1_sglang_disable_shm_mm/repro_disable_shm_mm_race.py`, **not** in
+>    sglang's `examples/` (that tree is for first-class serving examples, not ad-hoc
+>    repros). The PR body links it. The producer runs as its own interpreter so *its*
+>    resource_tracker unlinks the segment on exit — deterministic, faithful to the
+>    Ray/SLURM/Monarch per-worker teardown.
 >
-> py_compile clean on all three files. **Reproducer verified on WSL2 / Linux:** real
-> `/psm_*` `FileNotFoundError`, 3/3 runs (Windows shows the same race under the `wnsm_`
-> backend). **Force-push to origin still pending user authorization** (history rewrite
-> of the published branch).
+> py_compile clean on both PR files. **Reproducer strengthened 2026-06-06** with a third
+> demo (`demo_default_no_race`) that runs the gated `"default"` path end-to-end and
+> proves no `/psm_*` segment is created — making the race structurally impossible on the
+> patched path. **Verified on WSL2 / Linux: 3/3 runs**, crash + no-crash + gate all
+> deterministic (Windows shows the same `/psm_*` race under the `wnsm_` backend).
+> **Force-pushed to `origin/pr1-disable-shm-mm` (`f98e867c02`).** The PR diff is
+> now **only the 2 source files** (`environ.py +1`, `tokenizer_manager.py +3`) — verbose
+> comments trimmed to a single line matching the existing `is_cross_node` style. Remaining step:
+> open the PR on github.com/sgl-project/sglang (manual web — `gh` not installed here).
 
 ## Decoupled from torchtitan — on purpose (fork is public)
 
@@ -48,7 +55,7 @@ here" line — the fork links are optional depth, not the argument.
 
 ## To open the PR
 
-1. (after force-push) Open https://github.com/QIU023/sglang/pull/new/pr1-disable-shm-mm
+1. Open https://github.com/QIU023/sglang/pull/new/pr1-disable-shm-mm (branch already pushed)
 2. Confirm base = `sgl-project/sglang:main`, head = `QIU023/sglang:pr1-disable-shm-mm`
 3. Use the title and body below verbatim
 4. Submit
@@ -58,69 +65,25 @@ here" line — the fork links are optional depth, not the argument.
 ## Title (copy-paste)
 
 ```
-[srt/managers] SGLANG_DISABLE_SHM_MM env to force CPU multimodal IPC transport
+[srt/managers] Add SGLANG_DISABLE_SHM_MM to fall back to default transport when /psm_* races parent process-tree lifecycle
 ```
 
 ## Body (copy-paste)
 
-```markdown
-## Motivation
+The PR description is maintained as a **standalone file**, aligned to the sglang official
+PR template (Motivation / Modifications / Accuracy Tests / Speed Tests and Profiling /
+Checklist / Review and Merge Process) with clean code fences:
 
-`TokenizerManager` ships multimodal image tensors to the scheduler subprocess over
-POSIX-SHM (`/psm_*`) when `cuda_ipc` is selected. When SGLang is launched *inside a
-parent-managed process tree* (Ray actor groups, SLURM job arrays, Monarch meshes),
-the parent's `resource_tracker` can unlink the segment before the scheduler opens it:
+→ [`PR1_BODY.md`](./PR1_BODY.md) — open it, select-all, paste into the PR description box.
 
-​```
-  File ".../srt/managers/tokenizer_manager.py", in _determine_tensor_transport_mode / dispatch
-    ...
-FileNotFoundError: [Errno 2] No such file or directory: '/psm_a1b2c3'
-​```
+(Kept out of this file on purpose: embedding it here forced zero-width-space hacks on the
+nested code fences and drifted out of sync. Single source of truth = `PR1_BODY.md`.)
 
-Hard crash, no recovery, engine never boots. The cross-node path already avoids SHM
-(`dist_init_addr` → `"default"`); single-node parent-managed setups have no such opt-out.
+## Reproducer
 
-## Modifications
-
-Register `SGLANG_DISABLE_SHM_MM` (`EnvBool`, default off) in `srt/environ.py` and honour
-it at the top of `_determine_tensor_transport_mode` — when set, return `"default"`
-(inline-pickle, no SHM segment):
-
-​```python
-if envs.SGLANG_DISABLE_SHM_MM.get():
-    return "default"
-​```
-
-`+86`, three files (`environ.py`, `tokenizer_manager.py`, and a GPU-free reproducer under
-`examples/runtime/multimodal/`). Env unset → `cuda_ipc` path selected exactly as before.
-
-## Effect
-
-| | env unset (default) | `SGLANG_DISABLE_SHM_MM=1` |
-|---|---|---|
-| transport | `cuda_ipc` / SHM | `"default"` (inline pickle) |
-| parent-managed tree | `FileNotFoundError: /psm_*` at boot | boots clean |
-| large-image throughput | fast path | slightly slower (extra copy) |
-
-Minimal repro (no GPU, stdlib only): `examples/runtime/multimodal/repro_disable_shm_mm_race.py`
-runs a producer in its own interpreter so its `resource_tracker` unlinks the segment on exit
-(faithful to per-worker teardown), then opens it from the consumer → deterministic
-`FileNotFoundError: /psm_*`; the gate flips the selected transport to `"default"`.
-
-## Accuracy / Speed
-
-Transport-only — `"default"` and `"cuda_ipc"` deliver byte-identical tensors to the
-scheduler, so no accuracy impact and existing multimodal tests stay green with the env
-unset. `"default"` is slightly slower for very large image batches (extra serialize +
-copy); opt-in only, default fast path untouched.
-
-## Test
-
-- [x] `py_compile` clean; default path unchanged (early-return only when env set).
-- [x] Reproducer reproduces the crash and the gate's transport flip.
-- [x] Soaked 12h under a multimodal RL workload on a Monarch actor mesh, 601 steps,
-      zero `/psm` crashes. Full harness (public): https://github.com/QIU023/torchtitan_attention_residual
-```
+`repro_disable_shm_mm_race.py` (this folder) — GPU-free, stdlib-only, deterministic
+`/psm_*` crash + gate flip. **Not** shipped in the sglang PR (kept out of upstream
+`examples/`); the PR body links it here in the public repo.
 
 ## Related work in same batch
 
