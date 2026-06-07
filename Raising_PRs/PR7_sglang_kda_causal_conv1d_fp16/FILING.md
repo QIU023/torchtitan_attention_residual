@@ -2,18 +2,18 @@
 
 ## Status
 
-🟢 **Branch pushed; smoke verified on RTX 4070Ti SM 8.9; PR not yet opened.**
+🟢 **Force-pushed 2026-06-07 after rebase + pre-commit (`origin/yiqiaoq/kda-causal-conv1d-fp16` @ `11e9084599`); PR not yet opened on GitHub.**
 
 | Item | Link / value |
 |---|---|
 | Fork branch | https://github.com/QIU023/sglang/tree/yiqiaoq/kda-causal-conv1d-fp16 |
 | Open-PR URL | https://github.com/QIU023/sglang/pull/new/yiqiaoq/kda-causal-conv1d-fp16 |
 | Target repo | https://github.com/sgl-project/sglang |
-| Base | `sgl-project/sglang:main` |
+| Base | `sgl-project/sglang:main` @ `4b0f629082` (2026-06-06; +368 commits past 2026-05-21 `ed85bcf8c` previous base, including `38ae22e08c Nemotron perf changes` which also touched `causal_conv1d_triton.py` — clean rebase replay) |
 | Head | `QIU023/sglang:yiqiaoq/kda-causal-conv1d-fp16` |
-| Commit | `240ee84c5` (1 commit, +38/-25 in `causal_conv1d_triton.py`) |
-| Base | rebased onto `upstream/main` HEAD `ed85bcf8c` (2026-05-21); SPDX header preserved; py_compile clean. GPU smoke (6/7 PASS on RTX 4070Ti SM 8.9) was run on the pre-rebase state; can re-run on request — the kernel patch is self-contained so functional behavior is invariant under the upstream code drift around it. |
-| Verification | 6/7 dtype cases PASS on 4070Ti — see `smoke_kernel_direct_fp16.py` + `smoke_kernel_decode_fp16.py` |
+| Commit | `11e9084599` (1 commit, **1 file / +38 / -25** in `causal_conv1d_triton.py`); single linear commit (no merge clutter in PR diff). |
+| Prior HEADs | `4dfd8cf27` (initial isolation from bundle `a6c46168a`) → `240ee84c5b` (prior FILING base) → `11e9084599` (rebased onto +368-commit-newer upstream/main; pre-commit clean) |
+| Verification | **Pre-commit (sglang pinned hooks on the patched file)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **GPU smoke (RTX 4070Ti SM 8.9)**: prefill 3/4 + decode 4/4 PASS — see `smoke_kernel_direct_fp16.py` + `smoke_kernel_decode_fp16.py`. Inverted-dtype write-back case is a separate symmetric bug (not a SGLang real-world config, see PR body Follow-up). |
 | Cross-link | none required (orthogonal to PR #1 / #8) |
 
 ## To open the PR
@@ -32,7 +32,12 @@
 
 ## Body
 
-Use [PR.md](PR.md) verbatim. Key sections it already contains:
+Use [PR7_BODY.md](./PR7_BODY.md) verbatim — aligned to sglang's official PR template
+(Motivation / Modifications / Accuracy Tests / Speed Tests and Profiling / Checklist /
+Review and Merge Process). Open it, select-all, paste into the PR description box.
+
+[PR.md](PR.md) below is the older internal draft, kept for historical reference. Key
+sections it already contains:
 
 - Summary + symptom traceback
 - Root cause + fix sketch

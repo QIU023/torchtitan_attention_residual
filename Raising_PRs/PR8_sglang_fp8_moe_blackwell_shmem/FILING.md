@@ -2,33 +2,27 @@
 
 ## Status
 
-🚀 **Branch pushed; PR not yet opened.**
+🟢 **Force-pushed 2026-06-07 after rebase + pre-commit (`origin/yiqiaoq/fp8-moe-blackwell-shmem` @ `fc1d8ccf1d`); PR not yet opened.**
 
 | Item | Link / value |
 |---|---|
 | Fork branch | https://github.com/QIU023/sglang/tree/yiqiaoq/fp8-moe-blackwell-shmem |
 | Open-PR URL | https://github.com/QIU023/sglang/pull/new/yiqiaoq/fp8-moe-blackwell-shmem |
 | Target repo | https://github.com/sgl-project/sglang |
-| Base | `sgl-project/sglang:main` |
+| Base | `sgl-project/sglang:main` @ `4b0f629082` (2026-06-06; +848 commits past the prior base, including `c9f582a272 LoRA fast LoRA path with experimental_sgl_trtllm` which also touched `fused_moe_triton_kernels.py` — clean rebase replay; +107 hunk applies cleanly because it's purely additive in a different region) |
 | Head | `QIU023/sglang:yiqiaoq/fp8-moe-blackwell-shmem` |
-| Commit | `46592d9cf` (1 commit, +107/-0 in `fused_moe_triton_kernels.py`) |
-| Verification | static (py_compile); hot-path GPU smoke needs SM 12.0 (RTX 5090 — we have a fork-side benchmark in `phase11_rlhf_grpo_infra/bench_inference_dtype.py`) |
+| Commit | `fc1d8ccf1d` (1 commit, **1 file / +107 / -0** in `fused_moe_triton_kernels.py`); single linear commit (no merge clutter in PR diff). |
+| Prior HEADs | `46592d9cf0` (initial isolation from bundle `a6c46168a`) → `fc1d8ccf1d` (rebased onto +848-commit-newer upstream/main; pre-commit clean) |
+| Verification | **Pre-commit (sglang pinned hooks on the patched file)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **Hot-path GPU smoke needs SM 12.0 (RTX 5090)** — fork-side benchmark in `phase11_rlhf_grpo_infra/bench_inference_dtype.py` already shows 38.9 tok/s fp8 / coherent 8/8. Non-SM-12.0 paths byte-identical via three early-return guards. |
 | Cross-link | Cite **PR #10** as the documented downstream consumer-facing warning that we'd want filed if/when the deeper "illegal memory access" fp8-MoE kernel bug stays unresolved |
-
-## To push the branch
-
-```bash
-cd sglang
-git push origin yiqiaoq/fp8-moe-blackwell-shmem
-```
-
-(Visible/irreversible — requires explicit user OK.)
 
 ## To open the PR
 
-1. Open https://github.com/QIU023/sglang/pull/new/yiqiaoq/fp8-moe-blackwell-shmem after push
+1. Open https://github.com/QIU023/sglang/pull/new/yiqiaoq/fp8-moe-blackwell-shmem
 2. Confirm base = `sgl-project/sglang:main`, head = `QIU023/sglang:yiqiaoq/fp8-moe-blackwell-shmem`
-3. Title + body below
+3. Title below; **body**: use [PR8_BODY.md](./PR8_BODY.md) verbatim (aligned to sglang's
+   official PR template — Motivation / Modifications / Accuracy Tests /
+   Speed Tests and Profiling / Checklist / Review and Merge Process).
 
 ---
 
