@@ -57,7 +57,7 @@ else:
     ...
 ```
 
-`+32 / -19`, one file. The bf16+bf16 default path is **byte-identical**: `.to(bf16)`
+`+23 / -19`, one file. The bf16+bf16 default path is **byte-identical**: `.to(bf16)`
 of a bf16 load is a no-op, and `tl.zeros(..., dtype=bf16)` is exactly what the
 unpatched else-branch produced.
 
