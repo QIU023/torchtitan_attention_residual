@@ -2,7 +2,7 @@
 
 ## Status
 
-🟢 **Force-pushed 2026-06-07 after rebase + pre-commit (`origin/yiqiaoq/kda-causal-conv1d-fp16` @ `11e9084599`); PR not yet opened on GitHub.**
+🟢 **Force-pushed 2026-06-07 after rebase + sed-revert of stale spec-decoding names + pre-commit (`origin/yiqiaoq/kda-causal-conv1d-fp16` @ `cddb6d5132`); PR not yet opened on GitHub.**
 
 | Item | Link / value |
 |---|---|
@@ -11,9 +11,9 @@
 | Target repo | https://github.com/sgl-project/sglang |
 | Base | `sgl-project/sglang:main` @ `4b0f629082` (2026-06-06; +368 commits past 2026-05-21 `ed85bcf8c` previous base, including `38ae22e08c Nemotron perf changes` which also touched `causal_conv1d_triton.py` — clean rebase replay) |
 | Head | `QIU023/sglang:yiqiaoq/kda-causal-conv1d-fp16` |
-| Commit | `11e9084599` (1 commit, **1 file / +38 / -25** in `causal_conv1d_triton.py`); single linear commit (no merge clutter in PR diff). |
-| Prior HEADs | `4dfd8cf27` (initial isolation from bundle `a6c46168a`) → `240ee84c5b` (prior FILING base) → `11e9084599` (rebased onto +368-commit-newer upstream/main; pre-commit clean) |
-| Verification | **Pre-commit (sglang pinned hooks on the patched file)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **GPU smoke (RTX 4070Ti SM 8.9)**: prefill 3/4 + decode 4/4 PASS — see `smoke_kernel_direct_fp16.py` + `smoke_kernel_decode_fp16.py`. Inverted-dtype write-back case is a separate symmetric bug (not a SGLang real-world config, see PR body Follow-up). |
+| Commit | `cddb6d5132` (1 commit, **1 file / +32 / -19** in `causal_conv1d_triton.py`); single linear commit, **no extraneous churn** — diff is exclusively the `col_dtype` constexpr + `.to(col_dtype)` casts in `_causal_conv1d_fwd_kernel` and `_causal_conv1d_update_kernel`. |
+| Prior HEADs | `4dfd8cf27` (initial isolation from bundle `a6c46168a`) → `240ee84c5b` (prior FILING base) → `11e9084599` (rebased onto +368-commit-newer upstream/main; line-based rebase silently reverted 6 upstream `num_accept_*` identifiers to the old `num_accepted_*` form because the bundle commit pre-dated upstream's [Rule 1 rename](sglang/.claude/rules/speculative-naming.md) — user caught it on manual diff review) → `cddb6d5132` (sed-restored upstream's `num_accept_*` form; diff is now purely the `col_dtype` change as intended) |
+| Verification | **Pre-commit (sglang pinned hooks on the patched file, re-run post-fix)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **GPU smoke (RTX 4070Ti SM 8.9, re-run post-fix)**: prefill 3/4 + decode 4/4 PASS — see `smoke_kernel_direct_fp16.py` + `smoke_kernel_decode_fp16.py`. Inverted-dtype write-back case is a separate symmetric bug (not a SGLang real-world config, see PR body Follow-up). |
 | Cross-link | none required (orthogonal to PR #1 / #8) |
 
 ## To open the PR
