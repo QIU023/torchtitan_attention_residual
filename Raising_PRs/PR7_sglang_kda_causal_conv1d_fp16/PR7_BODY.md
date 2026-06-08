@@ -67,6 +67,57 @@ unpatched else-branch produced.
 | `_causal_conv1d_update_kernel` | byte-identical | compiles + correct output |
 | Default Triton compile | passes (today) | passes (this PR) |
 
+## Backwards compatibility audit
+
+Every model under `sglang/srt/models/` that uses causal-conv1d goes through
+the `causal_conv1d_fn` / `causal_conv1d_update` wrappers in
+`sglang/srt/layers/attention/mamba/causal_conv1d.py`, which dispatch to the
+patched Triton kernels (`_causal_conv1d_fwd_kernel`, `_causal_conv1d_update_kernel`).
+There is no model that bypasses the wrappers to call the kernels directly. The
+known callers as of this PR:
+
+| Model family | KERNEL_WIDTH | Default cache dtype | Default model dtype |
+|---|---|---|---|
+| LFM2 / LFM2-MoE | 3 (`conv_L_cache`) | bf16 | bf16 |
+| Kimi-Linear (KDA) | 4 (`short_conv_kernel_size`) | bf16 | bf16 |
+| Qwen3-Next / Qwen3.5 (GDN backend) | varies | bf16 | bf16 |
+| Falcon-H1, Granite-Hybrid, Jet-Nemotron, Nemotron-H | varies | bf16 | bf16 |
+
+`SGLANG_MAMBA_CONV_DTYPE` is registered once at `python/sglang/srt/environ.py`
+with a default of `bfloat16` (single source for all callers), so the
+default cache dtype is bf16 across the board.
+
+**Default-path claim**: with `cache_dtype == model_dtype == bf16`, the patched
+kernel is byte-identical to the upstream kernel — the `.to(col_dtype)` cast we
+introduce is a same-dtype cast, resolved at compile time (`tl.constexpr
+col_dtype = x_ptr.dtype.element_ty`), and dropped by Triton's optimizer.
+
+**Verified empirically** (RTX 4070Ti SM 8.9):
+
+```text
+=== KERNEL_WIDTH=3, bf16+bf16, seed=42 (LFM2 production path) ===
+  [patched]  sum=285.653198
+  [upstream] sum=285.653198
+  torch.equal(upstream, patched) = True; max abs diff = 0.0
+
+=== KERNEL_WIDTH=4, bf16+bf16, seed=42 (Kimi-Linear production path) ===
+  [patched]  sum=292.020142
+  [upstream] sum=292.020142
+  torch.equal(upstream, patched) = True; max abs diff = 0.0
+```
+
+(Test harness:
+[`smoke_byte_identical_bf16.py`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_byte_identical_bf16.py)
+— same process, `git checkout` swaps the kernel between `upstream/main` and
+this PR head, fixed-seed inputs, `torch.equal()` compare.)
+
+**Non-default-path claim**: any configuration where `cache_dtype != model_dtype`
+(e.g. `--dtype float16`, `--dtype float32`, or user-set
+`SGLANG_MAMBA_CONV_DTYPE` override) hits the Triton SSA type-join failure on
+**upstream/main** and never reaches the launch site. There is no "pre-patch
+behavior" to compare against in those configurations — the PR strictly enables
+previously-broken paths without any way to regress them.
+
 ## Accuracy Tests
 
 `KERNEL_WIDTH=4` matches Kimi-Linear KDA's `short_conv_kernel_size=4`
