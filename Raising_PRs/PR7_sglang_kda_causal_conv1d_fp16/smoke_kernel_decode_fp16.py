@@ -34,15 +34,11 @@ from sglang.srt.layers.attention.mamba.causal_conv1d_triton import (
 def make_decode_inputs(
     x_dtype: torch.dtype,
     state_dtype: torch.dtype,
+    kernel_width: int = 4,
     device: str = "cuda",
 ):
-    """Build a 1-token-per-batch decode call.
-
-    Production: Kimi Linear KDA has short_conv_kernel_size=4 (HF config
-    ``short_conv_kernel_size`` field on moonshotai/Kimi-Linear-48B-A3B).
-    state_len = width - 1 = 3.
-    """
-    batch, dim, kernel_width = 2, 64, 4
+    """Build a 1-token-per-batch decode call."""
+    batch, dim = 2, 64
     state_len = kernel_width - 1
     # decode: (batch, dim) shape — single-token per batch
     x = torch.randn(batch, dim, dtype=x_dtype, device=device)
@@ -63,10 +59,13 @@ def make_decode_inputs(
     )
 
 
-def run_case(name: str, x_dtype, state_dtype) -> bool:
-    print(f"\n=== {name}: x={x_dtype}, conv_state={state_dtype} ===", flush=True)
+def run_case(name: str, x_dtype, state_dtype, kernel_width: int) -> bool:
+    print(
+        f"\n=== {name} KW={kernel_width}: x={x_dtype}, conv_state={state_dtype} ===",
+        flush=True,
+    )
     try:
-        inputs = make_decode_inputs(x_dtype, state_dtype)
+        inputs = make_decode_inputs(x_dtype, state_dtype, kernel_width=kernel_width)
         out = causal_conv1d_update(**inputs)
         torch.cuda.synchronize()
         assert out.dtype == x_dtype, f"output dtype {out.dtype} != x dtype {x_dtype}"
@@ -92,28 +91,33 @@ def main():
         flush=True,
     )
     print(f"torch {torch.__version__}", flush=True)
-    print(
-        "KERNEL_WIDTH=4 (matches Kimi Linear KDA short_conv_kernel_size=4)",
-        flush=True,
-    )
 
-    cases = [
+    # KW=3: LFM2 / LFM2-MoE (conv_L_cache); KW=4: Kimi-Linear KDA (short_conv_kernel_size)
+    production_kernel_widths = [3, 4]
+    dtype_cases = [
         ("decode_baseline_bf16_bf16", torch.bfloat16, torch.bfloat16),
         ("decode_bug_repro_fp16_x_bf16_state", torch.float16, torch.bfloat16),
         ("decode_inverted_bf16_x_fp16_state", torch.bfloat16, torch.float16),
         ("decode_all_fp16", torch.float16, torch.float16),
     ]
 
-    results = {name: run_case(name, xd, sd) for name, xd, sd in cases}
+    results = {}
+    for kw in production_kernel_widths:
+        for name, xd, sd in dtype_cases:
+            key = f"KW{kw}_{name}"
+            results[key] = run_case(key, xd, sd, kw)
 
     print("\n=== DECODE PATH SUMMARY ===", flush=True)
     for name, ok in results.items():
         print(f"  {'OK ' if ok else 'BAD'}  {name}", flush=True)
 
-    bug_case_ok = results.get("decode_bug_repro_fp16_x_bf16_state", False)
+    bug_cases_ok = all(
+        results.get(f"KW{kw}_decode_bug_repro_fp16_x_bf16_state", False)
+        for kw in production_kernel_widths
+    )
     print(
         f"\nVerdict: decode path "
-        f"{'PR #7 patch verified' if bug_case_ok else 'FAILURE'}",
+        f"{'PR #7 patch verified across all production KERNEL_WIDTHs' if bug_cases_ok else 'FAILURE'}",
         flush=True,
     )
     sys.exit(0 if all(results.values()) else 1)

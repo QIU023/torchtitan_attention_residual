@@ -120,28 +120,38 @@ previously-broken paths without any way to regress them.
 
 ## Accuracy Tests
 
-`KERNEL_WIDTH=4` matches Kimi-Linear KDA's `short_conv_kernel_size=4`
-([Kimi-Linear-48B-A3B-Instruct config.json](https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct/raw/main/config.json)),
-so the smoke exercises the exact production code path.
-
-**Direct kernel smoke matrix** (no SGLang Engine boot needed — runs both the
-prefill `_causal_conv1d_fwd_kernel` and the decode `_causal_conv1d_update_kernel`
-directly with synthetic inputs), verified on RTX 4070Ti (SM 8.9) with
-torch 2.11.0+cu130, triton 3.6.0:
+The smoke iterates the 4-case dtype matrix over both production `KERNEL_WIDTH`
+values: **`KW=3`** (LFM2 / LFM2-MoE — `conv_L_cache`) and **`KW=4`**
+(Kimi-Linear KDA — `short_conv_kernel_size`; from the
+[Kimi-Linear-48B-A3B-Instruct config.json](https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct/raw/main/config.json)).
+Verified on RTX 4070Ti (SM 8.9) with torch 2.11.0+cu130, triton 3.6.0:
 
 ```text
 Prefill (_causal_conv1d_fwd_kernel):
-  baseline_bf16_bf16             PASS
-  bug_repro_fp16_x_bf16_state    PASS   ← production scenario (this PR fixes)
-  inverted_bf16_x_fp16_state     FAIL   ← see "Follow-up" below
-  all_fp16                       PASS
+  KW3_baseline_bf16_bf16              PASS  (LFM2)
+  KW3_bug_repro_fp16_x_bf16_state     PASS  (LFM2 fp16 inference — this PR fixes)
+  KW3_inverted_bf16_x_fp16_state      FAIL  (see "Follow-up" below)
+  KW3_all_fp16                        PASS
+  KW4_baseline_bf16_bf16              PASS  (Kimi-Linear)
+  KW4_bug_repro_fp16_x_bf16_state     PASS  (Kimi-Linear fp16 inference — this PR fixes)
+  KW4_inverted_bf16_x_fp16_state      FAIL  (same follow-up; symmetric across KWs)
+  KW4_all_fp16                        PASS
 
 Decode (_causal_conv1d_update_kernel):
-  baseline_bf16_bf16             PASS
-  bug_repro_fp16_x_bf16_state    PASS   ← production scenario (this PR fixes)
-  inverted_bf16_x_fp16_state     PASS   ← decode path is symmetrically clean
-  all_fp16                       PASS
+  KW3_decode_baseline_bf16_bf16       PASS
+  KW3_decode_bug_repro_fp16_x_bf16_state    PASS
+  KW3_decode_inverted_bf16_x_fp16_state     PASS  (decode path is symmetrically clean)
+  KW3_decode_all_fp16                 PASS
+  KW4_decode_baseline_bf16_bf16       PASS
+  KW4_decode_bug_repro_fp16_x_bf16_state    PASS
+  KW4_decode_inverted_bf16_x_fp16_state     PASS
+  KW4_decode_all_fp16                 PASS
 ```
+
+The production-relevant `bug_repro_fp16_x_bf16_state` case passes on every
+combination of `KERNEL_WIDTH ∈ {3, 4}` × {prefill, decode} — i.e. both LFM2 and
+Kimi-Linear fp16 inference paths are unblocked, with both kernels touched by the
+patch covered.
 
 Smoke scripts:
 [`smoke_kernel_direct_fp16.py`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_kernel_direct_fp16.py)

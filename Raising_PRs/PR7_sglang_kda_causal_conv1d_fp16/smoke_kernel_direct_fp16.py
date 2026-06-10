@@ -47,15 +47,11 @@ from sglang.srt.layers.attention.mamba.causal_conv1d_triton import (
 def make_inputs(
     x_dtype: torch.dtype,
     state_dtype: torch.dtype,
+    kernel_width: int = 4,
     device: str = "cuda",
 ):
-    """Build a single-sequence varlen batch that hits the type-join site.
-
-    The chunk_offset==0 branch loads from conv_states (state_dtype) while
-    the else-branch creates tl.zeros at x_ptr.dtype.element_ty. For the
-    bug to fire, those must differ.
-    """
-    batch, dim, seqlen, kernel_width = 1, 64, 8, 4
+    """Build a single-sequence varlen batch that hits the type-join site."""
+    batch, dim, seqlen = 1, 64, 8
     # x layout: (dim, total_tokens) — 2D continuous-batched
     x = torch.randn(dim, seqlen, dtype=x_dtype, device=device)
     weight = torch.randn(dim, kernel_width, dtype=x_dtype, device=device)
@@ -81,10 +77,13 @@ def make_inputs(
     )
 
 
-def run_case(name: str, x_dtype, state_dtype) -> bool:
-    print(f"\n=== {name}: x={x_dtype}, conv_states={state_dtype} ===", flush=True)
+def run_case(name: str, x_dtype, state_dtype, kernel_width: int) -> bool:
+    print(
+        f"\n=== {name} KW={kernel_width}: x={x_dtype}, conv_states={state_dtype} ===",
+        flush=True,
+    )
     try:
-        inputs = make_inputs(x_dtype, state_dtype)
+        inputs = make_inputs(x_dtype, state_dtype, kernel_width=kernel_width)
         out = causal_conv1d_fn(**inputs)
         torch.cuda.synchronize()
         assert out.dtype == x_dtype, f"output dtype {out.dtype} != x dtype {x_dtype}"
@@ -112,26 +111,31 @@ def main():
     )
     print(f"torch {torch.__version__}", flush=True)
 
-    cases = [
-        # Baseline: same dtype → no bug even pre-patch
+    # KW=3: LFM2 / LFM2-MoE (conv_L_cache); KW=4: Kimi-Linear KDA (short_conv_kernel_size)
+    production_kernel_widths = [3, 4]
+    dtype_cases = [
         ("baseline_bf16_bf16", torch.bfloat16, torch.bfloat16),
-        # The actual bug scenario PR #7 fixes
         ("bug_repro_fp16_x_bf16_state", torch.float16, torch.bfloat16),
-        # Inverted mismatch (also exercises type-join branch)
         ("inverted_bf16_x_fp16_state", torch.bfloat16, torch.float16),
-        # All-fp16 (also new dtype path for KDA)
         ("all_fp16", torch.float16, torch.float16),
     ]
 
-    results = {name: run_case(name, xd, sd) for name, xd, sd in cases}
+    results = {}
+    for kw in production_kernel_widths:
+        for name, xd, sd in dtype_cases:
+            key = f"KW{kw}_{name}"
+            results[key] = run_case(key, xd, sd, kw)
 
     print("\n=== SUMMARY ===", flush=True)
     for name, ok in results.items():
         print(f"  {'OK ' if ok else 'BAD'}  {name}", flush=True)
 
-    bug_case_ok = results.get("bug_repro_fp16_x_bf16_state", False)
+    bug_cases_ok = all(
+        results.get(f"KW{kw}_bug_repro_fp16_x_bf16_state", False)
+        for kw in production_kernel_widths
+    )
     print(
-        f"\nVerdict: {'PR #7 patch verified' if bug_case_ok else 'FAILURE'} on this device",
+        f"\nVerdict: {'PR #7 patch verified across all production KERNEL_WIDTHs' if bug_cases_ok else 'FAILURE'}",
         flush=True,
     )
     sys.exit(0 if all(results.values()) else 1)
