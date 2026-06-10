@@ -107,7 +107,7 @@ col_dtype = x_ptr.dtype.element_ty`), and dropped by Triton's optimizer.
 ```
 
 (Test harness:
-[`smoke_byte_identical_bf16.py`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_byte_identical_bf16.py)
+[`smoke_pr7.py byte-identical`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_pr7.py)
 — same process, `git checkout` swaps the kernel between `upstream/main` and
 this PR head, fixed-seed inputs, `torch.equal()` compare.)
 
@@ -153,12 +153,21 @@ combination of `KERNEL_WIDTH ∈ {3, 4}` × {prefill, decode} — i.e. both LFM2
 Kimi-Linear fp16 inference paths are unblocked, with both kernels touched by the
 patch covered.
 
-Smoke scripts:
-[`smoke_kernel_direct_fp16.py`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_kernel_direct_fp16.py)
-(prefill) +
-[`smoke_kernel_decode_fp16.py`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_kernel_decode_fp16.py)
-(decode). Both are GPU-required but zero-network: they import only the patched
-kernel module and feed synthetic 64×8 batches.
+Smoke harness:
+[`smoke_pr7.py`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_pr7.py)
+— one file, three CLI subcommands:
+
+```bash
+python smoke_pr7.py prefill          # _causal_conv1d_fwd_kernel dtype matrix
+python smoke_pr7.py decode           # _causal_conv1d_update_kernel dtype matrix
+python smoke_pr7.py byte-identical   # bf16+bf16 vs upstream/main (torch.equal)
+python smoke_pr7.py all              # all three back-to-back (default)
+```
+
+All modes are GPU-required but zero-network: they import only the patched
+kernel module and feed synthetic 64×8 batches. The `byte-identical` mode
+additionally calls `git checkout` inside the sglang submodule to swap the
+kernel between `upstream/main` and the patched HEAD.
 
 **End-to-end research-fork verification** (Kimi-Linear AttnRes inference under
 `--dtype float16`): coherent 8/8 on the smoke prompt set at **44.5 tok/s** vs

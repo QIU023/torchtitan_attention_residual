@@ -13,7 +13,7 @@
 | Head | `QIU023/sglang:yiqiaoq/kda-causal-conv1d-fp16` |
 | Commit | `dba9e9c9f0` (1 commit, **1 file / +23 / -19** in `causal_conv1d_triton.py`); single linear commit, no extraneous churn — diff is exclusively the `col_dtype` constexpr + `.to(col_dtype)` casts in `_causal_conv1d_fwd_kernel` and `_causal_conv1d_update_kernel`, with each new comment trimmed to a single line per the [project's one-line-comments rule](../../memory/feedback_comments_one_line.md). |
 | Prior HEADs | `4dfd8cf27` (initial isolation from bundle `a6c46168a`) → `240ee84c5b` (prior FILING base) → `11e9084599` (rebased onto +368-commit-newer upstream/main; line-based rebase silently reverted 6 upstream `num_accept_*` identifiers to the old `num_accepted_*` form because the bundle commit pre-dated upstream's Rule 1 rename — user caught it on manual diff review) → `cddb6d5132` (sed-restored upstream's `num_accept_*` form; diff is now purely the `col_dtype` change as intended) → `dba9e9c9f0` (shrank the 8-line `NOTE` block in `_causal_conv1d_fwd_kernel` and 3-line "See note" comment in `_causal_conv1d_update_kernel` each to one line, per the one-line-comments rule) |
-| Verification | **Pre-commit (sglang pinned hooks on the patched file, re-run post-fix)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **GPU smoke (RTX 4070Ti SM 8.9, re-run post-fix)**: prefill 3/4 + decode 4/4 PASS — see `smoke_kernel_direct_fp16.py` + `smoke_kernel_decode_fp16.py`. Inverted-dtype write-back case is a separate symmetric bug (not a SGLang real-world config, see PR body Follow-up). |
+| Verification | **Pre-commit (sglang pinned hooks on the patched file, re-run post-fix)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **GPU smoke (RTX 4070Ti SM 8.9)**: consolidated in [`smoke_pr7.py`](./smoke_pr7.py) (three modes: `prefill` / `decode` / `byte-identical`); production `bug_repro_fp16_x_bf16_state` PASSes on every `KW ∈ {3, 4}` × {prefill, decode} combo (i.e. both LFM2 and Kimi-Linear fp16 paths) **and** `torch.equal(upstream, patched) = True` on bf16+bf16 for both KWs. Inverted-dtype write-back case still FAILs on prefill — separate symmetric bug, not a SGLang real-world config (see PR body Follow-up). |
 | Cross-link | none required (orthogonal to PR #1 / #8) |
 
 ## To open the PR
@@ -51,8 +51,10 @@ The two smoke scripts in this folder are runnable independently:
 
 ```bash
 # Both require torch + triton + a CUDA-visible GPU
-python Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_kernel_direct_fp16.py
-python Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_kernel_decode_fp16.py
+python Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_pr7.py all              # prefill + decode + byte-identical
+python Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_pr7.py prefill          # just fwd kernel dtype matrix
+python Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_pr7.py decode           # just update kernel dtype matrix
+python Raising_PRs/PR7_sglang_kda_causal_conv1d_fp16/smoke_pr7.py byte-identical   # just bf16 regression vs upstream
 ```
 
 Sample output (RTX 4070Ti SM 8.9, torch 2.11.0+cu130, triton 3.6.0):
