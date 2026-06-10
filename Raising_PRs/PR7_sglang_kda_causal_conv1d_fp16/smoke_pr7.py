@@ -140,6 +140,7 @@ def run_prefill_smoke() -> bool:
 def _make_inputs_decode(x_dtype, state_dtype, kernel_width):
     batch, dim = 2, 64
     state_len = kernel_width - 1
+    # Arg shape mirrors production decode callers (kda_backend.py / lfm2.py): conv_state_indices only, no cache_seqlens.
     return dict(
         x=torch.randn(batch, dim, dtype=x_dtype, device="cuda"),
         conv_state=torch.zeros(
@@ -148,7 +149,6 @@ def _make_inputs_decode(x_dtype, state_dtype, kernel_width):
         weight=torch.randn(dim, kernel_width, dtype=x_dtype, device="cuda"),
         bias=torch.randn(dim, dtype=x_dtype, device="cuda"),
         activation="silu",
-        cache_seqlens=torch.tensor([5, 8], dtype=torch.int32, device="cuda"),
         conv_state_indices=torch.tensor([0, 1], dtype=torch.int32, device="cuda"),
     )
 

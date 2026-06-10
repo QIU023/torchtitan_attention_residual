@@ -165,9 +165,14 @@ python smoke_pr7.py all              # all three back-to-back (default)
 ```
 
 All modes are GPU-required but zero-network: they import only the patched
-kernel module and feed synthetic 64×8 batches. The `byte-identical` mode
-additionally calls `git checkout` inside the sglang submodule to swap the
-kernel between `upstream/main` and the patched HEAD.
+kernel module and feed synthetic inputs (prefill: `dim=64 × seqlen=8` varlen
+batch; decode: `batch=2 × dim=64` single-token step). The decode inputs mirror
+the production decode callers (`kda_backend.py` / `lfm2.py`):
+`conv_state_indices` only, no `cache_seqlens` (the circular-buffer arg is
+documented "not implemented yet" in the wrapper and unused by every in-tree
+caller). The `byte-identical` mode additionally calls `git checkout` inside
+the sglang submodule to swap the kernel between `upstream/main` and the
+patched HEAD.
 
 **End-to-end research-fork verification** (Kimi-Linear AttnRes inference under
 `--dtype float16`): coherent 8/8 on the smoke prompt set at **44.5 tok/s** vs
