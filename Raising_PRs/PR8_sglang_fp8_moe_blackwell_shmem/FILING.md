@@ -2,18 +2,18 @@
 
 ## Status
 
-🟢 **Force-pushed 2026-06-07 after rebase + pre-commit (`origin/yiqiaoq/fp8-moe-blackwell-shmem` @ `fc1d8ccf1d`); PR not yet opened.**
+🟢 **Force-pushed 2026-06-10 after comment-trim + smoke (`origin/yiqiaoq/fp8-moe-blackwell-shmem` @ `5496f15c67`); PR not yet opened.**
 
 | Item | Link / value |
 |---|---|
 | Fork branch | https://github.com/QIU023/sglang/tree/yiqiaoq/fp8-moe-blackwell-shmem |
 | Open-PR URL | https://github.com/QIU023/sglang/pull/new/yiqiaoq/fp8-moe-blackwell-shmem |
 | Target repo | https://github.com/sgl-project/sglang |
-| Base | `sgl-project/sglang:main` @ `4b0f629082` (2026-06-06; +848 commits past the prior base, including `c9f582a272 LoRA fast LoRA path with experimental_sgl_trtllm` which also touched `fused_moe_triton_kernels.py` — clean rebase replay; +107 hunk applies cleanly because it's purely additive in a different region) |
+| Base | `sgl-project/sglang:main` @ `4b0f629082` (2026-06-06; +848 commits past the prior base, including `c9f582a272 LoRA fast LoRA path with experimental_sgl_trtllm` which also touched `fused_moe_triton_kernels.py` — clean rebase replay; the hunk applies cleanly because it's purely additive in a different region) |
 | Head | `QIU023/sglang:yiqiaoq/fp8-moe-blackwell-shmem` |
-| Commit | `fc1d8ccf1d` (1 commit, **1 file / +107 / -0** in `fused_moe_triton_kernels.py`); single linear commit (no merge clutter in PR diff). |
-| Prior HEADs | `46592d9cf0` (initial isolation from bundle `a6c46168a`) → `fc1d8ccf1d` (rebased onto +848-commit-newer upstream/main; pre-commit clean) |
-| Verification | **Pre-commit (sglang pinned hooks on the patched file)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **Hot-path GPU smoke needs SM 12.0 (RTX 5090)** — fork-side benchmark in `phase11_rlhf_grpo_infra/bench_inference_dtype.py` already shows 38.9 tok/s fp8 / coherent 8/8. Non-SM-12.0 paths byte-identical via three early-return guards. |
+| Commit | `5496f15c67` (1 commit, **1 file / +95 / -0** in `fused_moe_triton_kernels.py`); single linear commit. The 8-line block comment moved into `_sm120_shmem_per_block_bytes`'s docstring; all inline comments trimmed to one line per the one-line-comments rule; the block-shape comment rewritten to match what the code does (pins N/K back to block_shape, rather than "don't touch"). |
+| Prior HEADs | `46592d9cf0` (initial isolation from bundle `a6c46168a`) → `fc1d8ccf1d` (rebased onto +848-commit-newer upstream/main; pre-commit clean) → `5496f15c67` (comments one-lined / moved to docstring; misleading block-shape comment fixed; -12 lines) |
+| Verification | **Pre-commit (sglang pinned hooks, re-run post-trim)**: `isort 7.0.0` ✓ `black 26.1.0` ✓ `ruff 0.15.1` (`--select=F401,F821`) ✓ `codespell 2.4.1` ✓. **Local smoke ([`smoke_pr8.py`](./smoke_pr8.py), RTX 4070Ti)**: 12/12 PASS — real-device mode proves the non-SM-12.0 identity early-return; mock-SM120 mode proves the shrink arithmetic (H100 default → `{M:64, N:128, K:128, warps:4, stages:2}`, est 49152 ≤ 101376), guard cases, block-shape pinning, input non-mutation. **What still needs SM 12.0 (RTX 5090)**: the real `OutOfResources` trigger + post-shrink launch — covered by the fork-side production run (38.9 tok/s fp8 / coherent 8/8, `phase11_rlhf_grpo_infra/bench_inference_dtype.py`). |
 | Cross-link | Cite **PR #10** as the documented downstream consumer-facing warning that we'd want filed if/when the deeper "illegal memory access" fp8-MoE kernel bug stays unresolved |
 
 ## To open the PR

@@ -83,6 +83,35 @@ per-tile launch geometry. Output is bit-identical at fixed seed on:
 The shrunk path is what gets exercised on RTX 5090; coherent generations on the
 Kimi-Linear AttnRes fp8 inference smoke (see Speed Tests below).
 
+**Helper-logic verification** (12 checks, RTX 4070Ti SM 8.9 + monkeypatched
+SM-12.0 detection — the helper is pure Python, so everything except the real
+`OutOfResources` trigger and the post-shrink launch is verifiable without
+Blackwell hardware):
+
+```text
+REAL-DEVICE (early-return guards, actual SM 8.9):
+  PASS  non_sm120_returns_same_object       ← identity, not equality: byte-identical guarantee
+  PASS  non_sm120_config_unmutated
+  PASS  non_quant_path_returns_same_object_any_device
+
+MOCK-SM120 (is_sm120_supported + shmem cap patched to RTX 5090's 101376):
+  PASS  h100_default_shrunk        → {M:64, N:128, K:128, warps:4, stages:2}
+  PASS  shrunk_config_fits_cap     → est 49152 ≤ 101376
+  PASS  input_config_not_mutated
+  PASS  int8_path_shrinks_too
+  PASS  bf16_path_untouched_on_sm120
+  PASS  fitting_config_returns_same_object
+  PASS  blockwise_pins_n_k         → N=128, K=128 (block_shape=[128,128])
+  PASS  blockwise_result_fits_cap  → est 49152
+  PASS  hopper_cap_on_sm120_returns_same_object
+```
+
+Harness:
+[`smoke_pr8.py`](https://github.com/QIU023/torchtitan_attention_residual/blob/main/Raising_PRs/PR8_sglang_fp8_moe_blackwell_shmem/smoke_pr8.py)
+— two CLI subcommands (`real-device` / `mock-sm120`, default `all`). The
+real-device mode asserts the *same object* comes back (`is`, not `==`) on
+non-SM-12.0 devices, which is the strongest possible no-op guarantee.
+
 ## Speed Tests and Profiling
 
 - **H100/A100/B100/MI300**: no extra ops on the existing path (early return
