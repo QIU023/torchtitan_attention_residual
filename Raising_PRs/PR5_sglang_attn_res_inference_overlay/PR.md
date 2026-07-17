@@ -93,8 +93,12 @@ Land in 3 PRs (after the RFC discussion concludes):
 
 ## Filing checklist
 
-- [ ] Wait for Kimi K-series production model to land publicly so
-      the algorithm has a deployment artifact to point at.
+- [x] Wait for Kimi K-series production model to land publicly so
+      the algorithm has a deployment artifact to point at. **MET
+      2026-07-16: Kimi K3 released, blog officially confirms AttnRes
+      (~25% training efficiency, <2% compute overhead). Full weights
+      2026-07-27 — file the RFC after that date for the strongest
+      "production-grade upstream method" framing.**
 - [ ] File RFC issue first with the 3-PR staging plan + design
       decisions list (per-block aggregation API, eager-fallback hook
       registry, dual-arch dispatch).

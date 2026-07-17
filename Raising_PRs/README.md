@@ -23,7 +23,7 @@ Filing flow per PR:
 | 2 | `PR2_sglang_base64_data_url/` | sglang | base64 data-URL in `attn_res_vl` image loader | Phase 11 | 🟡 Ready (`850ebb715`); blocks on PR #5 |
 | 3 | `PR3_sglang_flashinfer_mla_bf16_nan/` | sglang + flashinfer | flashinfer_mla bf16 NaN repro + fp32 fallback knob | Phase 11 | 🟠 Issue ready; FILING.md drafted with target URLs (sglang + flashinfer cross-link). |
 | 4 | `PR4_torchtitan_parallelize_fn_signature/` | torchtitan | `parallelize_fn` signature stability for `experiments.rl.PolicyTrainer` | Phase 11 | ⛔ **OBSOLETED-BY-UPSTREAM** (2026-05-17). `627f4a31 [rl] Trainer refactor` already landed the widening on 2026-04-20. Fork rebase tracked in [`FORK_REBASE_TASK.md`](FORK_REBASE_TASK.md). |
-| 5 | `PR5_sglang_attn_res_inference_overlay/` | sglang | Block AttnRes inference overlay (Kimi + Qwen3 carriers) | Algorithm root Phase 2-4; inference path Phase 11 | 🟠 Research-track; needs Kimi K-series release for legitimacy |
+| 5 | `PR5_sglang_attn_res_inference_overlay/` | sglang | Block AttnRes inference overlay (Kimi + Qwen3 carriers) | Algorithm root Phase 2-4; inference path Phase 11 | 🟢 **Gate MET (2026-07-16)**: Kimi K3 released, officially confirming AttnRes (~25% training efficiency, <2% overhead). Legitimacy anchor now exists (cite K3 blog). File the RFC after K3 weights drop **2026-07-27** for the strongest anchor. See [`../K3_RELEASE_IMPACT_2026-07-16.md`](../K3_RELEASE_IMPACT_2026-07-16.md). |
 | 6 | `PR6_sglang_rs_merge_ag_seq_shard_fusion/` | sglang | RS+merge+AG seq-shard fusion as a documented feature | Phase 11 | 🟠 RFC; depends on PR #5 + ≥1 other adopter |
 | 7 | `PR7_sglang_kda_causal_conv1d_fp16/` | sglang | KDA `causal_conv1d_triton` fp16 dtype type-join fix | Phase 11 | 🚀 **Branch pushed** → [yiqiaoq/kda-causal-conv1d-fp16](https://github.com/QIU023/sglang/tree/yiqiaoq/kda-causal-conv1d-fp16). GPU smoke verified on RTX 4070Ti SM 8.9 (6/7 cases). PR not yet opened. See [`PR7.../FILING.md`](PR7_sglang_kda_causal_conv1d_fp16/FILING.md). |
 | 8 | `PR8_sglang_fp8_moe_blackwell_shmem/` | sglang | fp8 weight-only MoE fused kernel Blackwell shmem autotune | Phase 11 | 🚀 **Branch pushed** → [yiqiaoq/fp8-moe-blackwell-shmem](https://github.com/QIU023/sglang/tree/yiqiaoq/fp8-moe-blackwell-shmem). Static-verified (`py_compile` OK; GPU smoke needs SM 12.0). PR not yet opened. See [`PR8.../FILING.md`](PR8_sglang_fp8_moe_blackwell_shmem/FILING.md). |
@@ -60,7 +60,7 @@ Refreshed 2026-05-17 after PR #4 obsoleted-by-upstream:
 4. **PR #11 issue** for torchstore (API design discussion).
 5. **PR #8** with partial shmem-shrink + ICA-acknowledgement.
 6. **PR #6** as a design RFC (no code change yet).
-7. **PR #5** RFC after Kimi K-series release; staged landing (algorithm → carrier → VL).
+7. **PR #5** RFC — gate MET (K3 released 2026-07-16); file after K3 weights drop 2026-07-27; staged landing (algorithm → carrier → VL).
 8. **PR #9** alongside or folded into PR #5 (cuBLAS bypass + cuBLAS-side reproducer issue).
 9. **PR #2** folded into PR #5, or as a 6-line follow-up.
 10. **PR #12** (engine-agnostic Generator) — now unblocked; file the RFC anytime; code PR follows RFC discussion.
