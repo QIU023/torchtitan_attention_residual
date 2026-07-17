@@ -115,35 +115,64 @@ benchmark:   48B-base vs 48B+AttnRes A/B, competitive with same-scale (~A3B) mod
 4. veRL post-training (FSDP+TP+EP): sequence-KD from K3 API + GRPO on target task.
 5. Benchmark the A/B; write up.
 
-## 4. Merge recipe (run on the GPU box — do NOT do this where torch is absent)
+## 4. Upstream merge — split-merge strategy (reviewed 2026-07-17 @ upstream `fbceec07`)
 
-The upstream merge was aborted on the Windows box because torch isn't importable
-there and the merge touches core training code that must be `pytest`-validated.
-On the GPU box:
+A real `git merge upstream/main` from `90d85eba3` produces **10 conflicts**, and
+they split into two very different halves. The merge was reviewed on the Windows
+box (torch absent -> can't `pytest`) and aborted; execute the split below on the
+GPU box.
+
+### Key finding: upstream rebuilt the RL experiment
+
+Between our fork point and `fbceec07`, upstream **completely restructured
+`experiments/rl/`** — added `components/`, `controller`, `environment/`,
+`examples/`, `losses/`, `observability/`; moved model registration from
+`plugin.py` to `models/vllm_registry.py`; and it is **vLLM-only (no SGLang)**.
+Our RL (`actors/sglang_generator`, `opd_trainer`, `grader`, `plugin`, `utils`) has
+no upstream equivalent — it is a parallel universe. **Merging the RL half is
+fighting upstream's rebuild for zero phase13 value** (phase13 post-trains via
+veRL, not torchtitan-experiment-RL).
+
+### Half A — Core / AttnRes (DO merge; low-risk, mostly "our torch-2.9 compat shim vs upstream newer-torch"; the box is torch 2.11)
+
+| File | Regions | Resolution |
+|---|---|---|
+| `experiments/__init__.py` | 1 | union: upstream list + our `"attention_residual"` |
+| `models/common/attention.py` | 2 | take upstream (2.11 has varlen + inductor flag); ALSO add upstream's `VarlenAuxRequest` import; confirm nothing uses our SDPA fallback |
+| `models/common/decoder.py` | 1 | union BOTH params: upstream's `attention_masks` + our `return_outputs` |
+| `distributed/parallel_dims.py` | 1 | take upstream (2.11 has `_unflatten`); drop our hasattr guard |
+| `distributed/context_parallel.py` | 1 | review on box; same compat pattern, likely take upstream |
+
+### Half B — RL experiment (do NOT reconcile; keep ours, we are on veRL)
+
+`plugin.py` (upstream-deleted; our SGLang reg), `actors/utils.py` (upstream-deleted,
++235 ours), `actors/trainer.py` (5 regions), `types.py` (2), `rl/__init__.py` (1).
+
+### Recipe (path-scoped merge on the GPU box)
 
 ```bash
-cd torchtitan  # the submodule
-git checkout attention_residual_dev
-git fetch origin && git fetch upstream
-git merge --ff-only origin/attention_residual_dev   # sync local to 90d85eba3
-git merge --no-ff upstream/main                      # 1 conflict expected
-# Resolve torchtitan/experiments/__init__.py: keep upstream's list changes
-#   (torchft.llama3 rename, alphabet_sort, search_r1) AND re-add our two entries.
-#   NOTE: verify whether the fork's module name is "attn_res"/"kimi_linear" or the
-#   consolidated "attention_residual" — the dir is now experiments/attention_residual/
-#   with kimi_linear/ nested; the registry entry MUST match the real module path.
-# Then VALIDATE (mandatory — 11 core files auto-merged, may be silently broken):
-python -c "import torchtitan.experiments.attention_residual"   # import gate
-pytest torchtitan/experiments/attention_residual/tests/ -x     # unit gate
-# smoke a 5-step debug-flavor train to catch semantic breakage in the auto-merged
-#   distributed/parallel_dims.py, models/common/attention.py, decoder.py.
+cd torchtitan
+git checkout attention_residual_dev && git merge --ff-only origin/attention_residual_dev
+git fetch upstream
+git merge --no-commit --no-ff upstream/main
+# Half B: keep ours wholesale (freeze our SGLang RL; phase13 uses veRL anyway)
+git checkout --ours -- torchtitan/experiments/rl/ && git add torchtitan/experiments/rl/
+# Half A: resolve the 5 core conflicts per the table above, then git add each
+# VALIDATE (mandatory — auto-merged core files may be silently broken):
+python -c "import torchtitan.experiments.attention_residual"
+pytest torchtitan/experiments/attention_residual/tests/ -x
+# smoke a 5-step debug-flavor train (catches semantic breakage in the auto-merged
+#   distributed/ + models/common/ files that DID NOT conflict textually).
 ```
 
-Conflict surface (files both sides changed): `distributed/{activation_checkpoint,
-context_parallel,parallel_dims,utils}.py`, `experiments/__init__.py`,
-`experiments/rl/{__init__,actors/trainer,actors/utils,plugin,types}.py`,
-`models/common/{attention,decoder}.py`. Only `experiments/__init__.py` conflicts
-textually; the other 11 auto-merge but need the smoke test.
+**Insight:** upstream RL is still vLLM-only. Our engine-agnostic SGLang generator
+remains a real upstream gap (feeds PR #12). Not "scooped" by the rebuild.
+
+Full conflict list (10): Half A = `distributed/{parallel_dims,context_parallel}.py`,
+`models/common/{attention,decoder}.py`, `experiments/__init__.py`. Half B =
+`experiments/rl/{__init__,types}.py`, `rl/actors/{trainer,utils}.py`, `rl/plugin.py`.
+Beyond these, other core files (`distributed/{activation_checkpoint,utils}.py`)
+auto-merge textually but still need the smoke test.
 
 ## 5. Honest caveats (do not skip these in any writeup)
 
@@ -171,3 +200,36 @@ The shareable claim, kept honest:
 
 Hold the scope line (§5). The value is the **framework-layer artifact**, not a
 benchmark-topping model.
+
+## 7. Confirmed timeline (2026-07-17)
+
+### Before 2026-07-27 (start now — nothing here waits on K3 weights)
+
+1. **phase13 main line**: veRL + torchtitan `kimi_linear`, base = Kimi-Linear-48B-A3B
+   open weights, graft AttnRes -> continued-PT (5D) -> veRL post-train (FSDP+TP+EP).
+2. **Sequence-KD data collection via the Kimi API — available NOW.** Start pulling
+   K3 outputs on the target task(s) into an SFT/seq-distill corpus; this needs only
+   the public API, no local 2.8T, no weights. Front-load it so the corpus is ready
+   when the trainer is.
+3. Upstream merge (split strategy §4) on the GPU box; pytest-gate.
+4. Base-vs-+AttnRes A/B on a scoped task.
+
+### After 2026-07-27 (weights + config + report drop)
+
+1. **Reconcile** AttnRes N/placement against K3's real config; optionally graft
+   Quantile Balancing / Per-Head Muon (per §1 graftability). Base stays 48B.
+2. **2.8T-under-limited-resources scenarios**, ranked by feasibility:
+
+| # | Scenario | Feasible on rented multi-H200? | Value |
+|---|---|---|---|
+| 1 | **Seq-KD via API** (continue) | yes (no local 2.8T) | primary distill signal |
+| 2 | **Config/weight reconciliation** — load K3 config + partial-read AttnRes params | yes (cheap; partial load) | fixes N + validates our port |
+| 3 | **K3 MXFP4 inference benchmark** — serve 2.8T, compare our two-phase AttnRes overlay | yes, short rental (~1.4TB MXFP4 -> ~18+ H200) | inference-side evidence |
+| 4 | **Logit-level OPD** — local 2.8T teacher -> distill into 48B student | stretch (same ~18 H200, longer run) | stronger than seq-KD |
+| 5 | **QLoRA on real 2.8T** | marginal (multi-node, expensive) | probably skip |
+| 6 | **Small AttnRes as K3 draft model** (speculative decoding) | niche (needs local K3 inference + logits) | skip unless #3 already stood up |
+
+3. **Decision rule:** scenarios 1-2 are cheap and always-do. 3 is the natural next
+   rental (inference-only, short). 4 only if the seq-KD signal proves too weak. 5-6
+   are opportunistic. **None of these require training the 2.8T** — the phase13
+   deliverable (48B K3-like training stack) stands on its own regardless.
