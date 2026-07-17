@@ -72,6 +72,24 @@ list — none invalidate our AttnRes work, but expect them in the report:
 contribution is scoped to **AttnRes + the PP cross-stage cache adapter + KDA/MLA
 port**, and that scope stays intact.
 
+**Graftability onto a *pretrained* Kimi-Linear-48B base** (for the [phase 13
+plan](phase13_k3like_48b_posttrain/PLAN.md)): **AttnRes** (zero-init, safe),
+**Quantile Balancing** (routing, training-time), and **Per-Head Muon** (optimizer)
+graft cleanly. **Gated MLA** is hard (changes attention structure), **SiTU** is
+not graftable (weights trained for SwiGLU), **Stable LatentMoE** is unknown until
+the report. So the realistic "K3-like" model = **Kimi-Linear-48B + AttnRes**
+(+ optional Quantile Balancing / Per-Head Muon).
+
+**Distributed-infra completeness (audited 2026-07-16 @ torchtitan `90d85eba3`):**
+model-side 5D is code-complete — `parallelize_kimi_linear` implements FSDP2/HSDP,
+TP (DSv3-style, KDA=NoParallel, fla-core DTensor patch), EP (all-to-all), and the
+PP `pipelining_fn` adapter; only **CP** is missing and it is upstream-blocked
+(fla-core `chunk_kda` lacks ring-recurrence). Gaps are not primitives but
+*composition* (full-5D-at-once untested off multi-H200) and *veRL integration
+glue* (does veRL's torchtitan worker drive `pipelining_fn`; train<->rollout
+weight reshard; rollout-side AttnRes serving). At 48B, FSDP+TP+EP holds the model
+without PP, so veRL post-training runs without the PP-integration gap.
+
 ## 4. Pre-registered reconciliation checklist (execute when weights drop 2026-07-27)
 
 The moment K3's `config.json` / `modeling_*.py` / tech report is public, diff
