@@ -27,11 +27,11 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 
 - AttnRes primitive + a Kimi-Linear port (KDA via `fla-core`, MLA, MoE) with
   FSDP2 / TP / EP parallelization —
-  [implementation](https://github.com/QIU023/torchtitan/tree/attention_residual_dev/torchtitan/experiments/kimi_k3).
+  [implementation](https://github.com/QIU023/torchtitan/tree/469577cdf/torchtitan/experiments/kimi_k3).
 - PP support via a cross-stage adapter kept **private to the model folder's
   `parallelize`** — no core changes, per earlier feedback on the
   generic-mechanism proposal:
-  [adapter](https://github.com/QIU023/torchtitan/blob/attention_residual_dev/torchtitan/experiments/kimi_k3/pipeline_adapter.py),
+  [adapter](https://github.com/QIU023/torchtitan/blob/469577cdf/torchtitan/experiments/kimi_k3/pipeline_adapter.py),
   [design notes + pressure-test launchers](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase3_attnres_pp_integration).
 - Numerics: naive-vs-adapter loss within the bf16 nondeterminism band
   (|Δloss| ≤ 0.011) across PP×VP shapes up to **PP=8 × VP=4 (32 virtual
@@ -40,7 +40,7 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 - 12.5K-step training runs on the 436M/447M Kimi-Linear shapes —
   [phase-4 pretrain log](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase4_kimi_attnres_lm_pretrain/README.md).
 - CPU unit tests for the primitive, model, and pipeline adapter —
-  [tests](https://github.com/QIU023/torchtitan/tree/attention_residual_dev/torchtitan/experiments/kimi_k3/tests).
+  [tests](https://github.com/QIU023/torchtitan/tree/469577cdf/torchtitan/experiments/kimi_k3/tests).
 
 ## Plan
 
