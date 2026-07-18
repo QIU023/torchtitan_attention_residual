@@ -9,20 +9,19 @@
 
 ## Summary
 
-#3029 proposed Block Attention Residuals (AttnRes) and was deferred pending
-adoption by a production model. **Kimi K3 (released 2026-07-16) is that
-model**: the [official blog](https://www.kimi.com/blog/kimi-k3) confirms
+I have previously raised RFC #3029 proposing Block Attention Residuals (AttnRes) with a personal torchtitan fork containing its distributed parallelism infra implementations. Per maintainer feedback, the PR was gated on a production model adopting Attention Residuals, which has now arrived: **Kimi K3** — the [official blog](https://www.kimi.com/blog/kimi-k3) confirms
 AttnRes + Kimi Delta Attention (KDA) as core architecture components (~25%
 training-efficiency gain, <2% compute overhead). Open weights and the tech
-report are due **2026-07-27**.
+report are due to be released by the Kimi team by **2026-07-27**.
 
-I propose adding **`torchtitan/experiments/kimi_k3/`** — the K3 model family
+Therefore, I volunteer to own and maintain Kimi K3 support in torchtitan, scoped mainly to Kimi K3 family pre-training and post-training (using torchtitan as the distributed framework backend of veRL).
+
+Currently, my proposed plan is to add **`torchtitan/experiments/kimi_k3/`** — the K3 model family
 (KDA + MLA + MoE + AttnRes) in the standard experiment layout (`model.py` /
 `config_registry.py` / `parallelize.py` / `state_dict_adapter.py`, following
-the `qwen3_5` structure as the hybrid linear-attention precedent).
+the `qwen3_5` structure as the hybrid linear-attention precedent). K3 architecture downscaled pre-training/post-training will be aligned with the official architecture as soon as the Kimi technical report is available (due 07-27).
 
-Maintainers: happy to have this **consolidated with #3029** into a single
-tracking issue if you prefer — this supersedes it.
+And I would suggest having the **RFC #3029** for Block Attention Residual support merged into this overall Kimi K3 RFC.
 
 ## Finished work as the K3-support continuation point
 
@@ -58,10 +57,16 @@ ratio, gated-MLA details) is config-level — then downscale pretraining +
 post-training. Target: scale-up stays config-only, so **2.8T LoRA
 post-training runs on the same stack** given the hardware.
 
-**Out of scope:** CP for the KDA layers (`fla-core`'s `chunk_kda` has no
-cross-rank state passing; same limitation exists for `qwen3_5`) and components
-K3's report has not yet specified (Stable LatentMoE internals, SiTU, Per-Head
-Muon) — interfaces hold placeholders until the report.
+**Out of scope for the first landing:**
 
-I've maintained the fork through upstream refactors since April and will
-continue to own this experiment.
+- CP / 1M-context training — in the hybrid stack, ring/zigzag applies only to
+  the full-attention (MLA) layers; KDA layers need Ulysses-style head sharding
+  or LASP-style cross-rank state passing, neither of which `fla-core`'s
+  `chunk_kda` supports today (the same blank exists for `qwen3_5`). Future work.
+- Inference/serving — covered by Moonshot's official vLLM contribution;
+  torchtitan scope here is training-side only.
+- MXFP4/MXFP8 QAT parity — MX microscaling formats need Blackwell-class
+  hardware; this experiment tracks bf16 + torchao float8 (rowwise) recipes,
+  already exercised on the 447M carrier.
+- Vision path — the blog confirms native vision but publishes no architecture
+  details; text-only until the tech report.
