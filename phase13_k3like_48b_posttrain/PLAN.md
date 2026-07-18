@@ -7,6 +7,40 @@
 > distributed-framework-layer credibility (public artifact + LinkedIn/Zhihu/X),
 > not resume bullets. See [`../K3_RELEASE_IMPACT_2026-07-16.md`](../K3_RELEASE_IMPACT_2026-07-16.md).
 
+## 0a. Reconciliation with HANDOFF_2026-07-17 (supersedes parts of this plan)
+
+[`HANDOFF_2026-07-17.md`](HANDOFF_2026-07-17.md) (from the parallel planning
+session, informed by titan-maintainer feedback) **supersedes this plan where
+they differ**:
+
+1. **Target location**: `torchtitan/models/kimi_k3/` (core, qwen3_5 template),
+   NOT `experiments/`. New RFC "Kimi K3 support in torchtitan" before 7.27.
+   The PP adapter stays a private impl inside the model folder's parallelize
+   (Tianyu rejected the generic-mechanism upstreaming ~2026-04).
+2. **Action order** (replaces §3 step order and §7 item 1): titan folder to
+   inclusion standard FIRST, then veRL recipe, then 48B POC, then docs, then
+   provisional 2.8T flavor + EP@896 smoke, then RFC. Continued-pretrain and
+   KD/downscale are DEPRIORITIZED behind these (E2 architecture evidence
+   postponed to post-7.27; E4 runs twice — provisional now, exact after).
+3. **Seq-KD** (replaces §7 "start now"): check Moonshot API ToS first; bulk
+   corpus from open distill sets (OpenThoughts-class); buy only 10–50K
+   K3-specific agentic/tool traces; logit-KD via self-hosted MXFP4 (~16×H200)
+   post-7.27 as the higher-sample-efficiency path. Whole KD line ranks behind
+   titan folder + veRL recipe.
+4. **Gated MLA**: upgraded from "hard skip" (§1 table) to viable via
+   near-identity gate init (route-A option).
+5. **veRL-torchtitan backend**: handoff asserts veRL native = FSDP/Megatron
+   only (titan backend = major work 🔧), conflicting with this plan's earlier
+   web-search claim that titan engine-workers exist. **Unverified — resolve
+   against veRL source on the GPU box; until then plan for the conservative
+   (major-work) case.**
+6. **Repo-side correction to the handoff's gap list**: phase11 already has
+   `hf_to_dcp_kimi_attn_res.py` (424/424 keys validated @ meta-49.12B) — the
+   "state_dict_adapter ❌" is really "promote phase11 script into the titan
+   folder's `state_dict_adapter.py`" ⚠️.
+
+§4 (split-merge) and §7's post-7.27 2.8T scenario table remain authoritative.
+
 ## 0. Why this phase, why 48B
 
 Three hard constraints forced the design:
