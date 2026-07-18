@@ -6,7 +6,7 @@ Hi TorchTitan maintainers! I have previously raised [RFC #3029](https://github.c
 
 Therefore, I would sincerely request to own and contribute the Kimi K3 full support in torchtitan, scoped mainly to Kimi K3 architecture model (text-only and vision-native) pre-training and (full-param & LoRA) post-training (using torchtitan as the distributed framework backend of veRL).
 
-Currently, my proposed plan is to add **`torchtitan/experiments/kimi_k3/`** — the K3 model family (KDA + MLA + MoE + AttnRes) in the standard experiment layout (`model.py` / `config_registry.py` / `parallelize.py` / `state_dict_adapter.py`, following the `qwen3_5` structure as the hybrid linear-attention precedent). K3 architecture model and its pre-training/post-training implementation will be aligned which is tracked to release on 07-27. I will verify through a downscaled model given GPU resource constraint, but config-only scalable to official 2.8T version from Kimi released weight checkpoints.
+Currently, my proposed plan is to add **`torchtitan/experiments/kimi_k3/`** — the K3 model family (KDA + MLA + MoE + AttnRes) in the standard experiment layout (`model.py` / `config_registry.py` / `parallelize.py` / `state_dict_adapter.py`, following the `qwen3_5` structure as the hybrid linear-attention precedent). K3 architecture model and its pre-training/post-training implementation will be aligned with the official Kimi technical report, which is tracked to release on 07-27. I will verify through a downscaled model given GPU resource constraint, but config-only scalable to official 2.8T version from Kimi released weight checkpoints.
 
 And I would suggest having the **RFC #3029** for Block Attention Residual support merged into this overall Kimi K3 RFC.
 
