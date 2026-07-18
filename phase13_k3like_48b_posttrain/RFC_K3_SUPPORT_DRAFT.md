@@ -65,11 +65,5 @@ post-training runs on the same stack** given the hardware.
   `chunk_kda` supports today (the same blank exists for `qwen3_5`). Future work.
 - Inference/serving — covered by Moonshot's official vLLM contribution;
   torchtitan scope here is training-side only.
-- MXFP4/MXFP8 QAT parity — the first landing ships bf16 + torchao float8
-  (rowwise, native on Hopper+, already exercised on the 447M carrier).
-  Emulated (fake-quant) MX/NVFP4 QAT runs on any GPU and is a natural
-  follow-up; strict parity with K3's QAT recipe is deferred until MX-native
-  hardware (B200-class) is available, since emulated rounding may not match
-  the hardware path bit-for-bit.
 - Vision path — the blog confirms native vision but publishes no architecture
   details; text-only until the tech report.

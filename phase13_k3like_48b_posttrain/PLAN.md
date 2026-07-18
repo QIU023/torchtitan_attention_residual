@@ -156,6 +156,25 @@ benchmark:   48B-base vs 48B+AttnRes A/B, competitive with same-scale (~A3B) mod
 4. veRL post-training (FSDP+TP+EP): sequence-KD from K3 API + GRPO on target task.
 5. Benchmark the A/B; write up.
 
+## 3b. Precision / QAT strategy (phase13-internal; NOT an RFC topic)
+
+torchtitan delegates low precision to torchao model converters (unlike
+Megatron/TE); QAT is our reproduction strategy, not a titan feature to
+negotiate in the RFC. Facts (settled 2026-07-17):
+
+- **QAT != native compute.** QAT is fake-quant on bf16 compute — runs on any
+  GPU and produces MX-deployable weights; hardware only buys speed + native
+  serving of the artifact.
+- **H200**: FP8 (E4M3/E5M2) native → torchao float8 rowwise QAT/pretrain/
+  post-train works today (447M fp8 flavor is the precedent). No FP4/MX
+  hardware → NVFP4/MXFP4 only via emulation (slower; rounding may differ
+  from hardware bit-for-bit, so no strict K3-QAT-parity claims).
+- **RTX 5090 (SM 12.0)**: FP8 native; FP4 tensor cores present but kernel
+  ecosystem is B200-first (our PR8/PR13 sm_120 fixes are the evidence).
+- **Order**: bf16 + FP8-rowwise first; emulated MX/NVFP4 QAT as follow-up
+  once the report reveals K3's exact QAT recipe; strict parity only with
+  B200-class access.
+
 ## 4. Upstream merge — split-merge strategy (reviewed 2026-07-17 @ upstream `fbceec07`)
 
 A real `git merge upstream/main` from `90d85eba3` produces **10 conflicts**, and
