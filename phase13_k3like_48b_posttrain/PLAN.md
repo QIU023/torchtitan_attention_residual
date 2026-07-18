@@ -13,10 +13,14 @@
 session, informed by titan-maintainer feedback) **supersedes this plan where
 they differ**:
 
-1. **Target location**: `torchtitan/models/kimi_k3/` (core, qwen3_5 template),
-   NOT `experiments/`. New RFC "Kimi K3 support in torchtitan" before 7.27.
-   The PP adapter stays a private impl inside the model folder's parallelize
-   (Tianyu rejected the generic-mechanism upstreaming ~2026-04).
+1. **Target location** (user decision 2026-07-17, overrides the handoff's
+   `models/kimi_k3/`): **`experiments/kimi_k3/`** first, structured to the
+   qwen3_5 template so promotion is a `git mv`; move to core `models/` only if
+   the maintainer proactively suggests it during PR/review. New short RFC
+   "Kimi K3 support" before 7.27, citing the original AttnRes RFC (#3029) and
+   offering to consolidate the issues. The PP adapter stays a private impl
+   inside the model folder's parallelize (Tianyu rejected the
+   generic-mechanism upstreaming ~2026-04).
 2. **Action order** (replaces §3 step order and §7 item 1): titan folder to
    inclusion standard FIRST, then veRL recipe, then 48B POC, then docs, then
    provisional 2.8T flavor + EP@896 smoke, then RFC. Continued-pretrain and

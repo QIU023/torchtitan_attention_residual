@@ -15,12 +15,16 @@ production. This repo owns the earliest torchtitan AttnRes implementation +
 PP cross-stage adapter (backward-correct, validated to PP8×VP4 on 8 GPUs).
 
 Three adoption surfaces, in priority order:
-1. **torchtitan upstream**: `torchtitan/models/kimi_k3/` folder to inclusion
-   standard (qwen3_5 as template — it is the hybrid linear-attention precedent).
-   New RFC "Kimi K3 support in torchtitan" goes out before 7.27.
-   Maintainer history: Tianyu rejected upstreaming the generic cross-stage PP
-   mechanism (~2026-04); the adapter lives as private impl inside the model
-   folder's parallelize. Do not re-propose it as a generic mechanism.
+1. **torchtitan upstream**: `experiments/kimi_k3/` folder to inclusion
+   standard, structured to the qwen3_5 template (the hybrid linear-attention
+   precedent) so core promotion is a `git mv` — but target experiments first;
+   move to `models/` only if the maintainer proactively suggests it in review.
+   New SHORT RFC "Kimi K3 support" before 7.27: cite the original AttnRes RFC
+   (pytorch/torchtitan#3029, whose adoption gate K3 now satisfies) and offer
+   issue consolidation. Maintainer history: Tianyu rejected upstreaming the
+   generic cross-stage PP mechanism (~2026-04); the adapter lives as private
+   impl inside the model folder's parallelize. Do not re-propose it as a
+   generic mechanism.
 2. **veRL recipe**: 48B+AttnRes SFT/GRPO one-command (LoRA + full-param configs).
 3. **This repo**: integration hub — KD scripts, provisional 2.8T flavor,
    EP@896 scaled smoke, version pins, ≤8-GPU quickstart.
