@@ -16,7 +16,10 @@ they differ**:
 1. **Target location** (user decision 2026-07-17, overrides the handoff's
    `models/kimi_k3/`): **`experiments/kimi_k3/`** first, structured to the
    qwen3_5 template so promotion is a `git mv`; move to core `models/` only if
-   the maintainer proactively suggests it during PR/review. New short RFC
+   the maintainer proactively suggests it during PR/review. **Rename executed
+   2026-07-17 (fork `469577cdf`): the folder IS `experiments/kimi_k3/` now;
+   our RL preserved on `experiments_rl_unmerged`, `experiments/rl/` taken
+   from upstream.** New short RFC
    "Kimi K3 support" before 7.27, citing the original AttnRes RFC (#3029) and
    offering to consolidate the issues. The PP adapter stays a private impl
    inside the model folder's parallelize (Tianyu rejected the
@@ -98,7 +101,7 @@ scale we can actually train.
 
 ## 2. Distributed-infra completeness (audited 2026-07-16 @ `90d85eba3`)
 
-`torchtitan/experiments/attention_residual/kimi_linear/parallelize.py` (1077 lines)
+`torchtitan/experiments/kimi_k3/kimi_linear/parallelize.py` (1077 lines)
 + `pipeline_adapter.py` (1143 lines).
 
 | Axis | Status | Location |
@@ -198,7 +201,7 @@ git checkout --ours -- torchtitan/experiments/rl/ && git add torchtitan/experime
 # Half A: resolve the 5 core conflicts per the table above, then git add each
 # VALIDATE (mandatory — auto-merged core files may be silently broken):
 python -c "import torchtitan.experiments.attention_residual"
-pytest torchtitan/experiments/attention_residual/tests/ -x
+pytest torchtitan/experiments/kimi_k3/tests/ -x
 # smoke a 5-step debug-flavor train (catches semantic breakage in the auto-merged
 #   distributed/ + models/common/ files that DID NOT conflict textually).
 ```

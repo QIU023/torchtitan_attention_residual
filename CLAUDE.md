@@ -43,7 +43,7 @@ Three adoption surfaces, in priority order:
 
 - Submodule `torchtitan/` (fork QIU023/torchtitan, branch
   `attention_residual_dev`): the real implementation —
-  `torchtitan/experiments/attention_residual/` (attn_res.py, model.py,
+  `torchtitan/experiments/kimi_k3/` (attn_res.py, model.py,
   pipeline_adapter.py ~1143 lines, kimi_linear/ with parallelize.py ~1077
   lines: FSDP2/HSDP+TP+EP complete, CP blocked on fla-core, PP via adapter).
 - Submodule `sglang/` (fork QIU023/sglang, branch
@@ -62,9 +62,13 @@ Three adoption surfaces, in priority order:
   downscale, −11.4% peak mem / +2.7% tps); 447M full pipeline
   (pretrain→SFT→GRPO end-to-end, model too weak to gain — infra correct);
   PR15 loaded official Kimi-Linear-48B in SGLang.
-- Upstream torchtitan merge: **split strategy** (PLAN §4) — core/AttnRes half
-  merge + pytest on GPU box; `experiments/rl/` half keep ours
-  (`git checkout --ours`), upstream rebuilt it vLLM-only.
+- Upstream torchtitan merge: **DONE on the fork** (2026-07-17, `469577cdf`).
+  Dev branch diff vs upstream/main is now exactly `experiments/kimi_k3/`
+  (renamed from attention_residual) + 1 registry line. `experiments/rl/` =
+  upstream's rebuilt version; our SGLang/Monarch RL is preserved on branch
+  `experiments_rl_unmerged` (phase11 replay must check that branch out).
+  All torch-2.9 compat shims dropped (fleet is torch 2.11). compileall
+  clean; **pytest + debug-flavor smoke still pending on the GPU box.**
 - HF↔DCP converters exist as phase11 scripts
   (`hf_to_dcp_kimi_attn_res.py`, 424/424 keys @ meta-49.12B) — the handoff's
   "state_dict_adapter ❌" is really "promote script → titan
