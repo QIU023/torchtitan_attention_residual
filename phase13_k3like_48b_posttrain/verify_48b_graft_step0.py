@@ -55,6 +55,13 @@ def fixed_tokens():
 
 
 def forward_logits(model):
+    # CPU-offloaded FSDP moves PARAMETERS per-forward but leaves buffers
+    # where they were materialized (CPU) -- the MoE router's
+    # expert_bias_E then meets GPU activations. Move buffers up front.
+    for m in model.modules():
+        for name, b in list(m.named_buffers(recurse=False)):
+            if b is not None and b.device.type != "cuda":
+                setattr(m, name, b.cuda())
     model.eval()
     with torch.no_grad():
         return model(fixed_tokens()).float().cpu()
@@ -74,7 +81,7 @@ def main(phase, model_dir):
 
     elif phase == "baseline":
         config = make_config(
-            "kimi_linear_48b_baseline", offload=False, native_load=True
+            "kimi_linear_48b_baseline", offload=True, native_load=True
         )
         trainer = config.build()
         trainer.checkpointer.load(step=-1)
@@ -88,13 +95,15 @@ def main(phase, model_dir):
     elif phase == "graft":
         import torch.distributed.checkpoint as dcp
 
-        config = make_config("kimi_linear_48b_block_attn_res_gated", offload=False)
+        config = make_config("kimi_linear_48b_block_attn_res_gated", offload=True)
         config.checkpoint.enable = False
         trainer = config.build()
         model = trainer.model_parts[0]
         sd = model.state_dict()
-        graft_only = [k for k in sd if "attn_res" in k]
-        load_sd = {k: v for k, v in sd.items() if "attn_res" not in k}
+        def is_graft_key(k):
+            return "attn_res" in k or "mlp_res" in k
+        graft_only = [k for k in sd if is_graft_key(k)]
+        load_sd = {k: v for k, v in sd.items() if not is_graft_key(k)}
         rank_print(f"[GRAFT0] loading {len(load_sd)} keys; keeping "
                    f"{len(graft_only)} zero-init AttnRes params")
         dcp.load(load_sd, checkpoint_id=f"{NATIVE}/step-0")

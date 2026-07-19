@@ -175,3 +175,26 @@ TP mesh by design) is exercised by the TP pair. Logs:
   steps; L16 dense runs don't exercise KDA).
 - torch 2.12-stable vs upstream-nightly drift is the dominant breakage
   class this pass (loss_kwargs, set_timeout, shape-inference metadata).
+
+
+## Post-checklist: 48B graft anchor verified on real weights (same day)
+
+The HANDOFF sec 5 anchor is now implemented AND measured. Finding
+first: the paper's ungated zero-init AttnRes read is a uniform
+source-average, NOT an identity (debug-scale A/B: max |dlogit| 0.126,
+top-1 96.5%) -- fine for from-scratch pretraining, wrong for grafting.
+The new alpha gate (opt-in flavor kimi_linear_48b_block_attn_res_gated;
+h = plain + alpha * (mix - plain), sequentially-threaded plain stream)
+restores exactness:
+
+- Debug-scale unit tests lock both directions (gated == torch.equal
+  with the plain backbone; ungated == measurably different).
+- **Real-weight verification** (official Kimi-Linear-48B-A3B-Base,
+  8x5090 FSDP, verify_48b_graft_step0.py): baseline vs gated graft on
+  the same batch -> **max |dlogit| = 0.0, top-1 agreement 100.00%**.
+  603 backbone keys loaded (native DCP re-export of the HF load),
+  165 AttnRes/alpha params kept zero-init.
+
+Post-training on the graft can therefore start from a step-0 function
+that IS the original checkpoint, with alpha training away from
+identity under optimizer control.
