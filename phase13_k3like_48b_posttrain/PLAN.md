@@ -48,6 +48,48 @@ they differ**:
 
 §4 (split-merge) and §7's post-7.27 2.8T scenario table remain authoritative.
 
+## 0b. Competitive intel — Megatron-Bridge PoR #4910 (analyzed 2026-07-18)
+
+NVIDIA-NeMo opened a Kimi K3 PoR tracking issue
+([Megatron-Bridge#4910](https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/4910))
+on K3 announcement day. It is a plan, not an implementation: KDA 🚧
+(Megatron-LM#5769, CP/THD scoped out), AttnRes 🚧 (#4016 open; prior
+attempt #4398 closed unmerged), and **Block AttnRes pipeline support 📋
+planned** with the note "needs PP state/payload design, backward routing,
+and per-microbatch cache validation" -- the three components this fork has
+already implemented and pressure-validated. Their strengths: AutoBridge
+HF<->Megatron conversion, K2/K2.5-VL bridges, productized PEFT/LoRA, wide
+validation matrices. Their bottleneck: architecture primitives must land
+in MCore upstream first (dual-repo review chain with one closed-unmerged
+AttnRes precedent); no RL loop in scope (NeMo-RL is a separate repo).
+
+**Six gaps their checklist exposes in ours, placed into the work order:**
+
+1. **Quantized checkpoint import (the real hole).** K3 is MXFP4-QAT from
+   SFT; official weights will likely ship packed MXFP4 + scales. Our
+   state_dict_adapter thinking assumed bf16-class tensors. The promotion
+   of phase11's hf_to_dcp script MUST add an explicit unpack/dequant path
+   ("never silently treat packed weights as ordinary values") -- else
+   7.27 day one blocks. -> attaches to work item (1), H200 first batch.
+2. **Artifact-discovery checklist** (config.json field inventory,
+   safetensors index + representative dtype/shape spot-checks, base vs
+   post-trained variants, license, chat template) -> mirrored into the
+   7.27 runbook (K3_RELEASE_IMPACT section 4).
+3. **FLOPs/MFU accounting**: titan's get_nparams_and_flops must be
+   rewritten for KDA (linear-attention FLOPs) + AttnRes extra ops + MoE,
+   or our MFU curves -- an RFC deliverable -- are wrong. -> work item (1).
+4. **KDA TP-shard explicit validation**: add a dedicated column to the
+   parity matrix (currently implicit via the qwen3_5-style dispatch). -> E1.
+5. **Packed/varlen (THD) sequences**: confirm SFT packing rides the fla
+   varlen kernel path and test it. -> veRL SFT pipeline, work item (2).
+6. **Non-interleaved PP framing**: we cover it as a correct plain-path
+   fallback (no cache saving); stated proactively in the RFC so it reads
+   covered-with-known-cost, not gap. -> done (RFC).
+
+RFC posture unchanged (short; no tracking-issue mega-format): the
+ecosystem-context table citing #4910 is the single highest-density
+argument -- their "planned" column is our "validated" column.
+
 ## 0. Why this phase, why 48B
 
 Three hard constraints forced the design:

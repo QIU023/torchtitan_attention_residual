@@ -13,11 +13,23 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 ## Finished work as the K3-support continuation point
 
 - AttnRes primitive + a Kimi-Linear port (KDA via `fla-core`, MLA, MoE) with FSDP2 / TP / EP parallelization — [implementation](https://github.com/QIU023/torchtitan/tree/a3b3c74b3/torchtitan/experiments/kimi_k3).
-- PP support via a cross-stage adapter kept **private to the model folder's `parallelize`** — no core changes, per earlier feedback on the generic-mechanism proposal: [adapter](https://github.com/QIU023/torchtitan/blob/a3b3c74b3/torchtitan/experiments/kimi_k3/pipeline_adapter.py), [design notes + pressure-test launchers](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase3_attnres_pp_integration).
+- PP support via a cross-stage adapter kept **private to the model folder's `parallelize`** — no core changes, per earlier feedback on the generic-mechanism proposal. Non-Interleaved1F1B schedules fall back to the plain pipeline path (correct, without the cache saving): [adapter](https://github.com/QIU023/torchtitan/blob/a3b3c74b3/torchtitan/experiments/kimi_k3/pipeline_adapter.py), [design notes + pressure-test launchers](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase3_attnres_pp_integration).
 - Numerics: naive-vs-adapter loss within the bf16 nondeterminism band (|Δloss| ≤ 0.011) across PP×VP shapes up to **PP=8 × VP=4 (32 virtual stages)**, including a Kimi-Linear 48B-layout carrier — [pressure-test report](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase3_attnres_pp_integration/PRESSURE_TEST_REPORT_2026-05-12.md).
 - 12.5K-step training runs on the 436M/447M Kimi-Linear shapes — [phase-4 pretrain log](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase4_kimi_attnres_lm_pretrain/README.md).
 - Multimodal (vision-native) precedent: SigLIP-splice scaffold in the experiment ([model](https://github.com/QIU023/torchtitan/blob/a3b3c74b3/torchtitan/experiments/kimi_k3/multimodal_model.py), [CPU test](https://github.com/QIU023/torchtitan/blob/a3b3c74b3/torchtitan/experiments/kimi_k3/tests/test_kimi_multimodal_model.py)); LLaVA-1.5-style pretraining + SFT + GRPO exercised end-to-end on the 447M carrier — [phase-5 VLM training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase5_vlm_multimodal_sft), [phase-11 post-training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase11_rlhf_grpo_infra).
 - CPU unit tests for the primitive, model, and pipeline adapter — [tests](https://github.com/QIU023/torchtitan/tree/a3b3c74b3/torchtitan/experiments/kimi_k3/tests).
+
+## Ecosystem context
+
+The Megatron ecosystem tracks the same components as open work ([Megatron-Bridge#4910](https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/4910), PoR opened 2026-07-16):
+
+| Component | Megatron ecosystem | This fork |
+|---|---|---|
+| KDA | 🚧 in progress ([Megatron-LM#5769](https://github.com/NVIDIA/Megatron-LM/pull/5769); CP/THD scoped out) | working via `fla-core` (CP likewise declared future work) |
+| AttnRes | 🚧 in progress ([Megatron-LM#4016](https://github.com/NVIDIA/Megatron-LM/issues/4016); a prior attempt [#4398](https://github.com/NVIDIA/Megatron-LM/pull/4398) closed unmerged) | working + unit-tested |
+| Block AttnRes pipeline support | 📋 planned — "needs PP state/payload design, backward routing, and per-microbatch cache validation" | all three implemented and validated to PP=8 × VP=4 (\|Δloss\| ≤ 0.011) |
+
+torchtitan can have a working K3 training path now.
 
 ## Plan
 

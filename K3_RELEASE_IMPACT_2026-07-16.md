@@ -96,6 +96,13 @@ The moment K3's `config.json` / `modeling_*.py` / tech report is public, diff
 against our implementation in this exact order. Pre-registering it here proves
 our implementation predates K3's public code.
 
+- [ ] **Artifact discovery first** (mirrors Megatron-Bridge#4910's checklist):
+      full config.json field inventory; safetensors index + representative
+      tensor dtype/shape spot-checks; base vs post-trained variants; license;
+      chat template.
+- [ ] **Quantized checkpoint import.** Expect packed MXFP4 weights + scales
+      (K3 is QAT from SFT). The state_dict_adapter must unpack/dequantize
+      explicitly -- never treat packed weights as ordinary tensors.
 - [ ] **AttnRes block count N.** K3 blog withholds N. Compare K3's actual N (and
       per-block layer grouping) to our `num_blocks` sweep (N∈{2,3,4,6,8,12}).
       Our bet: N≈8 sweet spot. → `experiments/attn_res/attn_res.py:AttnResConfig`

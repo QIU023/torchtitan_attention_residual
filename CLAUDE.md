@@ -89,8 +89,12 @@ KD/downscale line is deprioritized behind ①②. Flavor configs are a
 **parameterized generator** (layer ratio / experts / latent dims as variables).
 
 On 7.27: watch vLLM PR queue (config truth may land before the report) →
+artifact-discovery checklist (K3_RELEASE_IMPACT §4; incl. packed-MXFP4
+quantized-weight import — never treat packed weights as plain tensors) →
 regenerate flavors → official weight mapping → freeze weight-sync tensor
 naming against official vLLM K3 class → rerun smoke+parity → K3 model PR.
+Competitive context: Megatron-Bridge#4910 tracks KDA/AttnRes/Block-AttnRes-PP
+as open/planned; our PP adapter row is already validated (PLAN §0b).
 
 ## Key technical positions (details in HANDOFF §5)
 
