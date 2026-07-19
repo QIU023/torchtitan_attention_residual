@@ -14,7 +14,7 @@ index af03afb..699946b 100644
  
          optimizer = OptimizersContainer.Config(
 diff --git a/verl/workers/engine/torchtitan/utils.py b/verl/workers/engine/torchtitan/utils.py
-index f6c9cc1..bffd79c 100644
+index f6c9cc1..a4c29d3 100644
 --- a/verl/workers/engine/torchtitan/utils.py
 +++ b/verl/workers/engine/torchtitan/utils.py
 @@ -74,9 +74,20 @@ _HF_MODEL_TYPE_TO_TORCHTITAN_NAME = {
@@ -38,7 +38,30 @@ index f6c9cc1..bffd79c 100644
  def derive_torchtitan_name_and_flavor(hf_config) -> tuple[str, str]:
      """Derive torchtitan model name and flavor from a HuggingFace config.
  
-@@ -106,7 +117,7 @@ def derive_torchtitan_name_and_flavor(hf_config) -> tuple[str, str]:
+@@ -93,10 +104,22 @@ def derive_torchtitan_name_and_flavor(hf_config) -> tuple[str, str]:
+     Raises:
+         ValueError: If model_type is unsupported or no matching flavor is found.
+     """
++    import os
++
+     model_type = getattr(hf_config, "model_type", None)
+     if model_type is None:
+         raise ValueError("HuggingFace config does not have 'model_type' field")
+ 
++    # Explicit override for variant flavors that share backbone dims with
++    # the auto-derived one (e.g. an AttnRes graft or LoRA flavor of the
++    # same checkpoint shape).
++    forced = os.environ.get("VERL_TORCHTITAN_FLAVOR")
++    if forced:
++        name = _HF_MODEL_TYPE_TO_TORCHTITAN_NAME.get(model_type)
++        if name is None:
++            raise ValueError(f"Unsupported model_type '{model_type}'.")
++        return name, forced
++
+     name = _HF_MODEL_TYPE_TO_TORCHTITAN_NAME.get(model_type)
+     if name is None:
+         raise ValueError(
+@@ -106,7 +129,7 @@ def derive_torchtitan_name_and_flavor(hf_config) -> tuple[str, str]:
  
      # Import the model package and use model_registry to build each flavor's config.
      # model_registry has sensible defaults for all optional params (attn_backend, etc.).
