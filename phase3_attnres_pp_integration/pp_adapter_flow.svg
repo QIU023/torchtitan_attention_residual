@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="fwd" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1f6feb"/>
+    </marker>
+    <marker id="bwdX" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#d1242f"/>
+    </marker>
+    <marker id="bwdL" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a7f37"/>
+    </marker>
+    <marker id="cache" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#9a6700"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1180" height="900" fill="#ffffff"/>
+  <text x="24" y="34" font-size="22" font-weight="700" fill="#0d1117">AttnRes CrossStageCacheAdapter — forward delta + dual grad bridge under Interleaved1F1B</text>
+  <text x="24" y="58" font-size="13" fill="#57606a">Config shown: PP mesh P=2 ranks × V=2 virtual stages = 4 global stages. Looped assignment: rank R owns stages {R, R+P, ...}.  One block committed per stage (block S at stage S).</text>
+
+  <!-- ===================== RANK 0 LANE ===================== -->
+  <rect x="20" y="78" width="1140" height="300" rx="10" fill="#eef4ff" stroke="#bcd0f5"/>
+  <text x="34" y="100" font-size="14" font-weight="700" fill="#1f3a6e">PP rank 0  —  stages 0 (v=0) and 2 (v=1)</text>
+
+  <!-- rank0 shared cache -->
+  <rect x="430" y="112" width="330" height="58" rx="8" fill="#fff8e6" stroke="#e3b341"/>
+  <text x="445" y="132" font-size="12.5" font-weight="700" fill="#9a6700">RankLocalCache[rank 0]  (shared by S0 &amp; S2, keyed by mb)</text>
+  <text x="445" y="150" font-size="11.5" fill="#7a5300">after S0: {b0 own-commit, DETACHED}   →  S2 reads b0 from here</text>
+  <text x="445" y="164" font-size="11.5" fill="#7a5300">_install_augment_hook on b0  •  drop deferred to step() end</text>
+
+  <!-- Stage 0 box -->
+  <rect x="60" y="210" width="250" height="140" rx="10" fill="#ffffff" stroke="#1f6feb" stroke-width="2"/>
+  <text x="74" y="232" font-size="15" font-weight="700" fill="#1f6feb">Stage 0  (global id 0, v=0)</text>
+  <text x="74" y="252" font-size="11.5" fill="#24292f">_forward_delta: stage_id==0 branch</text>
+  <text x="74" y="270" font-size="11.5" fill="#24292f">wrapped(x, blocks=None) → partial, [b0]</text>
+  <text x="74" y="288" font-size="11.5" fill="#24292f">_finish_forward:</text>
+  <text x="84" y="304" font-size="11" fill="#3a4654">• hook on b0, cache.append(b0.detach())</text>
+  <text x="84" y="319" font-size="11" fill="#3a4654">• delta_to_send(0)=[b0] → stack</text>
+  <text x="74" y="338" font-size="11.5" font-weight="700" fill="#1f6feb">emit: (partial', [b0])</text>
+
+  <!-- Stage 2 box -->
+  <rect x="600" y="210" width="270" height="140" rx="10" fill="#ffffff" stroke="#1f6feb" stroke-width="2"/>
+  <text x="614" y="232" font-size="15" font-weight="700" fill="#1f6feb">Stage 2  (global id 2, v=1)</text>
+  <text x="614" y="252" font-size="11.5" fill="#24292f">recv delta [b1] from S1 (cross-rank)</text>
+  <text x="614" y="270" font-size="11.5" fill="#24292f">cache.get_blocks → b0 (own-rank, v=0)</text>
+  <text x="624" y="286" font-size="11" fill="#1a7f37">b0 producer_rank==pp_rank → _LocalCacheCapture.apply</text>
+  <text x="614" y="304" font-size="11.5" fill="#24292f">rebuild stack [b0,b1] (sorted by bidx)</text>
+  <text x="614" y="320" font-size="11.5" fill="#24292f">wrapped(partial, blocks=[b0,b1]) → partial,[b2]</text>
+  <text x="614" y="340" font-size="11.5" font-weight="700" fill="#1f6feb">emit: (partial', [b2])  delta_to_send(2)=[b2]</text>
+
+  <!-- cache write S0 -> cache -->
+  <path d="M200,210 C220,190 360,185 470,170" fill="none" stroke="#9a6700" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#cache)"/>
+  <text x="250" y="196" font-size="10.5" fill="#9a6700">append b0 (detached)</text>
+  <!-- cache read cache -> S2 -->
+  <path d="M700,170 C690,186 700,196 720,210" fill="none" stroke="#9a6700" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#cache)"/>
+  <text x="704" y="192" font-size="10.5" fill="#9a6700">read b0</text>
+
+  <!-- ===================== RANK 1 LANE ===================== -->
+  <rect x="20" y="500" width="1140" height="300" rx="10" fill="#f0fff4" stroke="#b6e3c0"/>
+  <text x="34" y="522" font-size="14" font-weight="700" fill="#1a5e32">PP rank 1  —  stages 1 (v=0) and 3 (v=1, last)</text>
+
+  <!-- rank1 shared cache -->
+  <rect x="430" y="724" width="380" height="60" rx="8" fill="#fff8e6" stroke="#e3b341"/>
+  <text x="445" y="744" font-size="12.5" font-weight="700" fill="#9a6700">RankLocalCache[rank 1]  (shared by S1 &amp; S3, keyed by mb)</text>
+  <text x="445" y="762" font-size="11.5" fill="#7a5300">after S1: {b0 RELAYED/attached to recv-tensor, b1 own-commit DETACHED}</text>
+  <text x="445" y="776" font-size="11.5" fill="#7a5300">S3 reads b0 (→ SEND_B grad) and b1 (→ Capture/local-slot grad)</text>
+
+  <!-- Stage 1 box -->
+  <rect x="330" y="560" width="270" height="140" rx="10" fill="#ffffff" stroke="#1f6feb" stroke-width="2"/>
+  <text x="344" y="582" font-size="15" font-weight="700" fill="#1f6feb">Stage 1  (global id 1, v=0)</text>
+  <text x="344" y="602" font-size="11.5" fill="#24292f">recv delta [b0] from S0 (cross-rank)</text>
+  <text x="344" y="620" font-size="11.5" fill="#24292f">no earlier cache yet → stack [b0]</text>
+  <text x="344" y="638" font-size="11.5" fill="#24292f">wrapped(partial, blocks=[b0]) → partial,[b1]</text>
+  <text x="344" y="656" font-size="11" fill="#3a4654">_finish_forward: relay b0 (attached), commit b1</text>
+  <text x="344" y="672" font-size="11" fill="#3a4654">delta_to_send(1)=[b1]  (b0 already in S2's cache)</text>
+  <text x="344" y="690" font-size="11.5" font-weight="700" fill="#1f6feb">emit: (partial', [b1])</text>
+
+  <!-- Stage 3 box -->
+  <rect x="870" y="560" width="280" height="140" rx="10" fill="#ffffff" stroke="#8250df" stroke-width="2"/>
+  <text x="884" y="582" font-size="15" font-weight="700" fill="#8250df">Stage 3  (global id 3, v=1, LAST)</text>
+  <text x="884" y="602" font-size="11.5" fill="#24292f">recv delta [b2] from S2</text>
+  <text x="884" y="620" font-size="11.5" fill="#24292f">cache → b0 (relay, unwrapped), b1 (Capture)</text>
+  <text x="884" y="638" font-size="11.5" fill="#24292f">rebuild [b0,b1,b2] → wrapped → logits</text>
+  <text x="884" y="656" font-size="11.5" fill="#24292f">_keepalive_touch(recv) keeps graph live</text>
+  <text x="884" y="676" font-size="11.5" font-weight="700" fill="#8250df">loss / logits</text>
+
+  <!-- cache writes/reads rank1 -->
+  <path d="M470,724 C440,712 430,706 440,700" fill="none" stroke="#9a6700" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#cache)"/>
+  <text x="362" y="718" font-size="10.5" fill="#9a6700">append b0(relay), b1(detached)</text>
+  <path d="M800,724 C880,712 940,706 960,700" fill="none" stroke="#9a6700" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#cache)"/>
+  <text x="900" y="718" font-size="10.5" fill="#9a6700">read b0, b1</text>
+
+  <!-- ===================== FORWARD DELTA HOPS (PP P2P send/recv) ===================== -->
+  <!-- S0 -> S1 -->
+  <path d="M185,350 C185,430 360,490 420,560" fill="none" stroke="#1f6feb" stroke-width="2.4" marker-end="url(#fwd)"/>
+  <text x="150" y="430" font-size="12" font-weight="700" fill="#1f6feb">P2P [b0]</text>
+  <!-- S1 -> S2 -->
+  <path d="M600,615 C720,500 700,420 730,350" fill="none" stroke="#1f6feb" stroke-width="2.4" marker-end="url(#fwd)"/>
+  <text x="690" y="470" font-size="12" font-weight="700" fill="#1f6feb">P2P [b1]</text>
+  <!-- S2 -> S3 -->
+  <path d="M860,350 C960,440 980,500 1010,560" fill="none" stroke="#1f6feb" stroke-width="2.4" marker-end="url(#fwd)"/>
+  <text x="980" y="455" font-size="12" font-weight="700" fill="#1f6feb">P2P [b2]</text>
+
+  <!-- ===================== BACKWARD GRAD: cross-rank via SEND_B (red) ===================== -->
+  <path d="M430,575 C320,500 230,440 215,350" fill="none" stroke="#d1242f" stroke-width="2" stroke-dasharray="2,3" marker-end="url(#bwdX)"/>
+  <text x="240" y="520" font-size="11" font-weight="700" fill="#d1242f">SEND_B grad[b0] → S0</text>
+  <path d="M760,575 C700,470 690,420 700,355" fill="none" stroke="#d1242f" stroke-width="2" stroke-dasharray="2,3" marker-end="url(#bwdX)"/>
+  <text x="640" y="540" font-size="11" font-weight="700" fill="#d1242f">SEND_B grad[b1] → S1</text>
+  <path d="M1010,560 C950,470 920,420 880,355" fill="none" stroke="#d1242f" stroke-width="2" stroke-dasharray="2,3" marker-end="url(#bwdX)"/>
+  <text x="930" y="530" font-size="11" font-weight="700" fill="#d1242f">SEND_B grad[b2] → S2</text>
+
+  <!-- ===================== BACKWARD GRAD: same-rank local slot bridge (green) ===================== -->
+  <!-- rank0: S2 consumer Capture.backward deposits -> slot -> S0 Augment hook pops -->
+  <path d="M620,300 C500,360 460,360 360,300" fill="none" stroke="#1a7f37" stroke-width="2" marker-end="url(#bwdL)"/>
+  <text x="400" y="392" font-size="11" font-weight="700" fill="#1a7f37">local slot (mb, prod=0, 0):  Capture.backward@S2  deposits  →  augment_hook@S0 pops &amp; SUMS</text>
+
+  <!-- rank1: S3 consumer Capture.backward for b1 -> S1 -->
+  <path d="M900,650 C800,700 720,700 600,650" fill="none" stroke="#1a7f37" stroke-width="2" marker-end="url(#bwdL)"/>
+  <text x="640" y="612" font-size="11" font-weight="700" fill="#1a7f37">local slot (mb, prod=1, 0): Capture@S3 → augment_hook@S1</text>
+
+  <!-- ===================== LEGEND ===================== -->
+  <rect x="24" y="824" width="1132" height="64" rx="8" fill="#f6f8fa" stroke="#d0d7de"/>
+  <line x1="40" y1="844" x2="80" y2="844" stroke="#1f6feb" stroke-width="2.4" marker-end="url(#fwd)"/>
+  <text x="88" y="848" font-size="11.5" fill="#24292f">Forward PP P2P send/recv (constant-size delta)</text>
+  <line x1="360" y1="844" x2="400" y2="844" stroke="#9a6700" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#cache)"/>
+  <text x="408" y="848" font-size="11.5" fill="#24292f">RankLocalCache read/write (rank-local, no NCCL)</text>
+  <line x1="720" y1="844" x2="760" y2="844" stroke="#d1242f" stroke-width="2" stroke-dasharray="2,3" marker-end="url(#bwdX)"/>
+  <text x="768" y="848" font-size="11.5" fill="#24292f">Cross-rank grad: rides PP built-in SEND_B</text>
+  <line x1="40" y1="872" x2="80" y2="872" stroke="#1a7f37" stroke-width="2" marker-end="url(#bwdL)"/>
+  <text x="88" y="876" font-size="11.5" fill="#24292f">Same-rank grad: _LocalCacheCapture deposits in dict slot → producer augment_hook pops &amp; sums (detach severs consumer→producer graph)</text>
+</svg>

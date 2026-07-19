@@ -23,6 +23,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WS="$(cd "$SCRIPT_DIR/.." && pwd)"
 TORCHTITAN_DIR="$WS/torchtitan"
+export PYTHONPATH="$WS:${PYTHONPATH:-}"  # dense_carrier import
 
 STEPS="${STEPS:-1000}"
 NGPU="${NGPU:-8}"
@@ -114,7 +115,7 @@ run_one() {
              --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
              --local-ranks-filter 7 --role rank --tee 3 \
              -m torchtitan.train \
-             --module attention_residual --config "llama3_${cfg}" \
+             --module phase3_attnres_pp_integration.dense_carrier --config "llama3_${cfg}" \
              --training.steps "$STEPS" \
              --training.local_batch_size "$lbs" \
              --training.global_batch_size "$gbs" \

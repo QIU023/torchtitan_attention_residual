@@ -21,11 +21,11 @@
 # What this launcher runs:
 #
 # Uses existing ``torchtitan/experiments/attn_res/`` flavors (Llama3
-# backbone + AttnRes) via ``--module attention_residual --config <flavor>``. These
+# backbone + AttnRes) via ``--module phase3_attnres_pp_integration.dense_carrier --config <flavor>``. These
 # are ModelSpec-complete and train end-to-end today. Once the Kimi Linear
 # ModelSpec integration lands (Phase 4c: ``KimiLinearModel(BaseModel)``
 # + ``KimiLinearConfig(BaseModel.Config)`` shim), swap to
-# ``--module attention_residual --config kimi_linear_<size>_<variant>``.
+# ``--module kimi_k3 --config kimi_linear_<size>_<variant>``.
 #
 # Scaling-law flavors available TODAY (Llama3 backbone):
 #   llama3_175m_baseline              # 12L dense Llama3, no AttnRes
@@ -57,7 +57,7 @@
 #       bash phase4_kimi_attnres_lm_pretrain/launch_fsdp_small.sh
 #
 #   # Kimi Linear flavor (after Phase 4c ModelSpec integration lands):
-#   MODULE=attention_residual CONFIG=kimi_linear_528m_block_attn_res \
+#   MODULE=kimi_k3 CONFIG=kimi_linear_528m_block_attn_res \
 #       STEPS=100000 bash phase4_kimi_attnres_lm_pretrain/launch_fsdp_small.sh
 #
 # ------------------------------------------------------------------------
@@ -68,7 +68,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TORCHTITAN_DIR="${TORCHTITAN_DIR:-${SCRIPT_DIR}/../torchtitan}"
 
 # ---- knobs ----
-MODULE="${MODULE:-attention_residual}"                            # attn_res (today) | kimi_linear (Phase 4c)
+# Module auto-selects by config family unless MODULE is set explicitly:
+# kimi_linear_* -> the fork's kimi_k3 experiment; llama3_*/dsv3_* -> the
+# logbook dense carrier (phase3_attnres_pp_integration/dense_carrier).
+if [ -z "${MODULE:-}" ]; then
+  case "${CONFIG}" in
+    kimi_linear_*) MODULE=kimi_k3;;
+    *) MODULE=phase3_attnres_pp_integration.dense_carrier
+       export PYTHONPATH="${SCRIPT_DIR}/..:${PYTHONPATH:-}";;
+  esac
+fi
 CONFIG="${CONFIG:-llama3_175m_attn_res_L16_n8}"
 NGPU="${NGPU:-8}"
 STEPS="${STEPS:-1000}"
@@ -86,6 +95,9 @@ mkdir -p "${OUT_DIR}"
 echo "$(cd "${TORCHTITAN_DIR}" && git rev-parse --short HEAD)" > "${OUT_DIR}/GIT_SHA"
 
 cd "${TORCHTITAN_DIR}"
+
+# dense_carrier lives in the logbook; make it importable next to the fork pkg
+export PYTHONPATH="${SCRIPT_DIR}/..:${PYTHONPATH:-}"
 
 # AttnRes cache adapter is a PP-only concept; explicit off for FSDP runs.
 unset TORCHTITAN_ATTNRES_CACHE

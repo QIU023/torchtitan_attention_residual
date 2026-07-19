@@ -21,6 +21,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TORCHTITAN_DIR="${TORCHTITAN_DIR:-${SCRIPT_DIR}/../torchtitan}"
+export PYTHONPATH="${SCRIPT_DIR}/..:${PYTHONPATH:-}"  # dense_carrier import
 SESSION="${SESSION:-ablation}"
 OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/runs/ablation}"
 STEPS="${STEPS:-20000}"
@@ -71,7 +72,7 @@ torchrun --nproc_per_node=${NGPU} --rdzv_backend c10d \\
     --rdzv_endpoint="localhost:0" \\
     --local-ranks-filter 0 --role rank --tee 3 \\
     -m torchtitan.train \\
-    --module attention_residual \\
+    --module phase3_attnres_pp_integration.dense_carrier \\
     --config ${variant} \\
     --training.steps ${STEPS} \\
     --training.local_batch_size ${LOCAL_BS} \\

@@ -20,8 +20,8 @@ import torch
 import torch.nn as nn
 
 from torchtitan.components.optimizer import register_moe_load_balancing_hook
-from torchtitan.experiments.kimi_k3 import attn_res_configs, model_registry
-from torchtitan.experiments.kimi_k3.dense_model import (
+from phase3_attnres_pp_integration.dense_carrier import attn_res_configs, model_registry
+from phase3_attnres_pp_integration.dense_carrier.dense_model import (
     AttnResModel,
     AttnResTransformerBlock,
 )
@@ -214,7 +214,7 @@ class TestModelRegistryDispatch(unittest.TestCase):
         No forward runs here -- just verifies the config builders and
         registry plumbing are self-consistent.
         """
-        from torchtitan.experiments.kimi_k3 import attn_res_configs
+        from phase3_attnres_pp_integration.dense_carrier import attn_res_configs
 
         for flavor in attn_res_configs.keys():
             with self.subTest(flavor=flavor):

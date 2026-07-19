@@ -14,11 +14,25 @@ This carrier is the algorithm's A/B baseline and PP-pressure-test bed:
 - `test_pipeline_adapter.py` — the 1460-line PP cross-stage adapter grid
   (TP + PP + AC combinations)
 
-**Provenance / how to run**: these files are archived verbatim. The flavor
-definitions (`llama3_175m_*`, `dsv3_attn_res_*`) and a fully runnable
-state live in the fork's git history — last complete commit
-[`666cf7ad6`](https://github.com/QIU023/torchtitan/tree/666cf7ad6/torchtitan/experiments/kimi_k3)
-on branch `attention_residual_dev`. The phase2/3 evidence
-(paper Table 1 reproduction, PP=8×VP=4 pressure tests, see
+Also here: `__init__.py` (model flavors `llama3_175m_*` / `dsv3_attn_res_*`
++ `model_registry`) and `config_registry.py` (trainer configs) — extracted
+from the fork at `666cf7ad6` and rewired so this package **runs against the
+current fork** as a downstream consumer (it imports the AttnRes primitive,
+layout tables and PP adapter from `torchtitan.experiments.kimi_k3`).
+
+**How to run** (torchtitan's ConfigManager accepts fully-qualified module
+paths):
+
+```bash
+export PYTHONPATH="$WS:$PYTHONPATH"   # logbook root, next to the fork pkg
+torchrun ... -m torchtitan.train     --module phase3_attnres_pp_integration.dense_carrier     --config llama3_175m_attn_res_L16_n8 ...
+# tests
+PYTHONPATH="$WS/torchtitan:$WS" pytest phase3_attnres_pp_integration/dense_carrier/ -q
+```
+
+The phase2/3 launchers (`launch_4gpu_*`, `launch_8gpu_*`,
+`run_pp_pressure_test.sh`, phase2 `launch*.sh`) have been updated to this
+module path. The phase2/3 evidence (paper Table 1 reproduction, PP=8×VP=4
+pressure tests, see
 [`../PRESSURE_TEST_REPORT_2026-05-12.md`](../PRESSURE_TEST_REPORT_2026-05-12.md))
 was produced on this carrier.

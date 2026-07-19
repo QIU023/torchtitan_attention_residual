@@ -118,7 +118,7 @@ exec /usr/local/bin/torchrun \
     --mm.val-batches ${VAL_BATCHES:-0} \
     --mm.shuffle-seed ${MM_SHUFFLE_SEED:-0} \
     --mm.pretrain-projector-path "${PRETRAIN_PROJECTOR_PATH:-${STAGE1_CKPT}}" \
-    --module attention_residual --config "${STUDENT_CONFIG}" \
+    --module kimi_k3 --config "${STUDENT_CONFIG}" \
     --hf_assets_path "${TORCHTITAN_DIR}/assets/hf/Llama-3.1-8B" \
     --training.steps "${STEPS}" \
     --training.local_batch_size "${LOCAL_BS}" \

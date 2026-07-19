@@ -18,14 +18,14 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-from torchtitan.experiments.kimi_k3 import attn_res_configs
+from phase3_attnres_pp_integration.dense_carrier import attn_res_configs
 from torchtitan.experiments.kimi_k3.attn_res import (
     AttnResProjection,
     block_attn_res,
     stack_blocks,
     unstack_blocks,
 )
-from torchtitan.experiments.kimi_k3.dense_model import AttnResTransformerBlock  # noqa: F401 -- imported for the direct block test below
+from phase3_attnres_pp_integration.dense_carrier.dense_model import AttnResTransformerBlock  # noqa: F401 -- imported for the direct block test below
 from torchtitan.models.common.nn_modules import RMSNorm
 
 

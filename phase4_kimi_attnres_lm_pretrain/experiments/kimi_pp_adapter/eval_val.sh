@@ -43,7 +43,7 @@ run_fsdp_eval() {
     echo "[$(date -Is)] === eval ${name} on c4_validation ==="
     backup_log "${out_dir}"
     OUT_DIR="${out_dir}" \
-    MODULE=attention_residual \
+    MODULE=kimi_k3 \
     CONFIG="${config}" \
     NGPU=4 \
     STEPS=12501 \
@@ -65,7 +65,7 @@ run_pp_eval() {
     echo "[$(date -Is)] === eval ${name} on c4_validation (PP) ==="
     backup_log "${out_dir}"
     OUT_DIR="${out_dir}" \
-    MODULE=attention_residual \
+    MODULE=kimi_k3 \
     CONFIG="${config}" \
     NGPU=4 \
     STEPS=12501 \

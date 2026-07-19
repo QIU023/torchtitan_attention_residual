@@ -32,6 +32,9 @@ echo "$(cd "${TORCHTITAN_DIR}" && git rev-parse --short HEAD)" > "${OUT_DIR}/GIT
 
 cd "${TORCHTITAN_DIR}"
 
+# dense_carrier lives in the logbook; make it importable next to the fork pkg
+export PYTHONPATH="${SCRIPT_DIR}/..:${PYTHONPATH:-}"
+
 export TORCHTITAN_ATTNRES_CACHE=1
 export ATTNRES_DBG=1
 # export ATTNRES_ADAPTER_DBG=1   # turn on for backward-call tracing
@@ -42,7 +45,7 @@ torchrun \
     --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
     --local-ranks-filter 3 --role rank --tee 3 \
     -m torchtitan.train \
-    --module attention_residual --config "${CONFIG}" \
+    --module phase3_attnres_pp_integration.dense_carrier --config "${CONFIG}" \
     --training.steps "${STEPS}" \
     --training.local_batch_size "${LOCAL_BS}" \
     --training.global_batch_size "${GLOBAL_BS}" \

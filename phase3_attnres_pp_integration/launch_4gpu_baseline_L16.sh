@@ -63,6 +63,9 @@ echo "$(cd "${TORCHTITAN_DIR}" && git rev-parse --short HEAD)" > "${OUT_DIR}/GIT
 
 cd "${TORCHTITAN_DIR}"
 
+# dense_carrier lives in the logbook; make it importable next to the fork pkg
+export PYTHONPATH="${SCRIPT_DIR}/..:${PYTHONPATH:-}"
+
 # Belt and suspenders: even though the baseline model has no AttnRes
 # blocks for the cache adapter to hook, unset the env flag explicitly
 # so a stale export from a prior adapter run can't accidentally flip
@@ -75,7 +78,7 @@ torchrun \
     --rdzv_backend c10d --rdzv_endpoint=localhost:0 \
     --local-ranks-filter 3 --role rank --tee 3 \
     -m torchtitan.train \
-    --module attention_residual --config "${CONFIG}" \
+    --module phase3_attnres_pp_integration.dense_carrier --config "${CONFIG}" \
     --training.steps "${STEPS}" \
     --training.local_batch_size "${LOCAL_BS}" \
     --training.global_batch_size "${GLOBAL_BS}" \
