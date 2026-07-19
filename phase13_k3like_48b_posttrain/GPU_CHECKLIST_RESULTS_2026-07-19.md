@@ -93,10 +93,27 @@ this environment, satisfying the acceptance criterion as written
 - seq512 fair pair (both modes fit): naive 6.54285 vs adapter 6.54153
   at step 300 -> **|dLoss| = 0.0013**. PASS.
 
-## Step 5 — pending
+## Step 5 — optional hardening (partial)
 
-447m TP=2 / EP=2 smokes + fp8 flavor 5-step smoke queued after step 4
-runs drain.
+- **fp8 flavor 5-step smoke: PASS** (1 GPU, seq 512, SM 12.0 native
+  rowwise fp8 through KimiLinearFloat8Spec's module-level swap). This
+  closes the last hardware gate from step 1's skip list.
+- **TP=2: BLOCKED (known drift, root-caused).** parallelize.py API
+  drift fixed (NoParallel kwarg, experts tree); the remaining failure
+  is integration-level: the merged common MoE no longer to_locals its
+  input, so the ffn-container NoParallel DTensor-izes x while the gate
+  output stays plain -> mixed Tensor/DTensor in the token dispatcher.
+  Needs a redesigned TP plan for the MoE container + numerics parity
+  run. Folded into work item (1) (parity matrix / KDA-TP column).
+- **EP=2: BLOCKED (known drift, root-caused).** Upstream EP is now
+  declared via sharding configs at config-build time;
+  _moe.parallelize() on our directly-built modules distributes nothing
+  (_sharding_config is None) -> grouped_mm batch mismatch vs EP-routed
+  token counts. Needs config-build-time EP wiring like qwen3/dsv3.
+  Folded into work item (1).
+
+Step 5 is optional per this checklist; steps 1-4 (the mandatory
+re-verification) are all green.
 
 ## Known-risk notes
 
