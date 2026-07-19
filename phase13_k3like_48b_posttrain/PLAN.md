@@ -86,9 +86,12 @@ AttnRes precedent); no RL loop in scope (NeMo-RL is a separate repo).
    fallback (no cache saving); stated proactively in the RFC so it reads
    covered-with-known-cost, not gap. -> done (RFC).
 
-RFC posture unchanged (short; no tracking-issue mega-format): the
-ecosystem-context table citing #4910 is the single highest-density
-argument -- their "planned" column is our "validated" column.
+RFC posture: #4910 is deliberately NOT cited in the RFC (decision
+2026-07-19) -- it tracks NVIDIA's FULL K3 support scope, so citing it
+both misrepresents ("they only scoped AttnRes+PP") and invites a
+breadth comparison we lose. The Block-AttnRes-PP evidence already lives
+in Finished work. This intel stays internal: useful in PR discussion if
+a maintainer asks "why not wait for Megatron".
 
 ## 0. Why this phase, why 48B
 

@@ -30,7 +30,3 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 - CP / 1M-context training — in the hybrid stack, ring/zigzag applies only to the full-attention (MLA) layers; KDA layers need Ulysses-style head sharding or LASP-style cross-rank state passing, neither of which `fla-core`'s `chunk_kda` supports today (the same blank exists for `qwen3_5`). Future work.
 - Inference/serving — covered by Moonshot's official vLLM contribution; torchtitan scope here is training-side only.
 - Vision path — the blog confirms native vision but publishes no architecture details; text-only until the tech report.
-
-## Appendix: Ecosystem context
-
-The Megatron ecosystem has also scoped this work: [Megatron-Bridge#4910](https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/4910) tracks AttnRes and its Block-AttnRes pipeline support as in-progress/planned. In this fork, AttnRes together with its pipeline-parallel support is already **working end-to-end -- including the hardest case, Interleaved1F1B with virtual stages (VP>1)** -- with unit tests, smoke runs, and the PP×VP pressure matrix completed (numerics above).
