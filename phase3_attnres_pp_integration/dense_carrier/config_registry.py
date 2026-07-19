@@ -38,6 +38,7 @@ from functools import partial
 import torch.nn as nn
 
 from torchtitan.components.checkpoint import CheckpointManager
+from torchtitan.components.loss import CrossEntropyLoss
 from torchtitan.components.lr_scheduler import LRSchedulersContainer
 from torchtitan.components.metrics import MetricsProcessor
 from torchtitan.components.optimizer import default_adamw, OptimizersContainer
@@ -70,7 +71,11 @@ from torchtitan.models.common import (
     TransformerBlock,
 )
 from torchtitan.models.common.attention import ScaledDotProductAttention
-from torchtitan.models.common.config_utils import make_ffn_config, make_gqa_config
+from torchtitan.models.common.config_utils import (
+    decoder_vocab_size,
+    make_ffn_config,
+    make_gqa_config,
+)
 from torchtitan.models.common.param_init import depth_scaled_std, skip_param_init
 from torchtitan.models.llama3.model import Llama3Model, Llama3TransformerBlock
 from torchtitan.models.llama3.parallelize import parallelize_llama
@@ -271,13 +276,19 @@ def llama3_175m_baseline() -> Trainer.Config:
     configs must share every hyperparameter EXCEPT the model flavor so that
     the only difference in the measured loss delta is Block AttnRes itself.
     """
+    model_spec = _baseline_model_registry()
     return Trainer.Config(
+        # Plain (non-chunked) CE: matches the numerics of the historical
+        # phase2/phase3 runs this carrier exists to reproduce.
+        loss=CrossEntropyLoss.Config(
+            global_vocab_size=decoder_vocab_size(model_spec),
+        ),
         hf_assets_path="./assets/hf/Llama-3.1-8B",
         metrics=MetricsProcessor.Config(
             enable_tensorboard=True,
             log_freq=10,
         ),
-        model_spec=_baseline_model_registry(),
+        model_spec=model_spec,
         optimizer=default_adamw(lr=3e-4),
         lr_scheduler=LRSchedulersContainer.Config(
             warmup_steps=500,
@@ -527,10 +538,14 @@ def dsv3_attn_res_debugmodel() -> Trainer.Config:
     bundled test tokenizer and c4_test dataset; finishes in a few seconds
     on CPU. Meant for unit / smoke tests, not a training target.
     """
+    model_spec = attn_res_model_registry("dsv3_debugmodel_attn_res")
     return Trainer.Config(
+        loss=CrossEntropyLoss.Config(
+            global_vocab_size=decoder_vocab_size(model_spec),
+        ),
         hf_assets_path="./tests/assets/tokenizer",
         metrics=MetricsProcessor.Config(log_freq=1),
-        model_spec=attn_res_model_registry("dsv3_debugmodel_attn_res"),
+        model_spec=model_spec,
         dataloader=HuggingFaceTextDataLoader.Config(dataset="c4_test"),
         optimizer=default_adamw(lr=8e-4),
         lr_scheduler=LRSchedulersContainer.Config(
@@ -562,9 +577,13 @@ def dsv3_attn_res_16b() -> Trainer.Config:
     ``--module kimi_k3 --config dsv3_attn_res_16b`` with matching seed
     and data order.
     """
+    model_spec = attn_res_model_registry("dsv3_16b_attn_res")
     return Trainer.Config(
+        loss=CrossEntropyLoss.Config(
+            global_vocab_size=decoder_vocab_size(model_spec),
+        ),
         hf_assets_path="./assets/hf/deepseek-moe-16b-base",
-        model_spec=attn_res_model_registry("dsv3_16b_attn_res"),
+        model_spec=model_spec,
         dataloader=HuggingFaceTextDataLoader.Config(dataset="c4"),
         optimizer=default_adamw(lr=2.2e-4),
         lr_scheduler=LRSchedulersContainer.Config(
