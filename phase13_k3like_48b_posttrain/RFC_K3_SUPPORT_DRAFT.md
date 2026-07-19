@@ -33,12 +33,4 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 
 ## Appendix: Ecosystem context
 
-The Megatron ecosystem tracks the same components as open work ([Megatron-Bridge#4910](https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/4910), PoR opened 2026-07-16):
-
-| Component | Megatron ecosystem | My Torchtitan fork |
-|---|---|---|
-| KDA | 🚧 in progress ([Megatron-LM#5769](https://github.com/NVIDIA/Megatron-LM/pull/5769); CP/THD scoped out) | working via `fla-core` (CP likewise declared future work) |
-| AttnRes | 🚧 in progress ([Megatron-LM#4016](https://github.com/NVIDIA/Megatron-LM/issues/4016); a prior attempt [#4398](https://github.com/NVIDIA/Megatron-LM/pull/4398) closed unmerged) | working + unit-tested |
-| Block AttnRes pipeline support | 📋 planned — "needs PP state/payload design, backward routing, and per-microbatch cache validation" | all three implemented and validated to PP=8 × VP=4 (\|Δloss\| ≤ 0.011) |
-
-torchtitan can have a working K3 training path now.
+The Megatron ecosystem has also scoped this work: [Megatron-Bridge#4910](https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/4910) tracks AttnRes and its Block-AttnRes pipeline support as in-progress/planned. In this fork, AttnRes together with its pipeline-parallel support is already **working end-to-end -- including the hardest case, Interleaved1F1B with virtual stages (VP>1)** -- with unit tests, smoke runs, and the PP×VP pressure matrix completed (numerics above).
