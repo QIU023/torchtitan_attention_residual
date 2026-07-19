@@ -146,6 +146,28 @@ this environment, satisfying the acceptance criterion as written
 Step 5 is optional per this checklist; steps 1-4 (the mandatory
 re-verification) are all green.
 
+## Post-checklist: TP/EP parity matrix (work item (1), same day)
+
+Protocol: shared seed checkpoint (torchtitan standard for
+cross-parallelism comparison -- per-config sharded init draws differ
+by design), fp32 + `--debug.seed 42 --debug.deterministic`, identical
+data order within each pair, 447m_aligned flavor, 60 steps:
+
+| pair | step-1 loss | steps 2-5 |d| | step-1 grad_norm |
+|---|---|---|---|
+| TP=2 vs FSDP dp=1 (same data) | **EXACT (12.21259)** | <= 4e-5 | 22.571 vs 22.764 (0.85%) |
+| EP=2 vs FSDP dp_shard=2 (same data) | **EXACT (12.24621)** | <= 5e-5 | **EXACT (11.3439)** |
+
+Beyond ~step 10 the fp32 trajectories decohere (1e-3..5e-2 by step
+60): chaotic amplification at the flavor's warmup LR (2.2e-3), seen in
+BOTH pairs and in either direction depending on seed -- not a
+parallelism defect. Control: the dense-carrier fp32 PP probe (7x lower
+LR) stayed at 3e-5 over 100 steps. Verdict: TP and EP forward/loss
+are exactly parity at step 1 and backward/optimizer equivalent to
+~1e-5 over the early window; the KDA-TP column (KDA replicated on the
+TP mesh by design) is exercised by the TP pair. Logs:
+`parity_s_{fsdp1,tp2,fsdp2,ep2}.log` in the reverification folder.
+
 ## Known-risk notes
 
 - fla `fused_norm_gate` device-side assert (SM 12.0, ~650-step KDA
