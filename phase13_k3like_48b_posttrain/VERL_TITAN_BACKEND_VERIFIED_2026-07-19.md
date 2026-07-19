@@ -64,8 +64,15 @@ Source anchors (all under `verl/workers/engine/torchtitan/`):
 
 ## Next actions (feeds PLAN item 3 / task list)
 
-- [ ] Minimal veRL recipe patch: mapping entry + experiments-namespace
-      fallback + attn_backend tolerance + flavor-dict shim.
-- [ ] state_dict_adapter promotion first (blocks HF initial load).
-- [ ] LoRA P0 trio unchanged (veRL PEFT config is engine-agnostic;
-      verify torchtitan engine honors it before relying on it).
+- [x] Minimal veRL recipe patch -- DONE same day:
+      [`verl_kimi_linear_engine.patch`](verl_kimi_linear_engine.patch)
+      (2 hunks: kimi_linear->kimi_k3 mapping + experiments-namespace
+      fallback) + fork-side shims (attn_backend kwarg, dim/vocab_size
+      duck props, kimi_linear_configs flavor dict). Verified standalone:
+      the patched matcher resolves the official 48B HF config to
+      ("kimi_k3", "kimi_linear_48b_baseline") through the real registry.
+- [x] state_dict_adapter promotion -- DONE (603/603 keys, bit-exact
+      sharded load of the official weights; see GPU_CHECKLIST_RESULTS).
+- [ ] LoRA P0 trio (veRL PEFT config engine-agnostic; verify the
+      torchtitan engine honors it) + full veRL install + 48B LoRA SFT
+      smoke -- next leg.
