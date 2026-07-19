@@ -220,6 +220,46 @@ negotiate in the RFC. Facts (settled 2026-07-17):
   once the report reveals K3's exact QAT recipe; strict parity only with
   B200-class access.
 
+## 3c. Hardware plan (2026-07-19): 5090 now, H200 at 7.27
+
+The 8x5090 box currently rented covers everything up to the 48B full-param
+POC leg. Memory arithmetic that draws the line:
+
+| Workload | Need | 8x5090 (32GB/card) | 8xH200 (141GB/card) |
+|---|---|---|---|
+| 48B LoRA SFT (FSDP, frozen base) | 96GB weights sharded = 12GB/card + activations | OK (small batch, AC) | comfortable |
+| 48B LoRA GRPO (trainer + rollout co-resident) | 4+4 split, ~24GB weights/card each side | marginal squeeze | comfortable |
+| 48B **full-param** train | weights 96 + grads 96 + AdamW 384 = ~576GB -> 72GB/card | **does not fit** | fits |
+| 2.8T scenarios / logit-KD self-hosted | 16x H200+ | no | multi-node |
+| **FP4/NVFP4 native** | SM 12.0 tensor cores | **only the 5090 can** | **H200 has no FP4 hardware** |
+| FP8 rowwise | SM89+ | yes | yes |
+
+Note the FP4 row is inverted: the 5090 box is not a stopgap -- it is the
+only FP4-capable hardware we have. Keep it for the FP4 line even after H200.
+
+**5090 work queue (now -> ~7.27):**
+
+1. [PRE_RFC_GPU_CHECKLIST.md](PRE_RFC_GPU_CHECKLIST.md) (~1 day) -> post the RFC.
+2. Work item (1) closure (~3-4 days): parity matrix + KDA-TP column,
+   debugmodel CI, MFU/FLOPs rewrite (KDA/AttnRes/MoE), state_dict_adapter
+   promotion -- 48B weight LOADING verifies on 5090 (12GB/card sharded).
+3. Work item (2) veRL (~5-7 days): verify titan-backend claim against veRL
+   source (PLAN 0a #5), LoRA P0 trio (alpha-fullparam exception / TP-plan
+   extension / LoRA-only DCP) on 194M/447M, LoRA-only weight sync.
+4. Item (3) LoRA leg: 48B LoRA SFT smoke on 5090; LoRA GRPO try the 4+4
+   split, fall back to H200 if it does not fit.
+5. FP4 line (parallel, opportunistic): emulated MXFP4 QAT prototype +
+   native FP4 kernel scouting on SM 12.0 (expect PR8/PR13-class kernel
+   potholes).
+
+**H200 trigger: book for ~7.26-7.28**, one rental bundling three things:
+(a) item (3) full-param leg -- 48B full-param small GRPO + alpha
+trainable-vs-frozen curves; (b) the 7.27 day-one runbook -- artifact
+discovery + packed-MXFP4 quantized import (the day-one blocker) + flavor
+regeneration + smoke/parity re-run; (c) full-5D simultaneous composition
+validation + EP@896 scaled smoke + provisional 2.8T meta construction.
+Logit-KD / 2.8T scenarios (16x H200+) get a separate go/no-go later.
+
 ## 4. Upstream merge — split-merge strategy (reviewed 2026-07-17 @ upstream `fbceec07`)
 
 A real `git merge upstream/main` from `90d85eba3` produces **10 conflicts**, and
