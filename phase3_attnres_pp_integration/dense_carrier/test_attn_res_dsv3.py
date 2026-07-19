@@ -10,8 +10,9 @@ Covers build, per-layer dense / MoE mix (DSv3 first-N-dense convention),
 zero-init of pseudo-queries, forward+backward, and the
 ``model_registry`` dispatch that picks ``parallelize_deepseekv3`` vs
 ``parallelize_llama`` based on whether the config has any MoE layers.
-CPU only; uses the small ``dsv3_debugmodel_attn_res`` flavor (6 layers,
-1 dense + 5 MoE, 8 experts, dim=256, N=3 AttnRes blocks).
+Config-level tests are CPU; the model forward/backward tests need CUDA
+(flex-backed flavor). Uses the small ``dsv3_debugmodel_attn_res`` flavor
+(6 layers, 1 dense + 5 MoE, 8 experts, dim=256, N=3 AttnRes blocks).
 """
 
 import unittest
@@ -32,12 +33,14 @@ from torchtitan.models.deepseek_v3.state_dict_adapter import DeepSeekV3StateDict
 from torchtitan.models.llama3.parallelize import parallelize_llama
 from torchtitan.models.llama3.state_dict_adapter import Llama3StateDictAdapter
 
-def _causal_masks(B: int, T: int):
+def _causal_masks(B: int, T: int, device: str = "cuda"):
     from torchtitan.models.common.attention import (
         create_attention_mask,
         get_causal_mask_mod,
     )
-    return create_attention_mask(get_causal_mask_mod(), B, None, T, T)
+    return create_attention_mask(
+        get_causal_mask_mod(), B, None, T, T, device=device
+    )
 
 
 
@@ -94,13 +97,19 @@ class TestDSv3AttnResLayers(unittest.TestCase):
     "FlexAttention has no CPU backward; DSv3 flavors are flex-backed upstream",
 )
 class TestDSv3AttnResModel(unittest.TestCase):
-    """Build + forward + backward smoke on the DSv3 AttnRes debug model."""
+    """Build + forward + backward smoke on the DSv3 AttnRes debug model.
+
+    Runs on CUDA: the flavor is flex-backed and FlexAttention has no CPU
+    backward (and ``create_attention_mask`` builds CUDA BlockMasks by
+    default), so a CPU build can never exercise these paths.
+    """
 
     def setUp(self):
         torch.manual_seed(0)
         self.config = attn_res_configs["dsv3_debugmodel_attn_res"]()
-        self.model = self.config.build()
-        self.model.init_states()
+        with torch.device("cuda"):
+            self.model = self.config.build()
+            self.model.init_states()
 
     def test_build_produces_correct_block_types(self):
         """Each built layer is an AttnResTransformerBlock; layer 0 has
@@ -137,20 +146,20 @@ class TestDSv3AttnResModel(unittest.TestCase):
 
     def test_forward_shape(self):
         B, T = 2, 8
-        tokens = torch.randint(0, self.config.vocab_size, (B, T))
+        tokens = torch.randint(0, self.config.vocab_size, (B, T), device="cuda")
         logits = self.model(tokens, attention_masks=_causal_masks(*tokens.shape))
         self.assertEqual(logits.shape, torch.Size([B, T, self.config.vocab_size]))
 
     def test_forward_finite(self):
         """MoE + MLA + AttnRes composition does not NaN on step 0."""
         B, T = 2, 8
-        tokens = torch.randint(0, self.config.vocab_size, (B, T))
+        tokens = torch.randint(0, self.config.vocab_size, (B, T), device="cuda")
         logits = self.model(tokens, attention_masks=_causal_masks(*tokens.shape))
         self.assertTrue(torch.isfinite(logits).all())
 
     def test_forward_backward_grads_reach_attn_res_params(self):
         B, T = 2, 8
-        tokens = torch.randint(0, self.config.vocab_size, (B, T))
+        tokens = torch.randint(0, self.config.vocab_size, (B, T), device="cuda")
         logits = self.model(tokens, attention_masks=_causal_masks(*tokens.shape))
         loss = logits.sum()
         loss.backward()
@@ -170,7 +179,7 @@ class TestDSv3AttnResModel(unittest.TestCase):
     def test_forward_backward_grads_reach_moe_router(self):
         """Backward reaches the router gate on at least one MoE layer."""
         B, T = 2, 8
-        tokens = torch.randint(0, self.config.vocab_size, (B, T))
+        tokens = torch.randint(0, self.config.vocab_size, (B, T), device="cuda")
         logits = self.model(tokens, attention_masks=_causal_masks(*tokens.shape))
         logits.sum().backward()
         # Layers 1..5 are MoE; pick one and check its router.
