@@ -21,7 +21,7 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 
 ## Plan
 
-**Before the release (this issue is the placeholder — no PR yet):** build and smoke the post-training stack on the **open Kimi-Linear-48B-A3B weights** (the K3-family carrier available today): AttnRes graft (zero-init, step-0 numerically identical to the original checkpoint), SFT/GRPO with LoRA and full-param configs.
+**Before the release (this issue is the placeholder — no PR yet):** build and smoke the post-training stack on the **open Kimi-Linear-48B-A3B weights** (the K3-family carrier available today): AttnRes graft with an alpha-gated zero-init (alpha=0 makes step 0 exactly reproduce the original checkpoint's function, then alpha trains away from identity), SFT/GRPO with LoRA and full-param configs.
 
 **After 2026-07-27 (weights + report + official vLLM/SGLang support):** drop the official architecture/config into the same infra — flavor configs are parametrically generated, so reconciliation (AttnRes block count, KDA:MLA ratio, gated-MLA details) is config-level — then downscale pretraining + post-training. Target: scale-up stays config-only, so **2.8T LoRA post-training runs on the same stack** given the hardware.
 
