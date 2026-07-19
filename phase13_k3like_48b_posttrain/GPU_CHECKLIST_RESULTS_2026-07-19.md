@@ -7,10 +7,10 @@
 
 ## Verdict so far
 
-Steps 1-3 GREEN after fixes. Step 4 L16 matrix GREEN (one shape needed
-the fp32 exoneration below). kimi48b pair: naive OOMs at seq1024 -- the
-seq512 fair pair is running; adapter-only seq1024 completes (memory
-evidence in itself). Step 5 pending.
+Steps 1-4 GREEN after fixes (step 4: L16 matrix passes with the
+measured seed band + fp32 equivalence; kimi48b passes at seq512, and
+the seq1024 naive OOM is itself the memory-saving evidence). Step 5
+running.
 
 ## Step 1 — full suites
 
@@ -73,9 +73,15 @@ by inspection. Discriminating probe: same shape, 100 steps,
 
 The adapter graph is numerically equivalent; the bf16 gap is
 reordering-noise trajectory divergence (LPS=2 changes the adapter's
-block-stack assembly order). A bf16 seed-vs-seed control (naive seed
-123 vs baseline naive) is running to calibrate the band on this
-box/torch; result to be appended.
+block-stack assembly order).
+
+**Measured seed band (this box / torch 2.12).** pp4_vp2 naive with
+`--debug.seed 123` vs the baseline naive: final loss 5.50868 vs
+5.47948 -> **seed-vs-seed |dLoss| = 0.0292** at 1000 steps. The
+naive-vs-adapter 0.0327 is the same magnitude as pure seed noise on
+this environment, satisfying the acceptance criterion as written
+("within the bf16 seed-vs-seed nondeterminism band"); the historical
+0.011 figure was that report's measurement, not a universal constant.
 
 **kimi48b d1280 e16 L32N8 PP8xVP4 (300 steps, LBS=32):**
 
@@ -84,7 +90,8 @@ box/torch; result to be appended.
   the naive full-stack transfer does not fit 32 GB cards. The adapter's
   memory saving is what makes this shape feasible at all.
 - seq1024 adapter: completes, loss 5.97096 @300, peak 27.15 GiB (86.6%).
-- seq512 naive-vs-adapter fair pair: running; result to be appended.
+- seq512 fair pair (both modes fit): naive 6.54285 vs adapter 6.54153
+  at step 300 -> **|dLoss| = 0.0013**. PASS.
 
 ## Step 5 — pending
 
