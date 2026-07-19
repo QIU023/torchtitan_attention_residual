@@ -62,6 +62,34 @@ L16_n8, 1000 steps, 8 GPUs, bf16 (`pressure_test_20260719-0801`):
 Step-1 losses identical across all six runs (11.7618): init + data
 order seed-matched; AttnRes zero-init identity holds.
 
+**Cross-era comparison vs PRESSURE_TEST_REPORT_2026-05-12 (same
+shapes, same script defaults, pre-merge fork + older torch):**
+
+| shape | hist naive | today naive | hist adapter | today adapter | hist |d| | today |d| |
+|---|---|---|---|---|---|---|
+| PP8xVP2 | 5.42497 | 5.27563 | 5.42935 | 5.26996 | 0.0044 | 0.0057 |
+| PP4xVP2 | 5.52833 | 5.47948 | 5.52941 | 5.44676 | 0.0011 | 0.0327 |
+| PP4xVP4 | 5.13467 | 5.11195 | 5.13877 | 5.10225 | 0.0041 | 0.0097 |
+
+- Shape ordering of final losses reproduces exactly
+  (vp4 < pp8 < pp4_vp2 in both eras).
+- Absolute losses shifted -0.02..-0.15 across eras (torch 2.12 +
+  merged-trunk kernels; both columns internally consistent).
+- Historical naive-vs-naive band: 0.06-0.13 (phase3 handoff
+  2026-04-21); today's measured seed band: 0.0292. Adapter deltas sit
+  inside the band in both eras. (The checklist's "0.011" reference
+  traces to a different report; the 2026-05-12 L16 report itself says
+  max 0.0044 with band 0.06-0.13.)
+- Step-time note: today's per-run timing is polluted by the validator
+  firing at steps 500/1000 and single-snapshot tps; the RFC's perf
+  numbers continue to cite the historical report, which this pass did
+  not re-measure.
+
+**kimi48b adapter, same script, cross-era:** historical step-300 loss
+5.96955 (24.76 GiB, tps 1096) vs today 5.97096 (27.15 GiB, tps 919)
+-> **cross-era |dLoss| = 0.0014** on the 48B-layout carrier across a
+torch major bump + 8 fix commits. Memory +2.4 GiB under torch 2.12.
+
 **PP4xVP2 fp32 exoneration.** The 0.0327 exceeds the historical 0.011
 band AND is same-signed at every late step -- not dismissible as noise
 by inspection. Discriminating probe: same shape, 100 steps,
