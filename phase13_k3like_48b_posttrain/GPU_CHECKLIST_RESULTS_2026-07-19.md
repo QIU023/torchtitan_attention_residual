@@ -126,19 +126,22 @@ this environment, satisfying the acceptance criterion as written
 - **fp8 flavor 5-step smoke: PASS** (1 GPU, seq 512, SM 12.0 native
   rowwise fp8 through KimiLinearFloat8Spec's module-level swap). This
   closes the last hardware gate from step 1's skip list.
-- **TP=2: BLOCKED (known drift, root-caused).** parallelize.py API
-  drift fixed (NoParallel kwarg, experts tree); the remaining failure
-  is integration-level: the merged common MoE no longer to_locals its
-  input, so the ffn-container NoParallel DTensor-izes x while the gate
-  output stays plain -> mixed Tensor/DTensor in the token dispatcher.
-  Needs a redesigned TP plan for the MoE container + numerics parity
-  run. Folded into work item (1) (parity matrix / KDA-TP column).
-- **EP=2: BLOCKED (known drift, root-caused).** Upstream EP is now
-  declared via sharding configs at config-build time;
-  _moe.parallelize() on our directly-built modules distributes nothing
-  (_sharding_config is None) -> grouped_mm batch mismatch vs EP-routed
-  token counts. Needs config-build-time EP wiring like qwen3/dsv3.
-  Folded into work item (1).
+- **TP=2: FIXED same day -> PASS** (50-step smoke rc=0, loss 7.55).
+  Root cause was integration-level (merged MoE no longer to_locals its
+  input); resolution: MoE TP/EP migrated to trunk's module-internal
+  mechanism -- sharding configs declared at config build
+  (set_moe_sharding_config, dsv3's expert param layout) via
+  update_from_config-wired flags, _moe.parallelize(parallel_dims) at
+  parallelize time, all _moe entries dropped from the hand TP plan,
+  and a plain-tensor boundary restored at KimiMoE.forward exit
+  (Partial -> Replicate all-reduce + to_local). Commit f7bb7cd0f.
+- **EP=2: FIXED same day -> PASS** (50-step smoke rc=0, loss 7.68).
+  Same mechanism (the config-build-time sharding declaration was the
+  missing piece; _sharding_config had been None on directly-built
+  modules).
+- Regression checks after the migration: full kimi_k3 suite 52 passed;
+  FSDP-only 194m 5-step smoke unchanged (loss 12.17). The
+  TP/EP-vs-FSDP loss-parity matrix remains queued (work item (1)).
 
 Step 5 is optional per this checklist; steps 1-4 (the mandatory
 re-verification) are all green.
