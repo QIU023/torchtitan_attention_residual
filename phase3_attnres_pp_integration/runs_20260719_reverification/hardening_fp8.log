@@ -1,0 +1,58 @@
+W0719 13:57:05.063000 62095 site-packages/torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0719 13:57:05.224000 62095 site-packages/torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[titan] 2026-07-19 13:57:06,306 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-07-19 13:57:06,349 - fla.utils._device - INFO - Blackwell detected: registering default global_scratch allocator.
+[titan] 2026-07-19 13:57:07,099 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-07-19 13:57:07,100 - root - INFO - Float8 training active with recipe rowwise
+[titan] 2026-07-19 13:57:07,175 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-07-19 13:57:07,177 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/smoke_runs/hardening_447m_fp8/structured_logs/training.global_rank_0.20260719-135707-SQOCHN.jsonl
+[titan] 2026-07-19 13:57:07,329 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-07-19 13:57:07,332 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-07-19 13:57:07,333 - root - INFO - Building kimi_linear kimi_linear_447m_aligned_block_attn_res_n4
+[titan] 2026-07-19 13:57:07,403 - root - INFO - TensorBoard logging enabled. Logs will be saved at /workspace/smoke_runs/hardening_447m_fp8/tb/20260719-1357
+[titan] 2026-07-19 13:57:07,403 - root - INFO - CUDA capacity: NVIDIA GeForce RTX 5090 with 31.36GiB memory
+[titan] 2026-07-19 13:57:07,405 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-07-19 13:57:07,405 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[titan] 2026-07-19 13:57:07,407 - root - INFO - [34mModel kimi_linear kimi_linear_447m_aligned_block_attn_res_n4 [31msize: 1,409,320,896 total parameters[39m
+[titan] 2026-07-19 13:57:07,522 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-07-19 13:57:07,522 - root - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5090, fallback to A100
+[titan] 2026-07-19 13:57:07,522 - root - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[titan] 2026-07-19 13:57:07,522 - root - INFO - CUDA memory usage for model: 5.89GiB(18.80%)
+[titan] 2026-07-19 13:57:07,524 - root - INFO - Optimizer AdamW (model_part=0): 409 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0022, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-07-19 13:57:07,525 - root - WARNING - Warmup steps (500) exceed total steps (5). Adjusting warmup steps to 5.
+[titan] 2026-07-19 13:57:07,525 - root - WARNING - Warmup (5) + decay (4) steps exceed total steps (5). Adjusting decay steps to 0.
+[titan] 2026-07-19 13:57:07,526 - root - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-07-19 13:57:07,920 - root - INFO - Preparing c4 dataset from allenai/c4
+[titan] 2026-07-19 13:57:09,673 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[titan] 2026-07-19 13:57:09,674 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[titan] 2026-07-19 13:57:09,959 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/allenai/c4/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/README.md "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:10,246 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/c4.py "HTTP/1.1 404 Not Found"
+[titan] 2026-07-19 13:57:12,262 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/allenai/c4/allenai/c4.py "HTTP/1.1 404 Not Found"
+[titan] 2026-07-19 13:57:12,673 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:13,700 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[titan] 2026-07-19 13:57:16,927 - httpx - INFO - HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=allenai/c4 "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:17,268 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=true&expand=false "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:18,139 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=true&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:18,780 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2?recursive=false&expand=false "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:19,219 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/dataset_infos.json "HTTP/1.1 404 Not Found"
+/venv/main/lib/python3.12/site-packages/torchdata/stateful_dataloader/stateful_dataloader.py:379: UserWarning: 'set_vital' is deprecated, please do not call
+  torch.set_vital("Dataloader", "enabled", "True")  # type: ignore[attr-defined]
+[titan] 2026-07-19 13:57:19,324 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./assets/hf/Llama-3.1-8B/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-07-19 13:57:19,324 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-07-19 13:57:19,325 - root - INFO - Trainer is initialized with local batch size 1, global batch size 1, gradient accumulation steps 1, sequence length 512, total steps 5 (warmup 500)
+[titan] 2026-07-19 13:57:19,325 - root - INFO - Training starts at step 1
+[titan] 2026-07-19 13:57:19,656 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/revision/1588ec454efa1a09f29cd18ddd04fe05fc8653a2 "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:21,355 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?recursive=false&expand=false "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:22,308 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/datasets/allenai/c4/tree/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en?expand=false&recursive=false&limit=1000&cursor=ZXlKbWFXeGxYMjVoYldVaU9pSmxiaTlqTkMxMGNtRnBiaTR3TURrNU9TMXZaaTB3TVRBeU5DNXFjMjl1TG1kNklpd2lkSEpsWlY5dmFXUWlPaUprWXprME0yTTBZelF3WmpVelpEQXlZak14WTJWa01XUmxabUUzWlRWbU5ETTRaRFU0TmpKbEluMD06MTAwMA%3D%3D "HTTP/1.1 200 OK"
+[titan] 2026-07-19 13:57:23,020 - httpx - INFO - HTTP Request: GET https://huggingface.co/datasets/allenai/c4/resolve/1588ec454efa1a09f29cd18ddd04fe05fc8653a2/en/c4-train.00000-of-01024.json.gz "HTTP/1.1 302 Found"
+[titan] 2026-07-19 13:57:24,990 - httpx - INFO - HTTP Request: GET https://us.aws.cdn.hf.co/xet-bridge-us/621ffdd236468d709f182a80/6656aac078668b0d5feb1cfb7b04def05bff73e7e375d0a66e252827336ac1a8?response-content-type=application%2Fgzip&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27c4-train.00000-of-01024.json.gz%3B+filename%3D%22c4-train.00000-of-01024.json.gz%22%3B&X-Xet-Cas-Uid=public&user_id=public&Expires=1784473042&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjIxZmZkZDIzNjQ2OGQ3MDlmMTgyYTgwLzY2NTZhYWMwNzg2NjhiMGQ1ZmViMWNmYjdiMDRkZWYwNWJmZjczZTdlMzc1ZDBhNjZlMjUyODI3MzM2YWMxYThcXD9yZXNwb25zZS1jb250ZW50LXR5cGU9YXBwbGljYXRpb24lMkZnemlwJnJlc3BvbnNlLWNvbnRlbnQtZGlzcG9zaXRpb249aW5saW5lJTNCK2ZpbGVuYW1lJTJBJTNEVVRGLTglMjclMjdjNC10cmFpbi4wMDAwMC1vZi0wMTAyNC5qc29uLmd6JTNCK2ZpbGVuYW1lJTNEJTIyYzQtdHJhaW4uMDAwMDAtb2YtMDEwMjQuanNvbi5neiUyMiUzQiZYLVhldC1DYXMtVWlkPXB1YmxpYyZ1c2VyX2lkPXB1YmxpYyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiRXBvY2hUaW1lIjoxNzg0NDczMDQyfSwiQnl0ZVJhbmdlIjp7IkV4cGVjdGVkSGVhZGVyIjoiYnl0ZXM9MC01MjQyODgxIn19fV19&Signature=MEYCIQDlQynxvKjrojL6Hh8ko622-QtnO8fgacLCfUhA1EE4YAIhAJtvSlvxwwaY0u%7EawJb7jU9CnBpkvw9vKD-EOQfDdCEk&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F "HTTP/1.1 206 Partial Content"
+/venv/main/lib/python3.12/site-packages/triton/language/core.py:2284: UserWarning: tl.make_block_ptr is deprecated. Use TensorDescriptor or tl.make_tensor_descriptor instead.
+  warn("tl.make_block_ptr is deprecated. Use TensorDescriptor or tl.make_tensor_descriptor instead.")
+[titan] 2026-07-19 13:57:33,266 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-07-19 13:57:33,271 - root - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-07-19 13:57:33,532 - root - INFO - [31mstep:  1  [32mloss: 12.22108  [38;2;180;60;0mgrad_norm: 30.5407  [38;2;54;234;195mmemory: 24.83GiB(79.18%)  [34mtps: 20  [36mtflops: 0.15  [35mmfu: N/A[39m
+[titan] 2026-07-19 13:57:33,533 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[titan] 2026-07-19 13:57:35,593 - root - INFO - Sleeping 2 seconds for other ranks to complete
+[titan] 2026-07-19 13:57:37,593 - root - INFO - Training completed
+[titan] 2026-07-19 13:57:37,980 - root - INFO - Process group destroyed
