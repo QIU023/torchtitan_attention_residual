@@ -19,18 +19,6 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 - Multimodal (vision-native) precedent: SigLIP-splice scaffold in the experiment ([model](https://github.com/QIU023/torchtitan/blob/a3b3c74b3/torchtitan/experiments/kimi_k3/multimodal_model.py), [CPU test](https://github.com/QIU023/torchtitan/blob/a3b3c74b3/torchtitan/experiments/kimi_k3/tests/test_kimi_multimodal_model.py)); LLaVA-1.5-style pretraining + SFT + GRPO exercised end-to-end on the 447M carrier — [phase-5 VLM training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase5_vlm_multimodal_sft), [phase-11 post-training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase11_rlhf_grpo_infra).
 - CPU unit tests for the primitive, model, and pipeline adapter — [tests](https://github.com/QIU023/torchtitan/tree/a3b3c74b3/torchtitan/experiments/kimi_k3/tests).
 
-## Ecosystem context
-
-The Megatron ecosystem tracks the same components as open work ([Megatron-Bridge#4910](https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/4910), PoR opened 2026-07-16):
-
-| Component | Megatron ecosystem | This fork |
-|---|---|---|
-| KDA | 🚧 in progress ([Megatron-LM#5769](https://github.com/NVIDIA/Megatron-LM/pull/5769); CP/THD scoped out) | working via `fla-core` (CP likewise declared future work) |
-| AttnRes | 🚧 in progress ([Megatron-LM#4016](https://github.com/NVIDIA/Megatron-LM/issues/4016); a prior attempt [#4398](https://github.com/NVIDIA/Megatron-LM/pull/4398) closed unmerged) | working + unit-tested |
-| Block AttnRes pipeline support | 📋 planned — "needs PP state/payload design, backward routing, and per-microbatch cache validation" | all three implemented and validated to PP=8 × VP=4 (\|Δloss\| ≤ 0.011) |
-
-torchtitan can have a working K3 training path now.
-
 ## Plan
 
 **Before the release (this issue is the placeholder — no PR yet):** build and smoke the post-training stack on the **open Kimi-Linear-48B-A3B weights** (the K3-family carrier available today): AttnRes graft (zero-init, step-0 numerically identical to the original checkpoint), SFT/GRPO with LoRA and full-param configs.
@@ -42,3 +30,15 @@ torchtitan can have a working K3 training path now.
 - CP / 1M-context training — in the hybrid stack, ring/zigzag applies only to the full-attention (MLA) layers; KDA layers need Ulysses-style head sharding or LASP-style cross-rank state passing, neither of which `fla-core`'s `chunk_kda` supports today (the same blank exists for `qwen3_5`). Future work.
 - Inference/serving — covered by Moonshot's official vLLM contribution; torchtitan scope here is training-side only.
 - Vision path — the blog confirms native vision but publishes no architecture details; text-only until the tech report.
+
+## Appendix: Ecosystem context
+
+The Megatron ecosystem tracks the same components as open work ([Megatron-Bridge#4910](https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/4910), PoR opened 2026-07-16):
+
+| Component | Megatron ecosystem | My Torchtitan fork |
+|---|---|---|
+| KDA | 🚧 in progress ([Megatron-LM#5769](https://github.com/NVIDIA/Megatron-LM/pull/5769); CP/THD scoped out) | working via `fla-core` (CP likewise declared future work) |
+| AttnRes | 🚧 in progress ([Megatron-LM#4016](https://github.com/NVIDIA/Megatron-LM/issues/4016); a prior attempt [#4398](https://github.com/NVIDIA/Megatron-LM/pull/4398) closed unmerged) | working + unit-tested |
+| Block AttnRes pipeline support | 📋 planned — "needs PP state/payload design, backward routing, and per-microbatch cache validation" | all three implemented and validated to PP=8 × VP=4 (\|Δloss\| ≤ 0.011) |
+
+torchtitan can have a working K3 training path now.
