@@ -16,7 +16,7 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 | Block AttnRes | DONE | attn_res.py + attn_res_model.py; the headline |
 | **AttnRes graft gate (alpha)** | DONE | bit-exact step-0 identity; 48B real-weight anchor max|dlogit|=0.0 |
 | SiTU activation | SKIP | weights trained for SwiGLU; non-graftable (report) |
-| Quantile Balancing routing | 7.27 | blog-only algorithm; router extension point; training-time method, not correctness |
+| **Quantile Balancing routing** | DONE (provisional) | quantile_balance.py: CDF-position bias vs DSv3 sign rule; drop-in hook; tested. Exact K3 rule -> 7.27 |
 | **Per-Head Muon optimizer** | DONE (base) | muon.py: NS-orthogonalized Muon + per-head hook + AdamW fallback; tested. Exact K3 per-head variant -> 7.27 |
 | Stable LatentMoE | 7.27 | framework-level; wait for report |
 
@@ -49,7 +49,8 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 | LoRA SFT | DONE | 194m graft + 48B real-weight, end-to-end |
 | QLoRA SFT | DONE | standalone loop (quantize-before-shard); trainer-integration hook = future |
 | LoRA P0 trio | DONE | step-0 identity / grad routing / LoRA-only payload; tested |
-| GRPO | BLOCKED | veRL v1 RL rollout registry = vllm/sglang/trtllm only; no hf rollout in RL. Needs sglang AttnRes overlay or 7.27 vllm |
+| GRPO (standalone on K3) | DONE | grpo_titan_standalone.py: full-recompute rollout + group-adv + PG update, titan-native, 6 steps |
+| GRPO (veRL-native) | BLOCKED | veRL RL rollout = server-only; transformers K3 needs ~4.57 vs veRL 5.14; no titan KDA decode. Path: QIU023/verl fork + sync rollout, or sglang overlay. GRPO_STATUS |
 
 ## Checkpoint / weights
 
