@@ -93,3 +93,22 @@ apply_mxfp4_qat straight-through fake-quant wrapper: 2 CUDA tests pass
 (wrap+forward+STE grad; quantization measurably perturbs logits).
 Committed 1058f837. This is the K3-faithful line the user chose
 (direction 2), distinct from the NF4 QLoRA stopgap.
+
+### D consolidation -- DONE
+- K3_REPRODUCTION_STACK_STATUS.md: full component->evidence map.
+- INVENTED_PARTS_REVIEW.md: the ~30% non-standard, with risk.
+- DEMO_RUNBOOK.md: every working command.
+- Gated MLA (provisional near-identity graft) + Per-Head Muon (base
+  algorithm faithful) added as K3 architecture/optimizer deltas, tested.
+- Certification batch PASS: kimi_k3 67, dense_carrier 70, debugmodel
+  train, TP=2 447m, EP@896 -- all green after ~28 overnight commits.
+- Final RFC re-pin -> 7f3289a43; submodule bumped.
+
+### Overnight scorecard
+DONE: full-param SFT, LoRA SFT (194m+48B), QLoRA SFT loop + NF4 experts
++ FSDP composition, MXFP4/MXFP8 QAT (K3-faithful), Gated MLA, Per-Head
+Muon, 2.8T provisional flavor, EP@896 mesh, stack-status + review +
+runbook docs, full certification.
+BLOCKED (documented, not faked): GRPO (needs inference server), 48B
+step-time (all-gather bound, H200), QLoRA-in-trainer (meta-first
+ordering), full-5D + 48B full-param (H200).
