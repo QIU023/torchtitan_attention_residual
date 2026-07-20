@@ -67,6 +67,13 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 | 48B-A3B (real weights) | DONE (loaded, graft-anchored) |
 | **2.8T-A50B provisional** (896/16) | DONE meta-build + EP@896 mesh; dims placeholder -> 7.27 |
 
+## Usable through the CLI
+
+`kimi_linear_debugmodel_k3faithful` (`--module kimi_k3 --config`)
+turns on the K3 architecture deltas (Gated MLA + alpha graft) and
+trains through the real trainer; MXFP4 QAT + Per-Head Muon apply
+via mxfp4_qat.py / muon.py hooks. Suite: 69 tests stable green.
+
 ## Honest blockers (not hidden)
 
 1. 48B step-time on this box: all-gather bound (no P2P, 3.84 GB/s), ~5
