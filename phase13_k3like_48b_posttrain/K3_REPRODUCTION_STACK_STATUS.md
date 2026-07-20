@@ -17,7 +17,7 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 | **AttnRes graft gate (alpha)** | DONE | bit-exact step-0 identity; 48B real-weight anchor max|dlogit|=0.0 |
 | SiTU activation | SKIP | weights trained for SwiGLU; non-graftable (report) |
 | Quantile Balancing routing | 7.27 | blog-only algorithm; router extension point; training-time method, not correctness |
-| Per-Head Muon optimizer | 7.27 | published Muon + per-head variant at 7.27; optimizer-container extension point |
+| **Per-Head Muon optimizer** | DONE (base) | muon.py: NS-orthogonalized Muon + per-head hook + AdamW fallback; tested. Exact K3 per-head variant -> 7.27 |
 | Stable LatentMoE | 7.27 | framework-level; wait for report |
 
 ## Parallelism (5D)
