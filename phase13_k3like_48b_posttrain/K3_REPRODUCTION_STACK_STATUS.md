@@ -1,0 +1,85 @@
+# K3 reproduction stack — component status map (2026-07-20)
+
+Every component the K3 training/post-training stack needs, mapped to its
+implementation state on this fork + the evidence. "Provisional" = built
+against blog-only info, exact form reconciles when the 7.27 config +
+report drop. Fork: QIU023/torchtitan @attention_residual_dev.
+
+## Architecture (K3 family)
+
+| Component | Status | Evidence |
+|---|---|---|
+| KDA (linear attn) | DONE | fla-core kernels; kimi_linear layers; suite |
+| MLA (NoPE) | DONE | KimiMLAAttention; DSv3-aligned |
+| **Gated MLA** (K3 delta) | PROVISIONAL | near-identity sigmoid gate, graft-viable (max rel dlogit 6.8e-4 at init); test_gated_mla; exact form -> 7.27 |
+| MoE (sigmoid grouped-topk) | DONE | KimiMoE over common MoE; router+shared+routed |
+| Block AttnRes | DONE | attn_res.py + attn_res_model.py; the headline |
+| **AttnRes graft gate (alpha)** | DONE | bit-exact step-0 identity; 48B real-weight anchor max|dlogit|=0.0 |
+| SiTU activation | SKIP | weights trained for SwiGLU; non-graftable (report) |
+| Quantile Balancing routing | 7.27 | blog-only algorithm; router extension point; training-time method, not correctness |
+| Per-Head Muon optimizer | 7.27 | published Muon + per-head variant at 7.27; optimizer-container extension point |
+| Stable LatentMoE | 7.27 | framework-level; wait for report |
+
+## Parallelism (5D)
+
+| Axis | Status | Evidence |
+|---|---|---|
+| FSDP2 / HSDP | DONE | all post-training demos; 48B sharded load |
+| TP | DONE | module-internal MoE migration; TP=2 parity vs FSDP (step-1 exact) |
+| EP | DONE | TP/EP migration; **EP@896** real-mesh smoke (896 experts, 112/rank) |
+| PP (cross-stage adapter) | DONE | |dLoss|<=0.0057 to PP8xVP4; 2026-07-19 re-verification report |
+| CP | BLOCKED | fla-core chunk_kda lacks ring-recurrence; documented non-goal (same as qwen3_5) |
+| Full-5D simultaneous | PARTIAL | axes individually validated; full stack = multi-H200 (PLAN caveat) |
+
+## Quantization
+
+| Format | Status | Evidence |
+|---|---|---|
+| fp8 rowwise (SM89+) | DONE | KimiLinearFloat8Spec; 5-step smoke on SM12.0 |
+| NF4 QLoRA (customer option) | DONE | FSDP2 composition; QLoRA SFT loop; dim-alignment guard. NOT K3's format |
+| **MXFP4+MXFP8 QAT** (K3-faithful) | DONE | apply_mxfp4_qat STE fake-quant; torchao mx; 2 tests. Emulated (any GPU) |
+| packed-MXFP4 import | GUARDED | state_dict_adapter rejects packed weights loudly; real unpack -> 7.27 |
+
+## Post-training (veRL x torchtitan)
+
+| Path | Status | Evidence |
+|---|---|---|
+| veRL torchtitan engine | INTEGRATED | patch v3 (mapping/namespace/flavor/gloo); shims; official-48B flavor resolves |
+| Full-param SFT | DONE | 194m 40 steps (loss 11.49->11.26); config-scalable to 48B/H200 |
+| LoRA SFT | DONE | 194m graft + 48B real-weight, end-to-end |
+| QLoRA SFT | DONE | standalone loop (quantize-before-shard); trainer-integration hook = future |
+| LoRA P0 trio | DONE | step-0 identity / grad routing / LoRA-only payload; tested |
+| GRPO | BLOCKED | veRL v1 RL rollout registry = vllm/sglang/trtllm only; no hf rollout in RL. Needs sglang AttnRes overlay or 7.27 vllm |
+
+## Checkpoint / weights
+
+| Item | Status | Evidence |
+|---|---|---|
+| HF<->tt state_dict_adapter | DONE | official 48B: 603/603 keys, 4/4 bit-exact sharded load |
+| 48B graft anchor | DONE | gated graft vs base: max|dlogit|=0.0, top-1 100% |
+| Artifact-discovery (7.27) | READY | 34 official key patterns catalogued; runbook |
+
+## Scale / flavors
+
+| Flavor | Status |
+|---|---|
+| 194m..528m scaling-law + 447m_aligned | DONE (parameterized generator) |
+| 48B-A3B (real weights) | DONE (loaded, graft-anchored) |
+| **2.8T-A50B provisional** (896/16) | DONE meta-build + EP@896 mesh; dims placeholder -> 7.27 |
+
+## Honest blockers (not hidden)
+
+1. 48B step-time on this box: all-gather bound (no P2P, 3.84 GB/s), ~5
+   min/step; QLoRA cuts gather ~4x but only helps at 48B scale; H200
+   NVLink unaffected. See PERF_48B_ALLGATHER_INVESTIGATION.
+2. GRPO needs an inference server (sglang overlay / 7.27 vllm).
+3. Full-5D simultaneous + full-param 48B = H200 (PLAN 3c).
+4. Non-standard invented parts (alpha gate / module-LoRA / NF4-experts):
+   see INVENTED_PARTS_REVIEW for risk + upstream posture.
+
+## What 7.27 closes
+
+Exact: AttnRes N + placement, KDA:MLA ratio, Gated-MLA form, Quantile
+Balancing, Per-Head Muon, MXFP4-QAT recipe, official weight keys, 2.8T
+dims. The provisional pieces above have extension points ready; the
+adapter's packed-MXFP4 guard flips to a real unpack.
