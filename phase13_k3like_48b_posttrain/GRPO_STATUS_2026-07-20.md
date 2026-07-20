@@ -54,12 +54,30 @@ feeds a non-contiguous latent slice.
 
 REMAINING boundary for veRL-native GRPO: veRL's sglang rollout imports
 sglang IN-PROCESS (`http_server_engine` top-level import), so veRL and
-sglang must share one venv -> torch 2.11 (sglang) vs 2.12 (titan engine
-+ fla-core) collide. To close it, either (a) unify on torch 2.11 (verify
-titan + fla-core + veRL run there), or (b) an external-server HTTP
-rollout that talks to the standalone sglang server over HTTP without
-importing sglang in the trainer process. The overlay itself is no longer
-the blocker; the venv/rollout wiring is.
+sglang must share one venv -> torch 2.11 (sglang) vs 2.12 (titan engine)
+collide. Two closes, both mapped + de-risked 2026-07-20:
+
+(a) Unify on torch 2.11. De-risked in `/workspace/sgl_venv` (torch 2.11):
+    fla-core imports and the KDA chunk kernel RUNS on 5090/Blackwell; the
+    titan Kimi-Linear KDA model BUILDS + FORWARDS (added tyro, spmd_types,
+    torchdata, datasets, tensorboard, wandb -- none pin torch). The one
+    wall: titan's TRAINING stack (`distributed/full_dtensor.py`) uses
+    `DataParallelMeshDims` from `torch.distributed.fsdp` -- and PASSES it to
+    `fully_shard` -- which is absent in torch 2.11.0 stable (the model path
+    is clean; only the FSDP/parallel trainer chain needs it). It is an FSDP
+    *API* coupling, not just an import: a fallback NamedTuple fixes the
+    import but 2.11.0's `fully_shard` won't accept it. Real close = torch
+    2.11 with that symbol (the nightly the fork's "fleet is 2.11" note
+    assumes) OR adapting titan FSDP to 2.11.0's API. Not a one-line shim, so
+    (b) is the cleaner path on THIS box (torch 2.11.0 stable in sgl_venv).
+(b) External-server HTTP rollout: run the standalone sglang server (proven
+    above) in its own 2.11 venv and have the 2.12 veRL trainer talk to it
+    over HTTP WITHOUT importing sglang in-process. Needs a thin ServerAdapter
+    that is pure-HTTP (no `from sglang...` at import), plus the delta_loader
+    registered server-side (already present) for weight sync.
+
+The overlay itself is no longer the blocker (it serves); the MODEL runs on
+2.11; the wiring is (a) one titan dist-API shim or (b) a pure-HTTP adapter.
 
 **Path B -- in-process titan sync rollout.** A new `BaseRollout` that
 holds the actor's live module and does full-recompute decode. Needs
