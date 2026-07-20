@@ -25,7 +25,25 @@ algorithm running on the Kimi-Linear/AttnRes 194m model, titan-native
    only); real serving = the sglang AttnRes overlay (fork submodule,
    PLAN 2).
 
-## Path to veRL-native GRPO (needs a QIU023/verl fork)
+## veRL fork IS now set up (QIU023/verl, submodule `verl/`)
+
+Synced to upstream volcengine/verl main (6a6242f3), branch
+`kimi_k3_integration`, patched (engine mapping + namespace fallback +
+gloo backend), SFT verified end-to-end on the fresh mainline. Two paths
+remain for veRL-native GRPO rollout, both substantial:
+
+**Path A -- sglang rollout (the DESIGNED path).** veRL already has
+`("sglang","async")` in the registry. Install QIU023/sglang
+(@attention_residual_inference, the AttnRes inference overlay) and run
+`rollout.name=sglang`. Heavy install; risks the /venv torch 2.12.
+
+**Path B -- in-process titan sync rollout.** A new `BaseRollout` that
+holds the actor's live module and does full-recompute decode. Needs
+engine_workers to thread the actor module into the rollout (the
+ServerAdapter ctor takes only config/model_config/device_mesh) + the
+DataProto response-packing format. A veRL worker-architecture change.
+
+## Original notes
 
 Register a SYNC in-process titan rollout in veRL's RL registry (adapt
 the ServerAdapter interface to call the titan actor's module with the
