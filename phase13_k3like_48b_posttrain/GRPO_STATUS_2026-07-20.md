@@ -35,7 +35,31 @@ remain for veRL-native GRPO rollout, both substantial:
 **Path A -- sglang rollout (the DESIGNED path).** veRL already has
 `("sglang","async")` in the registry. Install QIU023/sglang
 (@attention_residual_inference, the AttnRes inference overlay) and run
-`rollout.name=sglang`. Heavy install; risks the /venv torch 2.12.
+`rollout.name=sglang`.
+
+UPDATE 2026-07-20 -- the overlay now PROVABLY serves Kimi-Linear on this
+box (RTX 5090 / Blackwell). Installed into an ISOLATED venv
+(`/workspace/sgl_venv`, torch 2.11 -- does NOT touch /venv/main or
+/venv/verl @ torch 2.12) via `install_sglang_isolated.sh` (needs
+rust+protoc for the sglang-grpc crate; torchvision realigned to cu130;
+`kernels<0.13` pinned for transformers 5.6). `sglang_serve_smoke.sh`
+loads the 194m official-format checkpoint and serves `/generate`
+end-to-end (READY in 54s; output is gibberish only because the fixture
+is random-init -- the MLA+KDA+MoE serving PIPELINE runs). Two real bugs
+fixed en route (sglang fork e45f675), both of which would also break the
+real 48B: (1) `moe_fused_gate` fp32/bf16 dtype mismatch on the bf16
+`e_score_correction_bias` (verified bf16 on the real 48B weights);
+(2) flashinfer CUTE rmsnorm requires an 8-stride-aligned input, MLA
+feeds a non-contiguous latent slice.
+
+REMAINING boundary for veRL-native GRPO: veRL's sglang rollout imports
+sglang IN-PROCESS (`http_server_engine` top-level import), so veRL and
+sglang must share one venv -> torch 2.11 (sglang) vs 2.12 (titan engine
++ fla-core) collide. To close it, either (a) unify on torch 2.11 (verify
+titan + fla-core + veRL run there), or (b) an external-server HTTP
+rollout that talks to the standalone sglang server over HTTP without
+importing sglang in the trainer process. The overlay itself is no longer
+the blocker; the venv/rollout wiring is.
 
 **Path B -- in-process titan sync rollout.** A new `BaseRollout` that
 holds the actor's live module and does full-recompute decode. Needs
