@@ -48,3 +48,48 @@ K3-faithful MXFP4 path is a separate line (torchao mx).
 - [D2] re-pin SHAs, push both repos.
 
 Results appended to this file as each item resolves.
+
+---
+## Results log
+
+### A1 full-param SFT 194m -- PASS
+40 steps GSM8K, loss 11.49 -> 11.26, 2.85 s/step, rc=0. Random-init
+fixture so descent is slow by design; demonstrates the full-param SFT
+PATH end-to-end on the titan engine (dp_shard=8). 194m full-param fits
+5090 comfortably; config-scalable to 48B full-param on H200 (PLAN 3c,
+fp32 masters don't fit 5090).
+
+### A2 LoRA graft SFT 194m -- PASS
+Graft flavor (block_attn_res gated + LoRA r=16) loading the baseline
+194m checkpoint (shared backbone, zero-init AttnRes), 40 steps, loss
+10.96 -> 10.77, 3.19 s/step, rc=0. Exercises: HF->titan load into a
+graft flavor, adapter-only training, the alpha-fullparam exception,
+all through the veRL SFT pipeline.
+
+### B1 GRPO 194m -- BLOCKED (structural, documented)
+Progressed through: hydra config -> ray init -> worker init -> tokenizer
+(custom-code, needs data.trust_remote_code=true) -> engine_workers
+init_model -> rollout-class registration. WALL: veRL v1 GRPO's
+`_ROLLOUT_REGISTRY` (workers/rollout/base.py) contains ONLY
+(vllm|sglang|trtllm, "async") server adapters. There is NO `hf` rollout
+in the RL path -- HFRollout is SFT/eval-only. So GRPO needs a real
+inference server:
+  - vllm: no K3 support until Moonshot's 7.27 contribution;
+  - sglang: our fork's AttnRes overlay (sglang submodule, branch
+    attention_residual_inference) -- the intended path, heavy setup,
+    intentionally not installed in /venv/verl (protects torch 2.12);
+  - trtllm: n/a.
+This is exactly the "rollout-side AttnRes serving" gap in PLAN 2. Not a
+one-flag fix; not fabricating a GRPO number. GRPO loop stands up to the
+rollout-server boundary; closing it is the sglang-overlay leg (or
+7.27 vllm). Fixes captured en route (deps: cachetools; config:
+log_prob_micro_batch_size_per_gpu on rollout+ref, data.trust_remote_code)
+are recorded for when a server is available.
+
+### C MXFP4/MXFP8 QAT -- PASS (K3-faithful quant path)
+torchao MX primitives confirmed (MXTensor.to_mx float4_e2m1fn_x2 /
+float8_e4m3fn, block 32; dequant rel-err ~0.11 for FP4, expected).
+apply_mxfp4_qat straight-through fake-quant wrapper: 2 CUDA tests pass
+(wrap+forward+STE grad; quantization measurably perturbs logits).
+Committed 1058f837. This is the K3-faithful line the user chose
+(direction 2), distinct from the NF4 QLoRA stopgap.
