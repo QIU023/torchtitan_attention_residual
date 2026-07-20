@@ -35,6 +35,25 @@ torchrun --nproc_per_node=8 -m verl.trainer.sft_trainer \
 # bf16 48B ~12 GB/card + activations).
 ```
 
+**NF4 quantize order (adapter wiring).** titan's trainer runs
+build -> parallelize(shard) -> checkpointer.load(); QLoRA wants the base
+packed from the LOADED weights, not init noise. Two order-correct paths,
+both now supported by `lora.py`:
+
+- **Post-load hook (from-scratch / unsharded load):** build the plain
+  backbone bf16, load, then `quantize_lora_bases(model)` BEFORE
+  `fully_shard` (quantize-then-shard, torchtune order). Validated 5090
+  (`qlora_sft_demo.py`, unit test `test_post_load_quantize_hook`). The
+  QLoRA flavor must leave `lora_quantize_base=None` so build does not
+  pack early.
+- **Build-time NF4 + NF4-aware load (sharded 48B):** keep
+  `lora_quantize_base="nf4"`; the base is an NF4 param before
+  `checkpointer.load()` re-quantizes the bf16 checkpoint into it. This is
+  the path the flavor above takes; confirm titan DCP loads a bf16 shard
+  into an NF4 base at 48B here (the one step the no-P2P 5090 cannot time).
+`merge_lora_state_dict` folds the trained adapter back for HF export
+(`to_hf` drops lora_* keys) regardless of which path trained it.
+
 ## 2. 48B full-param SFT + small GRPO (the H200 hard requirement)
 
 fp32 masters (96 W + 96 grad + 384 AdamW = ~576 GB -> 72 GB/card) fit
