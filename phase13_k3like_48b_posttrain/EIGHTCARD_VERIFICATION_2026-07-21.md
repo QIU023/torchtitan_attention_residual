@@ -59,24 +59,38 @@ so param grads reduce over cp.
   (dp2,cp2,pp2) 7.059**, CP+EP (dp4,cp2,ep2) 6.751, CP4+FSDP (dp2,cp4)
   6.891 -- all train.
 
-Correctness-first = KDA/MLA compute replicated across cp ranks (no memory
-saving yet); the memory-optimal path (KDA Ulysses head-shard -- bit-exact,
-+ MLA SDPA ring) is the optimization, specced in CP_ULYSSES_DESIGN. CP+TP
-out of scope (all-gather guards on plain non-DTensor activations). Note:
-we have NO real 1M-context data -- CP here is infra/numerics verification
-on short seqs (the capability CP enables), not a long-context training run.
+**Memory optimization landed (ec417b21, 48285050):** on top of the seq
+all-gather, both compute-dominant ops are now HEAD-SHARDED across cp ranks
+-- KDA runs chunk_kda+o_norm on only its H/cp heads, MLA runs its H/cp
+heads of the SDPA, each all-gathering heads before the head-mixing o_proj
+(differentiable -> reduce-scatter backward). Cuts the O(T) scan and O(T^2)
+attention by cp. Parity preserved (cp=2 vs cp=1 still 6e-4), composes
+(PP+CP+FSDP 7.059). Remaining: proj/conv/kv-proj still replicated on the
+full seq (the fla short-conv is a fused triton path; seq-sharding it via a
+halo exchange is the last optimization, CP_ULYSSES_DESIGN). CP+TP out of
+scope. NO real 1M-context data -- CP here is infra/numerics verification
+on short seqs (the capability CP enables), not a long-context run.
 
-## MXFP4 x {EP, PP} directly -- blocked on the meta-first order
+## MXFP4 x {EP, PP} directly -- BLOCKED (probed, root-caused)
 
 torchtitan.train materializes as build(meta) -> parallelize(FULLY_SHARD)
 -> to_empty -> init_weights, so init runs on ALREADY-SHARDED DTensor
-params. MXFP4's validated path is quantize-THEN-shard (Phase 0); a
-post-init quantize hook would instead quantize sharded DTensors and
-register FSDP-unmanaged split-storage (base_qdata/base_scale) -- a real
-architectural mismatch, not a hook. Direct MXFP4x{EP,PP} needs either a
-DTensor-aware shard-then-quantize or a build-on-device parallelize path;
-not landed. The composition is inferred (bf16-LoRA composes with EP/PP;
-MXFP4 base shards under FSDP2) but not directly run through the trainer.
+params. MXFP4's validated path is quantize-THEN-shard (Phase 0). A
+post-fully_shard quantize was probed directly (shard_then_quant.py) and
+FAILS: `quantize_base_mxfp4` deletes the FSDP-managed `base.weight` to
+install split-storage (base_qdata/base_scale), which breaks FSDP2's
+forward all-gather hook -> `AttributeError: 'Linear' object has no
+attribute 'weight'`. MXTensor also can't itself be an FSDP param (packed
+qdata is non-contiguous, Phase 0). So MXFP4's split-storage is
+fundamentally incompatible with post-shard quantization, and the trainer
+shards before init.
+
+Resolutions (all real work, none a quick hook): (a) a build-on-device
+trainer path for MXFP4 flavors (quantize before fully_shard, the Phase-0
+order); (b) re-run fully_shard after quantize so the new split-storage
+params join the FSDP group. Not landed. Composition remains inferred
+(bf16-LoRA composes EP/PP; MXFP4 shards under quantize-then-shard FSDP2)
+but not directly run through the trainer. -> handoff item.
 
 ## KDA context parallel via Ulysses (RFC future-work item)
 
