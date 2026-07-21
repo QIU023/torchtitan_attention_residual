@@ -12,7 +12,6 @@ import sys
 
 import torch
 import torch.distributed as dist
-from torch.distributed.fsdp import fully_shard, MixedPrecisionPolicy
 
 
 def main(mode):
@@ -20,11 +19,12 @@ def main(mode):
     from torchtitan.experiments.kimi_k3 import config_registry
     from torchtitan.experiments.kimi_k3.lora import (
         KimiLoRALinear,
-        apply_lora,
         quantize_lora_bases,
     )
-    from torchtitan.experiments.kimi_k3.model import KimiLinearSpec
-    from torchtitan.experiments.kimi_k3.parallelize import apply_ep_kimi_linear
+    from torchtitan.experiments.kimi_k3.parallelize import (
+        apply_ep_kimi_linear,
+        apply_fsdp,
+    )
 
     dist.init_process_group("nccl")
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
@@ -48,11 +48,18 @@ def main(mode):
     n_q = quantize_lora_bases(model, mode=mode, experts=False)  # BEFORE shard
 
     apply_ep_kimi_linear(model, pd)  # EP on routed experts
-    mp = MixedPrecisionPolicy(param_dtype=torch.bfloat16)
-    fsdp_mesh = pd.get_mesh("fsdp")
-    for layer in model.layers.values():
-        fully_shard(layer, mesh=fsdp_mesh, mp_policy=mp)
-    fully_shard(model, mesh=fsdp_mesh, mp_policy=mp)
+    # EP-aware FSDP: non-expert params on the fsdp mesh, expert params on
+    # the efsdp mesh (dp_shard with the ep rank factored out) -- avoids the
+    # fsdp/ep mesh-overlap that a naive fully_shard(model) hits.
+    apply_fsdp(
+        model,
+        pd.get_mesh("fsdp"),
+        param_dtype=torch.bfloat16,
+        reduce_dtype=torch.float32,
+        pp_enabled=False,
+        ep_degree=pd.ep,
+        edp_mesh=pd.get_optional_mesh("efsdp"),
+    )
 
     q_bases = sum(
         1 for mod in model.modules()

@@ -66,9 +66,13 @@ experts on ``efsdp`` separately, which a hand harness must replicate; and
 (b) NF4's internal ``quantization_factor`` not dividing the shard count at
 DEBUG scale (``nf4_split ... not divisible by 8`` -- the 256-dim debug
 tensors are too small; 194m/48B divide fine, cf. qlora_sft_demo NF4 @194m).
-So MXFP4/NF4 x EP is low-risk (orthogonal) but its clean direct
-verification needs the build-on-device trainer path (the EP-aware FSDP
-mesh) -- an H200/veRL-engine item, not a fundamental conflict.
+RESOLVED for MXFP4: with the EP-aware apply_fsdp (non-experts on fsdp,
+experts on efsdp mesh) the naive-mesh overlap is gone and **MXFP4-base
+LoRA + FSDP+EP trains directly** (quant_lora_ep_harness.py, 4 GPU:
+q_bases=15, ep=2, loss finite). NF4 x EP still hits NF4's internal
+quantization_factor divisibility at DEBUG scale (256-dim tensors don't
+chunk by the shard count; 194m/48B divide fine) -- a scale artifact, not
+a mesh/conflict issue.
 
 ## quant-format x FSDP status (what IS directly verified)
 
