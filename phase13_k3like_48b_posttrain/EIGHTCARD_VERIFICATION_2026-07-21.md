@@ -122,11 +122,12 @@ KDA is deterministic under `--debug.seed 42 --debug.deterministic`
 
 - Save under FSDP(dp8): 8 `.distcp` shards written; **load: all 8 ranks
   load OK, no error** (same-mesh round-trip mechanically verified).
-- Follow-up: resume-and-continue-training didn't cleanly advance on the
-  debug flavor (tiny c4_test dataset likely exhausts) and a cross-degree
-  reshard load (dp8 ckpt -> dp2) SIGTERM'd -- both need a non-debug
-  fixture to verify the full-mesh reshard + resume. Save/load primitives
-  work; the reshard+resume path is the open item.
+- Cross-degree reshard LOAD works: dp8 checkpoint -> loaded into dp4 (all
+  4 ranks, no SIGTERM). DCP resharding is fine.
+- Follow-up: resume-and-CONTINUE-training didn't cleanly advance on the
+  debug flavor (tiny c4_test dataset exhausts) -- the earlier dp8->dp2
+  SIGTERM was this, not the load. Verify resume-continue with a non-debug
+  dataset on H200. Save / load / reshard-load all work.
 
 ## Open (documented, not silently skipped)
 
