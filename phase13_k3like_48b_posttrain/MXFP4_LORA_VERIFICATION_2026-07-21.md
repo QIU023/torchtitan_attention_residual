@@ -53,9 +53,29 @@ MXFP4 path shards + all-gathers + dequant-matmuls + trains.
 MXFP4 x {EP, PP} directly: NOT run (torchtitan.train has no post-load
 quantize hook). Inferred from the composition -- bf16-LoRA composes with
 EP/PP (matrix above) and the MXFP4 base shards under FSDP2 (Phase 0 + real
-harness); MXFP4 is a base-storage swap on the same wrappers. Direct
-verification is a follow-up (wire quantize_lora_bases into the train/
-parallelize path).
+harness); MXFP4 is a base-storage swap on the same wrappers.
+
+**NF4 + MXFP4 x EP (probed 2026-07-21, quant_lora_ep_harness.py):** the
+subsystems are ORTHOGONAL -- MXFP4/NF4 quantize the KimiLoRALinear bases
+(attn/gate/shared-expert linears, FSDP-sharded); EP shards the separate
+routed GroupedExperts (bf16). The direct debug-scale harness hit two
+NON-fundamental edges: (a) using the full ``fsdp`` mesh for fully_shard
+overlaps the ``ep`` mesh ("Cannot concatenate overlapping meshes") -- the
+trainer's EP-aware ``apply_fsdp`` shards non-experts on ``fsdp`` and
+experts on ``efsdp`` separately, which a hand harness must replicate; and
+(b) NF4's internal ``quantization_factor`` not dividing the shard count at
+DEBUG scale (``nf4_split ... not divisible by 8`` -- the 256-dim debug
+tensors are too small; 194m/48B divide fine, cf. qlora_sft_demo NF4 @194m).
+So MXFP4/NF4 x EP is low-risk (orthogonal) but its clean direct
+verification needs the build-on-device trainer path (the EP-aware FSDP
+mesh) -- an H200/veRL-engine item, not a fundamental conflict.
+
+## quant-format x FSDP status (what IS directly verified)
+
+- bf16-base LoRA: FSDP-8 PASS; composes with ALL axes (FSDP/TP/EP/PP/CP + 4D).
+- MXFP4-base LoRA: FSDP-8 PASS (mxfp4_lora_fsdp_real, 15 bases packed).
+- NF4-base QLoRA: 194m FSDP-8 PASS (qlora_sft_demo) + unit tests; debug-256
+  FSDP-8 hits NF4 chunk divisibility (scale artifact, not a bug).
 
 ## Phase 3 -- MXFP4 caveats (measured, not hidden)
 
