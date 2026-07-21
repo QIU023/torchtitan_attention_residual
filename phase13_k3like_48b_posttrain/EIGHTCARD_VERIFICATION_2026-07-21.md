@@ -53,6 +53,32 @@ The RFC flagged CP-for-KDA as unsupported (fla chunk_kda); the head-shard
 numerics are now proven. Remaining: full-layer wiring (seq-local proj +
 conv halo + torchtitan context_parallel context) -- standard engineering.
 
+## Deterministic numerical parity (seed + --debug.deterministic)
+
+KDA is deterministic under `--debug.seed 42 --debug.deterministic`
+(bit-identical loss across repeat runs). With a FIXED global batch
+(local_batch=1, global_batch=8) so data is identical across configs:
+
+- **EP is BIT-EXACT to FSDP** (step-1 loss 7.59001 == 7.59001) -- EP is
+  numerically transparent (experts sharded, same math).
+- **TP / PP / 4D differ from FSDP at step-1 by ~0.06** -- NOT a numerics
+  bug: sharded weight init consumes the seeded RNG differently (TP shards
+  more params -> different initial weights), so absolute step-1 loss is
+  not a valid cross-config metric. TP+EP == TP bit-exact (EP adds
+  nothing). All configs train (loss descends, grad finite). A same-init
+  cross-config parity needs a shared checkpoint load (below); the
+  init-divergence is the standard torchtitan cross-parallelism caveat.
+
+## DCP checkpoint save / load
+
+- Save under FSDP(dp8): 8 `.distcp` shards written; **load: all 8 ranks
+  load OK, no error** (same-mesh round-trip mechanically verified).
+- Follow-up: resume-and-continue-training didn't cleanly advance on the
+  debug flavor (tiny c4_test dataset likely exhausts) and a cross-degree
+  reshard load (dp8 ckpt -> dp2) SIGTERM'd -- both need a non-debug
+  fixture to verify the full-mesh reshard + resume. Save/load primitives
+  work; the reshard+resume path is the open item.
+
 ## Open (documented, not silently skipped)
 
 - TP-composition of the PROVISIONAL Gated-MLA gate (mixed-DTensor mul);
