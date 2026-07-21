@@ -71,6 +71,21 @@ halo exchange is the last optimization, CP_ULYSSES_DESIGN). CP+TP out of
 scope. NO real 1M-context data -- CP here is infra/numerics verification
 on short seqs (the capability CP enables), not a long-context run.
 
+## CP + full 4D mesh, and LoRA x mesh (added 2026-07-21, post-review)
+
+- **full-param FSDP+CP+EP+PP (dp2,cp2,ep2,pp2): PASS** (loss 7.059) -- CP
+  composes with the full 4-axis mesh (no TP; TP deprioritized). Full 5D
+  (FSDP+TP+CP+EP+PP all >1) needs >=16 ranks -> not runnable on 8 GPU.
+- **LoRA FSDP+CP+EP+PP: PASS** (loss 7.644) -- adapter-LoRA composes with
+  CP + the 4D mesh.
+- **LoRA x TP: FAILS** -- `ColwiseParallel currently only supports
+  nn.Linear` (fails even at dp1,tp2 alone). TP's plan targets the
+  projection nn.Linears by name, but apply_lora replaced them with
+  KimiLoRALinear wrappers, which ColwiseParallel rejects. Fixing needs the
+  TP plan to descend into the wrapper (shard the inner base + lora_a/
+  lora_b). Deprioritized (TP least important). So **LoRA composes with
+  FSDP / EP / PP / CP and their combos up to 4D, but NOT with TP.**
+
 ## MXFP4 x {EP, PP} directly -- BLOCKED (probed, root-caused)
 
 torchtitan.train materializes as build(meta) -> parallelize(FULLY_SHARD)
