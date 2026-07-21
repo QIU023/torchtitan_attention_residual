@@ -43,6 +43,41 @@ any MoE under TP+EP), flagged for the PR as a core change. LoRA matrix
 - **EP@896 wide-EP** (`ep896_construction_smoke.py`): 896 experts, EP@8,
   112/rank, forward finite.
 
+## Context Parallel -- LANDED + composes (was hard-blocked)
+
+CP is no longer a NotImplementedError. Correctness-first integration
+(torchtitan fork @f4b6f46f): both KDA and MLA layers all-gather the seq
+shard at their boundary, run the unchanged forward on the full sequence,
+slice this rank's shard from the output. Differentiable all_gather ->
+reduce-scatter backward; FSDP's mesh includes cp (parallel_dims line 217)
+so param grads reduce over cp.
+
+- **Forward correct**: cp=2 vs cp=1 at the SAME dp (dp1) -> step-1 loss
+  7.65969 vs 7.65907 (delta 6e-4, within bf16). (Different-dp comparisons
+  diverge only via init-RNG, as with TP.)
+- **Composes on 8 cards**: CP+FSDP (dp4,cp2) 6.751, **PP+CP+FSDP
+  (dp2,cp2,pp2) 7.059**, CP+EP (dp4,cp2,ep2) 6.751, CP4+FSDP (dp2,cp4)
+  6.891 -- all train.
+
+Correctness-first = KDA/MLA compute replicated across cp ranks (no memory
+saving yet); the memory-optimal path (KDA Ulysses head-shard -- bit-exact,
++ MLA SDPA ring) is the optimization, specced in CP_ULYSSES_DESIGN. CP+TP
+out of scope (all-gather guards on plain non-DTensor activations). Note:
+we have NO real 1M-context data -- CP here is infra/numerics verification
+on short seqs (the capability CP enables), not a long-context training run.
+
+## MXFP4 x {EP, PP} directly -- blocked on the meta-first order
+
+torchtitan.train materializes as build(meta) -> parallelize(FULLY_SHARD)
+-> to_empty -> init_weights, so init runs on ALREADY-SHARDED DTensor
+params. MXFP4's validated path is quantize-THEN-shard (Phase 0); a
+post-init quantize hook would instead quantize sharded DTensors and
+register FSDP-unmanaged split-storage (base_qdata/base_scale) -- a real
+architectural mismatch, not a hook. Direct MXFP4x{EP,PP} needs either a
+DTensor-aware shard-then-quantize or a build-on-device parallelize path;
+not landed. The composition is inferred (bf16-LoRA composes with EP/PP;
+MXFP4 base shards under FSDP2) but not directly run through the trainer.
+
 ## KDA context parallel via Ulysses (RFC future-work item)
 
 `kda_ulysses_cp_probe.py`: chunk_kda is **bit-exactly per-head independent**
