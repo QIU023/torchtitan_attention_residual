@@ -46,11 +46,12 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 |---|---|---|
 | veRL torchtitan engine | INTEGRATED | patch v3 (mapping/namespace/flavor/gloo); shims; official-48B flavor resolves |
 | Full-param SFT | DONE | 194m 40 steps (loss 11.49->11.26); config-scalable to 48B/H200 |
-| LoRA SFT | DONE | 194m graft + 48B real-weight, end-to-end |
-| QLoRA SFT | DONE | standalone loop (quantize-before-shard); trainer-integration hook = future |
-| LoRA P0 trio | DONE | step-0 identity / grad routing / LoRA-only payload; tested |
+| LoRA SFT | DONE | 194m graft + 48B real-weight (bf16 base, AttnRes graft), end-to-end; loss 0.254->0.133 |
+| LoRA save/export | DONE | merge_lora_state_dict folds adapter -> HF (to_hf drops lora keys otherwise); graft+LoRA compose+merge+export unit-tested |
+| QLoRA SFT | DONE (mechanism) | standalone 194m loop + post-load quantize_lora_bases hook (correct meta-first order) + adapter-dtype fix, unit-tested. 48B-via-veRL QLoRA (NF4 base under titan shard-then-load DCP) = not yet run |
+| LoRA P0 trio | DONE | step-0 identity / grad routing / LoRA-only payload; HF-export leg added via merge; tested |
 | GRPO (standalone on K3) | DONE | grpo_titan_standalone.py: full-recompute rollout + group-adv + PG update, titan-native, 6 steps |
-| GRPO (veRL-native) | BLOCKED | veRL RL rollout = server-only; transformers K3 needs ~4.57 vs veRL 5.14; no titan KDA decode. Path: QIU023/verl fork + sync rollout, or sglang overlay. GRPO_STATUS |
+| GRPO (veRL-native) | BLOCKED | veRL RL rollout = inference-server-only. sglang overlay now PROVEN serving Kimi-Linear on 5090 (fork e45f675, 2 real bugs fixed); remaining = veRL imports sglang in-process -> torch 2.11 vs 2.12 venv split (titan FSDP uses 2.12 DataParallelMeshDims). Strategy: rollout side is covered by official K3 vllm on 7.27; our niche is the titan-actor + weight-sync wiring. GRPO_STATUS |
 
 ## Checkpoint / weights
 
