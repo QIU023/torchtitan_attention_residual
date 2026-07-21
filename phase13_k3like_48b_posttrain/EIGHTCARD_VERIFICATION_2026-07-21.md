@@ -78,13 +78,17 @@ on short seqs (the capability CP enables), not a long-context run.
   (FSDP+TP+CP+EP+PP all >1) needs >=16 ranks -> not runnable on 8 GPU.
 - **LoRA FSDP+CP+EP+PP: PASS** (loss 7.644) -- adapter-LoRA composes with
   CP + the 4D mesh.
-- **LoRA x TP: FAILS** -- `ColwiseParallel currently only supports
-  nn.Linear` (fails even at dp1,tp2 alone). TP's plan targets the
-  projection nn.Linears by name, but apply_lora replaced them with
-  KimiLoRALinear wrappers, which ColwiseParallel rejects. Fixing needs the
-  TP plan to descend into the wrapper (shard the inner base + lora_a/
-  lora_b). Deprioritized (TP least important). So **LoRA composes with
-  FSDP / EP / PP / CP and their combos up to 4D, but NOT with TP.**
+- **LoRA x TP: FIXED (f76b3ae9)** -- LoRA now composes with TP too. The
+  TP plan redirects the Colwise/Rowwise style to the wrapped ``.base`` and
+  distributes the adapters to match (Colwise: lora_a Replicate / lora_b
+  Shard(0); Rowwise: lora_a Shard(1) / lora_b Replicate); remaining
+  adapters (NoParallel MoE shared experts) go Replicate for clip_grad_norm
+  mesh consistency; the forward aligns adapters with the input tensor kind;
+  and the graft-gate alpha (a NoParallel DTensor scalar) is to_local'd
+  against the plain block stream. Verified 8 GPU: LoRA FSDP+TP (7.644),
+  FSDP+TP+EP (7.655), **FSDP+TP+EP+PP 4D (7.645)**; non-TP regression
+  clean; suite 79. So **LoRA composes with ALL parallelism axes -- FSDP /
+  TP / EP / PP / CP and their 4D combinations.**
 
 ## MXFP4 x {EP, PP} directly -- BLOCKED (probed, root-caused)
 
