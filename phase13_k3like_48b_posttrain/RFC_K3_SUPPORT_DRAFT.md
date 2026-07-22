@@ -12,12 +12,12 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 
 ## Finished work as the K3-support continuation point
 
-- AttnRes primitive + a Kimi-Linear port (KDA via `fla-core`, MLA, MoE) with FSDP2 / TP / EP parallelization — [implementation](https://github.com/QIU023/torchtitan/tree/9496adcb4/torchtitan/experiments/kimi_k3).
-- PP support via a cross-stage adapter kept **private to the model folder's `parallelize`** — no core changes, per earlier feedback on the generic-mechanism proposal. Non-Interleaved1F1B schedules fall back to the plain pipeline path (correct, without the cache saving): [adapter](https://github.com/QIU023/torchtitan/blob/9496adcb4/torchtitan/experiments/kimi_k3/pipeline_adapter.py), [design notes + pressure-test launchers](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase3_attnres_pp_integration).
+- AttnRes primitive + a Kimi-Linear port (KDA via `fla-core`, MLA, MoE) with FSDP2 / TP / EP / CP parallelization — [implementation](https://github.com/QIU023/torchtitan/tree/f76b3ae9a/torchtitan/experiments/kimi_k3).
+- PP support via a cross-stage adapter kept **private to the model folder's `parallelize`** — no core changes, per earlier feedback on the generic-mechanism proposal. Non-Interleaved1F1B schedules fall back to the plain pipeline path (correct, without the cache saving): [adapter](https://github.com/QIU023/torchtitan/blob/f76b3ae9a/torchtitan/experiments/kimi_k3/pipeline_adapter.py), [design notes + pressure-test launchers](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase3_attnres_pp_integration).
 - Numerics: naive-vs-adapter loss within the bf16 nondeterminism band (|Δloss| ≤ 0.011) across PP×VP shapes up to **PP=8 × VP=4 (32 virtual stages)**, including a Kimi-Linear 48B-layout carrier — [pressure-test report](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase3_attnres_pp_integration/PRESSURE_TEST_REPORT_2026-05-12.md).
 - 12.5K-step training runs on the 436M/447M Kimi-Linear shapes — [phase-4 pretrain log](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase4_kimi_attnres_lm_pretrain/README.md).
-- Multimodal (vision-native) precedent: SigLIP-splice scaffold in the experiment ([model](https://github.com/QIU023/torchtitan/blob/9496adcb4/torchtitan/experiments/kimi_k3/multimodal_model.py), [CPU test](https://github.com/QIU023/torchtitan/blob/9496adcb4/torchtitan/experiments/kimi_k3/tests/test_kimi_multimodal_model.py)); LLaVA-1.5-style pretraining + SFT + GRPO exercised end-to-end on the 447M carrier — [phase-5 VLM training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase5_vlm_multimodal_sft), [phase-11 post-training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase11_rlhf_grpo_infra).
-- CPU unit tests for the primitive, model, and pipeline adapter — [tests](https://github.com/QIU023/torchtitan/tree/9496adcb4/torchtitan/experiments/kimi_k3/tests).
+- Multimodal (vision-native) precedent: SigLIP-splice scaffold in the experiment ([model](https://github.com/QIU023/torchtitan/blob/f76b3ae9a/torchtitan/experiments/kimi_k3/multimodal_model.py), [CPU test](https://github.com/QIU023/torchtitan/blob/f76b3ae9a/torchtitan/experiments/kimi_k3/tests/test_kimi_multimodal_model.py)); LLaVA-1.5-style pretraining + SFT + GRPO exercised end-to-end on the 447M carrier — [phase-5 VLM training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase5_vlm_multimodal_sft), [phase-11 post-training](https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase11_rlhf_grpo_infra).
+- CPU unit tests for the primitive, model, and pipeline adapter — [tests](https://github.com/QIU023/torchtitan/tree/f76b3ae9a/torchtitan/experiments/kimi_k3/tests).
 
 ## Plan
 
@@ -27,7 +27,6 @@ And I would suggest having the **RFC #3029** for Block Attention Residual suppor
 
 **Out of scope for the first landing:**
 
-- CP / 1M-context training — in the hybrid stack, ring/zigzag applies only to the full-attention (MLA) layers; KDA layers need Ulysses-style head sharding or LASP-style cross-rank state passing, neither of which `fla-core`'s `chunk_kda` supports today (the same blank exists for `qwen3_5`). Future work.
 - Inference/serving — covered by Moonshot's official vLLM contribution; torchtitan scope here is training-side only.
 - Vision path — the blog confirms native vision but publishes no architecture details; text-only until the tech report.
 

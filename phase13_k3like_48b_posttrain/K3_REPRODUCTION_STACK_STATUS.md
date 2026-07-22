@@ -1,4 +1,4 @@
-# K3 reproduction stack — component status map (2026-07-20)
+# K3 reproduction stack — component status map (2026-07-21)
 
 Every component the K3 training/post-training stack needs, mapped to its
 implementation state on this fork + the evidence. "Provisional" = built
@@ -28,8 +28,8 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 | TP | DONE | module-internal MoE migration; TP=2 parity vs FSDP (step-1 exact) |
 | EP | DONE | TP/EP migration; **EP@896** real-mesh smoke (896 experts, 112/rank) |
 | PP (cross-stage adapter) | DONE | |dLoss|<=0.0057 to PP8xVP4; 2026-07-19 re-verification report |
-| CP | BLOCKED | fla-core chunk_kda lacks ring-recurrence; documented non-goal (same as qwen3_5) |
-| Full-5D simultaneous | PARTIAL | axes individually validated; full stack = multi-H200 (PLAN caveat) |
+| CP | DONE | correctness-first seq all-gather (KDA + MLA), composes with FSDP/PP/EP, cp=4 fwd close to cp=1 (6e-4); memory-optimal KDA Ulysses head-shard validated bit-exact (CP_ULYSSES_DESIGN.md) |
+| Full-5D simultaneous | PARTIAL | 4D (FSDP+TP+EP+PP) + CP-composed variants (CP+FSDP/PP/EP) validated at debug scale; simultaneous 5-axis @ 48B = H200 (PLAN caveat) |
 
 ## Quantization
 
@@ -50,6 +50,8 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 | LoRA save/export | DONE | merge_lora_state_dict folds adapter -> HF (to_hf drops lora keys otherwise); graft+LoRA compose+merge+export unit-tested |
 | QLoRA SFT | DONE (mechanism) | standalone 194m loop + post-load quantize_lora_bases hook (correct meta-first order) + adapter-dtype fix, unit-tested. 48B-via-veRL QLoRA (NF4 base under titan shard-then-load DCP) = not yet run |
 | LoRA P0 trio | DONE | step-0 identity / grad routing / LoRA-only payload; HF-export leg added via merge; tested |
+| LoRA x parallelism | DONE | bf16-LoRA trains under FSDP/TP/EP/PP/PP+EP/wide-EP, incl. AttnRes-LoRA x PP skip-edge grad routing; TP was the last axis, fixed 07-21 |
+| MXFP4-base LoRA x parallelism | DONE | shards + trains under FSDP2 (EP-aware apply_fsdp); FSDP+EP directly verified; NF4/MXFP4 x EP root-caused as orthogonal subsystems (debug-scale plumbing edges, not fundamental) |
 | GRPO (standalone on K3) | DONE | grpo_titan_standalone.py: full-recompute rollout + group-adv + PG update, titan-native, 6 steps |
 | GRPO (veRL-native) | BLOCKED | veRL RL rollout = inference-server-only. sglang overlay now PROVEN serving Kimi-Linear on 5090 (fork e45f675, 2 real bugs fixed); remaining = veRL imports sglang in-process -> torch 2.11 vs 2.12 venv split (titan FSDP uses 2.12 DataParallelMeshDims). Strategy: rollout side is covered by official K3 vllm on 7.27; our niche is the titan-actor + weight-sync wiring. GRPO_STATUS |
 
@@ -60,6 +62,7 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 | HF<->tt state_dict_adapter | DONE | official 48B: 603/603 keys, 4/4 bit-exact sharded load |
 | 48B graft anchor | DONE | gated graft vs base: max|dlogit|=0.0, top-1 100% |
 | Artifact-discovery (7.27) | READY | 34 official key patterns catalogued; runbook |
+| DCP cross-degree reshard | DONE | dp8->dp4 resume verified |
 
 ## Scale / flavors
 
@@ -85,6 +88,8 @@ via mxfp4_qat.py / muon.py hooks. Suite: 69 tests stable green.
 3. Full-5D simultaneous + full-param 48B = H200 (PLAN 3c).
 4. Non-standard invented parts (alpha gate / module-LoRA / NF4-experts):
    see INVENTED_PARTS_REVIEW for risk + upstream posture.
+5. QLoRA/MXFP4-QLoRA trainer flow (quantize-then-shard ordering) is the
+   next H200 open item -- see H200_HANDOFF_2026-07-21.
 
 ## What 7.27 closes
 
