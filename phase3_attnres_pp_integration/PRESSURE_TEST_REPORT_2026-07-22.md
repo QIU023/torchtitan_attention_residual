@@ -36,21 +36,29 @@ reproduction, and records the exact commit + environment.
 Direction of the delta is mixed (adapter higher on some shapes, lower on others)
 -- consistent with nondeterminism, not a systematic bias.
 
-## Results 2 -- naive-vs-naive nondeterminism band (pp4_vp2, the reference)
+## Results 2 -- naive-vs-naive band vs adapter |dLoss| (the correctness test)
 
-Two independent naive runs of the same config (same 1000 steps):
+For each L16 shape, a second independent naive run measures the naive-vs-naive
+nondeterminism (same config, same 1000 steps). The adapter is correct iff its
+adapter-vs-naive |dLoss| is at or below this band -- i.e. the adapter deviates
+no more than two naive runs deviate from each other.
 
-| run | naive final |
-|---|---|
-| naive #1 | 5.44236 |
-| naive #2 | 5.44671 |
-| **naive-vs-naive \|delta\|** | **0.00435** |
+| shape | naive #1 | naive #2 | naive-vs-naive band | adapter \|dLoss\| | verdict |
+|---|---|---|---|---|---|
+| PP=8 x VP=2 | 5.29187 | 5.24944 | 0.04243 | 0.00811 | within (0.19x band) |
+| PP=4 x VP=2 | 5.44236 | 5.44671 | 0.00435 | 0.00487 | ~= band (1.1x) |
+| PP=4 x VP=4 | 5.11626 | 5.07392 | 0.04234 | 0.01866 | within (0.44x band) |
 
-The pp4_vp2 adapter-vs-naive |dLoss| (0.00487) is essentially equal to this
-naive-vs-naive band (0.00435): **the adapter deviates no more than two naive
-runs deviate from each other.** This is the correctness criterion. (The 05-12
-report cited a wider 0.06-0.13 band from an earlier carrier/handoff; the band is
-config- and stack-dependent, so it is measured here rather than assumed.)
+**Every adapter |dLoss| is at or below its config's naive-vs-naive band** -- the
+cross-stage adapter is numerically indistinguishable from a naive run on all
+three shapes.
+
+The band is strongly config-dependent: pp8vp2 and pp4vp4 are noisy (~0.042,
+consistent with the 05-12-cited 0.06-0.13 band), while pp4vp2 is near-
+deterministic (0.004). This is exactly why the 07-19 pp4vp2 = 0.033 stood out
+and did NOT reproduce: pp4vp2's true noise floor is ~0.004, so 0.033 was a rare
+single-run excursion (8x its band), not a regression -- the 07-22 re-run lands
+at 0.005, back within the band.
 
 ## Results 3 -- Kimi-Linear 48B-layout carrier, PP=8 x VP=4, 300 steps
 

@@ -31,3 +31,4 @@ steps=1000 ngpu=8
 |---|---|---|---|---|---|---|---|---|
 | 175m_attn_res_L16_n8 | 4 | 2 | 8 | 16 | naive | 10.30 | 5.44671 | 175m_attn_res_L16_n8_pp4_vp2_naive |
 OVERNIGHT_PP_DONE
+BANDS_DONE
