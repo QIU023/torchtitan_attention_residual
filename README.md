@@ -99,7 +99,7 @@ the algorithm or adapter.
 | Path | What it is |
 | --- | --- |
 | [`ROOT_PLAN.md`](./ROOT_PLAN.md) | Full phased project plan (hardware, budget, risk register, references to Kimi infra notes) |
-| [`RFC_DRAFT_v3.md`](./RFC_DRAFT_v3.md) | RFC text as posted to issue #3029 |
+| [`docs/rfc_3029_archive/`](./docs/rfc_3029_archive/) | Pre-K3 RFC #3029 drafting history (superseded — issue body now holds the full Kimi K3 RFC) |
 | [`phase2_attnres_baseline_loss/`](./phase2_attnres_baseline_loss/) | Single-GPU FSDP playbook + results (`runs/comparison.png`) |
 | [`phase3_attnres_pp_integration/`](./phase3_attnres_pp_integration/) | PP playbook: adapter design notes, fake-PG smoke, 4-GPU launchers, naive-vs-adapter compare plots |
 | [`phase4_kimi_attnres_lm_pretrain/`](./phase4_kimi_attnres_lm_pretrain/) | Kimi Linear port + 12.5 k step FSDP / PP-adapter overnight runs |
