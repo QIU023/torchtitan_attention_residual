@@ -2,10 +2,6 @@
 
 ## Summary
 
-Hi TorchTitan maintainers! I have previously raised [RFC #3029](https://github.com/pytorch/torchtitan/issues/3029) proposing Block Attention Residuals (AttnRes) with a personal torchtitan fork containing its distributed parallelism infra implementations. Per maintainer feedback, the PR was gated on a production model adopting Attention Residuals, which has now arrived: **Kimi K3** — the [official blog](https://www.kimi.com/blog/kimi-k3) confirms AttnRes + Kimi Delta Attention (KDA) as core architecture components (~25% training-efficiency gain, <2% compute overhead). Open weights and the tech report are due to be released by the Kimi team by **2026-07-27**.
-
-Therefore, I would sincerely request to own and contribute the Kimi K3 full support in torchtitan, scoped mainly to Kimi K3 architecture model (text-only and vision-native) pre-training and (full-param & LoRA) post-training (using torchtitan as the distributed framework backend of veRL).
-
 Currently, my proposed plan is to add **`torchtitan/experiments/kimi_k3/`** — the K3 model family (KDA + MLA + MoE + AttnRes) in the standard experiment layout (`model.py` / `config_registry.py` / `parallelize.py` / `state_dict_adapter.py`, following the `qwen3_5` structure as the hybrid linear-attention precedent). K3 architecture model and its pre-training/post-training implementation will be aligned with the official Kimi technical report, which is tracked to release on 07-27. I will verify through a downscaled model given GPU resource constraint, but config-only scalable to official 2.8T version from Kimi released weight checkpoints.
 
 And I would suggest having the **RFC #3029** for Block Attention Residual support merged into this overall Kimi K3 RFC.
