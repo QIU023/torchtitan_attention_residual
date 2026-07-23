@@ -15,6 +15,24 @@ map. Detailed docs are linked inline.
 
 The logbook pins the verl + torchtitan submodules to these SHAs.
 
+## 0b. Environment (exact versions -- reproduce before diagnosing drift)
+
+Box: 8x NVIDIA RTX 5090 (32 GB, PCIe, no P2P/NVLink), driver **580.159.03**.
+Three venvs (the titan trainer and the sglang rollout are deliberately split):
+
+| venv | purpose | python | torch | key libs |
+|---|---|---|---|---|
+| `/venv/main` | torchtitan trainer / actor | 3.12.13 | **2.12.0+cu130** (cuda 13.0) | fla-core **0.5.1**, torchao **0.17.0** |
+| `/venv/verl` | verl SFT/RL engine | 3.12 | **2.12.0+cu130** | verl @ `c2c2c5a8` (editable, submodule) |
+| `/workspace/sgl_venv` | sglang rollout server | 3.12 | **2.11.0+cu130** | transformers **5.6.0**, sglang @ `e45f675` |
+
+The 2.11-vs-2.12 split is why the GRPO rollout is an EXTERNAL HTTP server
+(section 4): sglang pins torch 2.11, the titan/verl trainers run 2.12. torch
+wheels bundle their own CUDA runtime (cu130), independent of the box driver.
+On H200: rebuild the same trio (or unify verl on a K3-capable vLLM venv at
+7.27). torchao 0.17 has no weight-only MXFP4 linear yet -> the MXFP4-base LoRA
+path dequant-matmuls (lora.py).
+
 ## 1. Change inventory -- FINAL (durable K3 training support) vs TEMPORARY (scaffolding)
 
 **FINAL -- directly supports K3 pretrain / SFT / RL, LoRA + full-param, distributed (the RFC/PR product):**
