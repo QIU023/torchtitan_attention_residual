@@ -1,5 +1,25 @@
 # GRPO status (2026-07-20)
 
+## UPDATE 2026-07-23 -- GRPO with the sglang overlay as the rollout WORKS (external-server, HTTP)
+
+`phase11_rlhf_grpo_infra/grpo_titan_sglang_rollout.py` runs the full GRPO
+loop on the titan K3 194m actor with the user's sglang AttnRes overlay as
+the ROLLOUT, end-to-end on the 5090 -- 6 steps, PASS, every step
+`weight_sync=True`. Division of labor (the PLAN-2 commitment): the training
+parts are titan/ours (group-relative advantages, the titan actor forward +
+policy-gradient update, the actor->rollout weight-sync orchestration); the
+rollout is the user's sglang server, running in its own venv
+(`/workspace/sgl_venv`, torch 2.11) as an EXTERNAL HTTP server -- this
+script (torch 2.12 titan venv) talks to it over HTTP only, no sglang import,
+so the 2.11-vs-2.12 venv split is bypassed. Rollout = POST `/generate`
+(input_ids -> output_ids, verified). Weight sync (veRL has no pure-HTTP
+full-weight path) = actor exports HF weights to a shared dir + POST sglang's
+native `/update_weights_from_disk` (verified, `{"success":true}`), so the
+rollout tracks the actor each step. Random-init 194m => reward ~0.5 toy
+signal (mechanism demo, not learning). This is the mechanism the veRL-native
+external-server rollout adapter (Path A(b), contract mapped below) will
+productize.
+
 ## What works: standalone GRPO on the titan K3 model
 
 `phase11_rlhf_grpo_infra/grpo_titan_standalone.py` -- the GRPO RL
