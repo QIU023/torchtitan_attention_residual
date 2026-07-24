@@ -101,6 +101,45 @@ band whether or not TP is on.
 | regression: fsdp8 / pp2fsdp4 / 4D fsdp+tp+pp+ep | 8 | PASS (non-CP paths untouched) |
 | unit tests `experiments/kimi_k3/tests` | — | 79 passed + 64 subtests |
 
+## Part 2 (same day): the GAPS_TO_K3_SFT items A1-A5 + B6-B7 closed
+
+Fork commits `eb18e8f1` (A2), `a3d41902` (A1), verl `60b185fe` (A5).
+
+- **A2 LoRA dtype fix** (`eb18e8f1`): frozen-base LoRA's fp32 masters
+  (AttnRes proj/norm/alpha, adapters) now cast to the stream dtype at
+  the master-meets-stream boundaries (no-ops under FSDP). gated_lora
+  now trains at dp1, dp1+tp2, dp1+tp2+cp2, AND tp2 x cp2 x pp2 -- the
+  LoRA x 3D cell. Preexisting bug (repros on 7d8acabe).
+- **A3 AC x CP**: activation-checkpoint full x {cp2, tp2cp2, 3D} all
+  train; step-1 losses EXACTLY match the non-AC cells (AC does not
+  change forward numerics; collectives recompute in lockstep).
+- **A4 DCP under CP+TP**: fsdp2tp2cp2 save -> same-mesh resume matches
+  the uninterrupted run to 1e-4; cross-mesh MODEL-weight reshard
+  (fsdp2tp2cp2 ckpt -> fsdp8) works with
+  `--checkpoint.exclude-from-loading dataloader,lr_scheduler,optimizer,train_state`
+  (dataloader state is dp-degree-bound; optimizer state does not
+  reshard across TP changes -- upstream DCP behaviors, not kimi bugs).
+- **A1 packed-MXFP4 QLoRA through torchtitan.train** (`a3d41902`): MX
+  block-32 quantization commutes with FSDP Shard(0), so a meta-built
+  packed layout + an offline streaming-quantized DCP checkpoint
+  (stream_quantize_mxfp4_dcp.py, peak RAM ~= one tensor) IS the
+  quantize-then-shard path. Verified: 15 bases packed, bytes BIT-EXACT
+  vs on-device quantization, trains under FSDP2 and FSDP x CP.
+  TP x packed-base not wired (loud crash).
+- **A5 verl engine CP** (verl `60b185fe`): five engine defects fixed
+  (headtail default, dp-mesh=fsdp-includes-cp sampler bug, positions
+  KeyError, BlockMask sharding on causal-only models, full-seq loss
+  contract via differentiable logits gather). SFT dp1+cp2 runs a full
+  epoch on the rebuilt 194m fixture (make_fake_hf_fixture.py); step-1
+  12.143 vs 12.149 single-GPU (bf16 band). TODO: sharded-loss variant
+  to avoid gathering [B, T, V] at long context.
+- **B6 debugmodel8h flavor**: H=8/d=512 enables deep meshes on 8 ranks:
+  tp2cp4 and tp4cp2 both train (step-1 within the TP band of the 1-GPU
+  baseline).
+- **B7 Muon x FSDP x TP x CP** (muon_tp_cp_capstone.py): Per-Head Muon
+  Newton-Schulz on (fsdp x tp)-sharded DTensors with cp in the mesh:
+  PASS (loss 6.093 -> 6.081, finite).
+
 ## 5. Known limitations / follow-ups
 
 - **LoRA flavor without FSDP (dp_shard=1) crashes** with fp32-vs-bf16 at
