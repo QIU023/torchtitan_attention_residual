@@ -1,5 +1,16 @@
 # KDA/MLA context-parallel: real Ulysses design + full-5D requirement (updated 2026-07-23)
 
+> **STATUS 2026-07-24: Problems 1 and 2 below are FIXED and verified.**
+> Real Ulysses (a2a seq<->head, seq-local projections) landed for both
+> KDA and MLA, CP+TP composes, and the 3D tp2 x cp2 x pp2 cell is green
+> on 8 cards. A third bug this doc missed -- the default headtail CP
+> load balancer silently permuting the sequence -- was found and fixed
+> the same day. Design: [CP_TP_3D_FIX_DESIGN_2026-07-24.md](CP_TP_3D_FIX_DESIGN_2026-07-24.md);
+> evidence: [CP_TP_3D_VERIFICATION_2026-07-24.md](CP_TP_3D_VERIFICATION_2026-07-24.md);
+> fork commits 331e52a7 / 5b654384 / 0f37ec4a. Remaining from the plan
+> here: full 5D at >=16 ranks (needs a bigger-H debug flavor + more
+> cards), real 1M-context runs (memory contract now right, box-bound).
+
 > Supersedes the 2026-07-21 draft below the line. That version predates the
 > CP that actually landed (`f4b6f46f`, `ec417b21`, `48285050`) and described
 > a plan that was never fully built as specced (MLA did NOT get
