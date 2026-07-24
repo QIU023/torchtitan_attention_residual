@@ -85,8 +85,11 @@ remains the context map for the 5090 session's work.
    (dp2*tp2*cp2*pp2 = 16). Every <=8-rank projection is already green
    (Part 4 of the verification doc): all CP 2/3-axis combos, the two
    4-axis-with-EP-folded combos, HSDP x CP, cp8, compile x CP,
-   validation x CP. Interleaved1F1B is a PREEXISTING PP-adapter gap
-   (fails without CP too) -- PP-side follow-up.
+   validation x CP, and Interleaved1F1B (vp2) both alone and x CP
+   (requires the phase3 recipe's pipeline_parallel_layers_per_stage
+   flags; without them the default splitter emits non-contiguous P2P
+   buffers -- config papercut, documented in the verification doc's
+   CORRECTION note).
 
 **Date-gated (7.27 official release):**
 6. Reconciliation checklist (K3_RELEASE_IMPACT sec 4) + weight-sync
