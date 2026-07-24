@@ -60,3 +60,16 @@ A flat list of what's documented where, for quick navigation.
 | `phase11_rlhf_grpo_infra/rlhf/trace_grpo_sum_digits_200steps/` | 200-step GRPO trace (44K NCCL ops) |
 | `phase11_rlhf_grpo_infra/rlhf/trace_ppo_sum_digits/` | 50-step PPO with KL — 2× Send/Recv vs GRPO |
 | `phase5_vlm_multimodal_sft/runs/*/tb/` | TensorBoard logs across all training runs |
+
+## Phase 13 — 2026-07-24 session (8x5060Ti): CP fixed for real + QLoRA infra
+
+| File | Scope |
+| --- | --- |
+| `phase13_k3like_48b_posttrain/SESSION_HANDOFF_2026-07-24.md` | **Latest handoff**: change inventory, env recipe, next-box plan |
+| `phase13_k3like_48b_posttrain/CP_TP_3D_FIX_DESIGN_2026-07-24.md` | Design + the findings beyond CP_ULYSSES_DESIGN (split-brain CP+TP, headtail permutation) |
+| `phase13_k3like_48b_posttrain/CP_TP_3D_VERIFICATION_2026-07-24.md` | Evidence: 3 silent-correctness bugs killed, Ulysses parity/memory, 3D+composition matrix, Parts 2-3 (GAPS items closed, FSDP-gate grad-sync bug) |
+| `phase13_k3like_48b_posttrain/GAPS_TO_K3_SFT_2026-07-24.md` | Gap audit to K3 QLoRA/full-param SFT (A1-A5/B6-B7 closed same day) |
+| `phase13_k3like_48b_posttrain/run_cp_tp_3d_matrix.sh` | Reproducible CP x TP x PP matrix |
+| `phase13_k3like_48b_posttrain/stream_quantize_mxfp4_dcp.py` | Streaming bf16 -> packed-MXFP4 DCP converter (QLoRA quantize-then-shard) |
+| `phase13_k3like_48b_posttrain/make_fake_hf_fixture.py` | Rebuilds the veRL 194m HF fixture (no longer box-local) |
+| `phase13_k3like_48b_posttrain/muon_tp_cp_capstone.py` | Muon x FSDP x TP x CP capstone (PASS) |

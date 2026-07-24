@@ -140,6 +140,44 @@ Fork commits `eb18e8f1` (A2), `a3d41902` (A1), verl `60b185fe` (A5).
   Newton-Schulz on (fsdp x tp)-sharded DTensors with cp in the mesh:
   PASS (loss 6.093 -> 6.081, finite).
 
+## Part 3 (wrap-up pass): the "cosmetic" grad_norm symptom was a REAL bug
+
+Chasing the per-rank grad_norm display difference exposed a third
+silent-correctness bug: `parallelize_kimi_linear` gated FSDP on
+`dp_shard_enabled or dp_replicate_enabled` -- but torchtitan's "fsdp"
+mesh is dp_shard x cp and **FSDP is the mechanism that reduces param
+grads over cp**. At dp_shard=1, cp>1 (every dp1+cp cell in Parts 1-2)
+FSDP was silently skipped: each cp rank trained an UNSYNCED full
+replica on its own seq shard, diverging step by step with a plausible
+loss curve. The differing per-rank grad_norms were the only visible
+symptom. Upstream llama3 applies FSDP unconditionally; fix adds
+`cp_enabled` to the gate (and the HSDP branch now uses
+["dp_replicate", "fsdp"] instead of "batch", which also excluded cp).
+
+Impact assessment of earlier cells:
+- **Forward parity claims (step-1) stand** -- pre-update, unaffected.
+- **Multi-step dp1+cp trajectories in Parts 1-2 carried this
+  divergence** (part of the observed 0.05 drift). Re-run after the fix:
+  per-rank grad_norm identical; dp1cp2 now runs under FSDP(cp-mesh)
+  bf16 like every other FSDP cell (step-1 7.58866, family-consistent
+  with fsdp8's 7.58611) and reaches 3.833@20 vs fp32-cp1's 3.815.
+- **Cells with dp_shard>1 were always correct** (FSDP applied, mesh
+  included cp).
+- Full regression on the final HEAD: cp4 / tp2cp2 / 3D / fsdp2tp2cp2 /
+  LoRA x 3D / tp2cp4(8h) / QLoRA x CP / Muon capstone / verl cp2 leg
+  all green with rank-identical grad_norms; fsdp8 regression cell
+  bit-identical to the pre-fix run (non-CP paths untouched).
+
+Lesson recorded for the next parity gate: "loss descends and matches a
+baseline within a band" is NOT sufficient evidence for multi-rank
+correctness -- assert rank-identical grad_norm (or explicit replica
+consistency) in every new-axis cell.
+
+Also new: CPU unit tests for the fixes
+(`tests/test_cp_qlora_fixes.py`: packed-MXFP4 meta layout == on-device
+layout incl. flatten ctx; AttnRes/LoRA fp32-master x bf16-stream dtype
+alignment) -- suite now 84 passed + 66 subtests.
+
 ## 5. Known limitations / follow-ups
 
 - **LoRA flavor without FSDP (dp_shard=1) crashes** with fp32-vs-bf16 at

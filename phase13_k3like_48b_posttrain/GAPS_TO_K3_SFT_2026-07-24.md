@@ -1,5 +1,12 @@
 # Remaining gaps to K3-architecture QLoRA / full-param training+SFT (2026-07-24)
 
+> **STATUS (end of session, same day): A1-A5, B6, B7 CLOSED** on this
+> box -- see CP_TP_3D_VERIFICATION_2026-07-24.md Parts 2-3 and
+> SESSION_HANDOFF_2026-07-24.md. B9's "cosmetic" grad_norm symptom
+> turned out to be a REAL bug (FSDP skipped at dp1+cp -> unsynced cp
+> replicas), fixed in `a42be25f`. Still open: B8 (7.27-gated), C10-C12
+> (bigger hardware), TP x packed-MXFP4 base, upstream PR extractions.
+
 Audit requested after the CP/Ulysses fix: what ELSE stands between the
 current stack and reliable K3-arch QLoRA or full-param SFT. Ordered by
 (blocks-training > silently-wrong > perf/cosmetic), each with where it
