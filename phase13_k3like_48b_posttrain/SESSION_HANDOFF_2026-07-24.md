@@ -81,7 +81,12 @@ remains the context map for the 5090 session's work.
    Exp A; Muon variant now has the FSDPxTPxCP capstone behind it.
 
 **On >=16 ranks:**
-5. Full 5D (FSDPxTPxCPxEPxPP all >1) matrix with debugmodel8h.
+5. Full 5D (FSDPxTPxCPxEPxPP all >1) single run with debugmodel8h
+   (dp2*tp2*cp2*pp2 = 16). Every <=8-rank projection is already green
+   (Part 4 of the verification doc): all CP 2/3-axis combos, the two
+   4-axis-with-EP-folded combos, HSDP x CP, cp8, compile x CP,
+   validation x CP. Interleaved1F1B is a PREEXISTING PP-adapter gap
+   (fails without CP too) -- PP-side follow-up.
 
 **Date-gated (7.27 official release):**
 6. Reconciliation checklist (K3_RELEASE_IMPACT sec 4) + weight-sync

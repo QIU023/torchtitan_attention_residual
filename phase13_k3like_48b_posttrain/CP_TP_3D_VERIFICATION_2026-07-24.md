@@ -178,6 +178,26 @@ Also new: CPU unit tests for the fixes
 layout incl. flatten ctx; AttnRes/LoRA fp32-master x bf16-stream dtype
 alignment) -- suite now 84 passed + 66 subtests.
 
+## Part 4 (completeness pass): remaining 8-rank-feasible cells
+
+| cell | result |
+|---|---|
+| FSDP x CP x EP x PP (dp2cp2pp2 + ep2, 8 ranks -- max axes this box) | PASS 7.653 -> 6.007; losses BIT-IDENTICAL to the non-EP cell (EP==FSDP reduction parity holds under the new Ulysses CP) |
+| HSDP x CP (dp_replicate2 x shard2 x cp2) | PASS 7.595 -> 5.878 -- validates the Part-3 mesh-branch change (["dp_replicate","fsdp"]) |
+| cp8 (debugmodel8h, dp1) | PASS 7.620 -> 4.615 |
+| compile x cp2 | PASS; step-1 7.58888 vs eager 7.58866 (inductor band) |
+| compile x tp2 x cp2 | PASS; step-1 EXACTLY equals eager tp2cp2 (7.63927). Non-fatal inductor cache-pickle warning. |
+| validation-during-training x cp2 | PASS (validate loss rank-identical). Preexisting FSDP warning about final AttnResProjection not running forward in eval paths -- hygiene note, not CP-related. |
+| seq_len % cp != 0 | upstream already raises a clean ValueError ("must be divisible by 4 for the configured sequence/context parallelism") -- no fix needed |
+| Interleaved1F1B x CP | FAILS -- but fails identically WITHOUT CP ("Tensors for P2P must be non-overlapping and dense"): PREEXISTING kimi PP-adapter limitation, 1F1B is the supported schedule. Tracked as PP-side follow-up, not CP work. |
+
+**5D status, stated precisely:** FSDP x TP x CP x PP all >1 (+EP folded)
+needs dp2*tp2*cp2*pp2 = 16 ranks -- physically impossible on 8 cards.
+Verified here: every <=8-rank projection of the 5D mesh (all 2-axis and
+3-axis combos involving CP, the two 4-axis-with-EP-folded combos
+fsdp+tp+cp+ep and fsdp+cp+pp+ep, plus HSDP x CP). The 16-rank single
+run is next-box item 5, with debugmodel8h ready as the carrier.
+
 ## 5. Known limitations / follow-ups
 
 - **LoRA flavor without FSDP (dp_shard=1) crashes** with fp32-vs-bf16 at
