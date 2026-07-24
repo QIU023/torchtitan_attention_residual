@@ -214,6 +214,33 @@ Verified here: every <=8-rank projection of the 5D mesh (all 2-axis and
 fsdp+tp+cp+ep and fsdp+cp+pp+ep, plus HSDP x CP). The 16-rank single
 run is next-box item 5, with debugmodel8h ready as the carrier.
 
+## Part 5 (re-audit): real-dims carrier cells + remaining combos
+
+The debugmodel cells verify mechanisms at toy dims (d=256, head_dim 64);
+this pass adds the 48B-SHAPE carrier (d1280, L32, N8, e16 -- real MLA
+kv_lora/nope/rope dims and KDA head_dim) and the leftover combos:
+
+| cell | result |
+|---|---|
+| carrier fsdp4 x cp2 (seq512) | PASS 12.241 -> 6.171 |
+| carrier cp2 x pp2 x fsdp2 (seq512) | PASS 12.258 -> 6.629 |
+| **carrier seq4096, cp4 + AC full (16GB cards)** | PASS, 10.98 GiB peak -- real-dims long-seq CP on consumer VRAM (without AC: fwd fits at 15.06 GiB, bwd OOMs; without CP: no fit at all) |
+| post-fix CP parity: dp2 vs dp2cp2, 20 steps | step-20 delta **0.0045** (was 0.05 pre-grad-sync-fix -- the old drift was mostly the unsynced-replica bug, now 10x tighter) |
+| verl SFT dp2 x cp2 (4 ranks) | PASS 12.133 -> 3.818 (the batch-mesh sampler under real dp+cp) |
+| tp8 (8h flavor, dp1) | PASS 7.736 -> 4.952 |
+| ep4 (dp4cp2ep4) | PASS, losses bit-identical to the ep2 cell (EP==FSDP parity again) |
+| Interleaved(vp2) x CP x EP | PASS, bit-identical to the no-EP cell |
+| compile x 3D (tp2cp2pp2) | PASS, step-1 7.62553 vs eager 7.62558 |
+| grad-accum (global 4 = 2 micro) x cp2 | PASS, step-1 == dp2cp2 |
+| QLoRA(mxfp4-packed) x PP2 | PASS 7.5694, matches the FSDP/FSDP x CP cells |
+
+Still NOT runnable here (unchanged): 16-rank 5D single run, 48B real
+weights, 1M-context. Deferred by choice: NF4-base meta layout
+(NF4Tensor's nested double-quant fields are a bigger meta-registration
+surface than MXTensor's two, and K3-native is MXFP4 -- do it if a titan
+customer asks), TP x packed-MXFP4 base (loud crash today; wire when 48B
+QLoRA actually needs TP).
+
 ## 5. Known limitations / follow-ups
 
 - **LoRA flavor without FSDP (dp_shard=1) crashes** with fp32-vs-bf16 at
