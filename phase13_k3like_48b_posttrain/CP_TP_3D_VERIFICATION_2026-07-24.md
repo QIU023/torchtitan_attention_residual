@@ -189,7 +189,7 @@ alignment) -- suite now 84 passed + 66 subtests.
 | compile x tp2 x cp2 | PASS; step-1 EXACTLY equals eager tp2cp2 (7.63927). Non-fatal inductor cache-pickle warning. |
 | validation-during-training x cp2 | PASS (validate loss rank-identical). Preexisting FSDP warning about final AttnResProjection not running forward in eval paths -- hygiene note, not CP-related. |
 | seq_len % cp != 0 | upstream already raises a clean ValueError ("must be divisible by 4 for the configured sequence/context parallelism") -- no fix needed |
-| Interleaved1F1B x CP | FAILS -- but fails identically WITHOUT CP ("Tensors for P2P must be non-overlapping and dense"): PREEXISTING kimi PP-adapter limitation, 1F1B is the supported schedule. Tracked as PP-side follow-up, not CP work. |
+| Interleaved1F1B x CP | FAILS -- but bisect-PROVEN preexisting: the identical error ("Tensors for P2P must be non-overlapping and dense") reproduces without CP AND on pre-session `7d8acabe`. Interleaved never worked for kimi_k3; the historical "PP8xVP4" evidence is the phase3 attn_res experiment, and kimi_k3's own PP evidence has always been 1F1B-only. pipeline_adapter.py untouched this session. As the counterpart, the dp4pp2 1F1B cell is loss+grad_norm BIT-IDENTICAL between `7d8acabe` and `a42be25f` (5-step deterministic diff empty). |
 
 **5D status, stated precisely:** FSDP x TP x CP x PP all >1 (+EP folded)
 needs dp2*tp2*cp2*pp2 = 16 ranks -- physically impossible on 8 cards.
