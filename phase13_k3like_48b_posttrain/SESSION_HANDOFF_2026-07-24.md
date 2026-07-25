@@ -9,7 +9,7 @@ remains the context map for the 5090 session's work.
 | repo | branch | HEAD | this session |
 |---|---|---|---|
 | logbook | main | (this commit) | phase13 docs/scripts below |
-| torchtitan | `attention_residual_dev` | `a42be25f` (7 commits from `7d8acabe`) | CP guards, Ulysses CP, CP+TP, LoRA dtype, packed-MXFP4 QLoRA, 8h flavor, FSDP-gate grad-sync fix, tests |
+| torchtitan | `attention_residual_dev` | `ef0fced4` (8 commits from `7d8acabe`) | CP guards, Ulysses CP, CP+TP, LoRA dtype, packed-MXFP4 QLoRA, 8h flavor, FSDP-gate grad-sync fix, tests |
 | verl | `kimi_k3_integration` | `60b185fe` | engine CP working (5 fixes) |
 | sglang | `attention_residual_inference` | `e45f675` | unchanged |
 
@@ -96,10 +96,23 @@ remains the context map for the 5090 session's work.
    tensor-name freeze + GRPO at scale on official vLLM.
 
 **Anywhere / small:**
-7. TP x packed-MXFP4 base (redirect Colwise/Rowwise to qdata/scale
-   split storage) -- only when 48B QLoRA needs TP.
+7. TP x packed-MXFP4 base: WIRED (fork ef0fced4) + CPU-gloo 2-proc
+   parity-verified (packed_tp_cpu_probe.py: fwd 5e-7, adapter grads
+   <=2e-6, Partial reductions fire). GPU cells (QLoRA tp2 / tp2cp2 /
+   tp2pp2 vs the fsdp2 baseline 7.5695) could NOT run here -- see the
+   HARDWARE note -- run them FIRST on the next box.
 8. Upstream PR extractions still pending: moe.py TP+EP scatter fix
    (torchtitan), checkpoint interval=1 + the engine CP fixes (verl).
+
+## 4b. HARDWARE: this box DIED mid-session (2026-07-25)
+
+GPU 1 dropped off the bus (NVML 'Unknown Error', unrecoverable from an
+unprivileged container); NCCL's NVML topology sweep enumerates ALL
+physical devices, so EVERY multi-rank init now fails regardless of
+CUDA_VISIBLE_DEVICES, and even world-1 NCCL is flaky at teardown.
+All multi-GPU evidence above predates the failure. Destroy/swap the
+instance; nothing on it is irreplaceable (all repos pushed, fixtures
+regenerable via make_fake_hf_fixture.py).
 
 ## 5. Honesty carries (unchanged, from CLAUDE.md + 07-23 handoff)
 
