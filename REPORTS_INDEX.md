@@ -61,6 +61,15 @@ A flat list of what's documented where, for quick navigation.
 | `phase11_rlhf_grpo_infra/rlhf/trace_ppo_sum_digits/` | 50-step PPO with KL — 2× Send/Recv vs GRPO |
 | `phase5_vlm_multimodal_sft/runs/*/tb/` | TensorBoard logs across all training runs |
 
+## Phase 13 — 2026-07-25 session (8x5060Ti box #2): packed-TP closed
+
+| File | Scope |
+| --- | --- |
+| `phase13_k3like_48b_posttrain/SESSION_HANDOFF_2026-07-25.md` | **Latest handoff**: packed-TP closed, open gradient-scale decision |
+| `phase13_k3like_48b_posttrain/PACKED_TP_VERIFICATION_2026-07-25.md` | Evidence: TP x packed-MXFP4 matrix, the NoParallel packed-base crash + fix, FSDP gradient-division finding (corrects B9) |
+| `phase13_k3like_48b_posttrain/run_packed_tp_matrix.sh` | Reproducible packed-MXFP4 QLoRA x TP matrix |
+| `phase13_k3like_48b_posttrain/cp_grad_scale_probe.py` | Measures the true applied gradient norm (wraps clip_grad_norm_, bypasses _NormPartial) |
+
 ## Phase 13 — 2026-07-24 session (8x5060Ti): CP fixed for real + QLoRA infra
 
 | File | Scope |

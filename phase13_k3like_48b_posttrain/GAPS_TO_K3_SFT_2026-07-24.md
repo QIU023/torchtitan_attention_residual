@@ -81,6 +81,19 @@ bites and the concrete fix. Context: CP x TP x PP 3D is now green
    of cp4 partials reconstructs cp1's norm). Cosmetic but it WILL send
    someone chasing a phantom divergence. One-line metrics fix.
 
+   > **WRONG -- corrected 2026-07-25**
+   > ([PACKED_TP_VERIFICATION_2026-07-25.md](PACKED_TP_VERIFICATION_2026-07-25.md)
+   > sec 4). The printed value IS the true global norm, and the APPLIED
+   > gradient is under-scaled by the fsdp mesh size (`dp_shard x cp`) --
+   > exactly cp, not sqrt(cp), and dp_shard is affected too. Cause:
+   > kimi_k3's private `apply_fsdp` omits the
+   > `disable_fsdp_gradient_division` call that the shared `apply_fsdp`
+   > makes, while the loss is already `local_sum / global_valid_tokens`.
+   > Measured with `cp_grad_scale_probe.py`, not inferred from curves
+   > (AdamW is scale-invariant, so no loss curve can see it). Clipping is
+   > therefore NOT globally consistent: it engages `dp_shard*cp` times
+   > later than configured. Not a metrics fix; fix identified, not landed.
+
 ## C. Scale / perf (not correctness)
 
 10. **1M-context**: memory contract now Ulysses-correct, but real
