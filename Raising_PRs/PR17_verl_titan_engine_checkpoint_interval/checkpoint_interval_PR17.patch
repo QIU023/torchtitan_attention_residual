@@ -1,0 +1,33 @@
+commit c2c2c5a8c09feb832e412bfb933c36ddd5f003a8
+Author: QIU023 <yiqiaoqiu@hotmail.com>
+Date:   Wed Jul 22 08:57:24 2026 +0000
+
+    [kimi_k3] torchtitan engine: honor verl save_freq by setting checkpoint interval=1
+    
+    The engine built CheckpointManager.Config without an interval (torchtitan
+    default 500) and save_checkpoint() never passed last_step, so the model save
+    was gated by torchtitan's own 500-step interval, not verl's trainer.save_freq.
+    Any run shorter than 500 steps (or whose save_freq did not land on a multiple
+    of 500) silently wrote only dataloader state -- no model weights ever, the
+    final step included. Set interval=1 so every save() call verl issues (already
+    gated by save_freq) writes via the normal model+optimizer+extra DCP path.
+    
+    Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_016tHsrAsHfAP81fLpktESYP
+
+diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
+index 699946bb..40cced7a 100644
+--- a/verl/workers/engine/torchtitan/transformer_impl.py
++++ b/verl/workers/engine/torchtitan/transformer_impl.py
+@@ -152,6 +152,11 @@ class TorchTitanEngine(BaseEngine):
+             initial_load_in_hf=True,
+             initial_load_model_only=True,
+             initial_load_path=model_config.path,
++            # verl's trainer.save_freq is the cadence authority and save() is
++            # only called on those steps; defer torchtitan's own interval to 1
++            # so every requested save writes (default 500 silently drops all
++            # saves in runs shorter than 500 / not multiples of it).
++            interval=1,
+         )
+         compile_config = CompileConfig(enable=self.engine_config.use_torch_compile)
+         training_kwargs = {}

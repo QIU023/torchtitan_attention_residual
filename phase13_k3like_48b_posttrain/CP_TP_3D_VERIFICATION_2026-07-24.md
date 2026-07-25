@@ -243,8 +243,11 @@ QLoRA actually needs TP).
 
 ## 5. Known limitations / follow-ups
 
-- **LoRA flavor without FSDP (dp_shard=1) crashes** with fp32-vs-bf16 at
-  `block_attn_res` einsum -- PREEXISTING (repros at plain dp1+tp2 on
+- ~~**LoRA flavor without FSDP (dp_shard=1) crashes** with fp32-vs-bf16 at
+  `block_attn_res` einsum~~ **-- STALE. A2 (`eb18e8f1`) fixed this the same
+  day; re-verified on GPU 2026-07-25 (bf16 `gated_lora`, dp1+tp2, no FSDP:
+  7.66083 -> 7.65224, no crash). Original text kept for the record:**
+  PREEXISTING (repros at plain dp1+tp2 on
   7d8acabe, before any CP change): without FSDP mixed-precision the LoRA
   flavor's dtype story is inconsistent. Not CP-related; fix separately.
 - Full 5D (FSDP x TP x CP x EP x PP all >1) needs >= 16 ranks + more

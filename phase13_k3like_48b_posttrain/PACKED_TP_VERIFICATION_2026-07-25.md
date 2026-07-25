@@ -22,11 +22,11 @@ the 07-24 handoff sec 2 -- torch 2.12.0+cu130, fla-core 0.5.1, torchao
    loss+grad_norm and step-1 within **1e-4** of the no-parallelism
    reference -- two orders tighter than the TP band the 07-24 doc records
    for the full-param flavor (4.6e-3).
-3. Separately, and NOT specific to packed-MXFP4: **the applied gradient is
+3. Separately, and NOT specific to packed-MXFP4: **the applied gradient was
    under-scaled by the FSDP mesh size (dp_shard x cp)** in every FSDP
-   kimi_k3 run. Measured directly, root-caused, one-line fix identified,
-   NOT landed (sec 4) -- it changes effective LR/clipping semantics for
-   every run in the logbook, so it is the user's call.
+   kimi_k3 run. Measured directly, root-caused, and **fixed** (sec 4, fork
+   `20bd4f3a`) once the audit showed it is a kimi_k3-only divergence from
+   what upstream models already do. Post-fix regression in sec 7.
 
 ## 1. The matrix (5-step cells, seed 42 deterministic, bf16, seq 512)
 
@@ -50,10 +50,11 @@ Peak memory: 0.23-0.24 GiB (tp2 / fsdp2), 0.14 GiB (fsdp2tp2cp2).
 
 Notes on reading this table:
 
-- The tp2cp2 / fsdp2tp2cp2 grad_norm columns are *not* rank divergence and
-  *not* a TP effect -- they are the FSDP-mesh gradient division of sec 4
-  (cp2 halves it, dp2xcp2 quarters it). Loss agreement is what carries the
-  TP claim here.
+- The grad_norm column above is **as first measured, before the sec-4 fix**:
+  the tp2cp2 / fsdp2tp2cp2 values are neither rank divergence nor a TP
+  effect, they are the FSDP-mesh gradient division (cp2 halves it, dp2xcp2
+  quarters it). Loss agreement is what carries the TP claim here. Post-fix
+  every cell reports one consistent norm -- see sec 7.
 - fsdp2 vs ref_1gpu differ by 7e-3 because at dp2 the same global batch is
   split across ranks instead of across 2 grad-accum microbatches, and dp2
   additionally runs under FSDP mixed precision. Not comparable by
@@ -198,10 +199,12 @@ from torchtitan.distributed.fsdp import disable_fsdp_gradient_division
 disable_fsdp_gradient_division(model)
 ```
 
-**NOT landed.** It changes the effective LR and clipping semantics of every
-FSDP kimi_k3 run and re-bases every grad_norm in the logbook, which is a
-scope call for the user, not a side effect of the packed-TP task. The probe
-script is committed so the decision costs one command.
+**LANDED** (fork `20bd4f3a`) after confirming the scope: this is a
+**kimi_k3-only** defect, not an upstream one. llama3 / deepseek_v3 / qwen3 /
+gpt_oss all call the shared `apply_fsdp_to_decoder`, which makes the call at
+`fsdp.py:287`; only kimi_k3's private copy of the Llama3 layout omits it. The
+fix therefore aligns kimi_k3 with behaviour upstream already has, rather than
+changing a global convention -- see sec 7 for the post-fix regression.
 
 ## 5. Reproduction recipe (artifacts are not portable)
 
@@ -234,3 +237,150 @@ that produced it, or quote only deltas measured inside one session.
 - Rank-identical loss+grad_norm is a cross-rank consistency gate only; sec
   4 is the counterexample to treating it as a magnitude gate.
 - 48B real weights, 16-rank 5D, and long-context remain not run here.
+
+## 7. Post-fix regression and re-baseline (after the sec-4 fix landed)
+
+The gradient-division fix cannot change any step-1 loss (it only affects
+gradients, and step 1's loss is computed before the first update). It *does*
+change multi-step trajectories wherever FSDP is active AND clipping engages,
+because `max_norm=1.0` now compares against the true norm instead of one
+`dp_shard*cp` times smaller. Both matrices were re-run in full.
+
+**`run_cp_tp_3d_matrix.sh` (full-param, 14 cells): all still PASS.** Every
+step-1 loss is unchanged from the 07-24 record. Examples of the intended
+multi-step shift:
+
+| cell | 07-24 recorded | post-fix | note |
+|---|---|---|---|
+| cp1 baseline | 7.63564 / 3.81458@20 | 7.63564 / 3.81458@20 | **bit-identical** -- dp1cp1 has no FSDP at all, so the fix is a no-op |
+| tp2 | 7.64027 / 3.95069@20 | 7.64027 / 3.95066@20 | step-1 identical (TP-only, no FSDP) |
+| tp2cp2 | 7.63927 / 4.00261@20 | 7.63927 / 3.89796@20 | step-1 identical; step-20 moves -- clipping now engages |
+| fsdp8 | 7.58611 / 5.80952@5 | 7.58611 / 5.81329@5 | step-1 identical; step-5 moves |
+| fsdp2tp2cp2 | 7.649 | 7.64919 | matches |
+| tp2cp2ep2 | == fsdp2tp2cp2 | 7.64919 (step-1 exactly equal) | EP==FSDP parity still holds |
+| cp2fsdp2 / cp2ep2 / cp2pp2fsdp2 | 7.588 / 7.571 / 7.653 | 7.58786 / 7.57120 / 7.65318 | match |
+| pp2fsdp4 / 4D fsdp2tp2pp2ep2 | PASS | 7.65306 / 7.64436 | PASS |
+
+**`run_packed_tp_matrix.sh` (packed-MXFP4 QLoRA): grad_norm is now
+mesh-independent**, which is the visible payoff -- it makes grad_norm a usable
+cross-mesh comparison for the first time:
+
+| cell | grad_norm@1 pre-fix | grad_norm@1 post-fix |
+|---|---|---|
+| ref_1gpu | 0.1672 | 0.1672 (no FSDP) |
+| tp2 | 0.1672 | 0.1672 (no FSDP) |
+| tp2cp2 | 0.0835 | **0.1671** |
+| tp2pp2 | 0.1671 | 0.1671 |
+| fsdp2 | 0.0886 | **0.1772** |
+| fsdp2tp2cp2 | 0.0442 | **0.1770** |
+
+QLoRA trajectories are essentially unmoved (true norms ~0.17, far below the
+1.0 clip threshold), so every parity conclusion in sec 1 stands post-fix:
+tp2 7.58910, tp2cp2 7.58911, tp2pp2 7.58918 vs ref 7.58917.
+
+**Muon x FSDP2 x TP2 x CP2 capstone**: PASS, 6.0929 -> 6.0817 vs the 07-24
+record 6.093 -> 6.081 -- unchanged, exactly as expected for a scale-invariant
+optimizer. **B8 deltas-compose capstone** (gated MLA + graft + MXFP4 QAT +
+Muon under FSDP2/8gpu): PASS, 0.3584 -> 0.3583.
+
+## 8. Remaining <=8-GPU gaps swept the same day
+
+Driver: [run_remaining_8gpu_gaps.sh](run_remaining_8gpu_gaps.sh) with the
+corrected legs in [run_gaps_redo.sh](run_gaps_redo.sh).
+
+### 8a. DCP for the packed-MXFP4 checkpoint under TP -- VERIFIED
+
+`ef0fced4` claimed "DTensor registration keeps DCP resharding of the packed
+checkpoint working unchanged" but never ran it. It holds:
+
+| leg | result |
+|---|---|
+| tp2 reference, 4 steps | 7.58910 / 7.61620 / 7.59389 / 7.58073 |
+| tp2 mid-run save at step 2, then same-mesh resume | steps 3-4 = 7.59389 / 7.58073 -- **exactly** the uninterrupted trajectory (optimizer + dataloader state included) |
+| cross-mesh: step-2 packed ckpt -> tp2 (control) | 7.57039 |
+| cross-mesh -> tp1 | 7.57031 (8e-5 from the control) |
+| cross-mesh -> tp2cp2 | 7.57019 (2e-4) |
+| cross-mesh -> fsdp2 | 7.56773 (2.7e-3; different mesh axis + FSDP mixed precision) |
+
+Cross-mesh legs use identical weights and identical (restarted) data on three
+meshes, so the spread is the reshard + mesh-numerics band, nothing else.
+`--checkpoint.exclude-from-loading dataloader,lr_scheduler,optimizer,train_state`
+is required, exactly as GAPS A4 found for the non-packed case.
+
+### 8b. AC full x packed-TP -- PASS, forward numerics unchanged
+
+`activation-checkpoint:full` with tp2: 7.58910 / 7.61620 / 7.59389 --
+**bit-identical** to the non-AC tp2 cell, consistent with what A3 established
+for AC x CP.
+
+### 8c. compile x packed-TP -- DOES NOT WORK (two independent blockers)
+
+`--compile.enable` with tp2 on the packed flavor fails. Non-TP packed compile
+is fine (1 GPU: 7.58907 vs eager 7.58917, inductor band), and compile x TP
+works for the full-param flavor (07-24 Part 4), so this is specific to
+packed-base x TP:
+
+1. `Dynamo failed to run FX node with fake tensors: call_method dequantize` --
+   `_dequant_base_mxfp4` rebuilds an MXTensor from tp-sharded qdata/scale, and
+   `MXTensor.dequantize` internally does `aten.index_put_`, which DTensor
+   refuses on a `Shard(0)` operand ("in-place operations that require
+   placement changes are not supported"). In eager the branch calls
+   `to_local()` first; dynamo's fake-tensor mode does not carry that
+   narrowing through, the same failure family as the existing
+   `block_attn_res` / KDA `torch.compiler.disable` carve-outs in
+   `_apply_compile_kimi_linear`.
+2. Adding the analogous carve-out for `_dequant_base_mxfp4` clears (1) and
+   exposes a second, deeper problem: `RuntimeError: During the backward, we
+   encountered a tensor subclass where we guessed its metadata incorrectly.
+   Expected a AsyncCollectiveTensor tangent but got a plain Tensor` at
+   `model.py:1088 out = out.to_local()` in a dynamo *resume* frame -- the new
+   graph break makes AOTAutograd mis-guess the tangent type of the MoE output.
+
+The carve-out was **not kept**: it trades one error for another without making
+the cell work. Recorded here so the next attempt starts at (2), not (1).
+
+### 8d. GAPS sec 5 "LoRA flavor without FSDP crashes" -- STALE, now corrected
+
+bf16 `gated_lora` at dp1+tp2 (no FSDP) trains: 7.66083 / 7.65383 / 7.65224.
+A2 (`eb18e8f1`) fixed this and the GAPS sec-5 entry was never updated.
+
+### 8e. Upstream PR extractions (07-24 sec 7 item 8) -- kits written, none filed
+
+All three audited against current upstream and **still applicable**:
+
+| kit | target | upstream HEAD audited | state |
+|---|---|---|---|
+| `Raising_PRs/PR16_torchtitan_moe_tp_ep_routing_scatter/` | `pytorch/torchtitan` `models/common/moe.py` | `fd277658` | unfixed upstream; patch + a DTensorTestBase unit test (landed on the fork, fails pre-fix) |
+| `Raising_PRs/PR17_verl_titan_engine_checkpoint_interval/` | `volcengine/verl` engine | `983cb0f2` | unfixed upstream; one-liner, silent no-weights-saved bug |
+| `Raising_PRs/PR18_verl_titan_engine_cp_fixes/` | `volcengine/verl` engine | `983cb0f2` | unfixed upstream; 3 of the fork's 5 CP fixes are generic, 2 are name-gated and need an upstream capability flag first (documented, not proposed) |
+
+**The PR16 upstream-model reproducer could NOT be produced on this box** and
+this is a hardware/stack limit, not a missing result: `deepseek_v3_debugmodel`
+and `qwen3_moe_debug` both die before the MoE at
+`TypeError: create_block_mask() got an unexpected keyword argument
+'separate_full_blocks'` (the fork's upstream-merged flex-attention path needs
+a torch nightly; we run torch 2.12.0 stable). With that shimmed out locally
+they then die in the flex kernel itself: `OutOfMemoryError: out of resource:
+triton_tem_fused_flex_attention_0 Required: 139776 Hardware limit: 101376` --
+sm_120 consumer cards do not have the shared memory the kernel config wants.
+So PR16's evidence is the unit test plus the K3-model 4D mesh; a maintainer
+with datacenter cards should run the tp2xep2 cell. Neither shim was kept.
+
+Side note worth its own line: **every upstream torchtitan model that builds
+attention masks is unrunnable in this fork on torch 2.12 stable** for the
+`separate_full_blocks` reason above. kimi_k3 is unaffected (causal-only, never
+calls `get_attention_masks`), which is why no earlier session hit it.
+
+### 8f. Not fixable here, recorded
+
+- QLoRA flavors **silently train on unpopulated packed weights** when no
+  `--checkpoint.initial-load-path` is given (observed: flat loss ~7.667,
+  grad_norm 3e-4). A loud failure would need the model to know whether a
+  checkpoint load is configured, which lives in trainer/checkpoint config --
+  outside `experiments/kimi_k3`, and a build-time warning would fire on every
+  legitimate meta-path build. Left as a documented papercut.
+- Reusing a `--dump-folder` across runs makes torchtitan ignore
+  `--checkpoint.initial-load-path` (documented upstream behaviour) and then
+  fail with `Missing key in checkpoint state_dict` against the previous run's
+  last-step model-only export. `run_packed_tp_matrix.sh` now takes `OUT` and
+  says so.

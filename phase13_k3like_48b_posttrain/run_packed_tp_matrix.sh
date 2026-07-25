@@ -26,6 +26,11 @@ cd /workspace/torchtitan_attention_residual/torchtitan
 PACKED=${PACKED:-/workspace/packed_mxfp4_ckpt}
 STEPS=${STEPS:-5}
 GLOBAL_BATCH=${GLOBAL_BATCH:-4}
+# MUST be empty: torchtitan ignores --checkpoint.initial-load-path when the
+# run's own checkpoint folder is non-empty, so a reused OUT makes every cell
+# auto-resume from the previous run's last-step (model-only) export and die
+# with "Missing key in checkpoint state_dict".
+OUT=${OUT:-/workspace/out_qlora_tp}
 CFG="--module kimi_k3 --config kimi_linear_debugmodel_gated_qlora_mxfp4 \
  --debug.seed 42 --debug.deterministic --metrics.log_freq 1 \
  --training.global-batch-size $GLOBAL_BATCH \
@@ -40,7 +45,7 @@ run_cell() {
   local out clean lines
   out=$(CUDA_VISIBLE_DEVICES=$(seq -s, 0 $((ngpu-1))) torchrun --nproc_per_node=$ngpu \
         --master_port=$PORT -m torchtitan.train $CFG --training.steps $STEPS \
-        --dump-folder /workspace/out_qlora_tp/$name "$@" 2>&1)
+        --dump-folder $OUT/$name "$@" 2>&1)
   clean=$(echo "$out" | sed -E 's/\x1b\[[0-9;]*m//g')
   # every rank logs; unique (step, loss, grad_norm) triples must number
   # exactly STEPS if all ranks agree -- more lines means rank divergence.

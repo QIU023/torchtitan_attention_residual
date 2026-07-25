@@ -68,7 +68,12 @@ A flat list of what's documented where, for quick navigation.
 | `phase13_k3like_48b_posttrain/SESSION_HANDOFF_2026-07-25.md` | **Latest handoff**: packed-TP closed, open gradient-scale decision |
 | `phase13_k3like_48b_posttrain/PACKED_TP_VERIFICATION_2026-07-25.md` | Evidence: TP x packed-MXFP4 matrix, the NoParallel packed-base crash + fix, FSDP gradient-division finding (corrects B9) |
 | `phase13_k3like_48b_posttrain/run_packed_tp_matrix.sh` | Reproducible packed-MXFP4 QLoRA x TP matrix |
+| `phase13_k3like_48b_posttrain/run_remaining_8gpu_gaps.sh` | Sweep of every remaining <=8-GPU gap (DCP/AC/compile/staleness/capstones) |
+| `phase13_k3like_48b_posttrain/run_gaps_redo.sh` | Corrected legs of the sweep (EP dims, DCP save interval) |
 | `phase13_k3like_48b_posttrain/cp_grad_scale_probe.py` | Measures the true applied gradient norm (wraps clip_grad_norm_, bypasses _NormPartial) |
+| `Raising_PRs/PR16_torchtitan_moe_tp_ep_routing_scatter/` | Upstream kit: common-MoE routing-map placement (patch + unit test) |
+| `Raising_PRs/PR17_verl_titan_engine_checkpoint_interval/` | Upstream kit: verl engine never saves model weights |
+| `Raising_PRs/PR18_verl_titan_engine_cp_fixes/` | Upstream kit: verl engine CP (3 generic fixes; 2 fork-local documented) |
 
 ## Phase 13 — 2026-07-24 session (8x5060Ti): CP fixed for real + QLoRA infra
 

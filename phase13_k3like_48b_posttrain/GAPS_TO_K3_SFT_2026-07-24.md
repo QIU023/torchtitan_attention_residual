@@ -4,8 +4,16 @@
 > box -- see CP_TP_3D_VERIFICATION_2026-07-24.md Parts 2-3 and
 > SESSION_HANDOFF_2026-07-24.md. B9's "cosmetic" grad_norm symptom
 > turned out to be a REAL bug (FSDP skipped at dp1+cp -> unsynced cp
-> replicas), fixed in `a42be25f`. Still open: B8 (7.27-gated), C10-C12
-> (bigger hardware), TP x packed-MXFP4 base, upstream PR extractions.
+> replicas), fixed in `a42be25f`.
+>
+> **UPDATE 2026-07-25** (box #2, PACKED_TP_VERIFICATION_2026-07-25.md):
+> **TP x packed-MXFP4 base CLOSED** (crash found + fixed, matrix green);
+> **B9 CLOSED** (was NOT cosmetic -- see the correction under item 9);
+> **A2 confirmed stale-as-written** (it was fixed the same day it was filed);
+> **B7 re-verified** post-fix; **upstream PR extraction kits written** for all
+> three (PR16/PR17/PR18 in `Raising_PRs/`, audited against current upstream,
+> none filed). Still open: B8 (7.27-gated), C10-C12 (bigger hardware),
+> 16-rank 5D, and compile x packed-TP (new, see that doc sec 8c).
 
 Audit requested after the CP/Ulysses fix: what ELSE stands between the
 current stack and reliable K3-arch QLoRA or full-param SFT. Ordered by
@@ -92,7 +100,11 @@ bites and the concrete fix. Context: CP x TP x PP 3D is now green
    > Measured with `cp_grad_scale_probe.py`, not inferred from curves
    > (AdamW is scale-invariant, so no loss curve can see it). Clipping is
    > therefore NOT globally consistent: it engages `dp_shard*cp` times
-   > later than configured. Not a metrics fix; fix identified, not landed.
+   > later than configured. Not a metrics fix. **FIXED 2026-07-25** (fork
+   > `20bd4f3a`): kimi_k3's `apply_fsdp` now calls
+   > `disable_fsdp_gradient_division`, like the shared `apply_fsdp_to_decoder`
+   > that llama3/deepseek_v3/qwen3/gpt_oss use -- so this was a kimi_k3-only
+   > divergence from upstream, not a global convention change. B9 CLOSED.
 
 ## C. Scale / perf (not correctness)
 
@@ -103,6 +115,12 @@ bites and the concrete fix. Context: CP x TP x PP 3D is now green
 11. **torchao 0.17 has no weight-only MXFP4 linear** -> QLoRA base
     dequant-matmuls (slow, correct). Re-check at torchao bumps; swap to
     the native kernel when it lands.
+
+    > **Checked 2026-07-25: still true, and there is nothing to bump to** --
+    > 0.17.0 is the latest release on PyPI. `torchao.prototype.mx_formats`
+    > exports `NVFP4WeightOnlyConfig` (weight-only, but **NVFP4**) and
+    > `MXDynamicActivationMXWeightConfig` (MX, but quantizes activations
+    > too). K3 is MXFP4-native, so neither substitutes. Unchanged item.
 12. **Full-param 48B SFT stays H200-class** (fp32 masters ~576GB); this
     box changes nothing there. QLoRA is the realistic 48B path on
     consumer VRAM -- which is why A1 is the top item.
