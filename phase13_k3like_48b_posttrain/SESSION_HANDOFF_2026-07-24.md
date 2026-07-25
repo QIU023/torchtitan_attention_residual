@@ -114,6 +114,14 @@ All multi-GPU evidence above predates the failure. Destroy/swap the
 instance; nothing on it is irreplaceable (all repos pushed, fixtures
 regenerable via make_fake_hf_fixture.py).
 
+Do NOT try to nurse a dead GPU with an NVML/LD_PRELOAD shim: verified
+dead-end this session. NCCL's whole-machine topology sweep
+(ncclTopoGetSystem) crashes on the off-bus PCI device even for a
+SINGLE-rank init; faking nvmlDeviceGetHandleByIndex just moves the
+SIGSEGV into the topology tree build (incoherent fake device). Swap
+the box or reboot (stop/start re-enumerates GPUs) -- don't inject
+libraries.
+
 ## 5. Honesty carries (unchanged, from CLAUDE.md + 07-23 handoff)
 
 - Never claim 2.8T personally validated; 48B real weights + K3-faithful
