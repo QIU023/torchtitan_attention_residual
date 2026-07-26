@@ -63,10 +63,26 @@ iperf3 -c 192.168.50.17 -p 10193 -R     # node0 -> node1 (reverse, same server)
 iperf3 -c 192.168.50.17 -p 10193 -P 4   # 4 parallel streams (NCCL-like)
 ```
 
-Interpretation: ~940 Mbps -> 1 GbE LAN (PP-only across nodes is realistic,
-~0.3 s per 37.7 MB stage-boundary microbatch at 48B seq8192; HSDP replicate of
-LoRA grads ~0.26 s/step). ~2.5 GbE/10 GbE -> correspondingly better. If it
-matches the WAN 92.7 Mbps instead, the LAN assumption is wrong -- stop there.
+**MEASURED 2026-07-26: 1 GbE, saturated.** Single stream 936 Mbit/s, reverse
+938 Mbit/s, 4 parallel streams 930 Mbit/s (so the cap is the link, not per-flow)
+-- symmetric, and 10x the 92.7 Mbit/s WAN uplink the machine advertises. High
+retransmits at line rate (~6k per 10 s single-stream, ~9.7k with 4 streams)
+imply shallow buffers, i.e. latency jitter under load; irrelevant at debug
+scale.
+
+What 117 MB/s means per optimizer step, cross-node:
+
+| what crosses | volume/step | time | verdict |
+|---|---|---|---|
+| HSDP `dp_replicate` of 48B LoRA grads (7.6 M trainable -> 15.2 MB, all-reduce ~2x) | 30 MB | **0.26 s** | fine |
+| PP stage boundary, 48B seq8192 B=1, 8 microbatches fwd+bwd | ~600 MB | 5.1 s | usable for validation, not for throughput |
+| PP stage boundary, debugmodel8h seq512 (what the 5D cells use) | ~1 MB/microbatch | negligible | fine |
+| FSDP `dp_shard` shipping parameters (bf16 98 GB / MXFP4 25 GB) | 25-150 GB | 3.5-21 min | dead |
+| TP (27 layers x 2 collectives, plus ~108 sequential round trips) | ~4 GB | 34 s + latency | dead |
+
+Conclusion for real work: let **PP** (or HSDP's replicate axis, under LoRA)
+cross the node boundary; keep TP and CP strictly intra-node. The default rank
+placement already does this -- see PLAN_5D_16GPU.md sec 2.
 
 ## Step 3 -- NCCL smoke (after the overlay exists)
 
