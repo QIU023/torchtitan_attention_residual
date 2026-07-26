@@ -63,8 +63,10 @@ regression.
   us with behaviour upstream already has; it does not change a convention.
 - **Post-fix regression**: all 14 cells of `run_cp_tp_3d_matrix.sh` still
   PASS, every step-1 loss unchanged, and multi-step trajectories move only
-  where FSDP is active and clipping now engages (fsdp8 step-5
-  5.80952 -> 5.81329; tp2cp2 step-20 4.00261 -> 3.89796). Recorded grad_norms
+  where FSDP is active and clipping now engages -- verified example: fsdp8
+  step-5 5.80943 (division on) -> 5.81329 (fixed). The `tp2cp2
+  4.00261 -> 3.89796` example first cited here was **misattributed**; the fix
+  moves that cell by 1.6e-4, see verification doc sec 10. Recorded grad_norms
   from before 2026-07-25 are `dp_shard*cp` too small -- **treat every
   pre-07-25 grad_norm in this logbook as re-based**. Muon capstone unchanged
   (scale-invariant), as predicted.

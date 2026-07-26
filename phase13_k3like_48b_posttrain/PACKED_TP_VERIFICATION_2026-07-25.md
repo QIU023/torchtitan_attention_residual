@@ -254,7 +254,7 @@ multi-step shift:
 |---|---|---|---|
 | cp1 baseline | 7.63564 / 3.81458@20 | 7.63564 / 3.81458@20 | **bit-identical** -- dp1cp1 has no FSDP at all, so the fix is a no-op |
 | tp2 | 7.64027 / 3.95069@20 | 7.64027 / 3.95066@20 | step-1 identical (TP-only, no FSDP) |
-| tp2cp2 | 7.63927 / 4.00261@20 | 7.63927 / 3.89796@20 | step-1 identical; step-20 moves -- clipping now engages |
+| tp2cp2 | 7.63927 / 4.00261@20 | 7.63927 / 3.89796@20 | step-1 identical; the step-20 gap is **NOT** from this fix -- see the CORRECTION below |
 | fsdp8 | 7.58611 / 5.80952@5 | 7.58611 / 5.81329@5 | step-1 identical; step-5 moves |
 | fsdp2tp2cp2 | 7.649 | 7.64919 | matches |
 | tp2cp2ep2 | == fsdp2tp2cp2 | 7.64919 (step-1 exactly equal) | EP==FSDP parity still holds |
@@ -412,3 +412,60 @@ and stage 1 to node B, keeping dp_shard x cp x tp (= 8) entirely intra-node --
 so the two chatty axes (TP every layer, CP's per-attention all-to-all) never
 cross the node boundary, and only the PP stage-boundary P2P does. No manual
 rank placement needed.
+
+## 10. CORRECTION + why every earlier multi-D cell was blind to the gradient bug
+
+Recorded because the honesty rule in CLAUDE.md applies to my own attributions.
+
+**The correction.** Commit `20bd4f3a`, sec 7 above, and
+SESSION_HANDOFF_2026-07-25 sec 2 all cited `tp2cp2 step-20 4.00261 -> 3.89796`
+as an example of the intended multi-step shift from the gradient fix. **That
+attribution is wrong.** Measured by re-introducing the division on the current
+HEAD and changing nothing else:
+
+| cell | division re-introduced | with the fix | delta from the fix |
+|---|---|---|---|
+| tp2cp2 (20 steps) | 3.89780 | 3.89796 | **1.6e-4 -- essentially nothing** |
+| fsdp8 (5 steps) | 5.80943 | 5.81329 | 3.9e-3 (and 5.80943 reproduces the 07-24 record 5.80952, so that example IS correctly attributed) |
+
+So tp2cp2's 0.10 step-20 gap versus the 07-24 record predates this fix -- the
+`§3` parity table in CP_TP_3D_VERIFICATION_2026-07-24.md was measured before
+the Part-3 FSDP-gate fix (`a42be25f`), and Part 3 re-ran those cells green
+without re-quoting their 20-step values. Only fsdp8 should have been cited.
+
+**Why the whole 07-24 matrix could not have caught the bug.** Three
+independent cancellations stack up, which is the real lesson:
+
+1. **Step-1 comparisons are structurally blind.** Step-1 loss is computed
+   before the first optimizer step, so it cannot depend on gradient scale.
+   Nearly every tight cross-mesh claim in the 07-24 doc ("EXACTLY equals",
+   "bit-identical") is a step-1 claim -- they validate the FORWARD, and the
+   forward contains no gradients.
+2. **AdamW cancels a uniform scale** (`m/sqrt(v)`; both scale linearly). Muon
+   too -- Newton-Schulz keeps only the direction. Demonstrated in reverse:
+   the bug becomes visible only after breaking that invariance (`eps=1.0`,
+   clipping off), where cp1 vs cp2 diverge monotonically.
+3. **Gradient clipping cancels it as well, and this is the subtle one.** Once
+   clipping engages, the result is `g * max_norm / ||g||`, which is *exactly*
+   independent of any uniform scaling of `g`. So in the regime where norms
+   exceed `max_norm`, even a scale-sensitive optimizer sees nothing. The bug
+   is only observable in the band
+   `max_norm < ||g||_true <= (dp_shard*cp) * max_norm`, where the true run
+   clips and the under-scaled run does not.
+
+That band is exactly what the two measurements above show: fsdp8's true norm
+1.86 with divisor 8 gives a pre-fix 0.23 that does NOT clip, so its trajectory
+moved; tp2cp2's true norm 3.35 with divisor 2 gives a pre-fix 1.67 that still
+clips, so its trajectory did not. cp1 has divisor 1 and is bit-identical by
+construction.
+
+**And the symptom WAS seen -- then explained away.** GAPS_TO_K3_SFT B9 recorded
+the grad_norm drop, proposed a plausible mechanism ("the metric prints the
+local partial norm; sqrt-sum reconstructs cp1's norm"), and filed it as
+cosmetic **without numerically testing that mechanism**. The sqrt(cp)
+prediction is refutable in one command (the factor is cp, not sqrt(cp)). The
+failure mode here was a mis-diagnosis with a plausible story attached, not a
+missing observation -- which is a sharper version of the Part-3 lesson: a
+plausible explanation for an anomaly is not evidence, and the cheap numerical
+check that would discriminate it is worth running before filing the anomaly as
+benign.
