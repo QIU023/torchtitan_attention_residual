@@ -384,3 +384,31 @@ calls `get_attention_masks`), which is why no earlier session hit it.
   fail with `Missing key in checkpoint state_dict` against the previous run's
   last-step model-only export. `run_packed_tp_matrix.sh` now takes `OUT` and
   says so.
+
+## 9. Axis-coverage completion: the 4-choose-3 matrix + EP (2026-07-26)
+
+Coverage audit of "any 3 of {DP, TP, CP, PP}, with and without EP". Two cells
+were missing -- one never run, one only ever run with EP -- both now green, so
+the table below is literal (no cell inferred from another):
+
+| 3 of {DP,TP,CP,PP} | without EP | with EP (folded into dp_shard x cp) |
+|---|---|---|
+| DP x TP x CP | 7.64919 (fsdp2tp2cp2) | 7.64919 (tp2cp2ep2, dp2) -- bit-identical |
+| DP x TP x PP | **7.64436** (dp2tp2pp2, new) | 7.64436 (4D fsdp2tp2pp2ep2) -- bit-identical |
+| DP x CP x PP | 7.65318 (cp2pp2fsdp2) | PASS (dp2cp2pp2+ep2, 07-24 Part 4) |
+| TP x CP x PP | 7.62559 (tp2cp2pp2, dp1) | **7.62559** (tp2cp2pp2ep2, dp1, new) -- bit-identical |
+
+Both new cells: 5 steps, seed 42 deterministic, debugmodel, 8 ranks, post
+grad-division fix. The EP==FSDP-reduction parity that Parts 4-5 established
+now holds on every 4-axis-with-EP combination, including the dp1 one where EP
+has to fold into the cp axis alone (`ep2` with `dp_shard=1, cp=2`) -- that was
+the open question, and it works.
+
+**5D remains 16-rank-bound** (dp2 x tp2 x cp2 x pp2). Favorable news for a
+2-node attempt: `parallel_dims.py:231` orders the mesh
+`["pp", "dp_replicate", "dp_shard", "cp", "tp"]`, i.e. **pp is the outermost
+axis and tp the innermost**. On 2 nodes x 8 GPUs that maps pp stage 0 to node A
+and stage 1 to node B, keeping dp_shard x cp x tp (= 8) entirely intra-node --
+so the two chatty axes (TP every layer, CP's per-attention all-to-all) never
+cross the node boundary, and only the PP stage-boundary P2P does. No manual
+rank placement needed.
