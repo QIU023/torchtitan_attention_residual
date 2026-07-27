@@ -329,3 +329,62 @@ next to "Context Parallelism (CP, sec 5.1.2)". So "plain ring for the MLA
 layers" is a reasonable guess but is not what the paper says, and the citation
 trail actually points at Ulysses -- which is what our MLA CP already does.
 Resolving this needs their released attention kernels, not the report.
+
+---
+
+## 8. FlashKDA: built for sm_120, but it is the INFERENCE half of the stack
+
+Built from source on this box (`MoonshotAI/FlashKDA`, MIT). Two corrections to
+what a reader might assume:
+
+**It builds on consumer Blackwell.** `setup.py` declares
+`SUPPORTED_CUDA_ARCHS = ["90a", "100a", "103a", "120a"]`, so `120a` (RTX 50-series,
+cc 12.0) is supported despite the README's "SM90 and above" phrasing.
+`FLASH_KDA_CUDA_ARCHS=120a pip install --no-build-isolation .` works; there is no
+PyPI wheel (`pip index versions flash-kda` -> nothing).
+
+**It cannot be used for training.** The first check in
+`fla/ops/kda/backends/flashkda.py::chunk_kda_verifier` is::
+
+    if torch.is_grad_enabled():
+        return False, "FlashKDA only supports inference mode"
+
+It is a fused CUTLASS *forward*; there is no backward. So "adopt FlashKDA to
+align training and inference numerics" is not achievable -- the two paths are
+structurally different, and training necessarily stays on fla's Triton kernels.
+
+Full acceptance conditions, read off the verifier empirically:
+
+| condition | required value |
+|---|---|
+| grad | disabled (`torch.inference_mode()`) |
+| dtype | bfloat16 |
+| K, V | exactly 128 each |
+| GVA | not supported (`HV == H`) |
+| `use_gate_in_kernel` | True |
+| `use_beta_sigmoid_in_kernel` | True |
+| `use_qk_l2norm_in_kernel` | True |
+| `safe_gate` | True |
+| `state_v_first` | True |
+
+Two consequences worth carrying:
+
+1. **`safe_gate=True` is mandatory**, i.e. the official inference kernel
+   *requires* K3's Eq. 5 lower-bounded decay. Independent confirmation of the
+   parameterization adopted in fork `9bc44fbd`, and a reason for K3-faithful
+   training configs to set `kda_gate_lower_bound=-5.0` rather than leave it None.
+2. **K = V = 128 rules FlashKDA out for our small debug carriers** (head_dim 16
+   or 64). A K3-faithful debug flavor has to keep head_dim 128 to exercise it at
+   all -- which is a design constraint on the downscale carrier, not just a
+   detail.
+
+Forward A/B at K=128, T=512, seed-fixed, same inputs and flags:
+**rel 5.60e-03, max-abs 4.88e-04** (FlashKDA vs Triton). A real difference, so
+any claim that switching backends is numerically free is false.
+
+Method note, recorded because it nearly produced a wrong result: an earlier run
+of this A/B reported rel 0.0. The verifier had silently rejected the
+inference-mode call (missing `state_v_first`, then missing `safe_gate`) and BOTH
+sides fell back to Triton -- a vacuous comparison that looked like a perfect
+match. When a backend is selected by a verifier, assert the verifier returned
+True before believing any A/B against it.
