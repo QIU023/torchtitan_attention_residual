@@ -282,3 +282,116 @@ unaffected.
 - 7.27 reconciliation actions (packed-MXFP4 guard flip, flavor regeneration,
   weight-sync name freeze) -- runbook lives in K3_RELEASE_IMPACT sec 4.
 - PR16/17/18 filing decisions (need explicit go-ahead; kits in Raising_PRs/).
+
+---
+
+# Execution record + corrections (2026-07-27)
+
+Worked through on box #2. Fork commit `301eab64`; PR branch
+`kimi_k3_upstream_pr` = `daab44f9` (base) + `b5abac26` (trim). Seven things the
+checklist got wrong or missed -- recorded here rather than silently patched.
+
+## C1. Ordering: items 1-3 belong on the FORK, not on the PR branch
+
+The checklist frames the whole exercise as PR-branch surgery. But items 1-3 fix
+statements that are **wrong in the shipped folder**, so they are defects on
+`attention_residual_dev` too, and two practical reasons force fork-first:
+
+- the GPU gate (item 10.4) can only run where the torch-2.12 shims exist -- see
+  C7; on the PR branch it dies after step 1;
+- doing it twice would let the fork and the PR branch drift textually.
+
+Done in that order: fork `301eab64` (44 replacements, verified) -> PR branch
+imports the already-verified folder. **Item 7 stays PR-branch-only** -- the
+scaling-law and downscale flavors are fork research assets.
+
+## C2. Item 10 gate 2's baseline is wrong
+
+Not "64 passed / 6 skipped". Measured: **85 passed + 66 subtests** on the fork,
+and **85 passed + 35 subtests** on the trimmed PR branch -- the subtest count
+tracks the flavor count because the registry sweep is parameterized over it, so
+a *dropping* subtest number is expected after item 7, not a regression.
+(A separate `tests/unit_tests/test_moe_routing_map_placement.py` adds 2, which
+is where an "87" reading comes from; that test belongs to PR16, not here.)
+
+## C3. Two more stale factual claims (same class as item 1)
+
+Both found while verifying item 1, both fixed on the fork:
+
+- `config_registry.py`: "AC off -- parallelize.py Phase 4c doesn't implement
+  it". AC **is** implemented (`ac_config.build(dump_folder).apply(model)` in
+  `parallelize_kimi_linear`) and verified under CP and TP. Off-by-default is a
+  fine choice; only the false reason was rewritten.
+- `model_configs.py` docstring: "This module does NOT yet return
+  Trainer.Config nor ModelSpec. ModelSpec integration is Phase 4c ... use the
+  Llama3-backed attn_res/config_registry.py flavors". Wrong three ways -- the
+  module has a "Trainer.Config factories" section, the `BaseModel.Config` shim
+  exists (`KimiLinearSpec` in model.py), and `attn_res/` no longer exists.
+
+Lesson for the next pass: item 1 was not a one-off. Grep for *claims* ("not
+supported", "doesn't implement", "does NOT yet", "blocked on"), not just for
+phase tags.
+
+## C4. Item 3's verify grep has a false positive
+
+`grep -niE "HANDOFF|..."` also matches the ordinary English word in
+`attn_res_model.py` ("the adapter's P2P handoff"). Use a case-sensitive
+`HANDOFF` or anchor on `HANDOFF sec`.
+
+## C5. Item 7's gate is incomplete, and its keep-list drops an ablation arm
+
+- The named gate (`test_flavor_registry_sweep.py`) is dynamic and passes either
+  way. But `test_kimi_model_spec.py` and `test_state_dict_adapter.py`
+  **hard-import** trimmed flavors -- the suite fails at *collection*. Both were
+  repointed at kept flavors of the same kind, including two LR assertions and
+  two test names that carried the old sizes (Table-2 rows 2.99e-3 / 2.02e-3 ->
+  the 48B row's 1.0e-3).
+- The keep-list omits **`48b_full_attn_res`**, which is the ablation arm the
+  Block-AttnRes claim is measured against. Kept it: 11 flavors, not 10.
+- Bonus: the trim removes all 3 **N802** findings for free (the offenders were
+  `d1280_e32_L24_N8`-style names whose capital L/N tripped the check).
+
+## C6. NEW item 11 -- the folder is not flake8-clean, which blocks gate 1
+
+**28 F401 + 2 F811 + 1 NU002** (plus E301/E241 fixed by ufmt) exist in the
+folder. Identical count at `20bd4f3a` and `301eab64`, so the doc cleanup
+introduced none, and no `# noqa` was removed. Two traps make this NOT a
+mechanical sweep:
+
+- the `F401`s in `__init__.py` / `config_registry.py` are largely
+  **re-exports** (`build_kimi_linear_config`, `SCALING_LAW_TABLE`, ...).
+  Deleting them changes the public surface -- use `__all__` or
+  `# noqa: F401`.
+- on the FORK, `N802` cannot be "fixed" by renaming: those function names ARE
+  the `--config` names the ConfigManager resolves, so renaming is an API
+  change. Suppress instead.
+
+Needs its own commit and its own bit-identical gate, since unlike items 1-3 it
+touches code lines. Left undone deliberately.
+
+## C7. Gate 10.4 result, and the limit of what the PR branch can prove here
+
+Gate 4 **passes on its own terms**: PR-branch step-1 on a single GPU is
+`loss 7.63564 / grad_norm 3.3177`, bit-identical to the fork's cp1 baseline.
+
+It then dies with `AttributeError: module 'torch.distributed' has no attribute
+'set_timeout'` -- exactly compat shim #1 from item 4. So on torch 2.12 stable
+the PR branch cannot be exercised past step 1, and fuller GPU validation of the
+PR branch needs a nightly torch. The fork-side gate is the load-bearing one;
+it was run across every touched path (seed 42, deterministic, all bit-identical
+to the values recorded at `20bd4f3a`):
+
+| cell | step-1 loss / grad_norm |
+|---|---|
+| tp2cp2pp2 (3D) | 7.62559 / 3.3709 |
+| fsdp8 | 7.58611 / 1.8625 |
+| 4D fsdp2tp2pp2ep2 | 7.64436 / 2.8285 |
+| QLoRA packed tp2 | 7.58910 / 0.1672 |
+
+## C8. The pyrefly hook cannot be satisfied locally at all
+
+It is `language: system`. Absent -> the hook fails ("Executable pyrefly not
+found"); installed from PyPI -> a version drifting from the pinned one strips
+`# pyrefly: ignore [...]` across ~20 unrelated core files (item 6 warns about
+the second half only). Both runs here used `SKIP=pyrefly-check`; it has to be
+left to CI, and gate 1 should say so.
