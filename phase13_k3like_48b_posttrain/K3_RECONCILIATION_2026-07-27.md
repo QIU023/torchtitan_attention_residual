@@ -198,3 +198,89 @@ Two further notes:
 8. Vision tower + patchmergerv2 projector + divided_fixed 3D pos emb.
 9. Re-run the whole parallelism matrix on whatever survives, and re-check the
    report's overhead definition.
+
+---
+
+## 7. Context parallelism: K3's KDA CP is NOT what we built
+
+Report sec 5.1.2, and the single most consequential infra finding of this
+reconciliation.
+
+### What K3 does
+
+Softmax attention CP exchanges KV blocks whose size **grows with sequence
+length** (the report cites Ring Attention [72] for that property). Linear
+attention instead carries a **fixed-size** recurrent state `S in R^{dk x dv}`.
+Prior linear-attention CP (LASP / LASP-2 [113,114]) has each rank compute the
+state its local tokens generate from `S = 0` and then **sums** those states --
+and the report says plainly that this **is insufficient for KDA**: the delta
+rule applies a token-dependent `M_t` to the incoming state
+(`S_t = M_t S_{t-1} + beta_t k_t v_t^T`), so a segment's effect depends on the
+state entering it and cannot be recovered from the `S = 0` result alone.
+
+**KCP** (KDA Context Parallelism) decomposes each rank's segment into two
+locally computable fragments (Eq. 17):
+
+```
+M^{T<-1}_[i] = prod_r M_r     cumulative transition,  R^{dk x dk}
+S~^{T}_[i]                    state started from S=0, R^{dk x dv}
+```
+
+Both are computable from local tokens **before** the incoming state exists, and
+they compose **associatively**, so every rank's incoming state is recovered by a
+**prefix scan**: compute the pair locally -> **one all-gather** -> replay
+preceding fragments in order with `S <- M_[j] S + S~_[j]`.
+
+Cost: a fixed-size all-gather per layer, **independent of sequence length**.
+
+### What we built, and how it differs
+
+Our 07-24 CP is **Ulysses for KDA**: one fused all-to-all per attention module
+swapping seq-sharding for head-sharding, each rank then running the full-length
+scan on its head subset. Both designs are exact. They differ in what crosses
+the wire per layer:
+
+| | our Ulysses-for-KDA | K3's KCP |
+|---|---|---|
+| what moves | q/k/v/gates/beta activations | the `(M, S~)` state fragments |
+| volume | `O(B * T * D / cp)` -- grows with T | `O(dk*dk + dk*dv)` -- fixed |
+| primitive | all-to-all | all-gather + prefix scan |
+| sequence stays sharded | no (full-T on the head subset) | yes |
+
+At 1M context the difference is orders of magnitude. For the RFC this also
+changes the framing: CP-for-KDA is no longer an open problem we solved one way,
+it is a solved problem with a published method we should match.
+
+### The actionable part: it is already in our pinned dependency
+
+Report footnote 2: "The construction builds on DeltaNet context parallelism
+[142]. The KDA implementation is available in **FLA PR #691**." That code is in
+**fla-core 0.5.1**, which we already pin:
+
+- `chunk_kda(...)` accepts **`cp_context`** (plus `safe_gate` / `lower_bound`,
+  which are Eq. 5 -- already adopted, see fork `9bc44fbd`)
+- `fla/ops/cp/context.py` -- `build_cp_context` / `FLACPContext` (per-rank token
+  range, local `cu_seqlens`, first/last-rank flags, conv halo token count)
+- `fla/ops/cp/comm.py` -- `all_gather_into_tensor`, `send_recv_fwd/bwd`
+  ("Uses all_gather"), `conv_cp_send_recv_fwd/bwd` for the short-conv halo
+- `fla/ops/cp/chunk_delta_h.py` -- `pre_scan` producing the `(m, he)` fragment
+  pair and `merge_fwd_bwd_kernel` -- i.e. Eq. 17's `(M, S~)` and the scan
+- `fla/modules/conv/cp/ops.py::causal_conv1d_cp`
+
+Integration notes for the next increment: fla's KCP is built around a **packed
+(varlen) layout** -- `build_cp_context` partitions a `cu_seqlens` range per rank
+and derives the conv halo -- whereas our training path currently passes
+`cu_seqlens=None` on fixed-length batches, so the adapter has to synthesize
+`cu_seqlens` and keep the sequence sharded rather than all-to-all'ing it.
+`kda_kcp_probe.py` in this directory is the numerical gate: it compares the
+CP path against a single-rank reference on our shapes before any model change.
+
+### What about the MLA layers?
+
+The report does **not** state K3's method for its Gated MLA layers. Ring
+Attention is cited only when characterizing softmax CP's cost in general, while
+the pre-training parallelism list in sec 5.2 cites **DeepSpeed Ulysses [50]**
+next to "Context Parallelism (CP, sec 5.1.2)". So "plain ring for the MLA
+layers" is a reasonable guess but is not what the paper says, and the citation
+trail actually points at Ulysses -- which is what our MLA CP already does.
+Resolving this needs their released attention kernels, not the report.
