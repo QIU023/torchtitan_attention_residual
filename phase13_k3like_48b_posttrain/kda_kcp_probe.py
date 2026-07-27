@@ -70,12 +70,30 @@ def main() -> None:
     sl = slice(rank * part, (rank + 1) * part)
     ctx = build_cp_context(cu, group=dist.group.WORLD)
     with torch.no_grad():
-        o_cp, s_cp = chunk_kda(
+        o_cp, _ = chunk_kda(
             q=q[:, sl], k=k[:, sl], v=v[:, sl], g=g[:, sl], beta=beta[:, sl],
-            initial_state=None, output_final_state=True,
+            # fla asserts output_final_state is unsupported under CP -- an
+            # integration constraint for the model too, whose KDA forward
+            # currently asks for the final state it never uses in training.
+            initial_state=None, output_final_state=False,
             use_qk_l2norm_in_kernel=True,
             cu_seqlens=ctx.cu_seqlens, cp_context=ctx,
         )
+
+    # CONTROL: same sharding, NO cp_context -- each rank starts from S = 0
+    # and never receives the preceding state. If the probe has discriminating
+    # power this must be visibly wrong, which is what makes the KCP result
+    # above meaningful rather than vacuous.
+    with torch.no_grad():
+        o_nocp, _ = chunk_kda(
+            q=q[:, sl], k=k[:, sl], v=v[:, sl], g=g[:, sl], beta=beta[:, sl],
+            initial_state=None, output_final_state=False,
+            use_qk_l2norm_in_kernel=True,
+            cu_seqlens=torch.tensor([0, part], dtype=torch.int32, device="cuda"),
+        )
+    gathered_nocp = [torch.empty_like(o_nocp) for _ in range(cp)]
+    dist.all_gather(gathered_nocp, o_nocp.contiguous())
+    o_nocp_all = torch.cat(gathered_nocp, dim=1)
 
     # Gather the per-rank output slices and compare against the reference.
     gathered = [torch.empty_like(o_cp) for _ in range(cp)]
@@ -89,11 +107,14 @@ def main() -> None:
         ).item()
         print(f"[KCP] cp={cp} T={T} H={H} K={K}", flush=True)
         print(f"[KCP] output  max-abs {err:.3e}  rel {rel:.3e}", flush=True)
-        if s_cp is not None and s_ref is not None:
-            serr = (s_cp.float() - s_ref.float()).abs().max().item()
-            print(f"[KCP] final state max-abs {serr:.3e}", flush=True)
-        # bf16 chunked-scan band, same tolerance the Ulysses probe used
-        print("[KCP] PASS" if rel < 5e-2 else "[KCP] FAIL", flush=True)
+        ctrl = (
+            (o_nocp_all.float() - o_ref.float()).norm() / o_ref.float().norm()
+        ).item()
+        print(f"[KCP] control (no cp_context) rel {ctrl:.3e}", flush=True)
+        # bf16 chunked-scan band, same tolerance the Ulysses probe used;
+        # and the control must be far worse, else the probe proves nothing.
+        ok = rel < 5e-2 and ctrl > 10 * max(rel, 1e-6)
+        print("[KCP] PASS" if ok else "[KCP] FAIL", flush=True)
     dist.destroy_process_group()
 
 
