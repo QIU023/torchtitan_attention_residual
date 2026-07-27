@@ -495,3 +495,52 @@ consistency; A/B vs `disable_radix_cache=True`).
 
 **Refs**: sglang #12867, #11214, #22326, #20415; PyTorch blog "Hybrid Models Meet
 SGLang"; model `moonshotai/Kimi-Linear-48B-A3B-Instruct`.
+
+## #14 — `MoE.forward`: let the router read a different tensor than the experts
+
+**Target**: `pytorch/torchtitan`, `torchtitan/models/common/moe.py`.
+**Status**: implemented on the fork (`064a6e37`); kit not written.
+
+Latent-expert MoE routes on the full-width token but dispatches a projected,
+narrower tensor to the experts. K3's Stable LatentMoE is the concrete case
+(tech report Eq. 11: `u = sum_i p_i E_i(W_down x)`, router `s_i =
+Sigmoid(W_r x_i)`), but the split is architecture-general. `MoE.forward`
+currently feeds one tensor to both, so a faithful wiring otherwise has to
+duplicate the whole routing block (SP padding, routing-map scatter, token
+counts, load-balance bias).
+
+Change is ~16 lines: an optional **keyword-only** `router_input_BLD=None`,
+defaulting to today's behaviour. Keyword-only is required, not stylistic —
+`Module._redistribute_inputs` enumerates positional parameter names and pops
+each from kwargs, so a new positional arg raises `KeyError` under EP (this bit
+us; the tp2cp2ep2 cell caught it).
+
+**Evidence**: non-latent cells bit-identical (fsdp8 7.58611/1.8625,
+tp2cp2ep2 7.64919/2.5214); latent path trains at dp2 and composes with TP2.
+
+## #15 — MoE router: expose the Top-(k+1) selection cutoff
+
+**Target**: `pytorch/torchtitan`, the token-choice router.
+**Status**: algorithm implemented + tested on the fork (`a463fa14`); the router
+hook is not wired.
+
+Auxiliary-loss-free load balancing currently nudges the expert bias by
+`gamma * sign(mean_load - load)`, where gamma trades adaptation speed against
+oscillation — and that worsens as expert pools grow (K3 runs 896 per layer).
+K3's Quantile Balancing instead *solves* for the bias, but it needs one thing
+the router does not currently return: the **(k+1)-th biased score** per token,
+i.e. the cutoff an expert must exceed to enter that token's Top-k (report
+Eq. 14; taking it from Top-(k+1) routing avoids a separate token-side
+quantile).
+
+So the ask is small and self-contained: route with Top-(k+1) and return the
+cutoff alongside the scores/ids. The balancing rule itself can then live
+outside core (ours does, in `experiments/kimi_k3/quantile_balance.py`, with a
+histogram estimator so the quantile pools across ranks by one all-reduce).
+
+**Evidence**: one QB step cuts the worst expert's deviation from the target
+load to <35% of its starting value on skewed routing; histogram counts are
+additive across shards; a common bias offset provably does not change Top-k.
+
+**Note**: file #14 and #15 separately — different reviewer surfaces, and #14
+lands standalone.
