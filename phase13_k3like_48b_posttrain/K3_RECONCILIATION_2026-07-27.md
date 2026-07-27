@@ -275,6 +275,51 @@ and derives the conv halo -- whereas our training path currently passes
 `kda_kcp_probe.py` in this directory is the numerical gate: it compares the
 CP path against a single-rank reference on our shapes before any model change.
 
+### Correction to the KCP gate: the "lossy" claim, tested
+
+FLA PR #691's own description says KCP is **lossy in outputs and gradients**
+compared with all-to-all CP. Our forward probe measured bit-exact, so that had
+to be resolved rather than left as a contradiction -- and the forward probe ran
+under `no_grad`, so the backward was untested.
+
+Tested (`kda_kcp_backward_probe.py`, fla-core 0.5.1, T=2048):
+
+| cp | dq | dk | dv | dg | dbeta |
+|---|---|---|---|---|---|
+| 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
+| 4 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
+
+So the **KDA scan is bit-exact in both directions on our shapes**, and the
+lossy claim does not reproduce there. Three candidate explanations, in order of
+likelihood:
+
+1. **Our probes bypass the short convolution.** The KDA module applies
+   ShortConv before the scan, and #691's description flags exactly this: conv1d
+   "requires additional processing -- gathering tail tokens from the previous
+   rank". `fla/modules/conv/cp/ops.py::causal_conv1d_cp` exists for it and
+   takes a `cp_context`. **Untested by us**; this is the most likely locus of
+   any loss and is the next thing to gate before integration.
+2. The claim describes the PR at merge (2026-01) and 0.5.1 (2026-06) improved
+   it. #691 first shipped in FLA v0.4.2.
+3. It describes a configuration we did not exercise (e.g. multi-sequence packing
+   where one sequence straddles ranks unevenly -- our probe uses a single
+   sequence split evenly).
+
+Do not claim "KCP is exact" without qualification. The supported claim is: the
+scan is bit-exact forward and backward for a single evenly-split sequence; the
+conv halo is unverified.
+
+### FlashKDA is NOT active in our environment
+
+FLA #852 (merged) auto-dispatches `chunk_kda` to the FlashKDA CUTLASS backend
+when `flash_kda` is importable and `FLA_FLASH_KDA != 0`. On this box
+`import flash_kda` fails and the env var is unset, so **every KDA number this
+repo has ever recorded came from the Triton path**, not FlashKDA. That matters
+twice over: vLLM's and SGLang's K3 branches both link FlashKDA, so adopting it
+would align training and inference numerics -- and it would also invalidate
+bit-identical comparisons against our recorded baselines, so it needs its own
+A/B rather than a silent dependency bump.
+
 ### What about the MLA layers?
 
 The report does **not** state K3's method for its Gated MLA layers. Ring
