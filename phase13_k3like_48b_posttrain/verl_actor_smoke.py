@@ -55,21 +55,27 @@ import torch
 
 
 def install_shims() -> None:
-    for name in ("peft", "peft.utils", "peft.utils.constants"):
+    for name in (
+        "peft", "peft.utils", "peft.utils.constants",
+        "peft.utils.save_and_load", "peft.tuners", "peft.tuners.lora",
+    ):
         m = types.ModuleType(name)
         m.__path__ = []
         sys.modules.setdefault(name, m)
     for attr in ("PeftModel", "LoraConfig", "TaskType", "PeftConfig"):
         setattr(sys.modules["peft"], attr, object)
     sys.modules["peft"].get_peft_model = lambda *a, **k: None
+    sys.modules["peft.utils.save_and_load"].get_peft_model_state_dict = (
+        lambda *a, **k: {}
+    )
+    sys.modules["peft.utils.save_and_load"].set_peft_model_state_dict = (
+        lambda *a, **k: None
+    )
 
-    import torchtitan.experiments.kimi_k3 as k3
-
-    sys.modules.setdefault("torchtitan.models.kimi_k3", k3)
-
-    from verl.workers.engine.torchtitan import utils as vu
-
-    vu._HF_MODEL_TYPE_TO_TORCHTITAN_NAME["kimi_k3"] = "kimi_k3"
+    # The QIU023/verl fork (branch kimi_k3_integration) already carries three of
+    # the four upstream gaps: the kimi_k3 / kimi_linear model_type entries, an
+    # experiments/ namespace fallback in _import_torchtitan_model_module, and the
+    # param_groups optimizer API. Only the peft stub above is still needed here.
 
 
 def main() -> None:
