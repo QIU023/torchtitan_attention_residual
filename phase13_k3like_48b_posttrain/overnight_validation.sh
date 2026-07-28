@@ -93,13 +93,15 @@ fi
 ############################################################################
 say "PHASE 3: every K3 flavor from the same seed"
 STEPS=3
+PORT_OFF=0
 for f in kimi_linear_k3mini_qat_mxfp4 kimi_linear_k3mini_qlora \
          kimi_linear_k3mini_kcp kimi_linear_k3mini_quantile_balance; do
   extra=""
   [ "$f" = "kimi_linear_k3mini_kcp" ] && extra="--training.local-batch-size 1 \
     --parallelism.context_parallel_degree 2 --parallelism.data_parallel_shard_degree 1"
   [ -z "$extra" ] && extra="--parallelism.data_parallel_shard_degree 2"
-  run "flavor_${f#kimi_linear_k3mini_}" 2 3120$RANDOM --config $f \
+  PORT=$((31200 + PORT_OFF)); PORT_OFF=$((PORT_OFF + 1))
+  run "flavor_${f#kimi_linear_k3mini_}" 2 $PORT --config $f \
       --training.steps 3 --training.global-batch-size 2 $extra
 done
 
@@ -115,7 +117,7 @@ PYTHONPATH=$TITAN timeout 1200 torchrun --nproc_per_node=2 --master_port=31401 \
 say "PHASE 5: CP numerics re-verified (per-layer, fp32)"
 for n in 2 4; do
   PYTHONPATH=$TITAN timeout 1800 torchrun --nproc_per_node=$n --master_port=3150$n \
-    "$PHASE13/mixed_cp_parity_probe.py" 512 2>&1 | grep -E "MIXED-CP (cp|layer 0|PASS|FAIL)" | tail -4
+    "$PHASE13/mixed_cp_parity_probe.py" 512 2>&1 | grep -E "MIXED-CP|Error" | tail -6
 done
 PYTHONPATH=$TITAN timeout 1200 torchrun --nproc_per_node=2 --master_port=31521 \
   "$PHASE13/conv_halo_probe.py" 512 2>&1 | grep -E "CONV-CP" | tail -4
