@@ -92,8 +92,7 @@ def main() -> None:
     ref_model, cfg = build()
     ref_loss = step(ref_model)
     ref = grads_of(ref_model)
-    del ref_model
-    torch.cuda.empty_cache()
+    _ref_keep = ref_model
 
     # ---- TP arm ----
     from torchtitan.experiments.kimi_k3.parallelize import apply_tp_kimi_linear
@@ -106,6 +105,19 @@ def main() -> None:
     tp_loss = step(tp_model)
     tp = grads_of(tp_model)
 
+    # What the TRAINER would report, on the same gradients we just materialized.
+    from torchtitan.distributed.utils import clip_grad_norm_ as titan_clip
+
+    reported_tp = titan_clip(
+        [p for p in tp_model.parameters()], max_norm=1e9, foreach=False
+    )
+    reported_ref = titan_clip(
+        [p for p in _ref_keep.parameters()], max_norm=1e9, foreach=False
+    )
+    if rank == 0:
+        print(f"[TPGRAD] trainer-reported norm: ref={float(reported_ref):.4f}  "
+              f"tp={float(reported_tp):.4f}  ratio="
+              f"{float(reported_ref)/max(float(reported_tp),1e-12):.4f}", flush=True)
     if rank == 0:
         print(f"[TPGRAD] world={world}  ref_loss={ref_loss:.6f} tp_loss={tp_loss:.6f}",
               flush=True)
