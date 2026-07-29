@@ -195,3 +195,50 @@ convert with explicit grad placements that force the tp-axis all-reduce, the way
 `attn_out * gate`, which is why `use_local_output=True` was chosen originally --
 so the fix needs the multiply and `o_proj`'s input handling adjusted together,
 and re-verified on this same single-layer measurement.
+
+## RETRACTION: the gate hypothesis is disproven, and the localization was unsound
+
+Two things are now settled, both against me.
+
+**The mechanism was wrong.** The proposed defect was that `attn_gate_proj` reads a
+REPLICATED plain `x` with a column-sharded weight, leaving `dL/dx` Partial and
+unreduced. A runtime print says `x` arrives at the gate as a **DTensor**, not a
+plain tensor:
+
+    [TPDIAG] gate input: group=set is_dtensor=True type=DTensor
+
+So DTensor's autograd redistributes that gradient itself and there is nothing to
+reduce by hand. The explicit all-reduce added for it was a no-op -- it short
+circuits on `isinstance(x, DTensor)` -- which is exactly why the measurement came
+back bit-identical (1.0649 with and without). That machinery has been removed
+rather than left as dead code that can never fire.
+
+**The localization was not sound either.** Gate-on scored 1.0649 and gate-off
+0.9801, and I read that as isolating the gate. It does not: disabling the gate
+removes a whole projection (~88M parameters at K3 scale) from the model, so the
+two arms are DIFFERENT MODELS with different gradient fields. A ratio that moves
+when you delete a large module is not evidence that the module's TP handling is
+wrong. I noted this concern in passing and then built on the comparison anyway.
+
+## Where the TP question actually stands
+
+Open. Established and still standing:
+
+* `clip_grad_norm_` reports exactly the materialized norm in every configuration,
+  so nothing is a reporting defect;
+* the whole-model gap is real and one-directional (dp2 8.496 vs dp2xtp2 2.743,
+  ratio 3.10, holding dp degree fixed);
+* it compounds with depth (layer 20 = 1.066, layer 0 = 3.613);
+* upstream llama3 under the identical measurement is 0.9915, so TP is not broadly
+  broken in this trainer;
+* KDA alone at one layer is 0.9766, i.e. clean.
+
+Not established: which module. Every "which module" answer so far came from
+comparing configurations that differ by more than the module under test.
+
+A sound next instrument has to hold the model FIXED and vary only the
+parallelism, then attribute per-parameter rather than by ablation -- for example
+compare a single `KimiMLAAttention` module with and without
+`apply_tp_kimi_linear` on identical weights and inputs, which is what the earlier
+hand-built probe did for the CP path (and which returned bit-exact there). Ablating
+modules changes the model and cannot answer it.
