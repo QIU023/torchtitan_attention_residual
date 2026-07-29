@@ -69,3 +69,50 @@ points where the TP plan converts between sharded and replicated -- the same
 class of bug as the `block_attn_res` Partial-vs-Replicate grad placement fixed
 earlier, which also produced a wrong-magnitude gradient that no loss curve
 revealed.
+
+## Decomposition (same day, after the depth profile)
+
+The ratio compounds with depth rather than being one global factor -- with KDA,
+layer 20 (nearest the loss) is 1.066 and layer 0 is 3.613, about 1.063x lost per
+layer. So the next question was which module carries it. Two diagnostic flavors
+hold everything else fixed:
+
+| configuration | dp2 | dp2xtp2 | ratio | layer-0 ratio |
+| --- | --- | --- | --- | --- |
+| k3mini (KDA + MoE) | 8.496 | 2.743 | **3.10** | 3.613 |
+| no KDA (MoE kept) | 8.933 | 5.020 | **1.78** | 1.865 |
+| dense MLA only | 18.138 | 16.227 | **1.12** | -- |
+
+Three contributors, all compounding with depth, KDA the largest.
+
+## Why this is probably not a gradient-placement bug -- and why the instrument
+## cannot settle it
+
+Dense-MLA-only is pure tensor sharding of dense matmuls, which is exactly
+equivalent mathematically, and it still shows 1.12. That residual is the tell:
+TP changes the reduction order of every matmul, which in bf16 perturbs
+activations at ~1e-3, and this model AMPLIFIES perturbations by roughly 1.6x per
+layer (measured independently in the CP parity probe). Over 21 layers that is a
+factor of ~2e4, so any perturbation saturates long before the output.
+
+Once a perturbation saturates, a whole-model gradient-norm ratio cannot separate
+"a term is missing from the backward" from "two runs diverged and amplified".
+The three numbers above are then explained without any bug: TP perturbs
+activations (bf16), MoE turns a perturbation into a discrete routing flip, and
+KDA's recurrence carries state along the sequence so it amplifies hardest. That
+ordering matches the measurements.
+
+This is the same trap as the CP logits comparison earlier in this logbook, where
+a correct path and a deliberately broken control both landed at ~0.7. The
+saturation lesson has now cost two investigations, so it is worth stating as a
+rule: in this model, any end-to-end numerical comparison across parallelism is
+uninformative beyond the first few layers.
+
+What would settle it: a SINGLE-layer TP comparison, or a first-layer-only
+gradient check, where amplification has not yet run. Until that is done, the
+honest status is "unexplained, most likely amplified divergence rather than a
+lost gradient term" -- not "TP is broken", and not "TP is fine".
+
+The one thing measured cleanly and repeatedly: `clip_grad_norm_` reports exactly
+the materialized norm in every configuration, so nothing here is a reporting
+defect.
