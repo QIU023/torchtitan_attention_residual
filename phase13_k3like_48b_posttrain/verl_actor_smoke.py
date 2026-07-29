@@ -88,11 +88,17 @@ def main() -> None:
     rank = dist.get_rank()
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
+    # VERL_SEED_CKPT lets the actor load real weights. Without it the engine
+    # reaches the checkpoint load and dies on a missing key, because
+    # /workspace/k3mini_hf carries a config and no weights.
+    seed = os.environ.get("VERL_SEED_CKPT")
     model_config = HFModelConfig(
         path="/workspace/k3mini_hf",
         load_tokenizer=False,
         trust_remote_code=True,
     )
+    if seed:
+        print(f"[VERL] seed checkpoint: {seed}", flush=True)
     if rank == 0:
         hc = model_config.hf_config
         print(
@@ -119,6 +125,24 @@ def main() -> None:
     engine_config = TorchtitanEngineConfig()
     optimizer_config = TorchtitanOptimizerConfig(lr=1e-4)
     checkpoint_config = CheckpointConfig()
+    if seed:
+        # veRL drives torchtitan's CheckpointManager; point its initial load at
+        # the seed and make it model-only, the same flags the trainer uses.
+        for attr, val in (
+            ("load_path", seed),
+            ("initial_load_path", seed),
+            ("initial_load_model_only", True),
+        ):
+            if hasattr(checkpoint_config, attr):
+                try:
+                    setattr(checkpoint_config, attr, val)
+                except Exception as e:
+                    print(f"[VERL] could not set {attr}: {e}", flush=True)
+        print(
+            "[VERL] checkpoint_config fields: "
+            f"{[a for a in ('load_path','initial_load_path','initial_load_model_only') if hasattr(checkpoint_config, a)]}",
+            flush=True,
+        )
 
     engine = TorchTitanEngineWithLMHead(
         model_config=model_config,
