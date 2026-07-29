@@ -152,3 +152,46 @@ PrepareModuleInput(use_local_output=True) boundary, and the Gated-MLA output gat
 registered as ColwiseParallel(use_local_output=True) -- both convert between
 sharded and replicated, which is the class of boundary that produced the earlier
 block_attn_res placement bug.
+
+## FOUND: the Gated-MLA output gate
+
+| 1-layer dense MLA | dp2 | dp2xtp2 | ratio |
+| --- | --- | --- | --- |
+| full (gate + AttnRes) | 10.339 | 9.709 | 1.0649 |
+| AttnRes disabled | 9.837 | 9.398 | 1.0468 |
+| **gate disabled** | 12.478 | 12.731 | **0.9801** |
+| upstream llama3 (control) | 1.529 | 1.542 | 0.9915 |
+| KDA (control) | 2.519 | 2.579 | 0.9766 |
+
+Disabling `attn_gate_proj` moves the ratio from 1.047 to 0.980 -- into the same
+band as both controls. The gate is the primary carrier.
+
+Why it is the gate, mechanically. `attn_gate_proj` is registered
+`ColwiseParallel(use_local_output=True)` and its INPUT is `x`, the replicated
+residual stream, which the module also feeds to the attention path. A colwise
+matmul on a replicated input produces a gradient w.r.t. that input which is
+PARTIAL -- each rank holds one term of a sum that must be all-reduced over the tp
+axis before it can be added to the residual's other gradient contribution. If
+that reduction is skipped, the residual keeps only 1/tp of the gate's
+contribution, which is a systematic under-count in exactly one direction, per
+layer, compounding with depth. Every symptom matches.
+
+This is the same defect shape as the `block_attn_res` fix recorded earlier in
+this logbook: "a bare to_local() defaults the backward grad placement to the
+DTensor's own placement (Replicate), which tells DTensor the gradient is already
+consistent and SKIPS the all-reduce". The gate was added later and never got the
+equivalent treatment.
+
+Note the ratio lands slightly BELOW 1 without the gate (0.980), as do both
+controls (0.9915, 0.9766). That residual is bf16 reduction-order noise and is not
+one-directional across configurations, unlike the gate's contribution.
+
+### Fix direction (not yet implemented)
+
+The gate must either keep its output in DTensor space so the chain stays
+consistent (as `q_proj` / `kv_b_proj` do with `use_local_output=False`), or
+convert with explicit grad placements that force the tp-axis all-reduce, the way
+`block_attn_res` does. The first is cleaner but changes the dtype/kind of
+`attn_out * gate`, which is why `use_local_output=True` was chosen originally --
+so the fix needs the multiply and `o_proj`'s input handling adjusted together,
+and re-verified on this same single-layer measurement.
