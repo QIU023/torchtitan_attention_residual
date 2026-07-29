@@ -116,3 +116,39 @@ lost gradient term" -- not "TP is broken", and not "TP is fine".
 The one thing measured cleanly and repeatedly: `clip_grad_norm_` reports exactly
 the materialized norm in every configuration, so nothing here is a reporting
 defect.
+
+## Single-layer measurement: it IS a defect, and it is in the MLA path
+
+Whole-model ratios were uninformative because perturbations saturate. One layer
+removes amplification entirely, and the picture inverts:
+
+| 1 layer | dp2 | dp2xtp2 | ratio |
+| --- | --- | --- | --- |
+| dense MLA | 10.339 | 9.709 | **1.0649** |
+| dense MLA, AttnRes off | 9.837 | 9.398 | **1.0468** |
+| MLA + MoE | 8.865 | 7.474 | 1.1862 |
+| KDA | 2.519 | 2.579 | **0.9766** |
+| **upstream llama3_debugmodel** | 1.529 | 1.542 | **0.9915** |
+
+KDA is CLEAN (0.977). It only looked like the largest contributor in the
+multi-layer runs because its recurrence amplifies whatever it is fed -- the
+opposite of the conclusion the depth profile suggested.
+
+The upstream llama3 control is what makes this actionable: under the identical
+measurement, in the same trainer, with the same TP degree and batch, a known-good
+model is within 0.9%. So TP itself is numerically sound here, and a ~4.7% gap in
+a single dense MLA layer is ours.
+
+AttnRes accounts for a small part of it (1.065 -> 1.047 with it disabled) but not
+the bulk, so its hand-rolled Partial-on-tp grad placement is not the main
+culprit.
+
+And 1.047^21 = 2.7, 1.065^21 = 3.7 -- which brackets the 3.10x whole-model ratio
+and matches the 3.6-3.7 seen on the attention projections. The per-layer defect
+fully explains the end-to-end number.
+
+Remaining suspects, in the MLA TP plan: the inner_attention
+PrepareModuleInput(use_local_output=True) boundary, and the Gated-MLA output gate
+registered as ColwiseParallel(use_local_output=True) -- both convert between
+sharded and replicated, which is the class of boundary that produced the earlier
+block_attn_res placement bug.
