@@ -353,3 +353,31 @@ the AttnRes rows must go flat across tp2 and tp4 like `o_proj` and
 DIFFERENT symptom (grad_norm 40k-80k under a 4D mesh), so whatever replaces it has
 to keep that case correct too -- the earlier fix is why the `Partial()` request is
 there at all.
+
+## Correction: AttnRes is one component, not the whole cause
+
+The section above says the AttnRes finding "explains the whole-model picture
+without any other mechanism". That is an overstatement, and a measurement already
+in hand contradicts it: `kimi_linear_k3mini_diag_1l_mla_noattnres`, one dense MLA
+layer with AttnRes DISABLED, gives ratio **1.0468** against 1.0649 with it. If
+AttnRes were the whole cause, disabling it would land near 1.0.
+
+The per-parameter table shows the same thing once read carefully. Calling
+`o_proj` "flat" was about its behaviour ACROSS tp degrees (1.0957 -> 1.0309, it
+does not grow), not about it being unbiased -- it carries ~5-10% like most
+parameters:
+
+    post_attention_layernorm 1.1982    ffn.gate_proj        1.1232
+    input_layernorm          1.1537    kv_a_proj_with_mqa   1.1042
+    norm                     1.1479    o_proj               1.0957
+
+So there are TWO distinct phenomena:
+
+1. **Grows with tp degree** -- only the AttnRes projections. That localization
+   stands, and it is the one thing the fixed-model / varying-tp instrument
+   isolated.
+2. **A flat ~5-10% deviation on nearly every parameter**, which does NOT grow with
+   tp and is still unexplained. Upstream deepseek_v3 shows 0.56% per layer for
+   comparison, so ours is larger, but that comparison is between different models.
+
+Fixing block_attn_res would address (1) and leave (2) untouched.
