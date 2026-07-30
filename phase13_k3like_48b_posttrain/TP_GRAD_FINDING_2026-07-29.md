@@ -303,3 +303,53 @@ TP plan -- is already what we have, so a rewrite would be cosmetic and would not
 be validatable as an improvement against any baseline. The open question is the
 backward boundary policy, which is torchtitan-specific and has no official
 reference, and which no measurement so far has isolated.
+
+## ISOLATED: the AttnRes projections, and they scale with TP degree
+
+The instrument that finally worked holds the MODEL fixed (one dense MLA layer, no
+KDA, no MoE) and varies only the TP degree, attributing per parameter instead of
+by ablation. Gradient norms, dp2 as reference:
+
+| parameter | dp2 | dp2xtp2 | dp2/tp2 | dp2xtp4 | dp2/tp4 |
+| --- | --- | --- | --- | --- | --- |
+| `final_attn_res_proj.weight` | 0.2774 | 0.6076 | **0.4565** | 0.8393 | **0.3305** |
+| `mlp_res_proj.weight` | 0.5554 | 0.6323 | **0.8784** | 1.4858 | **0.3738** |
+| `self_attn.attn_gate_proj.weight` | 0.3826 | 0.3750 | 1.0203 | 0.3688 | 1.0374 |
+| `self_attn.o_proj.weight` | 4.2243 | 3.8554 | 1.0957 | 4.0976 | 1.0309 |
+
+The AttnRes pseudo-query projections receive gradients that GROW with the TP
+degree. Every other parameter stays flat as tp goes 2 -> 4. That is a signature no
+previous measurement produced, and it comes from the only instrument so far that
+neither deletes a module nor compares two different models.
+
+Two conclusions follow immediately.
+
+**The output gate is exonerated.** `attn_gate_proj` sits at 1.02 and 1.04 across
+both degrees -- flat. The earlier gate ablation was misleading exactly as the
+retraction said, and the retraction was right.
+
+**The suspect is `block_attn_res`.** It is the one place in this model with
+hand-rolled backward grad placements: it reads `proj.weight` directly rather than
+calling the module, and requests `Partial()` on the tp axis to force an all-reduce
+that a bare `to_local()` would skip. A gradient that grows with tp degree is what
+over-reduction looks like -- the contribution is being summed across ranks that
+each already hold the full value.
+
+The scaling is not a clean 1/tp (0.4565 and 0.3305 rather than 0.5 and 0.25), so
+it is not a single uniform double-count. That is expected for a NORM: these
+tensors' gradients are part correct and part over-counted, and the norm mixes
+both. The direction and the monotonicity in tp are the signal.
+
+This also explains the whole-model picture without any other mechanism: AttnRes
+runs in EVERY layer, its error grows with tp, and 21 layers compound it -- which is
+why the end-to-end ratio was 3.10 and why it looked like it lived everywhere.
+
+### Not yet done
+
+The fix is not written. `block_attn_res`'s placement logic needs to be re-derived
+rather than patched by guess, and it has to be verified on this same instrument:
+the AttnRes rows must go flat across tp2 and tp4 like `o_proj` and
+`attn_gate_proj` already do. Note that this code was previously changed to fix a
+DIFFERENT symptom (grad_norm 40k-80k under a 4D mesh), so whatever replaces it has
+to keep that case correct too -- the earlier fix is why the `Partial()` request is
+there at all.
