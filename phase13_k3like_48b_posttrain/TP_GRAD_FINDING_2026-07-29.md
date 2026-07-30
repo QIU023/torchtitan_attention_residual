@@ -534,3 +534,51 @@ despite the module docstring at line 453 stating that every NoParallel call
 passes `(Replicate(),)`. Whatever the default resolves to is what governs the
 plain-tensor -> DTensor conversion at exactly the boundary where this defect
 lives. Check what the default is before changing it.
+
+### It is pure TP, and the boundary is one tensor wide
+
+FSDP is not involved. Dropping dp_shard to 1 reproduces the defect at the same
+magnitude (grad_norm 8.2308 / 6.8119 / 6.2441 at tp 1/2/4, ratios 1.208 and
+1.318, against 1.197 and 1.308 with dp2). Without FSDP in the picture the
+per-parameter boundary is exact:
+
+  lm_head                     1.0000  1.0000
+  norm                        1.0001  1.0000
+  ffn.latent.up               1.0000  1.0000
+  routed_experts.w1_EFD       1.0000  1.0001
+  routed_experts.w2_EDF       1.0000  1.0000
+  shared_experts.down_proj    1.0000  1.0000
+  ---- corruption enters here ----
+  ffn.latent.down             1.4646  2.0702
+  ffn._moe.router.gate        1.3941  1.6901
+  self_attn.o_proj            1.3315  1.6317
+  embed_tokens                1.4719  1.7499
+
+Median ratio/sqrt(tp): 1.008 at tp2, 0.887 at tp4.
+
+Eq. 11's chain is down -> experts -> RMSNorm -> up, so in the backward the
+experts' own weight gradients are computed correctly (1.0000) and the very next
+thing -- the gradient w.r.t. their INPUT, which is latent.down's output gradient
+-- is already wrong. The defect is one tensor wide.
+
+Also ruled out on the way: NoParallel does not accept
+``local_output_grad_placements`` at all. ``_prepare_output_fn`` ends in a bare
+``outputs.to_local()`` (distributed/tensor_parallel.py:82), so the backward
+placement defaults to the output layout, Replicate. The claim in
+kimi_k3/parallelize.py:453 that "every NoParallel call passes
+local_output_grad_placements=(Replicate(),)" describes an API that does not
+exist; that docstring needs correcting regardless of this bug.
+
+The open puzzle: under TP the whole MoE subtree is replicated (router.gate,
+latent, shared_experts are NoParallel; routed experts are DTensor(Replicate)
+to_local'd to plain), so every tp rank should compute an identical forward AND an
+identical backward, and no parameter should move at all. Something in that
+subtree is nonetheless rank-dependent. Note the forward is not quite bit-identical
+either -- loss 7.79058 / 7.79053 / 7.79052 at tp 1/2/4, whereas the PP legs were
+bit-identical at 7.71304 -- so a small rank-dependence is visible in the forward
+too, and the gradient effect is far larger than that difference would explain.
+
+Next step: instrument the gradient w.r.t. routed_input (the tensor between
+latent.down and the experts) and compare it BOTH across tp ranks and against tp1.
+That distinguishes "the ranks disagree" from "the ranks agree but a reduction is
+dropped", which the parameter-level view cannot separate.
