@@ -447,3 +447,49 @@ dispatcher. If tokens are split across tp, each rank's routed-expert gradient is
 Partial on tp -- but the experts are distributed as Replicate() and
 GroupedExperts.forward calls a bare to_local(), which skips that all-reduce.
 Needs to be verified the same way the AttnRes one was, not assumed.
+
+## The MoE defect, localized to the experts' input-side backward
+
+The earlier lead in this file -- "routed experts are Replicate() on tp and
+GroupedExperts.forward calls a bare to_local(), so the expert weight gradients
+skip an all-reduce" -- is DISPROVEN. The expert weight gradients are exact:
+
+  w1_EFD  0.9996 / 0.9998      shared_experts.gate_proj  0.9998 / 0.9999
+  w2_EDF  0.9997 / 1.0005      shared_experts.up_proj    0.9998 / 1.0000
+  w3_EFD  0.9997 / 1.0001      shared_experts.down_proj  1.0000 / 0.9999
+
+(ratio dp2/tp2 and dp2/tp4, diag_1l_mla_moe, shared seed.)
+
+What is wrong is the gradient flowing back OUT of the experts. Ordering the
+parameters along the backward path makes the boundary exact -- Eq. 11's chain is
+down -> experts -> RMSNorm -> up:
+
+  above the experts   lm_head              0.9997 / 1.0000   exact
+                      norm                 0.9995 / 1.0004   exact
+                      ffn.latent.up        0.9996 / 1.0004   exact
+  ---- routed experts ----
+  below the experts   ffn.latent.down      1.4643 / 2.1692   wrong
+                      router.gate          0.7612 / 1.3317   wrong
+                      post_attn_layernorm  1.4181 / 1.8639   wrong
+                      self_attn.o_proj     1.3164 / 1.6100   wrong
+                      embed_tokens         1.4197 / 1.6476   wrong
+
+Everything the backward reaches BEFORE the experts is exact; everything it
+reaches AFTER them is wrong. The forward is fine (step-1 loss 7.77043 / 7.77072 /
+7.77151 at tp 1/2/4), so this is purely a backward-placement defect, and it is
+one edge: the gradient w.r.t. the experts' input.
+
+Mechanism, consistent with the above but NOT yet verified: the token dispatcher
+treats the tp axis as sequence-parallel -- `wire_meshes` sets `sp_size =
+tp_mesh.size()` and `sp_rank = tp_mesh._sym_get_coordinate(0)`
+(models/common/token_dispatcher.py:212). So each tp rank runs the experts on 1/tp
+of the tokens. The forward combine reassembles them correctly. The dispatch's
+backward has to reduce each rank's contribution back onto the full token set; if
+it does not, the gradient arriving at routed_input carries only one rank's share,
+which is exactly what the table shows. Verify before fixing, the way the AttnRes
+one was.
+
+Upstream control on the same common MoE (deepseek_v3_debugmodel, tp1 vs tp2
+grad_norm): 3.7201 vs 3.6052, a 3.2% gap against our 19.7%. Upstream is not
+gradient-exact under tp either, so part of this may be shared with upstream
+rather than specific to the K3 wiring.
