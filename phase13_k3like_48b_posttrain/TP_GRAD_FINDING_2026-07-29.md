@@ -242,3 +242,64 @@ compare a single `KimiMLAAttention` module with and without
 `apply_tp_kimi_linear` on identical weights and inputs, which is what the earlier
 hand-built probe did for the CP path (and which returned bit-exact there). Ablating
 modules changes the model and cannot answer it.
+
+## The rewrite has no target: our sharding plan already IS the official one
+
+Instruction was to tear down the TP wrapper and re-port it from official K3. Doing
+that first requires knowing what the official plan is, and the answer is that ours
+already matches it.
+
+vLLM's K3 (PR #50000, `vllm/models/kimi_k3/nvidia/mla.py`) assigns:
+
+| module | vLLM | ours |
+| --- | --- | --- |
+| `q_proj` (no q-lora) | ColumnParallelLinear | ColwiseParallel |
+| `q_a_proj` / `q_a_layernorm` | ReplicatedLinear / RMSNorm | NoParallel |
+| `q_b_proj` | ColumnParallelLinear | ColwiseParallel |
+| `kv_a_proj_with_mqa` | **ReplicatedLinear** | NoParallel |
+| `kv_a_layernorm` | RMSNorm (replicated) | NoParallel |
+| `kv_b_proj` | ColumnParallelLinear | ColwiseParallel |
+| `g_proj` (output gate) | ColumnParallelLinear | ColwiseParallel |
+| `o_proj` | RowParallelLinear | RowwiseParallel |
+
+Every assignment agrees. Re-porting would produce the same file. And it could not
+have addressed the gradient question anyway: vLLM is inference-only, so the
+official sources contain **no backward path for this module at all** -- which is
+why there was never a reference to check the gradient against, and why this has
+been hard.
+
+What is genuinely torchtitan-specific, and therefore has no official counterpart,
+is the DTensor boundary policy: every module here converts to plain tensors at its
+edge (`use_local_output=True`) so PP send/recv, AttnRes block stacking and the fla
+triton kernels never see a mixed-mesh tensor. That policy is ours, it is not
+something to port, and it is the only place a difference could live.
+
+## Upstream MLA control: same phenomenon, smaller
+
+`deepseek_v3_debugmodel` has the same MLA (with q_lora_rank=0 and no output gate),
+6 layers, and is upstream-validated. Under the identical instrument:
+
+    deepseek_v3 (6 layers)   dp2 3.783382  dp2xtp2 3.658649  ratio 1.0341
+    -> per layer 1.0341^(1/6) = 1.0056, i.e. 0.56% per layer
+
+    k3mini, 1 dense MLA layer                              ratio 1.0649
+    -> 6.5% in a single layer
+
+So a known-good upstream MLA shows the SAME KIND of deviation, about 12x smaller
+per layer. Two readings are consistent with that and this measurement cannot
+separate them: either some deviation is intrinsic to MLA under TP and ours is
+worse for a reason still unidentified, or the two models differ enough (ours has
+the output gate and AttnRes; ours has 4 heads to DSv3's 16, so 2 per rank against
+8) that the per-layer numbers are not comparable.
+
+Note the same weakness as the retracted gate ablation applies here: DSv3 versus
+k3mini is a comparison between different models, not an isolation of one
+mechanism. It raises the suspicion again without establishing it.
+
+## Position
+
+No rewrite performed. The thing the instruction named as the source -- the official
+TP plan -- is already what we have, so a rewrite would be cosmetic and would not
+be validatable as an improvement against any baseline. The open question is the
+backward boundary policy, which is torchtitan-specific and has no official
+reference, and which no measurement so far has isolated.
