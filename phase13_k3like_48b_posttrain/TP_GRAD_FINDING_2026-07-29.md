@@ -493,3 +493,44 @@ Upstream control on the same common MoE (deepseek_v3_debugmodel, tp1 vs tp2
 grad_norm): 3.7201 vs 3.6052, a 3.2% gap against our 19.7%. Upstream is not
 gradient-exact under tp either, so part of this may be shared with upstream
 rather than specific to the K3 wiring.
+
+### The sequence-parallel mechanism is DISPROVEN
+
+The mechanism proposed above -- dispatcher treats tp as sequence-parallel, each
+rank runs the experts on 1/tp of the tokens, dispatch's backward fails to reduce
+-- is wrong. Two measurements:
+
+Runtime check confirms the wiring is real: the dispatcher IS
+`AllToAllTokenDispatcher` and `wire_meshes` does set `sp_size = 2` under tp2.
+
+But suppressing it changes nothing. Passing `tp_mesh=None` into `wire_meshes`
+(so `sp_size` stays 1) reproduces the defect exactly:
+
+              tp1       tp2       tp4
+  with SP    8.8086    7.3616    6.7362
+  no SP      8.8086    7.3616    6.7362     grad_norm, step 1
+
+Bit-identical. The dispatcher's tp wiring has no bearing on this defect.
+
+### What the numbers do say
+
+The deviating parameters scale as ~sqrt(tp), not 1/tp or tp. Median ratio
+divided by sqrt(tp): 0.987 at tp2 (individual params 0.97-1.04) and 0.865 at tp4
+(0.79-1.23). A sqrt(tp) norm ratio is what you get when the true gradient is a
+sum of tp near-orthogonal contributions and only one of them survives -- the
+signature of a missing reduction, not of a wrong scale factor. The looser fit at
+tp4 is consistent with the shares being partially correlated rather than
+independent.
+
+Still true and still unexplained: expert weight gradients are exact, every
+parameter the backward reaches before the experts is exact, every parameter it
+reaches after them is wrong, and the forward matches. The defect is one backward
+edge -- the gradient w.r.t. the experts' input -- and neither the expert
+to_local() nor the dispatcher's tp wiring is responsible.
+
+Next candidate, unverified: `no_par_local = NoParallel(use_local_output=True)`
+(parallelize.py:516) does not actually pass `local_output_grad_placements`,
+despite the module docstring at line 453 stating that every NoParallel call
+passes `(Replicate(),)`. Whatever the default resolves to is what governs the
+plain-tensor -> DTensor conversion at exactly the boundary where this defect
+lives. Check what the default is before changing it.
