@@ -48,13 +48,20 @@ def _dump(per_param: dict) -> None:
 
     import torch.distributed as dist
 
-    if dist.is_initialized() and dist.get_rank() != 0:
-        return
     if _DUMPED:
         return
-    _DUMPED.append(1)
     path = os.environ.get("GRADCHK_DUMP")
-    if path:
+    if not path:
+        return
+    _DUMPED.append(1)
+    rank = dist.get_rank() if dist.is_initialized() else 0
+    # Under PP each rank owns a DIFFERENT stage, so a rank-0-only dump sees
+    # only the first stage's parameters. Every rank writes a suffixed file;
+    # the comparison merges them (a parameter lives on exactly one stage,
+    # except tied embeddings, which agree by construction).
+    with open(f"{path}.r{rank}", "w") as f:
+        json.dump(per_param, f)
+    if rank == 0:
         with open(path, "w") as f:
             json.dump(per_param, f)
         print(f"[GRADCHK] per-parameter norms -> {path}", flush=True)
