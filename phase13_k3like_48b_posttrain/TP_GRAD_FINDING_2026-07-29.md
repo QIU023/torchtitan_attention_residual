@@ -381,3 +381,69 @@ So there are TWO distinct phenomena:
    comparison, so ours is larger, but that comparison is between different models.
 
 Fixing block_attn_res would address (1) and leave (2) untouched.
+
+## 2026-07-30: AttnRes fixed; remaining gap isolated to MoE
+
+### A measurement flaw invalidated the two entries above
+
+Both the "AttnRes grows with tp" table and the "no-AttnRes is 1.0468" figure were
+run WITHOUT a shared seed checkpoint. FSDP2 meta-init gives each parallel layout
+its own RNG stream, so dp2 and dp2xtp2 started from DIFFERENT WEIGHTS -- those
+runs compared models, not parallelisms. The matrix scripts already knew this
+(run_fsdp_pp_cp_ep_matrix.sh seeds explicitly and says why); the ad-hoc probe
+runs did not.
+
+A second harness hole: the probe legs passed no --dump-folder, so after the first
+leg wrote ./outputs/checkpoint/step-3 the later legs RESUMED FROM IT, ignored
+--checkpoint.initial-load-path, and exited without running a step. The main
+matrix scripts pass --dump-folder per leg and were never exposed.
+
+Both fixed in run_tp_perparam_noattnres.sh (shared seed + per-leg dump folder).
+Run-to-run noise floor of this model is 0.0000 -- bit-deterministic.
+
+### The AttnRes defect, measured properly
+
+One dense MLA layer, shared seed, varying only tp. Ratio = dp2 / dp2xTP:
+
+                            before          after
+                          tp2     tp4     tp2     tp4
+  final_attn_res_proj   0.4999  0.2501  0.9998  1.0004
+  mlp_res_proj          0.5008  0.2505  1.0016  1.0018
+  (18 other params)     1.0000  1.0000  1.0000  1.0000
+
+Exactly 1/tp, not the fuzzy trend the unseeded runs showed. grad_query is
+sum_{n,b,t} grad_logits*K with both factors replicated on tp, so every rank
+already holds the full gradient and Partial() summed tp identical copies. Fixed
+by using the default to_local() placement.
+
+Regression gate for the case Partial() was originally added for (grad_norm
+40k-80k on a 4D mesh): fsdp2 x tp2 x cp2, full k3mini, 8 GPU -> grad_norm 3.74 /
+3.82 / 3.78 over three steps. No regression. That symptom was really fixed by
+local_output_grad_placements=(Replicate(),) in parallelize.py; the Partial()
+request was a redundant second fix that overshot.
+
+### What is still wrong: MoE, not KDA, not MLA, not AttnRes
+
+Single-layer isolation, shared seed, per-parameter, max |ratio-1| over all params:
+
+  diag_1l_mla            (MLA only)        0.0004    clean
+  diag_1l_mla_noattnres  (no AttnRes)      0.0002    clean
+  diag_1l_kda            (KDA only)        0.0010    clean
+  diag_1l_mla_moe        (MLA + MoE)       1.4650    BROKEN
+
+The MoE leg deviates on EVERY parameter and grows with tp. Direction: gradients
+are too SMALL under tp (the mirror of the AttnRes bug -- an all-reduce missing
+rather than doubled). Forward is fine: step-1 loss is 7.77043 / 7.77072 / 7.77151
+at tp 1/2/4, a bf16-level spread. grad_norm at the same step is 8.8086 / 7.3616 /
+6.7362.
+
+Upstream control, same common MoE, deepseek_v3_debugmodel, tp1 vs tp2 grad_norm:
+3.7201 vs 3.6052 (3.2%). Ours at tp2 is 19.7%. Upstream is not gradient-exact
+under tp either, but ours is ~6x worse, so most of our gap is our own.
+
+Lead, not yet confirmed: apply_ep_kimi_linear runs when tp > 1 even with ep == 1
+(parallelize.py:206), and moe.parallelize() wires the tp mesh into the token
+dispatcher. If tokens are split across tp, each rank's routed-expert gradient is
+Partial on tp -- but the experts are distributed as Replicate() and
+GroupedExperts.forward calls a bare to_local(), which skips that all-reduce.
+Needs to be verified the same way the AttnRes one was, not assumed.
