@@ -582,3 +582,60 @@ Next step: instrument the gradient w.r.t. routed_input (the tensor between
 latent.down and the experts) and compare it BOTH across tp ranks and against tp1.
 That distinguishes "the ranks disagree" from "the ranks agree but a reduction is
 dropped", which the parameter-level view cannot separate.
+
+## 2026-07-31: the MoE defect was two bugs, one ours and one upstream's
+
+### Ours: the MoE latent input's gradient was declared Replicate
+
+`moe_edge_grad_probe.py` settled what the parameter-level view could not -- it
+hooks the tensor between latent.down and the experts and reports its gradient on
+EVERY rank, so "the ranks disagree" and "the ranks agree but a reduction is
+dropped" look different:
+
+  tp1                                          0.04075606
+  tp2   rank0 0.02921830, rank1 0.02839850     ranks DISAGREE
+  tp2   after all-reduce                       0.04075651   = tp1
+  tp4   after all-reduce                       0.04075698   = tp1
+
+The shares sum to the tp1 value, so the gradient is genuinely Partial and
+NoParallel's bare `to_local()` was declaring it Replicate, keeping one share.
+`_NoParallelPartialGrad` on `ffn.latent.down` fixes it:
+
+           tp1      tp2      tp4
+  before  8.2308   6.8119   6.2441     19.7% and 32.1% off
+  after   8.2308   8.2169   8.2110     0.17% and 0.24% off
+
+Applied to `down` only. `up` and `norm` are on the far side of the experts and
+receive a genuinely replicated gradient; declaring Partial there would
+over-reduce by exactly tp -- the block_attn_res failure mode.
+
+### Upstream's: the router gate, reproduced on unmodified deepseek_v3
+
+The one parameter the fix did not move is `ffn._moe.router.gate` (1.3941 / 1.6901).
+Its TP-plan entry never applies -- the module-internal MoE parallelization sets
+`ffn` to None and leaves the whole `_moe` subtree out of the plan, so the gate is
+owned by `models/common/moe_sharding.py::_router_gate_config`.
+
+This is not K3-specific. Unmodified `deepseek_v3_debugmodel`, dp1, seeded, ratio
+dp1/tp2 per parameter -- its five router gates are its five worst parameters:
+
+  layers.2 moe.router.gate.weight   1.4780
+  layers.4 moe.router.gate.weight   1.4401
+  layers.3 moe.router.gate.weight   1.4178
+  layers.5 moe.router.gate.weight   1.2109
+  layers.1 moe.router.gate.weight   1.2067
+  (next worst, ffn_norm)            1.0178
+
+All near sqrt(2), the same signature and the same magnitude as ours. Every other
+upstream parameter is within 1.8%, matching our post-fix state.
+
+Note `_router_gate_config`'s own docstring header in moe_sharding.py:238 reads
+"Router gate: dense-family TP plan with Partial output grad", but the EP-off
+branch sets out_src/out_dst to `dense_activation_placement(tp=spmd.R)` --
+Replicate. The intent recorded in the comment and the placement actually declared
+disagree, which is consistent with the measurement.
+
+Not patched here: this is `torchtitan/models/common/`, core code shared by every
+MoE model, and the repo rule is not to modify core for an experiment. It should
+go upstream as a bug report with the deepseek_v3 reproduction above, which needs
+none of our code.
