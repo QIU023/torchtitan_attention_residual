@@ -876,3 +876,47 @@ conclusion. What would settle it: measure the absolute (not relative) gradient
 difference on mlp_res_proj between tp1 and tp2. If it is ~1e-7 of the terms being
 summed, cancellation is confirmed and there is nothing to fix; if it is
 comparable to the gradient itself, a defect remains.
+
+### The cancellation hypothesis is REFUTED -- this is a real defect
+
+Measured the cancellation directly inside block_attn_res: for each call, the sum
+of |term| against |sum of terms|, where the terms are grad_logits * K whose sum
+forms the pseudo-query gradient.
+
+  layers.0 mlp_res_proj   sum|term| 1.550e+01   |sum| 1.024e+00   factor 15.1
+  others                  1.84e+00 - 2.20e-01   1.49e-01 - 3.3e-02  factor 6.0 - 13.1
+
+Six to fifteen. Not 1e5. A reduction-order change perturbs the terms by ~1e-7
+relative; through a 15x cancellation that is ~1.5e-6 in the result. The observed
+tp1-vs-tp2 difference is 2.8% to 6.4%:
+
+  parameter                     ||g_tp1||    ||g1-g2||    relative
+  final_attn_res_proj            0.409975    2.008e-02     0.0490
+  layers.0.mlp_res_proj          1.024494    6.577e-02     0.0642
+  layers.3.mlp_res_proj          0.330588    1.712e-02     0.0518
+  layers.3.attn_res_proj         0.060277    3.338e-03     0.0554
+  layers.1.attn_res_proj         0.032772    1.222e-03     0.0373
+  layers.0.attn_res_proj         0.000000    0.000e+00     exactly zero
+
+Four orders of magnitude too large for ill-conditioning to explain. So the
+hypothesis recorded in the previous section is wrong and this is a real defect.
+
+Where it must live: AttnRes alone is exact -- 21 dense layers with 8 AttnRes
+blocks sit at 4e-4, indistinguishable from the same model with AttnRes disabled.
+The gap only appears when MoE is present. mlp_res_proj's keys and values ARE the
+FFN output, so with MoE that is the MoE output. The AttnRes projections are not
+the defect, they are the most sensitive readout of it: a defect on the MoE
+output's gradient path shows up first in the parameter that reads that output
+directly.
+
+Note also layers.0.attn_res_proj takes EXACTLY zero gradient, in every run. That
+may be structurally correct (the first block has nothing preceding it to attend
+over) but it has never been checked, and a parameter that never receives gradient
+is worth confirming rather than assuming.
+
+Next: the MoE output boundary. KimiMoE.forward ends in a bare to_local() on a
+DTensor whose placements the earlier probe showed as already Replicate, so the
+redistribute branch never fires and the backward placement defaults to Replicate.
+Whether the gradient arriving there from the residual stream is genuinely
+replicated is the thing to measure -- same method as the latent-input edge, which
+is how the input-side half of this bug was found.
