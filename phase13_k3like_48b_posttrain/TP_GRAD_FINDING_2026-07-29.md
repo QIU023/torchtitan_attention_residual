@@ -781,3 +781,49 @@ Next measurement to separate them: count how many tokens change expert assignmen
 between tp1 and tp2 on one MLA+MoE layer. Zero flips with a 0.09% gradient gap
 means a placement issue remains; flips proportional to the gap means it is
 routing sensitivity and no placement fix applies.
+
+### Routing is identical across tp -- the discreteness explanation is disproven
+
+Counting expert-assignment changes on one MLA+MoE layer, token by token,
+order-insensitive:
+
+  tp2   0/1024 tokens flipped
+  tp4   0/1024 tokens flipped
+
+Routing is bit-identical. (The first attempt at this measurement reported 71%
+flips; it was wrong -- TokenChoiceTopKRouter.forward returns
+(topk_scores_BLK, topk_expert_ids_BLK, scores_BLE) and the probe compared
+out[0], the float scores, with ==. Reading out[1] gives zero flips. The score
+spread was also checked and is not near-tied: the median gap between the 2nd and
+3rd ranked expert is 4.5e-2 and only 1.66% of tokens sit below 1e-3, so
+bf16-level differences could not have flipped 71% anyway.)
+
+So the MoE gap has no discrete source, and no placement fix follows from routing.
+
+### The depth curve, and what it rules out
+
+All at dp1, pure TP, shared seed, same instrument:
+
+  layers   median |r-1| tp2   max |r-1| tp2
+    1         0.00005           0.00088
+    4         0.00162           0.05283
+    8         0.00220           0.04435
+   21         0.0054            0.1497     (diag_no_kda)
+
+against the dense control, 21 layers with no MoE at all: median 0.0000, max
+0.0004 -- flat, no depth growth whatsoever.
+
+This rules out the explanation in _diag_single_layer's docstring, that the model
+amplifies any perturbation ~1.6x per layer. If that were general the dense legs
+would grow too, and they do not: 21 dense layers stay at 4e-4. The growth is
+specific to MoE.
+
+It also does not fit simple geometric amplification of a fixed per-layer error:
+1 -> 4 layers is a 60x jump in the max (1.6^3 would be 4x), and 4 -> 8 -> 21
+then flattens. A large jump followed by saturation is the shape of something
+that reaches a ceiling, not of steady compounding.
+
+OPEN. Single-layer MoE at 8.8e-4 is plausibly bf16; four layers at 5.3e-2 is not
+explained by anything measured so far. Next step is the same one that worked
+three times already: take the 4-layer MoE leg, find the worst parameter, and walk
+the backward path around it -- do not reason about the mechanism first.
