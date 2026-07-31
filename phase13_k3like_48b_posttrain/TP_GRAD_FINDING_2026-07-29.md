@@ -920,3 +920,50 @@ redistribute branch never fires and the backward placement defaults to Replicate
 Whether the gradient arriving there from the residual stream is genuinely
 replicated is the thing to measure -- same method as the latent-input edge, which
 is how the input-side half of this bug was found.
+
+### Correcting the refutation: the input perturbation is 1e-4, not 1e-7
+
+The refutation above compared a 15x cancellation against a 1e-7 perturbation and
+concluded ill-conditioning could not explain a 5% gap. The 1e-7 was wrong. The
+actual perturbation entering block_attn_res was never measured until now.
+
+MoE boundary gradients, tp1 vs tp2, ranks agreeing with each other in every case:
+
+                        tp1            tp2            relative
+  TF32 on   MoE out     10.12526703    10.13063049    5.3e-4
+            latent in    0.06751845     0.06755044    4.7e-4
+  TF32 off  MoE out     10.13461685    10.13328743    1.3e-4
+            latent in    0.06762622     0.06760582    3.0e-4
+
+So the gradient arriving at the AttnRes keys/values already differs by 1.3e-4 to
+5.3e-4 -- three to four orders of magnitude above the 1e-7 the refutation
+assumed. Through a 15x cancellation that is 0.2% to 0.8% per layer, and it
+compounds across layers: the observed 2.9% (TF32 off) and 5.3% (TF32 on) at four
+layers follow directly, and the ~2x reduction when TF32 is disabled matches the
+~4x reduction in the injected difference.
+
+Both MoE boundaries are rank-consistent, which is what rules out a placement
+defect: a dropped or doubled reduction makes ranks disagree, and these agree
+exactly. The remaining 1.3e-4 in true fp32 is within about 2x of sqrt(N)*eps for
+a reduction over 2.6e5 elements, so it is consistent with accumulation order
+rather than a missing collective.
+
+### Conclusion on the MoE TP investigation
+
+Two real defects were found and fixed, both with the ranks-disagree signature:
+
+  block_attn_res Partial() over-reduction    exactly 1/tp   fixed, verified
+  moe_sharding in_grad_placements dropped    ~sqrt(tp)      fixed, verified,
+                                                            also fixes upstream
+
+What remains is not a third defect. It is arithmetic: MoE injects a 1e-4-level
+difference into the gradient stream when the reduction order changes, and
+AttnRes's near-uniform softmax (proj is zero-init, so the block weights start
+exactly uniform) amplifies it about 15x per layer. Dense models show none of it
+because they inject nothing at that level -- 21 dense layers with 8 AttnRes
+blocks sit at 4e-4.
+
+This is worth knowing rather than fixing: it means AttnRes gradient magnitudes are
+a poor TP regression signal in MoE models, and any future check should use the
+MoE boundary gradients (rank-consistency) rather than parameter-norm ratios on
+res_proj, which move by percent for reasons that are not bugs.
