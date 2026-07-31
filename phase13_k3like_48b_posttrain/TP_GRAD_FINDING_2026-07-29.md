@@ -639,3 +639,33 @@ Not patched here: this is `torchtitan/models/common/`, core code shared by every
 MoE model, and the repo rule is not to modify core for an experiment. It should
 go upstream as a bug report with the deepseek_v3 reproduction above, which needs
 none of our code.
+
+## After the root-cause fix: where the residual sits
+
+Single-module re-verification with the current code (shared seed, dp2 held fixed,
+only tp varies), max |ratio-1| over all parameters:
+
+  diag_1l_mla       0.0018    clean
+  diag_1l_kda       0.0010    clean
+  diag_1l_mla_moe   0.018     router.gate 0.9879 / 0.9820, the rest under 0.007
+
+MoE went from 1.465 to 0.018. KDA is and was clean, so the large A_log ratios in
+the 21-layer model are not a KDA module defect -- A_log's gradient is tiny
+(largest 0.11% of the total norm) and its ratio is dominated by near-zero values.
+
+Full K3, 21 layers, dp2 fixed: median |ratio-1| 0.80% at tp2, 0.86% at tp4,
+grad_norm 11.7447 / 11.7856 / 12.0221.
+
+The largest single-module residual is the router gate at 1.2-1.8%. Upstream
+deepseek_v3 after the same fix sits at 0.25% over 83 parameters, so 1.8% is
+unlikely to be bf16 reordering alone.
+
+Next candidate, IDENTIFIED BUT NOT VERIFIED: K3 calls the MoE as
+``self._moe(self.latent.to_latent(x), router_input_BLD=x)`` -- the router reads
+``x`` while the experts consume ``W_down x``, so they are different tensors. The
+MoE-level sharding config (moe_sharding.py:187) declares only ``x_BLD``;
+``router_input_BLD`` appears in no sharding config at all, so its placement and
+its gradient placement are undeclared on the path K3 uses. That is the same class
+of gap as the one just fixed, on the one input that only K3 supplies -- which
+would also explain why the residual is larger for us than for deepseek_v3, which
+never passes it. Verify on diag_1l_mla_moe before changing anything.
