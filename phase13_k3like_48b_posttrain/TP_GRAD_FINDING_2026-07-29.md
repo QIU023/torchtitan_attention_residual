@@ -827,3 +827,52 @@ OPEN. Single-layer MoE at 8.8e-4 is plausibly bf16; four layers at 5.3e-2 is not
 explained by anything measured so far. Next step is the same one that worked
 three times already: take the 4-layer MoE leg, find the worst parameter, and walk
 the backward path around it -- do not reason about the mechanism first.
+
+### What the 4-layer MoE gap is and is not
+
+Worst parameters, 4 layers, dp1, pure TP (ratio tp1/tpN):
+
+  layers.0.mlp_res_proj      10.44% of total grad norm   1.0528 / 1.0006
+  layers.2 router.gate        0.54%                      0.9961 / 1.0299
+  layers.1.attn_res_proj      0.33%                      0.9828 / 1.0222
+  median over 91 params                                  0.0016
+
+Four controls, run in this order:
+
+1. **Not nondeterminism.** tp2 vs tp2, identical config: max |ratio-1| =
+   0.0000000 over 91 parameters. Bit-deterministic, so the tp1-vs-tp2 difference
+   is systematic and reproducible.
+
+2. **Not routing.** 0/1024 tokens change expert assignment at tp2 or tp4.
+
+3. **Not TF32, and the dp1 legs were never true fp32.** Parameters and gradients
+   are float32 at dp1 (101/101), but torch.backends.cuda.matmul fp32_precision is
+   'tf32' -- 10 mantissa bits -- and torchtitan's determinism setup leaves
+   allow_tf32 True, overriding a flag set before it runs. Forcing it off at the
+   driver (NVIDIA_TF32_OVERRIDE=0) does change the numbers, so the override took
+   effect, but not the magnitude:
+
+     TF32 on    max tp2 0.0528  tp4 0.0299   median 0.00162
+     TF32 off   max tp2 0.0288  tp4 0.0515   median 0.00154
+
+   Same order, and the identity of the worst parameter swaps between router.gate
+   and mlp_res_proj. Magnitude invariant to precision while the ranking reshuffles
+   is the behaviour of an ill-conditioned quantity, not of a fixed defect.
+
+4. **Not depth amplification in general.** 21 dense layers stay at 4e-4 with no
+   growth, so the model does not amplify perturbations ~1.6x per layer as
+   _diag_single_layer's docstring assumes. The growth is MoE-specific.
+
+The parameters that carry the deviation are the same three kinds every time:
+AttnRes pseudo-queries (mlp_res_proj, attn_res_proj) and router gates. Both
+compute gradients as differences of nearly equal quantities -- the AttnRes
+softmax starts uniform because proj is zero-init, so grad_logits =
+w*(dL - sum(w*dL)) cancels to near zero. Under cancellation a reduction-order
+change that is 1e-7 in absolute terms becomes percent-level in relative terms,
+which is exactly the pattern: median 0.15%, max 3-5%, always on those parameters.
+
+That is a hypothesis consistent with all four controls, NOT a verified
+conclusion. What would settle it: measure the absolute (not relative) gradient
+difference on mlp_res_proj between tp1 and tp2. If it is ~1e-7 of the terms being
+summed, cancellation is confirmed and there is nothing to fix; if it is
+comparable to the gradient itself, a defect remains.
