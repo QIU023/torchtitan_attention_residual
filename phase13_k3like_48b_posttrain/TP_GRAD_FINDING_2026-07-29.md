@@ -696,3 +696,52 @@ a small-magnitude gradient passing through two nonlinearities -- consistent with
 either a residual placement issue or genuine bf16 sensitivity. Distinguishing
 those needs an fp32 run, which is the cheapest next measurement: if the gap
 survives in fp32 it is a placement bug, if it collapses it is precision.
+
+## The router residual is precision, not placement -- but 21 layers are not clean
+
+Re-measuring diag_1l_mla_moe at dp1 (no FSDP, so params stay fp32) instead of
+dp2 settles the precision-vs-placement question:
+
+  max |ratio-1|   dp2: 0.018 (router.gate 0.9879 / 0.9820)
+                  dp1: 0.0009 / 0.0005  (router.gate 0.9991 / 0.9995)
+
+With FSDP's bf16 mixed-precision cast out of the picture, TP on one MLA+MoE layer
+is exact. The 1.2-1.8% was bf16, introduced by the cast interacting with TP's
+different accumulation order -- not a placement bug.
+
+### But the multi-layer model is a different story
+
+21 layers, all-MLA (diag_no_kda, chosen because the KDA shmem limit blocks pure
+TP on the real flavor), dp1, pure TP, 458 parameters:
+
+  median |ratio-1|   tp2 0.0054   tp4 0.0047
+  max                tp2 0.1497   tp4 0.1932
+
+and the worst are not negligible parameters:
+
+  parameter                        |grad|   % of total   /tp2     /tp4
+  layers.0.mlp_res_proj            1.0633     7.85%     0.9260   0.8221
+  layers.1.mlp_res_proj            0.6194     4.57%     1.1095   1.1910
+  layers.1.attn_res_proj           0.1906     1.41%     0.9106   0.8068
+  embed_tokens                     4.4453    32.81%     0.9577   0.9782
+  layers.0.kv_a_proj_with_mqa      3.8017    28.06%     0.9481   0.9797
+
+The 42 AttnRes projections together carry 9.6% of the model's gradient norm.
+
+### What this says about the AttnRes fix
+
+It was verified ONLY on a single-layer instrument, and a single layer
+under-exercises block_attn_res: with one block the softmax over the block axis is
+nearly degenerate, so the pseudo-query gradient path the multi-layer model uses is
+barely exercised. "All parameters 1.0000 at tp2 and tp4" was true of what was
+measured and does not extend to 21 layers, where the AttnRes projections are the
+worst weight-carrying parameters under pure TP.
+
+The bare to_local() that replaced the Partial() request may therefore be right for
+the one-block case and wrong once there are several blocks -- some contributions
+to the pseudo-query gradient may genuinely be partial across tp. That has to be
+measured on a multi-layer instrument, not reasoned about.
+
+Next: build the same per-parameter instrument at 2 and 4 layers (enough for
+several AttnRes blocks, small enough to read), confirm AttnRes is the cause by
+comparing against diag_no_kda with AttnRes disabled, then re-derive the placement.
