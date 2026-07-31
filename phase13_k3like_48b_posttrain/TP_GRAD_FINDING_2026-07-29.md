@@ -745,3 +745,39 @@ measured on a multi-layer instrument, not reasoned about.
 Next: build the same per-parameter instrument at 2 and 4 layers (enough for
 several AttnRes blocks, small enough to read), confirm AttnRes is the cause by
 comparing against diag_no_kda with AttnRes disabled, then re-derive the placement.
+
+### Correction: AttnRes is fine at depth. The residual is MoE amplified by depth.
+
+The previous section blamed the 21-layer deviation on AttnRes, reasoning that the
+single-layer instrument pins ``num_blocks=1`` and so under-exercises
+block_attn_res. The reasoning about the instrument is right; the attribution was
+wrong. Measured, dp2 for the multi-block legs and dp1 pure TP for the 21-layer
+ones, max |ratio-1| over all parameters:
+
+  4 layers, AttnRes off (control)      0.0017
+  4 layers, 2 AttnRes blocks           0.0011
+  8 layers, 4 AttnRes blocks           0.0023
+  21 layers, 8 AttnRes blocks          0.0004
+  21 layers, AttnRes off (control)     0.0003
+
+AttnRes at full depth with 8 real blocks is exact, and indistinguishable from the
+same model with AttnRes disabled. The fix holds.
+
+What differs in the leg that showed 0.1497/0.1932 is MoE: ``diag_no_kda`` is
+21 layers of MLA + MoE + AttnRes, while these new flavors set
+``first_k_dense_replace=num_layers`` and are dense throughout. So the residual is
+the MoE path, and it is a depth effect: one MLA+MoE layer at dp1 sits at 0.0009,
+and this model amplifies perturbations ~1.6x per layer, which over 21 layers turns
+0.09% into saturation.
+
+Whether that per-layer 0.09% is a placement bug or genuine sensitivity is still
+open, but there is a specific reason to suspect the latter here: routing is
+DISCRETE. topk over the router scores is not continuous, so a bf16-level
+difference in a score can flip a token to a different expert, which changes that
+token's gradient discontinuously rather than by a small amount. That mechanism
+does not exist in the dense legs above, which are exact.
+
+Next measurement to separate them: count how many tokens change expert assignment
+between tp1 and tp2 on one MLA+MoE layer. Zero flips with a 0.09% gradient gap
+means a placement issue remains; flips proportional to the gap means it is
+routing sensitivity and no placement fix applies.
