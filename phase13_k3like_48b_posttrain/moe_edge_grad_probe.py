@@ -1,0 +1,78 @@
+"""Measure the gradient on the ONE tensor the MoE tp defect lives on.
+
+The parameter-level view cannot separate "the tp ranks disagree" from "the ranks
+agree but a reduction is dropped" -- both show up as a wrong parameter gradient.
+This hooks the tensor between latent.down and the experts (the MoE's latent
+input) and reports its gradient norm ON EVERY RANK, so the two cases look
+different: disagreement shows as ranks differing from each other, a dropped
+reduction shows as every rank agreeing with each other but not with tp1.
+
+Usage: torchrun ... moe_edge_grad_probe.py <the usual train args>
+"""
+
+from __future__ import annotations
+
+import runpy
+import sys
+
+import torch
+
+
+def _install() -> None:
+    import torch.distributed as dist
+
+    from torchtitan.experiments.kimi_k3.model import KimiMoE
+
+    original = KimiMoE.forward
+    seen: list[int] = []
+
+    def patched(self, x):
+        if self.latent_size is not None and not seen:
+            latent_in = self.latent.to_latent(x)
+
+            def _hook(g):
+                rank = dist.get_rank() if dist.is_initialized() else 0
+                import os
+                if os.environ.get("MOEEDGE_ALLREDUCE") and dist.is_initialized():
+                    # If the true gradient is the SUM of the per-rank shares,
+                    # all-reducing here must reproduce the tp1 value exactly.
+                    g = g.clone()
+                    dist.all_reduce(g)
+                print(
+                    f"[MOEEDGE] rank={rank} grad_latent_input_norm="
+                    f"{g.detach().float().pow(2).sum().sqrt().item():.8f} "
+                    f"shape={tuple(g.shape)} type={type(g).__name__}",
+                    flush=True,
+                )
+                return g
+
+            if latent_in.requires_grad:
+                latent_in.register_hook(_hook)
+                seen.append(1)
+            out = self._moe(latent_in, router_input_BLD=x)
+            if isinstance(out, torch.Tensor) and hasattr(out, "placements"):
+                print(
+                    f"[MOEEDGE] moe_out placements={out.placements} "
+                    f"mesh={out.device_mesh.mesh_dim_names}",
+                    flush=True,
+                )
+            from torch.distributed.tensor import DTensor, Replicate
+
+            if isinstance(out, DTensor):
+                if any(not p.is_replicate() for p in out.placements):
+                    out = out.redistribute(
+                        placements=[Replicate()] * len(out.placements)
+                    )
+                out = out.to_local()
+            out = self.latent.from_latent(out)
+            if self.shared_experts is not None:
+                out = out + self.shared_experts(x)
+            return out
+        return original(self, x)
+
+    KimiMoE.forward = patched
+
+
+_install()
+sys.argv[0] = "torchtitan.train"
+runpy.run_module("torchtitan.train", run_name="__main__", alter_sys=True)
