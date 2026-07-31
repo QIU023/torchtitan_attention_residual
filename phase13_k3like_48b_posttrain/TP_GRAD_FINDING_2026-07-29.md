@@ -669,3 +669,30 @@ its gradient placement are undeclared on the path K3 uses. That is the same clas
 of gap as the one just fixed, on the one input that only K3 supplies -- which
 would also explain why the residual is larger for us than for deepseek_v3, which
 never passes it. Verify on diag_1l_mla_moe before changing anything.
+
+### router_input_BLD is DISPROVEN
+
+The undeclared second input is not the cause. Hooking it directly:
+
+  tp1                                      0.01914334
+  tp2   rank0 0.01914365, rank1 0.01914365
+
+The ranks agree with each other and match tp1 to 1.6e-5 relative. So even though
+``router_input_BLD`` appears in no sharding config, its gradient comes back
+correct on the path K3 uses. (The declaration gap is still real and worth closing
+for clarity, but it is not this bug.)
+
+That narrows the router gate's remaining 1.2-1.8% to its OUTPUT side.
+``grad_W_gate = grad_scores^T @ router_input``, and the right factor is now
+verified clean, so the error is in ``grad_scores`` -- the gradient flowing back
+into the gate from the MoE body, through sigmoid/softmax, expert_bias,
+route_norm and route_scale before reaching the local_map region whose
+in_grad_placements were just fixed.
+
+Note the size and shape of what is left: the gate's own gradient norm is 0.1352
+against a model total of 11.74, the deviation is 1.2% at tp2 and 1.8% at tp4, and
+it is monotonic in tp with the tp legs slightly LARGER. Small, systematic, and on
+a small-magnitude gradient passing through two nonlinearities -- consistent with
+either a residual placement issue or genuine bf16 sensitivity. Distinguishing
+those needs an fp32 run, which is the cheapest next measurement: if the gap
+survives in fp32 it is a placement bug, if it collapses it is precision.

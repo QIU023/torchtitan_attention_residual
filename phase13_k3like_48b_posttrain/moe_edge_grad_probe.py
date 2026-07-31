@@ -49,7 +49,28 @@ def _install() -> None:
             if latent_in.requires_grad:
                 latent_in.register_hook(_hook)
                 seen.append(1)
-            out = self._moe(latent_in, router_input_BLD=x)
+            # K3 passes a SECOND input the sharding config never declares:
+            # the router reads x while the experts consume W_down x. Hook it
+            # too -- if its gradient is Partial and declared Replicate, the
+            # ranks disagree and all-reducing recovers the tp1 value.
+            router_in = x
+            if router_in.requires_grad:
+
+                def _rhook(g):
+                    rank = dist.get_rank() if dist.is_initialized() else 0
+                    import os
+                    if os.environ.get("MOEEDGE_ALLREDUCE") and dist.is_initialized():
+                        g = g.clone()
+                        dist.all_reduce(g)
+                    print(
+                        f"[MOEEDGE] rank={rank} grad_ROUTER_input_norm="
+                        f"{g.detach().float().pow(2).sum().sqrt().item():.8f}",
+                        flush=True,
+                    )
+                    return g
+
+                router_in.register_hook(_rhook)
+            out = self._moe(latent_in, router_input_BLD=router_in)
             if isinstance(out, torch.Tensor) and hasattr(out, "placements"):
                 print(
                     f"[MOEEDGE] moe_out placements={out.placements} "
