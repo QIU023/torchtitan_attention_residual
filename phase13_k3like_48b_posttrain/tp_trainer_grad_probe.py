@@ -48,13 +48,22 @@ def _dump(per_param: dict) -> None:
 
     import torch.distributed as dist
 
-    if _DUMPED:
-        return
     path = os.environ.get("GRADCHK_DUMP")
     if not path:
         return
+    # Dump every step up to GRADCHK_STEPS (default 1). Step 1 from a cold seed is
+    # the LEAST informative point in training: everything zero-initialized is
+    # still zero, so LoRA's B contributes nothing, the AttnRes softmax is exactly
+    # uniform, and the optimizer has no state. Those paths only become
+    # measurable once they have been updated at least once.
+    n_max = int(os.environ.get("GRADCHK_STEPS", "1"))
+    step = len(_DUMPED) + 1
+    if step > n_max:
+        return
     _DUMPED.append(1)
     rank = dist.get_rank() if dist.is_initialized() else 0
+    if n_max > 1:
+        path = f"{path}.s{step}"
     # Under PP each rank owns a DIFFERENT stage, so a rank-0-only dump sees
     # only the first stage's parameters. Every rank writes a suffixed file;
     # the comparison merges them (a parameter lives on exactly one stage,
