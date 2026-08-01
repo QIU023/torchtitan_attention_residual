@@ -50,3 +50,37 @@ measures wrong.
 Not yet diagnosed: whether `_tp_style` and `_tp_mesh` are set as the branch
 assumes for o_proj, whether the Partial request fires at all, and why kv_b_proj
 is affected at tp4 but not tp2. Measure before changing, as with the others.
+
+## Diagnosed: the explicit TP path never runs
+
+Runtime inspection under tp2:
+
+  [LORA] KimiLoRALinear style=None mesh=False
+         x=DTensor(Replicate(),) lora_a=DTensor(Replicate(),) lora_b=DTensor(Shard(0),)
+
+`_tp_style` is None and `_tp_mesh` is unset, so the entire colwise/rowwise branch
+in `KimiLoRALinear.forward` -- the one carrying the explicit
+`to_local(grad_placements=(Partial(),))` calls and the docstring about making the
+tp reductions happen -- is dead code in this configuration.
+
+Both attributes are assigned in exactly one place (lora.py:287-288), inside the
+function that distributes a **packed-MXFP4** base. So the hand-written TP handling
+only activates when the base is packed. Plain LoRA and QAT LoRA under TP fall
+through to generic DTensor dispatch on parameters that were distributed
+elsewhere (lora_a Replicate, lora_b Shard(0)), and that fallback is what measures
+wrong: o_proj.lora_b at 2.2726 (tp2) and 3.2584 (tp4).
+
+So the earlier worry -- that lora.py's `Partial()` requests repeat the
+block_attn_res over-reduction -- was aimed at code that never executes. The real
+defect is the opposite: the intended reduction is absent because the path that
+would perform it is gated behind packed-MXFP4.
+
+Two things to establish before fixing, neither done yet:
+
+1. Whether the packed-MXFP4 path (where `_tp_style` IS set) measures correct. If
+   it does, the fix is to set the attributes for the non-packed case too. If it
+   does not, the `Partial()` requests need re-deriving first -- and they cite a
+   justification that was disproven.
+2. Whether `lora_b` being Shard(0) is right for a rowwise layer. The probe caught
+   one module; o_proj is rowwise and its B should shard on the input axis, not
+   dim 0. If the distribution itself is wrong, no grad_placement fixes it.
