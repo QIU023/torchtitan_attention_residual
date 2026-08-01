@@ -84,3 +84,44 @@ Two things to establish before fixing, neither done yet:
 2. Whether `lora_b` being Shard(0) is right for a rowwise layer. The probe caught
    one module; o_proj is rowwise and its B should shard on the input axis, not
    dim 0. If the distribution itself is wrong, no grad_placement fixes it.
+
+## The gating is deeper than the attribute -- first fix attempt was a no-op
+
+Setting `_tp_style`/`_tp_mesh` from the plan's placements changed nothing: the
+numbers came back bit-identical (o_proj.lora_b 2.2726 / 3.2584, all-param max
+1.27261 / 2.25842, median 0.02046). Reverted rather than left in as a no-op.
+
+The reason is in `KimiLoRALinear.forward`:
+
+    if self._quantize_base == "nf4":
+        ...
+    elif self._quantize_base == "mxfp4":
+        if getattr(self, "_tp_style", None) is not None:
+            return self._forward_packed_tp(x)
+
+`_forward_packed_tp` is reachable only when the base is **mxfp4**. The attribute
+is a second gate inside that branch, not the gate. So the explicit TP handling --
+the colwise/rowwise split and every `grad_placements` in it -- exists for exactly
+one configuration: an mxfp4-packed base. nf4 and unquantized LoRA under TP have
+no explicit handling at all, and that is the configuration measuring wrong.
+
+The parameter distribution is not the problem. Read off at runtime it is exactly
+right for every projection type:
+
+  colwise (gate_proj, up_proj, q_b_proj, kv_b_proj, attn_gate_proj)
+      lora_a Replicate       lora_b Shard(0)
+  rowwise (down_proj, o_proj)
+      lora_a Shard(1)        lora_b Replicate
+  NoParallel (latent down/up, q_a_proj, kv_a_proj_with_mqa)
+      both Replicate
+
+Rowwise is where the defect shows, and the shape of it follows from that layout:
+lora_b is Replicate while each rank computes its contribution from its own input
+shard, so grad_b is Partial across tp and needs an all-reduce that nothing
+performs. That is why o_proj.lora_b, and not the colwise adapters, is what moves.
+
+So the fix is not to enable an existing path but to give the non-packed path the
+same treatment the packed one already has. That is a real change to a forward
+that three configurations share (nf4, mxfp4, unquantized), so it needs deriving
+and then verifying on the warm-checkpoint instrument per configuration -- not a
+one-line enable. Not attempted here.
