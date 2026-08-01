@@ -87,3 +87,28 @@ A parsing trap worth recording, since the first run of this was garbage: every
 rank prints the loss line, so a tp2 run emits 16 values for 8 steps. Comparing
 that positionally against an 8-value reference produced max |dloss| of 1.4 to 2.6
 and looked like catastrophic divergence. Dedupe by step number first.
+
+## EP combinations, and what 5D would need
+
+EP is carved out of the data-parallel axes rather than costing extra ranks, so
+these fit in 8 GPUs:
+
+  ep2 x tp2 x pp2    max |dloss| 0.10053   final 5.03486
+  ep2 x tp2 x cp2    max |dloss| 0.09807   final 5.03310
+  fsdp2 x tp2 x cp2  max |dloss| 0.09920   final 5.03531
+
+The controlled pair is the last two: ep2_tp2_cp2 and fsdp2_tp2_cp2 differ ONLY in
+whether EP is on, and their curves differ by 0.001-0.002 per step. EP contributes
+essentially nothing.
+
+All three sit near 0.10 because they share dp_shard=2, which splits the same
+global batch into 2 accumulation steps instead of the reference's 4. That is a
+different bf16 accumulation structure, not a parallelism error. Measured against a
+dp1 reference the number is therefore an OVERSTATEMENT; the right comparison is
+against a dp_shard=2 reference, which has not been run.
+
+**Full 5D has NOT been tested and is not runnable here.** All of dp_shard, tp, pp
+and cp at degree 2 needs 16 GPUs (EP does not add to the product, but the other
+four multiply). The most that fits in 8 is three of them plus dp. So the coverage
+claim is: every pair and triple of {tp, pp, cp} with and without EP, not the full
+product.

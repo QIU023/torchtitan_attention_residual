@@ -62,6 +62,12 @@ run tp2_pp2_cp2    8 4 --parallelism.tensor_parallel_degree 2 --parallelism.pipe
                        --parallelism.context_parallel_degree 2
 run fsdp2_tp2_cp2  8 2 --parallelism.data_parallel_shard_degree 2 --parallelism.tensor_parallel_degree 2 \
                        --parallelism.context_parallel_degree 2
+# EP is carved out of the data-parallel axes rather than costing extra ranks, so
+# these fit in 8 GPUs. Full 5D (dp_shard x tp x pp x cp all >= 2) needs 16.
+run ep2_tp2_pp2    8 4 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 \
+                       --parallelism.tensor_parallel_degree 2 --parallelism.pipeline_parallel_degree 2
+run ep2_tp2_cp2    8 2 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 \
+                       --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
 
 echo; echo "########## max |loss - ref| over the curve ##########"
 python3 - <<PY
@@ -71,6 +77,7 @@ legs = {
  "tp2": "${CURVE[tp2]}", "tp2_pp2": "${CURVE[tp2_pp2]}",
  "tp2_cp2": "${CURVE[tp2_cp2]}", "tp2_pp2_cp2": "${CURVE[tp2_pp2_cp2]}",
  "fsdp2_tp2_cp2": "${CURVE[fsdp2_tp2_cp2]}",
+ "ep2_tp2_pp2": "${CURVE[ep2_tp2_pp2]}", "ep2_tp2_cp2": "${CURVE[ep2_tp2_cp2]}",
 }
 r=[float(x) for x in ref]
 print(f"ref curve: {' '.join(f'{v:.5f}' for v in r)}")
