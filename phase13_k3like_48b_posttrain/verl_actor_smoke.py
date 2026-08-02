@@ -128,7 +128,23 @@ def build_engine():
         TorchTitanEngineWithLMHead,
     )
 
-    engine_config = TorchtitanEngineConfig()
+    # Parallel degrees come from the environment so the GRPO smoke can sweep
+    # them without a second copy of this setup. The config is a frozen
+    # dataclass, so they go in at construction rather than by assignment.
+    par = {}
+    for env, attr in (
+        ("VERL_DP_SHARD", "data_parallel_shard_size"),
+        ("VERL_TP", "tensor_parallel_size"),
+        ("VERL_PP", "pipeline_parallel_size"),
+        ("VERL_CP", "context_parallel_size"),
+        ("VERL_EP", "expert_parallel_size"),
+    ):
+        v = os.environ.get(env)
+        if v:
+            par[attr] = int(v)
+    engine_config = TorchtitanEngineConfig(**par)
+    if rank == 0 and par:
+        print(f"[VERL] parallel: {par}", flush=True)
     optimizer_config = TorchtitanOptimizerConfig(lr=1e-4)
     checkpoint_config = CheckpointConfig()
     if seed:
