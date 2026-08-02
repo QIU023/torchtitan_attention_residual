@@ -236,3 +236,53 @@ not among them.
 
 All three edits reverted. Four hypotheses tested and killed so far; the defect
 is unchanged at 2.2726 / 3.2584 on o_proj.lora_b.
+
+## ROOT CAUSE CONFIRMED: o_proj is the only site that receives a plain x
+
+Enumerating all 139 LoRA modules by name with their branch conditions:
+
+  module                x_is_dt   base_out_is_dt   lora_a          lora_b
+  o_proj                FALSE     False            Shard(1)        Replicate
+  down_proj             True      False            Shard(1)        Replicate
+  gate_proj / up_proj   True      True             Replicate       Shard(0)
+  q_b_proj / kv_b_proj  True      True             Replicate       Shard(0)
+  attn_gate_proj        True      False            Replicate       Shard(0)
+  q_a_proj / kv_a_proj  True      True             Replicate       Replicate
+  latent down / up      True      True             Replicate       Replicate
+
+`o_proj` is the ONLY module where x arrives plain -- the MLA attention output is
+built in plain-tensor land. It is also rowwise, so lora_a is Shard on the
+contracted axis. Unwrapping both adapters therefore makes the product each rank's
+PARTIAL contribution with no DTensor left to sum it, and RowwiseParallel
+all-reduces the base only, so the adapter rides outside it.
+
+That is the defect, and it explains why only o_proj.lora_b moved: down_proj is
+also rowwise but keeps a DTensor x, so DTensor performs the reduction there.
+
+The earlier "x arrives plain" hypothesis was therefore RIGHT, and I killed it on
+bad evidence -- the probe that checked it happened to sample down_proj, where x is
+a DTensor, and I generalized from one module to all of them.
+
+## Both reduction implementations are half-fixes
+
+Adding the missing reduction fixes one adapter and breaks the other, depending on
+how it is spelled:
+
+                                          o_proj.lora_a      o_proj.lora_b
+  no reduction (as shipped)               ~1.0               2.2726 / 3.2584
+  funcol all_reduce(sum)                  0.4926 / 0.2454    fixed
+  DTensor Partial -> Replicate            fixed              1.7657 / 3.0338
+
+funcol's 0.4926 / 0.2454 is exactly 1/tp: its backward re-sums the gradient
+rather than passing it through, so lora_a ends up tp times too large. Switching
+to a DTensor redistribute fixes that and returns lora_b to being short.
+
+So the two adapters need different backward treatment on this path -- lora_a is
+the local shard of a Shard(1) parameter and its gradient is already complete per
+rank, while lora_b is Replicate and its gradient is a sum across ranks. A single
+reduction on their shared output cannot satisfy both, which is why each spelling
+fixes one.
+
+All experimental edits reverted; the repo is at the shipped behaviour. The fix
+needs to be derived for the two adapters separately and verified on the
+warm-checkpoint instrument, per adapter, not by iterating on a single collective.
