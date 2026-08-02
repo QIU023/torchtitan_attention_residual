@@ -48,66 +48,87 @@ def group_relative_advantages(rewards: torch.Tensor) -> torch.Tensor:
 
 
 def _policy_gradient_step(engine, rows, adv) -> float:
-    """Backprop the GRPO objective through the actor and report the grad norm.
+    """Backprop the GRPO objective through veRL's engine and report the norm.
 
-    -(advantage * mean logprob of the sequence), summed over the group. The
-    sampler is stubbed -- sequences are the dummy answers rather than model
-    samples -- because what is under test is that the objective reaches the
-    actor's parameters through veRL's engine, not the sample quality. A real
-    loop replaces the token source and nothing else here.
+    Goes through ``forward_backward_batch``, not a direct module call. That is
+    what makes TP and PP reachable: under TP the wrapped model expects a DTensor
+    input and a plain one raises "mixed torch.Tensor and DTensor", and under PP
+    the stages have to be driven by the pipeline schedule. The engine owns both,
+    plus micro-batching and the SPMD mesh context.
+
+    ``use_dynamic_bsz`` is turned OFF. The default path routes through
+    ``rearrange_micro_batches``, whose token-budget bookkeeping did not hold for
+    this batch; the fixed-size path only needs ``micro_batch_size_per_gpu`` and
+    keeps the whole batch in one micro batch, which is what the smoke wants
+    anyway.
+
+    The sampler is stubbed -- sequences are deterministic ids, not model samples
+    -- so this establishes that the objective reaches the actor's parameters,
+    not sample quality.
     """
     import torch.nn.functional as F
+    from tensordict import TensorDict
 
-    if len(engine.module) > 1:
-        # PP splits the model into stages that must be driven by the pipeline
-        # schedule; calling a stage directly hands stage 1 the raw token ids
-        # instead of stage 0's hidden states ("normalized_shape=[512] ... got
-        # input of size [1, 8, 128]").
-        #
-        # engine.forward_backward_batch is the right entry -- it owns the
-        # schedule, micro-batching and the SPMD mesh context -- but its
-        # TensorDict contract did not come together in four attempts here
-        # (max_token_len_per_gpu lives on the batch rather than the config, and
-        # the batch then fails with "values expected sparse tensor layout").
-        # Rather than keep guessing at it, the direct path stays as the
-        # verified one and PP is recorded as unsupported by this smoke.
-        raise NotImplementedError(
-            "GRPO smoke does not support PP: needs engine.forward_backward_batch, "
-            "whose batch contract is not yet worked out. See "
-            "GRPO_PARALLEL_STATUS."
+    from verl.utils import tensordict_utils as tu
+
+    n_prompt, n_group = adv.shape
+    n_seq, seq_len = n_prompt * n_group, 128  # KDA asserts T > 64 in training
+    device = torch.device(f"cuda:{torch.cuda.current_device()}")
+
+    g = torch.Generator(device="cpu").manual_seed(0)
+    flat = torch.randint(0, 2016, (n_seq, seq_len), generator=g).to(device)
+    a = adv.reshape(-1).to(device)
+
+    # veRL's engine runs in NO_PADDING mode: prepare_model_inputs calls
+    # .values() and .offsets() on input_ids, so the batch has to carry NESTED
+    # tensors (variable-length sequences packed jagged), not padded strided
+    # ones. Turning the un-padding off is not an alternative -- the rest of the
+    # path assumes the same layout.
+    def _nest(t):
+        return torch.nested.nested_tensor(
+            list(t.unbind(0)), layout=torch.jagged, device=device
         )
 
-    module = engine.module[0]
-    device = next(module.parameters()).device
-    vocab = module.vocab_size if hasattr(module, "vocab_size") else 2016
+    ids = _nest(flat)
 
-    # Deterministic token ids, so the step is reproducible without a tokenizer.
-    # Length 128: KDA's training path asserts T > 64 (chunk mode).
-    # One sequence per GROUP MEMBER, not per prompt. Averaging advantages over
-    # the group would give exactly zero -- group-relative standardization makes
-    # each group's mean zero by construction -- so a per-prompt sequence yields
-    # a zero objective and a zero gradient, and the smoke would pass having
-    # tested nothing.
-    n_prompt, n_group = adv.shape
-    g = torch.Generator(device="cpu").manual_seed(0)
-    ids = torch.randint(
-        0, vocab, (n_prompt * n_group, 128), generator=g
-    ).to(device)
+    data = TensorDict(
+        {
+            "input_ids": ids,
+            "position_ids": _nest(
+                torch.arange(seq_len, device=device)
+                .unsqueeze(0)
+                .expand(n_seq, -1)
+                .contiguous()
+            ),
+            "loss_mask": torch.ones_like(flat),
+            "responses": flat,
+            "advantages": a.unsqueeze(-1).expand(-1, seq_len),
+        },
+        batch_size=[n_seq],
+    )
+    # The engine reads sampling metadata off the batch too.
+    tu.assign_non_tensor_data(data, "temperature", 1.0)
+    tu.assign_non_tensor_data(data, "use_dynamic_bsz", False)
+    tu.assign_non_tensor_data(data, "micro_batch_size_per_gpu", n_seq)
 
-    # bf16 autocast is load-bearing here, not an optimization: without FSDP's
-    # mixed-precision cast the KDA params stay fp32 and fla's kernel asks for
-    # 108,160 B of dynamic shared memory against this GPU's 101,376 B limit.
-    with torch.autocast("cuda", dtype=torch.bfloat16):
-        logits = module(ids)
-    if isinstance(logits, (tuple, list)):
-        logits = logits[0]
-    logprobs = F.log_softmax(logits.float(), dim=-1)
-    tok_lp = logprobs[:, :-1, :].gather(-1, ids[:, 1:].unsqueeze(-1)).squeeze(-1)
-    seq_lp = tok_lp.mean(dim=-1)                      # [prompts * group]
 
-    a = adv.to(device).reshape(-1)                    # matching flat order
-    loss = -(a * seq_lp).sum()
-    loss.backward()
+    def grpo_loss(model_output, data, dp_group=None, **kw):
+        """-(advantage * logprob), the policy-gradient objective.
+
+        The engine computes token log-probs itself and hands them over in
+        model_output, so this only has to weight them. Group-relative
+        advantages are already standardized, so no baseline is subtracted.
+        """
+        lp = model_output["log_probs"]
+        a = data["advantages"]
+        if hasattr(lp, "values"):        # nested, as NO_PADDING mode packs it
+            lp = lp.values()
+            a = a.reshape(-1)[: lp.numel()]
+        else:
+            a = a[..., : lp.shape[-1]]
+        return -(a * lp).mean(), {}
+
+    engine.forward_backward_batch(data, loss_function=grpo_loss)
 
     total = 0.0
     for m in engine.module:
@@ -117,13 +138,13 @@ def _policy_gradient_step(engine, rows, adv) -> float:
                 gg = gg.full_tensor() if hasattr(gg, "full_tensor") else gg
                 total += float(gg.float().pow(2).sum())
     norm = total ** 0.5
-    print(f"[GRPO]   loss={float(loss):.6f} grad_norm={norm:.6f}", flush=True)
-    # A zero gradient means the objective never reached the parameters, which
-    # is a passing run that tested nothing. It happened once here: averaging
-    # advantages over the group gives exactly zero, because group-relative
-    # standardization makes each group's mean zero by construction.
+    print(f"[GRPO]   grad_norm={norm:.6f}", flush=True)
+    # A zero gradient means the objective never reached the parameters, which is
+    # a passing run that tested nothing. It happened once: averaging advantages
+    # over the group gives exactly zero, because group-relative standardization
+    # makes each group's mean zero by construction.
     assert norm > 0.0, "GRPO objective produced no gradient"
-    return float(loss)
+    return norm
 
 
 def load_dummy(path: str, n: int) -> list[dict]:
@@ -185,7 +206,7 @@ def main() -> None:
             engine.optimizer_zero_grad()
             loss = _policy_gradient_step(engine, rows, adv)
             engine.optimizer_step()
-            print(f"[GRPO] step {step} objective={loss:.6f}", flush=True)
+            print(f"[GRPO] step {step} grad_norm={loss:.6f}", flush=True)
 
     if engine is not None:
         import torch.distributed as dist
