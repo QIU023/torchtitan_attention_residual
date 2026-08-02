@@ -101,11 +101,20 @@ The controlled pair is the last two: ep2_tp2_cp2 and fsdp2_tp2_cp2 differ ONLY i
 whether EP is on, and their curves differ by 0.001-0.002 per step. EP contributes
 essentially nothing.
 
-All three sit near 0.10 because they share dp_shard=2, which splits the same
-global batch into 2 accumulation steps instead of the reference's 4. That is a
-different bf16 accumulation structure, not a parallelism error. Measured against a
-dp1 reference the number is therefore an OVERSTATEMENT; the right comparison is
-against a dp_shard=2 reference, which has not been run.
+All three sit near 0.10 against the dp1 reference because they share dp_shard=2,
+which splits the same global batch into 2 accumulation steps instead of 4. That
+is a different bf16 accumulation structure, not a parallelism error. Running the
+matching reference confirms it:
+
+                     vs dp1 ref    vs dp_shard=2 ref
+  fsdp2 x tp2 x cp2    0.09920         0.00346
+  ep2 x tp2 x pp2      0.10053         0.00306
+  ep2 x tp2 x cp2      0.09807         0.00290
+
+So the 0.10 figures were almost entirely accumulation structure, and every
+combination measured -- with or without EP, dp1 or dp2 -- sits at or below 0.010
+against the reference that shares its accumulation structure. Each leg is now
+compared to the right reference automatically.
 
 **Full 5D has NOT been tested and is not runnable here.** All of dp_shard, tp, pp
 and cp at degree 2 needs 16 GPUs (EP does not add to the product, but the other

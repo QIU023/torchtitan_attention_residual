@@ -53,8 +53,14 @@ run() {
   fi
 }
 
-echo "########## reference and 4D combinations, $STEPS steps ##########"
+echo "########## references and 4D combinations, $STEPS steps ##########"
+# TWO references. Legs with dp_shard=2 split the same global batch into 2
+# gradient-accumulation steps where the dp1 reference takes 4, which is a
+# different bf16 accumulation structure. Comparing them to the dp1 curve charges
+# them for that difference and overstates the parallelism error, so each leg is
+# measured against the reference with ITS accumulation structure.
 run ref            1 2
+run ref_dp2        2 2 --parallelism.data_parallel_shard_degree 2
 run tp2            2 2 --parallelism.tensor_parallel_degree 2
 run tp2_pp2        4 4 --parallelism.tensor_parallel_degree 2 --parallelism.pipeline_parallel_degree 2
 run tp2_cp2        4 2 --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
@@ -76,15 +82,25 @@ import sys
 legs = {
  "tp2": "${CURVE[tp2]}", "tp2_pp2": "${CURVE[tp2_pp2]}",
  "tp2_cp2": "${CURVE[tp2_cp2]}", "tp2_pp2_cp2": "${CURVE[tp2_pp2_cp2]}",
+ }
+DP2 = {
  "fsdp2_tp2_cp2": "${CURVE[fsdp2_tp2_cp2]}",
  "ep2_tp2_pp2": "${CURVE[ep2_tp2_pp2]}", "ep2_tp2_cp2": "${CURVE[ep2_tp2_cp2]}",
 }
+ref_dp2 = [float(x) for x in "${CURVE[ref_dp2]}".split()]
 r=[float(x) for x in ref]
 print(f"ref curve: {' '.join(f'{v:.5f}' for v in r)}")
-for k,v in legs.items():
-    xs=[float(x) for x in v.split()]
-    if not xs: print(f"{k:<16} NO CURVE"); continue
-    n=min(len(xs),len(r))
-    d=[abs(xs[i]-r[i]) for i in range(n)]
-    print(f"{k:<16} steps={n}  max|dloss|={max(d):.5f}  final={xs[n-1]:.5f} vs {r[n-1]:.5f}")
+def report(items, base, label):
+    print(f"\n-- against {label} --")
+    for k,v in items.items():
+        xs=[float(x) for x in v.split()]
+        if not xs: print(f"{k:<16} NO CURVE"); continue
+        n=min(len(xs),len(base))
+        d=[abs(xs[i]-base[i]) for i in range(n)]
+        print(f"{k:<16} steps={n}  max|dloss|={max(d):.5f}  final={xs[n-1]:.5f} vs {base[n-1]:.5f}")
+report(legs, r, "dp1 reference (4 accumulation steps)")
+if ref_dp2:
+    print(f"\ndp2 reference curve: {' '.join(f'{v:.5f}' for v in ref_dp2)}")
+    report(DP2, ref_dp2, "dp_shard=2 reference (2 accumulation steps)")
+    report(DP2, r, "dp1 reference -- for contrast, what was reported before")
 PY
