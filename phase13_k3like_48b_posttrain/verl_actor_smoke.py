@@ -78,7 +78,13 @@ def install_shims() -> None:
     # param_groups optimizer API. Only the peft stub above is still needed here.
 
 
-def main() -> None:
+def build_engine():
+    """Construct and initialize the veRL torchtitan engine on our K3 model.
+
+    Split out of main() so the GRPO loop can drive the same verified setup
+    instead of duplicating it -- if this drifts, both smokes move together.
+    Returns the initialized engine; the caller owns process-group teardown.
+    """
     install_shims()
     import torch.distributed as dist
 
@@ -158,7 +164,16 @@ def main() -> None:
             p.numel() for m in engine.module for p in m.parameters()
         )
         print(f"[VERL] initialized, {n/1e6:.1f}M params on this rank", flush=True)
+    return engine
+
+
+def main() -> None:
+    import torch.distributed as dist
+
+    engine = build_engine()
+    if dist.get_rank() == 0:
         print("[VERL] PASS (engine built and initialized)", flush=True)
+    del engine
     dist.destroy_process_group()
 
 

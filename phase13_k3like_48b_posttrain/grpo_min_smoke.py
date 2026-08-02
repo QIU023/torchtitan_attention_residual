@@ -47,6 +47,64 @@ def group_relative_advantages(rewards: torch.Tensor) -> torch.Tensor:
     return (rewards - mean) / torch.clamp(std, min=1e-6)
 
 
+def _policy_gradient_step(engine, rows, adv) -> float:
+    """Backprop the GRPO objective through the actor and report the grad norm.
+
+    -(advantage * mean logprob of the sequence), summed over the group. The
+    sampler is stubbed -- sequences are the dummy answers rather than model
+    samples -- because what is under test is that the objective reaches the
+    actor's parameters through veRL's engine, not the sample quality. A real
+    loop replaces the token source and nothing else here.
+    """
+    import torch.nn.functional as F
+
+    module = engine.module[0]
+    device = next(module.parameters()).device
+    vocab = module.vocab_size if hasattr(module, "vocab_size") else 2016
+
+    # Deterministic token ids, so the step is reproducible without a tokenizer.
+    # Length 128: KDA's training path asserts T > 64 (chunk mode).
+    # One sequence per GROUP MEMBER, not per prompt. Averaging advantages over
+    # the group would give exactly zero -- group-relative standardization makes
+    # each group's mean zero by construction -- so a per-prompt sequence yields
+    # a zero objective and a zero gradient, and the smoke would pass having
+    # tested nothing.
+    n_prompt, n_group = adv.shape
+    g = torch.Generator(device="cpu").manual_seed(0)
+    ids = torch.randint(
+        0, vocab, (n_prompt * n_group, 128), generator=g
+    ).to(device)
+
+    # bf16 autocast is load-bearing here, not an optimization: without FSDP's
+    # mixed-precision cast the KDA params stay fp32 and fla's kernel asks for
+    # 108,160 B of dynamic shared memory against this GPU's 101,376 B limit.
+    with torch.autocast("cuda", dtype=torch.bfloat16):
+        logits = module(ids)
+    logprobs = F.log_softmax(logits.float(), dim=-1)
+    tok_lp = logprobs[:, :-1, :].gather(-1, ids[:, 1:].unsqueeze(-1)).squeeze(-1)
+    seq_lp = tok_lp.mean(dim=-1)                      # [prompts * group]
+
+    a = adv.to(device).reshape(-1)                    # matching flat order
+    loss = -(a * seq_lp).sum()
+    loss.backward()
+
+    total = 0.0
+    for m in engine.module:
+        for p in m.parameters():
+            if p.grad is not None:
+                gg = p.grad
+                gg = gg.full_tensor() if hasattr(gg, "full_tensor") else gg
+                total += float(gg.float().pow(2).sum())
+    norm = total ** 0.5
+    print(f"[GRPO]   loss={float(loss):.6f} grad_norm={norm:.6f}", flush=True)
+    # A zero gradient means the objective never reached the parameters, which
+    # is a passing run that tested nothing. It happened once here: averaging
+    # advantages over the group gives exactly zero, because group-relative
+    # standardization makes each group's mean zero by construction.
+    assert norm > 0.0, "GRPO objective produced no gradient"
+    return float(loss)
+
+
 def load_dummy(path: str, n: int) -> list[dict]:
     rows = []
     with open(os.path.join(path, "gsm8k_dummy", "data.jsonl")) as f:
@@ -63,13 +121,24 @@ def main() -> None:
     ap.add_argument("--steps", type=int, default=3)
     ap.add_argument("--group", type=int, default=4)
     ap.add_argument("--prompts", type=int, default=2)
+    ap.add_argument(
+        "--engine", action="store_true",
+        help="drive veRL's torchtitan engine; without it only the reward and "
+             "advantage path runs, which needs no GPU",
+    )
     args = ap.parse_args()
 
-    # The engine is verified separately by verl_actor_smoke (actor builds,
-    # 80.9M params initialize on the torchtitan engine). This exercises the
-    # GRPO-specific path -- reward extraction, group-relative advantages -- so
-    # that a break in either is attributable. Joining them is the next step and
-    # needs verl_actor_smoke's monolithic main() split into a builder first.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    engine = None
+    if args.engine:
+        import torch.distributed as dist
+
+        from verl_actor_smoke import build_engine
+
+        engine = build_engine()
+        if dist.get_rank() == 0:
+            print("[GRPO] engine ready", flush=True)
+
     rows = load_dummy(args.data, args.prompts)
     print(f"[GRPO] {len(rows)} prompts, group={args.group}", flush=True)
     assert rows, "no dummy rows loaded"
@@ -87,7 +156,21 @@ def main() -> None:
               f"adv[0]={[round(x, 4) for x in adv[0].tolist()]}", flush=True)
         assert torch.isfinite(adv).all(), "advantages must be finite"
 
-    print("[GRPO] PASS (reward + advantage path)", flush=True)
+        if engine is not None:
+            # One policy-gradient step. The loss is -(advantage * logprob)
+            # summed over the group; with a stubbed sampler the logprobs come
+            # from the model's own forward on the prompt, which is enough to
+            # prove gradients flow from the GRPO objective into the actor.
+            engine.optimizer_zero_grad()
+            loss = _policy_gradient_step(engine, rows, adv)
+            engine.optimizer_step()
+            print(f"[GRPO] step {step} objective={loss:.6f}", flush=True)
+
+    if engine is not None:
+        import torch.distributed as dist
+
+        dist.destroy_process_group()
+    print("[GRPO] PASS", flush=True)
 
 
 if __name__ == "__main__":
