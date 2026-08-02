@@ -166,6 +166,22 @@ def build_engine():
             flush=True,
         )
 
+    # VERL_NO_CKPT skips the weight load. Under TP the saved expert weight is
+    # [224, 256] against the sharded model's [112, 256], which is a checkpoint
+    # layout limitation rather than a model one -- skipping the load separates
+    # the two.
+    if os.environ.get("VERL_NO_CKPT"):
+        # engine.initialize() calls self.checkpointer.load() unconditionally,
+        # and there is no config switch for it. Neutralizing the load isolates
+        # a TP failure in the model from one in the checkpoint layout: the saved
+        # expert weight is [224, 256] against the sharded model's [112, 256],
+        # and only skipping the load tells the two apart.
+        from torchtitan.components.checkpoint import CheckpointManager
+
+        CheckpointManager.load = lambda self, *a, **k: None
+        if rank == 0:
+            print("[VERL] checkpoint load DISABLED (diagnostic)", flush=True)
+
     engine = TorchTitanEngineWithLMHead(
         model_config=model_config,
         engine_config=engine_config,

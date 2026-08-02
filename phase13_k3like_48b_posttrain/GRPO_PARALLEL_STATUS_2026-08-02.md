@@ -30,12 +30,23 @@ torchtitan FSDP is unaffected (verified: 7.68238 / 7.16806 at dp_shard=2).
 
 These are five different problems, not one. Reading them:
 
-- **tp=2** is a checkpoint layout limitation, not a model bug. The expert weight
+- **tp=2** has TWO independent blockers, and separating them took disabling the
+  checkpoint load (engine.initialize() calls checkpointer.load() unconditionally,
+  with no config switch).
+
+  The first is a checkpoint layout limitation, not a model bug. The expert weight
   is saved as [224, 256] and the TP-sharded model wants [112, 256] -- exactly
   half. `_get_local_experts_weights` documents itself as handling "FSDP + EP"
   (dim-0 sharding) and has no path for TP sharding experts on dim-1. Extending
   it changes checkpoint semantics for every MoE model, so it is left alone
   here.
+
+  The second only becomes visible once the load is skipped: `aten.mm.default got
+  mixed torch.Tensor and DTensor`. That one is this smoke's, not the model's --
+  it calls `module(ids)` with a plain tensor while the TP-wrapped model expects
+  a DTensor input. The engine's `forward_backward_batch` would supply it
+  correctly, which is the same entry the PP path needs, so both TP and PP wait
+  on the same piece of work rather than two.
 - **pp=2** was two problems, one of them mine. The tuple return is fixed (under
   PP the stage returns AttnRes block tensors alongside the hidden states, so the
   logits are element 0). The remainder is structural: this smoke calls the module
