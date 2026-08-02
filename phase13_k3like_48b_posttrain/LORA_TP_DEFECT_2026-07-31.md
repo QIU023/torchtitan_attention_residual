@@ -204,3 +204,35 @@ DTensor the full_tensor branch is skipped entirely and the add is Replicate +
 Partial), and the parameter-gradient accumulation itself, which defaults a
 Replicate parameter's grad to Replicate. Print the placements of `base_out` and
 `lora_out` at the add before touching either.
+
+## Placements at the add, and why three edits changed nothing
+
+Reconstructing the adapter path for a rowwise projection under tp2:
+
+  down_proj   x=Shard(2)   base_out=PLAIN   inter=Partial(sum)   lora_out=Partial(sum)
+
+So `lora_out` is Partial and `base_out` is plain, which means the
+`isinstance(lora_out, DTensor) and not isinstance(base_out, DTensor)` branch IS
+taken and `full_tensor()` does run -- for down_proj.
+
+Three separate edits to that line produced BIT-IDENTICAL results:
+
+  as-is                                  max tp2 1.27261  tp4 2.25842  med 0.02046
+  full_tensor(grad_placements=Partial)   max tp2 1.27261  tp4 2.25842  med 0.02064
+  full_tensor(grad_placements=Replicate) max tp2 1.27261  tp4 2.25842  med 0.02046
+
+Partial being a no-op is explicable -- it is what full_tensor already defaults to,
+mirroring the tensor's own placement. Replicate producing the identical number is
+not. Three different backward specifications cannot all give the same gradient if
+they are on the path.
+
+Combined with the probe output -- which printed `down_proj` on every run and
+`o_proj` on none -- the reading is that o_proj does not reach this line at all.
+Either it is not a KimiLoRALinear, or its base_out is a DTensor so the branch is
+skipped, or it is reached under a different name. o_proj.lora_b is precisely the
+parameter that measures wrong, so that is the thing to establish next: enumerate
+which modules actually execute this line, by name, and confirm o_proj is or is
+not among them.
+
+All three edits reverted. Four hypotheses tested and killed so far; the defect
+is unchanged at 2.2726 / 3.2584 on o_proj.lora_b.
