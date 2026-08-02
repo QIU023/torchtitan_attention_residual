@@ -58,6 +58,25 @@ def _policy_gradient_step(engine, rows, adv) -> float:
     """
     import torch.nn.functional as F
 
+    if len(engine.module) > 1:
+        # PP splits the model into stages that must be driven by the pipeline
+        # schedule; calling a stage directly hands stage 1 the raw token ids
+        # instead of stage 0's hidden states ("normalized_shape=[512] ... got
+        # input of size [1, 8, 128]").
+        #
+        # engine.forward_backward_batch is the right entry -- it owns the
+        # schedule, micro-batching and the SPMD mesh context -- but its
+        # TensorDict contract did not come together in four attempts here
+        # (max_token_len_per_gpu lives on the batch rather than the config, and
+        # the batch then fails with "values expected sparse tensor layout").
+        # Rather than keep guessing at it, the direct path stays as the
+        # verified one and PP is recorded as unsupported by this smoke.
+        raise NotImplementedError(
+            "GRPO smoke does not support PP: needs engine.forward_backward_batch, "
+            "whose batch contract is not yet worked out. See "
+            "GRPO_PARALLEL_STATUS."
+        )
+
     module = engine.module[0]
     device = next(module.parameters()).device
     vocab = module.vocab_size if hasattr(module, "vocab_size") else 2016
@@ -80,6 +99,8 @@ def _policy_gradient_step(engine, rows, adv) -> float:
     # 108,160 B of dynamic shared memory against this GPU's 101,376 B limit.
     with torch.autocast("cuda", dtype=torch.bfloat16):
         logits = module(ids)
+    if isinstance(logits, (tuple, list)):
+        logits = logits[0]
     logprobs = F.log_softmax(logits.float(), dim=-1)
     tok_lp = logprobs[:, :-1, :].gather(-1, ids[:, 1:].unsqueeze(-1)).squeeze(-1)
     seq_lp = tok_lp.mean(dim=-1)                      # [prompts * group]

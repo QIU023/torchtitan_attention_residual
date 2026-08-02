@@ -32,10 +32,21 @@ These are five different problems, not one. Reading them:
 - **tp=2** is a checkpoint shape mismatch: 224 x 256 saved against something else
   current. The seed checkpoint was written without TP, so this is the loading
   path, not the model.
-- **pp=2** is the GRPO smoke's own fault before it is veRL's: under PP the model
-  returns a tuple, and `_policy_gradient_step` calls `.float()` on it. The
-  normalized_shape error before it suggests the stage split also needs the input
-  contract PP expects.
+- **pp=2** was two problems, one of them mine. The tuple return is fixed (under
+  PP the stage returns AttnRes block tensors alongside the hidden states, so the
+  logits are element 0). The remainder is structural: this smoke calls the module
+  directly, and under PP the stages must be driven by the pipeline schedule --
+  a direct call hands stage 1 the raw token ids instead of stage 0's hidden
+  states, which is the `normalized_shape=[512] ... got input of size [1, 8, 128]`.
+
+  `engine.forward_backward_batch` is the right entry, since it owns the
+  schedule, micro-batching and the SPMD mesh context. Four attempts at its
+  TensorDict contract did not land: `max_token_len_per_gpu` is read off the
+  batch rather than the engine config (verl/workers/engine/utils.py:68-74), and
+  supplying it via `assign_non_tensor_data` then fails with "values expected
+  sparse tensor layout but got Strided". Rather than keep guessing, the direct
+  path stays as the verified one and the smoke raises NotImplementedError under
+  PP instead of silently measuring the wrong thing.
 - **cp=2** is a placement bug -- something calls `.dim` on a `Replicate`, which
   only `Shard` has.
 - **the two 4-GPU combinations** share one cause and it is about how veRL calls
