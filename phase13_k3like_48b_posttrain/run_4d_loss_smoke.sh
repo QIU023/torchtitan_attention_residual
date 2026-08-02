@@ -74,6 +74,10 @@ run ep2_tp2_pp2    8 4 --parallelism.data_parallel_shard_degree 2 --parallelism.
                        --parallelism.tensor_parallel_degree 2 --parallelism.pipeline_parallel_degree 2
 run ep2_tp2_cp2    8 2 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 \
                        --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+run fsdp2_tp2_pp2  8 4 --parallelism.data_parallel_shard_degree 2 --parallelism.tensor_parallel_degree 2 \
+                       --parallelism.pipeline_parallel_degree 2
+run ep2_tp2_pp2_b  8 4 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 \
+                       --parallelism.tensor_parallel_degree 2 --parallelism.pipeline_parallel_degree 2
 
 echo; echo "########## max |loss - ref| over the curve ##########"
 python3 - <<PY
@@ -86,6 +90,7 @@ legs = {
 DP2 = {
  "fsdp2_tp2_cp2": "${CURVE[fsdp2_tp2_cp2]}",
  "ep2_tp2_pp2": "${CURVE[ep2_tp2_pp2]}", "ep2_tp2_cp2": "${CURVE[ep2_tp2_cp2]}",
+ "fsdp2_tp2_pp2": "${CURVE[fsdp2_tp2_pp2]}",
 }
 ref_dp2 = [float(x) for x in "${CURVE[ref_dp2]}".split()]
 r=[float(x) for x in ref]
