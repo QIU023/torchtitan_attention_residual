@@ -162,3 +162,45 @@ which branch executes before changing any of them.
 If confirmed, the fix is not a grad_placements argument anywhere: it is that the
 plain-tensor adapter path under rowwise TP needs its own all-reduce, or the
 adapters must stay DTensors through the matmul so DTensor performs it.
+
+## The plain-x hypothesis is also wrong; the gradient is mislabelled Replicate
+
+`x` is a DTensor at every LoRA site, so the `x_is_dt` branch is taken and the
+adapters stay DTensors through the matmul:
+
+  gate_proj / up_proj (colwise)   x=R        lora_a=R      lora_b=S(0)
+  down_proj / o_proj  (rowwise)   x=S(2)     lora_a=S(1)   lora_b=R
+  latent down/up      (NoParallel) x=R       lora_a=R      lora_b=R
+
+Hooking `o_proj.lora_b`'s gradient directly, over three successive steps from a
+warm checkpoint:
+
+  tp1   0.01480148  0.01612288  0.01783790   placement: plain
+  tp2   0.01066847  0.01178489  0.01376823   placement: Replicate()
+
+Ratio 1.387, against sqrt(2) = 1.414. That is the same signature as the
+moe_sharding defect: the gradient is mathematically Partial across tp -- each
+rank holds one near-orthogonal share -- but it is labelled Replicate, so DTensor
+treats it as already complete and the sum never happens.
+
+Three hypotheses have now been measured and killed:
+
+  1. lora.py's Partial() requests over-reduce, like block_attn_res  -- that code
+     never runs (gated on _quantize_base == "mxfp4").
+  2. full_tensor() lacks grad_placements                            -- adding it
+     changed nothing.
+  3. x arrives plain so the adapters compute outside DTensor        -- x is a
+     DTensor everywhere.
+
+What is established: the value is right (loss matches), the parameter
+distribution is right, the forward branch taken is the DTensor one, and the
+gradient reaching lora_b under rowwise TP is short by ~sqrt(tp) while carrying a
+Replicate label.
+
+So the remaining question is narrow: on the path from `lora_out` back to
+`lora_b`, where does a Partial gradient acquire a Replicate label? The two
+candidates left are the `base_out + scaling * lora_out` add (if base_out is a
+DTensor the full_tensor branch is skipped entirely and the add is Replicate +
+Partial), and the parameter-gradient accumulation itself, which defaults a
+Replicate parameter's grad to Replicate. Print the placements of `base_out` and
+`lora_out` at the add before touching either.
