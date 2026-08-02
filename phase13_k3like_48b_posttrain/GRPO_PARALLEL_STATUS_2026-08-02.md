@@ -88,3 +88,33 @@ Only single-GPU and dp_shard=2 are verified. The other five configurations do no
 run, and no number from them exists to report. The sampler is also still stubbed
 throughout -- sequences are deterministic ids rather than model samples -- so
 what is verified is the plumbing, not sample quality.
+
+
+## TP under veRL is the same problem the k3_refactor branch found
+
+Peeling the layers off tp=2 one at a time -- skip the checkpoint load, set
+`activation_checkpoint="none"` (veRL's own config comment recommends this under
+spmd_types), disable torch.compile -- leaves this:
+
+    File "torchtitan/protocols/module.py", line 291, in forward_with_redistribution
+    File "torch/nn/modules/linear.py", line 134, in forward
+    RuntimeError: aten.mm.default got mixed torch.Tensor and DTensor
+
+`forward_with_redistribution` is the DECLARATIVE path. veRL sets
+`spmd_backend="spmd_types"`, which makes `Module.parallelize()` the mechanism,
+and that is exactly the wall the k3_refactor branch hit: the declarative
+vocabulary has no `use_local_output`, so it cannot express K3's plain-tensor
+module boundaries, and the boundaries exist because PP P2P sends raw tensors,
+block_attn_res stacks plain and DTensor operands, and fla's triton kernels
+dispatch on data pointers.
+
+So TP-under-veRL and the imperative-to-declarative migration are ONE problem,
+not two. It is not fixable in the smoke or the engine config: either the
+declarative vocabulary gains a way to say "hand the next module a plain tensor"
+(a core change, belongs upstream), or K3 gives up the boundary convention (which
+costs the three things above).
+
+The three layers peeled off on the way are worth keeping as findings in their
+own right, since each was masking the next: the unconditional checkpoint load,
+activation checkpointing recomputing the forward outside the DTensor context,
+and torch.compile turning the error into a fake-tensor failure.

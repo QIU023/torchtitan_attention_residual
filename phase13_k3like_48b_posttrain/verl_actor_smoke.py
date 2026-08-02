@@ -142,6 +142,15 @@ def build_engine():
         v = os.environ.get(env)
         if v:
             par[attr] = int(v)
+    # veRL's config comment says to use activation_checkpoint="none" under
+    # spmd_backend="spmd_types"; leaving it on makes the TP forward fail inside
+    # checkpoint's __torch_dispatch__ with "mixed torch.Tensor and DTensor",
+    # because recompute re-runs the forward outside the DTensor context.
+    ac = os.environ.get("VERL_AC")
+    if ac:
+        par["activation_checkpoint"] = ac
+    if os.environ.get("VERL_NO_COMPILE"):
+        par["use_torch_compile"] = False
     engine_config = TorchtitanEngineConfig(**par)
     if rank == 0 and par:
         print(f"[VERL] parallel: {par}", flush=True)
