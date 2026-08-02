@@ -125,3 +125,40 @@ same treatment the packed one already has. That is a real change to a forward
 that three configurations share (nf4, mxfp4, unquantized), so it needs deriving
 and then verifying on the warm-checkpoint instrument per configuration -- not a
 one-line enable. Not attempted here.
+
+## Second fix attempt also a no-op -- the DTensor branch is not taken at all
+
+Adding `grad_placements=(Partial(),)` to the `full_tensor()` call at the end of
+the adapter path changed nothing (max |r-1| identical at 1.27261 / 2.25842,
+median 0.02046 -> 0.02064). Reverted.
+
+That call sits inside `if isinstance(lora_out, DTensor) and not
+isinstance(base_out, DTensor)`. For it to matter, `lora_out` has to be a DTensor,
+which requires `x` to be one. The forward branches on exactly that:
+
+    x_is_dt = isinstance(x, DTensor)
+    ...
+    if x_is_dt:      # keep adapters as DTensors
+    else:            # la = la.to_local(); lb = lb.to_local()
+
+If `x` arrives PLAIN at o_proj -- which is what `use_local_output=True` on the
+producing module gives -- then both adapters are unwrapped to their local shards
+and `F.linear(F.linear(x, la), lb)` runs entirely in plain-tensor land. For a
+rowwise layer `la` is Shard(1), so that product is each rank's PARTIAL
+contribution, and being a plain tensor there is nothing left to all-reduce it.
+RowwiseParallel's all-reduce covers the base weight only; the adapter rides
+outside it.
+
+That is consistent with everything measured: the adapter contributes one rank's
+share instead of the sum, so `grad_b` is short by roughly tp, monotonically, and
+only on rowwise layers (o_proj, down_proj) -- colwise adapters are Shard on the
+output axis and need no sum.
+
+NOT yet confirmed: whether `x` is in fact plain at o_proj. That is one print and
+should be the next thing measured -- both previous fixes were aimed at code paths
+that turned out not to run, and the way to stop repeating that is to confirm
+which branch executes before changing any of them.
+
+If confirmed, the fix is not a grad_placements argument anywhere: it is that the
+plain-tensor adapter path under rowwise TP needs its own all-reduce, or the
+adapters must stay DTensors through the matmul so DTensor performs it.
