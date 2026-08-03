@@ -47,5 +47,22 @@ Single-GPU remains blocked by the KDA shared-memory limit that affects every
 flavor on this box, so the seed-checkpoint path (single-process only) cannot be
 used; the checkpoint above comes from a short FSDP run instead.
 
-Next: export this to HF format so config, weights and `architectures` finally
-agree, then retry the vLLM rollout.
+## Exported, and the three now agree
+
+`export_vl_to_hf.py` materializes the DCP model tensors, writes safetensors, and
+emits a config with the text fields nested under `text_config`, a `vision_config`
+matching the shrunk tower, and `auto_map.AutoConfig` pointing at the MULTIMODAL
+`KimiK3Config` -- the last of which is what previously made transformers resolve
+the text-only config and hand vLLM a flat one.
+
+    /workspace/k3mini_vl_hf: 642 tensors, 30 of them vision_tower.*
+    transformers resolves KimiK3Config, text hidden 512, vision layers 4
+
+The exporter refuses to write if the checkpoint has no vision tensors, so it
+cannot silently reproduce the inconsistency it exists to fix.
+
+One number to read correctly: the DCP metadata has 390 keys containing
+`vision_tower`, but 360 of those are optimizer state. The model-side tower is 30
+tensors, which is what a 4-layer MoonViT has, and what the export contains.
+
+Next: retry the vLLM rollout against this.
