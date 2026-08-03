@@ -1,12 +1,9 @@
 # PR #16 — common MoE: routing-map scatter drops the router's shard placement (breaks TP+EP)
 
-**Target repo**: `pytorch/torchtitan`
-**Target file**: `torchtitan/models/common/moe.py` (`MoE.forward`, the one-hot routing-map construction)
-**Fork reference**: torchtitan `attention_residual_dev`, commit `129e29de`
-**Upstream audit (2026-07-25)**: `upstream/main` @ `fd277658` still has the unmodified `scatter_` and the stale comment claiming DTensor runs it as a local op. **Not obsoleted; still applies.**
-**Re-audit (2026-08-03)**: `upstream/main` @ `681fd4b50` — bare `scatter_` still at `moe.py:465`; patch verified to apply cleanly in a fresh worktree. **Can be filed in parallel with PR19** (`moe_sharding.py` in_grad_placements): different files, no overlap, both apply to `681fd4b50` in either order.
-**Effort**: ~half a day (patch + a TP+EP integration cell + unit test).
-**Risk**: low — the non-DTensor path is untouched, and the DTensor branch only makes the placement explicit.
+**Target**: `pytorch/torchtitan`, `torchtitan/models/common/moe.py` (`MoE.forward`)
+**Fork reference**: `attention_residual_dev` @ `129e29de`
+**Upstream audit**: 2026-07-25 @ `fd277658` and 2026-08-03 @ `681fd4b50` — bare `scatter_` still at `moe.py:465`, patch applies cleanly. **Parallel-safe with PR19** (different files, no overlap).
+**Risk**: low — the plain-tensor path is byte-identical; the DTensor branch only makes the placement explicit.
 
 ---
 
@@ -26,24 +23,16 @@ routing_map_BLE = torch.zeros_like(scores_BLE, dtype=torch.bool).scatter_(
 )
 ```
 
-and the comment above it asserts that "scatter_ writes along the (replicated)
-expert dim, so DTensor runs it as a local op with no redistribution". That is
-not what DTensor does. When the router outputs are DTensors sharded on the
-token dim (TP/SP with EP enabled), there is no sharding strategy for
-`aten.scatter_` that preserves `Shard(dim=1)`:
-
-- the **in-place** form errors out, and
-- the out-of-place form would redistribute the operand to `Replicate`, which
-  silently breaks the downstream `Partial(sum)` token-count contract that
-  `RoutedExperts` declares — `num_local_tokens_per_expert_E` would then be a
-  full-sequence count on every rank instead of a per-shard partial.
-
+The comment above it says DTensor runs this as a local op. It does not: when
+the router outputs are sharded on the token dim (TP with EP), no
+`aten.scatter_` strategy preserves `Shard(dim=1)` — the in-place form errors
+out, and the out-of-place form would redistribute to `Replicate`, silently
+breaking the `Partial(sum)` token-count contract `RoutedExperts` declares.
 Net effect: TP+EP does not run.
 
 ### Fix
 
-Do the scatter on the local shard and rewrap with the router's own placement,
-so the sequence shard is preserved by construction:
+Scatter on the local shard and rewrap with the router's own placement:
 
 ```python
 if isinstance(scores_BLE, DTensor):
@@ -54,69 +43,41 @@ if isinstance(scores_BLE, DTensor):
         local_map, scores_BLE.device_mesh, scores_BLE.placements
     )
 else:
-    routing_map_BLE = torch.zeros_like(
-        scores_BLE, dtype=torch.bool
-    ).scatter_(-1, topk_expert_ids_BLK, True)
+    ...  # unchanged plain-tensor path
 ```
 
-The plain-tensor path is byte-identical to today's code. The comment is
-corrected too — it currently documents behaviour DTensor does not have.
-
-### Evidence
-
-A unit test in upstream's own style pins the contract: it fails on the current
-construction and passes on the fixed one (see "Test plan"). The fix also
-unblocks TP+EP and the full 4D `FSDP x TP x EP x PP` mesh on our Kimi-K3-like
-MoE model (8 GPUs), where TP+EP was previously unreachable. See "Reproducer"
-for what we could and could not run, and why.
+The stale comment is corrected as well.
 
 ### Reproducer
 
-Any MoE model with `--parallelism.tensor_parallel_degree 2
---parallelism.expert_parallel_degree 2` (EP is carved out of the data-parallel
-axes, so e.g. `dp_shard 2 * tp 2 = 4` ranks).
+Unmodified `deepseek_v3_debugmodel` on 4 ranks:
 
-**Honest caveat on our own evidence.** We could not run this cell on an
-upstream model on the hardware available (8x RTX 5060 Ti, sm_120, torch 2.12.0
-stable). Both `deepseek_v3_debugmodel` and `qwen3_moe_debug` fail *before*
-reaching the MoE, for two reasons unrelated to this PR:
+```bash
+NGPU=4 ./run_train.sh --model.name deepseek_v3 --model.flavor debugmodel \
+  --parallelism.tensor_parallel_degree 2 --parallelism.expert_parallel_degree 2
+```
 
-1. `TypeError: create_block_mask() got an unexpected keyword argument
-   'separate_full_blocks'` -- `models/common/decoder.py` passes a kwarg that
-   only exists in torch nightly.
-2. With that shimmed out locally, the compiled flex-attention kernel then
-   fails with `OutOfMemoryError: out of resource:
-   triton_tem_fused_flex_attention_0 Required: 139776 Hardware limit: 101376`
-   -- consumer sm_120 cards do not have the shared memory the kernel config
-   wants.
-
-So the evidence we can stand behind is: the unit test in this kit (which
-isolates exactly the placement contract and fails on the pre-fix
-construction), plus the fix unblocking TP+EP and the full 4D
-FSDP x TP x EP x PP mesh on our Kimi-K3-like MoE model on 8 GPUs. A maintainer
-with datacenter cards (and/or nightly) should run the upstream-model cell
-before merge -- it should reproduce as an error in the routing-map scatter.
+Errors in the routing-map construction at step 1; with this patch it trains.
+The fix also unblocks the full FSDP x TP x EP x PP mesh on our Kimi-K3-family
+MoE model (8 GPUs).
 
 ### Test plan
 
-- Unit test (included: `test_moe_routing_map_placement.py`, `DTensorTestBase`
-  + `@with_comms`, world_size 2, the pattern of
-  `tests/unit_tests/test_fsdp_moe_sharding.py`): build `Shard(1)` `scores` /
-  `topk` DTensors, run the routing-map construction, and assert (a) the result
-  keeps the input's placements, (b) its gathered value equals the plain-tensor
-  result, (c) each rank holds LOCAL token counts -- the `Partial(sum)`
-  contract. Verified to fail when pointed at the pre-fix construction.
-- GPU integration: any MoE model with `--parallelism.tensor_parallel_degree 2
-  --parallelism.expert_parallel_degree 2` (EP is carved out of the
-  data-parallel axes, so e.g. `dp_shard 2 * tp 2 = 4` ranks).
+Unit test included (`test_moe_routing_map_placement.py`, `DTensorTestBase` +
+`@with_comms`, world_size 2, same pattern as `test_fsdp_moe_sharding.py`):
+asserts the routing map keeps the router's `Shard(1)` placement, gathers to
+the plain-tensor result, and each rank holds LOCAL token counts. Fails on the
+pre-fix construction; passes after. Plus the integration cell above.
 
 ---
 
 ## Notes for the filer
 
-- This is a **core** `models/common` change, not an experiment change — it
-  should be filed on its own and not bundled with any Kimi-K3 work. Per the
-  maintainer history in CLAUDE.md, core-adjacent changes are best proposed as
-  narrow, independently-justified fixes.
-- The fork commit message already frames it as a core fix; reuse it, but lead
-  with the upstream-model reproducer rather than the K3 model.
+- **Pre-filing gate (mandatory)**: the DSv3 tp2+ep2 cell above has not been
+  executed yet on our box — run it once before filing (deepseek_v3_debugmodel
+  is known to run there at tp2/tp4 since the 07-31 sessions, and this bug
+  triggers in the MoE forward, before anything model-specific). Paste the
+  actual pre-fix error text and the post-fix step-1 loss into the PR body. If
+  the cell behaves differently, stop and re-scope.
+- File on its own; do not bundle with any Kimi-K3 work. Can be opened the same
+  day as PR19 — cross-link once numbers exist.
