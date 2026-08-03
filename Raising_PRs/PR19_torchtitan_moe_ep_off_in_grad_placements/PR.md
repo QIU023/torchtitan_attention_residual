@@ -46,8 +46,9 @@ gates are the model's five worst parameters:
 
 The pre-fix deviations sit near `sqrt(tp)` — a dropped sum of near-orthogonal
 per-rank shares, not a wrong scale factor. Post-fix grad_norm is
-3.2649 / 3.2650 / 3.2651 across tp 1/2/4. The reproduction uses no code
-outside upstream torchtitan.
+3.2649 / 3.2650 / 3.2651 across tp 1/2/4. The model and parallelism code
+under test are entirely upstream torchtitan; our only addition is the probe
+harness that reads per-parameter materialized gradients.
 
 ### Fix
 
@@ -72,7 +73,16 @@ Reproduction recipe above. Happy to add a DTensor unit test pinning
 
 ## Notes for the filer
 
-- Lead with the deepseek_v3 reproduction — it needs none of our code.
+- **No mandatory GPU gate** — unlike PR16, the before/after evidence above was
+  already measured on the box (2026-07-31 session, `tp_trainer_grad_probe.py`,
+  fork checkout whose `moe_sharding.py` region is verified identical to
+  upstream `681fd4b50`). Two optional upgrades if the PR16 gate worktree is
+  already up: (a) re-run the before/after probe against pristine upstream
+  `681fd4b50` (vanilla vs +patch, dp1/tp2, <=2 GPUs) so the table is
+  literally-upstream; (b) write the DTensor unit test promised in the test
+  plan (fails before / passes after) so this PR ships a test like PR16 does.
+  Neither blocks filing.
+- Lead with the deepseek_v3 reproduction — it needs none of our model code.
 - Provenance, one sentence max: found while root-causing a TP gradient gap on
   our Kimi-K3-family model (public logbook, TP_GRAD_FINDING_2026-07-29.md).
 - If asked why the fix belongs in the shared config and not per-model: a
