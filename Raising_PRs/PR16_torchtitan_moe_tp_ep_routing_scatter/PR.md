@@ -27,6 +27,13 @@ core-changes audit); drop it when the fleet moves to >=2.13.
    `deepseek_v3_debugmodel` dp_shard2 x tp2 x ep2): trains clean under BOTH
    `spmd_backend default` and `full_dtensor` (loss 8.01456 / 6.19790).
    Consistent with (2).
+4. **Unit-test-level re-verification (2026-08-03, torch 2.13.0, local)**:
+   `test_moe_routing_map_placement.py` passes (2/2) on the merged fork tree
+   with the fix, AND passes (2/2) with the helper forced to the pre-fix bare
+   construction (`if False:` on the DTensor branch) -- placements kept,
+   gathered values exact, per-shard local counts. On >= 2.13 the test cannot
+   distinguish fixed from unfixed; its fails-before property was 2.12-only,
+   now measured rather than inferred from the probe.
 
 ## Corrections to earlier revisions of this kit
 
