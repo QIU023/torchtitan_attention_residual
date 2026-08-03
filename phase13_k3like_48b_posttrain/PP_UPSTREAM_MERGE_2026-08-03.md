@@ -51,6 +51,32 @@ contract expects.
 So the break is not in the K3 path and not in our adapter. Adding
 `--parallelism.pipeline_parallel_microbatch_size 1` does not help either model.
 
+## Traced to the schedule, and it is not ours
+
+Instrumenting the trainer settles where the count is lost. Rank 0, pp2,
+local_batch 4:
+
+    [MB4] input_dict_mbs=4 label_mbs=4          <- the list arrives complete
+    [MB5] loop iter -> arg_mbs=1 ... first_stage=True
+    [MB5] loop iter -> arg_mbs=2
+    [MB5] loop iter -> arg_mbs=3
+    [MB5] loop iter -> arg_mbs=4                <- and is built complete
+    ValueError: Expecting 4 arg_mbs but got 1   <- yet the schedule sees one
+
+So the trainer does everything right and `pp_schedule.step` reports one. The
+error text comes from PyTorch's schedule, not from torchtitan.
+
+It is also not the K3 adapter, which wraps `pp_schedule.step`
+(pipeline_adapter.py:983). Two greps: `deepseek_v3` references nothing from that
+module, and nothing outside `models/kimi_k3` imports `pipeline_adapter` at all.
+deepseek_v3 fails identically without ever touching it.
+
+That leaves a contract mismatch between torchtitan's new
+`pp_forward_backward_step` and the installed PyTorch schedule -- plausibly a
+version skew, since this box runs torch 2.14.0.dev20260725+cu130 rather than the
+2.12 line this merge was developed against. Not verified, and stated as the
+remaining candidate rather than a conclusion.
+
 ## Where the mismatch is
 
 The trainer computes the count correctly:
