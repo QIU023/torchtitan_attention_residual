@@ -66,3 +66,30 @@ is already met and should not be used to justify this work.
 NOT for migrating TP to the declarative path either -- k3_refactor established
 that the declarative vocabulary has no `use_local_output` and so cannot express
 K3's plain-tensor module boundaries.
+
+## Refactor stopped: upstream PR #4025 removes its last justification
+
+pytorch/torchtitan#4025 adds Kimi K3 upstream. Checked against the three reasons
+this branch existed:
+
+- It constructs `nn.Linear` POSITIONALLY, not through a config tree. It has
+  config dataclasses but does not declare child `Linear.Config` fields or
+  `.build()` them. So "return to the titan standard" was never true -- upstream's
+  own K3 does what ours does.
+- It supports **FSDP2 only**, and explicitly rejects HSDP, TP, PP, CP, EP,
+  activation checkpointing, torch.compile and CPU offload. The author notes
+  TP/PP/CP would need significant adaptation because of data-dependent Python
+  loops and incompatible forward signatures.
+
+That inverts the argument. The parallelism work upstream declines to do is
+exactly what this fork has: 14/14 matrix legs producing loss, PP verified
+per-parameter at 0.00000 over 548 parameters, two TP defects found and fixed
+(one of which also fixes upstream deepseek_v3). Refactoring toward a style
+upstream does not use, at the cost of breaking that, is the wrong trade.
+
+Measured cost, not estimated: converting three MLA linears to `Linear.Config(
+...).build()` failed 12 of 14 legs with silent `exit=0` hangs. Reverted.
+
+The branch keeps its two gated commits (the MLA Config declaration and the
+sharding declarations, both bit-identical on the matrix) in case the
+LoRAConverter question returns. It is not the current line of work.
