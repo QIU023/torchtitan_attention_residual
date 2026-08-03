@@ -115,3 +115,46 @@ Everything else survives the merge: the conflict was one line in
 `_supported_models` (upstream added `kimi_k2_7`, we added `kimi_k3` -- both
 kept), no script imports the removed `set_step_loss_kwargs`, and the non-PP axes
 are unaffected.
+
+
+## Bisected: upstream #3856 "Always Pre-Split Microbatches for PP"
+
+`git bisect` over the 34 commits the merge brought in, probing with
+`deepseek_v3_debugmodel` at pp2, lands on `9228564523aa`:
+
+    Always Pre-Split Microbatches for PP (#3856)
+    - Have PP training and validation dataloaders emit pipeline microbatches directly.
+    - Keep PP microbatching distinct from gradient accumulation and pass pre-split
+      args, kwargs, and targets through the upstream schedule API.
+
+The title is the diagnosis. It changed torchtitan/trainer.py (184 lines),
+components/validate.py, config/configs.py, and every model or experiment that
+carries its own trainer -- flux, torchft, forge, graph_trainer.
+
+### A false bisect first, and why
+
+The first run reported `ab461244d "Make AutoParallel tests GPU-agnostic"`, which
+touches two files under experiments/graph_trainer and cannot affect PP. Every
+step had been marked bad, including commits that could not possibly break it.
+
+The probe was the problem: it ran `--module kimi_k3`, and across the bisect range
+kimi_k3 sits in `experiments/` and is registered in `_supported_experiments`,
+while the probe's resolution path expects `_supported_models`. So every commit
+failed on module resolution, never reaching PP. Re-probing with `deepseek_v3` --
+present and unmoved across the whole range -- converged on #3856 in three steps.
+
+Worth keeping as a rule: a bisect probe has to be valid at BOTH ends before the
+run, and "good end passes" is the check that catches this. It was not run the
+first time.
+
+### What this does not yet explain
+
+K3 has no trainer of its own -- no `trainer.py` or dataloader under
+`models/kimi_k3` -- so it uses the core trainer that #3856 already updated. The
+instrumentation above shows that core trainer building `arg_mbs` correctly to 4
+and the schedule still seeing 1. So "our path did not follow the change" is not
+the explanation, and neither is the earlier version-skew guess: PP was verified
+per-parameter at 0.00000 on this same torch nightly BEFORE the merge.
+
+The remaining question is narrow and answerable: what does #3856 expect the
+dataloader to emit, and does the c4_test path K3 and deepseek_v3 share emit it?
