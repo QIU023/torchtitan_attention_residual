@@ -90,3 +90,26 @@ Reproduction recipe above. Happy to add a DTensor unit test pinning
   fix, the same edge reduced twice per layer and 21-layer grad_norms exploded
   to ~1e7.
 - Can be opened the same day as PR16 — cross-link once numbers exist.
+
+---
+
+## Reproducer verification — 2026-08-03, clean upstream
+
+Route A: `git worktree` at upstream `681fd4b50`, no fork code involved. Seeded
+run (shared step-0 checkpoint), dp1, varying only tp. `git apply --check` on the
+patch: clean.
+
+|                              | before tp2 | before tp4 | after tp2 | after tp4 |
+|---|---|---|---|---|
+| `layers.2.moe.router.gate`   | 1.4780 | 1.7221 | 1.0011 | 0.9999 |
+| `layers.4.moe.router.gate`   | 1.4401 | 2.1567 | 0.9998 | 0.9974 |
+| `layers.3.moe.router.gate`   | 1.4178 | 2.6851 | 1.0003 | 1.0009 |
+| `layers.5.moe.router.gate`   | 1.2109 | 1.6576 | 1.0022 | 1.0009 |
+| `layers.1.moe.router.gate`   | 1.2067 | 1.9644 | 0.9975 | 0.9992 |
+| **max \|ratio−1\| (83 params)** | **0.4780** | **1.6851** | **0.0025** | **0.0026** |
+
+The tp2 column reproduces the numbers already in this kit. tp4 is new and is
+worse than tp2 before the fix, which is what a dropped reduction should do --
+more ranks, more of the sum missing.
+
+`if enable_ep else None` is still at moe_sharding.py L311-322 on `681fd4b50`.
