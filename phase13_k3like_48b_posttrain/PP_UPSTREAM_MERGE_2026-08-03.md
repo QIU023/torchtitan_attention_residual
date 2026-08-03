@@ -41,6 +41,42 @@ becomes "Expecting 2" -- because the accumulation loop still yields a single
 dict per step on this path. The K3 train path is not producing the list the new
 contract expects.
 
+## It is upstream's own PP, not ours
+
+`deepseek_v3_debugmodel` fails identically on the merged tree:
+
+    NGPU=2, pp2, local_batch 4, global 8
+    ValueError: Expecting 4 arg_mbs but got 1
+
+So the break is not in the K3 path and not in our adapter. Adding
+`--parallelism.pipeline_parallel_microbatch_size 1` does not help either model.
+
+## Where the mismatch is
+
+The trainer computes the count correctly:
+
+    num_pipeline_parallel_microbatches = local_batch_size // pp_microbatch_size
+                                       = 4 // 1 = 4
+
+and the accumulation loop does fetch that many:
+
+    for _ in range(self.gradient_accumulation_steps):
+        microbatches = []
+        for _ in range(self.num_pipeline_parallel_microbatches):
+            input_dict, labels = next(data_iterator)
+            microbatches.append((input_dict, labels))
+
+Its init line confirms the arithmetic -- "local batch size 4, global batch size
+8, gradient accumulation steps 2". Yet the schedule receives one entry. So each
+`next(data_iterator)` is yielding a whole local batch where the new contract
+wants one microbatch: the dataloader side of this change has not landed for the
+`c4_test` path, or needs a knob neither model sets.
+
+Reported rather than patched. The fix belongs wherever upstream intended the
+split to happen, and guessing at it from the consumer side would put the K3
+adapter -- the component with the clean per-parameter record -- on the hook for
+an upstream contract change.
+
 ## Not attempted
 
 Patching the adapter or the loop to synthesize a list would be guessing at a
