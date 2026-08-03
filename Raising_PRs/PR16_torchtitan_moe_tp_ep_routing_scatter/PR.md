@@ -4,6 +4,7 @@
 **Target file**: `torchtitan/models/common/moe.py` (`MoE.forward`, the one-hot routing-map construction)
 **Fork reference**: torchtitan `attention_residual_dev`, commit `129e29de`
 **Upstream audit (2026-07-25)**: `upstream/main` @ `fd277658` still has the unmodified `scatter_` and the stale comment claiming DTensor runs it as a local op. **Not obsoleted; still applies.**
+**Re-audit (2026-08-03)**: `upstream/main` @ `681fd4b50` — bare `scatter_` still at `moe.py:465`; patch verified to apply cleanly in a fresh worktree. **Can be filed in parallel with PR19** (`moe_sharding.py` in_grad_placements): different files, no overlap, both apply to `681fd4b50` in either order.
 **Effort**: ~half a day (patch + a TP+EP integration cell + unit test).
 **Risk**: low — the non-DTensor path is untouched, and the DTensor branch only makes the placement explicit.
 
