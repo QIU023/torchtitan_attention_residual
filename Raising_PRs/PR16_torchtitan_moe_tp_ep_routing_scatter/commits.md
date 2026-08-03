@@ -21,3 +21,12 @@ Upstream state verified 2026-07-25 against `pytorch/torchtitan` main
 @ `fd277658`: `MoE.forward` still builds the routing map with a bare
 `zeros_like(...).scatter_(...)`, and the comment above it still claims DTensor
 runs it as a local op.
+
+## RETIRED 2026-08-03
+
+The defect is torch-2.12-only: `scatter_probe.py` (this folder) shows the
+identical construction working correctly on torch 2.13.0, and the GPU box
+showed pristine upstream training clean on 2.14 nightly under both spmd
+backends. `129e29de` stays on the fork as a 2.12-stable compat shim and is
+excluded from any upstream PR branch. Do not file. See PR.md for the full
+evidence chain and the corrections to earlier revisions of this kit.

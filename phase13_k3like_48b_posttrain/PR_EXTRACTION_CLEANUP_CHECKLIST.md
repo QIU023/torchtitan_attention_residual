@@ -146,22 +146,25 @@ nightly."
 
 ---
 
-## 5. `models/common/moe.py` TP+EP scatter fix: separate PR, not this one
+## 5. `models/common/moe.py` scatter fix: RETIRED as a PR (2026-08-03) -- now a torch-2.12 compat shim
 
-**What**: the fork carries a real core fix (router `routing_map` scatter
-under `Shard(1)` placement + unit test). It is model-agnostic and belongs in
-its own PR -- kit ready in `Raising_PRs/PR16/` (filing needs explicit
-go-ahead).
+**What (updated)**: the routing-map scatter "fix" (`129e29de`) turned out to
+patch a torch-2.12-only gap -- torch >= 2.13 has the `aten.scatter_`
+sharding strategy and the bare construction works (evidence chain in
+`Raising_PRs/PR16_*/PR.md`; probe in that folder). **PR16 is not filed.**
+The fork keeps the change as a stable-torch compat shim, same category as
+item 4's shims.
 
-**How**:
+The OTHER core fix, `moe_sharding.py` EP-off `in_grad_placements`
+(`Raising_PRs/PR19_*`), is unaffected: it is a declaration bug present in
+current upstream source, with a DSv3 reproduction valid on the default
+backend. PR19 files on its own; the K3 PR body references it if TP cells
+depend on it.
 
-- File PR16 first (or simultaneously). The K3 PR branch must NOT contain the
-  moe.py diff (item 0 guarantees this).
-- If PR16 is not yet merged when the K3 PR opens: the K3 PR body states
-  "TP+EP combos require pytorch/torchtitan#<PR16-number>"; TP+EP CI cells,
-  if any, are marked accordingly.
+**How**: item 0's branch construction already excludes both moe.py and
+moe_sharding.py diffs from the K3 PR branch. Nothing else to do.
 
-**Verify**: `git log --oneline -- torchtitan/models/common/moe.py` on the PR
+**Verify**: `git log --oneline -- torchtitan/models/common/` on the PR
 branch shows no fork commits.
 
 ---
