@@ -2,7 +2,7 @@
 
 ## What was found
 
-`KimiLinearModel.init_weights` never initialized the routed-expert parameters.
+`KimiK3Model.init_weights` never initialized the routed-expert parameters.
 Two independent stale assumptions in the same code block:
 
 ```python
@@ -31,7 +31,7 @@ experts: the dense FFN on layer 0, the two full-width shared experts, and the
 latent projections carry the FFN path on their own. Nothing errors, no
 gradient is NaN, and grad_norm stays in a normal range.
 
-Measured at dp2 on `kimi_linear_k3mini_block_attn_res`, seed 42 deterministic
+Measured at dp2 on `kimi_k3_mini_block_attn_res`, seed 42 deterministic
 (`moe_connected_probe.py`):
 
 | configuration | loss | routed-expert grad-norm |
@@ -49,8 +49,8 @@ Trainer-level effect on the same 3-step smoke:
 
 | flavor | before | after |
 | --- | --- | --- |
-| `kimi_linear_k3mini_block_attn_res` | 7.71445 / 7.61991 / 7.15075 | 7.75113 / 7.68023 / 7.59077 |
-| `kimi_linear_k3mini_qat_mxfp4` | 7.71445 / 7.61991 / 7.15075 | 7.72159 / 7.65503 / 7.55739 |
+| `kimi_k3_mini_block_attn_res` | 7.71445 / 7.61991 / 7.15075 | 7.75113 / 7.68023 / 7.59077 |
+| `kimi_k3_mini_qat_mxfp4` | 7.71445 / 7.61991 / 7.15075 | 7.72159 / 7.65503 / 7.55739 |
 
 Note the pre-fix loss fell *faster* (7.71 -> 7.15 vs 7.75 -> 7.59). A smaller
 effective model overfits a 2-sequence batch more quickly, so the broken

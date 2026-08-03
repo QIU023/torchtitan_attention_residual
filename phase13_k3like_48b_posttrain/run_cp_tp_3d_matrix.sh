@@ -6,7 +6,7 @@
 # against their 1-axis baselines (see the report for bands).
 set -u
 cd /workspace/torchtitan_attention_residual/torchtitan
-CFG="--module kimi_k3 --config kimi_linear_debugmodel --checkpoint.no-enable --debug.seed 42 --debug.deterministic --metrics.log_freq 1"
+CFG="--module kimi_k3 --config kimi_k3_debugmodel --checkpoint.no-enable --debug.seed 42 --debug.deterministic --metrics.log_freq 1"
 PORT=29500
 run_cell() {
   local name="$1" ngpu="$2" steps="$3"; shift 3
@@ -45,9 +45,9 @@ run_cell "4d fsdp2tp2pp2ep2"  8  5 --parallelism.data_parallel_shard_degree 2 --
 echo "=================== MATRIX DONE ==================="
 # LoRA / gated flavors (separate configs):
 #   LoRA x FSDP x TP x CP:
-#     --config kimi_linear_debugmodel_gated_lora dp2 tp2 cp2   (PASS)
+#     --config kimi_k3_debugmodel_gated_lora dp2 tp2 cp2   (PASS)
 #   gated (k3faithful) x TP:
-#     --config kimi_linear_debugmodel_k3faithful dp1 tp2       (PASS, was broken pre-fix)
+#     --config kimi_k3_debugmodel_k3faithful dp1 tp2       (PASS, was broken pre-fix)
 # Known limitation: the LoRA flavor without FSDP (dp_shard=1) hits a
 # preexisting fp32-vs-bf16 dtype crash in block_attn_res (not CP-related;
 # repros at plain dp1 tp2 on the pre-CP commit 7d8acabe).

@@ -30,7 +30,7 @@ the 07-24 handoff sec 2 -- torch 2.12.0+cu130, fla-core 0.5.1, torchao
 
 ## 1. The matrix (5-step cells, seed 42 deterministic, bf16, seq 512)
 
-`kimi_linear_debugmodel_gated_qlora_mxfp4`, packed base loaded from an
+`kimi_k3_debugmodel_gated_qlora_mxfp4`, packed base loaded from an
 offline-quantized DCP checkpoint. **`--training.global-batch-size 4` is
 pinned on every cell**: `global_batch_size` defaults to `local_batch_size *
 dp_degree`, so a dp2 cell silently optimizes a 2x larger batch than a dp1
@@ -87,7 +87,7 @@ via `moe.py:501 self.shared_experts(x_BLD)` -> `feed_forward.py:54 self.w1(x)`.
 projections (`_tp_style` set -> `_forward_packed_tp`). But the **MoE shared
 experts** (`w1/w2/w3`) are styled `NoParallel`, not Colwise/Rowwise, so:
 
-- the `packed_tp` loop in `apply_tp_kimi_linear` never sees them and
+- the `packed_tp` loop in `apply_tp_kimi_k3` never sees them and
   `_tp_style` stays `None` -> forward takes the non-TP branch;
 - that branch calls `_dequant_base_mxfp4()`, which for `_tp_style is None`
   densifies `base_qdata`/`base_scale` via `full_tensor()` -> a **plain**
@@ -217,7 +217,7 @@ in the repo). Rebuilt in-session:
 ```bash
 # 1. bf16 source (dp2, 1 step, model-only fp32 save at last step)
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 \
-  --config kimi_linear_debugmodel_gated_lora --debug.seed 42 \
+  --config kimi_k3_debugmodel_gated_lora --debug.seed 42 \
   --debug.deterministic --training.steps 1 \
   --parallelism.data_parallel_shard_degree 2 \
   --checkpoint.enable --checkpoint.interval 1 --dump-folder /workspace/out_bf16_lora
@@ -328,7 +328,7 @@ packed-base x TP:
    `to_local()` first; dynamo's fake-tensor mode does not carry that
    narrowing through, the same failure family as the existing
    `block_attn_res` / KDA `torch.compiler.disable` carve-outs in
-   `_apply_compile_kimi_linear`.
+   `_apply_compile_kimi_k3`.
 2. Adding the analogous carve-out for `_dequant_base_mxfp4` clears (1) and
    exposes a second, deeper problem: `RuntimeError: During the backward, we
    encountered a tensor subclass where we guessed its metadata incorrectly.

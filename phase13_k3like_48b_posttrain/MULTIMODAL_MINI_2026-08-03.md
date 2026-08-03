@@ -5,7 +5,7 @@
 `/workspace/k3mini_hf` started as a hand-written K3 config skeleton with no
 weights, declaring `architectures: [KimiK3ForConditionalGeneration]` -- K3's real
 identity. The 946 tensors in it later came from converting a torchtitan seed
-checkpoint generated with `kimi_linear_k3mini_block_attn_res`, a TEXT-ONLY
+checkpoint generated with `kimi_k3_mini_block_attn_res`, a TEXT-ONLY
 flavor. So it claimed to be multimodal while containing zero vision tensors, and
 vLLM's multimodal path failed on the mismatch.
 
@@ -17,7 +17,7 @@ multimodal. That is the one I started on and it was the wrong trade.
 
 ## What was built instead
 
-`kimi_linear_k3mini_vl`: the text k3mini plus a SHRUNK MoonViT-V2. Sizes matter
+`kimi_k3_mini_vl`: the text k3mini plus a SHRUNK MoonViT-V2. Sizes matter
 here -- the released tower is 447.4M against k3mini's 80.9M text side, 5.5x, so
 a debug run would measure the encoder rather than the K3 structure under test.
 At 4 layers / hidden 256 / 4 heads (head_dim 64, as released) the tower is 6.44M,

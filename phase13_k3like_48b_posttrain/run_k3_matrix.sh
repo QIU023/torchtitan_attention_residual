@@ -5,7 +5,7 @@
 # routed experts were never initialized (EVIDENCE_INVALIDATION_2026-07-27.md),
 # so nothing here is comparable to a pre-2026-07-27 number.
 #
-# The flavor is kimi_linear_k3mini_block_attn_res: K3's structure at reduced
+# The flavor is kimi_k3_mini_block_attn_res: K3's structure at reduced
 # extents (SiTU-GLU routed experts, Gated MLA with q-compression and a
 # full-rank output gate, KDA with the lower-bounded decay, Stable LatentMoE
 # with 2 shared experts, AttnRes block size 12 over 21 layers, head_dim 128).
@@ -28,7 +28,7 @@ export PYTHONPATH=$TITAN
 # global_batch_size / (dp_degree * local_batch_size). With global 8 and dp 1 the
 # local batch defaults to 8, giving ONE microbatch and a hard failure -- so
 # every PP leg pins --training.local-batch-size 2.
-COMMON="--module kimi_k3 --config kimi_linear_k3mini_block_attn_res \
+COMMON="--module kimi_k3 --config kimi_k3_mini_block_attn_res \
  --training.steps $STEPS --training.global-batch-size 8 --training.seq_len 512 \
  --debug.seed 42 --debug.deterministic --metrics.log_freq 1 \
  --checkpoint.no-enable"
@@ -117,8 +117,8 @@ run tp2xcp2xpp2      8 30724 --parallelism.data_parallel_shard_degree 1 \
 echo "########## QAT / QLoRA under a mesh ##########"
 run qat_dp2xtp2      4 30731 --parallelism.data_parallel_shard_degree 2 \
                               --parallelism.tensor_parallel_degree 2 \
-                              --config kimi_linear_k3mini_qat_mxfp4
+                              --config kimi_k3_mini_qat_mxfp4
 run qlora_dp2xtp2    4 30732 --parallelism.data_parallel_shard_degree 2 \
                               --parallelism.tensor_parallel_degree 2 \
-                              --config kimi_linear_k3mini_qlora
+                              --config kimi_k3_mini_qlora
 echo "########## done ##########"

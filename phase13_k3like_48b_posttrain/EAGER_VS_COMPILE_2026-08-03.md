@@ -7,8 +7,8 @@ and the 7-leg multimodal matrix were already eager runs -- the "add an eager
 baseline" request was, in effect, already satisfied, and what was actually
 missing was the COMPILED comparison. Checked rather than assumed:
 
-    kimi_linear_k3mini_diag_4l_moe_depth: compile.enable=False
-    kimi_linear_k3mini_vl:                compile.enable=False
+    kimi_k3_mini_diag_4l_moe_depth: compile.enable=False
+    kimi_k3_mini_vl:                compile.enable=False
 
 ## The comparison
 

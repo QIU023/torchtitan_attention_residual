@@ -12,7 +12,7 @@ Torchtitan fork commits (branch `attention_residual_dev`, on top of `7d8acabe`):
 | `5b654384` | real Ulysses CP for KDA+MLA (fused a2a seq<->head, seq-local projections, channel-sliced conv), head-divisibility ValueErrors |
 | `0f37ec4a` | CP+TP enabled (guard lifted); `attn_gate_proj` TP-wrapped (fixes standing gated-MLA-under-TP crash) |
 
-All runs: `kimi_linear_debugmodel` (4 layers: 3 KDA + 1 MLA, H=4, d=256,
+All runs: `kimi_k3_debugmodel` (4 layers: 3 KDA + 1 MLA, H=4, d=256,
 Block AttnRes, MoE 8 experts), `--debug.seed 42 --debug.deterministic`,
 bf16, seq 512 unless noted.
 
@@ -143,7 +143,7 @@ Fork commits `eb18e8f1` (A2), `a3d41902` (A1), verl `60b185fe` (A5).
 ## Part 3 (wrap-up pass): the "cosmetic" grad_norm symptom was a REAL bug
 
 Chasing the per-rank grad_norm display difference exposed a third
-silent-correctness bug: `parallelize_kimi_linear` gated FSDP on
+silent-correctness bug: `parallelize_kimi_k3` gated FSDP on
 `dp_shard_enabled or dp_replicate_enabled` -- but torchtitan's "fsdp"
 mesh is dp_shard x cp and **FSDP is the mechanism that reduces param
 grads over cp**. At dp_shard=1, cp>1 (every dp1+cp cell in Parts 1-2)

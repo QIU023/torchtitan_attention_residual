@@ -3,7 +3,7 @@
 Full multi-GPU smoke + accuracy sweep on the 8x5090 box, ahead of moving
 the heavy 48B QLoRA/QAT SFT/GRPO to 2xH200. torchtitan fork @129e29de+.
 
-## Full-param parallelism matrix (kimi_linear_debugmodel, 8 cards)
+## Full-param parallelism matrix (kimi_k3_debugmodel, 8 cards)
 
 | cell | step-1 | step-3 loss / grad_norm |
 |---|---|---|

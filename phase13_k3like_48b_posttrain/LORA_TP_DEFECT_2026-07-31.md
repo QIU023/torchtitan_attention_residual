@@ -2,7 +2,7 @@
 
 ## The measurement
 
-`kimi_linear_k3mini_qlora`, dp1, pure TP, shared checkpoint, only tp varies.
+`kimi_k3_mini_qlora`, dp1, pure TP, shared checkpoint, only tp varies.
 Ratio is tp1/tpN per parameter, so >1 means the TP gradient is too SMALL.
 
   parameter                                      /tp2      /tp4

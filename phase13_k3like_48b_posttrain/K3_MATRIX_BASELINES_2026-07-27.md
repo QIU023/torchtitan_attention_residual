@@ -1,7 +1,7 @@
 # K3-faithful parallelism baselines (2026-07-27)
 
 Produced by `run_k3_matrix.sh` on 8x RTX 5060 Ti, flavor
-`kimi_linear_k3mini_block_attn_res` unless noted, 3 steps, global batch 8,
+`kimi_k3_mini_block_attn_res` unless noted, 3 steps, global batch 8,
 seq 512, `--debug.seed 42 --debug.deterministic`.
 
 **These replace every earlier MoE loss in this logbook.** The previous numbers

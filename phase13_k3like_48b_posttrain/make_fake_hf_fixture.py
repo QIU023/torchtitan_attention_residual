@@ -46,7 +46,7 @@ def main() -> None:
     from torchtitan.experiments.kimi_k3.model_configs import (
         build_kimi_linear_config,
     )
-    from torchtitan.experiments.kimi_k3.model import KimiLinearModel
+    from torchtitan.experiments.kimi_k3.model import KimiK3Model
     from torchtitan.experiments.kimi_k3.state_dict_adapter import (
         KimiLinearStateDictAdapter,
     )
@@ -107,13 +107,13 @@ def main() -> None:
     # 4) Random-init flavor weights -> HF layout via to_hf.
     torch.manual_seed(42)
     with torch.device("cpu"):
-        model = KimiLinearModel(kc)
+        model = KimiK3Model(kc)
     model.init_weights()
     model = model.to(torch.bfloat16)
-    from torchtitan.experiments.kimi_k3 import KimiLinearSpec
+    from torchtitan.experiments.kimi_k3 import KimiK3Spec
 
     adapter = KimiLinearStateDictAdapter(
-        KimiLinearSpec(kimi_config=kc, num_blocks=None), hf_assets_path=None
+        KimiK3Spec(kimi_config=kc, num_blocks=None), hf_assets_path=None
     )
     hf_sd = adapter.to_hf(model.state_dict())
     from safetensors.torch import save_file

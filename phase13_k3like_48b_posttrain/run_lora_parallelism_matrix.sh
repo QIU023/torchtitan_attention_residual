@@ -2,13 +2,13 @@
 # Phase 2: adapter-LoRA (bf16) x parallelism matrix on the 8-card box, via
 # the REAL torchtitan.train path (mesh/parallelize/PP handled by titan).
 # Closes the flagged gap: LoRA post-training only ever ran under pure FSDP.
-# Model: kimi_linear_debugmodel_gated_lora (AttnRes graft + LoRA rank-8,
+# Model: kimi_k3_debugmodel_gated_lora (AttnRes graft + LoRA rank-8,
 # 4 layers, 8 experts). Each cell = 3 steps; PASS = finite loss + grad_norm
 # (grad_norm>0 under PP proves the cross-stage adapter routes the LoRA/graft
 # skip-edge gradients -- the correctness-critical cell).
 set -u
 cd /workspace/torchtitan_attention_residual/torchtitan
-CFG="--module kimi_k3 --config kimi_linear_debugmodel_gated_lora --training.steps 3 --checkpoint.no-enable"
+CFG="--module kimi_k3 --config kimi_k3_debugmodel_gated_lora --training.steps 3 --checkpoint.no-enable"
 PORT=29541
 run_cell() {
   local name="$1"; shift

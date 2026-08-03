@@ -1,6 +1,6 @@
 # Multimodal parallelism matrix
 
-`kimi_linear_k3mini_vl` (87,376,316 params: 80.9M text + 6.44M MoonViT-V2 at
+`kimi_k3_mini_vl` (87,376,316 params: 80.9M text + 6.44M MoonViT-V2 at
 4 layers / hidden 256), 3 steps, seed 42, deterministic, global batch 8, on
 torch dev20260802.
 

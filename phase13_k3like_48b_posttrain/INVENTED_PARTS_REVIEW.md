@@ -36,7 +36,7 @@ in the K3 PR).
   full-param exception + `trainable_state_dict`.
 - Works around: upstream `LoRAConverter` is Config-tree based; the Kimi
   model is plain modules (same reason Float8 needed
-  `KimiLinearFloat8Spec`).
+  `KimiK3Float8Spec`).
 - Precedent: semantics mirror LoRAConverter (kaiming A, zero B, scaling
   alpha/rank); torchtune module-swap LoRA is the close precedent.
 - 7.27 impact: NONE -- titan-integration concern. Clean long-term fix:

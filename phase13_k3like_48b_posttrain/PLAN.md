@@ -152,8 +152,8 @@ scale we can actually train.
 | Axis | Status | Location |
 |---|---|---|
 | FSDP2 / HSDP | DONE | `apply_fsdp` (tied-embed bundle, PP-strip aware, EP-nested edp_mesh) |
-| TP | DONE | `apply_tp_kimi_linear` (DSv3-style; KDA=NoParallel; MLA colwise/rowwise; MoE gate/shared NoParallel; fla-core DTensor patch; plain-boundary convention) |
-| EP | DONE | `apply_ep_kimi_linear` (ExpertParallel all-to-all + edp FSDP nesting) |
+| TP | DONE | `apply_tp_kimi_k3` (DSv3-style; KDA=NoParallel; MLA colwise/rowwise; MoE gate/shared NoParallel; fla-core DTensor patch; plain-boundary convention) |
+| EP | DONE | `apply_ep_kimi_k3` (ExpertParallel all-to-all + edp FSDP nesting) |
 | PP | DONE | `pipeline_adapter.py` pipelining_fn (Interleaved1F1B + cache adapter) |
 | AC / compile | DONE | shared `apply_ac` / per-layer compile with fla carve-outs |
 | **CP** | BLOCKED | `raise NotImplementedError` — fla-core `chunk_kda` lacks ring-recurrence over CP shards (upstream fla-core issue, not ours) |

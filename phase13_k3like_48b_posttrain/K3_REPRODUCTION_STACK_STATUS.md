@@ -35,7 +35,7 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 
 | Format | Status | Evidence |
 |---|---|---|
-| fp8 rowwise (SM89+) | DONE | KimiLinearFloat8Spec; 5-step smoke on SM12.0 |
+| fp8 rowwise (SM89+) | DONE | KimiK3Float8Spec; 5-step smoke on SM12.0 |
 | NF4 QLoRA (customer option) | DONE | FSDP2 composition; QLoRA SFT loop; dim-alignment guard. NOT K3's format |
 | **MXFP4+MXFP8 QAT** (K3-faithful) | DONE | apply_mxfp4_qat STE fake-quant; torchao mx; 2 tests. Emulated (any GPU) |
 | packed-MXFP4 import | GUARDED | state_dict_adapter rejects packed weights loudly; real unpack -> 7.27 |
@@ -74,7 +74,7 @@ report drop. Fork: QIU023/torchtitan @attention_residual_dev.
 
 ## Usable through the CLI
 
-`kimi_linear_debugmodel_k3faithful` (`--module kimi_k3 --config`)
+`kimi_k3_debugmodel_k3faithful` (`--module kimi_k3 --config`)
 turns on the K3 architecture deltas (Gated MLA + alpha graft) and
 trains through the real trainer; MXFP4 QAT + Per-Head Muon apply
 via mxfp4_qat.py / muon.py hooks. Suite: 69 tests stable green.

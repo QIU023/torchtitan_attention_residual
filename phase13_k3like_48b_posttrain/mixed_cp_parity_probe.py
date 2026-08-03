@@ -47,7 +47,7 @@ import torch.distributed as dist
 
 from torchtitan.experiments.kimi_k3.model import (
     KimiDeltaAttention,
-    KimiLinearModel,
+    KimiK3Model,
     KimiMLAAttention,
 )
 from torchtitan.experiments.kimi_k3.model_configs import build_kimi_linear_config
@@ -59,7 +59,7 @@ def build(cp_mode: str, wire_cp: bool):
     cfg = build_kimi_linear_config("k3mini", vocab_size=256)
     cfg.kda_cp_mode = cp_mode
     torch.manual_seed(0)
-    model = KimiLinearModel(cfg).cuda().to(DTYPE)
+    model = KimiK3Model(cfg).cuda().to(DTYPE)
     model.init_weights(buffer_device="cuda")
     for p in model.parameters():
         dist.broadcast(p.data, src=0)

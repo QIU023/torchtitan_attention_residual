@@ -39,7 +39,7 @@ torchrun --nproc_per_node=1 -m torchtitan.train \
 
 # debugmodel CI flavor (seconds)
 torchrun --nproc_per_node=1 -m torchtitan.train \
-  --module kimi_k3 --config kimi_linear_debugmodel --checkpoint.no-enable
+  --module kimi_k3 --config kimi_k3_debugmodel --checkpoint.no-enable
 ```
 
 ## 3. Parallelism

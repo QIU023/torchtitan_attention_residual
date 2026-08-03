@@ -1,12 +1,12 @@
 #!/bin/bash
 # Full-param K3 parallelism matrix on 8 cards, adding the TP axis (the LoRA
 # matrix covered FSDP/EP/PP; this adds TP + the 4D FSDP+TP+EP+PP combo).
-# Model: kimi_linear_debugmodel (full-param, KDA+MLA+MoE, 4 layers 8 experts).
+# Model: kimi_k3_debugmodel (full-param, KDA+MLA+MoE, 4 layers 8 experts).
 # Reports step-1 and step-3 loss per cell; PASS = finite loss on the last
 # stage. Cross-cell loss varies within the bf16/KDA-nondeterminism band.
 set -u
 cd /workspace/torchtitan_attention_residual/torchtitan
-CFG="--module kimi_k3 --config kimi_linear_debugmodel --training.steps 3 --checkpoint.no-enable"
+CFG="--module kimi_k3 --config kimi_k3_debugmodel --training.steps 3 --checkpoint.no-enable"
 PORT=29590
 run_cell() {
   local name="$1"; shift

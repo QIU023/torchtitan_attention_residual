@@ -28,7 +28,7 @@ import os
 import torch
 import torch.distributed as dist
 
-from torchtitan.experiments.kimi_k3.attn_res_model import KimiLinearAttnResModel
+from torchtitan.experiments.kimi_k3.attn_res_model import KimiK3AttnResModel
 from torchtitan.experiments.kimi_k3.model_configs import (
     build_kimi_linear_config,
     resolve_num_blocks,
@@ -43,7 +43,7 @@ def main() -> None:
     cfg = build_kimi_linear_config("k3mini", vocab_size=256)
     nb = resolve_num_blocks("k3mini", "block_attn_res")
     torch.manual_seed(0)
-    model = KimiLinearAttnResModel(cfg, num_blocks=nb).cuda()
+    model = KimiK3AttnResModel(cfg, num_blocks=nb).cuda()
     model.init_weights()
 
     from torchtitan.experiments.kimi_k3.parallelize import apply_fsdp

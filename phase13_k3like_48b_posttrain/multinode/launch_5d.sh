@@ -26,7 +26,7 @@ export NCCL_SOCKET_IFNAME=$IFACE
 export NCCL_IB_DISABLE=1
 export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
 
-COMMON="--module kimi_k3 --config kimi_linear_debugmodel8h --checkpoint.no-enable \
+COMMON="--module kimi_k3 --config kimi_k3_debugmodel8h --checkpoint.no-enable \
  --debug.seed 42 --debug.deterministic --metrics.log_freq 1 \
  --training.global-batch-size 4 --training.steps $STEPS \
  --parallelism.data_parallel_shard_degree 2 \

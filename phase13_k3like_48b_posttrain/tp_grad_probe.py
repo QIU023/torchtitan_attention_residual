@@ -26,7 +26,7 @@ import os
 import torch
 import torch.distributed as dist
 
-from torchtitan.experiments.kimi_k3.model import KimiLinearModel
+from torchtitan.experiments.kimi_k3.model import KimiK3Model
 from torchtitan.experiments.kimi_k3.model_configs import build_kimi_linear_config
 
 
@@ -44,7 +44,7 @@ def build(device="cuda"):
     # fp32: in bf16 the forward already differs by ~0.5% between the arms, and
     # a random-init deep model amplifies that, so per-parameter gradient
     # comparisons drown in precision noise rather than showing a TP bug.
-    m = KimiLinearModel(cfg).to(device).float()
+    m = KimiK3Model(cfg).to(device).float()
     m.init_weights(buffer_device=device)
     for p in m.parameters():
         dist.broadcast(p.data, src=0)
@@ -95,13 +95,13 @@ def main() -> None:
     _ref_keep = ref_model
 
     # ---- TP arm ----
-    from torchtitan.experiments.kimi_k3.parallelize import apply_tp_kimi_linear
+    from torchtitan.experiments.kimi_k3.parallelize import apply_tp_kimi_k3
 
     tp_model, _ = build()
     tp_mesh = dist.device_mesh.init_device_mesh(
         "cuda", (world,), mesh_dim_names=("tp",)
     )
-    apply_tp_kimi_linear(tp_model, tp_mesh)
+    apply_tp_kimi_k3(tp_model, tp_mesh)
     tp_loss = step(tp_model)
     tp = grads_of(tp_model)
 

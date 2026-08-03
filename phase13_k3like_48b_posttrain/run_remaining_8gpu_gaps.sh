@@ -20,7 +20,7 @@ PACKED=${PACKED:-/workspace/packed_mxfp4_ckpt}
 OUT=${OUT:-/workspace/out_gaps}
 cd "$TITAN"
 export PYTHONPATH=$TITAN
-QCFG="--module kimi_k3 --config kimi_linear_debugmodel_gated_qlora_mxfp4 \
+QCFG="--module kimi_k3 --config kimi_k3_debugmodel_gated_qlora_mxfp4 \
  --debug.seed 42 --debug.deterministic --metrics.log_freq 1 \
  --training.global-batch-size 4"
 LOAD="--checkpoint.enable --checkpoint.initial-load-path $PACKED \
@@ -98,7 +98,7 @@ run "compile x tp2" 2 30331 $QCFG $LOAD --training.steps 3 \
 
 echo "############ 5. GAPS sec 5 staleness: bf16 gated_lora dp1+tp2 (no FSDP) ############"
 run "gated_lora dp1 tp2 (no FSDP)" 2 30341 --module kimi_k3 \
-  --config kimi_linear_debugmodel_gated_lora --checkpoint.no-enable \
+  --config kimi_k3_debugmodel_gated_lora --checkpoint.no-enable \
   --debug.seed 42 --debug.deterministic --metrics.log_freq 1 \
   --training.global-batch-size 4 --training.steps 3 \
   --parallelism.data_parallel_shard_degree 1 --parallelism.tensor_parallel_degree 2 \

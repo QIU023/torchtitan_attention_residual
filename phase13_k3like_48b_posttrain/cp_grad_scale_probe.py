@@ -15,7 +15,7 @@ breaks any scale-sensitive optimizer).
 
 Usage (identical config, only cp differs):
   torchrun --nproc_per_node=1 cp_grad_scale_probe.py --module kimi_k3 \
-    --config kimi_linear_debugmodel --checkpoint.no-enable \
+    --config kimi_k3_debugmodel --checkpoint.no-enable \
     --debug.seed 42 --debug.deterministic --training.steps 1 \
     --parallelism.context_parallel_degree 1
   torchrun --nproc_per_node=2 ... --parallelism.context_parallel_degree 2

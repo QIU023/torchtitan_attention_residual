@@ -28,7 +28,7 @@ FSDP2 per-param sharding 对 frozen(`requires_grad=False`)参数原生支持,gra
 
 ### 3. TP 轴:小活,但必须动我们手写的 plan
 
-`apply_tp_kimi_linear` 是逐模块手写的 plan dict,要扩展到 LoRA 子模块,配对规则是固定的:
+`apply_tp_kimi_k3` 是逐模块手写的 plan dict,要扩展到 LoRA 子模块,配对规则是固定的:
 
 - **Colwise base**(q_proj/kv_b_proj/gate_up):`lora_A` 复制、**`lora_B` colwise 分片**(跟 base 的 out-dim 切法);
 - **Rowwise base**(o_proj/down_proj):**`lora_A` rowwise 分片**(吃分片输入)、`lora_B` 复制,LoRA 分支产生 Partial → 要么多付一次 all-reduce,要么把 LoRA 输出加进 base 的 Partial 再一起 reduce(省通信但要动加法位置);

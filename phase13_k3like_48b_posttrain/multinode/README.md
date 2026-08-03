@@ -117,7 +117,7 @@ pp outermost -> with default rank placement, node 0 = pp stage 0 and node 1 =
 stage 1, so **only the PP stage-boundary P2P crosses the LAN**; tp/cp/dp stay
 intra-node. This is the correct placement automatically; do not reorder ranks.
 
-Carrier: `kimi_linear_debugmodel8h` (H=8 clears tp*cp=4 with headroom), seed
+Carrier: `kimi_k3_debugmodel8h` (H=8 clears tp*cp=4 with headroom), seed
 42 deterministic, global batch pinned. Gate: descending finite loss +
 rank-identical loss/grad_norm across all 16 ranks, compared against the
 verified <=8-rank projections in CP_TP_3D_VERIFICATION_2026-07-24.md.

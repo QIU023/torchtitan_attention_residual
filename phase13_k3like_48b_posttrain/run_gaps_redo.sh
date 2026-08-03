@@ -11,7 +11,7 @@ PACKED=${PACKED:-/workspace/packed_mxfp4_ckpt}
 OUT=${OUT:-/workspace/out_redo}
 cd "$TITAN"
 export PYTHONPATH=$TITAN
-QCFG="--module kimi_k3 --config kimi_linear_debugmodel_gated_qlora_mxfp4 \
+QCFG="--module kimi_k3 --config kimi_k3_debugmodel_gated_qlora_mxfp4 \
  --debug.seed 42 --debug.deterministic --metrics.log_freq 1 \
  --training.global-batch-size 4"
 PACKED_LOAD="--checkpoint.enable --checkpoint.initial-load-path $PACKED \

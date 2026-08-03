@@ -1,6 +1,6 @@
 # Full D matrix baseline, before the config-tree refactor
 
-`kimi_linear_k3mini_diag_4l_moe_depth`, 3 steps, seed 42, deterministic, global
+`kimi_k3_mini_diag_4l_moe_depth`, 3 steps, seed 42, deterministic, global
 batch 8. Every refactor step has to reproduce these before moving on.
 
     dp1                        7.72376 7.14969 6.22981
@@ -58,7 +58,7 @@ inherit `Decoder`. `LoRAConverter.convert()` starts from
 builds its linears positionally on a plain `nn.Module`, with no tree to walk,
 which is why the converter cannot be adopted.
 
-NOT for 2.8T scale-up. `kimi_linear_k3_2p8t_block_attn_res` already builds
+NOT for 2.8T scale-up. `kimi_k3_2p8t_block_attn_res` already builds
 config-only at 93 layers / hidden 7168 / 96 heads / 896 experts top-16, through
 the same `_flavor_trainer_config` parameterization as every other size. That goal
 is already met and should not be used to justify this work.

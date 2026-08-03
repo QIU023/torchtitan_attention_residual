@@ -26,7 +26,7 @@ SEED=$OUT/seed
 mkdir -p "$OUT"; cd "$TITAN"; export PYTHONPATH=$TITAN
 source /venv/main/bin/activate
 
-FLAVOR=${FLAVOR:-kimi_linear_k3mini_block_attn_res}
+FLAVOR=${FLAVOR:-kimi_k3_mini_block_attn_res}
 BASE="--module kimi_k3 --config $FLAVOR --training.seq_len 512 --debug.seed 42 \
  --debug.deterministic --metrics.log_freq 1"
 

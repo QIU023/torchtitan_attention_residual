@@ -46,12 +46,12 @@
 `model_spec.parallelize_fn(model, parallel_dims=, parallelism=,
 compile_config=)`. This works for Qwen3 (whose `parallelize_qwen3` accepts
 only those three) but fails for every other torchtitan `parallelize_*`
-function (`parallelize_kimi_linear`, `parallelize_deepseek_v3`,
+function (`parallelize_kimi_k3`, `parallelize_deepseek_v3`,
 `parallelize_llama`, `parallelize_attn_res`), which all require four
 additional kwargs: `training`, `model_converters`, `ac_config`,
 `dump_folder`.
 
-The result is `TypeError: parallelize_kimi_linear() missing 4 required
+The result is `TypeError: parallelize_kimi_k3() missing 4 required
 positional arguments: 'training', 'model_converters', 'ac_config',
 'dump_folder'` the moment a user points `PolicyTrainer` at a non-Qwen3
 model_spec. There is no per-flavor escape hatch — every RL entry-point
@@ -83,7 +83,7 @@ need converters keep working without code changes on the caller side.
 
 ### Why all four kwargs are needed
 
-- `training`: `parallelize_kimi_linear` reads `training.async_tensor_parallel`
+- `training`: `parallelize_kimi_k3` reads `training.async_tensor_parallel`
   to pick between sync and async TP collectives. Without it, falls back
   to the wrong default and silently degrades throughput.
 - `model_converters`: passed to FP8 / MXFP4 converters for quantization-

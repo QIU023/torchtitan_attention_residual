@@ -23,7 +23,7 @@ The `kimi-k3` branch registers `KimiK3ForConditionalGeneration`, exactly what
 The cause is the config we generated, not vLLM. `config.json` sets
 `model_type: kimi_k3` and `architectures: [KimiK3ForConditionalGeneration]` --
 both multimodal -- while `auto_map.AutoConfig` points at
-`configuration_kimi_k3.KimiLinearConfig`, the TEXT-ONLY config. transformers
+`configuration_kimi_k3.KimiK3Config`, the TEXT-ONLY config. transformers
 resolves the text config and says so ("You are using a model of type `kimi_k3`
 to instantiate a model of type `kimi_linear`"), so vLLM receives a flat config
 where it expects one nested under `text_config`, and the `hidden_size` write on

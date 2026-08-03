@@ -32,8 +32,8 @@ for QB from this table would be reading noise.
 
 ## Where the recipe is applied, and why not everywhere
 
-`kimi_linear_k3mini_k3recipe` carries both. Deliberately a separate flavor rather
-than a change to `kimi_linear_k3mini_block_attn_res`, because that flavor carries
+`kimi_k3_mini_k3recipe` carries both. Deliberately a separate flavor rather
+than a change to `kimi_k3_mini_block_attn_res`, because that flavor carries
 the cross-parallelism numerical baselines (PARALLEL_NUMERIC_BASELINE,
 PP_VP_REEXAMINATION) and changing its optimizer or router rule would invalidate
 every recorded number. The baseline flavor stays a fixed reference.

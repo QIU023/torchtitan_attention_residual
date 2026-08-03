@@ -51,7 +51,7 @@ checkout rather than cherry-picking the whole file:
 
 ```bash
 git checkout -b pr15-kimi-mamba-radix upstream/main
-# 1) add register_linear_attn_model(...) for KimiLinearConfig in configs/kimi_linear.py
+# 1) add register_linear_attn_model(...) for KimiK3Config in configs/kimi_linear.py
 # 2) drop KimiLinearForCausalLM from the force-disable elif in server_args.py
 # 3) confirm: type(scheduler.tree_cache).__name__ == "MambaRadixCache" with radix ON
 ```

@@ -57,14 +57,14 @@ registry at import time (the module is imported transitively before
 ```python
 register_linear_attn_model(
     LinearAttnModelSpec(
-        config_class=KimiLinearConfig,
+        config_class=KimiK3Config,
         backend_class_name="sglang.srt.layers.attention.linear.kda_backend.KDAAttnBackend",  # lazy str, no import cycle
         arch_names=["KimiLinearForCausalLM", "KimiBlockAttnResForCausalLM",
                     "KimiAttnResVLForConditionalGeneration"],
         uses_mamba_radix_cache=True,
         support_mamba_cache=True,
         support_mamba_cache_extra_buffer=False,   # no_buffer path
-        unwrap_text_config=True,                  # VLM carrier configs resolve inner KimiLinearConfig
+        unwrap_text_config=True,                  # VLM carrier configs resolve inner KimiK3Config
     )
 )
 ```
@@ -82,7 +82,7 @@ is a no-op when `enable_mamba_extra_buffer()` is False.)
 Verified caveats (no patch needed): `page_size==1` (Mamba-radix v0; default/auto
 already 1), overlap-schedule auto-disabled for no_buffer, `mamba_cache_chunk_size =
 max(FLA_CHUNK_SIZE=64, page_size)=64` matches the KDA kernel `chunk_size=64`, and
-`mamba2_layer_cache(layer_id)` is keyed by `KimiLinearConfig.mamba2_cache_params.layers
+`mamba2_layer_cache(layer_id)` is keyed by `KimiK3Config.mamba2_cache_params.layers
 == linear_layer_ids` (same global LM index KDA passes).
 
 ---
@@ -102,8 +102,8 @@ the patched sglang, TP=2 (45.84 GB/GPU), radix **enabled**.
 ```
 Registry double-hit (loaded via the engine's own `get_config`):
 ```
-get_linear_attn_spec_by_arch('KimiLinearForCausalLM') -> ('KimiLinearConfig', uses_mamba=True)
-get_linear_attn_config(<48B cfg>)                     -> ('KimiLinearConfig', uses_mamba=True)
+get_linear_attn_spec_by_arch('KimiLinearForCausalLM') -> ('KimiK3Config', uses_mamba=True)
+get_linear_attn_config(<48B cfg>)                     -> ('KimiK3Config', uses_mamba=True)
 ```
 Startup log corroboration (plain RadixCache never allocates this):
 ```

@@ -22,7 +22,7 @@ def main(mode):
         quantize_lora_bases,
     )
     from torchtitan.experiments.kimi_k3.parallelize import (
-        apply_ep_kimi_linear,
+        apply_ep_kimi_k3,
         apply_fsdp,
     )
 
@@ -37,7 +37,7 @@ def main(mode):
     pd.build_mesh()
 
     torch.manual_seed(0)
-    cfg = config_registry.kimi_linear_debugmodel_gated_lora()
+    cfg = config_registry.kimi_k3_debugmodel_gated_lora()
     m = cfg.model_spec.model
     # EP needs num_experts % ep == 0 (debug has 8); enable ep flag for build.
     m.kimi_config.moe_enable_ep = True
@@ -47,7 +47,7 @@ def main(mode):
     model = model.to(torch.bfloat16)
     n_q = quantize_lora_bases(model, mode=mode, experts=False)  # BEFORE shard
 
-    apply_ep_kimi_linear(model, pd)  # EP on routed experts
+    apply_ep_kimi_k3(model, pd)  # EP on routed experts
     # EP-aware FSDP: non-expert params on the fsdp mesh, expert params on
     # the efsdp mesh (dp_shard with the ep rank factored out) -- avoids the
     # fsdp/ep mesh-overlap that a naive fully_shard(model) hits.

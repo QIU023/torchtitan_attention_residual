@@ -54,7 +54,7 @@ missed the module docstring.
 ```
 
 Delete the `**Not supported**` block entirely. Copy the accurate wording
-from the `parallelize_kimi_linear` function docstring (L86-94), which is
+from the `parallelize_kimi_k3` function docstring (L86-94), which is
 already correct. New text must be ASCII-only (fork rule).
 
 **Verify**: `grep -n "blocked on fla-core" torchtitan/experiments/kimi_k3/parallelize.py`
@@ -323,13 +323,13 @@ Both found while verifying item 1, both fixed on the fork:
 
 - `config_registry.py`: "AC off -- parallelize.py Phase 4c doesn't implement
   it". AC **is** implemented (`ac_config.build(dump_folder).apply(model)` in
-  `parallelize_kimi_linear`) and verified under CP and TP. Off-by-default is a
+  `parallelize_kimi_k3`) and verified under CP and TP. Off-by-default is a
   fine choice; only the false reason was rewritten.
 - `model_configs.py` docstring: "This module does NOT yet return
   Trainer.Config nor ModelSpec. ModelSpec integration is Phase 4c ... use the
   Llama3-backed attn_res/config_registry.py flavors". Wrong three ways -- the
   module has a "Trainer.Config factories" section, the `BaseModel.Config` shim
-  exists (`KimiLinearSpec` in model.py), and `attn_res/` no longer exists.
+  exists (`KimiK3Spec` in model.py), and `attn_res/` no longer exists.
 
 Lesson for the next pass: item 1 was not a one-off. Grep for *claims* ("not
 supported", "doesn't implement", "does NOT yet", "blocked on"), not just for

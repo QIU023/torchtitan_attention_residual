@@ -19,7 +19,7 @@ running.
 - Fixes required:
   - fp8 flavor: `Float8LinearConverter.convert` (config-tree traversal)
     can never apply to the plain-module KimiLinear model; replaced with
-    module-level torchao swap in `KimiLinearFloat8Spec.build()`. The old
+    module-level torchao swap in `KimiK3Float8Spec.build()`. The old
     `filter_fqns` ("kda", "mla.q_lora_proj") matched NOTHING in the real
     module tree -- KDA now excluded structurally, MLA low-rank via its
     real name (`kv_a_proj_with_mqa`). fp8 build verified: 60 linears
@@ -124,7 +124,7 @@ this environment, satisfying the acceptance criterion as written
 ## Step 5 — optional hardening (partial)
 
 - **fp8 flavor 5-step smoke: PASS** (1 GPU, seq 512, SM 12.0 native
-  rowwise fp8 through KimiLinearFloat8Spec's module-level swap). This
+  rowwise fp8 through KimiK3Float8Spec's module-level swap). This
   closes the last hardware gate from step 1's skip list.
 - **TP=2: FIXED same day -> PASS** (50-step smoke rc=0, loss 7.55).
   Root cause was integration-level (merged MoE no longer to_locals its

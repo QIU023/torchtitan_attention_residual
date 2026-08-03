@@ -3,7 +3,7 @@
 Option A: LoRA on a frozen MXFP4 base (K3's native FP4 weight format), and
 the adapter-LoRA x parallelism matrix that prior SFT never covered (it ran
 FSDP-only). All on the 8x5090 box, debug graft flavor
-(`kimi_linear_debugmodel_gated_lora`: AttnRes alpha-graft + LoRA rank-8,
+(`kimi_k3_debugmodel_gated_lora`: AttnRes alpha-graft + LoRA rank-8,
 4 layers, 8 experts). torchtitan fork @1ca1bd39.
 
 ## Phase 0 -- MXTensor under FSDP2 (decision gate): PASS via split-storage

@@ -69,7 +69,7 @@ branch in `server_args.py`. Listed as a wanted-but-undone target in #12867.
 **(1)** `configs/kimi_linear.py` — append a `register_linear_attn_model(
 LinearAttnModelSpec(...))` block at the bottom of the module (it imports
 at registry-discovery time, before `ServerArgs._handle_model_specific_adjustments`
-runs). Spec: `config_class=KimiLinearConfig`, `backend_class_name` = lazy
+runs). Spec: `config_class=KimiK3Config`, `backend_class_name` = lazy
 str to `KDAAttnBackend`, `arch_names=["KimiLinearForCausalLM"]`,
 `uses_mamba_radix_cache=True`, `support_mamba_cache=True`,
 `support_mamba_cache_extra_buffer=False` (MambaRadixCache v1 has no
@@ -96,7 +96,7 @@ Verified caveats (no patch needed):
 - `mamba_cache_chunk_size = max(FLA_CHUNK_SIZE=64, page_size) = 64`
   matches KDA kernel `chunk_size=64`.
 - `mamba2_layer_cache(layer_id)` keyed by
-  `KimiLinearConfig.mamba2_cache_params.layers == linear_layer_ids`
+  `KimiK3Config.mamba2_cache_params.layers == linear_layer_ids`
   (same global LM index KDA passes).
 
 ## Validation — on the official `moonshotai/Kimi-Linear-48B-A3B-Instruct`
@@ -112,8 +112,8 @@ Downloaded bf16 (98.25 GB, 20 shards), booted in patched sglang, TP=2
 ```
 Registry double-hit:
 ```
-get_linear_attn_spec_by_arch('KimiLinearForCausalLM') -> ('KimiLinearConfig', uses_mamba=True)
-get_linear_attn_config(<48B cfg>)                     -> ('KimiLinearConfig', uses_mamba=True)
+get_linear_attn_spec_by_arch('KimiLinearForCausalLM') -> ('KimiK3Config', uses_mamba=True)
+get_linear_attn_config(<48B cfg>)                     -> ('KimiK3Config', uses_mamba=True)
 ```
 Startup log:
 ```

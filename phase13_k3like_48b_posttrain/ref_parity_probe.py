@@ -31,7 +31,7 @@ def rel(a: torch.Tensor, b: torch.Tensor) -> float:
 
 
 def ref_config(**over):
-    """A small KimiLinearConfig for the reference, K3-shaped."""
+    """A small KimiK3Config for the reference, K3-shaped."""
     cfg_mod = load_ref("configuration_kimi_k3")
     base = dict(
         vocab_size=256,
@@ -74,7 +74,7 @@ def ref_config(**over):
         },
     )
     base.update(over)
-    cfg = cfg_mod.KimiLinearConfig(**base)
+    cfg = cfg_mod.KimiK3Config(**base)
     # The reference dispatches attention through
     # ALL_ATTENTION_FUNCTIONS[config._attn_implementation]; unset it is a
     # KeyError. eager keeps the comparison off flash-attention's own kernels.
@@ -83,11 +83,11 @@ def ref_config(**over):
 
 
 def our_config(ref_cfg):
-    """The same structure expressed in our KimiLinearConfig."""
-    from torchtitan.experiments.kimi_k3.model import KimiLinearConfig
+    """The same structure expressed in our KimiK3Config."""
+    from torchtitan.experiments.kimi_k3.model import KimiK3Config
 
     lac = ref_cfg.linear_attn_config
-    return KimiLinearConfig(
+    return KimiK3Config(
         vocab_size=ref_cfg.vocab_size,
         hidden_size=ref_cfg.hidden_size,
         num_hidden_layers=ref_cfg.num_hidden_layers,

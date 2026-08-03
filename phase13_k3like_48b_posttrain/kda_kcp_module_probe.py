@@ -25,12 +25,12 @@ import torch.distributed as dist
 
 from torchtitan.experiments.kimi_k3.model import (
     KimiDeltaAttention,
-    KimiLinearConfig,
+    KimiK3Config,
 )
 
 
-def config(cp_mode: str) -> KimiLinearConfig:
-    return KimiLinearConfig(
+def config(cp_mode: str) -> KimiK3Config:
+    return KimiK3Config(
         vocab_size=256,
         hidden_size=256,
         num_hidden_layers=2,

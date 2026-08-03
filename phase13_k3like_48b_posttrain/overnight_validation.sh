@@ -17,7 +17,7 @@ cd "$TITAN"
 export PYTHONPATH=$TITAN
 source /venv/main/bin/activate
 
-FLAVOR=kimi_linear_k3mini_block_attn_res
+FLAVOR=kimi_k3_mini_block_attn_res
 COMMON="--module kimi_k3 --training.seq_len 512 --debug.seed 42 \
  --debug.deterministic --metrics.log_freq 1"
 
@@ -94,14 +94,14 @@ fi
 say "PHASE 3: every K3 flavor from the same seed"
 STEPS=3
 PORT_OFF=0
-for f in kimi_linear_k3mini_qat_mxfp4 kimi_linear_k3mini_qlora \
-         kimi_linear_k3mini_kcp kimi_linear_k3mini_quantile_balance; do
+for f in kimi_k3_mini_qat_mxfp4 kimi_k3_mini_qlora \
+         kimi_k3_mini_kcp kimi_k3_mini_quantile_balance; do
   extra=""
-  [ "$f" = "kimi_linear_k3mini_kcp" ] && extra="--training.local-batch-size 1 \
+  [ "$f" = "kimi_k3_mini_kcp" ] && extra="--training.local-batch-size 1 \
     --parallelism.context_parallel_degree 2 --parallelism.data_parallel_shard_degree 1"
   [ -z "$extra" ] && extra="--parallelism.data_parallel_shard_degree 2"
   PORT=$((31200 + PORT_OFF)); PORT_OFF=$((PORT_OFF + 1))
-  run "flavor_${f#kimi_linear_k3mini_}" 2 $PORT --config $f \
+  run "flavor_${f#kimi_k3_mini_}" 2 $PORT --config $f \
       --training.steps 3 --training.global-batch-size 2 $extra
 done
 

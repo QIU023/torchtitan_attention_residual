@@ -31,7 +31,7 @@ GLOBAL_BATCH=${GLOBAL_BATCH:-4}
 # auto-resume from the previous run's last-step (model-only) export and die
 # with "Missing key in checkpoint state_dict".
 OUT=${OUT:-/workspace/out_qlora_tp}
-CFG="--module kimi_k3 --config kimi_linear_debugmodel_gated_qlora_mxfp4 \
+CFG="--module kimi_k3 --config kimi_k3_debugmodel_gated_qlora_mxfp4 \
  --debug.seed 42 --debug.deterministic --metrics.log_freq 1 \
  --training.global-batch-size $GLOBAL_BATCH \
  --checkpoint.enable --checkpoint.initial-load-path $PACKED \

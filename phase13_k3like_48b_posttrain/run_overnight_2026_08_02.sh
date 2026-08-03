@@ -19,7 +19,7 @@ source /venv/main/bin/activate
 LOG="$OUT/log.txt"; : > "$LOG"
 say() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$LOG"; }
 
-FLAVOR=kimi_linear_k3mini_qlora
+FLAVOR=kimi_k3_mini_qlora
 BASE="--module kimi_k3 --config $FLAVOR --training.seq_len 512 --debug.seed 42 \
  --debug.deterministic --metrics.log_freq 1"
 

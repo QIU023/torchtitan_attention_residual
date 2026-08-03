@@ -10,7 +10,7 @@ Reached, against real veRL machinery and a real HF config dir:
 
     [VERL] seed checkpoint: /workspace/overnight2/seed_ckpt/checkpoint/step-0
     [VERL] hf_config: type=kimi_k3 hidden=512 layers=21 vocab=163840
-    [VERL] derived name=kimi_k3 flavor=kimi_linear_k3mini_block_attn_res
+    [VERL] derived name=kimi_k3 flavor=kimi_k3_mini_block_attn_res
     [VERL] engine constructed: TorchTitanEngineWithLMHead
 
 Three of the four upstream gaps are already fixed in the QIU023/verl fork
@@ -41,7 +41,7 @@ It then fails on the vocab:
                 and current: torch.Size([163840, 512]) for embed_tokens.weight
 
 This is the "single deliberate deviation" recorded when k3mini was created,
-surfacing as a real blocker. `model_registry("kimi_linear_k3mini_block_attn_res")`
+surfacing as a real blocker. `model_registry("kimi_k3_mini_block_attn_res")`
 builds vocab 163840 (K3's own), while the TRAINER config overrides it to 2016 so
 the flavor can use the repo's bundled tokenizer without downloading assets. The
 seed checkpoint therefore has a 2016-row embedding that cannot load into the

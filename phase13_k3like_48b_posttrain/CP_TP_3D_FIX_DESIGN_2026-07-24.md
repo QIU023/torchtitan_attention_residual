@@ -197,7 +197,7 @@ a shared helper.
 
 ## 3. Debug model head-count check (before running anything)
 
-kimi_linear_debugmodel: verify `num_attention_heads` and `kda_num_heads`
+kimi_k3_debugmodel: verify `num_attention_heads` and `kda_num_heads`
 divide tp*cp in {2x2, 2x4, 4x2} -- read from model_configs.py at step 0;
 if not, add a 3D-friendly debug flavor rather than bending the checks.
 

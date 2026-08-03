@@ -16,7 +16,7 @@ from torch.distributed.fsdp import fully_shard, MixedPrecisionPolicy
 
 def main():
     from torchtitan.experiments.kimi_k3 import config_registry
-    from torchtitan.experiments.kimi_k3.model import KimiLinearSpec
+    from torchtitan.experiments.kimi_k3.model import KimiK3Spec
     from torchtitan.experiments.kimi_k3.mxfp4_qat import apply_mxfp4_qat
     from torchtitan.experiments.kimi_k3.muon import Muon
 
@@ -27,7 +27,7 @@ def main():
 
     kc = config_registry.build_kimi_linear_config("194m", num_experts=32)
     kc = dataclasses.replace(kc, mla_gated=True)  # Gated MLA
-    spec = KimiLinearSpec(kimi_config=kc, num_blocks=4, attn_res_gated=True)
+    spec = KimiK3Spec(kimi_config=kc, num_blocks=4, attn_res_gated=True)
     with torch.device("cuda"):
         model = spec.build()
         model.init_weights()

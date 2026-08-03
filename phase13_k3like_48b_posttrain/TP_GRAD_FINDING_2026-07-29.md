@@ -239,7 +239,7 @@ comparing configurations that differ by more than the module under test.
 A sound next instrument has to hold the model FIXED and vary only the
 parallelism, then attribute per-parameter rather than by ablation -- for example
 compare a single `KimiMLAAttention` module with and without
-`apply_tp_kimi_linear` on identical weights and inputs, which is what the earlier
+`apply_tp_kimi_k3` on identical weights and inputs, which is what the earlier
 hand-built probe did for the CP path (and which returned bit-exact there). Ablating
 modules changes the model and cannot answer it.
 
@@ -358,7 +358,7 @@ there at all.
 
 The section above says the AttnRes finding "explains the whole-model picture
 without any other mechanism". That is an overstatement, and a measurement already
-in hand contradicts it: `kimi_linear_k3mini_diag_1l_mla_noattnres`, one dense MLA
+in hand contradicts it: `kimi_k3_mini_diag_1l_mla_noattnres`, one dense MLA
 layer with AttnRes DISABLED, gives ratio **1.0468** against 1.0649 with it. If
 AttnRes were the whole cause, disabling it would land near 1.0.
 
@@ -441,7 +441,7 @@ Upstream control, same common MoE, deepseek_v3_debugmodel, tp1 vs tp2 grad_norm:
 3.7201 vs 3.6052 (3.2%). Ours at tp2 is 19.7%. Upstream is not gradient-exact
 under tp either, but ours is ~6x worse, so most of our gap is our own.
 
-Lead, not yet confirmed: apply_ep_kimi_linear runs when tp > 1 even with ep == 1
+Lead, not yet confirmed: apply_ep_kimi_k3 runs when tp > 1 even with ep == 1
 (parallelize.py:206), and moe.parallelize() wires the tp mesh into the token
 dispatcher. If tokens are split across tp, each rank's routed-expert gradient is
 Partial on tp -- but the experts are distributed as Replicate() and

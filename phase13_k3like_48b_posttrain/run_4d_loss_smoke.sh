@@ -16,7 +16,7 @@ SEED=$OUT/seed; STEPS=${STEPS:-8}
 mkdir -p "$OUT"; cd "$TITAN"; export PYTHONPATH=$TITAN
 source /venv/main/bin/activate
 
-FLAVOR=${FLAVOR:-kimi_linear_k3mini_diag_4l_moe_depth}
+FLAVOR=${FLAVOR:-kimi_k3_mini_diag_4l_moe_depth}
 BASE="--module kimi_k3 --config $FLAVOR --training.seq_len 512 --debug.seed 42 \
  --debug.deterministic --metrics.log_freq 1 --training.steps $STEPS"
 

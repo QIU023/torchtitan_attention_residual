@@ -22,7 +22,7 @@ def run(quantize):
     )
 
     torch.manual_seed(0)
-    cfg = config_registry.kimi_linear_debugmodel_gated_lora()
+    cfg = config_registry.kimi_k3_debugmodel_gated_lora()
     spec_model = cfg.model_spec.model
     vocab = spec_model.kimi_config.vocab_size
     with torch.device("cuda"):

@@ -3,7 +3,7 @@
 EIGHTCARD verified Muon's Newton-Schulz on FSDP2-sharded DTensors; the
 full-param K3 recipe wants it under FSDP x TP (x CP) where params are
 2-D-mesh DTensors (fsdp x tp) and grads carry CP-reduced contributions.
-This runs the real parallelize_kimi_linear wiring (dp2 x tp2 x cp2 = 8
+This runs the real parallelize_kimi_k3 wiring (dp2 x tp2 x cp2 = 8
 ranks) on the gated debugmodel, trains 5 steps with Muon on the
 q/o_proj matrices (per-head) + AdamW fallback for the rest, and gates
 on finite descending loss.
@@ -26,10 +26,10 @@ def main() -> None:
     )
     from torchtitan.distributed import ParallelDims
     from torchtitan.experiments.kimi_k3 import config_registry
-    from torchtitan.experiments.kimi_k3.model import KimiLinearSpec
+    from torchtitan.experiments.kimi_k3.model import KimiK3Spec
     from torchtitan.experiments.kimi_k3.muon import Muon
     from torchtitan.experiments.kimi_k3.parallelize import (
-        parallelize_kimi_linear,
+        parallelize_kimi_k3,
     )
 
     dist.init_process_group("nccl")
@@ -45,7 +45,7 @@ def main() -> None:
     # trainer's update_from_config equivalent: MoE must know about TP at
     # build time (module-internal parallelization).
     kc = dataclasses.replace(kc, moe_enable_tp=True)
-    spec = KimiLinearSpec(kimi_config=kc, num_blocks=4)
+    spec = KimiK3Spec(kimi_config=kc, num_blocks=4)
     with torch.device("cuda"):
         model = spec.build()
         model.init_weights()
@@ -60,7 +60,7 @@ def main() -> None:
         context_parallel_degree=2,
         context_parallel_load_balancer=None,
     )
-    model = parallelize_kimi_linear(
+    model = parallelize_kimi_k3(
         model,
         parallel_dims=pd,
         training=TrainingConfig(),

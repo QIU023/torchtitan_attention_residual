@@ -10,7 +10,7 @@ PP before trusting it further.
 
 ## Method
 
-Same instrument as the TP work: one model (`kimi_linear_k3mini_block_attn_res`,
+Same instrument as the TP work: one model (`kimi_k3_mini_block_attn_res`,
 21 layers, KDA + MLA + MoE + AttnRes, 80.9M params), one shared seed checkpoint,
 vary only the parallelism. `tp_trainer_grad_probe.py` now dumps per-rank
 (`<path>.r<rank>`) because under PP each rank owns a different stage and a

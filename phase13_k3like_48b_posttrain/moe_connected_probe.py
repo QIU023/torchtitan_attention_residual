@@ -16,7 +16,7 @@ import os
 import torch
 import torch.distributed as dist
 
-from torchtitan.experiments.kimi_k3.model import KimiLinearModel
+from torchtitan.experiments.kimi_k3.model import KimiK3Model
 from torchtitan.experiments.kimi_k3.model_configs import build_kimi_linear_config
 from torchtitan.experiments.kimi_k3.moe import KimiSiTUGroupedExperts
 from torchtitan.experiments.kimi_k3.mxfp4_qat import apply_mxfp4_qat
@@ -27,7 +27,7 @@ def build(qat: bool, zero_experts: bool):
     torch.manual_seed(0)
     cfg = build_kimi_linear_config("k3mini", vocab_size=256)
     with torch.device("meta"):
-        model = KimiLinearModel(cfg)
+        model = KimiK3Model(cfg)
     if qat:
         apply_mxfp4_qat(model)
     mesh = dist.device_mesh.init_device_mesh(

@@ -1,6 +1,6 @@
 # The multimodal flavor across the parallelism axes
 
-`kimi_linear_k3mini_vl`, 3 steps, seed 42, deterministic, global batch 8.
+`kimi_k3_mini_vl`, 3 steps, seed 42, deterministic, global batch 8.
 
     fsdp2          7.71632 7.63655 7.43903
     cp2            7.71686 7.65315 7.44388
@@ -10,7 +10,7 @@
 
 ## Two fixes the axes exposed
 
-**TP addressed the wrong module.** `apply_tp_kimi_linear` applies its top-level
+**TP addressed the wrong module.** `apply_tp_kimi_k3` applies its top-level
 plan by name -- `embed_tokens`, `norm`, `lm_head` -- but the multimodal wrapper
 keeps the text model at `.language_model`, so none of those names resolved and
 the embedding stayed un-sharded. It surfaced as `aten.embedding.default got

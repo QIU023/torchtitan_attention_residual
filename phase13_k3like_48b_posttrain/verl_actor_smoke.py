@@ -18,7 +18,7 @@ RESULT (2026-07-28, veRL 0.8.0): gets as far as engine construction and stops on
 a genuine API skew, not a shim-able one.
 
     [VERL] hf_config: type=kimi_k3 hidden=512 layers=21 vocab=163840
-    [VERL] derived name=kimi_k3 flavor=kimi_linear_k3mini_block_attn_res
+    [VERL] derived name=kimi_k3 flavor=kimi_k3_mini_block_attn_res
     TypeError: OptimizersContainer.Config.__init__() got an unexpected
                keyword argument 'name'
 

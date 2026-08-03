@@ -51,8 +51,8 @@ P2P crosses the LAN, while TP (2 collectives per layer) and CP (an all-to-all
 per attention) stay on-node. **Do not reorder ranks.** Cell 6 measures what the
 alternative costs.
 
-Carriers: `kimi_linear_debugmodel8h` (H=8, d=512) for full-param, and the H=4
-`kimi_linear_debugmodel_gated_lora` / `..._gated_qlora_mxfp4` for the adapter
+Carriers: `kimi_k3_debugmodel8h` (H=8, d=512) for full-param, and the H=4
+`kimi_k3_debugmodel_gated_lora` / `..._gated_qlora_mxfp4` for the adapter
 cells -- `tp*cp = 4` exactly matches H=4, which is the documented bind.
 
 ## 3. Cell matrix
