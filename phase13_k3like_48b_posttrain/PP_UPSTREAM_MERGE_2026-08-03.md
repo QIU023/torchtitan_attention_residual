@@ -158,3 +158,34 @@ per-parameter at 0.00000 on this same torch nightly BEFORE the merge.
 
 The remaining question is narrow and answerable: what does #3856 expect the
 dataloader to emit, and does the c4_test path K3 and deepseek_v3 share emit it?
+
+
+## Traced into #3856: rank 1 sends an empty arg_mbs
+
+Instrumenting `pp_schedule.step` on EVERY rank (the earlier probe only printed
+rank 0, which is why this took two passes):
+
+    [R0] first=True  last=False  arg_mbs=4  kwarg=4  target=None  n_mb=4
+    [R1] first=False last=True   arg_mbs=0  kwarg=4  target=4     n_mb=4
+    ValueError: Expecting 4 arg_mbs but got 1
+
+Rank 0 is consistent -- 4 microbatches, schedule expects 4. Rank 1 is not a
+first stage, so `forward_backward_step` skips `arg_mbs.append(...)` and passes
+an EMPTY list rather than `None`:
+
+    arg_mbs=arg_mbs if self.pp_has_first_stage else None
+
+reads as if it passes None, but `arg_mbs` is `[]` on a non-first stage, and `[]`
+is falsy only in a boolean test -- this is a conditional expression, so the
+empty list is passed. PyTorch's `_check_inputs` then takes the
+`arg_mbs is not None` branch and rejects the length.
+
+`torchtitan/distributed/pipeline_parallel.py` is untouched by #3856, so the
+schedule's own `n_microbatches` (4, verified) is right; the defect is on the
+feeding side.
+
+The "got 1" in the message does not match either rank's count (4 and 0), so
+there is one more layer between these prints and the raise -- plausibly a
+per-stage schedule in the multi-stage path. Not chased further tonight; what is
+established is that the empty-vs-None distinction on non-first stages is real
+and is upstream's, since deepseek_v3 shows it with no K3 code involved.
