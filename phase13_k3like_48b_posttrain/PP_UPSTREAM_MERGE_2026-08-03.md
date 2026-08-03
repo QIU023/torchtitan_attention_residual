@@ -189,3 +189,40 @@ there is one more layer between these prints and the raise -- plausibly a
 per-stage schedule in the multi-stage path. Not chased further tonight; what is
 established is that the empty-vs-None distinction on non-first stages is real
 and is upstream's, since deepseek_v3 shows it with no K3 code involved.
+
+
+## Root cause: #3856 needs a newer PyTorch than this box has
+
+The last layer is a signature mismatch, not a logic bug. Instrumenting
+`_check_inputs` on every schedule class shows what actually arrives:
+
+    [CI-PipelineScheduleSingle] rank=0 n_mb=4 arg=1 kwarg=1
+    [CI-PipelineScheduleSingle] rank=1 n_mb=4 arg=1 kwarg=1
+
+One, from both ranks, where the trainer passed four. The installed PyTorch has
+
+    def step(self, *args, target=None, losses=None, loss_kwargs=None, **kwargs)
+
+with no `arg_mbs` parameter at all. torchtitan #3856 calls
+
+    self.pp_schedule.step(arg_mbs=..., kwarg_mbs=..., target_mbs=..., ...)
+
+so `arg_mbs` lands in `**kwargs` as a single value, and `step` then runs its own
+`_split_inputs(args, kwargs)` over it -- splitting a 4-element list into one
+microbatch. Hence "got 1" matching neither rank's count: it is the length after
+PyTorch re-split something that was already split.
+
+Dates settle it. This box runs `torch 2.14.0.dev20260725`; #3856 landed
+2026-07-31 and targets the newer schedule API. `2.14.0.dev20260802` is available
+on the nightly index.
+
+So there is nothing to fix in torchtitan or in our code -- the tree is correct
+and the environment is six days stale. That also retracts the earlier framing of
+this as "an upstream defect worth reporting": deepseek_v3 failing here is a
+version skew on our side, not a bug upstream would accept.
+
+Upgrading torch is not free on this box -- installing vLLM previously downgraded
+torch and broke the training stack (DataParallelMeshDims disappeared; torchvision
+had to be reinstalled). So the upgrade is worth doing deliberately, with the KDA
+shared-memory behaviour and the fla kernels re-checked afterwards, rather than as
+a side effect of chasing PP.
