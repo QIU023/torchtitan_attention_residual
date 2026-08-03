@@ -12,33 +12,42 @@ batch 8. Every refactor step has to reproduce these before moving on.
     fsdp2_tp2_pp2              7.71036 7.23313 6.28071
     fsdp2_tp2_cp2              7.76396 7.31618 6.39315
     tp2_pp2_cp2                7.71961 7.15782 6.29697
-    fsdp2_pp2_cp2              see below
+    fsdp2_pp2_cp2              7.70254 7.23634 6.33279
 
     ep2_fsdp2                  7.67856 7.26963 6.29357
     ep2_fsdp2_tp2_pp2          7.73785 7.21456 6.31275
     ep2_fsdp2_tp2_cp2          7.71987 7.22920 6.35607
-    ep2_fsdp2_pp2_cp2          see below
+    ep2_fsdp2_pp2_cp2          7.75924 7.24905 6.52276
 
-## The two PP+CP combinations produce no loss at all
+## Correction: those two legs were never broken -- the collector was
 
-Both configurations containing pp2 together with cp2 and fsdp2 run to completion
-and print nothing. Not a harness artifact and not a crash:
+The first run of this matrix reported the two PP+CP legs as producing no loss,
+and called it a pre-existing defect. That was wrong, and the way it was wrong is
+worth keeping.
 
-- exit code 0, "Training completed" on every rank
-- the trainer initializes correctly (local batch 2, global 8, gradient
-  accumulation 2, 3 steps)
-- grepping every rank's output for `loss:` -- including the negative
-  placeholders that PP stages not holding the loss emit -- returns nothing
+The runs did print their loss. Under PP the stages that do not hold the loss emit
+a negative placeholder (-8.00000 here, -2.00000 under pp2 alone, i.e.
+-global_batch_size), so the collector filtered negatives to drop them. But it
+filtered AFTER `sed` had rewritten each line to "<step> <loss>" and was
+deduplicating with `sort -k1,1n -u`, which keeps ONE row per step -- and the row
+it kept was the placeholder. Dropping negatives then removed the only surviving
+row for that step, leaving nothing.
 
-So the run trains and reports no loss from any rank. Recorded as a PRE-EXISTING
-defect: it is there before the refactor, so the refactor cannot be blamed for it,
-and it must not be counted as a passing leg.
+Deduplicating on the pair instead of the step, after dropping placeholders,
+recovers them:
 
-Noted from the same log and independent of this: FSDP2 warns that
-`FSDPKimiAttnResDecoderLayer` returns a view tensor, and that an in-place op on a
-view silently drops the pre-backward hook and skips the all-gather, which "can
-cause backward to fail or produce wrong gradients". AttnRes returns aggregated
-views by construction, so that deserves its own look.
+    fsdp2_pp2_cp2       7.70254 7.23634 6.33279
+    ep2_fsdp2_pp2_cp2   7.75924 7.24905 6.52276
+
+So the matrix is 14/14, and there is no pre-existing PP+CP defect. The lesson is
+the same one this project keeps re-learning: a filter that silently removes
+everything looks identical to a failure, and "no output" should be diagnosed
+before it is characterized.
+
+The FSDP2 warning noted from the same log stands on its own and is unaffected:
+`FSDPKimiAttnResDecoderLayer` returns a view tensor, and an in-place op on a view
+silently drops the pre-backward hook and skips the all-gather. AttnRes returns
+aggregated views by construction, so that still deserves its own look.
 
 ## Why this refactor, and what it is NOT for
 
