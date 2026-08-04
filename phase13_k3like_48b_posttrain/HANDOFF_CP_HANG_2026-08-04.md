@@ -100,7 +100,35 @@ So reading 2 (luck) is not supported: the twin fails at step 2 while k3mini
 survives 30, which is a difference in configuration rather than in chance. The
 12/12 stands at 30 steps for the leg most likely to be fragile.
 
-What is still NOT established is *which* configuration difference triggers it.
+## SOLVED: the trigger is gradient accumulation, not the model
+
+Neither flavor is special. The published multimodal matrix passed
+`--training.local-batch-size 4`; the twin matrix did not, and both flavors
+default to 1. With global batch 8 over dp2, local batch 4 means one forward per
+step and local batch 1 means **four gradient-accumulation microbatches** --
+which is exactly the `forward=4` the probe recorded.
+
+| flavor | local_batch 4 (no accumulation) | local_batch 1 (4 microbatches) |
+|---|---|---|
+| `kimi_k3_debugmodel_pr_4025` | 5 steps pass | hangs at step 2 |
+| `kimi_k3_mini_vl` | 30 steps pass | **hangs at step 2** |
+
+So the defect reproduces on k3mini_vl too. It is a real defect in the CP
+multimodal path under gradient accumulation, and the earlier 12/12 never
+exercised it because that run happened to pass a local batch large enough to
+avoid accumulation entirely.
+
+**Consequence for the published result: the 12-leg multimodal matrix is
+"passes without gradient accumulation", not "passes". That qualification has to
+travel with the number**, since accumulation is standard at any real scale.
+
+Why accumulation breaks it is not yet established. The shard arithmetic is
+right and the per-step call counts match at step 1, so the suspect is state
+that persists across microbatches within a step -- the CP count exchange runs
+once per microbatch, and something about the second step's first microbatch
+diverges.
+
+## Superseded: which configuration difference triggers it
 Both flavors use `max_patches=1024` and `seq_len 512`, so the obvious candidate
 is ruled out. Remaining differences: vocab 2020 vs 163840, dim 512 vs 256,
 21 layers vs 13, 15 KDA layers vs 10, and `local_batch_size` 4 vs unset. The
