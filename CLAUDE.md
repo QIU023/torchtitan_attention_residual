@@ -6,6 +6,18 @@ Operational context for any Claude instance working in this repo. Full narrative
 [phase13_k3like_48b_posttrain/PLAN.md](phase13_k3like_48b_posttrain/PLAN.md)
 (repo-side execution detail; §0 reconciles the two).
 
+## Commit-message rule: no cross-repo reference forms (both repos, incl. the fork)
+
+Never put `owner/repo#N` or a full `github.com/.../pull|issues/N` URL for a
+THIRD-PARTY issue/PR in a commit message (title or body) — on push, GitHub
+creates a permanent "referenced this PR" event in THEIR timeline; ~14 such
+events already spammed pytorch/torchtitan#4025 (irrevocable; history rewrite
+does not remove them and can double-fire). Write `PR-4025` / "the upstream K3
+PR" instead. Bare `#N` resolves repo-locally (harmless) but avoid it too for
+consistency. Deliberate cross-links belong ONLY in issue/PR comments we
+intentionally post. Reference forms in FILE CONTENT (docs) are fine — files
+never fire timeline events. Our own repo's issues/PRs are exempt.
+
 ## What this project is
 
 IC (Yiqiao / QIU023) **reference implementation** of Kimi K3's training-side
