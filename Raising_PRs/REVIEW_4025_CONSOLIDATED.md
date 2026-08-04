@@ -17,9 +17,10 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > the RFC #3029 update, so as not to flood this thread. Short version, long
 > versions in the review:
 >
-> 1. **Decoder loop (the one that matters for PP)**: could the layer loop be
->    factored to run over a contiguous range, carrying `(x, block_residuals)`
->    in and out? Details in the review on `model.py`.
+> 1. **Decoder loop (the one that matters for PP)**: the loop already carries
+>    `(h, block_residual)`; could it also take the initial residual stack as
+>    an argument and run over a contiguous layer range? Details in the review
+>    on `model.py`.
 > 2. **Final layer** (config question): sec 2.1 puts an extra Gated MLA at
 >    the end so the final layer is global attention; `{4, 8, 12}` over 13
 >    layers ends on KDA.
@@ -27,8 +28,9 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 >    grouped-GEMM conversion, so one adapter serves both layouts.
 > 4. **Unsupported-parallelism guard**: per-feature instead of one list, so
 >    partial support lands without editing every entry.
-> 5. Two field notes on `add_zero_valued_dependency` (cp>1 reaches the same
->    failure mode; the symptom is a hang) + a regression-test offer.
+> 5. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
+>    deadlock by a different route (a shard with zero vision sentinels on a
+>    batch that does have images) + a regression-test offer.
 >
 > None of these change the eager math -- all "leave a seam".
 
@@ -36,13 +38,17 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 **1. `model.py`, decoder loop — decides patch-vs-fork for PP:**
 
-> Could the decoder forward be factored so the layer loop runs over an
-> arbitrary contiguous range and takes/returns its carried state? Block
-> AttnRes threads a stack of committed block residuals alongside the hidden
-> state; a PP stage owns a layer slice, so the loop must be enterable at
-> layer i with `(x, block_residuals)` and exitable at j returning the pair.
-> Welded to "all layers, hidden state only", PP support means duplicating
-> the body rather than reusing it. TP, EP and CP need no such seam.
+> The loop already threads exactly the right pair -- `h_BLD` and
+> `block_residual_TND` in and out of every layer -- so this is a smaller ask
+> than it looks. Two things keep a PP stage from reusing it:
+> `block_residual_TND` is created inside the forward
+> (`h_BLD.new_zeros(B * L, 0, D)`) so a stage cannot pass an incoming stack
+> in, and the loop always runs `self.layers.values()` to the end. Would you
+> take the initial residual stack as an optional argument and the layer range
+> as a slice, returning the pair when the range stops short of the tail? A PP
+> stage owns a layer slice and has to enter at layer i with the upstream
+> stack and exit at j returning it. Without that seam PP means duplicating
+> the loop body rather than reusing it; TP, EP and CP need no such seam.
 
 **2. `__init__.py` (`full_attention_layers`), final layer:**
 
@@ -67,12 +73,14 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 **5. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
 
-> Strong agree with this helper. Two data points from the same architecture
-> under more parallelisms: (1) it is not only "a batch with no images" --
-> under CP a rank's shard can hold zero vision sentinels while every rank
-> got images; same failure mode, cp>1 only. (2) The failure is a hang, not
-> an error -- worth one docstring sentence, a hang sends people to the
-> wrong place. Happy to contribute a cp>1 regression test.
+> Strong agree with this helper, and the docstring already names the failure
+> correctly ("deadlock the step"). One field note from the same architecture
+> under more parallelisms: the trigger is not only "a batch that happens to
+> carry no images". Under context parallelism a rank's sequence shard can
+> hold zero vision sentinels while every rank did receive images, which
+> reaches the same missing-reduce-scatter deadlock at cp>1 only. Might be
+> worth half a sentence in the docstring, since the CP route is easy to miss
+> when reading the DP one. Happy to contribute a cp>1 regression test.
 
 ---
 
@@ -105,3 +113,26 @@ SiTU-GLU both branches (fig. 4); full-rank Gated MLA gate (eq. 7); AttnRes
 pseudo-query Linear(dim,1) + RMSNorm keys (eq. 8); the final aggregation
 over block representations (sec 2.2, present at the model tail); 3:1
 KDA:MLA, block size 12; core CrossEntropyLoss.
+
+---
+
+## Pre-post verification against the PR head (2026-08-04)
+
+`git fetch upstream pull/4025/head` -- head unchanged at the commit our
+worktree already had, so the tree read below is current. Verified by reading
+the files, not by grepping one class; that is exactly how the withdrawn
+aggregation claim got made in the first place.
+
+| item | verdict | evidence |
+|---|---|---|
+| 1. decoder loop | **STALE, corrected** | the loop already carries `(h_BLD, block_residual_TND)`. The draft said "hidden state only", which a maintainer would disprove by opening the file. Reframed: the real seam is that `block_residual_TND` is built inside the forward and the range is always the full `self.layers.values()` |
+| 2. final layer | PASS | `full_attention_layers = {4, 8, 12}`, matched 1-based via `(layer_idx + 1)`, 13 layers, nothing anywhere appends a trailing MLA |
+| 3. state-dict hook | PASS | adapter maps `block_sparse_moe.experts.{i}.{w1,w2,w3}` -> `moe.routed_experts.{i}.{proj}`; per-expert on both sides, no grouped-GEMM seam |
+| 4. guard | PASS | one `(name, enabled)` tuple list building `unsupported_parallelisms`, then a single raise |
+| 5. add_zero_valued_dependency | **half STALE, corrected** | the docstring already says "deadlock the step", so "the failure is a hang, worth a docstring sentence" was telling them something they wrote. Dropped. The cp>1 route is genuinely absent from it and is kept |
+| withdrawn: final aggregation | stays withdrawn | `output_res_norm/proj` declared at 646, built at 692, applied at 830 over the full block stack before norm and lm_head. Independently re-confirmed |
+
+Two of five needed correction, and one of those changes what we are asking
+for. Worth recording that the first pass of this review was written from
+partial reads twice over -- the aggregation claim and the "hidden state only"
+claim have the same root cause.
