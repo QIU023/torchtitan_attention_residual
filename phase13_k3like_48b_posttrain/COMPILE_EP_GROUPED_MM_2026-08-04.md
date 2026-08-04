@@ -147,3 +147,28 @@ collective, which is a different problem from the two already fixed.
 Not fixed. The next measurement is a per-rank, per-step count of entries with
 the ranks' output serialized (the current probe interleaves, which is why the
 counts had to be inferred rather than read).
+
+## Correction: the call counts DO line up
+
+The addendum above concluded that the entry counts differ between ranks. That
+was read off interleaved concurrent output and is wrong. Serializing each rank
+to its own file gives:
+
+    rank0..rank7  step1: forward=4  exchange=4
+
+All eight ranks, identical. So the collective is entered the same number of
+times by every participant, and the remaining hang is neither in which slice a
+rank takes (established earlier: 255 + 34 = 289, exactly one image after 2x2
+merge) nor in how many times it enters.
+
+Only step 1 appears in the dumps -- the file is written at the end of
+`train_step`, and step 2 never completes -- which places the hang inside step 2
+with step 1 fully aligned.
+
+Three hypotheses are now ruled out by measurement (KCP, the sentinel-count
+assertion, and the call counts) and two defects were found and fixed along the
+way. The remaining one is still open, and the next probe has to flush per
+collective rather than per step so step 2's partial trace survives the hang.
+
+Recording the retraction because "counts differ" was published in commit
+6ce9a1c and is not true.
