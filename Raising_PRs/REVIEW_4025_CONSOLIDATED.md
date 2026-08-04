@@ -17,14 +17,13 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > the RFC #3029 update, so as not to flood this thread. Short version, long
 > versions in the review:
 >
-> 1. **Final layer** (config question): sec 2.1 puts an extra Gated MLA at
->    the end so the final layer is global attention; `{4, 8, 12}` over 13
->    layers ends on KDA.
-> 2. **Expert state-dict layout hook**: a seam for per-expert <->
->    grouped-GEMM conversion, so one adapter serves both layouts.
-> 3. **Unsupported-parallelism guard**: per-feature instead of one list, so
->    partial support lands without editing every entry.
-> 4. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
+> 1. **Final layer** (config question): the released config's
+>    `full_attn_layers` ends `[..., 88, 92, 93]` -- 92 and 93 both global,
+>    per sec 2.1; `{4, 8, 12}` over 13 layers ends on KDA.
+> 2. **Expert state-dict layout hook** (following up the review's own ask):
+>    a seam for per-expert <-> grouped-GEMM conversion, so one adapter
+>    serves both layouts -- our EP follow-up is the consumer.
+> 3. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
 >    deadlock by a different route (a shard with zero vision sentinels on a
 >    batch that does have images) + a regression-test offer.
 >
@@ -52,13 +51,7 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > expert layout? The released checkpoint is per-expert; grouped kernels
 > want stacked. A hook keeps one adapter for both directions.
 
-**3. `parallelize.py`, the guard:**
-
-> If support lands piecemeal (TP before CP), would you take the guard
-> per-feature instead of one list? It is the first thing every follow-up
-> PR would touch.
-
-**4. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
+**3. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
 
 > Strong agree with this helper, and the docstring already names the failure
 > correctly ("deadlock the step"). One field note from the same architecture
@@ -78,6 +71,11 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
   first commit, no dependency on anyone. Announcing our own plan belongs on
   our own thread, not in their review; the PR comment set stays pure review.
   No rebase offer -- we are adding it either way.
+- **Unsupported-parallelism guard — DROPPED, same self-reliance logic**:
+  the first of our follow-up PRs to land restructures the guard while
+  removing its own entry; a 5-line list is not worth a pre-ask. (The
+  state-dict hook is different: it follows up an ask already made in their
+  review, and the adapter's interface shape is their design call.)
 - **Final aggregation question — WITHDRAWN, wrong**: the eager PR has it
   (`output_res_norm/proj` built at model level, applied over the full block
   stack before norm + lm_head; adapter maps the released
