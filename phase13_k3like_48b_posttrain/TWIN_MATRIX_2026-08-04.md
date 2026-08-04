@@ -193,9 +193,15 @@ a cell run would destroy exactly that.
 | `pp8` | **FAIL** -- see below |
 
 `ep8_fsdp8` is the interesting one: 8 experts over 8 ranks is exactly one
-expert per rank, so empty expert groups occur every step. That is the
-real-world trigger for the `_grouped_mm` zero-contraction-dim defect, and
-eager handles it cleanly.
+expert per rank, so empty expert groups occur every step, and eager handles it
+cleanly.
+
+**Correction.** This was written as "the real-world trigger for the
+`_grouped_mm` zero-contraction-dim defect". It is not. Run compiled WITHOUT the
+shim, `ep8_fsdp8` passes (12.02227 ...). Empty groups are not sufficient; the
+failing shape needs a rank with zero routed tokens in total, which the ep2
+combinations with TP/PP/CP produce and ep8 does not. The claim was an
+inference from "empty groups occur" and was never measured until now.
 
 Not expressible on the twin's config, recorded rather than worked around:
 
