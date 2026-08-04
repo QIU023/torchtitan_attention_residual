@@ -37,6 +37,18 @@ datacenter GPUs will not reproduce them:**
 * Anything memory-bound generally. The loss numbers themselves are not
   hardware-dependent, but which cells run is.
 
+## Pending re-verification on 8 x RTX 5090 / H200
+
+Gated on hardware, not on code, and listed so nothing here reads as finished
+that is not:
+
+* `PP8xVP4` at `seq_len 8192` -- the configuration the pressure test was built
+  for. The published run is 1024.
+* Long-horizon training behind the 100-step smoke numbers. Those overfit a tiny
+  dataset by construction and cannot speak to convergence.
+* The shared-memory-bound cells, to confirm the 101376-byte attribution is the
+  card and not something of ours that merely correlates with it.
+
 ## Two operational rules learned the hard way
 
 * Wipe the per-leg dump folder before each run. A leftover checkpoint makes the
