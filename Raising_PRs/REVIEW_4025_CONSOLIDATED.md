@@ -37,6 +37,14 @@ Strong agree with this helper. One field note from running this architecture und
 
 --- PASTE END ---
 
+## Follow-up response (post as a reply on the thread when appropriate)
+
+--- PASTE BEGIN ---
+
+One addition on scope: the multimodal path (the MoonViT tower + K3 backbone, vision features scattered into placeholder runs) is also already running under PP, EP and CP on our fork -- same matrix, same seeds, results in the RFC update linked above. Stacking those onto this folder may need minor changes on top of the current interfaces -- the shape we saw was things like the PP split needing to see through the multimodal wrapper, and modality-dependent collectives being decided from the mesh rather than from the batch -- nothing structural. Happy to discuss and review together when those follow-ups open.
+
+--- PASTE END ---
+
 ---
 
 ## Dropped from the posting set (2026-08-04, and why)
