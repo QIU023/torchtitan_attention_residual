@@ -1,5 +1,14 @@
 # PR #19 — common MoE sharding: EP-off drops the computed `in_grad_placements` (silent gradient under-reduction, reproduces on deepseek_v3)
 
+**FILED 2026-08-03 as pytorch/torchtitan#4054** (title verbatim from this
+kit; awaiting code-owner review). **Action item: CLA is unsigned — sign it,
+nothing merges before that.** Discovery context, for anywhere we narrate it:
+found during per-parameter gradient verification of our K3 parallelism
+matrix — the TP-without-EP legs (tp2, and every FSDP/PP/CP combination with
+EP off) showed grad_norm systematically low (dp2 8.496 vs dp2 x tp2 2.743,
+a 3.10x whole-model gap), isolated on a single MLA+MoE layer at dp1 varying
+only tp; EP-on legs were unaffected because the EP branch passes the tuple.
+
 **Target**: `pytorch/torchtitan`, `torchtitan/models/common/moe_sharding.py` (`set_moe_sharding_config`)
 **Fork reference**: `attention_residual_dev` @ `0d83910c4` — **`moe_sharding.py` hunk only**; the kimi_k3 hunk in that commit reverts a fork-internal workaround and must not be included.
 **Upstream audit**: 2026-08-03 @ `681fd4b50` — `if enable_ep else None` still at L311-322, patch applies cleanly.
