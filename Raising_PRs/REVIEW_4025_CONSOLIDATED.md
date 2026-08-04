@@ -1,58 +1,41 @@
 # Everything we post on the upstream K3 eager PR — final
 
-**Venue plan**: substance (matrices, branches, qualifications) goes to the
-RFC update (`RFC3029_UPDATE_2026-08-04.md`). On the PR: ONE top-level
-comment (intro + the numbered summary below) + ONE review bundling the long
-versions as inline comments at their file locations — a single notification.
-Tone: questions and offers. No PR/issue numbers in commit messages, ever.
+**Venue plan**: substance (matrices, branches, qualifications) goes to the RFC update (`RFC3029_UPDATE_2026-08-04.md`). On the PR: ONE top-level comment (intro + the numbered summary below) + ONE review bundling the two long versions as inline comments at their file locations — a single notification. Tone: questions and offers. No PR/issue numbers in commit messages, ever.
+
+**Format note**: paste sections are written as single-line paragraphs with no blockquote markers, so they copy into GitHub verbatim. Everything between the BEGIN/END markers is the paste.
 
 ---
 
-## Top-level comment (post as-is: intro + numbered summary)
+## Top-level comment
 
-> Thanks for landing this -- an eager reference is the right first step.
-> We have been building the parallelism side of K3 (TP/EP/PP/CP, text and
-> multimodal) in a fork since release and would like to converge on your
-> module layout rather than carry a parallel one -- evidence and branches in
-> the RFC #3029 update, so as not to flood this thread. Short version, long
-> versions in the review:
->
-> 1. **Final layer** (config question): the released config's
->    `full_attn_layers` ends `[..., 88, 92, 93]` -- 92 and 93 both global,
->    per sec 2.1; `{4, 8, 12}` over 13 layers ends on KDA.
-> 2. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
->    deadlock by a different route (a shard with zero vision sentinels on a
->    batch that does have images); our CP follow-up carries a regression
->    test for it.
->
-> Neither changes the eager math.
+--- PASTE BEGIN ---
 
-## Long versions (ONE review; anchor each at the named file)
+Thanks for landing this -- an eager reference is the right first step. We have been building the parallelism side of K3 (TP/EP/PP/CP, text and multimodal) in a fork since release and would like to converge on your module layout rather than carry a parallel one -- evidence and branches in the RFC #3029 update, so as not to flood this thread. Two review comments below:
 
-**1. `__init__.py` (`full_attention_layers`), final layer:**
+1. **Final layer** (config question): the released config's `full_attn_layers` ends `[..., 88, 92, 93]` -- 92 and 93 both global, per sec 2.1; `{4, 8, 12}` over 13 layers ends on KDA.
+2. One field note on `add_zero_valued_dependency`: cp>1 reaches the same deadlock by a different route (a shard with zero vision sentinels on a batch that does have images); our CP follow-up carries a regression test for it.
 
-> Should `full_attention_layers` include the last layer? The released
-> `config.json` lists `full_attn_layers` explicitly as
-> `[4, 8, 12, ..., 84, 88, 92, 93]` -- 24 entries, with **92 and 93 both
-> global** -- which matches sec 2.1's "an additional Gated MLA layer is
-> placed at the end of the backbone, ensuring that the final layer always
-> performs global attention". As written here, `{4, 8, 12}` over 13 layers
-> ends the stack on KDA.
->
-> Raising it at config level rather than as a debug-model nit: the released
-> list is not expressible as "every (ratio+1)-th layer", so a 2.8T config
-> needs either the trailing layer appended or the list carried verbatim.
+Neither changes the eager math.
 
-**2. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
+--- PASTE END ---
 
-> Strong agree with this helper. One field note from running this
-> architecture under CP: the trigger is not only "a batch that happens to
-> carry no images" -- under context parallelism a rank's sequence shard can
-> hold zero vision sentinels even when every rank received images, which
-> reaches the same subset-collective deadlock by a route that only appears
-> at cp>1. Might be worth a sentence in the docstring, since the CP route is
-> easy to miss when reading from the DP example. Our CP follow-up includes a
-> regression test for exactly this route.
+## Review comment 1 — anchor at `__init__.py` (`full_attention_layers`)
+
+--- PASTE BEGIN ---
+
+Should `full_attention_layers` include the last layer? The released `config.json` lists `full_attn_layers` explicitly as `[4, 8, 12, ..., 84, 88, 92, 93]` -- 24 entries, with **92 and 93 both global** -- which matches sec 2.1's "an additional Gated MLA layer is placed at the end of the backbone, ensuring that the final layer always performs global attention". As written here, `{4, 8, 12}` over 13 layers ends the stack on KDA.
+
+Raising it at config level rather than as a debug-model nit: the released list is not expressible as "every (ratio+1)-th layer", so a 2.8T config needs either the trailing layer appended or the list carried verbatim.
+
+--- PASTE END ---
+
+## Review comment 2 — anchor at `distributed/fsdp.py` (`add_zero_valued_dependency`)
+
+--- PASTE BEGIN ---
+
+Strong agree with this helper. One field note from running this architecture under CP: the trigger is not only "a batch that happens to carry no images" -- under context parallelism a rank's sequence shard can hold zero vision sentinels even when every rank received images, which reaches the same subset-collective deadlock by a route that only appears at cp>1. Might be worth a sentence in the docstring, since the CP route is easy to miss when reading from the DP example. Our CP follow-up includes a regression test for exactly this route.
+
+--- PASTE END ---
 
 ---
 
