@@ -78,3 +78,38 @@ the trailing Gated MLA at 93 is right.
 missing -- the MTP layer the report describes, and a 2.8T multimodal flavor
 wiring the 401M ViT. Both are additive rather than structural, but neither
 exists today.
+
+---
+
+## Gap 2 closed: `kimi_k3_2p8t_vl`
+
+The text-only 2.8T flavor is now joined by a multimodal one wrapping the same
+backbone in the released vision tower. `MoonViTConfig`'s defaults already are
+the released values, so the flavor passes them through rather than restating
+them -- a drift in the defaults surfaces here instead of being hidden by a
+duplicate. `vision_token_id` is the released `media_placeholder_token_id`
+(163605).
+
+Meta build (shapes only):
+
+| | ours | Table 1 |
+|---|---|---|
+| total | **2.780 T** | 2.78T |
+| activated / token | **105.8 B** | 104.2B |
+| vision tower | 447.4 M | 401M |
+
+The vision number needed explaining rather than excusing, and it explains
+cleanly:
+
+    encoder      397.0 M
+    pos_emb        4.2 M   -> 401.2 M  == Table 1's 401M
+    projector     46.1 M   (patchmergerv2, the bridge to the text model)
+    total        447.4 M
+
+So Table 1 counts the encoder plus its position embeddings and excludes the mm
+projector, which is a bridge rather than part of the tower. 401.2 vs 401 is an
+exact match; our tower is the released tower plus that projector.
+
+Remaining gap: MTP. Report Table 1 says one MTP layer, the released
+`config.json` says `num_nextn_predict_layers: 0`, and we implement none. We
+match the artifact, not the report. That one is still open.
