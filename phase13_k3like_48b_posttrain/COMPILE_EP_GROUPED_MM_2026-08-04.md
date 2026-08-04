@@ -172,3 +172,19 @@ collective rather than per step so step 2's partial trace survives the hang.
 
 Recording the retraction because "counts differ" was published in commit
 6ce9a1c and is not true.
+
+---
+
+# RETRACTED: the ownership conclusion above is wrong
+
+The section "Ownership: ours, not upstream's" concluded that the defect is in
+this fork and named the routing-map change as prime suspect. That is not
+correct. `GROUPED_MM_EMPTY_GROUP_2026-08-04.md` reproduces the identical error
+in five lines with no model, no compile and no distributed: `torch._grouped_mm`
+rejects an operand whose contraction dimension is zero, which is the shape the
+weight-gradient form takes when a group is empty. Empty groups themselves are
+fine in both eager and compiled.
+
+Also too broad above: "the kernel is intolerant of degenerate shapes". It is
+intolerant of one specific degenerate shape, and tolerant of the ones that
+actually occur in the forward.
