@@ -83,6 +83,53 @@ nothing and there is no reduction to declare), and whether the `elif` branch
 that lifts a plain `x` into the adapter mesh leaves `lora_b`'s gradient partial
 with no owner.
 
+## Two fix attempts, both reverted
+
+**Attempt 1: declare `grad_placements` on the generic path's `full_tensor()`.**
+Ruled out above -- count stays 22.
+
+**Attempt 2: make the TP-aware forward reachable for a plain base.** Set
+`_tp_style`/`_tp_mesh` in the plain-LoRA distribution loop and let `forward`
+dispatch there. The path is reached and immediately fails on
+`aten.mul.Tensor got mixed torch.Tensor and DTensor`, for two reasons that
+compound:
+
+1. **The style is three-valued, not two.** `lora_tp` carries a single
+   `is_colwise` bool, and `_forward_packed_tp` branches on it. The probe shows
+   three layouts in play:
+
+   | projection | x | lora_a | lora_b | style |
+   |---|---|---|---|---|
+   | `q_a_proj`, `kv_a_proj_with_mqa` | Replicate | Replicate | **Replicate** | NoParallel |
+   | `q_b_proj`, `kv_b_proj`, `attn_gate_proj` | Replicate | Replicate | Shard(0) | colwise |
+   | `o_proj` | plain | Shard(1) | Replicate | rowwise |
+
+   Forcing the replicated case into either of the other two mixes DTensor with
+   plain tensors at the matmul -- and the replicated case is where two of the
+   worst offenders live.
+
+   Adding a third `replicated` style (classified in the loop that currently
+   replicates leftover adapters) fixes that particular crash.
+
+2. **Output locality is not the module's to decide.** With the third style in
+   place the failure moves to `model.py:677`,
+   `attn_out * self._attn_gate(x, ...)`: `attn_gate_proj` is colwise, so
+   `_forward_tp` returns `DTensor(Shard)`, while the call site builds
+   `attn_out` in plain-tensor land. The generic path never had this problem
+   because it derives locality from `base_out = self.base(x)` -- the base goes
+   through the TP plan's own hooks, which know whether that site wants
+   `use_local_output`. Its comment says so explicitly: "which of the two ways
+   depends on the style, and getting it backwards is a shape error, not a
+   silent one".
+
+So the correct shape of the fix is: `_forward_tp` must call `self.base(x)`
+rather than doing its own local matmul, and match the base's locality on the
+way out -- keeping the explicit `grad_placements` on the adapter operands,
+which is the part the generic path lacks. That trades the packed path's local-
+matmul optimization for correctness, and needs the packed callers re-verified.
+
+Both attempts are reverted; the tree runs clean (dense LoRA tp2, 7.63126).
+
 ## Not done
 
 The defect is localized and reproducible but **not fixed**. What exists is the
