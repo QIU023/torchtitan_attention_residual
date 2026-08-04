@@ -148,3 +148,84 @@ aggregation over block representations (report sec 2.2). See
 `STRUCTURE_AUDIT_2026-08-04.md`. That is deliberate for this matrix -- the
 point is "our parallelism on their model" -- but it means these numbers must
 not be presented as parallelism validated on the K3 architecture.
+
+---
+
+# Addendum: report-faithful architecture, and max-degree cells
+
+## kimi_k3_debugmodel_report_arch, 100 steps: 13/13
+
+The twin with one entry changed -- layer 13 is Gated MLA, per report sec 2.1.
+Everything else identical.
+
+| leg | s1 | s50 | s100 |
+|---|---|---|---|
+| dp1 | 12.05342 | 1.43325 | 0.38039 |
+| fsdp2 | 12.05033 | 1.48655 | 0.40717 |
+| pp2 | 12.04891 | 1.46258 | 0.40002 |
+| cp2 | 12.04192 | 1.48153 | 0.35529 |
+| tp2 | 12.07846 | 1.49733 | 0.39618 |
+| fsdp2_tp2_pp2 | 12.05989 | 1.43384 | 0.35537 |
+| fsdp2_tp2_cp2 | 12.10048 | 1.44392 | 0.40598 |
+| tp2_pp2_cp2 | 12.05395 | 1.47912 | 0.38170 |
+| fsdp2_pp2_cp2 | 12.03465 | 1.46866 | 0.39791 |
+| ep2_fsdp2 | 12.05033 | 1.51492 | 0.39696 |
+| ep2_fsdp2_tp2_pp2 | 12.05717 | 1.37986 | 0.35544 |
+| ep2_fsdp2_tp2_cp2 | 12.06437 | 1.53136 | 0.42176 |
+| ep2_fsdp2_pp2_cp2 | 12.07291 | 1.41445 | 0.34968 |
+
+Step-1 band 12.035 to 12.100, against the twin's 12.039 to 12.080 -- the same
+band, which is what one changed layer should produce.
+
+## Max-degree cells on the twin, 3 steps
+
+Run without touching the flavor. A cell needing a different layer, head or
+expert count is recorded as not expressible, never accommodated: the twin's
+value is "their exact config, our parallelism", and changing the config to make
+a cell run would destroy exactly that.
+
+| cell | result |
+|---|---|
+| `ep8_fsdp8` | 12.03346 11.97891 11.77869 |
+| `pp4` | 12.06240 12.01471 11.81561 |
+| `tp4` | 12.03252 11.98273 11.81679 |
+| `cp4` | 12.07386 12.00828 11.83320 |
+| `pp8` | **FAIL** -- see below |
+
+`ep8_fsdp8` is the interesting one: 8 experts over 8 ranks is exactly one
+expert per rank, so empty expert groups occur every step. That is the
+real-world trigger for the `_grouped_mm` zero-contraction-dim defect, and
+eager handles it cleanly.
+
+Not expressible on the twin's config, recorded rather than worked around:
+
+| cell | why |
+|---|---|
+| `tp8`, `cp8`, `tp4 x cp4` | 4 attention heads (MLA and KDA both) -- nothing to shard 8 ways |
+| `pp8 x vp4` | 13 layers cannot host 32 virtual stages |
+
+High-degree coverage on our own flavors (tp8, cp8, PP8xVP4, EP@896) already
+exists in this logbook and is citable; it was not re-run here.
+
+## Open defect: pp8 on 13 layers
+
+    ValueError: Tensors for P2P must be non-overlapping and dense
+      torch/distributed/pipelining/schedules.py:814 _batch_p2p
+      -> distributed_c10d.py:3682 batch_isend_irecv -> :3336 irecv
+
+**Established**: `pp2` and `pp4` pass on the same flavor; `PP8xVP4` passes on
+our own 32-layer flavor, so pipeline degree 8 is not broken generally. The
+failure is 13 layers over 8 stages. Instrumenting the adapter's
+`_finish_forward` produced no records at all, so the failure happens **before**
+our code runs, while torch allocates the receive buffer.
+
+**Suspected, NOT confirmed**: the adapter emits
+`partial_out.new_zeros((0, *partial_out.shape))` when a stage commits no
+blocks, and with block size 12 over 13 layers most of 8 stages commit nothing.
+An empty payload would give a degenerate recv buffer. This is read off the code,
+not measured -- the probe that would confirm it has to sit on the receive-buffer
+allocation, not on our forward.
+
+Same shape of problem as the `_grouped_mm` one: a validator rejecting a
+legitimately empty tensor. Whether the fix belongs on our side (send a
+1-element sentinel instead of an empty block stack) or upstream is not settled.
