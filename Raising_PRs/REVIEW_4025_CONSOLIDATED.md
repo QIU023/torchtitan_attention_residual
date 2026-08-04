@@ -34,12 +34,17 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 **1. `__init__.py` (`full_attention_layers`), final layer:**
 
-> Should `full_attention_layers` include the last layer? Sec 2.1 places an
-> extra Gated MLA at the end of the backbone "ensuring that the final layer
-> always performs global attention", and 93 = 23*4 + 1 lines up with that.
-> As written, `{4, 8, 12}` over 13 layers ends the stack on KDA. Config
-> level matters here because a 2.8T config would need 92 and 93 both
-> global, which the "every (ratio+1)-th layer" pattern cannot express.
+> Should `full_attention_layers` include the last layer? The released
+> `config.json` lists `full_attn_layers` explicitly as
+> `[4, 8, 12, ..., 84, 88, 92, 93]` -- 24 entries, with **92 and 93 both
+> global** -- which matches sec 2.1's "an additional Gated MLA layer is
+> placed at the end of the backbone, ensuring that the final layer always
+> performs global attention". As written here, `{4, 8, 12}` over 13 layers
+> ends the stack on KDA.
+>
+> Raising it at config level rather than as a debug-model nit: the released
+> list is not expressible as "every (ratio+1)-th layer", so a 2.8T config
+> needs either the trailing layer appended or the list carried verbatim.
 
 **2. `state_dict_adapter.py`, expert layout hook:**
 
