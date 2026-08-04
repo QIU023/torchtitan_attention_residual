@@ -229,3 +229,68 @@ allocation, not on our forward.
 Same shape of problem as the `_grouped_mm` one: a validator rejecting a
 legitimately empty tensor. Whether the fix belongs on our side (send a
 1-element sentinel instead of an empty block stack) or upstream is not settled.
+
+---
+
+# pp8 fixed, and the PP8xVP4 pressure test after it
+
+## The pp8 defect: cause, and two wrong turns
+
+`pp8` over 13 layers died in torch's pipeline P2P with "Tensors for P2P must be
+non-overlapping and dense". What torch ships backwards is the raw `grad_input`
+autograd produced for a stage's PP inputs. The last stage aggregates the block
+stack together with the partial block, so the gradient for the partial block
+comes back as a slice of that wider buffer -- measured as `[1, 256, 256]` with
+stride `[256, 768, 1]`, and 768 is 3 x 256: two blocks plus the partial.
+
+Two wrong turns, recorded because each cost a cycle:
+
+1. Making the **adapter's** outputs contiguous did nothing. The matrix never
+   sets `TORCHTITAN_ATTNRES_CACHE`, so `CrossStageCacheAdapter` was not in the
+   path at all -- which is also why probing `_finish_forward` produced zero
+   records, a fact that should have been read as "not called" rather than
+   "nothing to see".
+2. Making the model's stage **outputs** contiguous did nothing either. The
+   buffer belongs to the inputs.
+
+Fix is `_DenseGrad` on the PP inputs: identity forward, `grad.contiguous()`
+backward. Both wrong turns are reverted.
+
+    pp8   ValueError -> 12.04408 / 11.96190 / 11.75889
+    pp2   12.04905 / 12.00033 / 11.79082   (unchanged, bit for bit)
+    pp4   12.06240 / 12.01471 / 11.81561   (unchanged, bit for bit)
+
+So the matrix is **18/18**.
+
+## PP8xVP4 after the change
+
+The fix touches the PP input gradient path, and PP8xVP4 is the only
+configuration that crosses it at every one of 32 virtual stage boundaries, so
+it had to be re-run.
+
+`kimi_k3_mini_pp8vp4` (32 layers), Interleaved1F1B, `layers_per_stage 1`,
+`first/last_stage_less_layers 0`, **seq_len 1024**, 100 steps:
+
+    step   1   loss 7.70028   grad_norm 8.3009
+    step  25   loss 4.84887   grad_norm 4.4583
+    step  50   loss 3.30078   grad_norm 2.5610
+    step  75   loss 2.87262   grad_norm 0.8959
+    step 100   loss 2.83465   grad_norm 0.7439
+
+Monotone, no errors. And bit-identical to the pre-change tree at matched step
+count (5 steps: 7.70028 / 7.39004 / 6.34917 / 5.60212 / 5.32743 both ways).
+
+Two things this does NOT say, both of which have to travel with it:
+
+* **seq_len 1024, not 8192.** The flavor's own 8192 OOMs on this box (15.48 GiB
+  per GPU): 32 layers x 32 virtual stages x 8 microbatches of activations do
+  not fit. Verified that the OOM is not ours by running the identical config on
+  the pre-change file -- same OOM. So this run covers the gradient round-trip
+  across every virtual stage boundary, which is what the change touches, and
+  does not cover long-context activation or communication volume. The 8192
+  configuration needs the H200.
+* A first attempt at this comparison read as a regression (step 2 onward
+  diverging badly) and was wrong: it compared a 100-step run against a 5-step
+  control, and the LR schedule is computed over total steps, so step 2 already
+  had a different learning rate. Matched step counts agree exactly. Recorded
+  because the false signal was convincing.
