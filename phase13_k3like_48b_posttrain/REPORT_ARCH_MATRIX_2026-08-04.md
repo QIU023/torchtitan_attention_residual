@@ -32,17 +32,15 @@ batch 8, `local_batch_size` 1 so gradient accumulation is on, 10 steps.
 | `ep8 x fsdp8` | 12.01828 | 11.03459 | 9.92187 |
 | `pp4` | 12.08035 | 10.79280 | 9.80668 |
 | `pp8` | 12.04015 | 10.81690 | 9.80949 |
-| `tp4` | pending | | |
-| `cp4` | pending | | |
+| `tp4` | 12.04172 | 11.10711 | 9.95002 |
+| `cp4` | 12.03731 | 11.00092 | 9.91970 |
 
-Step-1 spread across the sixteen reported: 12.0183 to 12.1005, against
-`ln(163840) = 12.006`.
+**18/18.** Step-1 spread 12.0183 to 12.1005, against `ln(163840) = 12.006`.
 
-`tp4` and `cp4` are re-runs at this horizon of cells that already passed at 3
-steps (12.04172 / 12.03731 at step 1); the table gets updated with them rather
-than left partial. The thirteen degree-2 cells also ran 100 steps clean on this
-flavor; those numbers are in `TWIN_MATRIX_2026-08-04.md` pending a re-run of
-all eighteen at that horizon.
+`tp4` and `cp4` reproduce their 3-step values exactly at step 1, which is the
+cheap consistency check on the re-run. The thirteen degree-2 cells also ran 100
+steps clean on this flavor; those numbers are in `TWIN_MATRIX_2026-08-04.md`
+pending a re-run of all eighteen at that horizon.
 
 ## Compiled
 
