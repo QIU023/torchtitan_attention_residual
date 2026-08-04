@@ -17,10 +17,11 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > the RFC #3029 update, so as not to flood this thread. Short version, long
 > versions in the review:
 >
-> 1. **Decoder loop (the one that matters for PP)**: the loop already carries
->    `(h, block_residual)`; could it also take the initial residual stack as
->    an argument and run over a contiguous layer range? Details in the review
->    on `model.py`.
+> 1. **Decoder loop (heads-up for PP, not a request)**: the loop already
+>    carries `(h, block_residual)`; our PP follow-up will add the two missing
+>    seams (initial stack as an argument, layer range as a slice) as its own
+>    first commit. Flagging now so the shape does not drift -- happy to
+>    rebase if you would rather define it yourselves. Details on `model.py`.
 > 2. **Final layer** (config question): sec 2.1 puts an extra Gated MLA at
 >    the end so the final layer is global attention; `{4, 8, 12}` over 13
 >    layers ends on KDA.
@@ -36,19 +37,20 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 ## Long versions (ONE review; anchor each at the named file)
 
-**1. `model.py`, decoder loop — decides patch-vs-fork for PP:**
+**1. `model.py`, decoder loop — heads-up, not a request:**
 
 > The loop already threads exactly the right pair -- `h_BLD` and
-> `block_residual_TND` in and out of every layer -- so this is a smaller ask
-> than it looks. Two things keep a PP stage from reusing it:
-> `block_residual_TND` is created inside the forward
+> `block_residual_TND` in and out of every layer -- so PP needs only two
+> small seams: `block_residual_TND` is created inside the forward
 > (`h_BLD.new_zeros(B * L, 0, D)`) so a stage cannot pass an incoming stack
-> in, and the loop always runs `self.layers.values()` to the end. Would you
-> take the initial residual stack as an optional argument and the layer range
-> as a slice, returning the pair when the range stops short of the tail? A PP
-> stage owns a layer slice and has to enter at layer i with the upstream
-> stack and exit at j returning it. Without that seam PP means duplicating
-> the loop body rather than reusing it; TP, EP and CP need no such seam.
+> in, and the loop always runs `self.layers.values()` to the end. A PP stage
+> owns a layer slice and has to enter at layer i with the upstream stack and
+> exit at j returning the pair. **Our PP follow-up PR will add both** (an
+> optional initial-stack argument and a layer-range slice) as its first,
+> separately reviewable commit -- nothing here blocks on you. Flagging it now
+> so the forward does not drift into a shape that makes the seam bigger, and
+> in case you would rather define it yourselves pre-merge, which we would
+> happily rebase onto. TP, EP and CP need no seam at all.
 
 **2. `__init__.py` (`full_attention_layers`), final layer:**
 
