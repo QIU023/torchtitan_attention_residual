@@ -17,42 +17,22 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > the RFC #3029 update, so as not to flood this thread. Short version, long
 > versions in the review:
 >
-> 1. **Decoder loop (heads-up for PP, not a request)**: the loop already
->    carries `(h, block_residual)`; our PP follow-up will add the two missing
->    seams (initial stack as an argument, layer range as a slice) as its own
->    first commit. Flagging now so the shape does not drift -- happy to
->    rebase if you would rather define it yourselves. Details on `model.py`.
-> 2. **Final layer** (config question): sec 2.1 puts an extra Gated MLA at
+> 1. **Final layer** (config question): sec 2.1 puts an extra Gated MLA at
 >    the end so the final layer is global attention; `{4, 8, 12}` over 13
 >    layers ends on KDA.
-> 3. **Expert state-dict layout hook**: a seam for per-expert <->
+> 2. **Expert state-dict layout hook**: a seam for per-expert <->
 >    grouped-GEMM conversion, so one adapter serves both layouts.
-> 4. **Unsupported-parallelism guard**: per-feature instead of one list, so
+> 3. **Unsupported-parallelism guard**: per-feature instead of one list, so
 >    partial support lands without editing every entry.
-> 5. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
+> 4. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
 >    deadlock by a different route (a shard with zero vision sentinels on a
 >    batch that does have images) + a regression-test offer.
 >
-> None of these change the eager math -- all "leave a seam".
+> None of these change the eager math.
 
 ## Long versions (ONE review; anchor each at the named file)
 
-**1. `model.py`, decoder loop — heads-up, not a request:**
-
-> The loop already threads exactly the right pair -- `h_BLD` and
-> `block_residual_TND` in and out of every layer -- so PP needs only two
-> small seams: `block_residual_TND` is created inside the forward
-> (`h_BLD.new_zeros(B * L, 0, D)`) so a stage cannot pass an incoming stack
-> in, and the loop always runs `self.layers.values()` to the end. A PP stage
-> owns a layer slice and has to enter at layer i with the upstream stack and
-> exit at j returning the pair. **Our PP follow-up PR will add both** (an
-> optional initial-stack argument and a layer-range slice) as its first,
-> separately reviewable commit -- nothing here blocks on you. Flagging it now
-> so the forward does not drift into a shape that makes the seam bigger, and
-> in case you would rather define it yourselves pre-merge, which we would
-> happily rebase onto. TP, EP and CP need no seam at all.
-
-**2. `__init__.py` (`full_attention_layers`), final layer:**
+**1. `__init__.py` (`full_attention_layers`), final layer:**
 
 > Should `full_attention_layers` include the last layer? Sec 2.1 places an
 > extra Gated MLA at the end of the backbone "ensuring that the final layer
@@ -61,19 +41,19 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > level matters here because a 2.8T config would need 92 and 93 both
 > global, which the "every (ratio+1)-th layer" pattern cannot express.
 
-**3. `state_dict_adapter.py`, expert layout hook:**
+**2. `state_dict_adapter.py`, expert layout hook:**
 
 > Room for a hook letting a backend declare per-expert <-> grouped-GEMM
 > expert layout? The released checkpoint is per-expert; grouped kernels
 > want stacked. A hook keeps one adapter for both directions.
 
-**4. `parallelize.py`, the guard:**
+**3. `parallelize.py`, the guard:**
 
 > If support lands piecemeal (TP before CP), would you take the guard
 > per-feature instead of one list? It is the first thing every follow-up
 > PR would touch.
 
-**5. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
+**4. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
 
 > Strong agree with this helper, and the docstring already names the failure
 > correctly ("deadlock the step"). One field note from the same architecture
@@ -88,6 +68,11 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 ## Dropped from the posting set (2026-08-04, and why)
 
+- **Decoder-loop seam — MOVED to the RFC update**: we will add both seams
+  (initial-stack argument + layer-range slice) ourselves as the PP PR's
+  first commit, no dependency on anyone. Announcing our own plan belongs on
+  our own thread, not in their review; the PR comment set stays pure review.
+  No rebase offer -- we are adding it either way.
 - **Final aggregation question — WITHDRAWN, wrong**: the eager PR has it
   (`output_res_norm/proj` built at model level, applied over the full block
   stack before norm + lm_head; adapter maps the released
