@@ -93,3 +93,58 @@ in inductor's lowering.
 * Compile is out of scope in #4025 and compile-off in everything we publish,
   so the three compiled EP failures block the "compile on and off" goal but
   nothing that has been claimed.
+
+
+---
+
+# 10-step and 100-step: 13/13 both
+
+Same flavor and fixture, run with the small legs concurrent on disjoint GPU
+sets and the 8-GPU legs serial. Full per-step numbers in `twin100_raw.txt`.
+
+**Concurrency control**: steps 1-3 of the 10-step run reproduce the 3-step
+serial matrix bit-for-bit on every leg, so running four legs at once did not
+perturb anything.
+
+## 100 steps
+
+| leg | s1 | s25 | s50 | s75 | s100 |
+|---|---|---|---|---|---|
+| dp1 | 12.05575 | 3.81165 | 1.39091 | 0.52958 | 0.37123 |
+| fsdp2 | 12.07003 | 3.77238 | 1.49744 | 0.56217 | 0.38411 |
+| pp2 | 12.04905 | 3.82795 | 1.47136 | 0.56041 | 0.37325 |
+| cp2 | 12.06936 | 3.81163 | 1.40859 | 0.54027 | 0.34736 |
+| tp2 | 12.05239 | 3.74603 | 1.42770 | 0.55103 | 0.37299 |
+| fsdp2_tp2_pp2 | 12.05729 | 3.68773 | 1.49043 | 0.50403 | 0.34810 |
+| fsdp2_tp2_cp2 | 12.04102 | 3.68571 | 1.44435 | 0.59443 | 0.39448 |
+| tp2_pp2_cp2 | 12.04419 | 3.69610 | 1.36390 | 0.57287 | 0.37996 |
+| fsdp2_pp2_cp2 | 12.07969 | 3.70476 | 1.43364 | 0.53225 | 0.35862 |
+| ep2_fsdp2 | 12.07003 | 3.74634 | 1.44065 | 0.56345 | 0.37278 |
+| ep2_fsdp2_tp2_pp2 | 12.03851 | 3.67017 | 1.39659 | 0.53609 | 0.35122 |
+| ep2_fsdp2_tp2_cp2 | 12.05770 | 3.77369 | 1.41237 | 0.58835 | 0.38370 |
+| ep2_fsdp2_pp2_cp2 | 12.06318 | 3.58361 | 1.40409 | 0.54908 | 0.34978 |
+
+All thirteen decrease monotonically. No NaN, no divergence.
+
+## What this is NOT evidence of
+
+Two things have to travel with these numbers.
+
+**It is overfitting a smoke dataset.** `cc12m-test` is tiny; 12.06 -> 0.37 in
+100 steps is memorization, not convergence quality. What the run establishes is
+that thirteen parallelism configurations behave consistently and stably over a
+100-step window, which is what it was for. Real convergence curves need the
+H200 pretraining run.
+
+**The spread grows in relative terms.** Absolute spread at step 100 is 0.047,
+but that is ~13% relative, against ~0.3% at step 1. This is the ordinary
+amplification of small absolute differences at low loss, not a defect signal --
+and equally it does not support a claim that the thirteen "agree closely" at
+step 100. State the step-1 agreement, not the step-100 one.
+
+**The model is #4025's current architecture, not the report\'s.** Its final
+layer is KDA where report sec 2.1 requires Gated MLA, and it has no final
+aggregation over block representations (report sec 2.2). See
+`STRUCTURE_AUDIT_2026-08-04.md`. That is deliberate for this matrix -- the
+point is "our parallelism on their model" -- but it means these numbers must
+not be presented as parallelism validated on the K3 architecture.
