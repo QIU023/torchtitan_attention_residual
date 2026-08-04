@@ -20,14 +20,11 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > 1. **Final layer** (config question): the released config's
 >    `full_attn_layers` ends `[..., 88, 92, 93]` -- 92 and 93 both global,
 >    per sec 2.1; `{4, 8, 12}` over 13 layers ends on KDA.
-> 2. **Expert state-dict layout hook** (following up the review's own ask):
->    a seam for per-expert <-> grouped-GEMM conversion, so one adapter
->    serves both layouts -- our EP follow-up is the consumer.
-> 3. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
+> 2. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
 >    deadlock by a different route (a shard with zero vision sentinels on a
 >    batch that does have images) + a regression-test offer.
 >
-> None of these change the eager math.
+> Neither changes the eager math.
 
 ## Long versions (ONE review; anchor each at the named file)
 
@@ -45,13 +42,7 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 > list is not expressible as "every (ratio+1)-th layer", so a 2.8T config
 > needs either the trailing layer appended or the list carried verbatim.
 
-**2. `state_dict_adapter.py`, expert layout hook:**
-
-> Room for a hook letting a backend declare per-expert <-> grouped-GEMM
-> expert layout? The released checkpoint is per-expert; grouped kernels
-> want stacked. A hook keeps one adapter for both directions.
-
-**3. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
+**2. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
 
 > Strong agree with this helper, and the docstring already names the failure
 > correctly ("deadlock the step"). One field note from the same architecture
@@ -73,9 +64,14 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
   No rebase offer -- we are adding it either way.
 - **Unsupported-parallelism guard — DROPPED, same self-reliance logic**:
   the first of our follow-up PRs to land restructures the guard while
-  removing its own entry; a 5-line list is not worth a pre-ask. (The
-  state-dict hook is different: it follows up an ask already made in their
-  review, and the adapter's interface shape is their design call.)
+  removing its own entry; a 5-line list is not worth a pre-ask.
+- **Expert state-dict layout hook — MOVED to the RFC update**: the EP
+  branch already carries the complete conversion (hf_key_map, bidirectional
+  per-expert <-> grouped with sliced-tensor indexing, plus the grouped
+  experts module) -- asking for a hook would hand the design to a thread
+  whose author is already asking maintainers whether to build grouped-GEMM
+  MoE himself. Announce ours on our thread; ownership follows the
+  implementation, not the suggestion.
 - **Final aggregation question — WITHDRAWN, wrong**: the eager PR has it
   (`output_res_norm/proj` built at model level, applied over the full block
   stack before norm + lm_head; adapter maps the released
