@@ -146,3 +146,20 @@ Listed so their absence is visible:
   loss), so the number is a real initialization signal. Cause not isolated --
   most likely the output projection's init scale, but that is a guess until
   measured.
+
+## CORRECTION 2026-08-04: the final aggregation is NOT missing from the eager PR
+
+The "RESOLVED" section above is half right. The report does require the
+final aggregation, but the claim that the eager PR lacks it is wrong: the
+audit read `KimiK3TransformerBlock` and stopped there. At the model level,
+`model.py` builds `output_res_norm` / `output_res_proj` (L692-693) and the
+forward applies `_apply_attention_residual` over the full
+`block_residual_TND` stack after the layer loop, before norm + lm_head
+(L828-832) -- exactly sec 2.2's aggregation. Their state_dict_adapter also
+maps the released `output_attn_res_*` keys onto those parameters.
+
+Architecture comment B is withdrawn from the posting plan (see
+REVIEW_4025_CONSOLIDATED.md sec 3); the final aggregation moves to the
+checked-and-fine list. Comment A (final layer is KDA, not global attention)
+was re-verified against `full_attention_layers = {4, 8, 12}` at
+`__init__.py:354` with 1-based matching over 13 layers, and stands.

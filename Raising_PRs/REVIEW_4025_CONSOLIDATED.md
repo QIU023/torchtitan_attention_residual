@@ -18,7 +18,7 @@ offers, never verdicts. No PR/issue numbers in commit messages, ever.
 > multimodal) in a fork since release and would like to converge on your
 > module layout rather than carry a parallel one -- details and evidence in
 > the RFC #3029 update, so as not to flood this thread. Four branches are
-> ready to rebase onto this folder once it lands. Two config-level questions
+> ready to rebase onto this folder once it lands. One config-level question
 > below, plus a review with interface asks -- all "leave a seam", none
 > "change the math".
 
@@ -31,12 +31,15 @@ offers, never verdicts. No PR/issue numbers in commit messages, ever.
 > at config level because a 2.8T config would need 92 and 93 both global,
 > which the "every (ratio+1)-th layer" pattern cannot express.
 
-## 3. Architecture question B: final aggregation over block representations
+## 3. WITHDRAWN before posting: final aggregation (2026-08-04)
 
-> Is the final aggregation over the N block representations intended to be
-> out of scope? Sec 2.2 has the per-layer attention (eq. 10) and then "The
-> final output layer then aggregates all N block representations"; I only
-> see the former here. Happy to contribute it if wanted.
+**Do not post.** #4025 HAS the final aggregation: `model.py` builds
+`output_res_norm/proj` (L692-693) and the forward applies
+`_apply_attention_residual` over the full `block_residual_TND` stack after
+the layer loop, before norm + lm_head (L828-832); the adapter maps the
+released `output_attn_res_*` keys. The structure audit looked only at
+`KimiK3TransformerBlock` and missed the model tail. Moved to the
+checked-and-fine list in section 6.
 
 ## 4. Review — inline comments (one review submission)
 
@@ -117,6 +120,8 @@ offers, never verdicts. No PR/issue numbers in commit messages, ever.
 ## 6. If the thread turns adversarial: what we checked and is fine
 
 SiTU-GLU both branches (beta 4.0/25.0, fig. 4); full-rank Gated MLA gate
-(eq. 7); AttnRes pseudo-query Linear(dim,1) + RMSNorm keys (eq. 8); 3:1
-KDA:MLA, block size 12; core CrossEntropyLoss. Saying so makes the rest read
-as review, not complaint.
+(eq. 7); AttnRes pseudo-query Linear(dim,1) + RMSNorm keys (eq. 8); the
+final aggregation over block representations (sec 2.2 -- present at the
+model tail, initially mis-audited as absent); 3:1 KDA:MLA, block size 12;
+core CrossEntropyLoss. Saying so makes the rest read as review, not
+complaint.
