@@ -63,7 +63,45 @@ CE is the same quantity computed in chunks, so this is a memory optimization
 rather than a numerical difference -- but it is a real structural difference
 and implementing `_skip_lm_head` would remove it.
 
-## Open: residual streams per layer
+## RESOLVED: the final aggregation layer, and it is missing from #4025
+
+Filed above as open. The report settles it, two paragraphs after eq. 10:
+
+> The final output layer then aggregates all N block representations.
+
+and gives the shape:
+
+> for Kimi K3, we partition its layers into 8 blocks with 12-layer size,
+> giving a partial final block and 9 total blocks when counting the embedding
+> layer.
+
+So Block AttnRes has two distinct pieces: a per-layer attention over block
+representations (eq. 10), **and** a final aggregation over all N of them at the
+output.
+
+| | per-layer AttnRes | final aggregation |
+|---|---|---|
+| report | yes (eq. 10) | **yes**, explicit |
+| #4025 | yes (`attention_res_*`, `ffn_res_*`) | **absent** |
+| ours | yes (`attn_res_*`, `mlp_res_*`) | **yes** (`final_attn_res_*`) |
+
+Our `final_attn_res_proj` / `final_attn_res_norm` is that aggregation, and
+#4025 has no counterpart. Second architecture comment for them.
+
+Block size 12 matches on both sides and matches the report.
+
+## Still open: one AttnRes per layer, or one per sublayer
+
+Eq. 8 defines `k_i = v_i = f_i(h_i)`, "the output of layer i", and eq. 10 gives
+V "for the i-th layer in block n" -- one per layer. Both implementations carry
+two (attention and FFN sublayers separately).
+
+**Shared deviation, or compressed phrasing in the report.** Not resolved, and
+neither implementation is favoured by the evidence I have. Do not raise this
+one with them until it is settled -- it would be raising our own design as
+theirs.
+
+## Superseded heading (kept so the earlier note is traceable): residual streams per layer
 
 #4025's block carries **two** residual attentions:
 
@@ -89,8 +127,11 @@ alongside eq. 8-9, which is the next thing to do.
 
 Listed so their absence is visible:
 
-* Gated MLA: where the gate is applied, and whether `q_lora`/`kv_lora` ranks
-  and head-dim splits match the report's table.
+* ~~Gated MLA gate rank~~ **checked, all three agree**: report eq. 7 says
+  `W_g` is full rank; #4025 uses `_linear(dim, num_heads * v_head_dim)`; ours
+  defaults `attn_gate_param="full_rank"` to the same shape. Still unchecked
+  there: `q_lora`/`kv_lora` ranks and head-dim splits against the report's
+  table.
 * Stable LatentMoE: the latent projection structure (report eq. 11), shared vs
   routed expert widths, and the normalization the report says accompanies it.
 * Router: aux-loss-free bias rule vs the report's quantile balancing (sec
