@@ -12,49 +12,82 @@ Two of our own changes this week were made to match their tree, and one of
 them (the KDA gate dtype) we now think is the wrong direction on the merits.
 Record the disagreement rather than inherit it silently.
 
-## Finding 1 (likely blocking for CP): `get_vision_positions` cannot see a sequence shard
+The rule cuts both ways, and Finding 1 is where it cut against us: it was
+first written up as a defect in their tree and is not one. Before attributing
+anything to this PR, check `git log --diff-filter=A` on the file -- two of the
+three things here live in code #4025 only consumes.
 
-`torchtitan/models/common/multimodal.py`. This is in **`models/common/`**, not
-in `models/kimi_k3/`, so whatever contract it sets becomes the contract for
-every multimodal model upstream. That is what makes it worth raising now
-rather than when we file our CP PR.
+## Finding 1 (NOT a defect -- reclassified): `get_vision_positions` assumes the whole sequence
 
-It hard-fails on two conditions:
+`torchtitan/models/common/multimodal.py`.
+
+**Provenance first, because it changes who this is addressed to.** This helper
+is NOT #4025's. It came in with PR #3532 ("[kimi k2_7] add kimi k2_7",
+2026-07-29) and is already on main, used by three models: `qwen3_5`,
+`kimi_k2_7`, and now `kimi_k3`. #4025 is its third consumer, not its author.
+
+**And it is not a bug.** All three consumers refuse CP outright, and two of
+them name this exact reason in the error text:
+
+    qwen3_5/parallelize.py:
+      "Context Parallel is not yet supported for Qwen3.5. GatedDeltaNet (75% of
+       layers) requires full-sequence allgather, and multimodal CP needs vision
+       scatter before CP sharding."
+
+    kimi_k2_7/parallelize.py:
+      "Context Parallel is not yet supported for Kimi K2.5: vision scatter
+       needs the full sequence before CP would shard it."
+
+So the whole-sequence assumption is deliberate, upstream knows what it costs,
+and the guard is there precisely so nobody reaches the helper with a shard.
+Nothing is broken today.
+
+An earlier draft of this file framed it as a defect to raise. That framing was
+wrong and would have read badly: we would have been reporting a limitation
+they had already documented in their own error messages.
+
+## What it actually is: the gap they wrote down, which we have filled
+
+The two conditions the helper enforces --
 
 ```python
-if num_runs != num_items:
-    raise ValueError("Multimodal misalignment: found {num_runs} contiguous run(s) ...")
-...
-if run_lengths[i] != n_tokens:
-    raise ValueError("placeholder run {i} spans {run_lengths[i]} token(s) but ...")
+if num_runs != num_items:      # a CP rank may hold none of an image's placeholders
+if run_lengths[i] != n_tokens: # or a run truncated at the shard boundary
 ```
 
-Both assume the caller holds the **whole** sequence. Under context parallelism
-neither holds:
+-- are exactly the two states a CP rank normally sees. That is why CP is
+guarded off rather than why the guard is wrong.
 
-* A CP rank whose sequence shard contains none of an image's placeholders sees
-  `num_runs < num_items` and raises, even though nothing is misaligned -- the
-  image's tokens are simply on its peer.
-* An image straddling a shard boundary gives that rank a **truncated** run, so
-  `run_lengths[i] != n_tokens` and it raises.
+**Their intended design differs from ours, and the PR must say so.** Both error
+messages describe scattering the vision embeddings *before* CP shards the
+sequence. We do the opposite: shard first, then have each CP rank select its
+slice of the encoder output by a prefix sum over per-rank sentinel counts
+(`_select_cp_shard`). Ours is not a shortcut around their plan -- their plan
+needs the vision encode to happen ahead of `prepare_context_parallel_input`,
+which runs in the trainer before the model forward, so "scatter before
+sharding" is a trainer-side change rather than a model-side one. Worth stating
+plainly instead of quietly shipping the other design.
 
-Both are normal states under CP, not corruption. The check as written is a
-good one for the non-CP case -- silently scattering a mismatched run really
-would corrupt embeddings -- so the ask is not to delete it but to make the
-"how many of these tokens are mine" question answerable:
+Proposed comment, positioned as filling a stated gap rather than reporting a
+fault:
 
-> Would you take a variant that accepts the item's global token count plus this
-> rank's shard offset, so a partial or absent run is a valid input rather than
-> an error? We have this working in a fork (each CP rank exchanges its local
-> sentinel count, then slices the encoder output by the prefix sum) and would
-> rather implement it against this helper than route around it.
+> `qwen3_5` and `kimi_k2_7` both turn CP off with a note that multimodal CP
+> needs the vision scatter to happen before CP shards the sequence. We have CP
+> working for the multimodal path with the opposite split -- shard first, then
+> each CP rank takes its slice of the encoder output via a prefix sum over
+> per-rank sentinel counts -- which keeps the change inside the model and out
+> of the trainer's input path. That needs `get_vision_positions` to accept a
+> shard: the item's global token count plus this rank's offset, so an absent or
+> truncated run is valid input rather than a `ValueError`. Would you take that,
+> or do you prefer the scatter-before-sharding route? Happy to implement
+> either; we would rather build on this helper than route around it.
 
-We hit exactly this: our equivalent path had to gain a per-rank sentinel-count
-`all_reduce` and a prefix-sum slice, plus a zero-sentinel branch. The
-zero-sentinel branch is where our own deadlock lived
-(`CP_MULTIMODAL_HANG_RESOLVED_2026-08-04.md`), which is a fair warning to pass
-on: it is easy to get the arithmetic right and still hang, because the rank
-with nothing to splice must still issue every collective its peers issue.
+One warning worth passing on from our own implementation: getting the shard
+arithmetic right is not sufficient. A rank whose shard holds no sentinel must
+still issue every collective its peers issue -- ours returned early, dropped
+the vision tower out of the loss graph, and deadlocked on a missing FSDP
+reduce-scatter (`CP_MULTIMODAL_HANG_RESOLVED_2026-08-04.md`). That failure mode
+is invisible until it hangs.
 
 ## Finding 2 (minor, consistency): placeholder and real image paths derive dtype differently
 
