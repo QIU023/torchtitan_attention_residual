@@ -21,7 +21,7 @@ never fire timeline events. Our own repo's issues/PRs are exempt.
 ## What this project is
 
 IC (Yiqiao / QIU023) **reference implementation** of Kimi K3's training-side
-infra — NOT a product. Kimi K3 (2.8T-A50B, released 2026-07-16, weights+report
+infra — NOT a product. Kimi K3 (2.8T total / 104.2B activated, released 2026-07-16, weights+report
 due 2026-07-27) confirmed Block Attention Residuals (AttnRes) + KDA in
 production. This repo owns the earliest torchtitan AttnRes implementation +
 PP cross-stage adapter (backward-correct, validated to PP8×VP4 on 8 GPUs).
