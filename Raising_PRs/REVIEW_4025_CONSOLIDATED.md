@@ -1,127 +1,107 @@
-# Everything we post on the upstream K3 eager PR — consolidated, final
+# Everything we post on the upstream K3 eager PR — final
 
-Supersedes and merges `REVIEW_4025_DRAFT.md`, `REVIEW_4025_ARCHITECTURE_COMMENT.md`,
-`REVIEW_4025_FINDINGS_2026-08-04.md` (deleted). The RFC #3029 update body lives in
-`RFC3029_UPDATE_2026-08-04.md` and is NOT restated here.
-
-**Venue plan**: substance (matrices, branches, qualifications) goes to #3029.
-On the PR: ONE short top-level comment + ONE review bundling all inline
-comments (a single review = a single notification). Tone: questions and
-offers, never verdicts. No PR/issue numbers in commit messages, ever.
+**Venue plan**: substance (matrices, branches, qualifications) goes to the
+RFC update (`RFC3029_UPDATE_2026-08-04.md`). On the PR: ONE top-level
+comment (intro + the numbered summary below) + ONE review bundling the long
+versions as inline comments at their file locations — a single notification.
+Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 ---
 
-## 1. Top-level comment (short)
+## Top-level comment (post as-is: intro + numbered summary)
 
 > Thanks for landing this -- an eager reference is the right first step.
 > We have been building the parallelism side of K3 (TP/EP/PP/CP, text and
 > multimodal) in a fork since release and would like to converge on your
-> module layout rather than carry a parallel one -- details and evidence in
-> the RFC #3029 update, so as not to flood this thread. Four branches are
-> ready to rebase onto this folder once it lands. One config-level question
-> below, plus a review with interface asks -- all "leave a seam", none
-> "change the math".
+> module layout rather than carry a parallel one -- evidence and branches in
+> the RFC #3029 update, so as not to flood this thread. Short version, long
+> versions in the review:
+>
+> 1. **Decoder loop (the one that matters for PP)**: could the layer loop be
+>    factored to run over a contiguous range, carrying `(x, block_residuals)`
+>    in and out? Details in the review on `model.py`.
+> 2. **Final layer** (config question): sec 2.1 puts an extra Gated MLA at
+>    the end so the final layer is global attention; `{4, 8, 12}` over 13
+>    layers ends on KDA.
+> 3. **Expert state-dict layout hook**: a seam for per-expert <->
+>    grouped-GEMM conversion, so one adapter serves both layouts.
+> 4. **Unsupported-parallelism guard**: per-feature instead of one list, so
+>    partial support lands without editing every entry.
+> 5. Two field notes on `add_zero_valued_dependency` (cp>1 reaches the same
+>    failure mode; the symptom is a hang) + a regression-test offer.
+>
+> None of these change the eager math -- all "leave a seam".
 
-## 2. Architecture question A: final layer is not global attention
+## Long versions (ONE review; anchor each at the named file)
 
-> Should `full_attention_layers` include the last layer? Sec 2.1 places an
-> extra Gated MLA at the end of the backbone "ensuring that the final layer
-> always performs global attention", and 93 = 23*4 + 1 lines up with that.
-> As written, `{4, 8, 12}` over 13 layers ends the stack on KDA. Raising it
-> at config level because a 2.8T config would need 92 and 93 both global,
-> which the "every (ratio+1)-th layer" pattern cannot express.
-
-## 3. WITHDRAWN before posting: final aggregation (2026-08-04)
-
-**Do not post.** #4025 HAS the final aggregation: `model.py` builds
-`output_res_norm/proj` (L692-693) and the forward applies
-`_apply_attention_residual` over the full `block_residual_TND` stack after
-the layer loop, before norm + lm_head (L828-832); the adapter maps the
-released `output_attn_res_*` keys. The structure audit looked only at
-`KimiK3TransformerBlock` and missed the model tail. Moved to the
-checked-and-fine list in section 6.
-
-## 4. Review — inline comments (one review submission)
-
-**`model.py`, decoder loop (THE ask — decides patch-vs-fork for PP):**
+**1. `model.py`, decoder loop — decides patch-vs-fork for PP:**
 
 > Could the decoder forward be factored so the layer loop runs over an
 > arbitrary contiguous range and takes/returns its carried state? Block
 > AttnRes threads a stack of committed block residuals alongside the hidden
 > state; a PP stage owns a layer slice, so the loop must be enterable at
 > layer i with `(x, block_residuals)` and exitable at j returning the pair.
-> Welded to "all layers, hidden state only", PP means duplicating the body.
+> Welded to "all layers, hidden state only", PP support means duplicating
+> the body rather than reusing it. TP, EP and CP need no such seam.
 
-**`state_dict_adapter.py`:**
+**2. `__init__.py` (`full_attention_layers`), final layer:**
+
+> Should `full_attention_layers` include the last layer? Sec 2.1 places an
+> extra Gated MLA at the end of the backbone "ensuring that the final layer
+> always performs global attention", and 93 = 23*4 + 1 lines up with that.
+> As written, `{4, 8, 12}` over 13 layers ends the stack on KDA. Config
+> level matters here because a 2.8T config would need 92 and 93 both
+> global, which the "every (ratio+1)-th layer" pattern cannot express.
+
+**3. `state_dict_adapter.py`, expert layout hook:**
 
 > Room for a hook letting a backend declare per-expert <-> grouped-GEMM
-> expert layout? The released checkpoint is per-expert; grouped kernels want
-> stacked. A hook keeps one adapter for both directions.
+> expert layout? The released checkpoint is per-expert; grouped kernels
+> want stacked. A hook keeps one adapter for both directions.
 
-**`parallelize.py`, the unsupported-parallelism guard:**
+**4. `parallelize.py`, the guard:**
 
 > If support lands piecemeal (TP before CP), would you take the guard
 > per-feature instead of one list? It is the first thing every follow-up
 > PR would touch.
 
-**`distributed/fsdp.py`, `add_zero_valued_dependency` (agree + two data points):**
+**5. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
 
 > Strong agree with this helper. Two data points from the same architecture
 > under more parallelisms: (1) it is not only "a batch with no images" --
 > under CP a rank's shard can hold zero vision sentinels while every rank
-> got images, same failure mode at cp>1 only; (2) the failure is a hang, not
-> an error -- worth saying in the docstring, a hang sends people to the
+> got images; same failure mode, cp>1 only. (2) The failure is a hang, not
+> an error -- worth one docstring sentence, a hang sends people to the
 > wrong place. Happy to contribute a cp>1 regression test.
 
-**`multimodal.py` consumers, CP design (filling a stated gap, not a bug):**
+---
 
-> qwen3_5 and kimi_k2_7 turn CP off noting multimodal CP needs the vision
-> scatter before CP shards. We have multimodal CP working with the opposite
-> split -- shard first, each CP rank selects its encoder-output slice via a
-> prefix sum over per-rank sentinel counts -- keeping the change model-side.
-> That needs `get_vision_positions` to accept a shard (global token count +
-> rank offset, absent/truncated runs valid). Would you take that, or prefer
-> scatter-before-sharding? Happy to implement either.
+## Dropped from the posting set (2026-08-04, and why)
 
-**`model.py`, dtype consistency (minor):**
+- **Final aggregation question — WITHDRAWN, wrong**: the eager PR has it
+  (`output_res_norm/proj` built at model level, applied over the full block
+  stack before norm + lm_head; adapter maps the released
+  `output_attn_res_*` keys). The audit had only read the block class.
+  Now on the checked-and-fine list below.
+- **CP multimodal design question** (`get_vision_positions` accepting a
+  shard): our shard-first CP is already implemented on the PR-D branch, and
+  the helper belongs to PR #3532's multimodal common code, not to this PR.
+  Raise it in PR-D's own description where the helper actually changes.
+- **dtype consistency nit + KDA gate dtype question**: we matched their
+  tree on both this week; the questions are academic until a measured
+  difference exists. Kept internal (`KDA_GATE_DTYPE_2026-08-04.md`).
+- **Naming convention**: resolved on our side (`kimi_k3_*` for K3 proper,
+  `kimi_linear_*` only for the published Kimi-Linear models).
 
-> `pixel_values` casts to `patch_embed.weight.dtype` on the real path but
-> `_encode_placeholder_image` uses the activation dtype. They coincide under
-> bf16 training.dtype but diverge under fp32 params + FSDP mixed precision,
-> and then two DP ranks feed different dtypes into the same module. Cheap to
-> derive both from one expression. (Not run end-to-end; the two lines just
-> disagree.)
+## NOT raising (unchanged)
 
-**`model.py`, KDA gate dtype (question, not defect):**
+Per-layer vs per-sublayer AttnRes count (shared reading, unsettled); our PP
+adapter as a generic mechanism (declined before; stays in the model
+folder); any change to their eager math.
 
-> Was bf16 storage for `A_log`/`dt_bias` considered? fla's kernel
-> accumulates their grads in fp32 then downcasts to the param dtype, and we
-> measure those grads 2-3 orders below the model median, so bf16 quantizes
-> them. No convergence difference measured, and fp32-param recipes are
-> unaffected -- but note FSDP2 needs uniform dtype per group, so "just fp32
-> them" needs its own group (we tried the naive version; FSDP2 rejects it).
+## If the thread turns adversarial: checked and fine
 
-**`config_registry.py`, naming (one-liner):**
-
-> We keep `kimi_linear_*` for the published Kimi-Linear-48B / Table-2 rows
-> and `kimi_k3_*` for K3 proper (no K3 exists at 48B). If you have a
-> convention for the shared folder we will follow it; cheaper now than in a
-> rebase.
-
-## 5. NOT raising (and why)
-
-- The per-layer vs per-sublayer AttnRes count (eq. 8/10): both trees share
-  the two-per-layer reading; unsettled, and raising it presents our own
-  design as their problem.
-- Our PP cross-stage adapter as a generic mechanism: declined upstream
-  before; stays private in the model folder.
-- Any change to their eager forward math.
-
-## 6. If the thread turns adversarial: what we checked and is fine
-
-SiTU-GLU both branches (beta 4.0/25.0, fig. 4); full-rank Gated MLA gate
-(eq. 7); AttnRes pseudo-query Linear(dim,1) + RMSNorm keys (eq. 8); the
-final aggregation over block representations (sec 2.2 -- present at the
-model tail, initially mis-audited as absent); 3:1 KDA:MLA, block size 12;
-core CrossEntropyLoss. Saying so makes the rest read as review, not
-complaint.
+SiTU-GLU both branches (fig. 4); full-rank Gated MLA gate (eq. 7); AttnRes
+pseudo-query Linear(dim,1) + RMSNorm keys (eq. 8); the final aggregation
+over block representations (sec 2.2, present at the model tail); 3:1
+KDA:MLA, block size 12; core CrossEntropyLoss.
