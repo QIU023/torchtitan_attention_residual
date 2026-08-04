@@ -111,3 +111,39 @@ Localized to this fork and to the EP+compile combination; eager is unaffected
 and nothing currently published depends on it. Next step is to instrument
 `num_tokens_per_expert_E` under the failing configuration and find which expert
 goes empty, rather than adding a guard that would hide the cause.
+
+---
+
+# Addendum: the CP+TP hang on the PR-4025 twin
+
+Refs: pytorch/torchtitan#3029
+
+Two collective desynchronizations were found and fixed (commit 524bffdde): the
+sentinel-count `all_reduce` sat behind a data-dependent early return, and an
+image-free batch skipped the now-FSDP-sharded tower and with it the all-gather
+FSDP2 issues from its pre-forward hook. Neither was sufficient --
+`fsdp2_tp2_cp2` and `ep2_fsdp2_tp2_cp2` still hang at step 2.
+
+Per-rank instrumentation of the entry to `_exchange_sentinel_counts` settles
+what is and is not wrong.
+
+**The shard arithmetic is correct.** rank 0 and rank 2 are a CP pair and report
+`local=255` and `local=34`. They sum to 289, which is exactly 17x17 -- one
+34x34-patch image after 2x2 merge. So each rank does hold a complementary slice
+of the sentinels, and `_select_cp_shard`'s premise holds.
+
+**The call counts do not line up.** `forward` runs several times per step (the
+probe shows `pixel_values` of (1,1120,588), (1,1140,588), (1,1156,588),
+(1,1092,588) -- different microbatches, different images), and the number of
+`_exchange_sentinel_counts` entries differs between ranks within a step. A
+collective whose *count* differs across participants hangs exactly like one
+whose participants differ.
+
+So the remaining defect is not in which slice a rank takes, but in how many
+times the exchange runs per step and in what order relative to its peers. That
+points at the interaction between the microbatch loop and a per-forward
+collective, which is a different problem from the two already fixed.
+
+Not fixed. The next measurement is a per-rank, per-step count of entries with
+the ranks' output serialized (the current probe interleaves, which is why the
+counts had to be inferred rather than read).
