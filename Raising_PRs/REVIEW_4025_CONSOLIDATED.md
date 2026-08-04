@@ -22,7 +22,8 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 >    per sec 2.1; `{4, 8, 12}` over 13 layers ends on KDA.
 > 2. One field note on `add_zero_valued_dependency`: cp>1 reaches the same
 >    deadlock by a different route (a shard with zero vision sentinels on a
->    batch that does have images) + a regression-test offer.
+>    batch that does have images); our CP follow-up carries a regression
+>    test for it.
 >
 > Neither changes the eager math.
 
@@ -44,14 +45,14 @@ Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 **2. `distributed/fsdp.py`, `add_zero_valued_dependency`:**
 
-> Strong agree with this helper, and the docstring already names the failure
-> correctly ("deadlock the step"). One field note from the same architecture
-> under more parallelisms: the trigger is not only "a batch that happens to
-> carry no images". Under context parallelism a rank's sequence shard can
-> hold zero vision sentinels while every rank did receive images, which
-> reaches the same missing-reduce-scatter deadlock at cp>1 only. Might be
-> worth half a sentence in the docstring, since the CP route is easy to miss
-> when reading the DP one. Happy to contribute a cp>1 regression test.
+> Strong agree with this helper. One field note from running this
+> architecture under CP: the trigger is not only "a batch that happens to
+> carry no images" -- under context parallelism a rank's sequence shard can
+> hold zero vision sentinels even when every rank received images, which
+> reaches the same subset-collective deadlock by a route that only appears
+> at cp>1. Might be worth a sentence in the docstring, since the CP route is
+> easy to miss when reading from the DP example. Our CP follow-up includes a
+> regression test for exactly this route.
 
 ---
 
