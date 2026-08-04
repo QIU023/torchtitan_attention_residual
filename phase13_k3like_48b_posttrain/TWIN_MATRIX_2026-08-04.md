@@ -1,4 +1,14 @@
-# The #4025 twin flavor: 13/13 eager, 10/13 compiled
+# The eager reference's architecture, unchanged: 18/18 eager, 15/18 compiled
+
+The primary matrix is `REPORT_ARCH_MATRIX_2026-08-04.md` (the same cells with
+the report's trailing Gated MLA). This file is the same cells on the eager
+reference's architecture as published, and it is also the defect history: the
+CP multimodal deadlock, the pp8 P2P failure, the grouped_mm operator
+limitation, and four claims that were published and then retracted.
+
+Read the sections in order. The early ones say 13/13 because the max-degree
+cells did not exist yet; the number grows to 18/18 further down. Nothing above
+is edited to match what came later -- the sequence is the point.
 
 Refs: pytorch/torchtitan#3029, pytorch/torchtitan#4025
 
