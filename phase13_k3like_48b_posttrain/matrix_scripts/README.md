@@ -56,3 +56,10 @@ that is not:
   collector reads it as a failure. This cost three separate matrices.
 * Never edit a source file while a matrix is running. Two runs were discarded
   for this; legs launched before and after the edit ran different code.
+
+## Scope: multimodal only
+
+The reported matrix runs the MULTIMODAL flavor. Text-only and dense legs exist as
+controls for specific questions -- whether the run-horizon band is
+architecture-specific, and whether a cross-layout disagreement is MoE route
+flipping -- and should be run when those questions come up, not by default.

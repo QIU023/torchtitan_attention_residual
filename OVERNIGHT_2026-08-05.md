@@ -229,3 +229,29 @@ accumulates.
 To finish it, in order: add an even-head debug vision config; A/B in bf16 with
 the dense control (fp32 is unavailable for TP legs on this hardware); require
 step-1 loss and grad_norm identity, as task 2 did.
+
+### Task 1b -- LANDED (`e37faff3c`). Both blockers removed.
+
+Added `kimi_k3_debugmodel_report_arch_vit4h` (4 heads over the same
+`qkv_hidden_size` 384 -> head_dim 96, RoPE-legal, parameter count unchanged) so
+head sharding can be exercised at all, and verified the sharding as a FUNCTION
+instead of through end-to-end loss, since fp32 is hardware-blocked for TP legs
+here.
+
+Single encoder block, TP2 against replicated on identical input:
+`max_abs 7.8e-03, rel 2.5e-03`, no NaN -- bf16 rounding, same order as the MLP
+shard's 5.2e-03.
+
+The end-to-end A/B on `vit4h` at tp2 moves step-1 loss by 1.5e-3
+(12.06875 sharded vs 12.06723 replicated), which is consistent with a 2.5e-3
+relative perturbation of the attention output and is NOT evidence either way at
+bf16 precision -- which is exactly why the module-level measurement was needed.
+
+`KIMI_VIT_TP_HEADS=0` keeps the A/B available.
+
+## Policy recorded
+
+**The full parallelism matrix runs MULTIMODAL only from now on.** The dense and
+text-only legs were controls for specific questions (is the run-horizon band
+architecture-specific; is a disagreement route flipping) and stay available as
+controls, but they are not part of the reported matrix.
