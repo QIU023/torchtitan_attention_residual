@@ -1,5 +1,13 @@
 # Everything we post on the upstream K3 eager PR — final
 
+**STATUS 2026-08-05: POSTED AND ADOPTED.** Both review comments landed as
+commits on the PR within a day: comment 1 as "Close the Kimi K3 backbone on
+global attention" (`9b9fe1feb`, docstring cites the released
+`..., 88, 92, 93` list), comment 2 as "Note the context-parallel route in
+add_zero_valued_dependency" (`9f60a3d6d`). This file is now a record. The
+one remaining unposted piece is the multimodal follow-up response below --
+post it when the parallelism follow-ups come up on the thread.
+
 **Venue plan**: substance (matrices, branches, qualifications) goes to the RFC update (`RFC3029_UPDATE_2026-08-04.md`). On the PR: ONE top-level comment (intro + the numbered summary below) + ONE review bundling the two long versions as inline comments at their file locations — a single notification. Tone: questions and offers. No PR/issue numbers in commit messages, ever.
 
 **Format note**: paste sections are written as single-line paragraphs with no blockquote markers, so they copy into GitHub verbatim. Everything between the BEGIN/END markers is the paste.
