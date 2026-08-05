@@ -151,3 +151,62 @@ but it needs the same weights loaded into both stacks, which needs our
 state-dict adapter to round-trip against theirs. Not done, and not claimed.
 
 The 100-step runs still overfit a smoke dataset. That has not changed.
+
+---
+
+## Dense control: the same matrix with MoE removed
+
+`kimi_k3_debugmodel_report_arch_dense` -- one field changed from the report
+architecture, `first_k_dense_replace` set to the layer count, so every layer is
+a plain FFN. Same 13 layers, same KDA/MLA composition with the trailing Gated
+MLA, same Block AttnRes, same vision tower, same data, its own seed checkpoint.
+Verified zero MoE parameters remain; 106.5M total.
+
+Thirteen cells, not eighteen: **expert parallelism is inapplicable** to a dense
+model, so those five are reported as such rather than as failures.
+
+| cell | step 1 | step 50 | step 100 |
+|---|---|---|---|
+| `single-GPU` | 12.06172 | 0.53980 | 0.11974 |
+| `fsdp2` | 12.06172 | 0.54802 | 0.11066 |
+| `pp2` | 12.06172 | 0.54380 | 0.13083 |
+| `cp2` | 12.06102 | 0.59149 | 0.11894 |
+| `tp2` | 12.06201 | 0.54532 | 0.12916 |
+| `fsdp2 x tp2 x pp2` | 12.06201 | 0.51759 | 0.11495 |
+| `fsdp2 x tp2 x cp2` | 12.06178 | 0.55177 | 0.11613 |
+| `tp2 x pp2 x cp2` | 12.06178 | 0.54580 | 0.11683 |
+| `fsdp2 x pp2 x cp2` | 12.06102 | 0.55344 | 0.11935 |
+| `pp4` | 12.06172 | 0.55650 | 0.12217 |
+| `pp8` | 12.06172 | 0.52187 | 0.10420 |
+| `tp4` | 12.06203 | 0.54762 | 0.12445 |
+| `cp4` | 12.06217 | 0.51810 | 0.13365 |
+
+13/13, monotone throughout. The same clustering by reduction structure: five
+cells agree bit-for-bit at step 1 (`single-GPU`, `fsdp2`, `pp2`, `pp4`, `pp8` at
+12.06172), and the ones that differ are the TP and CP cells.
+
+### What it establishes
+
+The run-horizon band is not architecture-specific. Comparing the thirteen
+non-EP cells on both models:
+
+| horizon | dense abs spread | MoE abs spread | dense rel | MoE rel |
+|---|---|---|---|---|
+| step 1 | 0.00115 | 0.00885 | 0.01% | 0.07% |
+| step 50 | 0.07390 | 0.12882 | 13.6% | 9.5% |
+| step 100 | 0.02945 | 0.04314 | 24.5% | 12.0% |
+
+Absolute spread is the same order on both and slightly smaller on dense.
+Relative spread reads higher on dense only because it converges three times
+further (0.120 against 0.360 at step 100), so an equal absolute difference is a
+larger fraction of a smaller loss.
+
+So the band tracks reduction order, which changes with parallel degree, rather
+than anything about routing. That is the documented expectation: bit-wise
+identity is required *with the same parallelisms*, and a change of parallel
+degree is a change of computation, judged on convergence.
+
+This control was run specifically to test an attribution that appeared in an
+earlier draft of the RFC -- that the band came from MoE top-k flipping. It does
+not; the dense model shows the same band without any routing to flip. The
+attribution was removed rather than reworded.
