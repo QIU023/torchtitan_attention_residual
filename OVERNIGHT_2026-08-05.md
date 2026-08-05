@@ -123,3 +123,50 @@ verify: exact equality is the expected result, not approximate.**
 
 Not implemented tonight -- landed with the design rather than a half-wired
 forward, since the remaining budget was not enough to implement and verify it.
+
+### Task 2 -- ViT dynamic CP: implemented, forward verified exact, backward NOT. Reverted.
+
+The design above was implemented: round-robin image ownership over the static
+`_cp_group`, output lengths sized from the replicated `grid_thw`, a fixed-shape
+`funcol.all_gather_tensor`, and a `KIMI_VIT_CP_IMAGE_SHARD=0` switch so the two
+paths can be A/B'd on one configuration.
+
+**The measurement discipline mattered here twice.**
+
+First run looked perfect: cp2 gave 12.07565, bit-identical to the published cp2
+leg. It proved nothing -- the path never engaged. The debug flavor runs
+`local_batch_size 1`, so one image per microbatch and `len(counts) < cp_size`
+sent it straight to the fallback. Confirmed by instrumenting rather than by
+inspection: `engaged=0`.
+
+With `--training.local-batch-size 2` the path fires on both ranks
+(`engaged=2`), and the A/B is:
+
+| | step 1 loss | step 1 grad_norm | step 2 loss | step 2 grad_norm |
+|---|---|---|---|---|
+| sharded | 12.07338 | 12.4375 | 11.99565 | 10.1250 |
+| replicated | 12.07338 | 12.4375 | 11.99084 | 10.0625 |
+
+**Forward is bit-exact, as predicted.** Step 2 diverges, so the backward is not.
+
+The hypothesis, and it is specific rather than a shrug: in the replicated path
+every CP rank computed the tower's gradient over ALL images, so each rank already
+held the complete sum and nothing needed to reduce it across CP. With images
+sharded, the all-gather's transpose is a reduce-scatter, so each rank ends up
+holding the gradient for only the images it owned -- an under-reduction, unless
+something all-reduces tower parameter gradients along the CP axis. Under
+FSDP/DP the reduction happens on the dp axis, which is not this one.
+
+That is the same failure shape as the shared-code MoE gradient bug filed earlier
+(under-reduced gradients, invisible in loss because Adam is scale-invariant, and
+visible in grad_norm) -- worth checking whether it is literally the same missing
+reduction.
+
+Next step, in order: (1) establish whether torchtitan reduces gradients over the
+CP axis at all for this model; (2) if not, all-reduce the tower's parameter
+gradients over `_cp_group` after backward, or make the collective's backward
+produce the full sum instead of the scatter; (3) re-run the same A/B and require
+step 2 to match as well.
+
+Reverted -- forward-only correctness is not correctness. Tree at `54810694d`,
+suite 260 passed.
