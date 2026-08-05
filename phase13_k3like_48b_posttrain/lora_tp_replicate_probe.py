@@ -101,14 +101,19 @@ def compare_replicated_grads(model_parts, step: int) -> None:
             max_delta = max(
                 (other - ref).abs().max().item() for other in gathered[1:]
             )
-            if max_delta > 0.0:
-                _record(
-                    step=step,
-                    param=name,
-                    max_delta=max_delta,
-                    ref_absmax=ref.abs().max().item(),
-                    placements=[str(x) for x in g.placements],
-                )
+            # Record agreements too. Recording only disagreements makes silence
+            # mean "compared and agreed" in one place and "never compared" in
+            # another, which is the ambiguity this probe exists to remove -- and
+            # reading an agreement as an absence has already produced two wrong
+            # conclusions here.
+            _record(
+                step=step,
+                param=name,
+                agrees=(max_delta == 0.0),
+                max_delta=max_delta,
+                ref_absmax=ref.abs().max().item(),
+                placements=[str(x) for x in g.placements],
+            )
     _record(step=step, summary=True, replicated_grads_checked=checked)
 
 
@@ -143,6 +148,37 @@ def dump_structure(model_parts, only: str) -> None:
             )
 
 
+def param_names(model_parts) -> set[str]:
+    return {
+        n
+        for part in model_parts
+        for n, _ in part.named_parameters(remove_duplicate=False)
+    }
+
+
+class Bisect:
+    """Record the parameter set at successive boundaries of the first step.
+
+    Parameters registered at __init__ are missing by the end of step 1. That can
+    only happen if an attribute is rebound to a non-Parameter, so the question is
+    purely "which boundary loses them" -- deterministic, unlike the numerics.
+    """
+
+    def __init__(self, model_parts) -> None:
+        self.parts = model_parts
+        self.prev = param_names(model_parts)
+        self.done = False
+        _record(bisect="after_init", count=len(self.prev))
+
+    def at(self, label: str) -> None:
+        if self.done:
+            return
+        now = param_names(self.parts)
+        lost = sorted(self.prev - now)
+        _record(bisect=label, count=len(now), lost_here=lost)
+        self.prev = now
+
+
 def install() -> None:
     import torchtitan.train as T
 
@@ -154,13 +190,28 @@ def install() -> None:
         want = os.environ.get("LORA_PROBE_STRUCTURE")
         if want:
             dump_structure(self.model_parts, want)
+
+        bisect = Bisect(self.model_parts) if os.environ.get("LORA_PROBE_BISECT") else None
         original_step = self.train_step
+        original_fb = self.forward_backward_step
+
+        def fb(*a, **k):
+            if bisect:
+                bisect.at("step_start_before_forward_backward")
+            out = original_fb(*a, **k)
+            if bisect:
+                bisect.at("after_forward_backward")
+            return out
 
         def step(*a, **k):
             out = original_step(*a, **k)
+            if bisect:
+                bisect.at("after_optimizer_step")
+                bisect.done = True
             compare_replicated_grads(self.model_parts, self.step)
             return out
 
+        self.forward_backward_step = fb
         self.train_step = step
 
     T.Trainer.__init__ = patched_init
