@@ -170,3 +170,36 @@ step 2 to match as well.
 
 Reverted -- forward-only correctness is not correctness. Tree at `54810694d`,
 suite 260 passed.
+
+### Task 2 -- LANDED after all (`57c6728ed`). The under-reduction hypothesis was wrong.
+
+The revert above was premature. Two measurements settled it:
+
+**fp32 A/B.** A missing CP reduction would show as a factor-of-cp error. It does
+not: step-1 grad_norm is 12.4583 vs 12.4584, i.e. ~1e-5 relative, which is
+accumulation noise. Also relevant, and it undercuts the hypothesis directly:
+torchtitan's `"fsdp"` mesh IS `dp_shard x cp`, and `disable_fsdp_gradient_division`
+is already applied, so tower gradients are summed across the CP axis rather than
+averaged. There was never a missing reduction.
+
+**Dense control.** Step 2 differing 400x more than step 1 looked like MoE top-k
+route flipping. The dense flavor, which has no routing to flip, shows the same
+pattern: step 1 bit-identical (12.05145, grad_norm 9.6241), step 2 apart by
+2e-4. So it is neither under-reduction nor route flipping -- it is
+reduction-order difference below grad_norm's display precision, amplified by
+Adam's first updates, where the update magnitude is ~lr almost independently of
+gradient scale.
+
+Final evidence for landing: step-1 loss and grad_norm bit-identical in bf16 AND
+fp32, on the MoE flavor AND the dense control. By CONTRIBUTING's rule this is a
+computation change judged on convergence, so step-1 identity is stronger than
+required. Published matrix legs are untouched -- they run `local_batch_size 1`,
+so the path never triggers.
+
+**Lesson worth keeping:** "step 1 matches, step 2 does not" is not evidence of a
+backward bug on its own. Adam makes a 1e-5 gradient difference into a 1e-4 loss
+difference in one step. Distinguishing a real reduction bug from that needs a
+dtype sweep (a factor error survives fp32; rounding does not) and an
+architecture control, not more staring at the same two numbers.
+
+Tree at `57c6728ed`, suite 260 passed.
