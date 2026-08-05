@@ -92,6 +92,12 @@ def main() -> None:
         except UnmappedKey:
             skipped.append(key)
             continue
+        if official.endswith(".A_log") and value.dim() == 1:
+            # KDA A_log is [1, 1, H, 1] in the HF layout and [H] in ours. The
+            # state-dict adapter reshapes on read and passes ours through on
+            # write; this export maps names, so the shape has to be converted
+            # here or the loader rejects it on size.
+            value = value.view(1, 1, -1, 1)
         out[_text_only(official)] = value.contiguous().cpu()
 
     if skipped:

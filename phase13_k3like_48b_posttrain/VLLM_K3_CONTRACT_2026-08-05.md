@@ -219,3 +219,41 @@ the odd one out -- which suggests targeting vLLM's
 `KimiK3ForConditionalGeneration` instead of stripping, rather than teaching the
 exporter two layouts. Decide before writing more code; both directions are cheap
 and only one is faithful.
+
+### GRPO progress, continued
+
+The prefix question resolved as "our adapter was mono-lingual", not as a choice
+between consumers. `hf_key_map` only ever spoke the released multimodal
+spelling, in both directions, so our own adapter could not read a checkpoint our
+own exporter had written. It now accepts a bare `model.*` on read and emits it on
+write when the model has no `vision_config`. vLLM keeps consuming `model.*`
+through `KimiLinearForCausalLM`, unchanged.
+
+Four more cleared after that, each a real export/shape gap:
+
+* **Prefix** -- fixed as above; the actor got past name resolution.
+* **`NameError: self`** -- `_tt_key_to_hf` is a staticmethod; text_only is now
+  threaded from the caller via `_is_text_only()`.
+* **Vocab** -- the fixture was exported at `--vocab-size 4096` while the flavor's
+  native size is 2016, so `lm_head.weight` mismatched. Export at the native size;
+  the override exists for tests, not for a loadable checkpoint.
+* **`A_log` shape** -- `[1, 1, H, 1]` in the HF layout, `[H]` in ours. The
+  state-dict adapter reshapes on read and passes ours through on write; this
+  exporter maps NAMES only, so the shape has to be converted in the export. Done.
+
+**Where it stops now:**
+
+    RuntimeError: Missing key in checkpoint state_dict:
+      model.layers.11.self_attn.attn_gate_proj.weight
+
+Layer 11 is a Gated-MLA layer (`full_attn_layers` is 1-based, so 12 -> index 11).
+The loader is asking for `attn_gate_proj`, our own name, where the release spells
+it `g_proj` -- so for this key `to_hf` did NOT go through
+`titan_to_official` and kept the tt name. Note the adapter calls
+`titan_to_official(key, kda_layers=set())` with an EMPTY kda_layers, which makes
+`_mla_layer` true for every layer; whether that is the cause or a separate latent
+bug is the thing to establish first, and it is a read of two functions, not an
+experiment.
+
+Everything up to that point is verified: config resolution, flavor resolution,
+model build, and the checkpoint load reaching per-key name lookup.
