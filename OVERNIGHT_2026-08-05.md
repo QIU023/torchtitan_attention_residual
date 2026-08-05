@@ -203,3 +203,29 @@ dtype sweep (a factor error survives fp32; rounding does not) and an
 architecture control, not more staring at the same two numbers.
 
 Tree at `57c6728ed`, suite 260 passed.
+
+### Task 1b -- ViT attention head TP: two hard prerequisites, not landed
+
+Re-applied with an env gate and tried to A/B it the way task 2 was settled. Both
+halves of that method are unavailable here:
+
+1. **The debug vision tower has 3 attention heads.** They do not divide 2 ranks,
+   so the guard correctly refuses to shard and the A/B compares nothing. Every
+   multimodal flavor inherits this tower. A verification needs a vision config
+   with an even head count -- MoonViT-V2 ships 12, so this is a debug-config
+   artifact, not a design limit.
+2. **fp32 + tp2 is hardware-blocked on this box**: `Failed to set the allowed
+   dynamic shared memory size to 108160` against this card's 101376 -- the
+   documented KDA fp32 ceiling. So the dtype sweep that distinguished
+   reduction-order from a factor error in task 2 cannot be run for TP legs here.
+   (It worked for the cp2 legs, which is why task 2 could be settled.)
+
+The implementation itself is believed complete: `wqkv` replicated, `to_local(
+grad_placements=[Partial()])` before slicing so the shard identity is not lost,
+`wo` as RowwiseParallel over `Shard(-1)`. Reverted rather than shipped behind a
+default-off flag, because unverifiable code behind a flag is how dead code
+accumulates.
+
+To finish it, in order: add an even-head debug vision config; A/B in bf16 with
+the dense control (fp32 is unavailable for TP legs on this hardware); require
+step-1 loss and grad_norm identity, as task 2 did.
