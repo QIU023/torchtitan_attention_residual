@@ -80,3 +80,64 @@ first and measured second.
 ## veRL
 
 Not started. Recording that rather than leaving it to be inferred from silence.
+
+
+---
+
+# The localization was wrong, and the measurement that showed it
+
+Everything above treats `q_a_proj.lora_b` as the root and looks for a
+Partial-to-Replicate mislabel inside `LoRALinear.forward`. Both premises are
+wrong.
+
+## What the gradient chain actually does
+
+Placement dump along the Q and KV compression paths, layer 0:
+
+    q_b_proj          grad_out S(2)      grad_in P(sum)
+    q_a_layernorm     grad_out P(sum)    grad_in R
+    q_a_proj          grad_out R         grad_in R
+
+The layernorm converting Partial to Replicate looked like the bug. It is not --
+it is a real reduction, not a relabel. Values at that boundary:
+
+    q_a_layernorm grad_out (Partial)   rank0 0.000193   rank1 0.000178   differ, correctly
+    q_a_layernorm grad_in  (Replicate) rank0 0.000596   rank1 0.000596   identical
+    q_a_proj      grad_out (Replicate) rank0 0.000596   rank1 0.000596   identical
+
+So the gradient arriving at `q_a_proj` is correctly reduced. The same dump also
+explains why `kv_a_proj_with_mqa` keeps a Partial gradient where `q_a_proj` does
+not: its output is split, the rope half contributes a Partial gradient, and
+`R + P(sum)` stays Partial. It is rescued by the split rather than handled.
+
+## The measurement that broke the story
+
+`q_a_proj.lora_b` gradients, per layer, both ranks:
+
+    layer 0   rank0 0.01897978   rank1 0.01897978   identical
+    layer 1   rank0 0.00397344   rank1 0.00267326   differ
+    layer 2   rank0 0.00266132   rank1 0.00298768   differ
+    layer 3   rank0 0.00168546   rank1 0.00153858   differ
+
+**Layer 0 is clean.** Every placement measurement above was taken on layer 0 --
+the one layer that is correct -- which is why it kept showing a healthy chain
+while the rank-spread probe kept reporting a defect. Two measurements that
+looked contradictory were describing different layers.
+
+## Where this points instead
+
+Layer 0 differs from layers 1+ in exactly one way: it has no incoming block
+residuals. Layers 1+ take their input from the AttnRes cross-layer aggregation.
+So the suspect is that aggregation path, not LoRA's TP handling, and the
+disagreeing set fits: three `q_a_proj.lora_b` on layers 1-3 (not 0) plus eight
+AttnRes projections.
+
+It also explains both earlier fix attempts. Both edited
+`LoRALinear.forward` -- declaring `grad_placements` on its `full_tensor`, and
+making the packed TP path reachable. Neither could work, because the input
+arriving at the module is already rank-dependent.
+
+Note the constraint this has to satisfy: with LoRA off, the same architecture is
+clean (40 replicated gradients checked, all agree). So the AttnRes aggregation
+is not unconditionally wrong -- something about the LoRA-wrapped layers changes
+what it carries. That is the next thing to measure, on layer 1, not layer 0.
