@@ -73,3 +73,10 @@ Next attempt starts by fixing the harness (or comparing inside a real training
 step instead of a standalone tower), not by rewriting the sharding.
 
 Tree left at `54810694d`, suite green.
+
+**Follow-up:** the tower is clean single-process -- same config, same input, no
+TP, no DTensor: `has_nan: False`. So the NaN was specific to building two towers
+inside one distributed harness, i.e. a harness artifact, and MoonViT has no
+latent uninitialized-row bug. That makes the reverted attention sharding
+*probably* correct, but probably is not verified, so it stays out. Resume by
+validating it inside a real training step.
