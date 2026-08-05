@@ -101,14 +101,34 @@ def main() -> None:
         )
 
     os.makedirs(args.out, exist_ok=True)
-    save_file(out, os.path.join(args.out, "model.safetensors"))
+    # Sharded name + index, not a bare model.safetensors: torchtitan's
+    # StateDictAdapter regexes the shard number out of the index's weight_map, so
+    # a single unindexed file fails with "model.safetensors.index.json not found".
+    # vLLM accepts either.
+    shard = "model-00001-of-00001.safetensors"
+    save_file(out, os.path.join(args.out, shard))
+    json.dump(
+        {
+            "metadata": {"total_size": sum(t.numel() * t.element_size() for t in out.values())},
+            "weight_map": {k: shard for k in out},
+        },
+        open(os.path.join(args.out, "model.safetensors.index.json"), "w"),
+        indent=2,
+    )
 
     cfg = titan_config_to_official(kc, num_blocks=num_blocks)
     cfg["architectures"] = ["KimiLinearForCausalLM"]
     cfg["torch_dtype"] = "bfloat16"
+    # transformers has no kimi_linear model type, and veRL's HFModelConfig goes
+    # through AutoConfig -- without auto_map it fails with "Transformers does not
+    # recognize this architecture". vLLM is unaffected either way: it resolves
+    # model_type through its OWN registry and never consults auto_map.
+    remote_cfg = "configuration_kimi_k3.py"
+    if os.path.exists(os.path.join(args.tokenizer_from, remote_cfg)):
+        cfg["auto_map"] = {"AutoConfig": f"{remote_cfg[:-3]}.KimiLinearConfig"}
     json.dump(cfg, open(os.path.join(args.out, "config.json"), "w"), indent=2)
 
-    for f in ("tokenizer.json", "tokenizer_config.json"):
+    for f in ("tokenizer.json", "tokenizer_config.json", remote_cfg):
         src = os.path.join(args.tokenizer_from, f)
         if os.path.exists(src):
             shutil.copy(src, os.path.join(args.out, f))

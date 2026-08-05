@@ -168,3 +168,54 @@ now provably accepts what that produces.
     CUDA_VISIBLE_DEVICES=0 K3_SITU_SHIM=1 VLLM_ENABLE_V1_MULTIPROCESSING=0 \
       VERL_VLLM_VERSION=0.27.0 PYTHONPATH=. \
       /venv/vllm_k3/bin/python vllm_k3_rollout_smoke.py /workspace/k3mini_text_hf
+
+## GRPO: how far it gets, and the one thing left
+
+`grpo_k3_try.sh` drives `verl.trainer.main_ppo` with `model_engine=torchtitan`
+(veRL upstream already ships that, plus `_generated_ppo_torchtitan_trainer.yaml`)
+and `algorithm.adv_estimator=grpo`. It now runs through config validation, Ray
+worker startup, transformers config resolution, titan flavor resolution and model
+build, and stops inside the actor's checkpoint load.
+
+Five blockers cleared, in order, all of them ours or environmental:
+
+1. `log_prob_micro_batch_size_per_gpu` unset for rollout and ref -- config
+   validation, not a defect.
+2. `trainer.use_v1=true` (the default) needs `transfer_queue`, which is not on
+   PyPI. `trainer.use_v1=false` takes the v0 trainer and does not.
+3. `peft` and `accelerate` missing -- the FSDP engine imports them at module
+   import even when the torchtitan engine is selected.
+4. transformers does not know `model_type: kimi_linear`, so veRL's
+   `HFModelConfig` (which goes through AutoConfig) failed. The export now emits
+   `auto_map` and copies `configuration_kimi_k3.py`; vLLM resolves model_type
+   through its own registry and never consults auto_map, so it is unaffected.
+   Needs `trust_remote_code=true`.
+5. A bare `model.safetensors` with no index -- torchtitan's StateDictAdapter
+   regexes the shard number out of the index's `weight_map`. The export now
+   writes `model-00001-of-00001.safetensors` plus the index.
+
+Also required: `VERL_TORCHTITAN_FLAVOR`, because flavor derivation matches on
+(hidden_size, num_hidden_layers, vocab_size) and a fixture vocab of 4096 matches
+nothing; and `actor_rollout_ref.actor.torchtitan.data_parallel_shard_size` (NOT
+`...actor.engine...`, which is not a key), or the parallel dims multiply to 1
+against WORLD_SIZE 2.
+
+**What is left is a prefix decision, not a defect.** The actor stops with
+
+    RuntimeError: Missing key in checkpoint state_dict:
+      language_model.model.layers.1.block_sparse_moe.routed_expert_down_proj.weight
+
+The two consumers want different top-level prefixes for the same tensors:
+
+| consumer | expects |
+|---|---|
+| vLLM `KimiLinearForCausalLM` (text-only) | `model.*` |
+| torchtitan `state_dict_adapter.from_hf` | `language_model.model.*` |
+
+Our exporter strips `language_model.` for the former, which is exactly what the
+latter then cannot find. The released checkpoint is multimodal-prefixed, so
+`language_model.model.*` is the faithful layout and the text-only vLLM class is
+the odd one out -- which suggests targeting vLLM's
+`KimiK3ForConditionalGeneration` instead of stripping, rather than teaching the
+exporter two layouts. Decide before writing more code; both directions are cheap
+and only one is faithful.
