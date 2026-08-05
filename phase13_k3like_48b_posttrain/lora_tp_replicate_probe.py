@@ -72,7 +72,7 @@ def compare_replicated_grads(model_parts, step: int) -> None:
     group = None
     checked = 0
     for part in model_parts:
-        for name, p in part.named_parameters():
+        for name, p in part.named_parameters(remove_duplicate=False):
             g = p.grad
             # Record WHY a parameter was not compared. Absence from the
             # disagreement list otherwise reads as "clean" when it may mean
@@ -112,6 +112,37 @@ def compare_replicated_grads(model_parts, step: int) -> None:
     _record(step=step, summary=True, replicated_grads_checked=checked)
 
 
+def dump_structure(model_parts, only: str) -> None:
+    """What IS this module, before theorising about its gradient.
+
+    Records the class, every parameter with its placement and requires_grad, and
+    every child, for any module whose qualified name contains ``only``.
+    """
+    for part in model_parts:
+        for name, mod in part.named_modules():
+            if only not in name:
+                continue
+            _record(
+                structure=True,
+                module=name,
+                cls=type(mod).__name__,
+                children=[n for n, _ in mod.named_children()],
+                params=[
+                    {
+                        "name": pn,
+                        "shape": list(p.shape),
+                        "requires_grad": p.requires_grad,
+                        "placements": (
+                            [str(x) for x in p.placements]
+                            if isinstance(p, DTensor)
+                            else "plain"
+                        ),
+                    }
+                    for pn, p in mod.named_parameters(recurse=False)
+                ],
+            )
+
+
 def install() -> None:
     import torchtitan.train as T
 
@@ -120,6 +151,9 @@ def install() -> None:
 
     def patched_init(self, *args, **kwargs):
         original_init(self, *args, **kwargs)
+        want = os.environ.get("LORA_PROBE_STRUCTURE")
+        if want:
+            dump_structure(self.model_parts, want)
         original_step = self.train_step
 
         def step(*a, **k):
