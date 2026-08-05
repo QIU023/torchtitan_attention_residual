@@ -141,3 +141,58 @@ Note the constraint this has to satisfy: with LoRA off, the same architecture is
 clean (40 replicated gradients checked, all agree). So the AttnRes aggregation
 is not unconditionally wrong -- something about the LoRA-wrapped layers changes
 what it carries. That is the next thing to measure, on layer 1, not layer 0.
+
+---
+
+# Retraction: the forward does not diverge
+
+The section above concluded that the forward is rank-dependent, citing
+`block_attn_res` outputs of 54.26 against 55.48 and an o_proj adapter delta of
+-26.56 against -23.43. **Both readings are wrong, in the same way.**
+
+`lora_b` is zero-initialised, which is standard LoRA:
+
+    rank0  lb  ['R']  shape=[512, 8]  norm=0.000000
+    rank1  lb  ['R']  shape=[512, 8]  norm=0.000000
+
+So at step 0 the adapter contributes exactly nothing to the forward, and the
+forward cannot differ from the LoRA-off case, which is clean. The traced chain
+confirms it end to end: `inner` is `P(sum)` with a real norm, `lora_out` is
+`P(sum)` with norm 0, `full_tensor()` gives norm 0.
+
+The "delta" came from calling `self.base(x)` a second time inside the probe and
+subtracting, which is not the adapter's contribution. And the differing
+intermediate norms are **per-rank plain tensors** -- `o_proj`'s input is the
+local attention-head shard, held plain by design -- so they are supposed to
+differ. Comparing them across ranks measures nothing.
+
+That is the same error as flagging `S(2)` tensors as divergent earlier in the
+same session: a sharded or per-rank-local value differing across ranks is
+correct behaviour, and a probe that reports it as a defect is measuring the
+wrong thing. Twice in one session.
+
+## What survives, and it is still useful
+
+Three measurements stand:
+
+1. `q_a_proj.lora_b`'s gradient is **identical across ranks on layer 0 and
+   differs on layers 1, 2 and 3**. Direct per-parameter comparison, not
+   inferred.
+2. With LoRA off, the same architecture is clean: 40 replicated gradients
+   checked, all agree.
+3. The gradient chain through `q_a_layernorm` reduces correctly -- Partial
+   output-grad differs per rank (0.000193 / 0.000178), Replicate input-grad is
+   identical (0.000596 both).
+
+So the defect is real, is in the backward, and is layer-dependent in a way that
+tracks the presence of incoming block residuals. What is NOT established is any
+claim about the forward.
+
+## The next measurement, stated so it cannot repeat the error
+
+Compare only quantities that are supposed to be equal across ranks: gradients
+whose placement is Replicate on the TP axis, and nothing else. Specifically,
+walk the backward of layer 1 and find the first Replicate-labelled gradient
+whose values differ, then check whether the same point on layer 0 is clean. Do
+not compare plain per-rank tensors or Shard-placed locals; they differ by
+design.
