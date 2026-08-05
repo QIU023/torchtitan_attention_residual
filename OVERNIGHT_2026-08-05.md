@@ -255,3 +255,38 @@ bf16 precision -- which is exactly why the module-level measurement was needed.
 text-only legs were controls for specific questions (is the run-horizon band
 architecture-specific; is a disagreement route flipping) and stay available as
 controls, but they are not part of the reported matrix.
+
+### Task 3 -- ViT DEP into PP bubbles: the crux is a dependency inversion
+
+Today the tower lives entirely on the stage owning `embed_tokens` (stage 0);
+`pipeline_adapter` states "nothing vision-side crosses a stage".
+
+**The naive version cannot work, and it is worth writing down why.** Stage 0
+needs the vision features at the very START of its first microbatch forward. The
+other stages' warmup idle exists precisely because they are waiting for stage 0.
+So the bubble that looks free is not usable for the work whose output is needed
+before it opens.
+
+**The variant that does work** exploits the microbatch index. Stage 0 needs
+microbatch j's features at roughly time j; stage k is idle for times < k. So for
+`j > k`, stage k can encode microbatch j's images during its own warmup idle and
+have them at stage 0 in time. That is genuine encoder/backbone pipelining rather
+than a bubble that happens to be empty.
+
+Two costs, neither small:
+
+* **Tower weights on every PP stage.** Currently only stage 0 has them. At real
+  scale MoonViT-V2 is 447.4M against k3mini's 80.9M text side, so replicating it
+  across 8 PP stages is not free -- it likely wants FSDP sharding of the tower
+  across the PP axis, which is a new mesh interaction.
+* **Our own P2P alongside PP's.** The AttnRes adapter is deliberately built so
+  that "PP owns all NCCL, so no deadlock risk" -- both of its gradient bridges
+  are pure local Python plus a dict. Introducing feature sends outside the
+  schedule's action list gives up that property, and a send that does not pair
+  with a matching recv in the schedule's order is exactly how PP deadlocks.
+
+So the honest sequencing is: this is a scheduling change that needs the tower
+distributed across the PP axis first, and it should reuse PP's own transport
+rather than adding a second one. Not a model-folder change.
+
+Not implemented. Recorded so the naive form is not attempted.
