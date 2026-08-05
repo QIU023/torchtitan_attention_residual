@@ -94,7 +94,41 @@ parameters are `model.*` -- vLLM's multimodal class is what adds
 `language_model.`. A text-only export with the wrapper prefix fails with "no
 module or parameter named 'language_model'".
 
-## What is still blocked, and it is a build, not a contract
+## Resolved: the source build, and the smoke passes unshimmed
+
+    engine built, hf_config=KimiLinearConfig
+    prompt_tokens=20 output_ids=[740, 3268, 3419, 64, 1246, 2459, 1005, 2781]
+    ROLLOUT SMOKE: PASS
+
+No shim, real kernels, generation end to end through the official K3
+implementation on weights our exporter wrote. The output is noise because the
+fixture is random-init; the pass condition is that the official class accepted
+every weight and the KDA/MLA decode path ran.
+
+Build recipe that worked (`/workspace/build_vllm_k3.sh`):
+
+    unset VLLM_USE_PRECOMPILED
+    export TORCH_CUDA_ARCH_LIST="12.0"   # sm_120, the only GPU here
+    export MAX_JOBS=32 NVCC_THREADS=4
+    export PATH="$HOME/.cargo/bin:$PATH"
+    uv pip install --python /venv/vllm_k3/bin/python --no-build-isolation -e .
+
+Two prerequisites that were absent and are easy to lose an hour to: the build
+needs `setuptools_rust` **and a Rust toolchain** (neither `cargo` nor `rustc`
+existed on this box; rustup, minimal profile), plus `setuptools_scm`. 404 CUDA
+objects, ~65 min wall clock at `MAX_JOBS=32`, ~3G of extra disk.
+
+Checked before starting rather than after: FlashKDA's cmake gates on
+`9.0a` / `10.0f` / `12.0f`, so sm_120 is supported -- confirmed in the log by
+`FlashKDA CUDA architectures: 12.0f`. On a GPU outside that set the whole build
+would have been wasted.
+
+`situ_and_mul` lives in the stable-libtorch extension, so it registers on
+`import vllm._custom_ops`, not on `import vllm._C` (which does not exist in this
+build). `situ_op_shim.py` is kept only as a record of the precompiled-install
+failure mode; nothing needs it now.
+
+## The blocker before that build, for the record
 
 Generation fails after a successful load:
 
