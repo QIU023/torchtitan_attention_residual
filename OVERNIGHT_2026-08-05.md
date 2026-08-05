@@ -80,3 +80,46 @@ inside one distributed harness, i.e. a harness artifact, and MoonViT has no
 latent uninitialized-row bug. That makes the reverted attention sharding
 *probably* correct, but probably is not verified, so it stays out. Resume by
 validating it inside a real training step.
+
+### Task 2 -- ViT dynamic CP: design settled, and one recorded blocker is wrong
+
+Today, under CP, the vision tower is **replicated across CP ranks**: text tokens
+are sharded but `pixel_values` is not, so every CP rank encodes the whole batch's
+images and throws away the part it does not need. `_cp_group` is already attached
+to the multimodal wrapper.
+
+Our own notes have said dynamic CP "needs a core change, because sub-CP-group
+formation is per-batch while `DeviceMesh` is static for the run". **That is not a
+blocker for the formulation that matters here.** The work to distribute is per
+IMAGE, not per sub-group: each CP rank encodes a disjoint subset of the batch's
+images and the features are all-gathered over the existing, static `_cp_group`.
+Dynamic *work assignment*, static group. No new mesh.
+
+The obstacle that looks fatal and is not: per-image feature blocks have different
+lengths, so the gather is uneven. But `grid_thw` is replicated -- it is part of
+the batch, not sharded -- so **every rank can compute every image's output length
+before the collective**: patch count is `prod(grid_thw[i])`, and the projector's
+2x2 merge divides it by 4. Sizes known a priori means a fixed-shape
+`all_gather_into_tensor` with precomputed offsets, not an object gather.
+
+Sketch, in `encode_images`:
+
+1. `counts = grid_thw.prod(-1)`, `out_len = counts // merge**2` -- both replicated.
+2. Rank `r` of `cp_size` takes images `r::cp_size` (round-robin balances better
+   than contiguous when image sizes vary).
+3. Pack and run the tower on that subset only.
+4. `all_gather_into_tensor` into a `[sum(out_len), D_llm]` buffer using the
+   offsets from step 1, then split back into the per-sample list.
+5. Backward: the gather's transpose is a reduce-scatter, so each rank receives
+   exactly the gradient for the images it encoded. `funcol.all_gather_tensor` is
+   differentiable and does this; a manual `dist.all_gather` is not.
+
+Correctness check to run first, before wiring it into the trainer: cp2 with
+image-sharded encode against cp2 with the current replicated encode, same seed,
+same step-0 checkpoint. They should agree to bf16 rounding -- the tower is a
+per-image function, so distributing images changes no math at all, unlike the MLP
+shard which changes summation order. **That makes this the easier of the two to
+verify: exact equality is the expected result, not approximate.**
+
+Not implemented tonight -- landed with the design rather than a half-wired
+forward, since the remaining budget was not enough to implement and verify it.
