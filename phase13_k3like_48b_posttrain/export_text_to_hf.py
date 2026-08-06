@@ -180,18 +180,14 @@ def main() -> None:
     if have_remote and not args.multimodal:
         cfg["auto_map"] = {"AutoConfig": f"{remote_cfg[:-3]}.KimiLinearConfig"}
     elif args.multimodal:
-        # Ship OUR minimal nested config module. The release has its own, which we
-        # do not hold locally; the file we do have defines the TEXT config class,
-        # and pointing AutoConfig at that for a nested kimi_k3 config hands
-        # transformers the wrong schema. vLLM needs none of this -- it resolves
-        # model_type through its own registry -- but anything going through
-        # AutoConfig does, veRL's HFModelConfig included.
-        mm_cfg = "configuration_kimi_k3_mm.py"
-        shutil.copy(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), mm_cfg),
-            os.path.join(args.out, mm_cfg),
-        )
-        cfg["auto_map"] = {"AutoConfig": f"{mm_cfg[:-3]}.KimiK3Config"}
+        # The RELEASE's own nested KimiK3Config, copied above with the rest of the
+        # bundle. An earlier version of this shipped a minimal stand-in written
+        # here, which was only ever justified by not holding the real file.
+        cfg["auto_map"] = {
+            "AutoConfig": "configuration_kimi_k3.KimiK3Config",
+            "AutoProcessor": "kimi_k3_processor.KimiK3Processor",
+            "AutoImageProcessor": "kimi_k3_vision_processing.KimiK3VisionProcessor",
+        }
     json.dump(cfg, open(os.path.join(args.out, "config.json"), "w"), indent=2)
 
     if args.multimodal:
@@ -207,7 +203,13 @@ def main() -> None:
         # KimiK3VisionProcessor, and the settings nested under media_proc_cfg.
         # Inventing this file is how a fixture ends up describing preprocessing
         # the tower was never built for.
-        for f in ("preprocessor_config.json", "kimi_k3_vision_processing.py"):
+        for f in (
+            "preprocessor_config.json",
+            "kimi_k3_vision_processing.py",
+            "media_utils.py",           # relative import of the vision processor
+            "kimi_k3_processor.py",     # the AutoProcessor the auto_map names
+            "configuration_kimi_k3.py",  # the release's own nested KimiK3Config
+        ):
             src = os.path.join(args.official_code, f)
             if not os.path.exists(src):
                 raise SystemExit(
