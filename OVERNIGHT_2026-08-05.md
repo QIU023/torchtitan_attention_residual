@@ -290,3 +290,34 @@ distributed across the PP axis first, and it should reuse PP's own transport
 rather than adding a second one. Not a model-folder change.
 
 Not implemented. Recorded so the naive form is not attempted.
+
+---
+
+# Overnight 2 (2026-08-06)
+
+## Restore points
+
+| repo | branch | commit |
+|---|---|---|
+| logbook | main | 93903c1 |
+| fork torchtitan | attention_residual_dev | 2b303ecae |
+| fork verl | kimi_k3_integration | 72eb968d |
+
+## Tasks
+
+1. **QAT (MXFP4 weights / MXFP8 activations) multimodal post-training under veRL.**
+   The pieces that exist: the QAT module and its scope, a multimodal QAT flavor
+   (`kimi_k3_debugmodel_report_arch_qat`, since report_arch is multimodal), the
+   build-time fix that makes QAT actually apply to multimodal flavors, and veRL
+   full-param SFT on the torchtitan engine. What has never been put together is
+   all of them at once.
+2. **MTP: everything needed.** Architecture exists and is default-off; the loss
+   is NOT wired, which needs the trainer's loss interface to carry more than one
+   head.
+
+Same rule as last night: verify before landing, revert rather than leave
+unverified numerics in the tree, and if something blocks after a few attempts
+move on and record why.
+
+## Log
+
