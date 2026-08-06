@@ -47,6 +47,20 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--vocab-size", type=int, default=None)
     ap.add_argument(
+        "--official-code",
+        default="/workspace/k3_official_code",
+        help="dir holding the release's preprocessor_config.json and "
+        "kimi_k3_vision_processing.py, copied verbatim for --multimodal",
+    )
+    ap.add_argument(
+        "--multimodal",
+        action="store_true",
+        help="emit the RELEASED layout: language_model.* plus vision_tower.*, "
+        "nested text_config/vision_config, KimiK3ForConditionalGeneration. "
+        "Without it the text-only layout is emitted for "
+        "KimiLinearForCausalLM.",
+    )
+    ap.add_argument(
         "--tokenizer-from",
         default="/workspace/k3mini_hf",
         help="dir to copy tokenizer files from; the engine needs a tokenizer "
@@ -58,10 +72,26 @@ def main() -> None:
     from torchtitan.models.kimi_k3.hf_key_map import (
         UnmappedKey,
         titan_config_to_official,
+        titan_config_to_official_multimodal,
         titan_to_official,
     )
 
-    spec = model_registry(args.flavor)
+    # Two naming spaces: model_registry parses "<size>_<variant>" with variant in
+    # baseline/block_attn_res/full_attn_res, while the debug and report-arch
+    # flavors are config_registry FUNCTIONS whose names it cannot parse. Accept
+    # either, so a flavor the trainer can run is a flavor this can export.
+    try:
+        spec = model_registry(args.flavor)
+    except ValueError:
+        from torchtitan.models.kimi_k3 import config_registry as _cr
+
+        fn = getattr(_cr, args.flavor, None)
+        if fn is None or not callable(fn):
+            raise SystemExit(
+                f"flavor {args.flavor!r} is neither a model_registry flavor nor a "
+                "config_registry function"
+            )
+        spec = fn().model_spec
     if args.vocab_size is not None:
         import dataclasses as dc
 
@@ -76,16 +106,24 @@ def main() -> None:
     model.init_weights(buffer_device="cuda")
 
     kda_layers = set(kc.kda_layers)
+    # titan_to_official always emits the released (multimodal) spelling;
+    # the text-only layout is that with the wrapper prefix removed.
+    _spell = (lambda k: k) if args.multimodal else _text_only
     out: dict[str, torch.Tensor] = {}
     skipped: list[str] = []
     for key, value in model.state_dict().items():
         value = value.detach()
+        # A multimodal model's children are vision_tower and language_model, so
+        # its text keys arrive as "language_model.layers.N...". titan_to_official
+        # takes our INNER names, so strip the wrapper child prefix; vision_tower.*
+        # it already handles.
+        key = key.removeprefix("language_model.")
         # One stacked expert tensor on our side is num_experts official keys, so
         # it has to be sliced here rather than renamed. Everything else is 1:1.
         if key.endswith(("w1_EFD", "w2_EDF", "w3_EFD")):
             for e in range(value.shape[0]):
                 official = titan_to_official(key, kda_layers=kda_layers, expert_idx=e)
-                out[_text_only(official)] = value[e].contiguous().cpu()
+                out[_spell(official)] = value[e].contiguous().cpu()
             continue
         try:
             official = titan_to_official(key, kda_layers=kda_layers)
@@ -98,7 +136,7 @@ def main() -> None:
             # write; this export maps names, so the shape has to be converted
             # here or the loader rejects it on size.
             value = value.view(1, 1, -1, 1)
-        out[_text_only(official)] = value.contiguous().cpu()
+        out[_spell(official)] = value.contiguous().cpu()
 
     if skipped:
         raise SystemExit(
@@ -122,26 +160,73 @@ def main() -> None:
         indent=2,
     )
 
-    cfg = titan_config_to_official(kc, num_blocks=num_blocks)
-    cfg["architectures"] = ["KimiLinearForCausalLM"]
+    if args.multimodal:
+        cfg = titan_config_to_official_multimodal(
+            kc,
+            spec.model.vision_config,
+            num_blocks=num_blocks,
+            media_placeholder_token_id=spec.model.vision_token_id,
+        )
+    else:
+        cfg = titan_config_to_official(kc, num_blocks=num_blocks)
+        cfg["architectures"] = ["KimiLinearForCausalLM"]
     cfg["torch_dtype"] = "bfloat16"
     # transformers has no kimi_linear model type, and veRL's HFModelConfig goes
     # through AutoConfig -- without auto_map it fails with "Transformers does not
     # recognize this architecture". vLLM is unaffected either way: it resolves
     # model_type through its OWN registry and never consults auto_map.
     remote_cfg = "configuration_kimi_k3.py"
-    if os.path.exists(os.path.join(args.tokenizer_from, remote_cfg)):
+    have_remote = os.path.exists(os.path.join(args.tokenizer_from, remote_cfg))
+    if have_remote and not args.multimodal:
         cfg["auto_map"] = {"AutoConfig": f"{remote_cfg[:-3]}.KimiLinearConfig"}
+    elif args.multimodal:
+        # Ship OUR minimal nested config module. The release has its own, which we
+        # do not hold locally; the file we do have defines the TEXT config class,
+        # and pointing AutoConfig at that for a nested kimi_k3 config hands
+        # transformers the wrong schema. vLLM needs none of this -- it resolves
+        # model_type through its own registry -- but anything going through
+        # AutoConfig does, veRL's HFModelConfig included.
+        mm_cfg = "configuration_kimi_k3_mm.py"
+        shutil.copy(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), mm_cfg),
+            os.path.join(args.out, mm_cfg),
+        )
+        cfg["auto_map"] = {"AutoConfig": f"{mm_cfg[:-3]}.KimiK3Config"}
     json.dump(cfg, open(os.path.join(args.out, "config.json"), "w"), indent=2)
+
+    if args.multimodal:
+        # vLLM's multimodal path resolves an image processor from the model dir
+        # before it will even call the model multimodal-capable, so a multimodal
+        # export without one fails in _create_processing_info long before any
+        # weight is read.
+        #
+        # COPIED from the release, not generated. An earlier attempt wrote a
+        # config naming "KimiK3ImageProcessor" -- a class that does not exist,
+        # carried over from a hand-made fixture. The real artifact is structurally
+        # different: no image_processor_type, an auto_map pointing at
+        # KimiK3VisionProcessor, and the settings nested under media_proc_cfg.
+        # Inventing this file is how a fixture ends up describing preprocessing
+        # the tower was never built for.
+        for f in ("preprocessor_config.json", "kimi_k3_vision_processing.py"):
+            src = os.path.join(args.official_code, f)
+            if not os.path.exists(src):
+                raise SystemExit(
+                    f"multimodal export needs {f} from the release; looked in "
+                    f"{args.official_code}. Pass --official-code."
+                )
+            shutil.copy(src, os.path.join(args.out, f))
 
     for f in ("tokenizer.json", "tokenizer_config.json", remote_cfg):
         src = os.path.join(args.tokenizer_from, f)
         if os.path.exists(src):
             shutil.copy(src, os.path.join(args.out, f))
 
-    print(f"wrote {args.out}: {len(out)} tensors")
+    text_cfg = cfg["text_config"] if args.multimodal else cfg
+    n_vision = sum(1 for k in out if k.startswith("vision_tower"))
+    print(f"wrote {args.out}: {len(out)} tensors, {n_vision} vision")
+    print(f"  arch: {cfg['architectures'][0]}")
     print(f"  gate form: use_full_rank_gate="
-          f"{cfg['linear_attn_config']['use_full_rank_gate']}, "
+          f"{text_cfg['linear_attn_config']['use_full_rank_gate']}, "
           f"checkpoint carries "
           f"{'g_proj' if any(k.endswith('g_proj.weight') for k in out) else 'g_a_proj/g_b_proj'}")
 

@@ -321,3 +321,58 @@ move on and record why.
 
 ## Log
 
+
+### Task 1 -- QAT multimodal post-training under veRL: QAT confirmed active, blocked on release files
+
+**Landed, four independently useful fixes:**
+
+* `hf_key_map.titan_config_to_official_multimodal` + `titan_vision_config_to_official`
+  (fork `641727433`). The released config is NESTED, and that is required rather
+  than cosmetic: `KimiK3Config` exposes `hidden_size` and `vocab_size` as
+  read-only properties delegating to `text_config`, so a flat top-level field
+  raises "property has no setter". The vision half's only real divergence is the
+  release's `vt_` prefix on the tower's own dims.
+* The state-dict adapter can now handle a multimodal state dict (fork
+  `1a74ac925`): vision keys were rejected before the hf_key_map delegation could
+  see them, and the prefix choice now reads the state dict rather than a config
+  that may be the inner text one.
+* veRL's torchtitan engine can now reach flavors defined as config_registry
+  FUNCTIONS (verl `866d1fc0`). Previously `VERL_TORCHTITAN_FLAVOR` resolved only
+  through `model_registry`'s `<size>_<variant>` parser, so **every debug,
+  report-architecture and QAT flavor was unreachable from veRL** -- including all
+  the ones the published matrices run on.
+* `export_text_to_hf.py --multimodal`: emits the released layout
+  (`language_model.*` + `vision_tower.*`, nested config,
+  `KimiK3ForConditionalGeneration`), and accepts both naming spaces for
+  `--flavor`.
+
+**The milestone:** QAT is active inside veRL --
+`MXFP4 QAT (K3 official scope): 12 routed-expert modules, MXFP8 activations on`,
+logged by the trainer during an SFT run on
+`kimi_k3_debugmodel_report_arch_qat`.
+
+**Where it stops, and it is a missing-artifact problem, not a code one.** We hold
+only four files of the release's preprocessing bundle
+(`/workspace/k3_official_code`): `kimi_k3_vision_processing.py`,
+`preprocessor_config.json`, and two modeling files. Missing are `media_utils.py`
+(a relative import of the vision processor) and `kimi_k3_processor.py` (the
+`AutoProcessor` the official `preprocessor_config.json`'s `auto_map` names). So:
+
+* vLLM's multimodal rollout stops at `No such file or directory: media_utils.py`.
+* veRL warns `Failed to create processor ... may affect multimodal processing`
+  and proceeds treating the model as text-only, after which DCP asks for
+  text-only FQNs against a multimodal export and fails on the first expert.
+
+Worth recording that the first `preprocessor_config.json` I wrote was INVENTED --
+it named `KimiK3ImageProcessor`, a class that does not exist, carried over from a
+hand-made fixture. The real artifact has no `image_processor_type` at all: an
+`auto_map` pointing at `KimiK3VisionProcessor`, with the settings nested under
+`media_proc_cfg`. The exporter now copies the release file instead of generating
+one, and fails loudly if it is absent.
+
+`configuration_kimi_k3_mm.py` is ours and labelled as such -- a minimal nested
+config so `AutoConfig` resolves `model_type: kimi_k3`, which veRL's
+`HFModelConfig` needs. It is not a reimplementation of the release's semantics.
+
+**To finish:** fetch `media_utils.py` and `kimi_k3_processor.py` from the
+`moonshotai/Kimi-K3` release. Everything else is in place.

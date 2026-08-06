@@ -40,16 +40,22 @@ def main() -> int:
     from vllm import LLM, SamplingParams
     from vllm.transformers_utils.config import get_config
 
-    cfg = get_config(MODEL, trust_remote_code=False)
+    # Multimodal needs remote code: the image processor is the release's
+    # KimiK3VisionProcessor, not a transformers built-in.
+    trust = os.environ.get("K3_TRUST_REMOTE_CODE") == "1"
+    cfg = get_config(MODEL, trust_remote_code=trust)
     print(f"config class : {type(cfg).__name__}")
     print(f"architectures: {getattr(cfg, 'architectures', None)}")
-    print(f"layers/hidden: {cfg.num_hidden_layers} / {cfg.hidden_size}")
+    # KimiK3Config (multimodal) delegates hidden_size/vocab_size to text_config
+    # and does not expose num_hidden_layers at the top level.
+    inner = getattr(cfg, "text_config", cfg)
+    print(f"layers/hidden: {inner.num_hidden_layers} / {cfg.hidden_size}")
 
     # Small numbers on purpose: this asks "does the official class load our
     # names and step the KDA/MLA decode path", not "how fast is it".
     llm = LLM(
         model=MODEL,
-        trust_remote_code=False,
+        trust_remote_code=trust,
         gpu_memory_utilization=0.30,
         max_model_len=256,
         enforce_eager=True,
