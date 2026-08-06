@@ -376,3 +376,59 @@ config so `AutoConfig` resolves `model_type: kimi_k3`, which veRL's
 
 **To finish:** fetch `media_utils.py` and `kimi_k3_processor.py` from the
 `moonshotai/Kimi-K3` release. Everything else is in place.
+
+### Task 1 -- DONE. QAT multimodal post-training runs under veRL.
+
+    MXFP4 QAT (K3 official scope): 12 routed-expert modules, MXFP8 activations on
+    state_dict_adapter: text_only=False   (406 keys, 30 of them vision)
+    train/loss 12.05791 -> 11.87875,  val/loss 11.53741
+
+MXFP4 weights / MXFP8 activations, on a multimodal model, post-trained through
+veRL on the torchtitan engine. Runner: `qat_mm_sft.sh`.
+
+**The "missing release files" conclusion was premature.** `moonshotai/Kimi-K3` is
+public and `list_repo_files` shows the whole bundle. Fetched `media_utils.py`,
+`kimi_k3_processor.py`, the release's own `configuration_kimi_k3.py` and
+`encoding_k3.py`. So the hand-written `configuration_kimi_k3_mm.py` was deleted --
+its only justification was not holding the real file, and one command would have
+established that. I stopped a whole round on that conclusion.
+
+Six blockers cleared after it, each a real assumption mismatch:
+
+1. **veRL rejected the processor outright**: `Unsupported processor type:
+   KimiK3Processor`. That match arm binds `get_rope_index` for models needing
+   multimodal RoPE position handling; K3 is NoPE, so there is nothing to bind --
+   the `MllamaProcessor` case exactly. Without it the warning only says "may
+   affect multimodal processing" and the run continues treating a multimodal
+   model as text-only.
+2. **`processor.image_processor.patch_size`** does not exist on
+   `KimiK3VisionProcessor`, which nests its settings under `media_proc_cfg`. The
+   config override that exists for this cannot help, because a default argument
+   is evaluated eagerly.
+3. **The expert path ignored the wrapper prefix.** `_tt_key_to_hf` applies it to
+   every key, but stacked experts are split on a separate path hardcoded to
+   `model.layers.{}...`, so a multimodal model emitted experts as `model.*` and
+   everything else as `language_model.model.*`. That the failures were ALL and
+   ONLY expert keys is what pointed here rather than at the prefix logic, which
+   was choosing correctly.
+4. `data.max_length=256` against gsm8k_sft samples of 515 tokens.
+5. `torchao` absent from the vLLM venv -- QAT needs its MX primitives.
+6. (Earlier) config-registry flavors unreachable from veRL, and the adapter
+   unable to handle a multimodal state dict at all.
+
+**vLLM multimodal rollout** now reaches backend selection -- `tokenizer_mode=
+kimi_k3`, remote code loaded, processor built -- and stops at `No valid MLA
+prefill backend found` for the DEBUG model's head dimensions. A fixture
+limitation, not an integration defect; real K3 dims are what those kernels
+target.
+
+### Task 2 -- DONE for text. MTP forward and loss (fork `727b60e26`).
+
+The recorded blocker, "the loss interface must carry more than one head", was
+false: MTP's targets are the same `labels` shifted by k+1, so the loss needs no
+extra data from the trainer, only the extra logits. Six tests. `kimi_k3_mini_mtp`
+runs end to end, step-1 loss 10.02522.
+
+Multimodal MTP remains open: the wrapper splices vision features and calls the
+language model with `inputs_embeds`, so the token ids MTP needs for its depth-k
+lookup are not in scope. Recorded rather than faked.
