@@ -1,3 +1,11 @@
+> **SUPERSEDED (2026-08-06) by `REPORT_ALIGNMENT_DEP_CP_MTP_2026-08-06.md`.**
+> The reframing below was derived from my own timing analysis, not from the
+> report. Report §5.2.3 prescribes the HYBRID: the first PP micro-batches' ViT
+> forwards upfront, the remaining forwards injected into pipeline bubbles,
+> backward analogously -- which strictly dominates Design A's parallel
+> prologue. The dependency-inversion observation below is correct and is what
+> the report works around the same way; the conclusion drawn from it is not.
+
 # ViT DEP: distributing the vision tower across the PP axis
 
 ## The reframing that changes the design
