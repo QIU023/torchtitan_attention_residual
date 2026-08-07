@@ -1,4 +1,11 @@
-> **SUPERSEDED (2026-08-06) by `REPORT_ALIGNMENT_DEP_CP_MTP_2026-08-06.md`.**
+> **SUPERSEDED. Read `VIT_DEP_DESIGN_2026-08-07.md` instead**, which is designed
+> against the report AND against what the schedule API actually permits: custom
+> action types are a closed set, so injecting ViT work into a bubble is not
+> expressible -- but making the ViT a STAGE puts its actions in the action list and
+> the interleaved schedule places them in the bubbles by itself. No out-of-band
+> send, so the deadlock risk this document worried about does not arise.
+>
+> (Earlier note, kept: superseded 2026-08-06 by `REPORT_ALIGNMENT_DEP_CP_MTP_2026-08-06.md`.)
 > The reframing below was derived from my own timing analysis, not from the
 > report. Report §5.2.3 prescribes the HYBRID: the first PP micro-batches' ViT
 > forwards upfront, the remaining forwards injected into pipeline bubbles,
