@@ -107,3 +107,57 @@ script and appended its source to the log while `python3 -` read nothing. The
 comparison silently produced no table -- the failure that looks like a completed
 run. The numbers above were produced by running the comparison over the dumps
 separately, which is also why `collect13.sh` is kept out of its runner.
+
+## 2026-08-07, second measurement: "specific to the LoRA path" is WITHDRAWN
+
+The sentence above -- "For the full-parameter model the same axes measured
+0.00000 (PP, per-parameter over 548 params) and ~0.007 (CP). So this is specific to
+the LoRA path." -- does not survive a one-variable check. It compared LoRA numbers
+on this flavor against full-parameter numbers measured on a DIFFERENT flavor, which
+makes "LoRA" and "flavor" the same variable.
+
+Both arms on flavors differing in exactly one field, `lora_rank`
+(`kimi_k3_mini_qlora` = `kimi_k3_mini_block_attn_res` + `lora_rank 8`), same warm
+protocol, same legs, both forced to bfloat16 -- at fp32 without FSDP's
+mixed-precision cast the full-parameter arm dies in fla's KDA kernel (108160 bytes
+of dynamic shared memory against this card's 101376) while the LoRA arm does not,
+so leaving the default would have made dtype a second variable.
+Runner: `lora_vs_fullparam_axes.sh`.
+
+| leg | full-param max>1% | LoRA max>1% | full-param max_all | LoRA max_all |
+|---|---|---|---|---|
+| pp2 | **0.23002** | 0.16138 | **2.36570** | 0.21084 |
+| cp2 | **0.12343** | 0.16489 | **2.45181** | 0.17790 |
+| tp2 | **0.11327** | 0.19870 | **0.74178** | 0.26931 |
+
+The full-parameter arm is not cleaner. It is in the same band on the norm-weighted
+column and an order worse on the unrestricted one. The worst-weighted parameter is
+an AttnRes pseudo-query projection in BOTH arms (`attn_res_proj` full-param,
+`mlp_res_proj` LoRA).
+
+So the band is a property of this measurement and the AttnRes graft, not of LoRA.
+`mlp_res_proj` holding 70.7% of the gradient norm under LoRA against 9.1%
+full-param explains why it surfaces as the worst offender there and not here, but
+not why the deviation exists at all.
+
+### What that leaves
+
+* **The only defect established as LoRA's was `o_proj`**, and it is fixed and
+  verified by three independent instruments: cross-rank values bit-identical,
+  26 of 26 replicated gradients at `max_delta` exactly 0.0, and seeded tp2/tp4
+  losses within 4e-05 and 0 of tp1.
+* **The standing sentence "Not usable without further work: PP and CP" is
+  withdrawn as stated.** Those axes are no worse under LoRA than full-parameter on
+  the same architecture, so nothing about them is a LoRA blocker.
+* **The band itself is still unexplained, and it is now an AttnRes question.** It is
+  a cross-run comparison across different reduction structures, concentrated in
+  zero-initialized graft parameters. The full-parameter `max_all` of 2.37-2.45
+  deserves its own look and was invisible while this was framed as a LoRA problem.
+
+### Method note worth keeping
+
+Two claims in this document were produced by comparing across flavors and both were
+wrong in the same way. The rule that would have caught both: a claim of the form "X
+causes this" needs the two arms to differ in X and nothing else, and if the
+comparison arms come from different documents, they differ in more than one thing
+until proven otherwise.
