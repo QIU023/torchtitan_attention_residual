@@ -13,6 +13,8 @@ Verified the load actually happens rather than assuming it: cold start gives
 step-1 12.07003 and the seeded run gives 12.09025. Identical numbers would have
 meant the path was silently ignoring the checkpoint, which is the failure that
 looks like success.
+(Those are the unchanged-architecture flavor's numbers; the report-architecture
+flavor's pair is 12.05342 cold against 12.07418 seeded.)
 
 ## The defect it exposed: PP could not load any checkpoint
 
