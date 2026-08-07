@@ -63,3 +63,41 @@ The reported matrix runs the MULTIMODAL flavor. Text-only and dense legs exist a
 controls for specific questions -- whether the run-horizon band is
 architecture-specific, and whether a cross-layout disagreement is MoE route
 flipping -- and should be run when those questions come up, not by default.
+
+## Correctness checking (added 2026-08-07)
+
+`replicate_axis_check.py` is the matrix's floor-free assertion, and the reason it
+exists is that two real defects passed eighteen cells at 100 steps. Full reasoning,
+the measured floor of the alternative, and the coverage table:
+`../MATRIX_CORRECTNESS_2026-08-07.md`.
+
+Short version: the matrix judges by LOSS AGREEMENT, whose band is 0.009-0.0146. The
+LoRA `o_proj` defect was 2.9e-02 in step-1 loss and the MLA CP defect was 1-6% on
+one parameter's gradient; both fit inside. More steps widen the band rather than
+narrowing it, so the fix is a different KIND of judgement, not a longer run.
+
+    PYTHONPATH=$TITAN torchrun --nproc_per_node=4 \
+      <logbook>/phase13_k3like_48b_posttrain/matrix_scripts/replicate_axis_check.py \
+      --module kimi_k3 --config kimi_k3_debugmodel_report_arch \
+      --debug.seed 42 --debug.deterministic --training.steps 3 \
+      --training.global-batch-size 8 --checkpoint.interval 100000 \
+      --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+
+**A collector must key on the `REPLICATE-CHECK` line, never on the exit code
+alone.** An import error, an OOM and a port collision all exit 1, and a missing
+PYTHONPATH once read as four cells finding problems. Three outcomes:
+
+| line | meaning |
+|---|---|
+| `REPLICATE-CHECK PASS` | every replicated gradient bit-identical across its axis |
+| `REPLICATE-CHECK FAIL: N ... differ` | real disagreement, world-reduced across ranks |
+| `REPLICATE-CHECK NOASSERT` | this cell has no Replicate axis; not covered, not broken |
+| line absent | the check never ran -- which is not the same as passing |
+
+Coverage is TP-bearing cells. CP-only and FSDP-only cells have no Replicate axis
+(the `"fsdp"` mesh here is `dp_shard x cp`, so parameters are sharded on the cp axis
+too) and report NOASSERT; for those the assertion is the cross-run per-parameter
+comparison, whose verdict must be "within the measured floor", not "zero". The
+floor: changing only the gradient-accumulation order on one GPU with no parallelism
+gives a norm-weighted max of 0.0975. `run_maxdeg.sh` / `run13_flav.sh` should carry
+that control as a permanent cell.
