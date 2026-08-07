@@ -34,6 +34,11 @@ launch() {
   CUDA_VISIBLE_DEVICES="$gpus" timeout 7200 torchrun \
     --nproc_per_node="$n" --master_port="$port" ${ENTRY:--m torchtitan.train} \
     $BASE "$@" --dump-folder "$OUT/$name" > "$OUT/$name.log" 2>&1
+  # Drop this cell's checkpoint as soon as the cell is done. A 100-step cell
+  # leaves ~700 MB of it and nothing ever reads it; eighteen cells filled the disk
+  # and took bash down with it. tb/ stays -- stdout carries five significant
+  # digits and a real loss comparison has to come from the TensorBoard record.
+  rm -rf "$OUT/$name/checkpoint"
 }
 
 echo "### batch A (concurrent, 2 GPUs each) ###"

@@ -32,6 +32,10 @@ run() {
     CUDA_VISIBLE_DEVICES="$gpus" timeout 7200 torchrun --nproc_per_node="$n" \
       --master_port="$port" ${ENTRY:--m torchtitan.train} $BASE "$@" \
       --dump-folder "$OUT/$name" > "$OUT/$name.log" 2>&1
+    # See run13_flav.sh: the checkpoint is ~700 MB per cell and unread. Dropped
+    # here rather than after the whole matrix, because the disk fills DURING a
+    # matrix, not after it. tb/ is kept as the full-precision record.
+    rm -rf "$OUT/$name/checkpoint"
     [ "$(rows "$OUT/$name.log")" -eq "$STEPS" ] && break
     grep -q EADDRINUSE "$OUT/$name.log" || break   # retry only the one transient mode we have observed
     sleep 15

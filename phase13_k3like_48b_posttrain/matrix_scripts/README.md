@@ -101,3 +101,44 @@ comparison, whose verdict must be "within the measured floor", not "zero". The
 floor: changing only the gradient-accumulation order on one GPU with no parallelism
 gives a norm-weighted max of 0.0975. `run_maxdeg.sh` / `run13_flav.sh` should carry
 that control as a permanent cell.
+
+## Disk hygiene (added 2026-08-07, after the box filled mid-matrix)
+
+The failure was worse than a lost run: at 100% full the agent harness could not
+write a command's output file either, so bash stopped working entirely and nothing
+could be diagnosed or cleaned from inside the box. `/tmp` held **227 GB** of
+checkpoints from matrices whose evidence is the ~200 KB log beside them.
+
+`prune_run_artifacts.sh [--dry-run] [roots...]` deletes `checkpoint/`
+subdirectories and JIT caches. **It keeps `tb/`**, and that distinction is the
+whole point: measured on one 13-cell 100-step matrix, `checkpoint/` is 9.0 GB,
+`structured_logs/` 159 MB and `tb/` 1.3 MB -- so checkpoint is 97% of the space,
+while tb is the one thing that must survive, because stdout prints five significant
+digits and CLAUDE.md is explicit that a loss comparison has to be read from the
+TensorBoard record. Deleting whole dump folders, which the first version did, would
+have destroyed the only full-precision copy of every published matrix.
+
+Never touched: `*.log`, `tb/`, JSON/JSONL dumps, anything whose folder name
+contains `seed` (regenerating one costs a run and breaks a matrix's shared-init
+protocol), git trees, the vLLM source build, and exported HF bundles. Getting the
+seed guard right took three dry runs -- `/seed_` missed a folder named plainly
+`seed`, the prefix form then missed `qat_seed` / `nokda_seed` / `ds_seed`, and once
+the rule moved to deleting `checkpoint/` the guard had to test the PARENT, since
+every candidate's basename is then `checkpoint`. **Run `--dry-run` first.**
+
+First run reclaimed **242 GB**, taking the disk from 84% to 20%.
+
+`disk_watchdog.sh` runs it automatically. Installed as a supervisor service
+(`/opt/supervisor-scripts/disk_watchdog.sh`, `disk_watchdog.conf`), checking every
+60s, pruning below `WATCHDOG_MIN_FREE_GB` (default **40**). 40 rather than 10
+because one 8-GPU 100-step cell writes ~700 MB of checkpoint and eighteen write
+~12 GB: at 10 GB the writer can outrun the sweep between two checks. It logs what
+it freed, and it warns loudly when a prune frees nothing -- a watchdog that runs,
+frees nothing and stays quiet is indistinguishable from one that is not running.
+
+**`/tmp` and `/workspace` are the same overlay on this box.** Cleaning `/workspace`
+alone does nothing for a full `/tmp`; assuming they were separate filesystems cost
+a round of pointless cleanup.
+
+Both runners now `rm -rf "$OUT/$name/checkpoint"` as each cell finishes, rather
+than after the matrix -- the disk fills DURING a matrix, not after it.
