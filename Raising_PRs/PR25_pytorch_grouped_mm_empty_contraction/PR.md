@@ -94,11 +94,8 @@ inline bool check_valid_strides_and_return_transposed(const Tensor& mat) {
   int alignment = 16 / mat.element_size();
   bool is_cpu = mat.device().is_cpu();
 
-+ // An operand with no elements has nothing to align and no layout to check:
-+ // every stride vector describes the same tensor. Reachable from the backward
-+ // of a grouped GEMM whose call has no routed tokens at all: the weight
-+ // gradient contracts over the total token count. Infer the orientation from
-+ // whichever stride is unit.
++ // An empty operand has no layout to validate and the branches below accept
++ // no stride vector for it; infer the orientation from the unit stride.
 + if (mat.numel() == 0) {
 +   return tensor_strides[end_dim] != 1 && tensor_strides[end_dim - 1] == 1;
 + }
@@ -144,6 +141,6 @@ Found while bringing up `torch.compile` across a parallelism matrix for a Kimi-K
 
 ## Branch state (2026-08-07)
 
-Fix branch pushed: `QIU023/pytorch` branch `fix_grouped_mm_empty_contraction` (commit `6f971e8`, based on upstream main `6a34faa`), applied by hand -- the hand-written patch in this folder did not `git apply` and is kept only as the design record. `torch/_meta_registrations.py` passes `py_compile`; the C++ side remains CI-verified-only, as the body states. Open the PR at: `https://github.com/pytorch/pytorch/compare/main...QIU023:pytorch:fix_grouped_mm_empty_contraction`
+Fix branch pushed: `QIU023/pytorch` branch `fix_grouped_mm_empty_contraction` (commit `f5c3171` after the comment compression, based on upstream main `6a34faa`), applied by hand -- the hand-written patch in this folder did not `git apply` and is kept only as the design record. Inline comments are 1-2 lines; the full WHY lives in the commit message and PR body. `torch/_meta_registrations.py` passes `py_compile`; the C++ side remains CI-verified-only, as the body states. Open the PR at: `https://github.com/pytorch/pytorch/compare/main...QIU023:pytorch:fix_grouped_mm_empty_contraction`
 
 The local `pytorch/` submodule is a shallow clone carrying this branch; it cannot serve as the running torch (both venvs install wheels) -- its role is the PR branch plus CI.
