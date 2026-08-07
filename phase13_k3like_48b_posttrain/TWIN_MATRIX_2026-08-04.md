@@ -310,3 +310,14 @@ Two things this does NOT say, both of which have to travel with it:
   control, and the LR schedule is computed over total steps, so step 2 already
   had a different learning rate. Matched step counts agree exactly. Recorded
   because the false signal was convincing.
+
+## SUPERSEDED 2026-08-05: the 8192 configuration now runs on this box
+
+The bullet above attributed PP8xVP4 at seq 8192 to hardware ("needs the
+H200"). That was wrong: the ceiling was the vocabulary-sized logits tensor
+(8192 x 163840 x 4 bytes = 5.37 GiB fp32 upcast), not activations -- seq
+4096 peaks at 7.7% of memory. With `_skip_lm_head` + chunked loss (fork
+`2b303ecae`), multimodal PP8xVP4 at seq 8192 runs: 5 steps monotone
+12.03512 -> 10.68649, peak 1.82 GiB (11.76%), and the chunked path
+reproduces plain CE bit-for-bit at seq 1024. A code item recorded as a
+hardware item until measured.
