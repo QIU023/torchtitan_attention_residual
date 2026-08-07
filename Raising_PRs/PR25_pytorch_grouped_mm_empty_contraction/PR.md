@@ -115,8 +115,9 @@ inline bool check_valid_strides_and_return_transposed(const Tensor& mat) {
 
 + // An operand with no elements has nothing to align and no layout to check:
 + // every stride vector describes the same tensor. Reachable from the backward
-+ // of a grouped GEMM whose group is empty, where the contraction dim is that
-+ // group's token count. Infer the orientation from whichever stride is unit.
++ // of a grouped GEMM whose call has no routed tokens at all: the weight
++ // gradient contracts over the total token count. Infer the orientation from
++ // whichever stride is unit.
 + if (mat.numel() == 0) {
 +   return tensor_strides[end_dim] != 1 && tensor_strides[end_dim - 1] == 1;
 + }
