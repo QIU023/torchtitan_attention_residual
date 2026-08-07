@@ -189,3 +189,17 @@ lines above. Public logbook:
 - An earlier version of our own logbook blamed our routing code for this and
   was retracted. Do not repeat the claim that the operator is "intolerant of
   degenerate shapes" -- it is intolerant of exactly one shape.
+
+---
+
+## Branch state (2026-08-07)
+
+Fix branch pushed: `QIU023/pytorch` branch `fix_grouped_mm_empty_contraction`
+(commit `6f971e8`, based on upstream main `6a34faa`), applied by hand -- the
+hand-written patch in this folder did not `git apply` and is kept only as the
+design record. `torch/_meta_registrations.py` passes `py_compile`; the C++
+side remains CI-verified-only, as the body states. Open the PR at:
+`https://github.com/pytorch/pytorch/compare/main...QIU023:pytorch:fix_grouped_mm_empty_contraction`
+The local `pytorch/` submodule is a shallow clone carrying this branch; it
+cannot serve as the running torch (both venvs install wheels) -- its role is
+the PR branch plus CI.
