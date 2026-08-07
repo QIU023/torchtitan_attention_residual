@@ -24,11 +24,13 @@ is 0. Not "it is slow" or "it returns garbage" -- there is **no stride vector
 that passes validation**, including the one `torch.empty` itself produces for
 that shape.
 
-This is reachable from ordinary MoE training: the weight-gradient form of a
-grouped GEMM contracts over the group's token count, so an expert that
-receives no tokens gives exactly this shape. Eager autograd happens not to
-emit the call in that case; inductor emits it unconditionally, so the failure
-shows up as "this model trains fine eagerly and dies under `torch.compile`".
+This is reachable from ordinary MoE training: in the weight-gradient form of
+a grouped GEMM the operand's contraction length is the total routed token
+count, so it is zero exactly when no expert in the call received any tokens
+(a single empty group among busy ones does not produce it -- see "Empty
+groups are already fine" below). Eager autograd happens not to emit the call
+in that case; inductor emits it unconditionally, so the failure shows up as
+"this model trains fine eagerly and dies under `torch.compile`".
 
 ### Reproduction
 
@@ -159,8 +161,12 @@ answer -- this is the part where local reproduction cannot settle it.
   wheel and no build tree, so the diff is written against the installed
   header's source and reviewed by hand, not compiled or run. Say so in the PR
   rather than implying otherwise.
-* End-to-end evidence that this single check is the whole obstacle is in
-  `EVIDENCE.md` in this folder.
+* End-to-end evidence that this single check is the whole obstacle: a local
+  shim that re-strides exactly as this patch would
+  (`phase13_k3like_48b_posttrain/matrix_scripts/gmm_shim.py` in the public
+  logbook) takes a compiled 18-cell parallelism matrix from 15/18 to 18/18
+  (`SEED_MATRIX_2026-08-04.md`, compiled section); the full analysis is
+  `GROUPED_MM_EMPTY_GROUP_2026-08-04.md`.
 
 ### Provenance
 
