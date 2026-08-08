@@ -139,3 +139,78 @@ The AttnRes cross-stage adapter. It changes the CONTENT of what crosses a PP hop
 (the delta of committed blocks instead of the full stack) and adds no collectives,
 so it is orthogonal to where the tower runs. Verified independently: multimodal
 PP8xVP4 is bit-identical with the adapter on and off, seq 1024 through 8192.
+
+---
+
+# Implementation route, verified against core (2026-08-08)
+
+The two options offered earlier -- hoist the text stack's children, or build the ViT
+stage manually -- are both unnecessary. Reading core rather than reasoning about it
+turned up a route that needs **no core change and no parameter-namespace change**.
+Three facts, each read off the source:
+
+**1. `parallelize_fn`'s return value replaces the stage's module.**
+`pipeline_parallel.py` builds every stage from `_split_module`'s chunk and then does:
+
+```python
+m = parallelize_fn(m, ...)
+model_parts[i] = m
+stages[i].submod = m        # "update the model in the stage"
+```
+
+So a chunk can be swapped for a completely different module after the
+`PipelineStage` exists. The current adapter already relies on this to attach the
+tower to the embed-owning chunk. Therefore: give
+`module_fqns_per_model_part` one entry that matches nothing in the text model
+(`_split_module` sets every non-matching child to None, yielding a zero-parameter
+chunk), and return a purpose-built ViT stage module for it. `language_model.*`
+naming is untouched, so the checkpoint contract, `hf_key_map` and
+`state_dict_adapter` are all unaffected.
+
+**2. Kwargs reach EVERY stage; positional args only the first.** From
+`trainer.py`:
+
+```python
+self.pp_schedule.step(
+    arg_mbs=arg_mbs if self.pp_has_first_stage else None,
+    kwarg_mbs=kwarg_mbs,      # NOT gated on pp_has_first_stage
+    ...
+)
+```
+
+**3. Stages can exchange a tuple**, so the ViT stage returns
+`(features, input_ids)` and the first text stage receives both positionally. That
+avoids needing `input_ids` in `extra_kwargs`, which would have been a core change.
+Both elements have fixed shapes: `input_ids` is `[B, T]`, and `features` is the
+config-derived capacity buffer from `stage_exchange_capacity` -- which is why that
+capacity must not be batch-derived (PP sizes its P2P once).
+
+## The resulting stage layout
+
+```
+stage 0        ViT stage(s)   in: input_ids (arg) + pixel_values, grid_thw (kwargs)
+                              out: (packed features, input_ids)
+stage 1        embed_tokens + first text layers
+                              in: (packed features, input_ids)
+                              splices, then runs its layers
+stage 2..P-1   text layers as today
+```
+
+Requirement (2) -- vision forward and backward balanced across PP stages -- means
+more than one ViT stage, i.e. more than one such no-match FQN entry, with the tower's
+blocks distributed between them. The report gives no rule for how many, so that is
+the part to choose by measurement.
+
+## Status
+
+* **Landed:** the exchange contract (`stage_exchange_lengths`,
+  `stage_exchange_capacity`, `pack_stage_features`, `unpack_stage_features`) with
+  tests, including that lengths carry no frame count and that overflow raises rather
+  than truncating.
+* **Not yet written:** the ViT stage module, the no-match FQN entry, the splice moved
+  into the first text stage, and the split of the tower across several ViT stages.
+* **First verification when it exists:** at pp2 on the multimodal debug flavor,
+  step-1 loss and grad_norm against the non-DEP path. Distributing the tower changes
+  no arithmetic, so the target is equality to the bf16 floor -- and the floor is
+  real, see the section above. Then a profile for the bubble-occupancy claim, because
+  "most of the ViT computation is hidden" is not a loss statement.
