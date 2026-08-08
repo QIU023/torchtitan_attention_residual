@@ -172,3 +172,39 @@ numerics moved is not a win.
 off, the same run must NOT show the improvement. That sounds trivial, but the current
 DEP already fails a related control -- bubble count is identical with and without it
 -- so "the toggle changes something measurable" is exactly the claim in question.
+
+---
+
+## Gate results (2026-08-08): the side stream is exact through pp8 x vp4
+
+`KIMI_VIT_SIDE_STREAM` on against off, two steps each, same seed:
+
+| configuration | loss | grad_norm |
+|---|---|---|
+| single GPU | 12.03482 both | 15.7500 both |
+| fsdp2 | 12.05179 both | 15.4375 both |
+| cp2 + dynamic CP | 12.05231 both | 15.4375 both |
+| **pp8 x vp4 (32 stages), multimodal** | **12.04995 both** | **8.3125 both** |
+
+Suite 293 passed.
+
+The last row is the one that was asked for and the one that could have failed. At 32
+virtual stages, FSDP2's tower all-gather and dynamic CP's collectives are both issued
+on the side stream while the PP schedule is mid-flight across eight ranks -- the
+ordering interaction flagged above as most likely to work at pp2 and hang at pp8. It
+did not.
+
+**What this does and does not license.** It licenses proceeding to the run-ahead: the
+stream discipline is right and the adapter's invariants survive. It does not license
+any latency claim, because with no run-ahead the side stream is entered and
+immediately waited on, so nothing overlaps and no speedup is expected or observed. A
+latency A/B is only meaningful once micro-batch m+k's encode is issued during m's text
+compute.
+
+**What the run-ahead still needs**, and it is a scheduling problem rather than a
+stream one: PP hands the first stage one micro-batch's inputs at a time, so encoding
+m+k at time m requires the batch's vision inputs earlier than the schedule offers
+them. `kwarg_mbs` holds every micro-batch's kwargs and is passed to the schedule whole,
+so the inputs exist -- reaching them means hooking the step rather than the stage.
+That is where the next increment goes, and the memory for k live micro-batches of
+vision features is the bound on k.
