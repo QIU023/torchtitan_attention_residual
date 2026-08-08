@@ -214,3 +214,72 @@ the part to choose by measurement.
   no arithmetic, so the target is equality to the bf16 floor -- and the floor is
   real, see the section above. Then a profile for the bubble-occupancy claim, because
   "most of the ViT computation is hidden" is not a loss statement.
+
+---
+
+# Requirement (2) is ambiguous in the report, and here is how I read it
+
+"balances vision forward and backward passes across PP stages" admits two readings,
+and the report does not disambiguate them. Recording both, because picking one
+silently would be exactly the kind of invention this project keeps correcting.
+
+**Reading A -- split the tower's DEPTH.** The ViT's encoder blocks are distributed
+over several vision stages the way text layers are over text stages. Pipeline-native
+and needs nothing the linear pipeline does not already have.
+
+**Reading B -- distribute the per-micro-batch PASSES.** The word "passes", and the
+next sentence's "The ViT forward passes of the first PP micro-batches ... the
+remaining forward passes are scheduled into pipeline bubbles", both point at
+per-micro-batch work rather than at layers. Taken alone this needs the tower
+replicated on every stage and its output delivered AGAINST the pipeline direction,
+which the report never describes.
+
+**Figure 11 does not settle it.** The ``ViT fwd`` boxes sit in the top annotation
+row that labels what overlaps in each phase -- one at the far left, one (green) at
+the far right beside ``reduce grad`` -- and NOT spread across the per-rank rows,
+which is what would have shown reading B.
+
+**How they reconcile, which is what I implement.** Under a schedule with virtual
+stages a single rank holds several stages. So if there are ``n_vit`` vision stages
+distributed across ranks, each rank owns vision work AND text work, and the
+interleaved schedule places that rank's vision actions in its own text bubbles.
+That is reading A's mechanism producing reading B's effect, with no
+reverse-direction delivery and no replicated tower. It is also the only one of the
+two that the closed set of computation types permits.
+
+I am not claiming the report says A. I am claiming A achieves what the report
+describes, and that B as literally stated needs a delivery path the report does not
+give.
+
+## What Reading A still needs
+
+The intermediate exchange between two vision stages carries the ViT's HIDDEN patch
+stream, whose length is the batch's patch count and therefore varies. Same
+constraint as the feature exchange and the same answer: a config-level patch
+capacity, with the real length recomputed on the receiving stage from ``grid_thw``,
+which is replicated and reaches every stage as a kwarg. Under dynamic CP the local
+patch count varies per rank too, so the capacity is per-rank-local and derived from
+the same maxima.
+
+Stage layout for ``n_vit > 1``:
+
+```
+vision 0        patch_embed + encoder blocks [0, k)        -> padded patch stream
+vision i        encoder blocks [.., ..)                    -> padded patch stream
+vision n-1      blocks + final_layernorm + mm_projector
+                + embed_tokens + splice                    -> spliced embeddings
+text 0..        transformer layers
+```
+
+``embed_tokens`` and the splice stay on the LAST vision stage for the reason
+established at ``n_vit = 1``: ids cannot cross the pipe, because PP's metadata
+inference pushes dummy values through it and indexing an embedding with those
+asserts.
+
+## Status at ``n_vit = 1``
+
+Implemented and verified. From a shared seed checkpoint, step-1 loss is IDENTICAL
+to non-DEP pp2 to five decimals (12.05471), grad_norm within one bf16 step, and both
+PP legs sit 5.69e-03 from single-GPU -- which is PP microbatching, since non-DEP
+shows it too. Cold start is NOT a valid comparison here and gave a misleading
+0.05: different stage splits consume RNG in a different order, so the weights differ.
