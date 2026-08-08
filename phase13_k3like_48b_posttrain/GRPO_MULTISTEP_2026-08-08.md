@@ -102,3 +102,42 @@ What is missing is the differential: disable the sync and `probs_diff` must grow
 substantially. If it does not, the metric is insensitive to the sync and no value of
 it means anything -- which was true by construction in the zero-reward run and has to
 be re-established now that the quantity is non-trivial.
+
+---
+
+## The sync IS verified -- by checksum, after two wrong routes
+
+A checksum of one real parameter, logged at every sync
+(`KIMI_GRPO_SYNC_CHECKSUM`, on by default; `KIMI_GRPO_FREEZE_SYNC=1` caches the first
+step's weights and ships them forever, as the control):
+
+| arm | checksums across 4 syncs |
+|---|---|
+| live | `56c55090…` -> `ca70d7ac…` -> `274f3dc9…` -> `15c10fcf…` -- **different every step** |
+| frozen | `56c55090…` x4 -- **constant**, and its first value equals live's first |
+
+So the sync transports weights that actually change, the freeze control works, and
+both arms provably start from the same state. **That closes the open item**, and it
+closes it directly rather than by inference.
+
+## rollout_probs_diff is not a sync check, and I read it as one twice
+
+With the freeze proven effective, the earlier differential's failure has only one
+remaining explanation: the metric is not sensitive to a stale rollout policy. The
+weights demonstrably change and `probs_diff` sits at 1-2.5e-03 either way.
+
+That is consistent with what it measures: the rollout engine's logprobs against the
+TRAINING engine's recomputation for the tokens the rollout produced, with the
+recomputation using the weights the rollout ran on. It is an engine-agreement metric
+by construction, not a freshness one.
+
+So the number is worth keeping -- **vLLM and torchtitan agree on logprobs to ~2e-03
+in bf16** -- but it says nothing about the sync, and it was wrong to frame it that way.
+
+Two failures, one lesson: the differential comparison I built to test the sync was
+itself uncontrolled. The two arms sample different responses (rewards/mean 0.33/0.40/
+0.51 against 0.51/0.51/0.49), so `probs_diff` was not comparing the same tokens across
+arms. Using a sampling-dependent metric to test a deterministic mechanism cannot work
+regardless of the direction of the result -- the frozen arm coming out LOWER was not
+evidence against the sync, it was noise. Checksumming the transported tensor was
+available from the start and is what should have been done first.
