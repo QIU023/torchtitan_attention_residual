@@ -58,3 +58,47 @@ removed, the metric is not sensitive to the sync and no value of it means anythi
 preceding sync at all. The open item in the handoff said "multi-step stability, a task
 with non-zero reward, and weight sync measured in-loop" as three items; they are not
 independent -- the third is unreachable without the second.
+
+---
+
+## With a variance reward: the actor moves, and the sync becomes measurable
+
+`grpo_variance_reward.surface_form_reward` wired through veRL's existing
+`custom_reward_function` extension point -- no core change. It is a deterministic
+hash of the response text, so two samples in a GRPO group differ, the group's
+advantages are not all equal, and the value is reproducible enough for a differential
+A/B. It is explicitly not a quality signal.
+
+| step | rewards/mean | **grad_norm** | pg_loss | probs_diff max |
+|---|---|---|---|---|
+| 1 | 0.5117 | **23.637** | 0.0 | 1.749e-03 |
+| 2 | 0.5142 | **24.385** | 0.0 | 2.087e-03 |
+| 3 | 0.4902 | **24.054** | 0.0 | 2.454e-03 |
+
+`grad_norm` left zero, so the causal chain identified above was right: no reward
+variance was the reason the actor never moved, not anything in the engine.
+
+And `rollout_probs_diff_max` now **grows monotonically** across steps, 1.75e-03 to
+2.45e-03, which is what changing weights between rollout and training looks like --
+the rollout ran on the pre-update policy.
+
+## A signal that would have misled, and did not only because grad_norm was next to it
+
+`pg_loss` is **0.0 while grad_norm is 23.6**, and that is expected rather than
+contradictory. GRPO normalises advantages to zero mean within a group, and at the
+first inner step the importance ratio is 1, so `pg_loss = -mean(A) = 0` BY
+CONSTRUCTION while its gradient is not zero at all.
+
+So for GRPO, `pg_loss` is not a health signal and `grad_norm` is. Reading pg_loss
+alone here would have produced "still not learning" -- the same wrong conclusion as
+before, from a different metric.
+
+## Still not a proof of the sync
+
+What holds: the actor updates, and with the sync enabled `rollout_probs_diff` stays
+around 2e-03 rather than diverging.
+
+What is missing is the differential: disable the sync and `probs_diff` must grow
+substantially. If it does not, the metric is insensitive to the sync and no value of
+it means anything -- which was true by construction in the zero-reward run and has to
+be re-established now that the quantity is non-trivial.
