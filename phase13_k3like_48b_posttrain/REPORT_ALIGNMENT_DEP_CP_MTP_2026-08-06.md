@@ -91,3 +91,34 @@ Also from Table 1, for the record: ViT is 401M over 27 layers, patch size 14,
 **12 attention heads** -- which confirms the 3-head debug tower is a fixture
 artifact, and that `kimi_k3_debugmodel_report_arch_vit4h` exists only to make head
 sharding testable at all.
+
+---
+
+## Update 2026-08-08: dynamic CP's sub-group path is exercised, not just unit-tested
+
+Both halves of report 5.2.3's dynamic CP are implemented, and the distributed
+sub-group path has now actually run rather than only being unit-tested. Until this
+point every real run had a single large image, so ``n_sub`` was always 1 and the
+branch that keeps under-loaded sub-groups in their collectives had never executed --
+which is exactly where a deadlock would hide, because its correctness rests on every
+sub-group running the same NUMBER of passes.
+
+| configuration | layout | loss |
+|---|---|---|
+| 2 images, threshold 256 | **1** sub-group of 4 ranks | 12.03832 |
+| 2 images, threshold 16 | **2** sub-groups of 2 ranks | **12.03832** |
+| 3 images, threshold 16 | 2 sub-groups of 2, split **2/1** | 12.04008, exit 0 |
+| 4 images, threshold 16 | (4, 1) -> g = 1, falls through to round-robin | no dynamic-CP log line |
+
+The first two lines are the load-bearing ones: **the same loss under two different
+sub-group layouts and two different gather groups.** Partitioning changes no
+arithmetic, and this is what that looks like when it holds.
+
+The third line is the one that was missing. Three images over two sub-groups gives a
+2/1 split, so the sub-group holding one image runs an empty pass -- and it completed
+rather than hanging.
+
+The fourth confirms the guard: four images on cp4 gives ``(4, 1)``, a sub-group of
+one rank, which has nothing to partition across, so the code declines and image-level
+round-robin takes the batch. The absence of the log line is how that is checked,
+which only works because engagement is logged rather than assumed.

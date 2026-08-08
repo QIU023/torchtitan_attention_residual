@@ -345,3 +345,40 @@ of at most 1024 patches each. Nothing enforces the agreement, though.
 ``pack_stage_features`` raising on overflow is what makes a mismatch loud instead of
 silent, which is the property that matters; deriving the DEP maxima from the
 dataloader config would be better and is not done.
+
+## Interleaved1F1B: the configuration the bubble claim needs
+
+Under plain 1F1B at ``n_vit = 1`` and pp2 there are two stages: rank 0 holds only the
+vision stage and rank 1 all the text layers. **Rank 0 has no bubbles to fill** -- it
+spends the step encoding. That configuration can show the arithmetic is unchanged,
+and does, but it cannot show anything about hiding work.
+
+With virtual stages a rank holds several, and that is where the report's mechanism
+lives. Measured, pp2 + Interleaved1F1B + DEP:
+
+```
+stage 0 (rank 0)  ['__kimi_dep_vision__0', 'embed_tokens']
+stage 1 (rank 1)  layers.0-3
+stage 2 (rank 0)  layers.4-7          <- same rank as the vision stage
+stage 3 (rank 1)  layers.9-12, norm, lm_head
+```
+
+Rank 0 owns the vision stage AND a text stage, so its vision actions sit in its own
+text pipeline's gaps. That is reading A's mechanism producing reading B's effect,
+which is what this design claimed and had not yet shown.
+
+``loss 12.07418`` and ``grad_norm 12.50``, **both identical to non-DEP** under the
+same schedule.
+
+## Correctness of ``n_vit = 1``, complete
+
+| configuration | loss | grad_norm |
+|---|---|---|
+| pp2, 1F1B | identical to non-DEP (12.05471) | 1 bf16 step apart |
+| pp4, 1F1B | **identical** (12.07418) | **identical** (12.5000) |
+| pp2, Interleaved1F1B | **identical** (12.07418) | **identical** (12.50) |
+
+What remains for the report's claim is a PROFILE. "Most of the ViT computation is
+hidden within pipeline bubbles" is a statement about occupancy, and none of the above
+measures it -- equal losses would hold whether the vision work overlapped perfectly
+or not at all.
