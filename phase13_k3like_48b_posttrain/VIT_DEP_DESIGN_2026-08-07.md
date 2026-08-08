@@ -543,8 +543,8 @@ That surface exists and is now verified rather than assumed:
 | CP: single large image split on the patch dimension, gather-KV | **done, exact** (fp32 `max\|delta\| = 0` at 2 ranks, 4 grids incl. video) |
 | CP: sub-CP groups, load-balanced large images | **done, exercised** (2 layouts same loss; 2/1 split runs the empty pass) |
 | DEP: ViT and text as separate stages | **done, exact** (pp2/1F1B, pp4/1F1B, pp2/Interleaved1F1B) |
-| DEP: vision passes balanced across PP stages | **not done** -- 64 vision slots on rank 0, 0 on the other seven |
-| DEP: first micro-batches upfront, rest into bubbles | **not done**, and the route I assumed would deliver it does not |
+| DEP: vision passes balanced across PP stages | **not done** -- 64 vision slots on rank 0, 0 on the other seven. Superseded: see the last section -- the clause is real, worth ~1/n in unhidden cost, and `KIMI_VIT_DEP_STAGES=2` hard-fails today |
+| DEP: first micro-batches upfront, rest into bubbles | **not done**, and the route I assumed would deliver it does not. Superseded: the run-ahead delivers the mechanism (31/32 encodes issued early, verified); the hideable SHARE is what the split governs |
 | "most of the ViT computation is hidden" | **no evidence, and currently false** by the bubble count |
 
 Two of my own claims in this document were wrong and are corrected above rather than
@@ -622,7 +622,7 @@ before anyone tries it:
 | CP: patch-dimension split, gather-KV | done, exact |
 | CP: sub-CP groups, load balance | done, exercised |
 | DEP: ViT and text as separate stages | **done, exact** at pp2/1F1B, pp4/1F1B, pp2/Interleaved1F1B |
-| DEP: passes balanced across PP stages | not done |
+| DEP: passes balanced across PP stages | not done -- quantified and diagnosed in the final section |
 | DEP: first upfront, rest into bubbles | **not achievable this way** -- proven, not assumed |
 | "most of the ViT computation is hidden" | false as built; needs a concurrent-stream design |
 
@@ -791,3 +791,97 @@ the effect ceiling (0.12%) sits an order of magnitude below run-to-run variation
 (2-3%). The original instruction -- do not measure wall-clock, use theoretical
 calculation, because this PCIe box's communication latency does not extrapolate -- was
 more thoroughly right than the caveat I attached to it.
+
+---
+
+# Clause (2) revisited: "balanced across PP stages" is real, quantified, and unbuilt
+
+## I had talked myself out of the report's own words
+
+The verbatim sentence is:
+
+> splits ViT and text training into separate stages **and balances vision forward and
+> backward passes across PP stages**
+
+This document's earlier section read that as "the ViT occupies more than one stage, by
+definition, not as a later optimisation". A later section replaced it with "distributing
+the per-micro-batch vision passes over the stages' idle slots", and the status table
+went to **not done**.
+
+That replacement was a mistake, and the tell was available at the time: the substitute
+reading is **exactly the thing already proven impossible** -- all 24 action reorders
+rejected by the lowering. Choosing an interpretation under which the report describes
+something unimplementable, when a straightforward implementable reading exists, is
+choosing the wrong interpretation.
+
+**The two clauses are not rivals.** "Balances ... across PP stages" (the tower spans
+several stages) and "further decompose the ViT computation" (per micro-batch: first
+ones upfront, rest into bubbles) are separate requirements in separate sentences. I
+collapsed them into an either/or and retired the `n_vit > 1` work on that basis. This
+is the SECOND time tonight the same error shape appeared -- see also superseding my own
+correct 2026-08-06 dependency analysis. The pattern: **when two readings look like
+they conflict, check whether the source is asking for both.**
+
+## What the split is worth, computed rather than argued
+
+`dep_hiding_theory.py --split` puts vision stage i on rank `i % pp`, so n stages spread
+the work over that many ranks and each carries `r / n`. At pp8 x vp4, 32 micro-batches:
+
+| n | r/n | ranks | worst-rank hidden | all-rank hidden | worst UNHIDDEN cost |
+|---|---|---|---|---|---|
+| 1 | 0.057 | 1 | 56% | 56% | 0.798 |
+| 2 | 0.029 | 2 | 56% | 78% | 0.399 |
+| 4 | 0.014 | 4 | 56% | 89% | 0.200 |
+| 8 | 0.007 | 8 | 56% | **95%** | **0.100** |
+| 16 | 0.004 | 8 | 66% | 96% | 0.078 |
+
+At the debug ratio r = 25.2 the same split moves the hideable share from 0% to 8% and
+the unhidden cost from 806 to 94.5 units.
+
+**The share is the wrong metric and it took a wrong turn to notice.** Worst-rank hidden
+share sits at 56% for n = 1..8 and looks like the split does nothing. It does not move
+because rank 0 is the pipeline head and has no bubbles during warmup regardless of the
+split. What changes is how much vision work that rank carries at all, so the metric
+that tracks wall time is the **unhidden cost**, and that falls as ~1/n. A ratio that
+holds steady while its numerator and denominator both shrink hides the entire effect.
+
+The all-rank 95% at n = 8 is also the first number in this work that lands where the
+report's "most of the ViT computation is hidden" would put it -- reached from the
+schedule, at the real model's cost ratio, with no clock involved.
+
+## Status of clause (2): hard-fails today, and that is the good failure mode
+
+`KIMI_VIT_DEP_STAGES` exists and defaults to 1. Setting it to 2 at pp4:
+
+```
+STAGES=1  exit=0  loss 12.07055
+STAGES=2  exit=1  ValueError: Optimizer param_groups pattern '.*' matched no parameters
+```
+
+Cause, confirmed by reading and then by the run: `_inject_kimi_k3_fqns` emits n vision
+FQNs, but `_parallelize_with_tower` only converts the chunk that holds `embed_tokens`
+and no layers into a `KimiK3ViTStage`. Vision chunks 1..n-1 have neither, so they fall
+through to the plain-text branch as zero-parameter shells and the optimizer finds
+nothing. **It fails loudly rather than training a hollow stage**, which is the failure
+mode to want -- unlike tonight's two silent ones.
+
+## What building it actually requires
+
+Not a small change, and specifically not "loosen the detection":
+
+1. **Split MoonViT's encoder layers across the vision stages**, the way the text stack
+   is split -- first stage keeps `patch_embed` (plus `embed_tokens`), last keeps the
+   projector and the splice, middles keep layer ranges.
+2. **Thread the CP patch plan through stage boundaries.** `set_cp_patch_plan` currently
+   hands one plan to one tower; with the tower spanning stages each piece needs its
+   own, and dynamic CP's gather-KV is issued inside the attention it splits.
+3. **Redefine the run-ahead.** It currently prefetches by calling `encode_images`,
+   which assumes one stage does the whole encode. Across stages an "encode" becomes a
+   pipeline of its own, and what runs ahead is the FIRST vision stage's share while
+   later shares arrive over the pipe -- a different mechanism from the present one, not
+   a parameter change.
+
+Deliberately not started tonight: the run-ahead and the stage split are both exact
+right now, and (3) rewrites the mechanism (1) and (2) would have to be validated
+against. Each half needs its own numerical gate, from a shared seed checkpoint, or a
+regression in one will be read as a defect in the other.

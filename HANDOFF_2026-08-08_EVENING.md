@@ -382,3 +382,43 @@ The core suite is NOT clean on this box, and none of it is ours:
 
 So the gate for kimi_k3 work is the first command. Quoting a core-suite number as if
 it were the project's gate would read as a regression that is not there.
+
+---
+
+## Report 5.2.3, clause by clause -- the state to trust
+
+| clause | state |
+|---|---|
+| (1) ViT and text as **separate stages** | **done, exact** at pp2/1F1B, pp4/1F1B, pp2 and pp8xvp4/Interleaved1F1B |
+| (2) vision passes **balanced across PP stages** | **not done.** `KIMI_VIT_DEP_STAGES=2` hard-fails: the extra vision chunks become zero-parameter shells and the optimizer errors. Worth ~1/n in unhidden cost -- quantified below |
+| (3) first micro-batches upfront, **rest into bubbles** | **mechanism done** (run-ahead, 31/32 encodes issued early, numerically exact). The hideable SHARE is governed by (2) |
+
+**Clause (2) was wrongly retired, and the reason matters.** I had replaced the report's
+plain reading ("the tower spans several stages") with "distribute per-micro-batch vision
+passes into idle slots" -- which is precisely the thing already proven impossible (all
+24 reorders rejected). Picking a reading that makes the source unimplementable, when an
+implementable one is right there, is picking the wrong reading. The two clauses are
+separate sentences asking for separate things; I collapsed them into an either/or.
+
+**Second occurrence of one error shape tonight** (the first: superseding my own correct
+2026-08-06 dependency analysis). Pattern to watch: **when two readings look like they
+conflict, check whether the source wants both.**
+
+**What (2) is worth**, from `dep_hiding_theory.py --split` at the real cost ratio:
+all-rank hidden share 56% (n=1) -> **95% (n=8)**, and worst-rank UNHIDDEN cost 0.798 ->
+0.100 units, i.e. ~1/n. The 95% is the first number in this work that lands where the
+report's "most of the ViT computation is hidden" would put it, reached from the schedule
+with no clock involved.
+
+**Do NOT read the hidden SHARE on the worst rank** -- it sits at 56% for n=1..8 and
+makes the split look useless. It cannot move: rank 0 is the pipeline head and has no
+warmup bubbles whatever the split. The metric that tracks wall time is the unhidden
+cost, and a ratio whose numerator and denominator both shrink hides the whole effect.
+
+**Building (2) needs three things, and it is not "loosen the detection":** split
+MoonViT's encoder layers across the vision stages; give each piece its own CP patch plan
+(dynamic CP's gather-KV lives inside the attention it splits); and redefine the
+run-ahead, which today calls `encode_images` on the assumption that one stage does the
+whole encode. That third item rewrites the mechanism (1) and (3) are currently exact
+against, so it needs its own gate from a shared seed checkpoint rather than being
+bolted on.

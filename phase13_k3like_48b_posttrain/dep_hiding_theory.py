@@ -109,7 +109,38 @@ def analyse(order, vision_stage: int, r: float) -> dict:
     if rank is None:
         raise ValueError(f"no rank holds stage {vision_stage}")
 
-    actions = order[rank]
+    return _walk(order[rank], rank, {vision_stage}, r)
+
+
+def analyse_split(order, num_vision_stages: int, r: float, pp_size: int) -> dict:
+    """The report's other clause: vision passes BALANCED ACROSS PP stages.
+
+    Splitting the tower over ``n`` stages puts stage i on rank ``i % pp_size``, so the
+    vision work spreads over that many ranks and each stage carries ``r / n``. That
+    second effect is the interesting one -- the hideable share depends steeply on the
+    per-stage cost, so balancing is not only about load, it is what can make the
+    bubble hiding possible at all.
+
+    Reported as the WORST rank, since a step waits for its slowest participant.
+    """
+    vision_stages = set(range(num_vision_stages))
+    per_stage_r = r / num_vision_stages
+    results = []
+    for rk in sorted(order):
+        held = {s for s in vision_stages if s % pp_size == rk}
+        if not held:
+            continue
+        results.append(_walk(order[rk], rk, held, per_stage_r))
+    worst = min(results, key=lambda d: d["hidden_share"])
+    worst["ranks_carrying_vision"] = len(results)
+    worst["per_stage_r"] = per_stage_r
+    worst["hidden_total"] = sum(d["hidden"] for d in results)
+    worst["forwards_total"] = sum(d["vision_forwards"] for d in results)
+    return worst
+
+
+def _walk(actions, rank: int, vision_stages: set[int], r: float) -> dict:
+    """Prefix bubble-budget walk over one rank's action list."""
     bubbles = sum(1 for a in actions if a is None)
 
     # Prefix walk, one unit = one text-stage forward. A bubble BEFORE a micro-batch's
@@ -130,7 +161,9 @@ def analyse(order, vision_stage: int, r: float) -> dict:
         if a is None:
             budget += 1.0
             continue
-        if a.stage_index != vision_stage or "FORWARD" not in str(a.computation_type):
+        if a.stage_index not in vision_stages or "FORWARD" not in str(
+            a.computation_type
+        ):
             continue
         if budget >= r:
             budget -= r
@@ -170,6 +203,11 @@ def main() -> None:
         action="store_true",
         help="sweep r over decades, so the conclusion does not rest on one estimate",
     )
+    ap.add_argument(
+        "--split",
+        action="store_true",
+        help="sweep the number of vision stages: does balancing enable the hiding?",
+    )
     args = ap.parse_args()
     ratios = args.r or [25.2, 0.057]
     if args.sweep:
@@ -181,6 +219,36 @@ def main() -> None:
         f"pp={args.pp} vp={args.vp} stages={num_stages} microbatches={args.mb}: "
         f"{total_bubbles} bubbles across all ranks"
     )
+    if args.split:
+        for r in ratios:
+            print(
+                f"\nr={r} total ViT cost, split over n stages (each carries r/n)\n"
+                f"{'n':>3}  {'r/n':>8}  {'ranks':>5}  {'worst-rank hidden':>18}  "
+                f"{'all-rank hidden':>16}  {'worst UNHIDDEN cost':>19}"
+            )
+            for n in (1, 2, 4, 8, 16):
+                if n > args.pp * args.vp:
+                    break
+                res = analyse_split(order, n, r, args.pp)
+                print(
+                    f"{n:>3}  {res['per_stage_r']:>8.3f}  "
+                    f"{res['ranks_carrying_vision']:>5}  "
+                    f"{res['hidden']:>3}/{res['vision_forwards']:<3} "
+                    f"{res['hidden_share'] * 100:>9.0f}%  "
+                    f"{res['hidden_total']:>4}/{res['forwards_total']:<4} "
+                    f"{res['hidden_total'] / max(1, res['forwards_total']) * 100:>4.0f}%"
+                    f"  {res['synchronous'] * res['per_stage_r']:>19.3f}"
+                )
+        print(
+            "\nRead the LAST column, not the shares. Worst-rank is what a step waits\n"
+            "for, and its hidden SHARE barely moves with n because rank 0 is the\n"
+            "pipeline head and has no bubbles during warmup whatever the split. What\n"
+            "the split changes is how much vision work that rank carries at all, so\n"
+            "the unhidden COST falls roughly as 1/n. A share is the wrong metric here:\n"
+            "it holds steady while the quantity that costs wall time drops n-fold."
+        )
+        return
+
     if args.sweep:
         print(
             f"\n{'r':>8}  {'hidden':>10}  {'sync':>5}  {'ViT cost':>9}  {'of step':>8}"
