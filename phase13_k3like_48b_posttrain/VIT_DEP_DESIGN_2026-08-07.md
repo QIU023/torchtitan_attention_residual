@@ -382,3 +382,89 @@ What remains for the report's claim is a PROFILE. "Most of the ViT computation i
 hidden within pipeline bubbles" is a statement about occupancy, and none of the above
 measures it -- equal losses would hold whether the vision work overlapped perfectly
 or not at all.
+
+---
+
+# NEGATIVE RESULT (2026-08-08): ViT-as-a-stage does not fill bubbles
+
+This refutes a claim made earlier in this document. It said:
+
+> If the ViT is a stage, its FORWARD and BACKWARD actions are already in the action
+> list, and the interleaved schedule places them where bubbles would otherwise be.
+
+That was an assumption. It is wrong, and the schedule's own structure shows it.
+
+## The measurement
+
+Not wall clock -- this box is 8x RTX 5060 Ti over PCIe and its communication
+fraction does not extrapolate to the report's fabric. Instead, torch's dependency
+simulator (``_simulate_comms_compute`` over ``pipeline_order_with_comms``) gives a
+per-rank slot list in which ``None`` is a bubble: a slot where the rank could execute
+nothing because a dependency was unmet. Probe:
+``dep_bubble_structure.py``. FSDP's UNSHARD/RESHARD/REDUCE_GRAD actions are filtered
+out first; they are parameter management, not pipeline dependencies, and the
+simulator raises on them.
+
+pp8, Interleaved1F1B, 16 virtual stages, 16 microbatches, 30-layer flavor:
+
+| rank | non-DEP slots / bubbles | DEP slots / bubbles | DEP vision slots | stages held |
+|---|---|---|---|---|
+| 0 | 443 / **283** | 443 / **283** | **64** | [0, 8] |
+| 1 | 442 / 250 | 442 / 250 | 0 | [1, 9] |
+| 2 | 440 / 248 | 440 / 248 | 0 | [2, 10] |
+| 3 | 438 / 246 | 438 / 246 | 0 | [3, 11] |
+| 4 | 436 / 244 | 436 / 244 | 0 | [4, 12] |
+| 5 | 434 / 242 | 434 / 242 | 0 | [5, 13] |
+| 6 | 432 / 240 | 432 / 240 | 0 | [6, 14] |
+| 7 | 426 / 266 | 426 / 266 | 0 | [7, 15] |
+| total | **2019 bubbles** | **2019 bubbles** | | |
+
+**The bubble count is identical.** Not smaller, not larger.
+
+## Why, and it is structural rather than a bug
+
+A pipeline stage's actions sit on the critical path. The schedule does not know one
+of its stages is a vision encoder; it places stage 0's forwards and backwards exactly
+where stage 0's work goes. And because the vision stage is taken OUT of the text
+budget, DEP swaps a text stage for a vision stage: same number of stages, same
+dependency graph, same stalls. The vision work occupies a COMPUTE slot that a text
+stage would have occupied. It does not occupy a bubble.
+
+"Hidden within pipeline bubbles" requires the opposite: keep every text stage AND
+place vision work into the idle slots. Those are different operations, and making the
+ViT a stage performs the first one.
+
+The same table also quantifies the missing requirement (2): 64 vision slots on rank 0
+and **zero on the other seven ranks**. "Balances vision forward and backward passes
+across PP stages" is not partially satisfied, it is not satisfied at all -- and that
+is now counted rather than inferred.
+
+## What this leaves standing, and what it does not
+
+Standing: requirement (1). ViT and text ARE separate stages, and it is numerically
+exact -- pp2/1F1B, pp4/1F1B and pp2/Interleaved1F1B all reproduce the non-DEP loss,
+the last two bit-identical on grad_norm too. That is worth keeping regardless: it is
+the decoupling the rest depends on, and it makes the tower's placement a
+configuration rather than a hard-coded attachment to the embed stage.
+
+Not standing: any claim about hiding vision compute. Requirement (3) is not
+implemented either, because the mechanism I assumed would deliver it does not.
+
+## What the report probably means, stated as a reading rather than a fact
+
+"The ViT forward passes of the first PP micro-batches are executed synchronously
+upfront, the remaining forward passes are scheduled into pipeline bubbles" reads, on
+this evidence, as software-pipelining the ViT AGAINST the text pipeline on the same
+rank -- microbatch j's vision encode running concurrently with microbatch j-k's text
+compute, on a side stream -- rather than as inserting the ViT into the pipeline's
+dependency chain. Once it is in the chain it is on the critical path by construction.
+
+That sits awkwardly with "splits ViT and text training into separate stages", so
+their "stage" may not mean a PP stage. I am not going to resolve the report's wording
+by fiat. What I do have is a measurement showing the route I took does not produce the
+benefit it claims, which is the part that matters for deciding what to do next.
+
+The closed set of computation types blocks the obvious implementation of the other
+reading -- no new action type can be registered -- so delivering it needs either a
+side-stream mechanism outside the schedule (and then the "PP owns all NCCL" property
+has to be given up deliberately) or an upstream change.
