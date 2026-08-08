@@ -885,3 +885,78 @@ Deliberately not started tonight: the run-ahead and the stage split are both exa
 right now, and (3) rewrites the mechanism (1) and (2) would have to be validated
 against. Each half needs its own numerical gate, from a shared seed checkpoint, or a
 regression in one will be read as a defect in the other.
+
+## Clause (2), step 1 of the build: the block split is numerically pinned
+
+Done and committed ahead of any pipeline wiring, deliberately: a mismatch discovered
+later at pp4 would be indistinguishable from a PP plumbing bug.
+
+`MoonViTEncoder` gained two methods, and `forward` now delegates to the second so the
+single-stage path is the same code:
+
+* `block_inputs(x, grid_thws, cp_plan) -> (freqs_cis, cu_seqlens)` -- the per-forward
+  values every block needs, split out so each stage can RECOMPUTE them from its own
+  `grid_thws`. Recomputing rather than sending them is forced: PP's metadata inference
+  pushes dummy values through pipe tensors, and these are RoPE indices and segment
+  bounds, where a dummy asserts out of bounds. Same reason `input_ids` never leave the
+  vision stage.
+* `run_blocks(..., block_slice=..., apply_final_norm=...)` -- one contiguous share,
+  with the final norm belonging to the last share only.
+
+`tests/test_moonvit_stage_split.py`, fp32 at `rtol=1e-5` (loose tolerances have already
+hidden a real 1e-3 defect in this model once):
+
+| property | result |
+|---|---|
+| 2 shares chained == whole encoder | pass |
+| 4 shares (one block each) == whole | pass |
+| norm on EVERY share must NOT match | pass -- guards the test itself |
+| `block_inputs` identical when recomputed on a later share | pass, exact (rtol=0) |
+| gradient reaches blocks in BOTH shares | pass |
+
+The third row is the one that keeps the suite honest: without it, a test that passed
+regardless of where the norm went would not be testing the split at all.
+
+## Clause (2), step 2: a constraint found while designing, not while coding
+
+Splitting the tower collides with WHERE THE SPLICE HAPPENS, and the collision is not
+obvious until the data flow is written out.
+
+* The splice needs `input_ids` -- to locate the sentinels and to embed the non-visual
+  tokens.
+* `input_ids` can only be on the FIRST pipeline stage: torchtitan passes positional
+  args to stage 0 only, and ids cannot travel the pipe (dummy values indexed into an
+  embedding assert out of bounds -- measured, in an earlier round).
+* But with the tower split, the visual features are only ready on the LAST vision
+  stage.
+
+So "tower spans stages" and "splice needs ids" pull in opposite directions. The
+resolution keeps every pipe payload a float activation:
+
+1. **vision stage 0**: `patch_embed` + `blocks[0:k1]`, AND `embed_tokens(input_ids)`.
+   It emits `(x_LD, text_embeds, sentinel_mask)`.
+2. **middle vision stages**: their block share on `x_LD`, passing the other two
+   through untouched.
+3. **last vision stage**: remaining blocks + `final_layernorm` + merger + projector,
+   then splice the features into `text_embeds` at `sentinel_mask`.
+
+`text_embeds` is exactly the kind of payload the pipe already carries today (the
+current single vision stage sends spliced embeddings), so dummy values in it are
+harmless -- nothing indexes with them. `sentinel_mask` travels as a float mask for the
+same reason.
+
+**And an implementation boundary that has to be declared rather than discovered:** this
+works for the `_splice_per_token` convention, where `MMCollator` reserves one sentinel
+per post-merge visual token so the sequence length is already correct. It does NOT
+work as-is for `_splice` (one sentinel per image, expanded in place), because that
+convention CHANGES the sequence length per sample and right-pads to a common length --
+a shape that depends on the batch's image token counts, which PP's shape inference
+cannot be handed. The split must therefore reject the LLaVA-style convention
+explicitly instead of producing a shape that works on one batch and not the next.
+
+Step 2 is designed, not built. What it needs beyond the above: `_parallelize_with_tower`
+has to identify WHICH vision chunk it is looking at (today it recognises only "holds
+embed_tokens and no layers"), and the run-ahead has to be gated off for n > 1 until its
+cross-stage form exists -- prefetching by calling `encode_images` assumes one stage does
+the whole encode, so leaving it on would silently do the whole tower on stage 0 and
+defeat the split it is supposed to support.
