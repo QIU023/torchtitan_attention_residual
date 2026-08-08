@@ -16,9 +16,26 @@ different and strictly better, and the schedule API turns out to permit it.
 > synchronously upfront, the remaining forward passes are scheduled into pipeline
 > bubbles, and the backward passes are handled analogously.
 
-Two claims, and the order matters. The load-bearing one is the FIRST: **ViT and
-text are separate stages.** The upfront/bubble split is what falls out of that
-under an interleaved schedule, not a separate mechanism.
+**Three requirements, all definitional.** An earlier version of this document
+demoted the second to "step 3, if the measured share justifies it". That was wrong:
+the report puts it in the sentence that says what DEP IS.
+
+1. ViT and text are **separate stages**.
+2. Vision forward and backward passes are **balanced across PP stages** -- so the
+   ViT occupies more than one stage, by definition, not as a later optimisation.
+3. The **first** micro-batches' ViT forwards run synchronously upfront; the
+   **remaining** ones go into bubbles; backward analogously.
+
+(3) is what falls out of (1) and (2) under an interleaved schedule rather than a
+separate mechanism -- see the API note below. Figure 11 corroborates the shape:
+``ViT fwd`` sits at the far left of the PP timeline and ``ViT fwd`` / ``reduce
+grad`` at the far right, with the 1F1B body between them.
+
+**What the report does NOT specify, and cannot:** how to express any of this in
+torchtitan. The report describes Kimi's own infrastructure (MoonEP and their own PP
+implementation). Everything below under "Sequence" and the two splitter options are
+MY engineering choices for this codebase, and they are labelled as such. Do not read
+them as report-derived.
 
 ## The API fact that changes the design
 
@@ -42,7 +59,7 @@ once the encoder is decoupled.
 So the pipeline stays linear: ViT stage -> text stages. No reverse-direction
 channel, no out-of-band send, no new action type.
 
-## What stands in the way, concretely
+## What stands in the way, concretely (my analysis of this codebase, not the report)
 
 The current adapter takes the opposite position on purpose. From
 `pipeline_adapter._unwrap_multimodal_for_pp`:
@@ -53,10 +70,9 @@ The current adapter takes the opposite position on purpose. From
 
 Four things follow from moving it, and each is a real change rather than a rename:
 
-1. **Stage count.** Today the split is over text layers only. DEP adds one or more
-   ViT stages ahead of them, so `pipeline_parallel_degree` no longer equals the
-   number of text chunks. The report also says vision forward and backward are
-   "balanced across PP stages", which means the ViT may be more than one stage.
+1. **Stage count.** Today the split is over text layers only. DEP adds ViT stages
+   ahead of them, so `pipeline_parallel_degree` no longer equals the number of text
+   chunks. Requirement (2) makes it more than one ViT stage, not "may be".
 
 2. **Stage 0's input is not a hidden state.** It is `pixel_values` plus
    `grid_thw`. `pipeline_llm` assumes a homogeneous chain whose stages exchange one
@@ -74,7 +90,7 @@ Four things follow from moving it, and each is a real change rather than a renam
    kw)` is the per-image length, and it carries no `t` -- the projector collapses
    time.
 
-## Sequence
+## Sequence (my plan, not the report's)
 
 1. **Make the ViT a stage with a fixed-shape output contract.** Feature length
    from `grid_thw` via `merged_tokens`, padded to the batch's maximum. Verify
@@ -83,8 +99,9 @@ Four things follow from moving it, and each is a real change rather than a renam
    -- see below.
 2. **Move the splice to the first text stage**, taking features as the incoming
    activation and `input_ids` from the batch.
-3. **Balance the vision passes across more than one ViT stage** if the measured
-   share justifies it, which is the report's own qualifier.
+3. **Balance the vision passes across more than one ViT stage.** Report-required,
+   not conditional -- see requirement (2). What IS open to measurement is how many
+   stages and how the split is chosen, since the report gives no rule.
 4. **Measure the bubble occupancy**, not just correctness. The claim to make is
    "most of the ViT computation is hidden", and that needs a profile, not a loss.
 
@@ -102,6 +119,19 @@ So the tower's arithmetic must be verified in a standalone fp32 reproducer, wher
 nothing casts, and the training A/B judged against the bf16 floor. Dynamic CP is
 verified that way: `max|delta| = 0.000e+00` at two ranks on four grids including
 the report-arch config's own and a frame-spanning video.
+
+## The adapter's approach is the report's, which is worth knowing
+
+Section 5.2.2, on memory-efficient training, describes exactly what our cross-stage
+adapter does:
+
+> For pipeline parallelism, we adopt cache-based pipeline communication [57], in
+> which only newly generated blocks are incrementally transferred between stages and
+> released as soon as the micro-batch finishes, reaching the theoretical lower bound
+> on memory footprint.
+
+Reference [57] is the AttnRes paper. So transferring only the delta of newly
+committed blocks is K3's own choice, not an invention of ours that happens to work.
 
 ## What is NOT in the way
 
