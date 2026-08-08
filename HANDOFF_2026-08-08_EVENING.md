@@ -4,14 +4,64 @@ Supersedes `HANDOFF_2026-08-08.md`, which covers the same day up to the DEP stag
 split. Everything after that -- the bubble negative result, the side stream, the
 run-ahead, and the veRL sync verification -- is only here.
 
-**Heads:** fork `QIU023/torchtitan` `attention_residual_dev` at `51921a671`;
-`QIU023/verl` `kimi_k3_integration` at `a94e0fe3`; logbook `main` pushed.
-Suite: **293 passed**, 1 skipped. Disk 307 GB free, watchdog running as a supervisor
+**Heads:** fork `QIU023/torchtitan` `attention_residual_dev` at `d60f120a6`;
+`QIU023/verl` `kimi_k3_integration` at `a94e0fe3`; logbook `main` at `a574507`.
+kimi_k3 suite: **293 passed**, 1 skipped. Disk watchdog running as a supervisor
 service.
+
+> **UPDATE, later the same night.** The run-ahead below is FIXED and engaging, and the
+> pp8xvp4 latency A/B has been run. See "Run-ahead: fixed" immediately below; the
+> original entry is kept after it because its reasoning was wrong in an instructive
+> way. Full detail in `phase13_k3like_48b_posttrain/VIT_DEP_DESIGN_2026-08-07.md`
+> (read bottom-up) and `PP_ADAPTER_UNDER_SIDESTREAM_VIT_2026-08-08.md`.
 
 ---
 
-## Start here: the one thing that is broken right now
+## Start here: run-ahead is FIXED; the latency A/B is not decidable on this box
+
+**Engaging.** Two bugs, neither the one predicted below:
+
+1. `_install_vision_prefetch` was called only from `pipeline_llm_with_cache_adapter`,
+   while every kimi_k3 flavor registers `pipeline_kimi_k3_with_cache_adapter`. Dead
+   code -- including the diagnostic that was supposed to reveal it.
+2. `logger` was never imported and the only line using it was that dead install log,
+   so adding the call surfaced a latent `NameError` on rank 0.
+
+**Engagement is asserted from a count predicted before measuring**, not from loss:
+pp2 with 4 micro-batches and depth 1 must give mb0 miss + mb1..3 hit. Predicted 3/1,
+measured 3/1. pp8xvp4 with 32 micro-batches: predicted 31/1, measured 31/1. Loss and
+grad_norm bit-identical to the off arm (12.07786/12.5625, 12.04995/8.3125).
+
+**The latency A/B was run as asked (pp8xvp4 multimodal, total latency, DEP toggled by
+one parameter, plus the negative control) and does NOT resolve the effect:**
+
+| arm | ms/step | repeats |
+|---|---|---|
+| base | 2063.3 | -- |
+| dep_nopf (negative control) | 2095.6 | 2102.9 / 2059.8 / 2101.5 |
+| dep_pf | 2072.6 | 2088.3 / 2121.2 / 2063.5 |
+
+Medians -0.6%; within-arm spread 2.1% and 2.8%; ranges overlap; **the sign flips
+between repeats.** Two reasons it could not have resolved it, both knowable in
+advance: mfu is 0.12% in every arm (so ~2.5ms of a 2063ms step is compute, capping any
+win at ~0.12%), and the theoretically hideable share AT THIS FLAVOR IS ZERO -- so a
+correct implementation must also show nothing here.
+
+**`phase13_k3like_48b_posttrain/dep_hiding_theory.py`** is the hardware-independent
+answer: 56% hideable at the real `2p8t_vl` cost ratio (limited by TIMING, not
+capacity), 0% at the debug flavor. Run it with `--sweep`.
+
+**Also found:** the cross-stage cache adapter **never engages under the multimodal
+wrapper** -- both ranks fall back, each for a different reason. Numerically safe
+(symmetric, and loss is bit-identical with the flag on and off) but zero coverage.
+The matrix never sets the flag, so matrix results stand; the adapter's PP8xVP4
+memory/tps numbers remain valid as a TEXT-only claim. Two separate defects to fix if
+it is wanted there: the wrapper class exposes no `num_blocks`/`layers_per_block`, and
+the layout-table inference reads a layer count that does not match the split.
+
+---
+
+## The original entry, kept because its reasoning was wrong instructively
 
 **The DEP run-ahead does not engage.** `KIMI_VIT_PREFETCH=1` at pp2 gives loss and
 grad_norm identical to the off arm (12.07786 / 12.5625) **and the
@@ -33,6 +83,13 @@ against the imported class, because what lands in `model_parts` is
 
 Then, and only in this order: **log line present → numerics exact → latency A/B with a
 negative control.**
+
+**What was wrong with it:** the third bullet asserts "`_install_vision_prefetch`
+runs", and it did not -- it was never called from the registered `pipelining_fn`. The
+guessed `isinstance` culprit was downstream of a function that never executed, so the
+proposed diagnostic could not have printed anything either. The lesson is narrow and
+worth keeping: **before debugging what a function does, establish that it is
+called.**
 
 ---
 
@@ -229,8 +286,11 @@ one-directional test cannot distinguish "behind" from "diverged".
 
 ## Open, in priority order
 
-1. **Make the run-ahead engage** (see the top of this file), then the latency A/B at
-   pp8 x vp4 with the negative control.
+1. ~~Make the run-ahead engage, then the latency A/B at pp8 x vp4 with the negative
+   control.~~ **DONE** -- see the top of this file. What replaces it is NOT another
+   latency run on this box (that question is closed as undecidable here); it is
+   deciding whether the DEP work is presented as the decoupling plus a
+   hardware-independent hideable-share analysis, which is what there is evidence for.
 2. **Publish the corrected 18-cell matrix.** Seven TP-bearing cells changed against the
    published table and eleven are bit-identical; the `k_rot` fix accounts for NONE of
    the step-1 changes (it is backward-only, so its ablation gives identical step-1
@@ -265,3 +325,60 @@ one-directional test cannot distinguish "behind" from "diverged".
   took the control arm down with it -- which is the signal that the fault is in the
   harness rather than in what is being measured.
 * **`/tmp` and `/workspace` are the same overlay here.**
+
+---
+
+## Added to the method lessons (same night)
+
+* **Before debugging what a function does, establish that it is CALLED.** The
+  run-ahead hunt spent a round on an `isinstance` inside a function that was never
+  invoked, and the diagnostic proposed to settle it lived in that same function.
+* **Log success, not only failure.** Both today's silent features -- the vision
+  prefetch and the cross-stage cache adapter -- logged every fallback and nothing on
+  the happy path. Combined with numerical neutrality that makes engagement
+  unobservable: loss cannot distinguish it and no line confirms it.
+* **A rank-blind diagnostic cries wolf.** The first absence-warning fired on every
+  text-only rank, i.e. on correct runs, because the vision stage is global stage 0 and
+  only one rank holds it. Gate a per-rank warning on what that rank was supposed to
+  have.
+* **Predict the expected value from the CONFIGURATION before measuring.** "3 hits, 1
+  miss at pp2" and "31/1 at pp8xvp4" were derivable from micro-batch count and depth;
+  matching them is evidence, whereas a number that merely looks plausible is not.
+* **Decide whether a measurement CAN resolve the effect before running it.** mfu 0.12%
+  put the ceiling at 0.12% while run-to-run spread was 2-3%. That ratio was available
+  from any earlier log, and it makes six 21-step runs unnecessary in hindsight.
+* **A pass/fail oracle on a partial quantity always answers fail.** The first hiding
+  model demanded every encode be bubble-covered and rejected a schedule matching the
+  report exactly -- the report itself runs the first micro-batches synchronously.
+* **`--first`/parser bugs are silent when they return a number and loud when they
+  return NA.** The latency parser matched zero lines because torchtitan colourises
+  metric values with ANSI codes; it printed NA, which is why it was caught. A parser
+  that had silently matched the wrong field would have produced a plausible table.
+* **Check the cwd before appending to a doc.** One block of this night's notes landed
+  in a new untracked file inside the fork instead of the existing doc in the logbook,
+  because the shell had moved. Moved back, fork tree clean.
+
+---
+
+## The test baseline, precisely (so the next session is not misled)
+
+"Suite 293 passed" in this and earlier handoffs means **the kimi_k3 suite**, not
+torchtitan's core unit tests. They are different commands with different baselines:
+
+```bash
+cd torchtitan && source /venv/main/bin/activate && export PYTHONPATH=$PWD
+python -m pytest torchtitan/models/kimi_k3/tests/ -q      # 293 passed, 1 skipped
+python -m pytest tests/unit_tests/ -q                     # see below
+```
+
+The core suite is NOT clean on this box, and none of it is ours:
+
+* **16 failed, 533 passed** -- all 16 in `test_helion_rope.py`, cause
+  `ImportError: HelionComplexRoPE override is active but 'helion' is not installed`.
+  Environment, not code.
+* **2 collection errors** (`test_download_hf_assets.py`, `test_tokenizer.py`) from
+  `from scripts.download_hf_assets import ...` while `torchtitan/scripts/` has no
+  `__init__.py`. Ignore those two files to get a runnable suite.
+
+So the gate for kimi_k3 work is the first command. Quoting a core-suite number as if
+it were the project's gate would read as a regression that is not there.
