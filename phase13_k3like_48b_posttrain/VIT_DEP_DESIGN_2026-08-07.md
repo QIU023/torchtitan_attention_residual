@@ -283,3 +283,44 @@ to non-DEP pp2 to five decimals (12.05471), grad_norm within one bf16 step, and 
 PP legs sit 5.69e-03 from single-GPU -- which is PP microbatching, since non-DEP
 shows it too. Cold start is NOT a valid comparison here and gave a misleading
 0.05: different stage splits consume RNG in a different order, so the weights differ.
+
+## The blocker for ``n_vit > 1``, located precisely
+
+With one vision stage, the splice sits on it and reads ``input_ids`` from the
+positional argument, which torchtitan gives to the FIRST stage. With more than one,
+the splice belongs on the LAST vision stage -- the features do not exist before it --
+and that stage is not the first, so it has no ids. And ids cannot cross the pipe:
+PP's metadata inference pushes dummy values through, and indexing an embedding with
+those asserts (measured).
+
+Passing the text EMBEDDINGS plus a float sentinel mask instead would keep the pipe
+all-float, but the splice then needs the mask's True count to match the feature
+count, and during metadata inference it will not -- so the splice would raise unless
+it clamps, and clamping hides real mismatches rather than reporting them.
+
+**So the ids have to arrive as a kwarg, which reach every stage** (``trainer.py``
+passes ``kwarg_mbs`` unconditionally while gating ``arg_mbs`` on
+``pp_has_first_stage``). They come from the dataloader's ``input_dict``, and
+everything except the ``"input"`` key becomes a forward kwarg. The obstacle is that
+the multimodal collator is **hardcoded**: ``hf_datasets/multimodal/mm_datasets.py``
+constructs ``MultiModalCollator(...)`` inline at its dataloader build, with no
+config field to substitute one. Editing that is a core change, which experiments do
+not get to make.
+
+The way through, entirely inside the model folder: a ``Kimi`` dataloader config that
+builds the core ``MMDataLoader`` and wraps its iterator to add ``text_ids`` to each
+batch dict. That is configuring an existing extension surface rather than modifying
+core, the same shape as everything else in this folder. Once ``text_ids`` exists,
+the splice can live on the last vision stage -- or move back to the first TEXT
+stage, which is arguably closer to "ViT and text as separate stages" than putting
+``embed_tokens`` on the vision side.
+
+## Capacity must agree with the dataloader, and currently does only by coincidence
+
+The multimodal flavor configures ``max_images_per_batch=8``, ``max_patches=1024``
+and ``max_patches_per_side=64``. The DEP defaults are ``dep_max_images=8`` and a
+32x32 grid, giving ``8 * 16 * 16 = 2048`` merged tokens -- consistent with 8 images
+of at most 1024 patches each. Nothing enforces the agreement, though.
+``pack_stage_features`` raising on overflow is what makes a mismatch loud instead of
+silent, which is the property that matters; deriving the DEP maxima from the
+dataloader config would be better and is not done.
