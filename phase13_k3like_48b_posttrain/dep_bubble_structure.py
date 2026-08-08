@@ -121,6 +121,35 @@ def main() -> None:
                 vision = {0}
 
         report = _analyse(sched, vision)
+
+        # Feasibility of the fix, checked here rather than assumed: the schedule's
+        # IR can be replaced. _load_csv(format="compute_only") takes a per-rank
+        # COMPUTE action table and re-runs the lowering passes to regenerate the
+        # comms schedule, and torch's own simulator docstring says "reordering and
+        # merging of IR can reduce the number of simulated steps". A round trip
+        # through an IDENTITY reorder must leave the simulation unchanged; if it
+        # does not, the surface is not usable and no reordering plan is either.
+        if os.environ.get("BUBBLE_ROUNDTRIP") == "1":
+            import csv as _csv
+            import tempfile
+
+            with tempfile.NamedTemporaryFile(
+                "w", suffix=".csv", delete=False, newline=""
+            ) as fh:
+                w = _csv.writer(fh)
+                for rank in sorted(sched.pipeline_order):
+                    w.writerow([str(a) for a in sched.pipeline_order[rank] if a])
+                tmp = fh.name
+            sched._load_csv(tmp, format="compute_only")
+            again = _analyse(sched, vision)
+            report["roundtrip"] = {
+                "total_slots": again["total_slots"],
+                "total_bubbles": again["total_bubbles"],
+                "identical": (
+                    again["total_slots"] == report["total_slots"]
+                    and again["total_bubbles"] == report["total_bubbles"]
+                ),
+            }
         if dist.get_rank() == 0:
             path = os.environ.get("BUBBLE_OUT")
             if path:

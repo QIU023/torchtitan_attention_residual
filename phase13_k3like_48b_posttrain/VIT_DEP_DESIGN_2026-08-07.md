@@ -468,3 +468,86 @@ The closed set of computation types blocks the obvious implementation of the oth
 reading -- no new action type can be registered -- so delivering it needs either a
 side-stream mechanism outside the schedule (and then the "PP owns all NCCL" property
 has to be given up deliberately) or an upstream change.
+
+---
+
+# Re-read of 5.2.3 word by word (2026-08-08): two of my readings were wrong
+
+## The decomposition is per MICRO-BATCH, not per depth
+
+"We therefore further decompose the ViT computation. The ViT forward passes of the
+**first PP micro-batches** are executed synchronously upfront, the **remaining**
+forward passes are scheduled into pipeline bubbles."
+
+The unit is the micro-batch. So "Reading A" earlier in this document -- distributing
+the encoder's BLOCKS across several vision stages -- is not what "further decompose
+the ViT computation" means, and the ``n_vit > 1`` plan built on it was solving the
+wrong problem. That also retires the vision-to-vision hidden-patch-stream exchange
+that plan needed.
+
+## The observation names the CONSTRAINT, not the opportunity
+
+"the text forward passes of the first PP micro-batches are all scheduled at the very
+beginning, while the text backward passes of the last PP micro-batches finish only at
+the very end."
+
+Read as a constraint it is immediate: the first micro-batches' text forwards happen
+at once, so their ViT forwards cannot be deferred -- hence "synchronously upfront".
+The LATER micro-batches' text forwards happen later, so their ViT forwards have slack
+and can be moved into idle slots ahead of them. Symmetrically the last
+micro-batches' text backwards finish at the end, so those ViT backwards can go late.
+
+So "balances vision forward and backward passes across PP stages" means distributing
+the per-micro-batch vision passes over the stages' idle slots. Which is what the
+negative result above already pointed at.
+
+## The mechanism this needs, and it is available
+
+Not "make the ViT a stage and hope the scheduler helps" -- that was measured and it
+does not (2019 bubbles either way). It needs the ACTION LIST REORDERED so vision
+actions land where a rank would otherwise stall.
+
+That surface exists and is now verified rather than assumed:
+
+* ``_PipelineScheduleRuntime._load_csv(path, format="compute_only")`` takes a
+  per-rank COMPUTE action table and re-runs the lowering passes to regenerate the
+  comms schedule.
+* Round-tripped: dumping ``pipeline_order``, reloading it unchanged and re-simulating
+  gives **slots 443, bubbles 2019, identical** -- so replacing the IR is
+  behaviour-preserving when the reorder is the identity, which is the precondition
+  for trusting a non-identity one.
+* torch's own simulator docstring blesses the approach: "the total number of
+  simulator steps can be used as a metric for unit tests involving IR optimization
+  passes as **reordering and merging of IR can reduce the number of simulated
+  steps**."
+
+## The plan, with a hardware-independent pass/fail
+
+1. Build the Interleaved1F1B compute IR as today.
+2. Choose ``J``: the number of leading micro-batches whose ViT forwards must run
+   upfront. The report does not give a rule; the constraint it states is that a
+   micro-batch's ViT forward must precede its text forward, so ``J`` follows from the
+   warmup depth of the schedule.
+3. Reorder: leave the first ``J`` vision forwards where they are; move the rest to
+   positions where the owning rank stalls but the dependency still precedes that
+   micro-batch's text forward. Mirror it for backward.
+4. Load the reordered IR and re-simulate.
+5. **Pass/fail: the bubble count must fall below 2019.** No wall clock, no PCIe
+   dependence -- the same number would be 2019 on any fabric, so a reduction is a
+   property of the schedule rather than of this box.
+
+## Status, corrected
+
+| report element | state |
+|---|---|
+| CP: single large image split on the patch dimension, gather-KV | **done, exact** (fp32 `max\|delta\| = 0` at 2 ranks, 4 grids incl. video) |
+| CP: sub-CP groups, load-balanced large images | **done, exercised** (2 layouts same loss; 2/1 split runs the empty pass) |
+| DEP: ViT and text as separate stages | **done, exact** (pp2/1F1B, pp4/1F1B, pp2/Interleaved1F1B) |
+| DEP: vision passes balanced across PP stages | **not done** -- 64 vision slots on rank 0, 0 on the other seven |
+| DEP: first micro-batches upfront, rest into bubbles | **not done**, and the route I assumed would deliver it does not |
+| "most of the ViT computation is hidden" | **no evidence, and currently false** by the bubble count |
+
+Two of my own claims in this document were wrong and are corrected above rather than
+edited away: that a stage's actions would be placed into bubbles, and that the
+decomposition was by depth. Both were assumptions that a measurement or a careful
+re-read overturned.
