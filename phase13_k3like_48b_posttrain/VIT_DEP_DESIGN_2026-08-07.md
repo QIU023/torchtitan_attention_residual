@@ -278,11 +278,32 @@ asserts.
 
 ## Status at ``n_vit = 1``
 
-Implemented and verified. From a shared seed checkpoint, step-1 loss is IDENTICAL
-to non-DEP pp2 to five decimals (12.05471), grad_norm within one bf16 step, and both
-PP legs sit 5.69e-03 from single-GPU -- which is PP microbatching, since non-DEP
-shows it too. Cold start is NOT a valid comparison here and gave a misleading
-0.05: different stage splits consume RNG in a different order, so the weights differ.
+Implemented and verified at two pipeline degrees, from a shared seed checkpoint.
+
+| | loss (step 1) | grad_norm |
+|---|---|---|
+| single GPU | 12.04902 | 15.1250 |
+| pp2 non-DEP | **12.05471** | 15.3125 |
+| pp2 DEP | **12.05471** | 15.2500 |
+| pp4 non-DEP | **12.07418** | **12.5000** |
+| pp4 DEP | **12.07418** | **12.5000** |
+
+At pp2 the step-1 loss is identical to five decimals and grad_norm differs by one
+bf16 step (both are multiples of 1/16). At pp4 **both** are identical. So moving the
+tower onto its own stage changes no forward arithmetic, and the mechanism does not
+depend on the stage count. Both PP legs sit 5.69e-03 from single-GPU at pp2, non-DEP
+included, so that is PP microbatching rather than DEP.
+
+**Cold start is not a valid comparison here** and gave a misleading 0.05: different
+stage splits consume RNG in a different order, so the weights differ. The seeded
+protocol is not optional for anything that changes the split.
+
+**A stack fact that cost three runs:** ``n_microbatches`` equals
+``local_batch_size``, not ``global / local`` -- since #3856 the dataloader emits one
+pipeline microbatch per fetch. So pp4 needs ``local_batch_size >= 4``, and
+``local_batch_size 1`` yields one microbatch regardless of the global batch. Each of
+those three failures took the non-DEP leg down with it, which is the signal that the
+fault was in the harness and not in what was being measured.
 
 ## The blocker for ``n_vit > 1``, located precisely
 
