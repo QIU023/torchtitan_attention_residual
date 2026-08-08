@@ -630,3 +630,164 @@ What DEP delivers today is the decoupling: the tower's placement is configuratio
 rather than a hard attachment to the embed stage, and it is numerically exact. That is
 a prerequisite for the concurrent design and worth keeping. It is not the bubble
 hiding, and the docs no longer suggest it is.
+
+---
+
+# The run-ahead engages (2026-08-08 late): two bugs, and a falsifiable hit count
+
+The previous section ended with the run-ahead as the only route to the report's
+"remaining forward passes are scheduled into pipeline bubbles". It was written and
+then reported as not engaging: `KIMI_VIT_PREFETCH=1` gave loss and grad_norm
+identical to the off arm with the install log line absent from BOTH arms, which is
+the signature of a path that never ran rather than evidence about the prefetch.
+
+## Bug 1: the install call was in the pipelining_fn nothing uses
+
+`_install_vision_prefetch` was called from `pipeline_llm_with_cache_adapter`. Every
+kimi_k3 flavor registers `pipeline_kimi_k3_with_cache_adapter` instead
+(`__init__.py` plus eight sites in `config_registry.py`), so the call was dead code.
+No `isinstance` subtlety was involved -- the earlier guess that `model_parts` held a
+type the check missed was wrong, and the diagnostic that would have printed those
+types was itself downstream of a function that never ran.
+
+## Bug 2: `logger` was not imported, and only the dead line used it
+
+With the call added, rank 0 found the vision stage, patched it, and then died on
+`NameError: name 'logger' is not defined` at the install log line -- the module used
+`logger` in exactly one place, the line that had never executed. A latent NameError
+sitting behind an uncalled branch is the same failure class as the dead call above:
+neither is visible until something runs.
+
+## The diagnostic had to be made rank-aware, not just present
+
+The first version warned whenever a rank had no `KimiK3ViTStage`. Under DEP the
+vision stage is global stage 0, so exactly one rank holds it and every other rank
+legitimately has none: the warning fired on a CORRECT run. It now warns only on a
+rank that owns stage 0 and still found no vision stage -- the genuine
+misconfiguration -- and logs at info level elsewhere, so absence stays assertable
+without crying wolf.
+
+## Engagement, and a count predicted BEFORE it was measured
+
+`installed` alone only proves the patch is in place. If `take(mb)` missed every time,
+the encode would fall back to the synchronous path and the numbers would be identical
+for the second time, for a different reason. So the prefetcher now counts hits and
+misses and reports them per step.
+
+At pp2, `local_batch_size=4` (n_microbatches = 4), depth 1, the count is derivable in
+advance: mb0 must miss because nothing has been encoded yet, and mb1..mb3 must hit.
+**Predicted 3 hits / 1 miss; measured 3 hits / 1 miss**, on every one of the five
+reports.
+
+| arm | installed | hits/misses per step | loss | grad_norm |
+|---|---|---|---|---|
+| `KIMI_VIT_PREFETCH=0` | 0 | -- | 12.07786 | 12.5625 |
+| `KIMI_VIT_PREFETCH=1` | 1 | **3 hit / 1 miss** | 12.07786 | 12.5625 |
+
+Five reports rather than two also checks out: `global_batch_size 8 / local 4 / dp 1`
+is two `schedule.step` calls per training step, so 3 steps is 6 calls, and the first
+has nothing to report. The mb0 miss is not a defect either -- it is the report's own
+"the ViT forward passes of the first PP micro-batches are executed synchronously
+upfront".
+
+**Now the identical loss means something.** The same two numbers were previously
+worthless; the difference is entirely that engagement is asserted independently, from
+a count whose expected value came from the configuration rather than from the
+measurement.
+
+## The pp8xvp4 latency A/B: run, and NOT decidable on this box
+
+Asked for explicitly: pp8 x vp4 multimodal, total latency, DEP toggled by one extra
+parameter. Done, with the negative control the structural analysis made necessary.
+Latency is read from the log's own millisecond timestamps across steps 10..20 (10
+measured steps, `log_freq` 10's natural print points, steps 1-9 as warmup),
+determinism OFF because deterministic algorithms serialise the concurrency being
+measured.
+
+| arm | ms/step |
+|---|---|
+| base (ViT synchronous on the embed stage) | 2063.3 |
+| dep_nopf (DEP + side stream, run-ahead OFF) -- negative control | 2095.6 |
+| dep_pf (DEP + side stream, run-ahead ON, 31 hit / 1 miss) | 2072.6 |
+
+Repeated three times, arms INTERLEAVED so a drift over the half hour could not land
+on one arm:
+
+| repeat | dep_nopf | dep_pf | pf relative |
+|---|---|---|---|
+| initial | 2095.6 | 2072.6 | -1.1% |
+| r1 | 2102.9 | 2088.3 | -0.7% |
+| r2 | 2059.8 | 2121.2 | **+3.0%** |
+| r3 | 2101.5 | 2063.5 | -1.8% |
+
+Medians 2101.5 vs 2088.3, i.e. -0.6%; **spread WITHIN dep_nopf is 2.1% and within
+dep_pf 2.8%, the ranges overlap completely, and the sign flips between repeats.** The
+measurement does not resolve the effect.
+
+### And that was predictable before running it
+
+Two independent reasons, both hardware-facts rather than opinions:
+
+* **mfu is 0.12% in all three arms.** So ~2.5ms of a 2063ms step is GPU compute and
+  the remaining 99.88% is PP communication, Python and data loading. Hiding ALL vision
+  compute could remove at most ~0.12% of the step, while the arm-to-arm spread is
+  1.1-3.0% -- an order of magnitude larger.
+* **The theoretical hideable share at this flavor is ZERO** (next section). So a
+  CORRECT implementation must also show no improvement here. The absence of a win is
+  not evidence against the implementation, and a win would have needed explaining.
+
+Reportable: "no resolvable step-latency difference at pp8xvp4 on 8x5060Ti/PCIe, with
+run-to-run spread 2-3x the effect ceiling". NOT reportable in either direction: any
+claim about how much ViT computation is hidden.
+
+## What IS decidable without a clock: `dep_hiding_theory.py`
+
+The Interleaved1F1B action order depends only on `(pp_size, num_stages,
+n_microbatches)`, so it can be built in one CPU process with no model and no GPU --
+which is the whole point, since a number derived from an 8-rank run here would carry
+this box's timings with it.
+
+The analysis walks the vision rank's action list keeping a bubble budget: only bubbles
+EARLIER than a micro-batch's consumption point can pay for its encode, because a
+bubble after the consumer has already run is worthless however large the total. Cost
+is in units of one text-stage forward, so the single model-dependent input is
+`r = (one ViT forward) / (one text-stage forward)`.
+
+| r | hidden | limited by |
+|---|---|---|
+| 0.01 - 0.3 | **18/32 = 56%** | TIMING (uses only 2.2% of bubble capacity) |
+| 1.0 | 8/32 = 25% | mixed |
+| 3.0 | 2/32 = 6% | capacity |
+| >= 10 (incl. the debug flavor's 25.2) | **0/32 = 0%** | capacity |
+
+* **debug `report_arch_pp8vp4`, r = 25.2: 0% hideable.** One ViT forward costs 25.2
+  units and the bubbles accumulated before any vision forward never reach that. This
+  is why the latency A/B could not have shown anything.
+* **real `2p8t_vl`, r = 0.057: 56% hideable**, consuming 2.2% of bubble capacity. The
+  binding constraint is TIMING, not capacity: the first payable encode is at slot 46,
+  so the first 14 micro-batches fall in the warmup stretch where too few bubbles have
+  accumulated -- which is the report's own "the ViT forward passes of the first PP
+  micro-batches are executed synchronously upfront", arrived at from the schedule
+  rather than read off the page.
+
+The r range matters because r is a DATA parameter (visual tokens per micro-batch), not
+a model constant, so a single value would have been a single-point claim.
+
+### A modelling mistake worth recording
+
+The first version of this analysis demanded that EVERY encode be covered by earlier
+bubbles, and duly reported TIMING DEFICIT at vision forward #2 -- **it failed a
+schedule that matches the report exactly**, because the report itself runs the first
+micro-batches synchronously. The question was wrong: not "can all of it be hidden" but
+"how much can be". A pass/fail oracle on a quantity the source describes as partial
+will always answer fail.
+
+### This also corrects a claim I made in the PP adapter analysis
+
+`PP_ADAPTER_UNDER_SIDESTREAM_VIT_2026-08-08.md` argued that a same-box relative A/B
+"measures whether this implementation hides work on this hardware, which is a
+different and answerable question". Legitimate in principle, but not answerable when
+the effect ceiling (0.12%) sits an order of magnitude below run-to-run variation
+(2-3%). The original instruction -- do not measure wall-clock, use theoretical
+calculation, because this PCIe box's communication latency does not extrapolate -- was
+more thoroughly right than the caveat I attached to it.

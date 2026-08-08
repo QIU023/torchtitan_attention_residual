@@ -208,3 +208,101 @@ them. `kwarg_mbs` holds every micro-batch's kwargs and is passed to the schedule
 so the inputs exist -- reaching them means hooking the step rather than the stage.
 That is where the next increment goes, and the memory for k live micro-batches of
 vision features is the bound on k.
+
+---
+
+## A coverage gap found during the re-read: multimodal x the cache adapter
+
+Not part of the side-stream question, found while reading the detection code, and
+recorded here with the prediction written BEFORE the experiment so the result cannot
+be rationalised afterwards.
+
+`pipeline_kimi_k3_with_cache_adapter` decides whether the model is AttnRes by reading
+
+```python
+inner0 = getattr(stages[0], "submod", None)
+num_blocks = getattr(inner0, "num_blocks", None)
+layers_per_block = getattr(inner0, "layers_per_block", None)
+```
+
+Two facts about that, both verified by reading rather than assumed:
+
+* `stages[0]` is this rank's first LOCAL stage, not global stage 0.
+* `KimiK3MultimodalModel` exposes neither `num_blocks` nor `layers_per_block`. It
+  passes `num_blocks` into the text model it constructs and keeps nothing on itself,
+  and `KimiK3ViTStage` inherits that. Only the bare text model
+  (`KimiK3AttnResModel`) carries the attributes.
+
+Under the multimodal wrapper the embed-owning chunk is re-wrapped, so on the rank
+holding global stage 0 the detection reads a wrapper and finds None, while every other
+rank reads a bare text model and finds the attributes.
+
+**Prediction:** with `TORCHTITAN_ATTNRES_CACHE=1` on a multimodal run, the rank
+holding stage 0 warns "no 'num_blocks'/'layers_per_block'" and returns passthrough
+while the other ranks wrap -- an ASYMMETRIC protocol, where one side's stage output
+carries no block delta and the other side expects one. Predicted for BOTH DEP off and
+DEP on, because the wrapper is present either way; DEP only changes which wrapper
+class sits there. Predicted warn count: 1 of 2 ranks at pp2.
+
+**Predicted consequence, and the two outcomes read differently:** a hard failure
+(shape or tuple-arity mismatch) is the good case. Exit 0 with the warning present is
+the bad case, because it means the adapter degrades silently and any run that thought
+it had the cache did not have it on one rank.
+
+**Why this was never caught:** the matrix never sets `TORCHTITAN_ATTNRES_CACHE`
+(recorded in `TWIN_MATRIX_2026-08-04.md`, where the same fact already caused two wrong
+turns), and every DEP and side-stream run so far left it unset too -- confirmed by
+grep over those logs. So "multimodal x cache adapter" has zero coverage, and the
+adapter's PP8xVP4 validation was text-only.
+
+### Result: the prediction was HALF right, and the truth is worse in a different way
+
+Run at pp2 x Interleaved1F1B, multimodal, `TORCHTITAN_ATTNRES_CACHE=1`, DEP off and on.
+
+| predicted | observed |
+|---|---|
+| stage-0 rank warns "no num_blocks" and passes through | **yes** |
+| exit 0 with the warning, i.e. silent degradation | **yes**, both arms |
+| the OTHER ranks wrap -> asymmetric protocol | **NO** |
+
+The other rank does not wrap either. It fails further down, for an unrelated reason:
+
+```
+Failed to build Kimi Linear block-layout tables
+  (ValueError('Default layer_to_stage requires n_layers (13) to ...'))
+```
+
+So both ranks fall back, each by a different route, and the protocol is symmetric
+after all -- **the adapter simply does not engage at all under the multimodal
+wrapper**. That is better than the asymmetry I predicted (no corrupted block state)
+and worse as a coverage fact: a feature believed to work in this configuration has
+never once run in it.
+
+Numerics confirm the benign reading: `CACHE=0` and `CACHE=1` give bit-identical
+loss and grad_norm (12.06794 / 12.5000). But that comparison ALONE proves nothing --
+the adapter is numerically neutral by design, so identical loss is exactly what both
+"engaged" and "silently skipped" produce. It is only interpretable next to the
+independent engagement assertion below.
+
+### The reason this hid for so long is a missing log line
+
+The adapter logged on every failure path and on NO success path. Combined with its
+numerical neutrality, that made engagement unobservable from outside: loss cannot
+distinguish it and no message confirms it. Added `logger.info("cross-stage cache
+adapter wrapped %d stage(s): %s", ...)` at both wrap sites, and the count of that line
+is what shows zero here. Same lesson as the vision prefetch earlier the same day:
+**assert engagement from a log, and log success, not only failure.**
+
+### Scope, stated precisely
+
+* The 18-cell matrix is unaffected: it never sets `TORCHTITAN_ATTNRES_CACHE`.
+* The adapter's PP8xVP4 validation (-11.4% peak memory, +2.7% tps) is a TEXT-only
+  result and stays valid as such. It was never a multimodal claim.
+* What is now known to be untrue is any implicit assumption that turning the cache on
+  in a multimodal run does anything. It does not.
+* Two independent defects have to be fixed for it to work there, and they are separate
+  from DEP: the wrapper class does not expose `num_blocks`/`layers_per_block`, and the
+  layout-table inference reads a layer count (13) that does not match the split.
+
+Not fixed tonight -- deliberately, because it is a different feature from the DEP work
+in flight and each half needs its own numerical gate.
