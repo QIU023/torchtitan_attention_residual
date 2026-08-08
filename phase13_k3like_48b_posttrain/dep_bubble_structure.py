@@ -122,6 +122,64 @@ def main() -> None:
 
         report = _analyse(sched, vision)
 
+        # Search the reorder parameters the report leaves free, with the simulator's
+        # bubble count as the oracle. The baseline is the number to beat and it is
+        # hardware-independent, so a reduction here is a property of the schedule.
+        if os.environ.get("BUBBLE_SEARCH") == "1" and vision:
+            import csv as _csv
+            import tempfile
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from dep_reorder import (
+                action_multiset,
+                defer_vision_forwards,
+                hoist_vision_backwards,
+            )
+
+            base_order = {r: list(a) for r, a in sched.pipeline_order.items()}
+            base_set = action_multiset(base_order)
+            trials = []
+            for keep_first in (0, 1, 2, 4):
+                for lookahead in (1, 2, 4, 8, 16, 32):
+                    cand = defer_vision_forwards(
+                        base_order, vision, keep_first=keep_first, lookahead=lookahead
+                    )
+                    cand = hoist_vision_backwards(
+                        cand, vision, keep_last=keep_first, lookahead=lookahead
+                    )
+                    if action_multiset(cand) != base_set:
+                        trials.append(
+                            {"keep_first": keep_first, "lookahead": lookahead,
+                             "error": "action set not preserved"}
+                        )
+                        continue
+                    with tempfile.NamedTemporaryFile(
+                        "w", suffix=".csv", delete=False, newline=""
+                    ) as fh:
+                        w = _csv.writer(fh)
+                        for rank in sorted(cand):
+                            w.writerow([str(a) for a in cand[rank] if a])
+                        tmp = fh.name
+                    try:
+                        sched._load_csv(tmp, format="compute_only")
+                        got = _analyse(sched, vision)
+                        trials.append(
+                            {"keep_first": keep_first, "lookahead": lookahead,
+                             "slots": got["total_slots"],
+                             "bubbles": got["total_bubbles"]}
+                        )
+                    except Exception as exc:
+                        # A reorder the lowering rejects is a real outcome, not a
+                        # crash to hide: record it and keep searching.
+                        trials.append(
+                            {"keep_first": keep_first, "lookahead": lookahead,
+                             "error": f"{type(exc).__name__}: {exc}"[:120]}
+                        )
+            report["search"] = {
+                "baseline_bubbles": report["total_bubbles"],
+                "baseline_slots": report["total_slots"],
+                "trials": trials,
+            }
+
         # Feasibility of the fix, checked here rather than assumed: the schedule's
         # IR can be replaced. _load_csv(format="compute_only") takes a per-rank
         # COMPUTE action table and re-runs the lowering passes to regenerate the

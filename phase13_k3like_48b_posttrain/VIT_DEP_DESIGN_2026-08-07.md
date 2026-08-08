@@ -551,3 +551,82 @@ Two of my own claims in this document were wrong and are corrected above rather 
 edited away: that a stage's actions would be placed into bubbles, and that the
 decomposition was by depth. Both were assumptions that a measurement or a careful
 re-read overturned.
+
+---
+
+# The reorder is INFEASIBLE, and this closes a loop I had opened myself
+
+## The measurement
+
+24 reorder candidates -- ``keep_first`` in {0,1,2,4} x ``lookahead`` in
+{1,2,4,8,16,32}, forwards deferred and backwards hoisted, action multiset verified
+preserved every time. **All 24 were rejected by the lowering pass**: 19 with
+``AssertionError: Malformed compute schedule, can't schedule sends/recvs`` and 5 with
+a rank-specific variant. Zero produced a schedule at all, let alone a smaller bubble
+count.
+
+So the compute IR is not freely reorderable. The lowering requires the per-rank
+compute order to admit a consistent send/recv pairing, and moving a stage's forward
+later on ONE rank breaks it: the consuming rank's forward for that micro-batch still
+sits earlier in its own list, so the send cannot precede the receive.
+
+Making it feasible would mean deferring the consumer too, which cascades through
+every downstream stage -- that is not a reorder of this schedule, it is a different
+schedule.
+
+## Why that is not a tooling limitation
+
+Because at ``n_vit = 1`` **the vision stage is the pipeline HEAD**. Every text stage's
+first forward waits on it. The bubbles are downstream of the work that would fill
+them, so deferring vision work delays the pipeline rather than hiding inside it.
+
+This is exactly the argument in ``VIT_DEP_DESIGN_2026-08-06.md``, which I wrote and
+then set aside:
+
+> Stage 0 needs microbatch 0's vision features at the START of its first forward.
+> Stages 1..P-1 are idle at that moment precisely because they are waiting for stage
+> 0. The idle that looks free is upstream of the work that would fill it.
+
+I superseded that on the grounds that it came from my own timing analysis rather than
+from the report. The analysis was right. Three independent measurements now say so:
+the bubble count is unchanged by DEP (2019 either way); every reorder is rejected as
+infeasible; and the dependency direction is what makes both true.
+
+**The lesson is about the supersede, not the analysis.** "This came from my own
+reasoning rather than the source" is a reason to CHECK a claim, not to discard it.
+Discarding it cost a design round.
+
+## What is left
+
+The report's mechanism cannot be the ViT sitting in the pipeline's dependency chain,
+because anything in the chain is on the critical path by construction. It has to be
+the ViT running CONCURRENTLY with the text pipeline -- micro-batch m's encode
+overlapping micro-batch m-k's text compute on the same device, on a separate stream --
+with the pipeline never waiting on it because it ran k micro-batches ahead.
+
+That is outside the PP schedule entirely, which has two consequences worth stating
+before anyone tries it:
+
+* The AttnRes adapter's property that "PP owns all NCCL" would have to be given up
+  deliberately, not incidentally. A vision collective issued from a side stream
+  while PP is mid-schedule is exactly the shape that deadlocks.
+* The lookahead k is bounded by memory: k micro-batches' worth of vision features
+  must be held live. At ``max_images_per_batch`` and the feature widths involved that
+  is a real budget, and it is the thing that decides whether "most of the ViT
+  computation" can be hidden or only some of it.
+
+## Status, final for this stretch
+
+| report element | state |
+|---|---|
+| CP: patch-dimension split, gather-KV | done, exact |
+| CP: sub-CP groups, load balance | done, exercised |
+| DEP: ViT and text as separate stages | **done, exact** at pp2/1F1B, pp4/1F1B, pp2/Interleaved1F1B |
+| DEP: passes balanced across PP stages | not done |
+| DEP: first upfront, rest into bubbles | **not achievable this way** -- proven, not assumed |
+| "most of the ViT computation is hidden" | false as built; needs a concurrent-stream design |
+
+What DEP delivers today is the decoupling: the tower's placement is configuration
+rather than a hard attachment to the embed stage, and it is numerically exact. That is
+a prerequisite for the concurrent design and worth keeping. It is not the bubble
+hiding, and the docs no longer suggest it is.
