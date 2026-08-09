@@ -117,6 +117,41 @@ MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 | 15 | moonvit.py | fixed+matrix | `cu_seqlens.tolist()` per block was 27 device-to-host syncs per tower forward |
 | 13 | attn_res.py | **not attempted** | see below |
 | 14 | muon.py | **not attempted** | see below |
+| 50 | pipeline_adapter.py | **regression I caused, fixed** | the guard assumed every rank owns a vision stage once the tower splits; n_vit>1 could not start |
+| -- | multimodal_model.py, moonvit.py | fixed+matrix | the split tower bypassed FSDP2's all-gather by calling forward_head/body/tail directly |
+| 58 | model.py | fixed+matrix (numbers moved) | MLA's inner attention duplicated common's `ScaledDotProductAttention` |
+
+### DEP, stated precisely, after two regressions of my own
+
+Both found by actually running n_vit>1, which nothing had done since the guard landed:
+
+* The finding-50 guard read `wired == 0 and n_vit > 1`, assuming every rank owns a vision
+  stage once the tower is split. True only when n_vit equals the pipeline degree. At pp=4
+  with n_vit=2 the two text-only ranks raised, so **n_vit>1 could not start at all**.
+* The shares called `vision_tower.forward_head` / `forward_body` / `forward_tail` directly,
+  and FSDP2 registers its all-gather on `__call__`, so `patch_embed.proj.weight` stayed a
+  sharded DTensor and the conv failed. **The split tower had never run under FSDP**; every
+  earlier n_vit>1 result was at dp_shard=1.
+
+Where clause 2 now stands, at dp_shard=2 x pp=4 from a shared seed checkpoint:
+
+| | step 1 | step 2 | step 3 |
+|---|---|---|---|
+| n_vit=1 | 11.81748 / 9.9896 | 11.78009 / 9.0480 | 11.30619 / 8.6702 |
+| n_vit=2 | 11.81748 / 9.9896 | 11.78009 / 9.0480 | 11.30619 / 8.6701 |
+
+Loss identical throughout; grad_norm differs in the last printed digit at step 3, which is
+the limit of stdout's five significant figures. Not claimed as bit-identical.
+
+**What can and cannot be said about bubble hiding.** The mechanism is implemented per the
+report and is numerically exact: clause 1 (tower on its own stage) agrees with DEP off, and
+clause 2 (tower split across stages) agrees with clause 1. Clause 3's placement is the
+schedule's; our extra async run-ahead was implemented and then removed on measurement. The
+BENEFIT is not demonstrated, and the hardware argument for why it cannot be here is
+unchanged: r = 25.2 at the debug flavor gives 0 of 32 encodes hideable, r = 0.057 at real
+scale hides 56% of an encode worth 0.6% of the step, the optimum near r = 1 ceilings at 2.7%
+of a compute-bound step, and MFU here is ~0.09%. So: mechanism implemented and exact,
+benefit unverified and unverifiable on this box.
 
 ### The core grad-norm defect, found by trying to align DEP
 
