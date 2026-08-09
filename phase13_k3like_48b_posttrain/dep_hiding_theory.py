@@ -245,7 +245,15 @@ def main() -> None:
             "pipeline head and has no bubbles during warmup whatever the split. What\n"
             "the split changes is how much vision work that rank carries at all, so\n"
             "the unhidden COST falls roughly as 1/n. A share is the wrong metric here:\n"
-            "it holds steady while the quantity that costs wall time drops n-fold."
+            "it holds steady while the quantity that costs wall time drops n-fold.\n"
+            "\nATTRIBUTION, corrected: that 1/n is LOAD BALANCING, not bubble filling.\n"
+            "A vision share cannot begin before its upstream share delivers over the\n"
+            "pipe, so only the HEAD share can be moved earlier in time at all -- the\n"
+            "bubble budget this script walks does not apply to shares 1..n-1. The 1/n\n"
+            "number is right for the simpler reason that the critical path's vision\n"
+            "work is spread over n ranks. Consequence: a cross-stage run-ahead is\n"
+            "nearly worthless (the head is 1/n of the tower), and the gain to MEASURE\n"
+            "is peak memory per rank, which is unconditional in the cost ratio."
         )
         return
 

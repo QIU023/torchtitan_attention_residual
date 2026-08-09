@@ -1038,3 +1038,59 @@ not latency**: at the real cost ratio (r ~ 0.057, MoonViT's 401M being an order 
 magnitude under a text stage's ~3.4B activated) the time on the table is under a percent
 of a step, while moving the tower's parameters and activations off one stage is
 unconditional.
+
+### The memory verification FAILED its prediction, and that corrects my own advice
+
+I recommended peak memory as this clause's verification target and called the gain
+"unconditional in the cost ratio". Measured at pp4 x Interleaved1F1B, 3 steps, cold start:
+
+| n_vit | per-rank peak GiB (desc) | max | vs n=1 |
+|---|---|---|---|
+| 1 | 0.99 / 0.58 / 0.33 / 0.27 | 0.99 | -- |
+| 2 | 1.05 / 0.66 / 0.30 / 0.27 | **1.05** | **+6%** |
+| 4 | 0.93 / 0.64 / 0.45 / 0.41 | 0.93 | -6% |
+
+**Not monotone, and n=2 is WORSE than not splitting.** The distribution does even out --
+the lightest rank goes 0.27 -> 0.41 GiB, so the parameter-level balancing is real -- but
+the maximum, which is what a rank must fit, barely moves and moves the wrong way first.
+
+The likely cause is the fixed-capacity pipe payload the split requires:
+``stage_patch_capacity(32, 32, 8)`` is 8192 rows, times vision hidden 256, times 2 bytes
+= 4.19 MB per tensor, times the micro-batches in flight and both directions. That lands
+in the same tens-of-MB range as the +64 MB seen at n=2. Meanwhile this flavor's tower is
+four blocks at hidden 256 -- a few MB -- so the split saves less than the padding costs.
+
+**I am not fitting a decomposition to two points.** Solving
+``net(n) = -T(1 - 1/n) + P(n - 1)`` against the two measurements gives a NEGATIVE tower
+activation, which means the model is wrong: the padding cost is not simply linear in the
+number of boundaries, and allocator peak timing and fragmentation are in the number too.
+Two points do not support a quantitative split of the effect.
+
+**So the correction to my own advice:** peak memory is not unconditional. It is
+``tower_size / n`` saved against ``padding_capacity`` spent, and on this flavor that ratio
+is unfavourable. The claim that survives is narrower: **the split balances the vision
+parameters across ranks, and whether that reduces the peak depends on the tower being
+large relative to the configured patch capacity.**
+
+Which is the same shape as the cost-weight lesson elsewhere in this work: a debug flavor's
+tower is ~5 MB against the real MoonViT's 401M, so this measurement does not extrapolate.
+**And a correction to the paragraph above, made by checking instead of assuming.** I first
+wrote that 8/32/32 over-provisions the capacity by ~8x. It does not: the collator's
+``max_patches`` is 1024 per image, i.e. exactly a 32x32 grid, and ``local_batch_size=8``
+with one image per sample is exactly 8 images. **The configured capacity matches the
+collator's worst case precisely.** It cannot be lowered without lowering what the data is
+allowed to contain.
+
+That makes the conclusion stronger and less comfortable: the padding is an INHERENT cost
+of splitting, not a misconfiguration. PP sizes its buffers once, so a mid-tower boundary
+must reserve the worst case every step even when a batch uses less, and that reservation
+is independent of how large the tower is. So splitting a SMALL tower is a net memory loss
+by construction, and the break-even is set by tower size against worst-case patch budget.
+
+What would actually decide it for the real model: MoonViT is 401M against this flavor's
+~5 MB of vision blocks, roughly five orders of magnitude, while the patch capacity grows
+only with the visual token budget. The sign of the effect is therefore expected to flip at
+real scale, but that is a prediction from the structure and not a measurement -- and the
+same cost-weight caution applies as everywhere else in this work. Until it is measured on
+a flavor whose tower is not negligible, clause 2's demonstrated result is EXACTNESS and
+PARAMETER BALANCING, not a memory win.

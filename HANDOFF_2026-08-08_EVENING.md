@@ -440,11 +440,23 @@ head is 1/n of the tower. The split's gain is load balancing (critical-path visi
 drops to r/n), which needs no run-ahead at all. The run-ahead is therefore correctly
 refused for n>1 rather than being a gap to close.
 
-**What to do instead, and it is cheap:** measure peak memory against n. That is the
-gain this clause actually delivers, it is unconditional (the tower's parameters and
-activations move off one stage regardless of cost ratio), and `memory:` is printed every
-step. At the real cost ratio the LATENCY on the table is under a percent of a step, so a
-latency A/B here would repeat tonight's undecidable measurement.
+**What I said to do instead was peak memory, and MEASURING IT REFUTED THE ADVICE.** At
+pp4 x Interleaved1F1B the max per-rank peak is 0.99 GiB at n=1, **1.05 at n=2** and 0.93
+at n=4 -- not monotone, and n=2 is worse than not splitting. The lightest rank does rise
+(0.27 -> 0.41 GiB), so the parameter balancing is real, but the peak is what a rank must
+fit and it barely moves.
+
+Cause: the fixed-capacity mid-tower payload. 8192 rows x vision hidden 256 x 2 bytes =
+4.19 MB per tensor, times micro-batches in flight and both directions, which is the same
+tens-of-MB range as the +64 MB at n=2. And the capacity is NOT over-provisioned -- I
+checked: `max_patches` is 1024 per image (a 32x32 grid) and `local_batch_size=8` with one
+image per sample is 8 images, so 8/32/32 matches the collator's worst case exactly. PP
+sizes buffers once, so that reservation is unavoidable and is independent of tower size.
+
+**Splitting a small tower is therefore a net memory loss by construction.** The sign is
+expected to flip for the real MoonViT (401M against this flavor's ~5 MB of vision blocks)
+but that is a structural prediction, not a measurement. Do not quote a memory win for
+clause 2; quote exactness and parameter balancing.
 
 Engagement for anything in this area comes from `DEP vision stage wiring: N stage(s),
 roles [...]` in the log. The split is numerically neutral by design, so a loss comparison
