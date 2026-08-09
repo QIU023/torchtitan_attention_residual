@@ -50,7 +50,7 @@ def _entries(params):
         # Rounded to 6 significant digits: enough to separate real differences
         # from the last-bit noise of printing, and stable across runs because
         # the arms are deterministic.
-        out.append(f"{g.numel()}:{float(torch.linalg.vector_norm(g.float())):.6g}")
+        out.append(f"{g.numel()}:{float(torch.linalg.vector_norm(g.float())):.6g}:{g.dtype}")
     return out
 
 
