@@ -126,6 +126,26 @@ MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 | 76 | experiments/kimi_k3 | fixed | orphan `__pycache__` directory removed (untracked) |
 | 25/33 | pipeline_adapter.py | fixed+matrix | same as 31/68 -- the dead twin, deleted |
 | 26/75 | model.py | fixed+matrix | the duplicate `dim`/`vocab_size` pair |
+| 38 | model_configs.py | fixed+matrix | `is_k3_shaped` keyed on a name list that excluded the "mini" alias |
+| 52 | test_vit_cp_plan.py | fixed | re-pinned t>1 with an uneven split -- the gap that let finding 59 exist |
+
+`#38` is the most consequential of the late batch. `is_k3_shaped` decided the whole K3 delta
+set (SiTU, the gates, the lower-bounded decay, q-compression, LatentMoE, the extra global
+layer, block size 12) from `size in ("2p8t", "k3mini")`. The rename
+`kimi_linear_k3mini_* -> kimi_k3_mini_*` made the parsed size "mini", which is aliased to the
+same row -- but not to the name list. So since that rename, every flavor built through
+`model_registry` under the new name has had silu rather than SiTU and block size 3 rather
+than 12, i.e. 7 equal blocks instead of the 2-with-a-9-layer-tail shape that is the entire
+reason the row exists. The trainer config of the same name builds it correctly and says so in
+its docstring. Two spellings of one row disagreeing on structure is the seed-checkpoint
+mismatch the finding named.
+
+Still open after this: the trainer config function and the registry flavor share the name
+`kimi_k3_mini_block_attn_res`, so a consumer resolving that name gets full extents (163840
+vocab, 32 experts) where the trainer builds the documented debug extents (2016, 8). Fixing
+that is a rename touching launch scripts and logbook references -- a decision, not a
+cleanup, so it is recorded rather than taken.
+
 
 `#74` is the one worth reading twice, because the fix restores a mechanism rather than adding
 one. The package already guards the fla-core import: a `try` around the re-export block
