@@ -1172,3 +1172,272 @@ passing. Section 5.2 says only:
 There is no PP degree, no VP count and no micro-batch count anywhere in the paper (896 is
 the routed-expert pool, not an EP degree). **pp8 x vp4 is our choice and must be described
 as ours**, not as the report's topology.
+
+---
+
+# Making bubble hiding observable, and the ceiling that limits it (2026-08-09)
+
+## r comes from the SEQUENCE, not from the model being too small
+
+`dep_cost_ratio.py` measures the parameter counts by constructing the modules instead of
+deriving them, then forms r from `2 * params * tokens` plus the quadratic attention term.
+On `report_arch_pp8vp4`:
+
+* vision tower **4.87M** + projector 1.31M, one text layer **2.42M** (mean over the mixed
+  KDA/MLA stack)
+* text is 30 layers over 32 virtual stages = **0.94 layers per stage**
+* `seq_len` is **256** while `max_patches` is 1024, so post-merge visual tokens are
+  1024/4 = 256 -- **100% of the sequence**
+
+So r = 14.0 not because the tower is large but because a text stage holds under one layer
+and 256 tokens. **The tower is not oversized and the layer counts are already aligned**
+(13/4 here, 93/27 in the report -- 3.25 vs 3.44). Shrinking vision to chase r would move
+AWAY from the report, whose MoonViT is larger relative to its text stack, not smaller.
+
+Scan over (seq, patches), with r's threshold at 0.3:
+
+| seq | patches | visual tokens as % of seq | r |
+|---|---|---|---|
+| 256 | 1024 | 100.0% | 13.98 |
+| 1024 | 256 | 6.2% | 0.543 |
+| 2048 | 256 | 3.1% | 0.230 |
+| **4096** | **1024** | **6.2%** | **0.493** |
+| 4096 | 512 | 3.1% | 0.200 |
+| 8192 | 1024 | 3.1% | 0.168 |
+
+## The ceiling: latency saving peaks at 2.65%, and the noise here is 2-3%
+
+Being inside the absorbable range is not the same as being observable. Saving is
+`hidden_share(r) * ViT_share_of_step(r)`, and the two factors pull against each other:
+
+| r | hidden | ViT % of step | latency saving |
+|---|---|---|---|
+| 0.20 | 56.2% | 2.12% | 1.19% |
+| **0.50** | 50.0% | 5.30% | **2.65%** (max) |
+| 1.00 | 25.0% | 10.60% | 2.65% |
+| 3.00 | 6.2% | 31.79% | 1.99% |
+| 14.0 | 0% | 148% | 0% |
+
+**At small r the bubbles absorb the encode but the encode barely matters; at large r it
+matters but cannot be absorbed.** The maximum is ~2.65% near r = 0.5 -- against a measured
+run-to-run spread of 2-3% on this box. So even the optimal configuration needs the noise
+beaten down before the effect is resolvable, and single runs cannot do it.
+
+`kimi_k3_debugmodel_bubble_ratio` therefore sits at the optimum, not merely in range: it
+changes ONE field, `seq_len` 256 -> 4096, leaving the patch budget at 1024, giving
+r = 0.493 and visual tokens at 6.2% of the sequence.
+
+**Averaging, not longer runs.** The 2-3% spread is BETWEEN runs (three 10-step means of
+2102.9 / 2059.8 / 2101.5 ms), not between steps, so a longer single run does not shrink
+it. Ten interleaved repeats put the standard error near 0.6%, which makes 2.65% a ~4-sigma
+effect. That is the design.
+
+## Why `n_vit>1` and CP are mutually exclusive today
+
+Asked directly, so stated precisely. `CPPatchPlan` holds a process group and cannot cross
+the pipe, so every share must RECOMPUTE it, and the chain is
+`classify -> subgroup_layout -> balance_images -> row_partition`, all inside
+`encode_images`. Three concrete problems:
+
+1. **A later share receives the FULL-image `grid_thw` from the batch kwargs, but it needs
+   the SHARD's grid.** Under dynamic CP the grid handed to the tower describes this rank's
+   row band, with the whole-image grid living in the plan. Without rerunning the planning
+   there is no way to get it, and a wrong grid makes `cu_seqlens` and the RoPE indices
+   wrong.
+2. **gather-KV fires inside every block**, via `block._cp_patch_plan`, so every share's
+   blocks need a plan. If any share computes a different one the gather shapes disagree,
+   and **the failure mode is a hang or a wrong value, not an exception** -- the shape this
+   work has learned to refuse first and implement second.
+3. **The fixed capacity would have to be recomputed per shard.** `stage_patch_capacity`
+   is derived from the WHOLE image, which under CP is oversized (wasteful) but safe.
+
+Deadlock risk is actually lower than it sounds: CP peers all sit on the same PP stage and
+run the same action sequence, so their ordering is consistent by construction. **So this is
+"unimplemented and unverified", not "impossible".**
+
+What makes it not worth doing yet is the ceiling above. Dynamic CP divides r by `cp_size`
+and clause 2 spreads the vision load over n ranks; stacking them gives `r/(cp*n)` -- which
+moves r DOWN, away from the 0.5 optimum, into the region where the effect shrinks. The
+cost is real and the marginal benefit is negative on this axis.
+
+## Matrix option: merge, and only on 3 cells -- not a 4x expansion
+
+Asked whether the matrix needs dynamic CP and DEP as separate axes (4x) or one combined
+"both on" arm.
+
+**One combined arm, added to 3 cells.** Reasoning:
+
+* **Only PP-and-CP cells can show the interaction.** DEP changes the stage split (PP axis);
+  dynamic CP only activates at cp > 1. In the 18-cell matrix the cells carrying both are
+  `fsdp2 x pp2 x cp2`, `tp2 x pp2 x cp2` and `ep2 x fsdp2 x pp2 x cp2`. Three, so +17%
+  rather than 72 cells.
+* **A dynamic-CP-OFF arm would add nothing.** It is already ON by default, so every
+  existing cp cell has been running it, and its numerical equivalence is established at
+  **fp32 with max|delta| = 0.000e+00** in dedicated tests. The matrix runs bf16, whose
+  resolution is strictly worse -- re-checking a high-resolution result with a
+  low-resolution instrument is waste.
+* **The matrix's job is regression detection, not first verification.** Both features are
+  independently established (dynamic CP exact at four configurations; DEP bit-identical at
+  n_vit 1, 2 and 4). A combined arm catches an interaction regression, and if it fails,
+  turning one off bisects it after the fact -- far cheaper than paying 4x every run.
+
+The combined arm is `KIMI_VIT_DEP=1` with dynamic CP left at its default, i.e. DEP at
+`n_vit=1`, since `n_vit>1` with CP is refused for the reasons above.
+
+## The latency route is closed for a reason r cannot fix: mfu is 0.12% either way
+
+`kimi_k3_debugmodel_bubble_ratio` runs at pp8xvp4: exit 0, loss 12.04973, grad_norm 8.2500,
+memory 9.57 GiB (61.84%), prefetch 31 hit / 1 miss -- and **mfu 0.12%, identical to the
+seq-256 parent**. Sequence length went up 16x, r went from 14.0 to 0.493, and the fraction
+of the step that is GPU compute did not move.
+
+That invalidates the 2.65% ceiling computed above, because that number assumes a slot's
+wall time is proportional to its FLOPs. It is not here:
+
+    0.12% (compute share of step) x 5.2% (ViT share of compute) x 50% (hideable) ~ 0.003%
+
+**r and mfu are independent knobs.** r decides what FRACTION of the vision compute the
+bubbles can absorb; mfu decides what fraction of the STEP is compute at all. Both must be
+high for a latency measurement to resolve anything, and tuning r alone -- which is what
+this flavor does -- moves only the first.
+
+So "the debug LM is too small" is right, but the consequence is not a wrong r. It is that
+hidden 256 with 0.94 layers per stage produces GEMMs too small to occupy the GPU, leaving
+the step launch- and communication-bound. Fixing THAT needs width, not sequence length, and
+hidden x8 multiplies activations by 8 on a run already at 61.84% of memory.
+
+### What to measure instead: the overlap itself, with CUDA events
+
+The question "is the ViT compute hidden behind other compute" does not require step latency
+to answer. Record each encode's `[start, end]` on the vision stream with CUDA events, record
+the text forward's window on the default stream, and report the OVERLAP. That quantity:
+
+* does not depend on mfu -- it compares two intervals, not their share of the step,
+* does not depend on r -- it measures the mechanism, not its payoff,
+* is not limited by the 2-3% run-to-run spread, since it is not a difference of two totals.
+
+A run-ahead that works shows encode intervals contained inside text-compute intervals; one
+that does not shows them serialised. That is the direct evidence, and it is what the earlier
+hit-count assertion (31/32 encodes issued early) implies but does not prove -- issued early
+is not the same as executed concurrently.
+
+## The run-ahead was never concurrent: it reused the SYNCHRONOUS stream wrapper
+
+Found while writing the overlap measurement, by reading `_run_on_vision_stream`:
+
+```python
+with torch.cuda.stream(side):
+    out = fn()
+cur.wait_stream(side)      # joins immediately
+```
+
+`VisionPrefetcher.ensure` called exactly this. So every prefetched encode was issued on
+the side stream and then **immediately joined**, blocking the default stream before any
+text compute could proceed. The encode happened EARLIER in the action order; it did not
+happen CONCURRENTLY with anything.
+
+That reconciles two observations I had treated as being in tension: a 31/32 hit rate and
+no measurable latency effect. Both are consistent, and the hit rate never implied overlap
+-- `take()` returning a cached tensor only says the encode finished, not that it finished
+while something else ran. This document had already noted "issued early is not the same as
+executed concurrently" as an open question one section earlier; the code had already
+settled it as "no".
+
+**The docstring said so too**, in the `_vision_stream` comment: "running on a side stream
+and immediately waiting for it cannot overlap anything." That was written for the n=1
+side-stream groundwork, and the run-ahead was then built on top of the same helper without
+revisiting it.
+
+### The fix, and the two halves that must stay paired
+
+`_issue_on_vision_stream` issues and returns `(out, event)` without joining;
+`_join_vision_stream` waits the event on the current stream and `record_stream`s the
+outputs back. `ensure()` issues, `take()` joins -- so the interval between them is
+available for text compute.
+
+Both `record_stream` edges are kept and neither is defensive: inputs marked on the side
+stream, outputs marked on the current one. Dropping either lets the caching allocator hand
+a live buffer to another allocation, which is a correctness bug rather than a slowdown.
+
+### And the overlap is now measured, not inferred
+
+`take()` calls `done.query()` before joining. An encode that is ALREADY COMPLETE when the
+consumer asks for it must have run while the default stream was doing something else, so
+the per-step log is now `N hit(s), M miss(es), K already complete on arrival (overlapped)`.
+That third number is the direct evidence, and it is immune to the three things that made
+latency useless here: it does not depend on mfu, it does not depend on r, and it is not a
+difference of two noisy totals.
+
+**Requires re-gating.** The synchronous side stream passed pp8xvp4 numerically, but that
+result does not extrapolate: with a true async issue the vision stream and the default
+stream now hold NCCL operations in flight simultaneously (FSDP's tower all-gather, dynamic
+CP's gather-KV), which is exactly the cyclic-wait shape flagged in
+`PP_ADAPTER_UNDER_SIDESTREAM_VIT_2026-08-08.md`. So the numerical gate at pp8xvp4 is being
+rerun rather than assumed to still hold.
+
+## Resolved: the encode is already free, because the GPU is 99.88% idle
+
+Third instrument, and the first one that could be falsified. Events bracket the encode ON
+THE SIDE STREAM, so what is reported is the encode's own GPU time rather than the span
+containing it. At pp8xvp4 on `bubble_ratio`, 31 prefetched encodes per step:
+
+| arm | encode GPU time | default-stream span | encode as % of span |
+|---|---|---|---|
+| async | 124.96 / 125.69 / 196.26 ms | 2881 / 2885 / 3186 ms | **4.3%** |
+| sync (negative control) | 123.48 / 124.75 / 181.93 ms | 2894 / 2891 / 3171 ms | 4.3% |
+
+So the encode is **not** negligible -- 125 ms per step, 4.0 ms each, 4.3% of the default
+stream. That rules out "there is nothing to hide". Yet async and sync differ by 13 ms
+(0.45%), an order of magnitude less than the 125 ms that hiding should have saved.
+
+**The explanation that fits every observation: mfu is 0.12%, so the GPU is idle 99.88% of
+the step, and the encode lands in that idle time whenever it is issued.** In the sync arm
+the `wait_event` stall is absorbed by the idle the PP communication was already producing,
+so issuing earlier saves nothing. The encode was never on the critical path.
+
+This single fact explains the entire chain of null results:
+
+* 31/32 hit rate with no latency change -- the encode was free either way,
+* 2019 = 2019 bubbles -- placement cannot matter for work that is not on the path,
+* three repeats with a sign flip -- the effect is far below the 2-3% spread,
+* peak memory non-monotone -- the padding cost dominates a saving that never materialised,
+* async == sync now -- both land in the same idle.
+
+### The conclusion, and it inverts the intuition
+
+**A run-ahead has no value on an idle GPU.** Its value appears only when the GPU is
+SATURATED: then the encode competes for SMs with text compute, and issuing it early is
+what keeps it off the critical path. The report's 2.8T training is necessarily saturated,
+which is why DEP is worth building there and why this box cannot demonstrate it.
+
+So "is the debug LM too small" was the right question, and the answer runs deeper than r:
+hidden 256 with 0.94 layers per stage leaves the GPU idle, and on an idle GPU the vision
+encode is hidden **by default**, with no scheduling at all. Fixing that needs width (to
+saturate), which multiplies activations on a run already at 61.84% of memory -- not a
+knob available here.
+
+### What is therefore claimable
+
+* The mechanism is IMPLEMENTED and NUMERICALLY EXACT: async issue/join, 31/32 encodes in
+  flight, loss and grad_norm bit-identical to the off arm (12.04981 / 8.2500) at pp8xvp4
+  with a genuine async issue, which also proves the two-communicator cyclic wait does not
+  fire.
+* The encode's GPU cost is measured: 4.0 ms each, 4.3% of the step's default-stream time.
+* Whether hiding it reduces step time is **not decidable on an idle GPU**, and the reason
+  is quantified rather than asserted.
+* Any claim about the benefit belongs to a saturated deployment and must be labelled as
+  structural, not measured.
+
+### Three instruments, two of them useless -- the pattern
+
+1. "Was the encode complete on arrival?" -- reads TRUE in both arms, because the
+   synchronous path also completes before `take()`. Unfalsifiable.
+2. "Default-stream time between issue and join" -- dominated by text compute and PP
+   communication, so both arms read ~2883 ms. The negative control caught this one before
+   it was believed, which is exactly what it was added for.
+3. "The encode's own GPU time, bracketed on the side stream" -- falsifiable, and it
+   produced the number that settled the question.
+
+The common defect in 1 and 2: both measured a quantity CONTAINING the encode rather than
+the encode itself. Same shape as `rollout_probs_diff` and `pg_loss` earlier in this work --
+a reading that moves with something other than the mechanism under test.
