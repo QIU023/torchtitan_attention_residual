@@ -112,6 +112,42 @@ MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 | 26/75 | model.py | fixed+matrix | the duplicate `dim`/`vocab_size` pair |
 | 38 | model_configs.py | fixed+matrix | `is_k3_shaped` keyed on a name list that excluded the "mini" alias |
 | 52 | test_vit_cp_plan.py | fixed | re-pinned t>1 with an uneven split -- the gap that let finding 59 exist |
+| -- | distributed/utils.py | fixed+matrix | **core**: the total norm was computed in the gradients' dtype, so it depended on the PP/EP partition |
+| 16 | quantile_balance.py | fixed+matrix | 92 serialised all-reduces per step, one per MoE layer, now one |
+| 15 | moonvit.py | fixed+matrix | `cu_seqlens.tolist()` per block was 27 device-to-host syncs per tower forward |
+| 13 | attn_res.py | **not attempted** | see below |
+| 14 | muon.py | **not attempted** | see below |
+
+### The core grad-norm defect, found by trying to align DEP
+
+Written up in full in `DEP_ALIGNMENT_2026-08-09.md`, with the upstream kit in
+`../Raising_PRs/PR26_torchtitan_grad_norm_low_precision/`. Short version:
+`torch.nn.utils.get_total_norm` returns the norm in the gradients' dtype, so with
+`training.dtype="bfloat16"` -- which this flavor sets deliberately, because fp32 KDA asks
+108160 bytes of shared memory against this card's 101376 -- the reported norm is accurate to
+three or four digits AND depends on how the parameters are grouped. Clipping fires every
+step, so the error scales the update.
+
+Two PP layouts with **identical gradients** reported 10.008054 and 9.951641; the float32
+truth is 9.989287. With the norm computed in float32 both report 9.9893 and agree on every
+step. The matrix references moved for this (step 1 unchanged everywhere, moves from step 2-5,
+max abs delta 3e-4 to 3.4e-2) -- new table in `MATRIX_18_FP32NORM_2026-08-09.md`, and the new
+numbers are the accurate ones.
+
+### Two efficiency findings left alone, with the reason
+
+`#13` (rebuild of the AttnRes block stack plus its float32 copy on every call) is the hottest
+path in the model and carries three documented subtleties in twenty lines: the order of the
+norm call is load-bearing for FSDP2's all-gather of `proj.weight`, float32 is load-bearing
+because the zero-initialized pseudo-query makes its gradient a difference of nearly equal
+terms (6x to 15x cancellation, measured), and under TP `proj.weight` is a replicated DTensor
+the einsum has to mix with a plain tensor. The suggested fix reuses a buffer inside that
+autograd graph, which is how gradients break without any symptom. It needs its own change
+with gradient-level verification.
+
+`#14` (batching the per-head Newton-Schulz) cannot be checked by the criterion used for
+everything else here: batched and sequential matmuls need not agree bit-for-bit, so it needs
+a tolerance argument before it can be verified at all.
 
 `#38` is the most consequential of the late batch. `is_k3_shaped` decided the whole K3 delta
 set (SiTU, the gates, the lower-bounded decay, q-compression, LatentMoE, the extra global
