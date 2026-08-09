@@ -114,6 +114,68 @@ MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 | 65 | pipeline_adapter.py | fixed+matrix | the sweep evicted only what backward marked, so eval-only microbatches never left the cache |
 | 66 | pipeline_adapter.py | partly fixed | a config error no longer degrades to a rank-local fallback; see below |
 | 45/53/73 | model.py | fixed+matrix | every MoE parameter bucket matched nothing, so flops_per_token reported total rather than activated |
+| 46 | moe.py | fixed+matrix | SiTU experts called `torch._grouped_mm` directly, bypassing the seam the MXFP8 converter overrides |
+| 47 | model.py | fixed+matrix | base multimodal path kept the naive index assignment; both models now share one helper |
+| 63 | multimodal_model.py | fixed+matrix | `num_images` was counted before CP sharding and compared after |
+| 35 | multimodal_model.py | partly fixed | import-time method grafting, half of it dead; substantive claim disproven |
+| 23 | lora.py | fixed+matrix | merge mixed a materialized base with sharded adapters |
+| 64 | vision_preprocess.py | **not a defect** | the constraint holds structurally; see below |
+| 74 | __init__.py | fixed+matrix | module-scope flavor discovery crashed the whole package import without fla-core |
+| 18 | model.py | fixed+matrix | per-microbatch device-to-host sync on the embed path, now unconditional |
+| 28 | model.py | premise wrong | `is_mla` is not constant-True; guard kept, error type corrected |
+| 76 | experiments/kimi_k3 | fixed | orphan `__pycache__` directory removed (untracked) |
+| 25/33 | pipeline_adapter.py | fixed+matrix | same as 31/68 -- the dead twin, deleted |
+| 26/75 | model.py | fixed+matrix | the duplicate `dim`/`vocab_size` pair |
+
+`#74` is the one worth reading twice, because the fix restores a mechanism rather than adding
+one. The package already guards the fla-core import: a `try` around the re-export block
+records `_KIMI_IMPORT_ERROR` so that a CPU-only box can import the package and get a pointed
+message only when a flavor is actually built. That deferred raise was unreachable, because
+`kimi_k3_configs` is built at module scope AFTER the guard and walks
+`config_registry -> model_configs -> model`, whose fla import raises outside any `try`.
+Verified both directions by blocking `fla` with a meta-path finder: before, `import
+torchtitan.models.kimi_k3` died; after, it imports, warns that the flavor list is empty, and
+`model_registry` still raises "Kimi K3 flavors require fla-core". Flavor count with fla
+present is 22 either way.
+
+`#28`'s premise does not hold. The finding calls `is_mla` constant-True by construction and
+asks for the dispatch to be flattened and the `NotImplementedError` deleted. But a config
+with all five MLA dims None and `mla_use_nope` False constructs fine, so the branch is
+reachable and deleting it would remove a live guard. What was wrong is the exception type: an
+unimplementable configuration is a user error, so it is now a `ValueError` with a message
+saying which fields to set.
+
+### Two findings that turned out not to be defects, and how that was established
+
+`#64` (pack_video records only frame 0's resolution) reads like a real hole, and I wrote the
+validation before checking whether it could fire. It cannot. `prepare_image` derives its
+grid from `navit_resize(W, H, ...)`, a pure function of the input dimensions and the kwargs,
+and `pack_video` takes a single stacked `[F, C, H, W]` tensor -- so every frame shares H and
+W and necessarily resizes to the same grid. The finding assumed `pack_video` accepts ragged
+frames the way `pack_images` does; it does not. So the check I had added was dead code, which
+CLAUDE.md rules out ("no speculative defensive checks"), and I reverted it. What landed
+instead is a docstring saying WHY the constraint holds, so the next reader does not re-raise
+it.
+
+`#35`'s substantive half is also absent. The claim is that grafted `init_weights` skips the
+MoonViT tower, leaving it at `torch.empty` garbage for from-scratch VL training. But
+`KimiK3MultimodalModel` defines its own `init_weights` that does init the tower, and the
+graft loop is guarded by `if not hasattr(...)`, so the `init_weights` entry never fires.
+Measured rather than argued: two same-seed builds of the multimodal flavor agree on all 30
+tower/projector parameters and every value is finite -- the same test that caught the real
+version of this in finding 43. What IS true is the code-quality half: attaching
+`get_attention_masks` to the class at import time is invisible to anyone reading the class,
+and half the loop was dead. That method is now written out explicitly and the loop is gone.
+The remaining external assignments (`layers`, `verify_module_protocol`) are the same smell
+and are left to the cleanup pass rather than churned here.
+
+`#63` is a third case worth distinguishing from both: the defect is real as code (a count
+taken in one scope and compared in another) but not reachable as a failure. Under CP the
+shard is sized by this rank's own sentinel count, so post-shard rows always equal
+`num_sentinels` and the per-token branch necessarily wins; the one convention where they
+could differ is already rejected inside `_select_cp_shard`. Fixed anyway, because making the
+comparison well-scoped costs nothing -- but recorded as unreachable rather than as a bug
+that was biting.
 
 ### #45/53/73: the MFU numbers, and which of them need a correction
 

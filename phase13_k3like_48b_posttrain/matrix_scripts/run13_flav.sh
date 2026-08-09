@@ -30,10 +30,24 @@ E=--parallelism.expert_parallel_degree
 launch() {
   local name="$1" gpus="$2" port="$3"; shift 3
   local n; n=$(awk -F, '{print NF}' <<<"$gpus")
-  rm -rf "$OUT/$name"
-  CUDA_VISIBLE_DEVICES="$gpus" timeout 7200 torchrun \
-    --nproc_per_node="$n" --master_port="$port" ${ENTRY:--m torchtitan.train} \
-    $BASE "$@" --dump-folder "$OUT/$name" > "$OUT/$name.log" 2>&1
+  # Retry on a fresh port when the assigned one is still held. The ports here are
+  # fixed per cell so concurrent cells cannot collide with each other -- but a
+  # socket from a PREVIOUS matrix run sits in TIME_WAIT, and back-to-back runs hit
+  # that constantly: three consecutive 18-cell runs each lost exactly one cell
+  # this way (ep2_fsdp2, tp2, fsdp2_pp2_cp2). Without this the cell reports FAIL
+  # and reads exactly like a numerical regression. run_maxdeg.sh already retried;
+  # this half of the matrix did not.
+  local attempt use_port
+  for attempt in 1 2 3; do
+    use_port="$port"
+    [ "$attempt" -gt 1 ] && use_port=$((port + 400 * (attempt - 1)))
+    rm -rf "$OUT/$name"
+    CUDA_VISIBLE_DEVICES="$gpus" timeout 7200 torchrun \
+      --nproc_per_node="$n" --master_port="$use_port" ${ENTRY:--m torchtitan.train} \
+      $BASE "$@" --dump-folder "$OUT/$name" > "$OUT/$name.log" 2>&1
+    grep -q EADDRINUSE "$OUT/$name.log" || break
+    echo "  ($name: port $use_port in use, retrying)" >&2
+  done
   # Drop this cell's checkpoint as soon as the cell is done. A 100-step cell
   # leaves ~700 MB of it and nothing ever reads it; eighteen cells filled the disk
   # and took bash down with it. tb/ stays -- stdout carries five significant
