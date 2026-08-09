@@ -225,3 +225,23 @@ clipping affects only the update that follows it.
 `ep2 x fsdp2 x pp2` was missing from the 18 and is now covered: DEP off 12.07418 /
 grad_norm 12.5816, DEP on 12.07418 with step 2 also bit-identical (11.98418). **DEP + EP
 works.**
+
+> **Correction (2026-08-09, later).** The bit-identity here does not reproduce. Rerun on
+> this exact config with `--training.local-batch-size 2`, 3 steps, same seed:
+> DEP off gives 12.07152 / grad_norm 13.0853 and DEP on gives 12.04214 / grad_norm 13.4154 --
+> loss AND grad differ at step 1, which is pure forward. Neither arm reproduces 12.07418, so
+> the discrepancy is in this recorded number rather than in the code: running the same two
+> arms at the pre-overnight commit `3e7e23e3c` gives byte-identical results to the current
+> head, so nothing since changed it. The most likely reading is that this line was measured
+> with different flags than the ones written down.
+>
+> What survives: **DEP + EP runs, converges, and is unchanged by the overnight batch.** What
+> does not: the claim that DEP on and off agree bit-for-bit. A step-1 difference in both loss
+> and grad_norm points at a different initialization -- DEP takes a stage for the tower out of
+> the text budget, so the module split and therefore the parameter partition change. That is
+> structural rather than arithmetic, and it means bit-identity was never the right pass
+> condition for on-vs-off. Untested hypothesis, and the way to settle it is to compare the
+> parameter tensors across the two arms, not the losses.
+>
+> Note this is a different claim from "DEP is bit-identical at n_vit 1, 2 and 4", which
+> compares DEP-on configurations against each other and is untouched by this.

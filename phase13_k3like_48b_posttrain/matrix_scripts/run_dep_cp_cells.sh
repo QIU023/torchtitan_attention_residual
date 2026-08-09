@@ -20,10 +20,24 @@
 # (_dep_reject_cp), because every share would have to recompute the dynamic-CP patch plan
 # identically and a mismatch there hangs rather than raises.
 #
-# Each cell is run TWICE, with the features off and on, from the same seed. The features
-# are numerically neutral by design, so the pass condition is bit-identical loss -- and a
-# difference would mean one of them perturbs the arithmetic under that parallelism
-# combination, which is exactly what this is here to catch.
+# Each cell is run TWICE, with the features off and on, from the same seed.
+#
+# The pass condition is NOT bit-identical loss. That was the original intent and it is wrong:
+# first measured 2026-08-09, DEP on and off differ at step 1 in both loss and grad_norm
+# (12.07152/13.0853 vs 12.04214/13.4154 on ep2 x fsdp2 x pp2), and step 1 is pure forward.
+# DEP takes a stage for the tower OUT of the text budget, so the module split and the
+# parameter partition change with it -- a different initialization, not different arithmetic.
+# Confirmed pre-existing rather than a regression: identical numbers at the pre-overnight
+# commit 3e7e23e3c and at the current head.
+#
+# So read this as: both arms must RUN and converge, on remains stable across code changes
+# (compare an on-arm against a previous on-arm, not against its off-arm), and a NEW
+# divergence between successive runs of the SAME arm is the regression signal.
+#
+# tp2_pp2_cp2 fails in both arms with "NotImplementedError: Operator c10d.allgather_.default
+# does not have a sharding strategy" -- the known TP x dynamic-CP gap, which the 18-cell
+# matrix sidesteps with KIMI_VIT_DYNAMIC_CP=0. This script does not, so that cell is expected
+# to fail here until that gap is closed.
 set -uo pipefail
 
 TITAN=${TITAN:-/workspace/torchtitan_attention_residual/torchtitan}
