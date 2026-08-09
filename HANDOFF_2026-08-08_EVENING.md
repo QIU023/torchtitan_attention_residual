@@ -390,8 +390,8 @@ it were the project's gate would read as a regression that is not there.
 | clause | state |
 |---|---|
 | (1) ViT and text as **separate stages** | **done, exact** at pp2/1F1B, pp4/1F1B, pp2 and pp8xvp4/Interleaved1F1B |
-| (2) vision passes **balanced across PP stages** | **not done.** `KIMI_VIT_DEP_STAGES=2` hard-fails: the extra vision chunks become zero-parameter shells and the optimizer errors. Worth ~1/n in unhidden cost -- quantified below |
-| (3) first micro-batches upfront, **rest into bubbles** | **mechanism done** (run-ahead, 31/32 encodes issued early, numerically exact). The hideable SHARE is governed by (2) |
+| (2) vision passes **balanced across PP stages** | **DONE and bit-identical** (2026-08-09). `KIMI_VIT_DEP_STAGES=n` splits the tower over n stages on n ranks; 12.07418 / 12.5000 at n=1, 2 and 4 from a shared seed checkpoint. Limits: no CP with a split tower, per-token collator convention only |
+| (3) first micro-batches upfront, **rest into bubbles** | **mechanism done** (run-ahead, 31/32 encodes issued early, numerically exact) for n_vit=1. Explicitly REFUSED when n_vit>1: it prefetches via encode_images and would run the whole tower on share 0, negating the split |
 
 **Clause (2) was wrongly retired, and the reason matters.** I had replaced the report's
 plain reading ("the tower spans several stages") with "distribute per-micro-batch vision
@@ -422,3 +422,31 @@ run-ahead, which today calls `encode_images` on the assumption that one stage do
 whole encode. That third item rewrites the mechanism (1) and (3) are currently exact
 against, so it needs its own gate from a shared seed checkpoint rather than being
 bolted on.
+
+---
+
+## Clause 2 landed (2026-08-09) -- and one thing to NOT do next
+
+`KIMI_VIT_DEP_STAGES=n` splits the tower across n PP stages on n ranks, bit-identical to
+unsplit at n = 1, 2 and 4 from a shared seed checkpoint (12.07418 / 12.5000 throughout).
+`n_vit=4` is the first configuration that exercises the `body` role under a real
+pipeline. Full write-up, including three obstacles and two corrections to my own earlier
+claims, in `phase13_k3like_48b_posttrain/VIT_DEP_DESIGN_2026-08-07.md` (bottom section).
+
+**Do NOT next go build a cross-stage run-ahead.** It looks like the obvious remaining
+item and the analysis says it is nearly worthless: a vision share cannot start before its
+upstream share delivers, so only the HEAD share can be moved earlier in time, and the
+head is 1/n of the tower. The split's gain is load balancing (critical-path vision work
+drops to r/n), which needs no run-ahead at all. The run-ahead is therefore correctly
+refused for n>1 rather than being a gap to close.
+
+**What to do instead, and it is cheap:** measure peak memory against n. That is the
+gain this clause actually delivers, it is unconditional (the tower's parameters and
+activations move off one stage regardless of cost ratio), and `memory:` is printed every
+step. At the real cost ratio the LATENCY on the table is under a percent of a step, so a
+latency A/B here would repeat tonight's undecidable measurement.
+
+Engagement for anything in this area comes from `DEP vision stage wiring: N stage(s),
+roles [...]` in the log. The split is numerically neutral by design, so a loss comparison
+cannot tell "split" from "silently unsplit" -- which is exactly the trap the run-ahead
+fell into earlier tonight.
