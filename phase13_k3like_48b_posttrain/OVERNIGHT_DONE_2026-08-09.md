@@ -28,13 +28,24 @@ The twelve fork commits, oldest first:
 
 ## Read this before pushing anything
 
-Those twelve messages cite findings as bare `#N`. On a branch belonging to a PR against
-pytorch/torchtitan, GitHub resolves each one against THAT repo and writes a permanent
-reference event into an unrelated third-party issue -- the mechanism that already fired ~14
-times on PR-4025. Nothing is pushed, so nothing has fired. Rewording them needs a history
-rewrite, which policy denied and I did not work around. Two ways out, in
-`OVERNIGHT_REVIEW_2026-08-09.md` under the blocker heading; the later commits already use
-`finding N`.
+**Nine** of those twelve cite findings as bare `#N` -- `fabbfc68d` through `9bed2644b`, 40
+occurrences over 31 distinct numbers (`#19` .. `#73`). The last three (`c7048afe0`,
+`d5e3063bc`, `549ef4a47`) use `finding N` and are clean. An earlier draft of this file said
+all twelve; that was an overstatement, and the ledger's "nine" is the correct figure.
+
+Those numbers are OUR review numbering and have nothing to do with pytorch/torchtitan's
+issues -- but GitHub cannot know that. Once the commits are part of a PR against that repo,
+each `#N` resolves against it and writes a permanent reference event into an unrelated
+third-party issue. A repo that active has real issues at every number in 19..73, so all 31
+would land somewhere real. This is the mechanism CLAUDE.md records as having already fired
+~14 times on PR-4025.
+
+Nothing is pushed, so nothing has fired. Worth separating the two destinations: pushing to
+our own fork is safe -- bare `#N` resolves against QIU023/torchtitan, which CLAUDE.md
+exempts -- so a backup push is fine. The rewrite only has to happen before the upstream PR.
+
+Rewording needs a history rewrite, which policy denied and I did not work around. Two ways
+out, in `OVERNIGHT_REVIEW_2026-08-09.md` under the blocker heading.
 
 ## Verification standard used
 
