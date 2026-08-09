@@ -960,3 +960,81 @@ embed_tokens and no layers"), and the run-ahead has to be gated off for n > 1 un
 cross-stage form exists -- prefetching by calling `encode_images` assumes one stage does
 the whole encode, so leaving it on would silently do the whole tower on stage 0 and
 defeat the split it is supposed to support.
+
+## Clause (2) is BUILT and numerically exact (2026-08-09)
+
+From a shared seed checkpoint -- mandatory, since a different vision-stage count changes
+the stage split and a cold start would compare initialisation rather than the split:
+
+| configuration | loss | grad_norm | stages wired | roles |
+|---|---|---|---|---|
+| pp4 1F1B, `n_vit=1` | 12.07418 | 12.5000 | 1 | `both` |
+| pp4 1F1B, `n_vit=2` | **12.07418** | **12.5000** | 2 | `head` / `tail` |
+| pp4 Interleaved1F1B, `n_vit=2` | **12.07418** | **12.5000** | 2 | `head` / `tail` |
+| pp4 Interleaved1F1B, `n_vit=4` | **12.07418** | **12.5000** | **4** | `head` / `body` x2 / `tail` |
+
+Bit-identical across all four, and the vision shares land on DIFFERENT ranks -- which is
+the clause. `n_vit=4` is the first configuration to exercise the `body` role under a real
+pipeline. Four is this flavor's maximum because its tower has four blocks; `block_bounds`
+raises above that rather than emitting an empty share.
+
+Engagement is asserted from a log line (`DEP vision stage wiring: N stage(s), roles
+[...]`), never from the loss: the split is numerically neutral by design, so loss alone
+cannot distinguish "split" from "silently unsplit".
+
+### Three obstacles, and what each turned out to be
+
+**1. Chunk identity.** `_parallelize_with_tower` recognised the vision chunk as "holds
+embed_tokens and no layers", which identifies share 0 only -- later shares hold neither
+and look exactly like a text chunk. Call order is unusable: a rank holding several
+virtual stages receives them in an order the function is not told. Fix: turn
+`__kimi_dep_vision__{i}` from a deliberately-unmatched FQN into a real empty submodule.
+`_split_module` keeps the child named in the chunk's FQN list, so the chunk arrives
+carrying its own index. No parameters, so no stage gets heavier.
+
+**2. A silent-failure path designed out.** The micro-batch index patch was installed only
+when the run-ahead was on, and a split tower's later shares NEED it to find `grid_thw`.
+Without it they take the metadata-inference branch: activations pass through unprocessed,
+no tower, no splice, no error. It is now `_install_vision_stage_wiring`, installed
+unconditionally under DEP and logged. Related: on a batch with no images the later shares
+must still run a placeholder-sized tower, or they skip an FSDP2 all-gather their peers
+issue and the peers wait for the watchdog. "No micro-batch in flight" and "micro-batch
+has no images" are now separate paths.
+
+**3. A premise of mine was wrong and the crash said so.** I assumed only the first stage
+receives the batch's kwargs, and built `VisionStepInputs` plus a step hook so later shares
+could recover `grid_thw`. The failure
+`KimiK3ViTStage.forward() got multiple values for argument 'pixel_values'` says otherwise:
+**PP forwards the batch kwargs to EVERY stage.** A later share therefore reads `grid_thw`
+directly, with nothing extra on the wire and no cache; the cache survives only as a
+fallback. `forward` now takes `*args` because a later share receives its upstream's three
+tensors positionally AND the batch kwargs by name -- under a named signature the patch
+stream binds to `input_ids` and `pixel_values` then arrives twice.
+
+### Declared limits, not discovered ones
+
+* **No CP with a split tower.** The shard decision and the dynamic-CP patch plan are made
+  inside `encode_images` and every share would have to recompute them identically.
+  `_dep_reject_cp` raises. `n_vit=1` with CP is unaffected.
+* **Per-token collator convention only.** The one-sentinel-per-image convention changes
+  sequence length per sample and right-pads to a batch-dependent length, which PP cannot
+  size a buffer for. The tail raises rather than producing a shape that works on one
+  batch and not the next.
+* **`dep_max_images` is a budget over FRAMES**, since `t` has no configured maximum. A
+  video exceeding capacity raises at the sender; truncating an activation would be a
+  silently wrong model the receiver cannot detect.
+
+### What the split is worth, restated correctly
+
+Earlier in this document I attributed the 1/n gain to bubbles. That was wrong and the
+correction stands: a vision share cannot start before its upstream share delivers, so
+only the head can move earlier in time. **The split's gain is load balancing** -- vision
+work on the critical path drops to r/n because it is spread over n ranks -- and that needs
+no bubbles at all. `dep_hiding_theory.py --split` reports the right 1/n number for this
+simpler reason.
+
+Which is why this clause's verification target is **peak memory and per-rank vision load,
+not latency**: at the real cost ratio (r ~ 0.057, MoonViT's 401M being an order of
+magnitude under a text stage's ~3.4B activated) the time on the table is under a percent
+of a step, while moving the tower's parameters and activations off one stage is
+unconditional.
