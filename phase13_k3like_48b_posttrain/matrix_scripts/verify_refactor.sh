@@ -14,10 +14,16 @@
 #
 # Usage: verify_refactor.sh [L1|L2|L3]      (default L2; L3 implies L1 and L2)
 #
-# Reference values are the ones measured on 2026-08-09 at commit 3d67e3bb5, recorded in
-# MATRIX_18_CORRECTED_2026-08-09.md. A refactor is expected to reproduce them EXACTLY at
-# step 1 -- these are all --debug.deterministic runs with a fixed seed, so anything else
-# means the arithmetic moved.
+# Reference values are from MATRIX_18_CORRECTED_2026-08-09.md, measured AFTER the
+# grad-norm dtype fix in torchtitan/distributed/utils.py. A refactor is expected to
+# reproduce them EXACTLY at step 1 -- these are all --debug.deterministic runs with a fixed
+# seed, so anything else means the arithmetic moved.
+#
+# L2 compares STEP-1 losses, which is why it is stable across that fix even for the pp2
+# cell: step 1 is pure forward, and gradient clipping affects only the update that follows
+# it. Every step-1 value in the 18-cell table was unchanged by the fix. Later steps DO move
+# for PP-bearing cells (a float32 norm changes clipping's scale factor by ~0.34%), so
+# multi-step comparison belongs in L3 where the whole table is read at once.
 set -uo pipefail
 
 LEVEL=${1:-L2}
@@ -113,8 +119,10 @@ FLAVOR=$FLAVOR OUT="$OUT/mx_b" STEPS=10 bash \
   "$(dirname "$0")/run_maxdeg.sh" >> "$OUT/l3b.log" 2>&1
 bash "$(dirname "$0")/collect13.sh" "$OUT/mx_a" 10 | tee -a "$RESULT"
 say ""
-say "=== L3b: DEP x EP is KNOWN BROKEN -- NaN at step 2, see MATRIX_18_CORRECTED ==="
-say "If this cell now SURVIVES, that is news and the limitation note should be revisited."
+say "=== L3b: DEP x EP -- FIXED 2026-08-09, must now run clean (was NaN at step 2) ==="
+say "The defect was in core: get_total_norm([]) returns a CPU float32 tensor(0.), so a PP"
+say "rank owning no EP gradients entered the pp_mesh all_reduce with a different dtype and"
+say "NCCL returned garbage. If this cell NaNs again, that fix has been undone."
 R="$OUT/depep"; rm -rf "$R"
 KIMI_VIT_DEP=1 KIMI_VIT_SIDE_STREAM=1 timeout 1800 torchrun --nproc_per_node=8 \
   --master_port="$(port)" -m torchtitan.train --module kimi_k3 --config "$FLAVOR" \

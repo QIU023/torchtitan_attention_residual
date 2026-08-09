@@ -15,21 +15,21 @@ Multimodal (MoonViT-V2 + backbone), seed 42, `--debug.deterministic`, global bat
 |---|---|---|---|
 | `dp1` | 12.05342 | 9.90565 | |
 | `fsdp2` | 12.05033 | 9.91598 | |
-| `pp2` | 12.04891 | 9.80817 | |
-| `pp4` | 12.08035 | 9.80668 | |
-| `pp8` | 12.04015 | 9.80949 | |
+| `pp2` | 12.04891 | 9.80407 | changed by the grad-norm fix |
+| `pp4` | 12.08035 | 9.80270 | changed by the grad-norm fix |
+| `pp8` | 12.04015 | 9.81109 | changed by the grad-norm fix |
 | `cp2` | 12.03828 | 9.92359 | dynamic CP on (default) |
 | `cp4` | 12.03993 | 9.91355 | dynamic CP on (default) |
 | `tp2` | 12.06346 | 9.92391 | |
 | `tp4` | 12.05647 | 9.94822 | |
 | `ep2 x fsdp2` | 12.05033 | 9.91933 | |
 | `ep8 x fsdp8` | 12.01828 | 9.92187 | |
-| `fsdp2 x tp2 x pp2` | 12.04664 | 9.74263 | |
-| `fsdp2 x pp2 x cp2` | 12.02968 | 9.72646 | dynamic CP on |
-| `ep2 x fsdp2 x tp2 x pp2` | 12.05293 | 9.74624 | |
+| `fsdp2 x tp2 x pp2` | 12.04664 | 9.73895 | changed by the grad-norm fix |
+| `fsdp2 x pp2 x cp2` | 12.02968 | 9.71810 | dynamic CP on; changed by the grad-norm fix |
+| `ep2 x fsdp2 x tp2 x pp2` | 12.05293 | 9.74656 | changed by the grad-norm fix |
 | `ep2 x fsdp2 x pp2 x cp2` | 12.07279 | 9.73979 | dynamic CP on |
 | `fsdp2 x tp2 x cp2` | 12.09125 | 9.93360 | **dynamic CP OFF required** |
-| `tp2 x pp2 x cp2` | 12.04720 | 9.72680 | **dynamic CP OFF required** |
+| `tp2 x pp2 x cp2` | 12.04720 | 9.72670 | **dynamic CP OFF required**; changed by the grad-norm fix |
 | `ep2 x fsdp2 x tp2 x cp2` | 12.04897 | 9.94180 | **dynamic CP OFF required** |
 
 18/18 run. The last three need `KIMI_VIT_DYNAMIC_CP=0`; see the limitation below.
@@ -163,3 +163,65 @@ attractive reading was "upstream already fixed it, we only need to rebase", and 
 have sent the next diagnosis down the wrong path entirely. The limitation stands -- do not
 enable DEP together with EP -- and its cause is still to be found in how DEP's stage split
 interacts with expert placement, not in `in_grad_placements`.
+
+---
+
+## The DEP x EP NaN was a CORE defect, now fixed -- and it moved the PP reference values
+
+Diagnosed to `torchtitan/distributed/utils.py`, not to kimi_k3. **DEP was only the
+trigger**, and the trigger condition is broader than DEP: any configuration where a PP
+stage owns gradients in only one of the EP / non-EP groups. A DEP vision stage owns no
+experts by construction, so it makes the condition certain.
+
+### The chain, each step ruling out one candidate
+
+A probe (`matrix_scripts/dep_ep_grad_probe.py`, wraps `clip_grad_norm_` from an entry
+point rather than editing core) reported, per rank:
+
+    DEP=off  rank0/1: 228 params  axes={fsdp:210, efsdp+ep:18}  returned_total_norm=12.6250
+             rank2/3: 166 params  axes={fsdp:148, efsdp+ep:18}  returned_total_norm=12.6250
+    DEP=on   rank0/1:  31 params  axes={fsdp:31}   local_non_ep=6.5930/1.1517  returned=6.6895
+             rank2/3: 363 params  axes={fsdp:327, efsdp+ep:36}  local_ep=3.0443  returned=0.0000
+
+Parameter totals agree (31+363 = 228+166 = 394), every gradient exists, every gradient is
+finite, every local norm is non-zero -- and the two sides of the pipeline return DIFFERENT
+`total_norm`. The 6.6895 is exactly `sqrt(6.5930^2 + 1.1517^2)`: the fsdp reduction only,
+with the other PP side's contribution absent.
+
+Root cause: `get_total_norm([])` returns a **CPU float32** `tensor(0.)`. A rank with no EP
+gradients therefore reaches the `pp_mesh` all_reduce holding float32 while a peer holding
+bf16 expert gradients holds bfloat16, and **NCCL returns garbage for a dtype mismatch
+instead of raising**. Fix: normalise `total_norm` to float32 on the mesh's device before
+the collective, in both the EP and non-EP paths. float32 is also the right width for a sum
+of squares.
+
+### Two of my own claims corrected along the way
+
+* "The NaN is at step 2" -- no: **step 1's grad_norm is already wrong**, and step 2's NaN
+  loss is the consequence of clipping with a garbage norm.
+* "DEP + EP needs experts spread over several stages" -- no: pp4 spreads them over three
+  stages and still fails. Tuning the PP degree is not a workaround.
+
+The probe itself needed correcting too. Its first version reported only
+`nonfinite_grads=0`, which reads identically whether gradients are healthy or identically
+zero -- and zero was the hypothesis under test.
+
+### Cost: the PP-bearing reference values moved
+
+Clipping is active (grad_norm ~12.6 against max_norm 1.0), so a norm computed in float32
+instead of bf16 changes the scale factor by ~0.34% and with it the trajectory. Reruns of
+all 18 cells confirm the fix's scope is exactly `pp_mesh is not None`:
+
+* **13 cells without PP are bit-identical** -- dp1, fsdp2, cp2, cp4, tp2, tp4, ep2xfsdp2,
+  ep8xfsdp8, fsdp2xtp2xcp2, ep2xfsdp2xtp2xcp2. This is the negative control, and it is
+  what makes "the fix does only what it claims" a measurement rather than an argument.
+* **PP-bearing cells MAY move**, and some do not: `ep2 x fsdp2 x pp2 x cp2` is unchanged
+  at 9.73979 because a 0.34% scale difference can be absorbed by bf16 rounding. So the
+  rule is "PP cells are allowed to move", not "PP cells move".
+
+Step-1 losses are unchanged everywhere, as they must be -- step 1 is pure forward and
+clipping affects only the update that follows it.
+
+`ep2 x fsdp2 x pp2` was missing from the 18 and is now covered: DEP off 12.07418 /
+grad_norm 12.5816, DEP on 12.07418 with step 2 also bit-identical (11.98418). **DEP + EP
+works.**
