@@ -44,6 +44,12 @@ one parameter, plus the negative control) and does NOT resolve the effect:**
 Medians -0.6%; within-arm spread 2.1% and 2.8%; ranges overlap; **the sign flips
 between repeats.** Two reasons it could not have resolved it, both knowable in
 advance: mfu is 0.12% in every arm (so ~2.5ms of a 2063ms step is compute, capping any
+  [CORRECTED 2026-08-09: read 0.12% as ~0.093% and ~2.5ms as ~1.9ms -- the MoE
+  parameter buckets in get_nparams_and_flops matched nothing, so flops_per_token
+  was 1.29x too high on this flavor (kimi_k3_debugmodel_bubble_ratio; the factor
+  runs 1.18x to 25.89x depending on expert count). The cap gets tighter, not
+  looser; see phase13_k3like_48b_posttrain/OVERNIGHT_REVIEW_2026-08-09.md
+  finding 45/53/73.]
 win at ~0.12%), and the theoretically hideable share AT THIS FLAVOR IS ZERO -- so a
 correct implementation must also show nothing here.
 
@@ -345,6 +351,7 @@ one-directional test cannot distinguish "behind" from "diverged".
   miss at pp2" and "31/1 at pp8xvp4" were derivable from micro-batch count and depth;
   matching them is evidence, whereas a number that merely looks plausible is not.
 * **Decide whether a measurement CAN resolve the effect before running it.** mfu 0.12%
+  (really ~0.093%; see the correction above)
   put the ceiling at 0.12% while run-to-run spread was 2-3%. That ratio was available
   from any earlier log, and it makes six 21-step runs unnecessary in hindsight.
 * **A pass/fail oracle on a partial quantity always answers fail.** The first hiding

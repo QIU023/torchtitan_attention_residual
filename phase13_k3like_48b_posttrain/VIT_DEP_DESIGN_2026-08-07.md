@@ -1,5 +1,16 @@
 # ViT DEP, designed against the report and the schedule API
 
+> **Correction (2026-08-09).** Every `mfu` and `tflops` figure below is **1.29x too high**.
+> `get_nparams_and_flops` classified MoE parameters with patterns that matched no parameter
+> name at all, so all routed experts counted as activated. The factor is flavor-dependent
+> (2.02x on `debugmodel_block_attn_res`, 25.89x on the K3-shaped `2p8t`, where the corrected
+> value reproduces K3's published 104.2B activated); the runs below are
+> `kimi_k3_debugmodel_bubble_ratio`, whose flops_per_token goes 0.8044G -> 0.6248G. So read
+> `mfu 0.12%` as **~0.093%** and `~2.5ms of compute` as **~1.9ms**. Nothing below depended
+> on MFU being as high as 0.12%, and the direction reinforces the conclusions: an idler GPU
+> makes "the encode is already free" more true, not less. See
+> OVERNIGHT_REVIEW_2026-08-09.md, finding 45/53/73.
+
 Supersedes `VIT_DEP_DESIGN_2026-08-06.md` entirely. That one proposed a parallel
 prologue derived from my own timing analysis; the report prescribes something
 different and strictly better, and the schedule API turns out to permit it.
