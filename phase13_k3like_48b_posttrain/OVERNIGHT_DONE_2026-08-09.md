@@ -13,39 +13,44 @@ summary a reader needs first.
 
 The twelve fork commits, oldest first:
 
-    fabbfc68d  nine findings, including three self-inflicted
-    f3834c8b3  close the from_hf round trip
-    ef5ddfc84  two defects an internal round trip cannot see
-    acce7b0f3  carry the AttnRes block size instead of re-deriving it
-    1b032ae1f  weight decay off 1-D params; QAT wrapper looks like a Linear
-    81bcfb53d  a carve-out that carved nothing, a dead twin, a silent sweep
-    a88cd727c  the unreachable layer->stage discovery becomes a guard
-    48e691796  evict what the cache holds; a config error stays an error
-    9bed2644b  count activated MoE params, not total, in flops_per_token
-    c7048afe0  the expert GEMM seam, one vision splice, two non-bugs
-    d5e3063bc  restore the fla-core import guard; drop an embed-path host sync
-    549ef4a47  key the K3-shape predicate on the row; re-pin uneven-split video
+    0d7ce0f96  nine findings, including three self-inflicted
+    b0f631f6a  close the from_hf round trip
+    3e11c103b  two defects an internal round trip cannot see
+    bf014239d  carry the AttnRes block size instead of re-deriving it
+    76e70285d  weight decay off 1-D params; QAT wrapper looks like a Linear
+    c6ceefdfb  a carve-out that carved nothing, a dead twin, a silent sweep
+    07127876c  the unreachable layer->stage discovery becomes a guard
+    fb3d45e03  evict what the cache holds; a config error stays an error
+    c87384e84  count activated MoE params, not total, in flops_per_token
+    bb627d62b  the expert GEMM seam, one vision splice, two non-bugs
+    e8203f540  restore the fla-core import guard; drop an embed-path host sync
+    a6f582b3b  key the K3-shape predicate on the row; re-pin uneven-split video
+
+## Commit messages: cleaned, and why the range stops where it does
+
+**Done.** Both repos' unpushed commits were rewritten so no bare `#N` survives -- the fork's
+twelve and the logbook's four. Verified three ways: the reference-form scan
+(`[owner/repo]#N`, `github.com/...`, bare `#N`) returns nothing; `git diff` against the
+pre-rewrite backup is empty, so only messages changed; and all twelve tree objects compare
+identical. Backups remain at `backup/pre-msg-rewrite-2026-08-09` in each repo.
+
+Findings now read `finding 49` and `findings 51/61`. Hashes below are the post-rewrite ones;
+the pre-rewrite mapping is in the commit that recorded this.
+
+**Deliberately NOT rewritten: anything already pushed.** CLAUDE.md notes 8 of 56 earlier
+fork commits carry `pytorch/torchtitan#N` or `Refs:` trailers from before the rule existed.
+Those are pushed, so their reference events have already fired; a rewrite would not remove
+them and can fire them a second time. The mitigation there is the one already recorded as
+finding 11 -- PR slices must be fresh commits, never cherry-picks of those messages.
 
 ## Read this before pushing anything
 
-**Nine** of those twelve cite findings as bare `#N` -- `fabbfc68d` through `9bed2644b`, 40
-occurrences over 31 distinct numbers (`#19` .. `#73`). The last three (`c7048afe0`,
-`d5e3063bc`, `549ef4a47`) use `finding N` and are clean. An earlier draft of this file said
-all twelve; that was an overstatement, and the ledger's "nine" is the correct figure.
-
-Those numbers are OUR review numbering and have nothing to do with pytorch/torchtitan's
-issues -- but GitHub cannot know that. Once the commits are part of a PR against that repo,
-each `#N` resolves against it and writes a permanent reference event into an unrelated
-third-party issue. A repo that active has real issues at every number in 19..73, so all 31
-would land somewhere real. This is the mechanism CLAUDE.md records as having already fired
-~14 times on PR-4025.
-
-Nothing is pushed, so nothing has fired. Worth separating the two destinations: pushing to
-our own fork is safe -- bare `#N` resolves against QIU023/torchtitan, which CLAUDE.md
-exempts -- so a backup push is fine. The rewrite only has to happen before the upstream PR.
-
-Rewording needs a history rewrite, which policy denied and I did not work around. Two ways
-out, in `OVERNIGHT_REVIEW_2026-08-09.md` under the blocker heading.
+Nothing in the unpushed range carries a cross-repo reference form any more, so the earlier
+blocker is closed. One thing still worth knowing about the two destinations: bare `#N` in a
+message resolves against whatever repo the commit lands in, so our own fork was never the
+hazard -- the hazard was those commits becoming part of a PR against pytorch/torchtitan,
+where each `#N` would write a permanent reference event into an unrelated third-party issue.
+That is the mechanism CLAUDE.md records as having already fired ~14 times on PR-4025.
 
 ## Verification standard used
 

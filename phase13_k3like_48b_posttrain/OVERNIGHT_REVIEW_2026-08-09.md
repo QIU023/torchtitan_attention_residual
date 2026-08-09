@@ -1,31 +1,15 @@
 # Overnight: working the code-review findings
 
-## BLOCKER BEFORE ANY PUSH: nine commit messages contain bare `#N`
+## Commit messages: cleaned (was a pre-push blocker)
 
-The nine overnight commits (`fabbfc68d` through `9bed2644b`, all local, `ahead 9`, none
-pushed) cite review findings as bare `#19` .. `#73`. That is the reference form CLAUDE.md
-forbids, and the reason is exactly live here: if these commits land on a branch belonging to
-a PR against pytorch/torchtitan, GitHub resolves each `#N` against THAT repo and writes a
-permanent "referenced this" event into the timeline of an unrelated third-party issue. These
-are low numbers, so every one of them corresponds to a real issue there. This is the same
-mechanism that already fired ~14 times on PR-4025.
+Resolved. Every unpushed commit in both repos was rewritten so no bare `#N` remains: the
+fork's twelve and the logbook's four. The reference-form scan comes back empty, `git diff`
+against `backup/pre-msg-rewrite-2026-08-09` is empty in each repo, and all twelve fork tree
+objects compare identical -- messages only. Findings now read `finding 49`, `findings 51/61`.
 
-Nothing has fired yet -- the risk exists only on push, and nothing is pushed.
-
-I tried to reword all nine in place and the history rewrite was denied by policy, which is
-the correct default for a destructive operation; I did not work around it. So this is handed
-over as a decision rather than done:
-
-* **Option A (recommended):** reword the nine messages before the first push, replacing
-  `#N` with `finding N`. A sanity check afterwards should be
-  `git log --format=%B <range> | grep -oE '#[0-9]+'` returning nothing.
-* **Option B:** the upstream PR is a fresh/squashed branch anyway, in which case these
-  messages never reach a PR against pytorch/torchtitan and the problem dissolves. Confirm
-  that is the plan before relying on it.
-
-Either way the commit HASHES in the ledger below become stale under Option A; they are
-recorded so the work is traceable, not as durable identifiers. From this point on I write
-`finding N` in commit messages.
+The hashes recorded below are post-rewrite. Already-pushed history was left alone on
+purpose: its reference events have fired, a rewrite cannot unfire them, and it risks firing
+them again.
 
 ## Traceback point (start of this session's overnight run)
 
@@ -80,8 +64,8 @@ Status values: `fixed+matrix` (fixed and the matrix reran clean), `fixed` (fixed
 not applicable -- docs, dead code), `parked` (recorded and routed around, with reason),
 `n/a` (already fixed by this box's parallel commits, verified against HEAD).
 
-Commits, in order: `fabbfc68d` (nine findings), `f3834c8b3` (tier-1 checkpoint round trip),
-`ef5ddfc84` (two defects an internal round trip cannot reach), `acce7b0f3` (block size).
+Commits, in order: `0d7ce0f96` (nine findings), `b0f631f6a` (tier-1 checkpoint round trip),
+`3e11c103b` (two defects an internal round trip cannot reach), `bf014239d` (block size).
 Matrix runs `mxA`/`mxB`/`mxC` each came back **10/10 bit-identical** to
 MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 `KIMI_VIT_DYNAMIC_CP=0` limitation, unchanged.
