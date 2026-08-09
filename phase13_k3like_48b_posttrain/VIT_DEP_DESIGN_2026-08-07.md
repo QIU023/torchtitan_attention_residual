@@ -1094,3 +1094,81 @@ real scale, but that is a prediction from the structure and not a measurement --
 same cost-weight caution applies as everywhere else in this work. Until it is measured on
 a flavor whose tower is not negligible, clause 2's demonstrated result is EXACTNESS and
 PARAMETER BALANCING, not a memory win.
+
+---
+
+# Dynamic CP is DEP's PRECONDITION, not a sibling optimisation (2026-08-09)
+
+Found by re-reading 5.2.3 for the pipeline degrees. The Dynamic CP paragraph does not end
+on load balance -- it ends on this:
+
+> This reduces both the encoder latency of large visual samples and the cross-device load
+> imbalance, **allowing the remaining encoder computation to be hidden in pipeline
+> bubbles.**
+
+So the report's causal chain is: large images/videos make the vision cost large -> too
+large for the bubbles -> Dynamic CP partitions the patch dimension across CP ranks ->
+the REMAINDER fits. The two subsections are one mechanism, and clause (3) depends on the
+Dynamic CP work rather than sitting beside it.
+
+## Why r is large for big images: the quadratic term I had omitted
+
+My earlier estimate of `r` (one ViT forward in units of one text-stage forward) used only
+the linear term, `401M x n_patches`. Vision attention is quadratic in patch count, so
+
+    r ~ [ 401M * n_p  +  n_p^2 * heads * head_dim * 27 ] / (text_stage_activated * seq_len)
+
+and at the patch counts long-context multimodal training reaches, the quadratic term
+dominates. That is what "large images and long videos substantially increase the
+computation time of the vision encoder" refers to, and it is why the linear estimate made
+DEP look pointless at scale.
+
+Dynamic CP reduces BOTH terms by `cp_size`: gather-KV has each rank compute `n_p/cp`
+queries against all `n_p` keys, so the quadratic work per rank is `n_p^2/cp`, not
+`(n_p/cp)^2`. Hence `r_eff = r / cp_size` for the hiding analysis.
+
+## The threshold, and what it says about this box
+
+From `dep_hiding_theory.py --sweep`, reaching the report's "most of the ViT computation is
+hidden" (>50%) needs **r_eff <= 0.3**. So the required CP degree is `cp >= r / 0.3`:
+
+| scenario | r | cp needed for "most hidden" |
+|---|---|---|
+| `report_arch_pp8vp4` (debug) | 25.2 | **>= 84** -- impossible on 8 GPUs |
+| a mid-size large image | 2.4 | 8 |
+| real `2p8t_vl`, one 1024-patch image | 0.057 | 1 (already 56%) |
+
+Measured directly at pp8 x vp4, r_eff = 25.2/cp: cp=1 and cp=2 give 0% hideable, cp=4
+gives 3.1%, cp=8 gives 6.2%, cp=16 gives 15.6%.
+
+**This is the third independent confirmation of the same thing.** The debug flavor cannot
+show bubble hiding, and it is now established by three routes that do not share an
+assumption: structurally (the vision stage is the pipeline head, so the bubbles are
+downstream of the work), theoretically (r=25.2 needs cp>=84), and empirically (2019 = 2019
+bubbles, and a latency A/B whose sign flips between repeats).
+
+## What this implies for measuring the effect at all
+
+The knob that matters is `r`, and it is NOT the layer-count ratio. Those are already
+aligned: 13 text / 4 vision here against the report's 93 / 27, i.e. 3.25 vs 3.44. What
+differs by ~440x is the PER-LAYER cost ratio -- the report's text layers are ~1.12B
+activated each (104.2B / 93) against MoonViT's ~15M (401M / 27), about 75x apart, while
+this flavor has hidden 256 on both sides so its layers cost about the same.
+
+So a flavor built to observe bubble hiding on 8 GPUs needs `r_eff <= 0.3`, reachable by
+shrinking the vision tower relative to the text stack (roughly vision hidden at 1/8 of
+text hidden) and/or leaning on CP. That does not require the real 2.8T model, only a
+config whose cost ratio is honest.
+
+## And the report does NOT give the pipeline degrees
+
+Checked, because our pp8 x vp4 has been described as the report's configuration in
+passing. Section 5.2 says only:
+
+> Kimi K3 pre-training combines Pipeline Parallelism (PP) with virtual stages (VP) [48,
+> 81], Expert Parallelism (EP) [66], ZeRO-1 Data Parallelism [100], Pipeline ZeRO-2
+> gradient sharding [145], and Context Parallelism (CP, 5.1.2) [50].
+
+There is no PP degree, no VP count and no micro-batch count anywhere in the paper (896 is
+the routed-expert pool, not an EP degree). **pp8 x vp4 is our choice and must be described
+as ours**, not as the report's topology.
