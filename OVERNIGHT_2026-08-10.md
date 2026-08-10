@@ -3,7 +3,9 @@
 Starting HEADs: fork `b66280b1b`, logbook `5148fc3`, verl `1059a888`. Disk 257 GB free.
 
 Plan was five phases; what actually happened is below, including two items deliberately
-routed around and one blocked from outside.
+routed around and one blocked from outside. The logbook branch had diverged mid-run -- a
+commit landed on the remote that was not mine -- so these sit rebased on top of it rather
+than force-pushed over it.
 
 ## Done
 
@@ -99,22 +101,6 @@ official-export names and justify on that basis.
   different prefix, `447m_aligned` only with `_n4`, `528m_l16` with no row), so the
   invariant is now the narrower true one with the exceptions named.
 
-## Routed around, with the reason
-
-* **finding 54 implementation.** Unblocked and short, but it moves FSDP grouping on all
-  eighteen cells, which moves the matrix baseline re-established this session and makes
-  "different grouping" hard to separate from "regression" in one run. That is a deliberate
-  call, not an end-of-overnight one.
-* **findings 4, 5, 12** (comment triage, `kcp.py` history paragraph, internal references).
-  Source edits were unsafe while the matrix was running -- a later cell would import a
-  half-edited file and the run would cover mixed code. Cheap and untouched.
-* **finding 36** (magic suffix parsing to structured fields). It has already hidden 37
-  flavors once, and it is the code path `VERL_TORCHTITAN_FLAVOR` resolution depends on --
-  which tonight's veRL work leaned on heavily. Not worth changing in the same session.
-* **finding 32** (env-var topology to config fields), unchanged from the earlier assessment:
-  seven variables, about thirty consumers including recorded repro lines in a dozen
-  documents.
-
 ### 4. Findings 4 and 5
 
 Three comments pointed at files only this repo has (two probe scripts, a local copy of the
@@ -128,6 +114,24 @@ file.
 No matrix for that one, on a stronger argument than a matrix: with docstrings stripped, the
 executable AST of all three files is IDENTICAL before and after, so nothing but comments
 changed.
+
+## Routed around, with the reason
+
+* **finding 54 implementation.** Unblocked and short, but it moves FSDP grouping on all
+  eighteen cells, which moves the matrix baseline re-established this session and makes
+  "different grouping" hard to separate from "regression" in one run. That is a deliberate
+  call, not an end-of-overnight one.
+* **finding 12** (48 comment blocks of 8+ lines). Untouched, and not because it is hard:
+  it is 48 judgement calls about which explanations earn their space, in a codebase whose
+  comments carry reasons that cost real time to learn. That wants reviewing with someone,
+  not sweeping at the end of an overnight. Findings 4 and 5 were the precise part of the
+  same tier and are done above.
+* **finding 36** (magic suffix parsing to structured fields). It has already hidden 37
+  flavors once, and it is the code path `VERL_TORCHTITAN_FLAVOR` resolution depends on --
+  which tonight's veRL work leaned on heavily. Not worth changing in the same session.
+* **finding 32** (env-var topology to config fields), unchanged from the earlier assessment:
+  seven variables, about thirty consumers including recorded repro lines in a dozen
+  documents.
 
 ## Matrix: 36 of 36 cells byte-identical
 
@@ -152,7 +156,7 @@ steps.
 | repo | HEAD | pushed |
 |---|---|---|
 | fork `attention_residual_dev` | `ec1192b2f` | yes |
-| logbook `main` | see below | yes |
+| logbook `main` | this commit | yes |
 | `verl` `kimi_k3_integration` | `ac913940` | yes |
 
 Tests: 353 passed, 1 skipped, 169 subtests in the kimi_k3 folder; 11 in verl's two engine
