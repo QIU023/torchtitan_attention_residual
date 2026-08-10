@@ -16,6 +16,60 @@ deltas will be folded in when it lands.
 
 ---
 
+## FIX-BATCH VERIFICATION (2026-08-09, local pass over the box's ~25 fix commits)
+
+Verified at fork `8b455cb2a`. Method: read the diff or the current code at
+every fixed site for the tier-1/2/3/4 items; commit-message + shipped-test
+review for the rest; full CPU suite run locally.
+
+**Suite**: box reports 334 passed / 1 skipped. Local run shows 15 failures,
+ALL environment-class, individually classified: 3x triton "0 active drivers"
+(no CUDA locally), 2x + ~10 subtests `ModuleNotFoundError: torchvision`
+(multimodal flavor builders import the dataset chain), 1x Float8 requires
+SM89+. Zero real regressions found in the fix batch. (Test-design nit: the
+block-size sweep calls every flavor builder, so missing optional deps read as
+sweep failures -- classify the exception in the subtest to keep it portable.)
+
+**FIXED AND CODE-VERIFIED** (spot-checked in source, not just commit text): #37 #72 (prefix strip + expert regex), #39 (delegation), #71 (+ the
+one-name-two-gates disambiguation), #42 (`kda_layers_zero_based`), #24
+(direct-code E8M0 test), #41 (+ new flavor-wide sweep test), #62 (antialias,
+honestly scoped as parity-prerequisite), #65 (+ eval-context guards), #31/#68 (config error stays an error), #67 (discovery -> local check, with
+the ModuleDict global-key premise itself asserted), #69 (rebind at the
+calling module; the "disable returns a wrapper" lesson is now in a comment), #34 (covered by test_compile_carveout.py), #70, #25/#33 (dead twin deleted,
+-181 lines), #49 #50 (guard restored, then correctly weakened to per-rank
+expected ownership after it broke n_vit>1; clause-2 3-step loss+grad_norm
+agreement re-shown), #51/#61 (join reverted to issue time -- backed by the
+4.0 ms / 0.45% measurement, an unmeasurable gain does not buy a deadlock), #45 (patterns now `._moe.*`), #19 #20 (bias in NF4 and packed-TP, colwise
+slice / rowwise post-reduce), #21 #22 #46, #47 (shared splice helper), #63
+(fixed and honestly recorded as unreachable), #56 (torch quantized reader), #58, #38, #74 (guard restored with deferred-raise fallback), #26, #15 #16 #18, #52, lint pass.
+
+**DIFFERENT ROOT THAN FILED**: #23 -- the box fixed a real merge defect
+(state-dict names vs module paths, found via a live GRPO failure), but the
+filed DTensor-adapter-mixing scenario on a packed base is not obviously
+covered by that fix; re-check `merge_lora_state_dict` under FSDP/TP + mxfp4
+before closing.
+
+**NOT YET ADDRESSED** (confirmed by grep/absence at `8b455cb2a`):
+- **#60 and #66** -- the two findings that exactly predict DEP-on PP x CP
+  breakage (single-vision-stage path discards the sentinel exchange;
+  install/fallback decided rank-locally). The reported DEP PP x CP
+  regression should be triaged against these two FIRST.
+- #59 (video gather-KV interleaved-pad mask), #64 (pack_video resolution
+  check) -- vision correctness.
+- MTP tier in full: #43 #44 #48 #40.
+- #32 (env-var topology -> config fields; PR-C gate), #35 (setattr graft).
+- Reuse tier in full: #54 #55 #57 #6 #7.
+- Efficiency: #13 #14.
+- Slop/dead code: #28 #29 #27 #36 #30 #76; #12 beyond lint (the 48
+  comment-block triage); #11 handled by the slicing policy, not by rewrite.
+
+**NEW CORE FOOTPRINT from the fix batch** (add to the audit): `3e7e23e3c` +
+`ee114861f` -- clip_grad_norm_ total-norm dtype normalized to float32 before
+the PP all_reduce (a dtype mismatch returned garbage). Same class as #4054:
+generic, small, upstream-reproducible -- next core-PR candidate.
+
+---
+
 ## TIER 1 -- Official-weights load path (blocks the "real 2.8T/48B weights" claim)
 
 The from_hf direction is roughly half an inverse of to_hf. Fix as one cluster;
