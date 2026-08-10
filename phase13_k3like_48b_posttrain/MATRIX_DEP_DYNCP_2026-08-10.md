@@ -54,6 +54,11 @@ is consistent with that and with nothing else here.
 
 ### The three TP+CP cells fail, with the recorded cause
 
+> **SUPERSEDED 2026-08-10 -- `DEFECT2_FIXED_2026-08-10.md`. These three cells now pass and
+> the matrix is 18/18.** The cause was narrower than recorded: replicated vision attention,
+> which this flavor always takes because it has 3 heads against tp2. `KIMI_VIT_DYNAMIC_CP=0`
+> is no longer needed anywhere. The PP-cell shifts below are unrelated and still stand.
+
     NotImplementedError: Operator c10d.allgather_.default does not have a sharding
     strategy registered.
 

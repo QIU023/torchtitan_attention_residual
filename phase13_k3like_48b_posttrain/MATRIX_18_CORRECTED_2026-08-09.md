@@ -62,7 +62,11 @@ My first attempt fixed only the first direction, and the second surfaced immedia
 worth recording, because "the error message changed" is not the same as "the bug is
 fixed".
 
-**Defect 2 (OPEN).** With the addition fixed, the next failure is:
+**Defect 2 (FIXED 2026-08-10, `DEFECT2_FIXED_2026-08-10.md`).** The diagnosis below is
+right about the symptom and too broad about the cause -- it is the replicated-attention
+branch, not vision TP in general, and `wo`'s contract never had to be renegotiated.
+
+**Defect 2 (as recorded then).** With the addition fixed, the next failure is:
 
     NotImplementedError: Operator c10d.allgather_.default does not have a sharding
     strategy registered.
