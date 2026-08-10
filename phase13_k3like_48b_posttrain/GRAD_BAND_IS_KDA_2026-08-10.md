@@ -1,5 +1,20 @@
 # The per-parameter gradient band across parallelisms is KDA's
 
+> **SUPERSEDED the same day by `GRAD_BAND_RESOLVED_2026-08-10.md`. The title of this file
+> is wrong.** KDA is not the cause. The band is an artifact of the instrument: its
+> reference leg runs `local_batch_size 2` (one forward at batch 2) while the pp2 leg runs
+> microbatches of 1, so the two arms feed different tensor shapes into every kernel.
+> `chunk_kda` is a chunked scan whose blocking depends on the input shape, which is why
+> only KDA responded -- and why the response compounds with the number of KDA layers.
+>
+> With the per-forward shapes matched, the 21-layer flavor's `max>1%` goes from 0.16749 to
+> **0.000000 across all 592 parameters**. PP is bit-exact.
+>
+> The elimination chain below is still correct as measurement and is kept for that: every
+> number in it reproduces. What is wrong is the final attribution, which is the third
+> wrong attribution this question has had (LoRA, then AttnRes, then KDA) and all three
+> failed the same way -- a single variable moved the number and was named as the cause
+> without checking the arms were equivalent in everything else.
 The band -- a 0.16 to 0.23 relative per-parameter gradient deviation between a parallel
 leg and its single-rank reference -- has been carried as unexplained since 2026-08-02,
 first as "LoRA is not usable on PP/CP", then withdrawn to "an AttnRes question". It is

@@ -88,6 +88,6 @@ arm() {
               --parallelism.context_parallel_degree 2
 }
 
-arm nokda_bf16 kimi_k3_mini_diag_no_kda          bfloat16
-arm mini_bf16  kimi_k3_mini_block_attn_res       bfloat16
+arm k4ar_bf16  kimi_k3_mini_diag_4l_kda           bfloat16
+arm k4no_bf16  kimi_k3_mini_diag_4l_kda_noattnres bfloat16
 echo "########## DONE ##########"
