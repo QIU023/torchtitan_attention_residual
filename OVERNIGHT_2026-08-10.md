@@ -115,10 +115,78 @@ official-export names and justify on that basis.
   seven variables, about thirty consumers including recorded repro lines in a dozen
   documents.
 
-## Matrix
+### 4. Findings 4 and 5
 
-RESULTS PENDING.
+Three comments pointed at files only this repo has (two probe scripts, a local copy of the
+released config); zero `phase13` references remain in the folder. `kcp.py`'s halo history
+goes from eight lines to two, and the full story moves to the PR-D body -- which is where
+writing it caught that body still claiming "`kcp.py` implements the halo exchange", untrue
+since the hand-rolled version was replaced by fla's `causal_conv1d_cp`. Filing PR-D as
+written would have described code that no longer exists, to reviewers who would open the
+file.
+
+No matrix for that one, on a stronger argument than a matrix: with docstrings stripped, the
+executable AST of all three files is IDENTICAL before and after, so nothing but comments
+changed.
+
+## Matrix: 36 of 36 cells byte-identical
+
+Both arms, DEP and dynamic CP on for multimodal, 10 steps, eager:
+
+| arm | cells | result |
+|---|---|---|
+| multimodal `report_arch` | 13 + 5 max-degree | **18/18 pass, byte-identical** to the post-defect-2 table |
+| text `kimi_k3_mini_block_attn_res` | 13 + 5 max-degree | **18/18 pass, byte-identical** to tonight's text table |
+
+That is the result tonight's changes should produce: five of them touch code
+(dead MLA fields, the alias rename, the AdamW reuse, the MXFP4 delegation, the 552-line
+scaffold deletion) and none of them is on the matrix flavor's numerical path -- the AdamW
+change only affects the Muon flavor, where it is measured separately at 2.6e-03 over 10
+steps.
+
+`collect13.sh` output for both arms is committed beside this file as `mm_13.txt` /
+`text_13.txt`.
 
 ## State
 
-RESULTS PENDING.
+| repo | HEAD | pushed |
+|---|---|---|
+| fork `attention_residual_dev` | `ec1192b2f` | yes |
+| logbook `main` | see below | yes |
+| `verl` `kimi_k3_integration` | `ac913940` | yes |
+
+Tests: 353 passed, 1 skipped, 169 subtests in the kimi_k3 folder; 11 in verl's two engine
+test files. Lint clean on the CI-enforced codes.
+
+## Next, in the order I would take it
+
+1. **`SupportsLoRA` for `KimiLinearForCausalLM` in the vLLM fork.** It is the only thing
+   between the adapter-only sync and an end-to-end verification, and everything on our side
+   is already in place and CPU-tested.
+2. **Finding 54.** Unblocked, short, and the highest-value remaining reuse item. Needs one
+   matrix run because FSDP grouping moves, and needs the decision to accept that the
+   baseline moves with it.
+3. **Findings 6 and 7's shared decision**: adopt upstream's parameter names and migrate the
+   DCP keys, or keep the official-export names and justify the fork on that basis. One
+   decision, both components.
+4. **CP/TP gradient equivalence.** Still a proof gap rather than a known bug -- the naive
+   recurrent KDA reference is the way to close it, and it has to be validated against
+   `chunk_kda` on one rank first or it is another untrusted instrument.
+5. File PR26, and `#55` / `#36` / `#12` when there is appetite for the churn.
+
+## Method notes worth keeping
+
+* **Check the instrument before believing it, twice over tonight.** The AdamW and MXFP4
+  swaps were both verified BEFORE replacing the code, which is the only order in which
+  "identical" can be established -- and the MXFP4 check only meant something because it
+  included the E8M0 special values that random scales never reach.
+* **A test asserting a false invariant fails loudly and looks like a bug.** The scaling-law
+  stub test's first version reported three "extra" flavors that are deliberate exceptions.
+  The failure was mine, not the registry's.
+* **`collect13.sh` on a live directory reports in-flight cells as `FAIL (n/10)`.** Two cells
+  were misread that way before the arm finished. Collect once, after DONE.
+* **Do not edit source while a matrix is running** -- a later cell imports the edited file
+  and the run silently covers mixed code. That is why findings 4/5 waited.
+* **The flavor, the weights and the rollout engine all have to agree**, and I checked that
+  last: two GRPO launches died on a multimodal flavor against text weights, then on
+  multimodal weights whose MLA dimensions vLLM rejects.
