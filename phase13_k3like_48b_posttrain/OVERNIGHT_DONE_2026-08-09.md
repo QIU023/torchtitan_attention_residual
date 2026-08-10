@@ -133,7 +133,7 @@ because making the comparison well-scoped costs nothing, but recorded as not-bit
 | `finding 60` | the fix is in but the numbers never moved on any configuration tried, so it rests on the code reading alone |
 | `finding 66` (general case) | the only divergence source I could name is closed; a setup-time all-reduce would defend a case I cannot construct |
 | TP x dynamic CP defect 2 | needs the `wo` local/DTensor contract settled first |
-| DEP 30-layer 6e-4 divergence | the unchunked control is blocked by an FSDP uniform-gradient-dtype assertion |
+| DEP 30-layer 6e-4 divergence | RESOLVED 2026-08-10: a cold-init comparison, exact from a shared checkpoint; `DEP_30L_RESOLVED_2026-08-10.md` |
 | `kimi_k3_mini_block_attn_res` name collision | a trainer config function and a registry flavor share it; fixing it is a rename touching launch scripts, i.e. a decision |
 | TIER 7 reuse (54/56/55/58/57/6/7) | 180-line `apply_fsdp` fork, SDPA and AdamW duplication, the MLA and FeedForward difference tables. Large, and `55`/`58` would move numerics |
 | TIER 9 remainder (13/14/15/16) | efficiency: stack rebuild on the hot path, per-head Newton-Schulz, `cu_seqlens.tolist()` sync, one all_reduce per MoE layer |

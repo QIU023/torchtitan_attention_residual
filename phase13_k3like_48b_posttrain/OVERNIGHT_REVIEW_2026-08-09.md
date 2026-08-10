@@ -32,6 +32,15 @@ Watchdog is running as a supervisor service and prunes at 10 GB free.
 
 ## Carried in, unresolved: DEP forward divergence on the 30-layer flavor
 
+> **RESOLVED 2026-08-10 -- see `DEP_30L_RESOLVED_2026-08-10.md`.** The divergence was a
+> cold-init comparison: DEP moves the vision tower to another PP stage and torchtitan
+> seeds PP ranks distinctly, so the two cold arms start from different weights (measured:
+> same 880 parameters, global norm sum 7732.368 against 7733.152). From a shared
+> checkpoint the arms are identical on the 30-layer flavor -- chunked and unchunked, pp2
+> and pp4, including the tower split across two stages. Depth was never the variable, and
+> the FSDP assertion below does not reproduce in five configurations. The section is kept
+> as the measurement it was.
+
 Parked deliberately, per the instruction to route around what does not resolve.
 
 | configuration | DEP off vs on |
@@ -375,7 +384,7 @@ Nine is greater than zero, so the warning stays quiet while a third of the tags 
 | 32 | env-var topology | upstream will not accept env vars; migrating to config fields is its own change |
 | 45/53/73 | MoE FQN patterns never match | inflates MFU/TFLOPs 10-30x; needs a decision on whether any published MFU number gets retracted |
 | -- | TP x dynamic CP defect 2 | gather-KV on DTensors needs the `wo` local/DTensor contract settled first |
-| -- | DEP 30-layer 6e-4 divergence | the unchunked control is blocked by an FSDP uniform-gradient-dtype assertion |
+| -- | DEP 30-layer 6e-4 divergence | RESOLVED 2026-08-10, a cold-init comparison; see `DEP_30L_RESOLVED_2026-08-10.md` |
 | -- | 35 flake8 findings in this folder | 27 F401 + 7 F811 + 1 E301, 36 of them in `config_registry.py`. All unused or shadowed imports, none functional. That file is under concurrent cleanup, so fixing them here would only collide -- but they do fail CI lint and have to land from one side or the other. |
 
 The one lint finding not routed around is the F811 pair in `model.py`: two identical
