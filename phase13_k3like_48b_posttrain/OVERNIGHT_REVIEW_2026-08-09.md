@@ -129,6 +129,13 @@ MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 | 50 | pipeline_adapter.py | **regression I caused, fixed** | the guard assumed every rank owns a vision stage once the tower splits; n_vit>1 could not start |
 | -- | multimodal_model.py, moonvit.py | fixed+matrix | the split tower bypassed FSDP2's all-gather by calling forward_head/body/tail directly |
 | 58 | model.py | fixed+matrix (numbers moved) | MLA's inner attention duplicated common's `ScaledDotProductAttention` |
+| 57 | muon.py | fixed+matrix (**numbers moved**) | fallback AdamW was a clone of torch's; reuse costs a last-bit `exp_avg` difference that reaches 2.6e-03 by step 10 on the Muon flavor |
+| 56 | packed_mxfp4.py | fixed+matrix | remaining half: decode delegates to torchao's `mx_formats.to_dtype`, bit-identical including E8M0 `0xFF` -> NaN |
+| 29 | multimodal_model.py | fixed+matrix | LLaVA scaffold deleted, 552 lines with its test; takes finding 17's double `.item()` loop with it |
+| 30 | config_registry.py | fixed+matrix | second `dataclasses` alias in one function |
+| 27 | config_registry.py | fixed+matrix | stubs kept explicit; the missing agreement check against `SCALING_LAW_TABLE` now exists |
+| 6/7 | model.py | **assessed, tables written** | two of their own rows were wrong: upstream broadcasts k_rot the same way, and the MLA's GQA fields were dead |
+| 54 | parallelize.py | **assessed, not converged** | upstream only READS its attributes, so read-only properties suffice and no checkpoint migration is needed; implementation moves FSDP grouping on all 18 cells |
 
 ### DEP, stated precisely, after two regressions of my own
 
