@@ -399,3 +399,12 @@ identical -- but the numbers did not move on any configuration tried, so **the f
 supported by evidence**, only by the code reading. It stays in because it removes a real
 divergence between two paths that should agree; it is not claimed as verified. A test that
 actually exercises a non-identity shard selection is still missing.
+
+> **UPDATED 2026-08-10 -- `DEP_60_VERIFIED_2026-08-10.md`.** The fix now has evidence, and
+> the sentence above is wrong about why. Every configuration tried here had a degenerate
+> partition (`counts=[64, 0]`), where selecting and not selecting give the same tensor:
+> rank 0's slice is the whole encode and rank 1 has nowhere to splice. Forcing a split
+> partition -- seq 96, so the 48 visual tokens straddle the midpoint, `counts=[47, 1]` --
+> makes the pre-fix path fail outright rather than drift. The missing non-identity test now
+> exists as 6 CPU tests in `test_cp_shard_selection.py`. The code comment's separate claim
+> of a 0.042 divergence does not reproduce and has been withdrawn.

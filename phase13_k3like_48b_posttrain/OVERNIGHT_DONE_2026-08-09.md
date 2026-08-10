@@ -130,7 +130,7 @@ because making the comparison well-scoped costs nothing, but recorded as not-bit
 |---|---|
 | `finding 44` (MTP + chunked loss) | needs an `mtp_loss` redesign, not a local fix |
 | `finding 32` (env-var topology) | upstream will not take env vars; migrating to config fields is its own change |
-| `finding 60` | the fix is in but the numbers never moved on any configuration tried, so it rests on the code reading alone |
+| `finding 60` | VERIFIED 2026-08-10: the earlier arms all had a degenerate `counts=[N, 0]` partition; on a split one the pre-fix path fails outright. `DEP_60_VERIFIED_2026-08-10.md` |
 | `finding 66` (general case) | the only divergence source I could name is closed; a setup-time all-reduce would defend a case I cannot construct |
 | TP x dynamic CP defect 2 | needs the `wo` local/DTensor contract settled first |
 | DEP 30-layer 6e-4 divergence | RESOLVED 2026-08-10: a cold-init comparison, exact from a shared checkpoint; `DEP_30L_RESOLVED_2026-08-10.md` |
