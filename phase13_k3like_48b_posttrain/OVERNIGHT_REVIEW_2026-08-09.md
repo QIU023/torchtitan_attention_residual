@@ -96,7 +96,7 @@ MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 | 39b | state_dict_adapter.py | fixed+matrix | shared experts answered with the Kimi Linear layout under a K3 wrapper |
 | 71/42 | hf_key_map.py | fixed+matrix | `g_proj` is one released name for two different gates |
 | 24 | packed_mxfp4.py | fixed+matrix | E8M0 `0x00`/`0xFF` decoded against the OCP MX spec in both directions |
-| 62 | vision_preprocess.py | fixed, weakly judged | bicubic downscale lacked `antialias=True`; see caveat below |
+| 62 | vision_preprocess.py | **fixed+judged** | the judge exists after all: the release uses PIL bicubic, so a differential against it gives 240x/147x on high-frequency content and 1.0x on a smooth gradient (pinned as its own test) |
 | 41 | attn_res_model.py (+4 files) | fixed+matrix | block size reached the model only through a lossy `num_blocks` trip |
 | 21 | muon.py | fixed, matrix as control | weight decay 0.1 reached 1-D parameters through Muon's AdamW fallback |
 | 22 | mxfp4_qat.py | fixed, matrix as control | the QAT wrapper had no `.weight`, so Per-Head Muon silently skipped every wrapped projection |
@@ -135,7 +135,7 @@ MATRIX_18_CORRECTED_2026-08-09; the three TP+CP cells fail as the documented
 | 30 | config_registry.py | fixed+matrix | second `dataclasses` alias in one function |
 | 27 | config_registry.py | fixed+matrix | stubs kept explicit; the missing agreement check against `SCALING_LAW_TABLE` now exists |
 | 6/7 | model.py | **assessed, tables written** | two of their own rows were wrong: upstream broadcasts k_rot the same way, and the MLA's GQA fields were dead |
-| 54 | parallelize.py | **assessed, not converged** | upstream only READS its attributes, so read-only properties suffice and no checkpoint migration is needed; implementation moves FSDP grouping on all 18 cells |
+| 54 | parallelize.py | **fixed+matrix** | converged onto apply_fsdp_to_decoder, 182 lines -> 81. Read-only aliases, no FQN moves. First attempt deadlocked every multimodal CP cell (extra FSDP unit); fixed by aliasing on the wrapper, then 18/18 byte-identical |
 
 ### DEP, stated precisely, after two regressions of my own
 
