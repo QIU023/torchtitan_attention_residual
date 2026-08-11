@@ -2,6 +2,19 @@
 
 Two questions, answered separately because they have different answers.
 
+> **CAVEAT added 2026-08-11.** The per-layer figure below (29.9B) is derived from the
+> PUBLISHED 2.78T total divided by 93 layers, which is right for real K3. Our provisional
+> `kimi_k3_2p8t` config does NOT reproduce that total: with `num_experts=896` and
+> `moe_intermediate_size=3072`, one routed-expert set is `3 x 7168 x 3072 x 896` = 59.2B per
+> MoE layer, so 92 MoE layers give **5.45T, about 1.96x the published 2.78T**. The activated
+> count was validated against the model card (104.2B); the TOTAL was never checked.
+>
+> Two shapes would fit 2.78T -- `moe_intermediate 1568` at 896 experts, or **457 experts** at
+> moe_intermediate 3072 -- and the released 2.8T `config.json` is not on this box, so which
+> field is wrong cannot be settled here. Every memory figure in this document that comes
+> from the published total is unaffected; anything measured by RUNNING the 2p8t flavor would
+> be roughly 2x too large.
+
 ## 1. Frozen-tower feature caching: which scenario
 
 Only one, and it is narrow: **the tower is frozen AND the image set is reused across
