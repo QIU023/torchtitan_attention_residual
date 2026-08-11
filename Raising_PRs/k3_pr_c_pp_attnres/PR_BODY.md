@@ -25,6 +25,40 @@ That is the same shape the report describes for Block AttnRes under PP.
 Non-Interleaved1F1B schedules fall back to the plain path, correct without the
 cache saving.
 
+
+## The local grad bridge, and why it is a hook rather than an autograd.Function
+
+The subtlest part of the adapter, and the part a reviewer should look at first.
+
+A block that stage R commits on this rank during an earlier virtual stage can be read back
+from the shared cache by a LATER virtual stage on the SAME rank. Left alone, that later
+stage's backward traverses into stage R's forward graph through the rebuild's stack/cat
+grad path and FREES it; stage R's own backward, driven later by PP's SEND_B on the outgoing
+delta, then dies with "backward through the graph a second time".
+
+Two earlier designs did not hold. A process-global `retain_graph=True` monkey-patch worked
+but leaked graphs for every unrelated backward in the process. Wrapping the hand-off in an
+`autograd.Function` (`_LocalCacheAugment`) also failed under real scheduling
+(Interleaved1F1B + FSDP + selective AC rerun): returning a view of the input did not stop
+autograd walking from the consumer's node upstream into `Augment` and on into the
+producer's forward graph during the CONSUMER's backward. That traversal was observed firing
+the producer-side `Augment.backward` inside the consumer stage's `backward_one_chunk` --
+exactly the freeing the design was meant to prevent.
+
+What holds severs the link structurally, in two rank-local halves with no collectives and
+no cross-rank state:
+
+* a tensor grad hook on the producer block, which fires once during the producer stage's
+  backward, pops the matching captured-grad slot, and sums it into the incoming grad;
+* `_LocalCacheCapture` on the consumer side, whose tensor input is a DETACHED leaf taken
+  from the cache. **The detach is the load-bearing guarantee**: even if autograd ignored
+  Capture's `None` grad return, there is no upstream `grad_fn` left to traverse.
+
+Recv-originated cached blocks -- sliced from a prior `recv_delta` tensor -- are deliberately
+NOT detached and NOT wrapped. Their gradient already flows back to the producing RANK
+through PP's built-in SEND_B via the recv-delta autograd chain, and severing that link
+would strand the cross-rank gradient channel.
+
 ## Multimodal
 
 The PP split cannot see through a multimodal wrapper: core's `_split_module`
@@ -48,7 +82,7 @@ reference at step 1. Text legs `pp2`, `fsdp2_tp2_pp2`, `tp2_pp2_cp2`,
 Built on #4025's `torchtitan/models/kimi_k3/` layout. Does not change the eager
 forward path. Rebase onto that PR's landing before review.
 
-## Verification
+## Verification (continued)
 
 Seed 42, `--debug.deterministic`, 10 steps unless stated. Full matrices and the
 per-defect history are in the RFC and in
