@@ -1,3 +1,8 @@
+> **The PP conclusions in this file were revised mid-document and are SUPERSEDED by
+> `PP_DECISION_2026-08-11.md`.** That file computes it once, separating full-parameter
+> from QLoRA and bandwidth from memory. What stays valid here is the mechanism, the
+> measurements, and the scaling arithmetic; what to act on is the other file.
+
 # Is PP worth it for 2.8T post-training and LoRA at 1M context?
 
 Short answer: **PP and 1M context work against each other**, and LoRA removes most of PP's
