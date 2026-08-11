@@ -83,8 +83,27 @@ so state collapses from 44.5 TB to 5.6 TB (1.4 TB quantized), and the frozen bas
 FSDP has no gradient reduce-scatter for it. The memory argument that motivates PP is mostly
 gone, while the bubble cost stays.
 
-**So: PP for full-parameter post-training at <= 32k context, where `m` can be large and (1)
-pays. Not for LoRA, and not at 1M.**
+**Correction (2026-08-11).** An earlier version of this line said "PP for full-parameter
+post-training at <= 32k context". That states a conclusion about `m` as though it were about
+context length, and it is wrong in both directions. The variable is
+
+    m = tokens_per_step / (tokens_per_microbatch x dp_shard)
+
+and a single 1M causal sequence cannot be split into microbatches, so context length
+constrains `m` only through how many WHOLE sequences a step's token budget holds. Two
+consequences the old framing hid:
+
+* **Long context does not rule PP out.** At 1M with `dp_shard = 1`, 8M tokens/step gives
+  `m = 7.6` and an 19% bubble at pp8 x vp4; 16M gives `m = 15` and 10%.
+* **Coding-agent finetune is usually not "many 1M sequences".** Agent traces and repo
+  contexts are a long-tailed distribution, and document packing rebuilds `m` from shorter
+  documents. At 4M tokens/step and `dp_shard = 2`: ctx 8k gives `m = 244` (0.7% bubble),
+  32k gives 61 (2.8%), 128k gives 15 (10.3%), and only a genuine 1M-per-document workload
+  collapses to `m = 2` (48%). So the question to ask a workload is the MEDIAN document
+  length, not the advertised maximum context.
+
+PP is still wrong for LoRA (the memory argument is gone, the bubble remains) and
+structurally wrong for GRPO (small `m` by design).
 
 ## If we only had FSDP + EP + CP: the four real limitations
 
@@ -136,3 +155,70 @@ substitute, not an equivalent: CP does nothing for the width dimension.
 Two things to fix if we want the no-PP/no-TP path to be complete: a **per-chunk MTP loss**
 (removes limitation 2) and **measured AC recompute cost at depth 93** (quantifies
 limitation 1). Neither needs PP.
+
+## A worked config: GB300 NVL72 + IB, 1M context, full parameter, tp=1
+
+Assumptions, stated so they can be corrected: 72 GPUs per NVLink domain, 288 GB HBM,
+~1.8 TB/s NVLink and ~100 GB/s IB per GPU, and the published 2.78T / 104.2B activated.
+
+**The first thing the arithmetic says is that PP does not reduce per-GPU state at all.**
+State sharding degree is `pp x cp x dp_shard = N` whichever way the factors fall:
+
+| N | state per GPU |
+|---|---|
+| 576 (8 racks) | **87 GB** |
+| 1152 (16 racks) | **43 GB** |
+
+So the usual memory argument for PP is void here. What `pp` actually changes is **where the
+FSDP all-gather happens**, because torchtitan flattens `dp_shard x cp` into the FSDP shard
+dim -- so at `pp=1` that mesh is the whole cluster and every weight gather crosses IB:
+
+| N | pp | cp | dp | FSDP mesh | in one rack? | dense gather / step | AttnRes cache | bubble (vp4, m=4) |
+|---|---|---|---|---|---|---|---|---|
+| 576 | 1 | 96 | 6 | 576 | no | 1600 ms | 5 GB | 0% |
+| 576 | 2 | 96 | 3 | 288 | no | 800 ms | 9 GB | 5.9% |
+| 576 | 4 | 48 | 3 | 144 | no | 400 ms | 37 GB | 15.8% |
+| 576 | 8 | 24 | 3 | **72** | **YES** | **11 ms** | **149 GB** | 30.4% |
+| 1152 | 1 | 96 | 12 | 1152 | no | 1600 ms | 5 GB | 0% |
+| 1152 | 4 | 96 | 3 | 288 | no | 400 ms | 19 GB | 15.8% |
+
+`pp = 8` is the configuration that puts one stage per rack and keeps every FSDP gather on
+NVLink -- a 145x reduction in gather time. And it is unaffordable, because **our AttnRes
+cache costs 149 GB there**, over half the HBM, on top of 87 GB of state.
+
+That is worth naming precisely: **Block AttnRes is what makes the topologically correct
+choice unaffordable.** Without the cache, one-stage-per-rack would be the obvious answer on
+a multi-rack cluster.
+
+### Recommendation
+
+**Primary: `pp = 1`, `cp = 96`, `dp_shard = N/96`, EP as large as divides `cp x dp_shard`.**
+State fits (87 GB at 576, 43 GB at 1152), the cache is negligible (5 GB), there is no
+bubble, and the 1.6 s of gather is prefetch-overlappable against a step whose compute is on
+the order of 7 s at 12.6M tokens (6 x 104.2e9 x 12.6e6 FLOPs against ~1e18 FLOP/s
+cluster-effective). The one thing to insist on is that **the EP mesh be laid out inside a
+rack**; expert all-to-all at 896 experts is the other big IB consumer and it does not
+overlap as forgivingly.
+
+**Fallback if measurement shows comms-bound: `pp = 2`.** It halves the per-rank gather for a
+5.9% bubble and 9 GB of cache. Cheap insurance, and the only PP degree that is cheap.
+
+**Do not use `pp >= 4` at 1M with AttnRes** until the cache is bounded: 37 GB at pp4 and
+149 GB at pp8 are not worth 400 ms and 11 ms of gather respectively.
+
+**Prerequisite for changing that answer:** the cache mitigation already listed in
+`PP_ADAPTER_AT_2P8T` -- store only the blocks a LATER virtual stage on this rank actually
+reads, which the layout knows. If that cuts the cache by the factor it looks like it should,
+`pp = 8` becomes the best configuration rather than the most expensive one.
+
+### On TP, since it was asked
+
+**No, and not merely "later".** `cp x tp` shares the 96-head budget, so every factor of TP
+costs a factor of CP -- and at 1M context CP is what keeps both activations and the AttnRes
+cache affordable (the cache is inversely proportional to `cp`). TP's one unique win here is
+sharding the 163840-wide logits, and chunked loss already covers that; the price of chunked
+loss is that MTP does not work with it today (finding 44), which is an MTP problem rather
+than a TP argument.
+
+TP becomes the right trade at SHORT context, where CP is not needed and the head budget is
+free. At 1M it is competing for exactly the resource that makes 1M work.
