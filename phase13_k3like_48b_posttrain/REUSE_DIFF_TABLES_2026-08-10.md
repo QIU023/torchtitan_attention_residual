@@ -105,3 +105,43 @@ single FQN. So the TIER 7 work splits in two rather than sharing one gate:
 
 That split is the actionable output of these tables. It was not visible from the finding
 text, which grouped all three as "reuse".
+
+## Decision, 2026-08-11: the naming migration is not needed for either
+
+The choice was framed as "adopt upstream's parameter names and migrate the DCP keys, or
+keep the official-export names and justify the fork". Both branches were wrong, for the
+same reason finding 54 turned out to be unblocked: **the shared code only READS the names
+it needs.**
+
+**Finding 7 is resolved by reuse without renaming.** `FeedForward.forward` is
+`w2(silu(w1(x)) * w3(x))` and assigns to nothing, so `KimiMLP` now subclasses it,
+registers the projections under the release's names, and exposes `w1`/`w2`/`w3` as
+read-only properties over `gate_proj`/`down_proj`/`up_proj`. The `silu` path is the shared
+forward verbatim -- verified bit-identical to the explicit formulation -- and `state_dict()`
+still reports exactly `gate_proj.weight`, `up_proj.weight`, `down_proj.weight`, so no
+checkpoint moves. `gelu` and `situ` keep their own forward, `situ` because it clips the
+LINEAR branch too and is therefore not an activation swap at all.
+
+`__init__` routes past `FeedForward.__init__` to the grandparent, because the shared
+constructor builds w1/w2/w3 from `Linear.Config`s while this class takes plain dimensions.
+Only the forward is inherited, which is the part the maintainer asked about.
+
+**Finding 6 keeps our names AND our forward, and the reason is not naming.** The same
+alias trick would make `KimiMLAAttention` satisfy any helper that reads `wq` / `wkv_a` /
+`wo`, but nothing reads them today, so adding them would be dead code. What actually
+blocks reuse is that `deepseek_v3.Attention.forward` has no way to express either of our
+two structural differences:
+
+* it calls `self.rope(q_pe, k_pe, positions)` unconditionally, and we apply no rotary at
+  all (`mla_use_nope`);
+* it has no output gate, and K3's Eq. 7 puts a full-rank sigmoid gate on the attention
+  output before `o_proj`.
+
+So finding 6 needs upstream SURFACE, in two small pieces: `rope: RoPE.Config | None` and
+`gate: Linear.Config | None`. Upstream already ships `SigmoidGatedFeedForward`, so an
+optional gate is not a foreign idea there. Until those exist, the honest answer to "why not
+parameterize theirs" is "because two of the parameters do not exist yet, and here they
+are" -- which is a much better PR conversation than a difference table.
+
+**Net: no DCP checkpoint is migrated, and the decision that was pending is void.** Rows 3
+and 9 of the finding-6 table and row 1 of finding 7's stop being costs to weigh.
