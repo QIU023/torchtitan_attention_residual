@@ -183,12 +183,71 @@ dim -- so at `pp=1` that mesh is the whole cluster and every weight gather cross
 | 1152 | 4 | 96 | 3 | 288 | no | 400 ms | 19 GB | 15.8% |
 
 `pp = 8` is the configuration that puts one stage per rack and keeps every FSDP gather on
-NVLink -- a 145x reduction in gather time. And it is unaffordable, because **our AttnRes
-cache costs 149 GB there**, over half the HBM, on top of 87 GB of state.
+NVLink -- a 145x reduction in gather time. It is also where the AttnRes cache costs 149 GB.
 
-That is worth naming precisely: **Block AttnRes is what makes the topologically correct
-choice unaffordable.** Without the cache, one-stage-per-rack would be the obvious answer on
-a multi-rack cluster.
+**Retraction.** An earlier version of this section said "Block AttnRes is what makes the
+topologically correct choice unaffordable". That is the wrong way round. **The cache is what
+makes AttnRes work under PP at all** -- without it a later stage either cannot see earlier
+blocks, or each rank's cost stops being constant in depth. What the table shows is the
+design's inherent memory cost at scale, not a fault in it.
+
+### The cost is inherent, not a representation artifact -- checked against the math
+
+`block_attn_res` computes
+
+    K       = norm(V).float()                      # V = stack(earlier blocks + current partial)
+    logits  = einsum("d,nbtd->nbt", w_L, K)        # w_L is the CONSUMING layer's pseudo-query
+    weights = softmax(logits, dim=0)               # normalised over the block axis
+    h       = einsum("nbt,nbtd->btd", weights, V)
+
+Two properties follow, and they close off the obvious optimisations:
+
+* **The mixing weights depend on the blocks themselves** (through `norm(V)`) **and on the
+  consumer's own `w_L`** -- not on the consumer's hidden state. So a producer stage cannot
+  pre-reduce for downstream consumers: it does not hold their `w_L`. The block bodies have
+  to travel.
+* **Backward needs every `V_i` individually**: `dL/dV_i` is `alpha_i * dh` plus the path
+  through `K = norm(V_i)` into the logits. So a flash-style online-softmax accumulator --
+  which would let the forward keep one running `[B, T, D]` instead of N blocks -- saves
+  FORWARD memory only. Backward still needs them, and recomputing them is impossible because
+  the producing layers' weights and activations are on other stages.
+
+So the per-block retention is required. The question is only *where* those bytes live.
+
+### Offload is the real answer, and it is topology-specific
+
+The cache's lifetime is exactly offload-shaped: written once at the end of a microbatch's
+forward, read once in its backward, untouched in between.
+
+| | 37 GB (pp4) | 149 GB (pp8) |
+|---|---|---|
+| PCIe 5.0 x16, ~50 GB/s | 1.5 s round trip | **6.0 s** |
+| NVLink-C2C to Grace, ~900 GB/s | 0.08 s | **0.33 s** |
+
+Against a step whose compute is ~7 s, 0.33 s is absorbable and 6.0 s is not. **So this
+mitigation exists on GB300/GH-class hardware and does not transport to x86 + PCIe**, which is
+worth saying plainly rather than presenting offload as a general answer. On a discrete
+accelerator behind PCIe the same 149 GB is simply unavailable, and the honest conclusion
+there is `pp <= 2` or no PP.
+
+### The grad bridge has no offload path either, and it is a SECOND block-sized store
+
+Checked: there is no `offload`, `pin_memory`, `.cpu()` or `non_blocking` anywhere in
+`pipeline_adapter.py`. Everything is device-resident.
+
+And `_captured_grads[key] = grad.detach().clone()` keeps a full `[B, T, D]` clone per
+`(mb, producer_stage, block_idx)` that a later same-rank virtual stage read. During backward
+both stores are live, so the figures above are the FORWARD cache only and the true peak is
+higher by the same-rank subset. Any offload design has to cover both halves, and the grad
+half is harder because its access is interleaved with backward rather than bulk.
+
+### A cheaper, independent win: the fp32 transient
+
+`K.float()` and `V.float()` materialise the whole block stack in fp32. For one microbatch at
+pp8/cp24 that is 4.7 GB bf16 + 9.3 GB + 9.3 GB, so the aggregation's transient is several
+times the per-microbatch cache. fp32 is load-bearing (the pseudo-query gradient shows 6x-15x
+cancellation, measured), but the einsum can be chunked over the block axis and keep fp32.
+That is a much cheaper change than offload and helps every configuration.
 
 ### Recommendation
 
@@ -203,8 +262,11 @@ overlap as forgivingly.
 **Fallback if measurement shows comms-bound: `pp = 2`.** It halves the per-rank gather for a
 5.9% bubble and 9 GB of cache. Cheap insurance, and the only PP degree that is cheap.
 
-**Do not use `pp >= 4` at 1M with AttnRes** until the cache is bounded: 37 GB at pp4 and
-149 GB at pp8 are not worth 400 ms and 11 ms of gather respectively.
+**`pp >= 4` at 1M needs cache offload first**, and only on hardware where offload is cheap.
+On GB300 that is a 0.33 s round trip against a ~7 s step and `pp = 8` then becomes the best
+configuration rather than the most expensive one -- it is the only one that keeps FSDP
+gathers on NVLink. On PCIe-attached accelerators the same offload is 6 s and the answer stays
+`pp <= 2`.
 
 **Prerequisite for changing that answer:** the cache mitigation already listed in
 `PP_ADAPTER_AT_2P8T` -- store only the blocks a LATER virtual stage on this rank actually
