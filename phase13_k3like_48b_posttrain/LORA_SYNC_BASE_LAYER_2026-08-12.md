@@ -130,3 +130,23 @@ unit tests rather than 40 minutes into a GRPO run.
   K3's loader passes no prefix, so the destination is
   `experts.routed_experts.base_layer.w13_weight`. Whether that param exists under the
   LoRA-wrapped runner is the next thing this path can disagree about.
+
+## Two evidence rules this cost, both mine
+
+**The merged arm only proves LoRA-OFF names.** Rounds 3 and 4 both leaned on "the merged
+arm loads this key, so the key is real". It is not: with `merge=true` the rollout serves no
+adapter, so its `params_dict` is the unwrapped model. Using it as a general oracle is what
+turned a bug in vLLM's mapping into a "contract" the sender was made to satisfy (round 3),
+and then made the opposite name look proven (round 4). The only oracle for a LoRA-enabled
+`params_dict` is a LoRA-enabled `params_dict` -- which is why the diagnostic lookup, added
+after round 4, should have been added after round 1.
+
+**Do not launch the next round before the previous one exits.** Rounds 3, 4 and 5 ran
+CONCURRENTLY on the same two GPUs, because `timeout 3000` keeps a driver alive for 50
+minutes and each round was launched right after reading the previous round's log. Four
+jobs shared GPUs 0 and 1. The KeyError conclusions survive -- a name is in `params_dict`
+or it is not, and contention cannot invent a specific missing key -- but nothing
+resource-shaped from those runs is usable as evidence. In particular the merged arm's
+closing `DataLoader worker ... killed by signal: Killed`, which was waved off as benign
+teardown, has exactly the signature of memory pressure and was recorded under four-way
+contention.
