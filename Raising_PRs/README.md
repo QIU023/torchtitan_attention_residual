@@ -34,6 +34,31 @@ Filing flow per PR:
 | 15 | `PR15_sglang_kimi_linear_mamba_radix_cache/` | sglang | Register Kimi-Linear (KDA) for `MambaRadixCache`; stop force-disabling its radix | Phase 11 (radix RCA 2026-06-02) | 🟢 Backing commit pushed (`QIU023/sglang@c3b588019`); **validated on official Kimi-Linear-48B-A3B** (MambaRadixCache hit; radix-ON vs OFF greedy 4/4 identical); mainline lacks it / force-disables. Hand-port register block + elif to upstream/main. = UPSTREAM_PR_LIST.md #13 |
 | 26 | `PR26_torchtitan_grad_norm_low_precision/` | torchtitan | `clip_grad_norm_` computes the total norm in the gradients' dtype, so with `training.dtype=bfloat16` the clipped update depends on the PP/EP partition | Phase 13 (2026-08-09, while aligning two PP layouts of the multimodal model) | ✅ **Ready to file** — reproduced on a clean upstream worktree (`681fd4b50`) with unmodified `llama3_debugmodel`; float32 rows unchanged, bf16 step-1 norm moves 1.4453 -> 1.4485 and matches what the float32 run reports. Patch is +56/-3 in one file. Pairs with the `pp_mesh` dtype fix in the same function (see [`commits.md`](PR26_torchtitan_grad_norm_low_precision/commits.md)). |
 
+### The four K3 parallelism PRs (A/B/C/D) — 2026-08-12
+
+These four have **two folders each** and it matters which you read:
+
+| PR | scope folder (body) | kit folder (body + recipe) | status |
+|---|---|---|---|
+| A | `PR22_torchtitan_kimi_k3_tp_kda/PR.md` | `k3_pr_a_tp_kda/` | 🟡 ready to extract, blocked on 4025 landing |
+| B | `PR21_torchtitan_kimi_k3_ep_grouped_moe/PR.md` | `k3_pr_b_ep_grouped/` | 🟡 same, plus a state_dict_adapter hook ask on 4025 |
+| C | `PR23_torchtitan_kimi_k3_pp_attnres/PR.md` | `k3_pr_c_pp_attnres/` | 🟠 blocked on a 4025 decoder-loop seam; do not extract before it is answered |
+| D | `PR24_torchtitan_kimi_k3_cp_ulysses/PR.md` | `k3_pr_d_cp_ulysses/` | 🟡 ready to extract; decide the vision/text split first |
+
+**All four base on PR-4025's head, not `upstream/main`** -- 4025 rejects TP/EP/PP/CP
+explicitly, so these are what answer that, and they have nothing to apply to until it
+lands.
+
+**The `k3_pr_*` git branches are bookmarks, not content.** All four point at the same
+commit (`a146d1bf2`, 2026-08-05); they were created from `attention_residual_dev` and
+periodically reset to its HEAD, and have never carried isolated per-PR diffs.
+
+**There is no cherry-pick recipe, by necessity.** All four features live in the same few
+files, and of the last 60 commits touching `torchtitan/models/kimi_k3/`, 43 touch two or
+more of them. No commit is scoped to one feature. Each kit's `commits.md` therefore gives
+a FUNCTION-level extraction list with line counts, what must not come along, and the
+matrix cells that verify it.
+
 **Legend**: 🚀 branch pushed · 🟢 branched locally (push pending) · ✅ ready to file (no local branch yet) · 🟡 ready but conditional (depends on another PR or hand-port) · 🟠 issue / RFC first, patch deferred · 🔵 tentative / wait · ⛔ obsoleted
 
 **Filing convention**: each folder has `PR.md` (PR body draft) + `commits.md` (backing commit hashes / cherry-pick recipe) + `FILING.md` (target URLs, copy-paste title/body, cross-links between PRs in this batch). PR-body content lives in `PR.md`; `FILING.md` is the actionable execution doc.
