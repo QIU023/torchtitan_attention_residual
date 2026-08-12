@@ -134,3 +134,47 @@ caching if the tower is frozen.
 -- PP is worth nothing, because EP already removes 97% of the gather and those workloads are
 compute-bound with state that fits one domain. PP earns its place only in full-parameter
 post-training, and its value there is proportional to how narrow the fabric is.
+
+## Addendum, 2026-08-12: I was measuring the wrong term
+
+The section above treats the FSDP weight gather as the fabric's load. It is not the
+binding term, and quantifying the one I kept asserting mattered changes the answer to
+"does PP widen DC coverage".
+
+### The weight gather is nowhere near binding
+
+At each DC type's memory-driven minimum GPU count, the step is 48-143 s and the gather needs
+1-3 GB/s. Turning it around, the scale ceiling at `pp=1` -- the most GPUs whose step is still
+long enough to hide 166 GB -- is **6,800 to 22,600 GPUs** depending on the fabric. No
+realistic deployment is near it, so the gather gates nothing.
+
+### Expert all-to-all is 5.6x larger, and it does not respond to PP
+
+K3 routes `top_k = 16` of 896 experts, so per token per MoE layer the dispatch+combine volume
+is `16 x 7168 x 2 bytes x 2` = **459 KB**. Per rank per step at N=576:
+
+| term | volume | sustained | responds to pp? |
+|---|---|---|---|
+| **EP all-to-all** | **923 GB** | **28.3 GB/s** | **no** |
+| weight all-gather | 166 GB | 5.1 GB/s | divided by `p` |
+
+The invariance is arithmetic, not accident. Per-rank EP volume is
+`tokens/(cp*dp) x (92/pp)`, and `cp*dp = N/pp`, so the `pp` cancels:
+`tokens x 92 / N`. **Only adding GPUs reduces it.** PP divides layers per rank and multiplies
+tokens per rank by the same factor.
+
+### So the answer to "does PP extend DC coverage" is: for full parameter, essentially no
+
+What decides whether a DC can run this is whether **EP fits inside the NVLink domain**. If it
+does, that 28 GB/s is intra-node and never touches the fabric, leaving ~5 GB/s of gather --
+which every fabric in service satisfies. If EP has to span nodes, 28 GB/s sustained rules out
+200G-class RoCE (25 GB/s) and leaves little margin at 400G.
+
+EP must divide 896 and fit the domain. On 8-GPU nodes, **EP=8 achieves it** (112 experts per
+rank, expert state still sharded over `EP x efsdp = cp*dp`). So the topology requirement is a
+placement decision about EP, and PP is orthogonal to it.
+
+**Corrected claim.** Earlier in this file: "PP divides the gather by p, so it lowers the
+per-GPU bandwidth floor by the same factor... this is the honest argument for shipping PP."
+Directionally true, quantitatively irrelevant -- it lowers a floor that is already 5x below
+the binding term. The honest argument for PP in full-parameter training is not bandwidth.
