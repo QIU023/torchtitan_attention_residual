@@ -59,17 +59,42 @@ this reason, plus the K3 projections missing from its shared `STACKED_PARAMS`:
 |---|---|
 | `.b_proj` `.f_a_proj` `.g_proj` | fused into `in_proj_qkvgfab` (KDA front end) |
 | `.f_b_proj` | its own linear |
+| `.q_conv1d` `.k_conv1d` `.v_conv1d` | `self.conv1d = ColumnParallelLinear(...)` -- see below |
 | `.self_attention_res_proj` `.output_attn_res_proj` `.mlp_res_proj` | Block AttnRes graft |
+| `.routed_expert_down_proj` `.routed_expert_up_proj` | latent MoE W_down / W_up, `ReplicatedLinear` |
 | `.block_sparse_moe.gate.weight` + `.e_score_correction_bias` | `GateLinear(ReplicatedLinear)`; the shared list spells this `.mlp.gate.` |
+| `.w1` `.w2` `.w3` | per-expert, for a different reason -- see below |
 
 The rename goes on the SOURCE name, and it is only sound because vLLM's mapping is a
 substring replace on the module segment: `.q_proj.base_layer.weight` still resolves to
 `.in_proj_qkvgfab.base_layer.weight`. That composition is pinned by a test rather than
 left as a reading of vLLM's loader.
 
-What is NOT renamed: norms, layernorms, `A_log`, `dt_bias`, the conv1d weights, the
-embeddings, and the routed experts (3-D `GroupedExperts` / FusedMoE, which travel through
-the expert mapping and have their own LoRA path).
+What is NOT renamed: norms, layernorms, `A_log`, `dt_bias`, and the embeddings plus
+`lm_head` -- those last two only because K3 declares no `embedding_modules`, which is why
+verl's shared list adds `.embed_tokens.weight` for llama and not here.
+
+### Two of these are not readable off the name
+
+**The KDA short convolution is a linear.** `kda.py` builds it as
+`self.conv1d = ColumnParallelLinear(...)` and unsqueezes the weight into conv layout
+afterwards, so LoRA wraps it like any projection. It was excluded in the first version of
+this fix on the reasoning that a conv is not a `LinearBase`, and a test was written
+asserting it keeps its plain name. The rule that survives: **ask what TYPE the vLLM
+destination is, not what the name looks like.**
+
+**The per-expert weights are renamed even though nothing wraps them.** They land in
+FusedMoE's stacked `w13` / `w2` params, but the expert mapping builds its weight_name as
+
+    f"experts.{logical_id}.{weight_name}.{lora_base_layer_prefix}"
+
+with the prefix set from `any(".base_layer." in n for n, _ in model.named_parameters())`.
+So **one LoRA-wrapped module anywhere in the model changes what the expert loader expects
+every expert key to be called** -- and an un-suffixed expert key matches no mapping entry
+at all, rather than mismatching one, so it falls through to the plain-name lookup and
+fails there. This document's first version had it exactly backwards, listing the experts
+as out of scope because they travel through the expert mapping; the expert mapping is what
+demands the suffix.
 
 ## What this retires
 
@@ -79,12 +104,29 @@ absent. It could not fire here: an `hf_names` entry that is PRESENT but names a 
 the rollout wrapped differently is not a missing key. The helper and its warning are gone
 along with the premise.
 
-## Open, and measurable next
+## How this was actually converged
 
-* **The routed experts under a LoRA-enabled rollout are untested.** If `MoERunner` is
-  wrapped as `FusedMoEWithLoRA`, the expert names move too, and the expert mapping's
-  `params_dict[name]` would fail the same way. The base half's expert keys have not yet
-  reached that code, because `q_proj` failed first.
+Three rounds, each one KeyError further in, which is the method working rather than
+failing: the destination misses `params_dict`, vLLM's stacked loop reads that as "packed
+projection not present on this layer", and the plain-path fallback names the source key.
+
+| round | failing key | what it taught |
+|---|---|---|
+| 1 | `layers.0.self_attn.q_proj.weight` | the wrapped set is the ROLLOUT's, not the trainer's |
+| 2 | `layers.0.self_attn.q_conv1d.weight` | the short conv is a `ColumnParallelLinear` |
+| 3 | `layers.1.block_sparse_moe.experts.4.w1.weight` | the expert mapping demands the suffix too |
+
+After round 2 the classification was derived once from vLLM's module types instead of
+iterated: a test now pins all 41 distinct leaf names the k3mini export ships (23 renamed,
+12 plain, plus the router and the experts), so the next architecture change fails in CPU
+unit tests rather than 40 minutes into a GRPO run.
+
+## Open
+
 * **Only the text stack is exercised.** The multimodal report_arch flavors cannot serve
   here -- vLLM rejects their MLA dimensions with "No valid MLA prefill backend found" --
   so the vision tower's projections have never been through this path.
+* **`routed_experts_prefix` defaults to `"routed_experts"`** in the mapping builder while
+  K3's loader passes no prefix, so the destination is
+  `experts.routed_experts.base_layer.w13_weight`. Whether that param exists under the
+  LoRA-wrapped runner is the next thing this path can disagree about.
