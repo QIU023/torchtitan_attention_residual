@@ -110,9 +110,10 @@ it does not want PP:
 
 * **`dynamic CP` is what parallelises the tower**, and it rides the CP group -- no TP, no PP
   required. This is the axis to lean on.
-* **DEP is not usable with LoRA at all** (the vision stage owns no adapted parameters; there
-  is now a guard that says so), and its exchange-buffer defaults hold 8192 patches where one
-  full-resolution image is 262144.
+* **DEP now runs with LoRA** (fixed 2026-08-12: the vision stage owns no adapted
+  parameters, which core treated as an error in three places rather than as a frozen
+  stage), but its exchange-buffer defaults hold 8192 patches where one full-resolution
+  image is 262144.
 * If the tower is frozen, **precomputing its features removes the vision cost entirely**,
   which beats anything PP or DEP can do for it.
 
@@ -124,7 +125,7 @@ caching if the tower is frozen.
 | scenario | PP value | why |
 |---|---|---|
 | QLoRA SFT, 1M text | **none** | 1.5% gather against compute, fits one domain |
-| QLoRA SFT, 200K multimodal | **none** | same, and DEP is unusable with LoRA anyway |
+| QLoRA SFT, 200K multimodal | **none** | same; dynamic CP carries the tower, and DEP buys ~0.6% of a step |
 | Multimodal GRPO / PPO | **negative** | small `m` by design; forward-only passes stress the cache |
 | Full parameter, IB-class fabric | **low** (`pp=1..2`) | 18% gather, overlaps |
 | Full parameter, EFA/RoCE-class | **moderate** (`pp=2..4`) | 37% gather, and EP competes |
