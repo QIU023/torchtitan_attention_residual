@@ -151,6 +151,28 @@ growing is not a process that has exited.
 
 ---
 
+## Mechanism 5b: attributing a difference to the most interesting nearby change
+
+**Instance.** The text arm drifted 1e-2 after the merge while both multimodal arms moved
+1e-5. I attributed it to the text flavor being 20 of 21 layers MoE and therefore most
+exposed to the merge's MoE sharding rework. A fact already in hand refutes it: the drifting
+cells include `fsdp2`, with `ep=1` and `tp=1`, where no MoE sharding code runs at all.
+
+The real cause was one grep away -- `3f71477c8 Mask loss at document boundaries (#4075)`
+changes `hf_datasets/text_datasets.py`, and the text arm's dataset is `c4` while the
+multimodal arms use `cc12m-test`. Upstream even regenerated its own golden loss files in
+that commit, which is as explicit as a "this changes your losses" gets.
+
+**The shape.** The recently-studied subsystem becomes the default explanation. I had spent
+hours inside the MoE sharding code, so a MoE story was available and felt informed; the
+data path was not in mind at all, and nothing prompted me to ask which commit touches the
+input pipeline.
+
+**The rule.** For an unexplained numerical difference, enumerate the commits that touch the
+path FIRST -- data, loss, kernel, parallelism -- and only then reason about magnitude. And
+check the cheapest discriminator: a cell with the suspected feature disabled. `fsdp2` was
+sitting in the same table.
+
 ## What actually worked, so it gets repeated
 
 * **The smoke gate.** `run_postmerge_gate.sh` runs one 2-step cell per arm and exits on

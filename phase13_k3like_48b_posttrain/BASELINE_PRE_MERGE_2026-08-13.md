@@ -82,12 +82,48 @@ Same cell (`fsdp2`), three trees:
     pre-merge baseline              7.70859 7.66722 7.57442 7.42620
 
 Our commits are provably inert on that cell -- identical with and without -- so the
-1.2e-3 comes entirely from the upstream merge. The text mini flavor is 20 of 21 layers
-MoE and this merge reworked MoE sharding (`#3996`) and the token dispatcher (`#3970`), so
-it is the arm most exposed; the multimodal flavors see 1e-5 on four cells each.
+1.2e-3 comes entirely from the upstream merge.
+
+**The cause is a DATA change, not a parallelism or structure one.**
+`3f71477c8 Mask loss at document boundaries (#4075)` changes
+`torchtitan/hf_datasets/text_datasets.py`: under document packing the last token of one
+document used to predict the first token of the next, training the model to emit BOS after
+EOS, and those boundary positions are now masked out of the loss. Upstream regarded this as
+loss-changing for every text run and said so in the strongest available way -- the same
+commit regenerates its OWN golden loss files, `tests/assets/losses/llama3_cuda.txt` and
+`qwen3_moe_cuda.txt`, 200 lines each.
+
+Which arm is affected follows directly from the dataset:
+
+| arm | dataset | loader | affected |
+|---|---|---|---|
+| text | `c4` | `hf_datasets/text_datasets.py` | **yes** |
+| multimodal full / LoRA | `cc12m-test` | multimodal loader | no |
+
+That also explains the pattern that rules out a parallelism cause: `fsdp2` drifts by
+9.2e-3 with `ep=1, tp=1`, where the reworked MoE sharding is not even active, and all ten
+text cells drift by a similar amount (5.7e-3 to 1.3e-2) with no outlier -- the signature of
+one changed objective, not of some configurations breaking. The four 1e-5 cells in the
+multimodal arms are a separate and smaller effect (`#4099`, a reduction moved onto the
+device), and all four carry cp or pp.
+
+**Retracted:** an earlier version of this section, and the merge commit message, attributed
+the text drift to the text flavor being 20 of 21 layers MoE and therefore most exposed to
+the MoE rework. That is wrong, and a fact already in hand refutes it: `fsdp2` has no EP and
+no TP, so no MoE sharding code runs. See
+`HOW_I_GET_THIS_WRONG_2026-08-13.md` mechanism 5 -- reaching for a plausible cause instead
+of checking which commit touches the path.
 
 **So "all three matrices identical" is not achievable with this merge in, and the reason
-is upstream numerics rather than anything on our side.** What is achieved: no cell that
-trained before fails now, both previously-broken EP x TP cells are back, and every
-deviation is measured and attributed. The text arm's baseline for future comparisons is
-`verify_post_merge/text_13.txt`, not `baseline_pre_merge/text_13.txt`.
+is upstream numerics rather than anything on our side.** For the text arm it is stronger
+than that: reproducing the old numbers would require upstream to un-fix a real bug, because
+predicting BOS after EOS across a document boundary was never something to train. The
+correct criterion for that arm is therefore not identity but:
+
+* every cell that trained before still trains;
+* the drift is UNIFORM across cells (one changed objective), not concentrated in particular
+  parallelism configurations (which would mean something is broken). Measured: all ten
+  cells within 5.7e-3 to 1.3e-2, no outlier.
+
+The text arm's baseline for future comparisons is `verify_post_merge/text_13.txt`, not
+`baseline_pre_merge/text_13.txt`.
