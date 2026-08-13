@@ -18,18 +18,11 @@
 
 ### Summary
 
-`torch.nn.utils.get_total_norm` returns the norm in the **input tensors' dtype**. Both call sites in `torchtitan/distributed/utils.py` pass gradients straight in, so when gradients are bfloat16 the per-tensor norms and the norm-of-norms are both bfloat16 — three to four significant digits.
+`torch.nn.utils.get_total_norm` returns the norm in the input tensors' dtype. Both call sites in `torchtitan/distributed/utils.py` pass gradients straight in, so with `training.dtype="bfloat16"` the per-tensor norms and the norm-of-norms are all bfloat16 -- three to four significant digits. The reported `grad_norm` is off by a few tenths of a percent, and the error depends on how the tensors are **grouped**: under PP each rank norms its own share before the `pp_mesh` reduction, and under EP the parameters split into EP and non-EP groups. So the value depends on where the pipeline was cut, not only on the gradients -- and since the clip factor is `max_norm / total_norm` and clipping usually fires every step, two runs with identical gradients but different PP splits take different-sized steps.
 
-Two consequences:
+The default `training.dtype="float32"` is unaffected; the issue appears only with the documented `bfloat16` option.
 
-1. The reported `grad_norm` is wrong by a few tenths of a percent.
-2. The error depends on **how the tensors are grouped**. Under PP each rank norms its own share and the results are combined across `pp_mesh`; under EP the parameters are split into an EP group and a non-EP group and combined. So the value depends on where the pipeline was cut, not only on the gradients.
-
-Point 2 is the one that matters, because `max_norm` is usually small enough that clipping fires every step. The clip factor is `max_norm / total_norm`, so an 0.2% error in the norm is an 0.2% error in that step's effective learning rate — and two runs with identical gradients but different PP splits take different-sized steps.
-
-Gradients are float32 by default (`training.dtype="float32"` gives fp32 master weights), so this is invisible in the common configuration. It appears with `training.dtype="bfloat16"`, which is a documented option in `configs.py` (`dtype: Literal["bfloat16", "float32"] = "float32"`).
-
-### Evidence — unmodified `llama3_debugmodel` on a clean checkout
+### Evidence -- unmodified `llama3_debugmodel` on a clean checkout
 
 `681fd4b50`, no fork code. 4 GPUs, `dp_shard=2 x pp=2`, seed 42, deterministic, 2 steps, `--training.local-batch-size 2`:
 
@@ -40,11 +33,9 @@ Gradients are float32 by default (`training.dtype="float32"` gives fp32 master w
 | `bfloat16` | before | 1.4453 | 1.6328 |
 | `bfloat16` | **after** | **1.4485** | 1.6357 |
 
-Two things to read off it. float32 is untouched, as it must be — there is nothing to fix when the gradients are already float32. And the patched bfloat16 run reports the same step-1 norm as the float32 run, 1.4485, while unpatched bfloat16 reports 1.4453: computing the norm in float32 recovers the value the higher-precision configuration agrees on.
+float32 is untouched, and patched bfloat16 reports the same step-1 norm the float32 configuration does.
 
-### Evidence — the partition dependence, without any distributed setup
-
-394 bfloat16 tensors with magnitudes spanning 1e-4 to 1e-1, norms taken with the same function the two call sites use, then the same tensors split into two groups and combined the way `pp_mesh`/EP combines them:
+The partition dependence needs no distributed setup: 394 bf16 tensors, norms taken with the same function the call sites use, then the same tensors split and combined the way `pp_mesh`/EP combines them:
 
 ```text
 float32 exact          121.222923
@@ -54,24 +45,17 @@ get_total_norm         121.000000     0.184% error, dtype=torch.bfloat16
   split 300 / 94       121.011543     0.174%
 ```
 
-Same gradients, three different answers. The returned dtype is `torch.bfloat16`, which is the whole mechanism: `121.000000` is what a bf16 scalar can represent near 121.
+Same gradients, three different answers; `121.000000` is what a bf16 scalar can represent near 121.
 
 ### Fix
 
-Compute the norm in float32. `get_total_norm` takes no dtype argument, so the patch adds a local `_get_total_norm_fp32` that mirrors it — same empty-list result, same `error_if_nonfinite` behaviour, same foreach fast path where it applies — and passes `dtype=torch.float32` to the norm calls:
-
-* plain tensors: `torch._foreach_norm(tensors, norm_type, dtype=torch.float32)` (`foreach=False` is honored with a per-tensor fallback)
-* DTensors: `torch.linalg.vector_norm(t, norm_type, dtype=torch.float32)` one at a time, because upstream's foreach support check excludes them as well. The dtype argument preserves the `_NormPartial` placement, so the existing `full_tensor()` reduction in both call sites still works unchanged.
-
-Three call sites redirected (one in `clip_grad_norm_`, two in `_clip_grad_norm_with_ep`). Diff is +55/−3 in one file.
-
-An alternative worth mentioning: add a `dtype` argument to `torch.nn.utils.get_total_norm` in PyTorch and drop this helper. That is the better long-term home, and this patch is compatible with it — the helper becomes a one-line call.
+`get_total_norm` takes no dtype argument, so a local `_get_total_norm_fp32` mirrors it (same empty-list result, same `error_if_nonfinite` behaviour, foreach fast path, `foreach=False` honored) and carries the reduction in float32 -- `torch._foreach_norm(..., dtype=torch.float32)` for plain tensors, `torch.linalg.vector_norm(..., dtype=torch.float32)` per DTensor, which preserves the `_NormPartial` placement so the callers' `full_tensor()` reductions are unchanged. Three call sites redirected; +55/-3 in one file. The better long-term home is a `dtype` argument on `torch.nn.utils.get_total_norm` itself, and this helper reduces to a one-line call if that lands.
 
 ### Test plan
 
-* `llama3_debugmodel`, `dp_shard=2 x pp=2`, `--training.dtype float32`: `grad_norm` unchanged (1.4485 / 1.6350 before and after).
-* Same with `--training.dtype bfloat16`: `grad_norm` moves to the float32-accurate value (1.4453 -> 1.4485 at step 1).
-* A unit test can pin the mechanism without a cluster: build a list of bf16 tensors, assert `get_total_norm` differs from the float32 computation and that splitting the list changes the combined result, then assert the new helper is split-invariant. Happy to add it during review; it needs no GPU.
+* `llama3_debugmodel`, `dp_shard=2 x pp=2`, `--training.dtype float32`: unchanged before/after.
+* Same with `bfloat16`: `grad_norm` moves to the float32-accurate value (1.4453 -> 1.4485 at step 1).
+* A CPU unit test can pin the mechanism: bf16 tensor list where `get_total_norm` differs from the float32 value and changes under splitting, while the new helper is split-invariant. Happy to add during review.
 
 --- PASTE END ---
 

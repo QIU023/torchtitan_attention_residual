@@ -2,7 +2,7 @@
 
 **Target**: `pytorch/pytorch`, `aten/src/ATen/native/GroupedMMUtils.h` (`check_valid_strides_and_return_transposed`), plus the duplicated logic in `torch/_meta_registrations.py`.
 **Found on**: `2.14.0.dev20260802+cu130`, CUDA 13.0, sm_120.
-**Status**: reproduction is airtight and self-contained. **The C++ patch is NOT compile-verified** -- see "What is and is not verified".
+**Status**: reproduction is airtight and self-contained. **The C++ patch is NOT compile-verified** -- stated plainly in the body's closing caveat.
 **Risk**: low. The change only adds an early return on a path that currently raises unconditionally; no tensor with elements takes it.
 
 **Format note**: single-line paragraphs (tables, lists and code blocks excepted) so the body copies verbatim.
@@ -19,13 +19,11 @@
 
 ### Summary
 
-`torch._grouped_mm` cannot be called with a 2D operand whose inner dimension is 0. Not "it is slow" or "it returns garbage" -- there is **no stride vector that passes validation**, including the one `torch.empty` itself produces for that shape.
+`torch._grouped_mm` cannot be called with a 2D operand whose inner dimension is 0: no stride vector passes `check_valid_strides_and_return_transposed`, including the one `torch.empty` itself produces for that shape.
 
-This is reachable from ordinary MoE training: in the weight-gradient form of a grouped GEMM the operand's contraction length is the total routed token count, so it is zero exactly when no expert in the call received any tokens (a single empty group among busy ones does not produce it -- see "Empty groups are already fine" below). Eager autograd happens not to emit the call in that case; inductor emits it unconditionally, so the failure shows up as "this model trains fine eagerly and dies under `torch.compile`".
+This is reachable from ordinary MoE training. In the weight-gradient form of a grouped GEMM the operand's contraction length is the total routed token count, so it is zero exactly when no expert in the call received any tokens. Eager autograd happens not to emit the call in that case; inductor emits it unconditionally, so the model trains eagerly and dies under `torch.compile`.
 
 ### Reproduction
-
-Five lines, no model, no `torch.compile`, no distributed:
 
 ```python
 import torch
@@ -37,96 +35,30 @@ torch._grouped_mm(a, w, offs=offs)
 # RuntimeError: strides should be multiple of 16 bytes
 ```
 
-and with the natural row-major stride for a zero-column matrix:
+With `sizes = [224, 0]` and bf16 alignment 8, the two accepting branches in `GroupedMMUtils.h:25` are both unsatisfiable:
 
-```python
-base = torch.empty(0, device="cuda", dtype=torch.bfloat16)
-torch._grouped_mm(base.as_strided((F, 0), (0, 1)), w, offs=offs)
-# RuntimeError: Invalid strides/sizes, got [0, 1] for strides and [224, 0] for sizes
-```
-
-### The check is unsatisfiable for this shape
-
-`check_valid_strides_and_return_transposed` (`GroupedMMUtils.h:25`) accepts a matrix on one of two branches. With `sizes = [224, 0]`, `end_dim = 1`, and `alignment = 16 / 2 = 8` for bf16:
-
-| stride | branch 1 `s[0]==1 && s[1] >= max(1, size[0]=224)` | branch 2 `s[1]==1 && s[0] >= max(1, size[1]=0)` | result |
+| stride | branch 1 `s[0]==1 && s[1] >= max(1, 224)` | branch 2 `s[1]==1 && s[0] >= max(1, 0)` | result |
 |---|---|---|---|
-| `(0, 1)` natural row-major | `s[0]!=1`, no | `0 >= 1`, no | `Invalid strides/sizes` |
-| `(1, 1)` what `torch.empty(224,0)` gives | `1 >= 224`, no | yes -> then `1 % 8 == 0`, no | `strides should be multiple of 16 bytes` |
-| `(8, 1)` fabricated | -- | yes -> `8 % 8 == 0`, yes | **ok** |
+| `(0, 1)` natural row-major | no | `0 >= 1`, no | `Invalid strides/sizes` |
+| `(1, 1)` what `torch.empty(224,0)` gives | no | yes, then `1 % 8 != 0` | `strides should be multiple of 16 bytes` |
+| `(8, 1)` fabricated | -- | yes | **ok, correct [224, 256] zeros** |
 
-Branch 2 demands `stride[end_dim - 1] >= 1` *and* a multiple of the alignment, while the row stride of a 0-column matrix is naturally 0. The `max(1, ...)` guards anticipate a degenerate *size* but not a tensor with no elements at all.
+The `(8, 1)` row shows the kernel itself is fine -- the validation is the only obstacle. The `max(1, ...)` guards anticipate a degenerate size but not a tensor with no elements: the natural row stride of a 0-column matrix is 0.
 
-### The kernel itself is fine
+Empty *groups* already work in both modes (`[512,0,0,0]`, `[0,0,0,0]`, etc.); only the zero-length contraction dimension fails, and that shape arises in backward.
 
-Handing it a fabricated but aligned stride shows the validation is the only obstacle:
+### Fix
 
-```python
-torch._grouped_mm(base.as_strided((F, 0), (8, 1)), w, offs=offs)
-# ok, output shape [224, 256]
-```
+An operand with no elements has no memory to align and no layout to validate, so return early, inferring the orientation from whichever stride is unit (keeping the existing transposed-bool convention). Placed before the `data_ptr()` check, since an empty allocation may not carry an aligned pointer. The duplicated stride check in `meta_grouped_mm` gets the matching guard so the meta function and the kernel agree on what is callable.
 
-Correct shape, correct (zero) result. So this is a validation bug, not a missing kernel capability.
-
-### Empty *groups* are already fine
-
-Worth separating, because "grouped_mm breaks on empty experts" would be too broad a claim. Empty groups work today, eager and compiled:
-
-| group sizes | total rows | eager | compiled |
-|---|---|---|---|
-| `[128,128,128,128]` | 512 | ok | ok |
-| `[256,256,0,0]` | 512 | ok | ok |
-| `[512,0,0,0]` | 512 | ok | ok |
-| `[0,256,0,256]` | 512 | ok | ok |
-| `[0,0,0,0]` | 0 | ok | ok |
-
-Only the zero-length *contraction* dimension fails, and that shape arises in backward rather than forward.
-
-### Suggested fix
-
-An operand with no elements has no memory to align and no layout to validate -- every stride vector describes the same empty tensor. Return early, inferring the orientation from whichever stride is unit:
-
-```cpp
-inline bool check_valid_strides_and_return_transposed(const Tensor& mat) {
-  IntArrayRef tensor_strides = mat.strides();
-  IntArrayRef tensor_sizes = mat.sizes();
-  int end_dim = mat.dim() - 1;
-  int alignment = 16 / mat.element_size();
-  bool is_cpu = mat.device().is_cpu();
-
-+ // An empty operand has no layout to validate and the branches below accept
-+ // no stride vector for it; infer the orientation from the unit stride.
-+ if (mat.numel() == 0) {
-+   return tensor_strides[end_dim] != 1 && tensor_strides[end_dim - 1] == 1;
-+ }
-+
-  TORCH_CHECK(is_cpu || uint64_t(mat.data_ptr()) % 16 == 0, ...);
-```
-
-Placing it before the `data_ptr()` check also avoids asserting alignment on a pointer that may be null for an empty allocation.
-
-The returned bool keeps today's convention -- branch 1 (`stride[end_dim-1]==1`) means transposed, branch 2 (`stride[end_dim]==1`) means not -- so `(0,1)` and `(1,1)` return `false` (row-major) and `(1,0)` returns `true`.
-
-### The same logic is duplicated in the meta registration
-
-`torch/_meta_registrations.py` (`meta_grouped_mm`'s `check_valid_strides`) reimplements the identical two-branch check and needs the matching guard, otherwise the meta function and the kernel disagree about what is callable.
-
-**One question for a maintainer there.** The failing shape is genuinely data-dependent (a routed token count), so under dynamic shapes `mat.numel()` may be a `SymInt` and `== 0` would install a guard. Should that use `guard_size_oblivious`, or is a guard acceptable here given the shape is already specialized by the time inductor emits the call? Not asserting an answer -- this is the part where local reproduction cannot settle it.
+One question on the meta side: the failing shape is data-dependent (a routed token count), so under dynamic shapes `mat.numel() == 0` would install a guard. Should that use `guard_size_oblivious`, or is a guard acceptable given the shape is already specialized by the time inductor emits the call?
 
 ### Test plan
 
-* `test_grouped_mm` case: for each of `(0,1)`, `(1,1)` and the contiguous layout, `torch._grouped_mm` on a `[M, 0]` operand returns zeros of shape `[M, N]` rather than raising.
-* Backward case: a grouped GEMM where one group is empty, `.backward()` on a contiguous gradient, under `torch.compile`. Fails before, passes after.
+* `test_grouped_mm`: `(0,1)`, `(1,1)` and contiguous layouts of a `[M, 0]` operand return zeros of shape `[M, N]` rather than raising.
+* Backward of a grouped GEMM with all groups empty, under `torch.compile`: fails before, passes after.
 
-### What is and is not verified
-
-* **Verified locally**: the reproduction, the branch analysis, that a fabricated aligned stride makes the same call succeed with the correct output shape, and that empty groups are otherwise fine in both modes.
-* **Not verified**: the C++ patch itself. This machine has PyTorch from a pip wheel and no build tree, so the change is written against the installed header's source and reviewed by hand, not compiled or run.
-* End-to-end evidence that this single check is the whole obstacle: a local shim that re-strides exactly as this patch would ([gmm_shim.py](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/matrix_scripts/gmm_shim.py)) takes a compiled 18-cell parallelism matrix from 15/18 to 18/18 ([seed-matrix record](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/SEED_MATRIX_2026-08-04.md), compiled section); the full analysis is in [the grouped_mm log](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/GROUPED_MM_EMPTY_GROUP_2026-08-04.md).
-
-### Provenance
-
-Found while bringing up `torch.compile` across a parallelism matrix for a Kimi-K3-family MoE model; three EP configurations failed under compile and passed eagerly, and the cause reduced to the five lines above. Full record: [public logbook](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/GROUPED_MM_EMPTY_GROUP_2026-08-04.md).
+Caveat, stated plainly: the C++ change is written against the installed header from a pip wheel and reviewed by hand -- I could not compile it locally, so CI is its first build. The reproduction, the branch analysis, and the fabricated-stride control above are all verified. End to end, a shim that re-strides exactly as this patch would takes a compiled 18-cell MoE parallelism matrix from 15/18 to 18/18 ([shim](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/matrix_scripts/gmm_shim.py), [analysis](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/GROUPED_MM_EMPTY_GROUP_2026-08-04.md)).
 
 --- PASTE END ---
 
