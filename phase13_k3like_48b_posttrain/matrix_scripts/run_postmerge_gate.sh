@@ -33,8 +33,18 @@ STEPS=${STEPS:-10}
 mkdir -p "$OUT"
 
 export TITAN
-export KIMI_VIT_DEP=1
-export KIMI_VIT_DYNAMIC_CP=1
+
+# Topology is set PER ARM, not exported globally. DEP on a text flavor is INVALID, not
+# inert: the finding-50 guard fires with "this rank owns 1 vision stage(s) by stage index
+# but 0 were wired" on every PP cell. That was established once already and a global export
+# repeated it. Finding 32 made the config field the source of truth, so "off" here means
+# simply not setting the retired env name.
+arm_knobs() {
+  case $1 in
+    text) echo "" ;;
+    *)    echo "KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1" ;;
+  esac
+}
 
 echo "=== post-merge gate: TITAN=$TITAN OUT=$OUT steps=$STEPS ==="
 df -h /workspace | tail -1
@@ -48,7 +58,7 @@ nvidia-smi --query-gpu=index,memory.used --format=csv,noheader
 # cells that did pass in the earlier text table stay comparable.
 arm_extra() {
   case $1 in
-    text) echo "--training.seq-len 2048" ;;
+    text) echo "--training.seq-len 4096" ;;
     *)    echo "" ;;
   esac
 }
@@ -62,7 +72,7 @@ for arm in text mm_full mm_lora; do
   echo
   echo "########## SMOKE $arm : $FLAVOR $(arm_extra $arm) ##########"
   ( source /venv/main/bin/activate && cd "$TITAN" && PYTHONPATH="$TITAN" \
-      timeout 900 torchrun --nproc_per_node=2 \
+      env $(arm_knobs "$arm") timeout 900 torchrun --nproc_per_node=2 \
       --master_port=60941 -m torchtitan.train --module kimi_k3 --config "$FLAVOR" \
       --debug.seed 42 --debug.deterministic --metrics.log_freq 1 --training.steps 2 \
       --training.global-batch-size 8 --training.local-batch-size 2 \
@@ -88,10 +98,10 @@ for arm in text mm_full mm_lora; do
   esac
   echo
   echo "########## $arm : $FLAVOR ##########"
-  EXTRA=$(arm_extra "$arm") FLAVOR=$FLAVOR OUT=$OUT/${arm}_13 STEPS=$STEPS \
-    bash "$HERE/run13_flav.sh"
-  EXTRA=$(arm_extra "$arm") FLAVOR=$FLAVOR OUT=$OUT/${arm}_max STEPS=$STEPS \
-    bash "$HERE/run_maxdeg.sh"
+  env $(arm_knobs "$arm") EXTRA="$(arm_extra "$arm")" FLAVOR=$FLAVOR \
+    OUT=$OUT/${arm}_13 STEPS=$STEPS bash "$HERE/run13_flav.sh"
+  env $(arm_knobs "$arm") EXTRA="$(arm_extra "$arm")" FLAVOR=$FLAVOR \
+    OUT=$OUT/${arm}_max STEPS=$STEPS bash "$HERE/run_maxdeg.sh"
   echo "--- $arm 13-cell table ---"
   bash "$HERE/collect13.sh" "$OUT/${arm}_13"
   df -h /workspace | tail -1
