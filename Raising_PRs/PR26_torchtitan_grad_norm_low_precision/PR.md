@@ -1,6 +1,6 @@
 # PR #26 — `clip_grad_norm_`: the total norm is computed in the gradients' dtype, so with `training.dtype=bfloat16` the clipped update depends on how the pipeline was cut
 
-**Status**: ✅ ready to file — reproduced on a CLEAN upstream worktree (`681fd4b50`) with the unmodified `llama3_debugmodel` and no fork code in the loop. Re-audited 2026-08-13 against upstream `f4e78188e`: all three `get_total_norm` call sites unchanged, patch applies cleanly, `Iterable`/`DTensor` imports present, `_foreach_norm`/`vector_norm` dtype args verified. Branch `grad-norm-fp32` pushed (commit `7c98c6c51`, see commits.md).
+**Status**: ✅ ready to file — reproduced on a CLEAN upstream worktree (`681fd4b50`) with the unmodified `llama3_debugmodel` and no fork code in the loop. Re-measured 2026-08-13 on upstream `f4e78188e` (table below) and re-audited there: all three `get_total_norm` call sites unchanged, patch applies cleanly, `Iterable`/`DTensor` imports present, `_foreach_norm`/`vector_norm` dtype args verified. Branch `grad-norm-fp32` pushed (commit `7c98c6c51`, see commits.md).
 **Target**: `pytorch/torchtitan`, `torchtitan/distributed/utils.py` (`clip_grad_norm_` and `_clip_grad_norm_with_ep`)
 **Risk**: low in shape, visible in numbers. No behaviour change when gradients are float32, which is the default; with `training.dtype="bfloat16"` the reported and applied norm changes, by design — the old value was inaccurate.
 
@@ -24,16 +24,16 @@ The default `training.dtype="float32"` is unaffected; the issue appears only wit
 
 ### Evidence -- unmodified `llama3_debugmodel` on a clean checkout
 
-`681fd4b50`, no fork code. 4 GPUs, `dp_shard=2 x pp=2`, seed 42, deterministic, 2 steps, `--training.local-batch-size 2`:
+`f4e78188e`, no fork code. 4 GPUs, `dp_shard=2 x pp=2`, seed 42, deterministic, 2 steps, `--training.local-batch-size 2`:
 
 | `--training.dtype` | patch | step 1 `grad_norm` | step 2 `grad_norm` |
 |---|---|---|---|
-| `float32` | before | 1.4485 | 1.6350 |
-| `float32` | after | 1.4485 | 1.6350 |
+| `float32` | before | 1.4509 | 1.6336 |
+| `float32` | after | 1.4509 | 1.6336 |
 | `bfloat16` | before | 1.4453 | 1.6328 |
-| `bfloat16` | **after** | **1.4485** | 1.6357 |
+| `bfloat16` | **after** | **1.4508** | 1.6343 |
 
-float32 is untouched, and patched bfloat16 reports the same step-1 norm the float32 configuration does.
+float32 is untouched to the printed digit, and patched bfloat16 matches the float32 configuration to 1e-4 -- bf16 inputs with an fp32 reduction approach the all-fp32 value rather than reaching it, which is the accuracy the fix is claiming.
 
 The partition dependence needs no distributed setup: 394 bf16 tensors, norms taken with the same function the call sites use, then the same tensors split and combined the way `pp_mesh`/EP combines them:
 

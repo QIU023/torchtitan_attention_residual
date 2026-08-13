@@ -1,8 +1,8 @@
 diff --git a/torchtitan/distributed/utils.py b/torchtitan/distributed/utils.py
-index 168b8a57e..29cfc3f08 100644
+index 25739c812..2c08215a3 100644
 --- a/torchtitan/distributed/utils.py
 +++ b/torchtitan/distributed/utils.py
-@@ -557,6 +557,58 @@ def set_pg_timeouts(
+@@ -595,6 +595,45 @@ def set_pg_timeouts(
          torch.distributed.set_timeout(timeout, group)
  
  
@@ -15,28 +15,15 @@ index 168b8a57e..29cfc3f08 100644
 +) -> torch.Tensor:
 +    """``torch.nn.utils.get_total_norm`` with the reduction carried in float32.
 +
-+    That function returns the norm in the TENSORS' dtype. With bf16 gradients both the
-+    per-tensor norms and the norm-of-norms are bf16 -- three to four significant digits --
-+    so the total is wrong by a few tenths of a percent, and by an amount that depends on
-+    how the tensors are GROUPED. Under PP or EP each rank norms its own share, so the
-+    value a rank reports depends on where the pipeline was cut rather than only on the
-+    gradients. Measured on 394 bf16 tensors: 0.184% error overall, and 0.057% / 0.142% /
-+    0.174% for three different splits of the same tensors.
-+
-+    With clipping active the error is not cosmetic -- it scales the update. A run with
-+    ``max_norm=1.0`` against a true norm near 10 clips by ``max_norm / total_norm``, so a
-+    0.2% error in the norm is a 0.2% error in that step's effective learning rate.
-+
-+    Structure follows the upstream function so the only difference is precision: same
-+    empty-list result, same error_if_nonfinite behaviour, and the foreach fast path where
-+    it applies (``foreach=False`` is honored). DTensors go through ``vector_norm``
-+    one at a time -- upstream's foreach support check excludes them too; the dtype
-+    argument preserves ``_NormPartial``, so the caller's ``full_tensor()`` still works.
++    That function returns the norm in the tensors' dtype, so with bf16 gradients the
++    total depends on how the tensors are GROUPED -- under PP or EP, on where the model
++    was cut rather than only on the gradients. Structure follows upstream so precision
++    is the only difference; DTensors take the per-tensor path because upstream's foreach
++    check excludes them, and the dtype argument preserves ``_NormPartial``.
 +    """
 +    tensors = list(tensors)
 +    if not tensors:
-+        # Upstream returns a plain CPU scalar here, and callers depend on that: it is how
-+        # a PP rank owning no gradients of one group signals "nothing to contribute".
++        # Plain CPU scalar, as upstream: a PP rank with no gradients contributes nothing.
 +        return torch.tensor(0.0)
 +    if foreach is False or any(isinstance(t, DTensor) for t in tensors):
 +        norms: list[torch.Tensor] = [
@@ -61,7 +48,7 @@ index 168b8a57e..29cfc3f08 100644
  @torch.no_grad()
  def clip_grad_norm_(
      parameters: torch.Tensor | Iterable[torch.Tensor],
-@@ -611,7 +663,7 @@ def clip_grad_norm_(
+@@ -649,7 +688,7 @@ def clip_grad_norm_(
          # prevent generators from being exhausted
          parameters = list(parameters)
      grads = [p.grad for p in parameters if p.grad is not None]
@@ -70,7 +57,7 @@ index 168b8a57e..29cfc3f08 100644
          grads, norm_type, error_if_nonfinite, foreach
      )
  
-@@ -679,14 +731,14 @@ def _clip_grad_norm_with_ep(
+@@ -708,14 +747,14 @@ def _clip_grad_norm_with_ep(
      # - In autoparallel, all params may live on a single sparse mesh with "ep" dimension,
      #   so non_ep_grads would be empty
      # - In PP + EP setups, certain PP ranks may only own EP or non-EP layers
