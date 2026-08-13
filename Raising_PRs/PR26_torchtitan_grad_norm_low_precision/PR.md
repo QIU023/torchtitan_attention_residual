@@ -54,7 +54,7 @@ Same gradients, three different answers; `121.000000` is what a bf16 scalar can 
 ### Test plan
 
 * `llama3_debugmodel`, `dp_shard=2 x pp=2`, `--training.dtype float32`: unchanged before/after.
-* Same with `bfloat16`: `grad_norm` moves to the float32-accurate value (1.4453 -> 1.4485 at step 1).
+* Same with `bfloat16`: `grad_norm` moves next to the float32 value (1.4453 -> 1.4508 at step 1, against float32's 1.4509).
 * A CPU unit test can pin the mechanism: bf16 tensor list where `get_total_norm` differs from the float32 value and changes under splitting, while the new helper is split-invariant. Happy to add during review.
 
 --- PASTE END ---
