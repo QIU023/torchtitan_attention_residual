@@ -1,7 +1,9 @@
 # PR #26 — `clip_grad_norm_`: the total norm is computed in the gradients' dtype, so with `training.dtype=bfloat16` the clipped update depends on how the pipeline was cut
 
 **Status**: ✅ ready to file — reproduced on a CLEAN upstream worktree (`681fd4b50`) with the
-unmodified `llama3_debugmodel` and no fork code in the loop.
+unmodified `llama3_debugmodel` and no fork code in the loop. Re-audited 2026-08-13 against
+upstream `f4e78188e`: all three `get_total_norm` call sites unchanged, patch applies cleanly,
+`Iterable`/`DTensor` imports present, `_foreach_norm`/`vector_norm` dtype args verified.
 **Target**: `pytorch/torchtitan`, `torchtitan/distributed/utils.py`
 (`clip_grad_norm_` and `_clip_grad_norm_with_ep`)
 **Fork reference**: `attention_residual_dev` — `torchtitan/distributed/utils.py` hunk only.
@@ -81,7 +83,7 @@ local `_get_total_norm_fp32` that mirrors it — same empty-list result, same
 `error_if_nonfinite` behaviour, same foreach fast path where it applies — and passes
 `dtype=torch.float32` to the norm calls:
 
-* plain tensors: `torch._foreach_norm(tensors, norm_type, dtype=torch.float32)`
+* plain tensors: `torch._foreach_norm(tensors, norm_type, dtype=torch.float32)` (`foreach=False` is honored with a per-tensor fallback)
 * DTensors: `torch.linalg.vector_norm(t, norm_type, dtype=torch.float32)` one at a time,
   because upstream's foreach support check excludes them as well. The dtype argument
   preserves the `_NormPartial` placement, so the existing `full_tensor()` reduction in both

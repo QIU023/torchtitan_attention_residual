@@ -29,16 +29,16 @@ index 168b8a57e..29cfc3f08 100644
 +
 +    Structure follows the upstream function so the only difference is precision: same
 +    empty-list result, same error_if_nonfinite behaviour, and the foreach fast path where
-+    it applies. DTensors go through ``vector_norm`` one at a time because upstream's
-+    foreach support check excludes them too; the dtype argument preserves their
-+    ``_NormPartial`` placement, so the caller's ``full_tensor()`` still reduces correctly.
++    it applies (``foreach=False`` is honored). DTensors go through ``vector_norm``
++    one at a time -- upstream's foreach support check excludes them too; the dtype
++    argument preserves ``_NormPartial``, so the caller's ``full_tensor()`` still works.
 +    """
 +    tensors = list(tensors)
 +    if not tensors:
 +        # Upstream returns a plain CPU scalar here, and callers depend on that: it is how
 +        # a PP rank owning no gradients of one group signals "nothing to contribute".
 +        return torch.tensor(0.0)
-+    if any(isinstance(t, DTensor) for t in tensors):
++    if foreach is False or any(isinstance(t, DTensor) for t in tensors):
 +        norms: list[torch.Tensor] = [
 +            torch.linalg.vector_norm(t, norm_type, dtype=torch.float32) for t in tensors
 +        ]
