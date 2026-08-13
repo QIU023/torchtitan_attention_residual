@@ -23,10 +23,28 @@ hold, and all three are in or under KDA:
 So the plan keeps module BOUNDARIES as plain tensors -- every Colwise/Rowwise
 entry uses `use_local_output=True` (or `output_layouts=Replicate()` plus
 `use_local_output=True`) -- while the TP collectives still fire inside each
-Linear. That is the design constraint the whole file is organised around, and it
-is why a declarative `sharding_config`-only approach does not work here: the
-declarative vocabulary has no `use_local_output`, so it cannot express a
-plain-tensor boundary.
+Linear. That is the design constraint the whole file is organised around.
+
+It is also why a declarative `sharding_config`-only approach cannot simply replace
+this file, and the reason is narrower than "declarations are not expressive enough".
+Declarations DO cover more than the weight: `in_src_shardings` lifts a plain input
+via `DTensor.from_local`, so a module fed plain activations can be driven
+declaratively. What the vocabulary has no field for is the OUTPUT side of
+`use_local_output` -- `out_dst_shardings` redistributes, it does not `to_local`, so a
+declaratively-driven module always returns a DTensor.
+
+That matters exactly where a module's output meets a plain tensor. K3's residual
+stream is plain, and Block AttnRes injects two more plain sources into it, so a
+module feeding that stream cannot be migrated alone: `down_proj` declared rowwise
+returns a DTensor and the residual add then mixes kinds. The migration unit is
+therefore a whole residual stream, not a module -- measured, not argued: migrating the
+dense FFN by itself dies with `aten.add.Tensor got mixed torch.Tensor and DTensor`,
+while the layer norms migrate byte-identically because their output feeds attention
+rather than the residual add.
+
+Partial migration is under way on a branch and it works where the stream allows it:
+`lm_head`, `embed_tokens` (onto upstream's vocab-parallel embedding) and all 26 layer
+norms are declarative, verified on the text flavor's `ep2_fsdp2_tp2_cp2` cell.
 
 ## The fla shims, done statelessly
 

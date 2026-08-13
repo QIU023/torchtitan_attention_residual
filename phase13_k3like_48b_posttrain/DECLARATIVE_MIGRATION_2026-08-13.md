@@ -126,10 +126,22 @@ Two causes, neither of them the migration's concern, but both blocking its instr
 
 ## Consequence for PR-A that must not be forgotten
 
-`Raising_PRs/k3_pr_a_tp_kda/PR_BODY.md` argues that a declarative `sharding_config`-only
-approach "does not work here" because "the declarative vocabulary has no
-`use_local_output`, so it cannot express a plain-tensor boundary". After this migration
-that argument is **void**, because the plain-tensor boundary is not needed. PR-A's body and
-its `commits.md` extraction list both have to be rewritten, and the PR shrinks from
-"577-line imperative plan" to "a `sharding.py` plus the fla kernel-boundary shims" -- which
-is a far easier review and closer to what the maintainer asked for in the first place.
+PR-A argues that a declarative `sharding_config`-only approach "does not work here"
+because "the declarative vocabulary has no `use_local_output`, so it cannot express a
+plain-tensor boundary".
+
+**That argument is CORRECT, and an earlier version of this section declared it void.**
+The retraction was wrong because it merged two separate claims. What this document
+retires is the idea that fla, PP's P2P and AttnRes's `stack` FORCE a plain boundary --
+they do not. Whether the declarative vocabulary can EXPRESS one is a different question,
+and the answer is no: `ShardingConfig` has `state_shardings`, `in_src`, `in_dst`,
+`out_src`, `out_dst` and `local_map`, and none of them is `to_local` on the output.
+`in_src` does lift a plain input, so the input side is expressible; the output side is
+not.
+
+So the PR body needs narrowing rather than deleting, and the honest form is stronger for
+review because it states the cost: our residual stream is plain, AttnRes injects two more
+plain sources into it, and a module feeding that stream therefore cannot migrate alone.
+Measured: the dense FFN alone dies with `aten.add.Tensor got mixed torch.Tensor and
+DTensor`, while the layer norms migrate byte-identically -- their output feeds attention,
+not the residual add.
