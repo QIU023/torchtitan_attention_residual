@@ -73,6 +73,6 @@ identical.
 ## Branch state (2026-08-13)
 
 Fix branch pushed: `QIU023/torchtitan` branch `grad-norm-fp32` (commit
-`7c98c6c51`, based on upstream main `f4e78188e`), the folder's patch applied
+`5e88ff897`, based on upstream main `f4e78188e`), the folder's patch applied
 verbatim, py_compile clean. Open the PR at:
 `https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:grad-norm-fp32`

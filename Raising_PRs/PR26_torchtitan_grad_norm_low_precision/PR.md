@@ -1,6 +1,6 @@
 # PR #26 — `clip_grad_norm_`: the total norm is computed in the gradients' dtype, so with `training.dtype=bfloat16` the clipped update depends on how the pipeline was cut
 
-**Status**: ✅ ready to file — reproduced on a CLEAN upstream worktree (`681fd4b50`) with the unmodified `llama3_debugmodel` and no fork code in the loop. Re-measured 2026-08-13 on upstream `f4e78188e` (table below) and re-audited there: all three `get_total_norm` call sites unchanged, patch applies cleanly, `Iterable`/`DTensor` imports present, `_foreach_norm`/`vector_norm` dtype args verified. Branch `grad-norm-fp32` pushed (commit `7c98c6c51`, see commits.md).
+**Status**: ✅ ready to file — reproduced on a CLEAN upstream worktree with the unmodified `llama3_debugmodel` and no fork code in the loop. Re-measured 2026-08-13 on upstream `f4e78188e` (table below) and re-audited there: all three `get_total_norm` call sites unchanged, patch applies cleanly, `Iterable`/`DTensor` imports present, `_foreach_norm`/`vector_norm` dtype args verified. Branch `grad-norm-fp32` pushed (commit `5e88ff897`, see commits.md).
 **Target**: `pytorch/torchtitan`, `torchtitan/distributed/utils.py` (`clip_grad_norm_` and `_clip_grad_norm_with_ep`)
 **Risk**: low in shape, visible in numbers. No behaviour change when gradients are float32, which is the default; with `training.dtype="bfloat16"` the reported and applied norm changes, by design — the old value was inaccurate.
 
