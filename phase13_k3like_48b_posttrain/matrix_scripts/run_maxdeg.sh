@@ -9,7 +9,10 @@
 # A cell that would need the flavor changed is recorded as not expressible,
 # never accommodated -- the twin's whole value is "their exact config".
 set -uo pipefail
-TITAN=/workspace/torchtitan_attention_residual/torchtitan
+# Overridable: the post-merge gate points this at a merge worktree. Hard-coding it
+# silently ran these cells against the dev tree while run13_flav.sh honoured TITAN, which
+# made five cells look byte-identical because they were literally the same tree.
+TITAN=${TITAN:-/workspace/torchtitan_attention_residual/torchtitan}
 OUT=${OUT:-/tmp/maxdeg}; STEPS=${STEPS:-3}; EXTRA=${EXTRA:-}
 FLAVOR=${FLAVOR:-kimi_k3_debugmodel_pr_4025}
 mkdir -p "$OUT"; cd "$TITAN"; export PYTHONPATH=$TITAN; source /venv/main/bin/activate
