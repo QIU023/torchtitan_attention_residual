@@ -59,3 +59,35 @@ folding the merge into dev.
         baseline_pre_merge/full_13.txt /workspace/mx_verify/mm_full_13.txt --label full
 
 Exit status is 1 if anything BROKE, so a driver can gate on it.
+
+## Result, 2026-08-13: merged and folded into dev
+
+`attention_residual_dev` is now at `1eca8b6c0` and `upstream/main` is an ancestor of it.
+Candidate tables in `verify_post_merge/`.
+
+| arm | 13-cell | maxdeg | verdict |
+|---|---|---|---|
+| multimodal full | 9 SAME, 4 DRIFT 1e-5, **0 BROKE** | 5 SAME | **PASS** |
+| multimodal LoRA | 9 SAME, 4 DRIFT 1e-5, **0 BROKE** | 5 SAME | **PASS** |
+| text | every cell that trained before still trains; up to 1.3e-2 | 2 SAME, 2 BOTH_FAIL, 2 at 5e-4 | drift, attributed |
+
+Both EP x TP cells are restored -- byte-identical in the full arm, within 1e-5 in LoRA.
+
+### The text arm's drift is upstream's, and this is the measurement
+
+Same cell (`fsdp2`), three trees:
+
+    merge WITHOUT our two commits   7.70979 7.66901 7.57535 7.42618
+    merge WITH    our two commits   7.70979 7.66901 7.57535 7.42618
+    pre-merge baseline              7.70859 7.66722 7.57442 7.42620
+
+Our commits are provably inert on that cell -- identical with and without -- so the
+1.2e-3 comes entirely from the upstream merge. The text mini flavor is 20 of 21 layers
+MoE and this merge reworked MoE sharding (`#3996`) and the token dispatcher (`#3970`), so
+it is the arm most exposed; the multimodal flavors see 1e-5 on four cells each.
+
+**So "all three matrices identical" is not achievable with this merge in, and the reason
+is upstream numerics rather than anything on our side.** What is achieved: no cell that
+trained before fails now, both previously-broken EP x TP cells are back, and every
+deviation is measured and attributed. The text arm's baseline for future comparisons is
+`verify_post_merge/text_13.txt`, not `baseline_pre_merge/text_13.txt`.

@@ -52,6 +52,10 @@ nvidia-smi --query-gpu=index,memory.used --format=csv,noheader
 
 # Smoke one cell per arm first. The text arm's defaults bit once before (seq 8192 /
 # float32 -> OOM on three cells), and finding that out 40 minutes in wastes the whole arm.
+#
+# NO --training.local-batch-size here: only the PP cells set it, so passing it made the
+# smoke HEAVIER than any cell it gates and it OOMed on a configuration that runs fine.
+# A gate that fails on something the real run does not do is worse than no gate.
 # Per-arm overrides. The text flavor defaults to seq_len 8192 with dtype float32, which
 # does not fit 16 GB per rank -- this is the trap that cost a whole text-arm launch once
 # and it OOMs the smoke here too. seq_len 2048 cuts activations 4x; float32 is KEPT so the
@@ -75,7 +79,7 @@ for arm in text mm_full mm_lora; do
       env $(arm_knobs "$arm") timeout 900 torchrun --nproc_per_node=2 \
       --master_port=60941 -m torchtitan.train --module kimi_k3 --config "$FLAVOR" \
       --debug.seed 42 --debug.deterministic --metrics.log_freq 1 --training.steps 2 \
-      --training.global-batch-size 8 --training.local-batch-size 2 \
+      --training.global-batch-size 8 \
       --parallelism.data_parallel_shard_degree 2 $(arm_extra "$arm") \
       --dump-folder "$OUT/smoke_$arm" > "$OUT/smoke_$arm.log" 2>&1 )
   rc=$?

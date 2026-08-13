@@ -29,15 +29,34 @@ import argparse
 import sys
 
 
+def _is_number(tok: str) -> bool:
+    try:
+        float(tok)
+    except ValueError:
+        return False
+    return True
+
+
 def read_table(path: str) -> dict[str, list[str] | None]:
-    """``{cell: [loss strings]}``, or None for a failed cell."""
+    """``{cell: [loss strings]}``, or None for a failed cell.
+
+    Keeps only NUMERIC tokens: the maxdeg runner truncates each row with "..." and also
+    emits skip notes ("tp8 / cp8 : only 4 attention heads"), and both were being read as
+    cells -- the notes inflated the SAME count and the "..." crashed the float compare.
+    A row whose second field is neither a number nor FAIL is not a cell.
+    """
     out: dict[str, list[str] | None] = {}
     for line in open(path):
-        if not line.strip():
-            continue
         fields = line.split()
+        if len(fields) < 2:
+            continue
         name = fields[0]
-        out[name] = None if "FAIL" in line else fields[1:]
+        if "FAIL" in line:
+            out[name] = None
+            continue
+        losses = [t for t in fields[1:] if _is_number(t)]
+        if losses:
+            out[name] = losses
     return out
 
 
