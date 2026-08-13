@@ -61,6 +61,8 @@ matrix cells that verify it.
 
 **Legend**: 🚀 branch pushed · 🟢 branched locally (push pending) · ✅ ready to file (no local branch yet) · 🟡 ready but conditional (depends on another PR or hand-port) · 🟠 issue / RFC first, patch deferred · 🔵 tentative / wait · ⛔ obsoleted
 
+**Body length**: cut every PR body to the four items in [`PR_WRITING_RULES.md`](PR_WRITING_RULES.md) before filing. A maintainer told us on PR26 that the summary was unreadable and looked AI-written, and the question he had to ask had a two-line answer the body never gave.
+
 **Filing convention**: each folder has `PR.md` (PR body draft) + `commits.md` (backing commit hashes / cherry-pick recipe) + `FILING.md` (target URLs, copy-paste title/body, cross-links between PRs in this batch). PR-body content lives in `PR.md`; `FILING.md` is the actionable execution doc.
 
 **Internal (non-PR) maintenance**: [`FORK_REBASE_TASK.md`](FORK_REBASE_TASK.md) — fork rebase required after upstream torchtitan `627f4a31` refactor; blocks GRPO launchers from running on freshly-pulled fork until reconciled.
