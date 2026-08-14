@@ -18,6 +18,19 @@ consistency. Deliberate cross-links belong ONLY in issue/PR comments we
 intentionally post. Reference forms in FILE CONTENT (docs) are fine — files
 never fire timeline events. Our own repo's issues/PRs are exempt.
 
+## PR-text rule (maintainer feedback on the grad-norm PR, 2026-08-13)
+
+Upstream PR descriptions and review replies must read as terse human
+engineering notes. Concretely: no section headers, no bold-heavy structure,
+no evidence tables in the description body -- a few plain sentences, with
+the exact op-level before/after stated FIRST. Numbers go inline; at most one
+short repro block. Detailed evidence lives in a linked logbook doc or comes
+as a follow-up comment when asked. Code comments 1-2 lines (existing rule).
+When a maintainer asks a question, the first sentence of the reply answers
+it. Verbatim trigger: "sorry I couldn't really understand the PR summary
+which seems to be written by AI." The kit PASTE bodies predating this rule
+are all too structured -- rewrite before filing, do not paste as-is.
+
 ## What this project is
 
 IC (Yiqiao / QIU023) **reference implementation** of Kimi K3's training-side
