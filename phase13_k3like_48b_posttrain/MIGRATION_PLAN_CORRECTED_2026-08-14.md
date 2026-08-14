@@ -287,3 +287,41 @@ Two consequences:
   come back together.
 * It also de-risks step 2. The upstream modules assume a DTensor stream, so once ours is
   one they drop in without an adapter layer.
+
+### The five tp x cp cells: measured, still open
+
+`migrate_stream_dtensor` at `b063b9e09` is **49/54**. text 18/18; the five failures are
+`fsdp2_tp2_cp2` and `ep2_fsdp2_tp2_cp2` on both multimodal arms plus `tp2_pp2_cp2` on
+LoRA. They passed before the flip (10/10 in `mx_sweep`), so the flip introduced them.
+
+**What is measured**, with a probe on the vision path rather than by reading:
+
+    dynamic_cp returns: ['plain']     <- forward output is plain, as intended
+    grad into feat[0]: DT             <- the gradient arrives as a DTensor
+
+Forward plain, backward DTensor. The tower's hand-written `funcol.all_gather_tensor` has
+a `reduce_scatter` transpose, and `_c10d_functional.reduce_scatter_tensor` has no DTensor
+sharding strategy, so the backward dies there.
+
+`to_local(grad_placements=...)` cannot express the fix: the tensor never came from a
+DTensor, so there is nothing to unwrap on the way out. The constraint is only on the way
+back.
+
+**Six attempts, none complete.** In order: flip the splice's lift direction; stop lifting
+the tower's input (-> `aten.convolution` mixed, because the tower's TP weights are
+DTensors); pin `grad_placements` at the gather; restore `use_local_output=True` inside
+`_apply_tp_moonvit_mlp` (-> `aten.add` mixed, tower output now plain while the stream
+wants DTensor); an `autograd.Function` sealing the gradient at the tower's exit (->
+`from_local` receives a DTensor, one layer further); scoping that seal to the entries
+this path produced (same error).
+
+The last two are the closest and the error moved, so the boundary is nearly right and the
+remaining mismatch is one layer beyond the exit. **Next step is to instrument that layer's
+backward specifically** -- a grad hook on whatever `from_local` is receiving -- rather than
+adjusting the seal a seventh time. Every one of the six was a guess about placement; the
+one measurement taken (the forward/backward kind asymmetry) is what made the direction
+clear, and it should have come first.
+
+The tower's TP and its dynamic CP are mechanisms this migration deliberately leaves alone,
+so an acceptable resolution is also to keep the whole tower behind a plain boundary in
+both directions and let the stream be DTensor only from the splice onward.
