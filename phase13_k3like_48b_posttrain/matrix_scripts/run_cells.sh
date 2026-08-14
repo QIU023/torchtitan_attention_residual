@@ -50,11 +50,19 @@ for name in "$@"; do
   n=$(awk -F, '{print NF}' <<<"$gpus")
 
   echo "--- $name  gpus=$gpus  args: $cellargs"
-  rm -rf "$OUT/$name"
-  CUDA_VISIBLE_DEVICES="$gpus" timeout 7200 torchrun \
-    --nproc_per_node="$n" --master_port=$((port + 900)) ${ENTRY:--m torchtitan.train} \
-    $BASE $cellargs --dump-folder "$OUT/$name" > "$OUT/$name.log" 2>&1
-  rc=$?
+  # Retry on a fresh port. A socket left in TIME_WAIT by an earlier run makes torchrun
+  # die with EADDRINUSE, which reads exactly like a numerical failure -- it cost this
+  # script one cell the first time it ran. run13_flav.sh retries for the same reason.
+  for attempt in 1 2 3; do
+    use_port=$((port + 900 + 400 * (attempt - 1)))
+    rm -rf "$OUT/$name"
+    CUDA_VISIBLE_DEVICES="$gpus" timeout 7200 torchrun \
+      --nproc_per_node="$n" --master_port="$use_port" ${ENTRY:--m torchtitan.train} \
+      $BASE $cellargs --dump-folder "$OUT/$name" > "$OUT/$name.log" 2>&1
+    rc=$?
+    grep -q EADDRINUSE "$OUT/$name.log" || break
+    echo "  ($name: port $use_port in use, retrying)"
+  done
   losses=$(grep -oE "loss: +[0-9.]+" "$OUT/$name.log" | awk '{printf "%s ", $2}')
   if [ -n "$losses" ]; then
     echo "    $losses"
