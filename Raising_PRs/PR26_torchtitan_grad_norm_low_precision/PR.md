@@ -10,7 +10,7 @@
 
 --- PASTE BEGIN ---
 
-Before: with bf16 grads, the per-tensor norms (`torch._foreach_norm` / `vector_norm`) and the norm-of-norms over their stack both ran in bf16, since `get_total_norm` keeps the input dtype — resulting in a total norm that is rounded per group and so depends on the PP/EP partition. After: the fix makes both ops accumulate in `dtype=torch.float32`, which shrinks the per-group rounding from ~0.4% to ~1e-7 relative, so all partitions agree to print precision; the gradients stay bf16, and the clip multiply is the same op — only the norm, and hence the clip factor, changes value.
+Before: with bf16 grads, the per-tensor norms (`torch._foreach_norm` / `vector_norm`) and the norm-of-norms over their stack both ran in bf16, since `get_total_norm` keeps the input dtype — resulting in a total norm that is rounded per group and so depends on the PP/EP partition. After: the fix makes both ops accumulate in `dtype=torch.float32`, shrinking the per-group rounding step from 2^-8 (~0.4%) to 2^-23 (~1e-7) relative, so any remaining partition dependence sits at float32 epsilon; the gradients stay bf16, and the clip multiply is the same op — only the norm, and hence the clip factor, changes value.
 
 --- PASTE END ---
 
