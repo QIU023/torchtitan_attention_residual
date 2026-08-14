@@ -207,3 +207,37 @@ never gets far enough to log.
 **Do not detect job completion by process name.** Chain the steps inside one process, or
 have each step touch a sentinel file and wait on that. One process is simpler and also
 guarantees the serial-GPU rule that the whole queue exists to enforce.
+
+## Reading a kind-mixing error instead of instrumenting it
+
+`aten.mul.Tensor got mixed torch.Tensor and DTensor` in the AttnRes stream, after the
+carrier moved from a list to a tensor. I diagnosed it three times from the source, each
+reading self-consistent and each wrong:
+
+1. the two AttnRes norms' declarations were bound to the old 4-D value stack -- named the
+   module without checking the traceback's line number, which said `input_layernorm`;
+2. the list path's first-layer `block_attn_res` call was silently converting DTensor to
+   plain, and the tensor path's skip guard removed it -- so add the conversion at the
+   model's entry;
+3. same conversion, but per layer, since `block_attn_res` runs at the top of every layer.
+
+The KIND probe answered it in one run:
+
+    functional.py:3012 {'input': 'plain', 'weight': "DTensor('S(0)',)"}
+
+The input was fine. The **weight** was still FSDP-sharded, because the model loop called
+`layer.forward_tensor_carrier(...)` directly and bypassed `nn.Module.__call__`, so FSDP2's
+pre-forward hook never fired. None of the three readings touched the actual cause.
+
+The common thread: the error names two tensor kinds, so I kept asking "which activation
+should have been a DTensor" and never once asked about the parameter side. A probe does not
+have a hypothesis to be captured by -- it prints both operands.
+
+**Rule: for a kind-mixing error, run the probe first, read the code second.** It was already
+written, and it had already paid for itself once the same day on the vision-tower
+attribution. Reading first cost three 8-GPU smoke runs and three commits.
+
+Corollary that made reading feel productive: fix (2) moved the failure to a later layer and
+fix (3) kept it in the same function, so both looked like "not fixed yet" rather than
+"wrong cause". A wrong hypothesis that shifts the symptom is more expensive than one that
+does nothing.
