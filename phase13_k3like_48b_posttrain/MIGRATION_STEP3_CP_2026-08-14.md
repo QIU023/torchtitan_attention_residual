@@ -108,3 +108,63 @@ They are the zero-initialized AttnRes pseudo-queries, and the carrier story depe
 small deltas accumulating from exactly zero.
 
 Then DEP, then PP with the adapter last.
+
+---
+
+# PP: the carrier migration, stopped at a verified intermediate
+
+Branch `migrate_carrier_tensor` at `77adb091b`, one commit on `align_4025`.
+
+## Done and verified
+
+`block_attn_res_tensor` and `KimiAttnResDecoderLayer.forward_tensor_carrier` take the block
+history as one `[T, N, D]` tensor instead of a list plus a separate partial, with the
+running partial sum riding inside the hidden state. Three Python accumulators become two
+tensors, both in the signature.
+
+The gate was **bitwise equality**, not the matrix: a pure container change has no licence to
+move a digit, and the 54-cell matrix could not distinguish a container bug from the drift it
+tolerates elsewhere. Measured on one GPU on `report_arch` -- blocks committed 2 both ways,
+carrier and hidden state both bitwise equal (`matrix_scripts/carrier_equivalence_probe.py`).
+
+Both paths live side by side. The gated graft keeps the list path with an explicit
+`NotImplementedError`, since its `plain_stream` is a third accumulator this form does not
+carry; it is off in all three matrix arms, so it does not block the 54.
+
+## Why the matrix was NOT run on this
+
+The model's forward loop still calls the list path, so a 54-cell run would re-run the old
+code and report green without touching the change. A passing matrix that does not exercise
+the diff is worse than no matrix, and it is the thing to refuse rather than the thing to
+report.
+
+## The blocker, precisely
+
+Switching the model loop means switching the PP wire format at the same time, because the
+model's return value IS the P2P payload. And there:
+
+**`[T, N, D]` flattens `B * L`, while the adapter slices blocks as `[B, T, D]`.**
+`unstack_blocks` cannot invert the flatten without being told B and L. This is information
+loss, not a reshape.
+
+Three ways out, and the choice determines the semantics of three places in the adapter's
+1571 lines (`RankLocalCache`, `_LocalCacheCapture`, `_install_augment_hook`):
+
+1. carry `B`/`L` as metadata alongside the tensor -- smallest change, adds a second thing
+   that must cross the wire in step;
+2. move the adapter to column-wise operation on `[T, N, D]` -- largest change, ends at the
+   upstream shape exactly;
+3. keep a 4-D wire format `[N, B, L, D]` and use the 3-D form only inside the block --
+   no adapter change, but the carrier crossing the wire is then not the upstream shape,
+   so the declarative win stops at the stage boundary.
+
+(2) is the only one that reaches the end state the migration is for. (3) is the one that
+gets a green 54 soonest and would have to be redone.
+
+## Next concrete action
+
+Pick between those three, then: switch the model loop, switch the wire format, run the
+three arms, and report `54/54` with the per-cell table. The PP cells are the risk surface --
+`pp2`, `fsdp2_tp2_pp2`, `tp2_pp2_cp2`, `fsdp2_pp2_cp2`, `ep2_fsdp2_tp2_pp2`,
+`ep2_fsdp2_pp2_cp2` plus maxdeg `pp4`/`pp8` -- and if they break it is the adapter's column
+semantics, not CP or EP.
