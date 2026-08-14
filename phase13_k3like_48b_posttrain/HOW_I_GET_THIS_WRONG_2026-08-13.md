@@ -189,3 +189,21 @@ sitting in the same table.
   wrong, nobody validated it" was disproved in one command (`protocols/module.py` did not
   change in the merge and the validation predates it). That one would have been a
   load-bearing wrong conclusion in a document.
+
+
+## Chaining background jobs with `pgrep` on the previous job's name
+
+Four queued scripts each waited with `while pgrep -f "<previous>.sh"; do sleep 120; done`.
+Three of them never started, with the GPUs sitting idle.
+
+The shell wrapper that CREATED each script still carries the script's text in its own
+cmdline -- the whole heredoc, including the line `pgrep -f "followup.sh"` -- and that
+wrapper does not exit. So the pattern matched its own creator, forever.
+
+The failure is silent and looks exactly like "the previous job is still running", which is
+the state it is supposed to detect. Nothing in the logs says otherwise, because the script
+never gets far enough to log.
+
+**Do not detect job completion by process name.** Chain the steps inside one process, or
+have each step touch a sentinel file and wait on that. One process is simpler and also
+guarantees the serial-GPU rule that the whole queue exists to enforce.
