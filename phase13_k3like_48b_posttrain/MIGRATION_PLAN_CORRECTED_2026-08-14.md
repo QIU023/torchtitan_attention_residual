@@ -367,3 +367,30 @@ that a later `git reset` discarded, and I re-derived the same deletions a second
 without noticing they had once existed. In both cases the code read as if the change was
 present. What caught it was measurement: the conflict probe reporting exactly the same 36
 mismatches, and the driver reporting exactly the same module count.
+
+### First real check of the declarations: text arm 6/13, and the failure is informative
+
+With the driver actually entering 53 modules, the text arm's `tp` cells fail with
+
+    Redistribution from one partial type (P(sum)) to another
+    (MaskP(sum, torch.Size([2016, 512]), 0)) is unsupported
+
+`[2016, 512]` is `embed_tokens`, and `MaskPartial` is what vocab-parallel embedding
+produces. `embed_tokens` itself has NO declaration -- it is still driven by the imperative
+`RowwiseParallel` -- so the `MaskPartial` side is the old path. The other side is new:
+`--debug.detect-anomaly` puts the forward at `attn_res.py:118`, `block_attn_res_tensor`,
+which is the aggregation the 27 now-declared `AttnResProjection` modules feed.
+
+So the two mechanisms meet inside the AttnRes aggregation, one producing a plain `P(sum)`
+and the other a `MaskPartial`, and DTensor has no conversion between two different partial
+types.
+
+This is what "the declarations have never been checked" looks like when it finally gets
+checked: not a wrong placement, but an interaction that could not exist while the
+declarations were inert. It is progress, and it is also the reason the multimodal `tp2`
+passed earlier while the text `tp2` does not -- the multimodal path routes the embedding
+through `_splice` rather than straight into the residual stream.
+
+Next: decide which side changes. Either `embed_tokens` also takes a declaration so both
+ends agree on the partial type, or the aggregation redistributes to `Replicate` before
+combining. The first is the direction of the migration; the second is a local patch.
