@@ -184,3 +184,38 @@ of step 1 look inexplicable.
 went to "different mesh" and "the driver was suppressed"; the one that landed was a
 CPU-only check of `_sharding_config` on a meta-device build. When the question is "is this
 declaration active", build the model and look -- do not infer it from a training run.
+
+### The declarative layer had never run, and it was right all along
+
+`apply_tp`'s final sweep promotes every remaining plain parameter to
+`DTensor(tp, Replicate)`, and it runs INSIDE `apply_tp` -- **before**
+`_drive_declarative_sharding`. So the sweep did the declarations' work first and the
+driver found every subtree already distributed.
+
+Two things that made no sense now do:
+
+* the driver only ever reported `{'ScaledDotProductAttention': 4}` -- the only declared
+  modules with no parameters of their own for the sweep to claim;
+* fixing 27 dropped `AttnResProjection` declarations changed no number at all.
+
+With the sweep skipping declared modules, the driver enters **300**: 118 RMSNorm, 77
+Linear, 43 AttnResProjection, 21 KimiMLP, 20 MoE, 15 KimiDeltaAttention, 6 SDPA.
+
+**Result: 54/54 on our tree, all three arms.** Three hundred declarations that had never
+executed were correct on their first run, across every parallelism combination the matrix
+covers.
+
+### What this does to the estimate of step 1
+
+"4 `parallelize_module` sites plus 38 `use_local_output` sites" counted imperative LINES
+on a tree where every declaration was inert. The declarations already covered 300 modules.
+So step 1 is not mostly writing declarations -- it is removing the imperative pieces that
+shadow them, and each removal is now a real handover rather than a silent fall-through to
+the sweep.
+
+### Method note, the sharpest of the day
+
+The two checks that found this were both seconds of CPU: build the model on a meta device
+and read `_sharding_config`, and look at which function calls which. Two 8-GPU runs went to
+refuted hypotheses first. **When the question is "is this mechanism active", inspect the
+built object -- do not infer it from a training run.**
