@@ -19,6 +19,15 @@ OUT=${OUT:-/workspace/mx_cells}
 STEPS=${STEPS:-10}
 EXTRA=${EXTRA:-}
 FLAVOR=${FLAVOR:-kimi_k3_debugmodel_report_arch}
+# The gate exports these for the multimodal arms and this script did not, so a
+# cell run here was NOT comparable to the same cell in the gate: the same tree
+# gave 12.04691 here and 12.07827 there, and that gap was briefly read as a
+# defect in the adapter's delta path. Default to matching the gate, and set
+# KNOBS="" explicitly when you want them off.
+case "$FLAVOR" in
+  *mini_block_attn_res*) KNOBS=${KNOBS-} ;;
+  *)                     KNOBS=${KNOBS-KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1} ;;
+esac
 mkdir -p "$OUT"; cd "$TITAN"; export PYTHONPATH=$TITAN
 source /venv/main/bin/activate
 
@@ -56,7 +65,7 @@ for name in "$@"; do
   for attempt in 1 2 3; do
     use_port=$((port + 900 + 400 * (attempt - 1)))
     rm -rf "$OUT/$name"
-    CUDA_VISIBLE_DEVICES="$gpus" timeout 7200 torchrun \
+    CUDA_VISIBLE_DEVICES="$gpus" env $KNOBS timeout 7200 torchrun \
       --nproc_per_node="$n" --master_port="$use_port" ${ENTRY:--m torchtitan.train} \
       $BASE $cellargs --dump-folder "$OUT/$name" > "$OUT/$name.log" 2>&1
     rc=$?
