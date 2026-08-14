@@ -126,3 +126,29 @@ One of four sites is half-migrated on a WIP branch, verified on `tp2` only, not 
 The 1e-5 drift on later steps wants explaining before this is called done: a declared
 Replicate and `NoParallel(use_local_output=True)` should be the same placement, so the
 difference is a routing detail and not obviously benign.
+
+### The 1e-5 on the declared proj: two hypotheses refuted, one contradiction open
+
+Declaring `final_attn_res_proj` (norm left imperative) trains and matches the baseline at
+step 1, then drifts ~1e-5. A declared Replicate and `NoParallel(use_local_output=True)`
+should be the same thing, so the drift needs a cause. Two were proposed and both are
+dead:
+
+* **Different mesh or placement.** Measured with a probe on `block_attn_res`'s operands:
+  both `proj.weight` and `norm.weight` are `mesh=('tp',) placements=(Replicate(),)`.
+  Identical.
+* **The imperative call suppressed the declarative driver.** The removed line was
+  `parallelize_module(model, tp_mesh, {...})` on the model ROOT, which could have marked
+  the root parallelized and made the driver skip everything. It did not: both trees log
+  `entered parallelize() on 4 outermost Modules: {'ScaledDotProductAttention': 4}`.
+
+That leaves a contradiction worth starting from: **the driver does not enter the tail
+modules at all** (only 4 SDPA), yet the probe shows `proj.weight` as
+`DTensor(tp, Replicate)`. Something else distributes it. Until that is identified, "the
+proj is declared" is not established -- it may be getting its placement from a path
+nobody has named, which would also explain a 1e-5 that no placement difference accounts
+for.
+
+Next action: find what distributes `final_attn_res_proj.weight`. `_drive_declarative_sharding`
+returns the classes it entered, so instrument that return rather than the log line, and
+check whether `AttnResProjection` is reached and skipped or never visited.
