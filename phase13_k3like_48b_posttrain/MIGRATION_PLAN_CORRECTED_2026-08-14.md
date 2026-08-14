@@ -254,3 +254,36 @@ and the norms are not the same case. Projections declared, norms left imperative
 
 So the residual-stream flip now has a quantified prize: it releases all 26 per-layer
 norms, the tail norm, and the 38 `use_local_output` sites in one move.
+
+### Is an all-DTensor residual stream what other models do? Yes -- it is their default
+
+Counted, not assumed:
+
+| model | `use_local_output` occurrences |
+|---|---|
+| llama3, deepseek_v3, qwen3, llama4, gpt_oss | **0 each** |
+| kimi_k3 (ours) | **39** |
+
+llama3's block is the whole argument:
+
+    h = x + self.attention(self.attention_norm(x), attention_masks, positions)
+    out = h + self.feed_forward(self.ffn_norm(h))
+    return out
+
+`x` arrives a DTensor, attention returns a DTensor, the adds happen on DTensors, `out`
+leaves a DTensor. The stream is never unwrapped, and `llama3/sharding.py` declares its
+layout directly -- SP on gives `Shard(1)` activations around attention and FFN with `wo`
+and `w2` reduce-scattering into it; SP off keeps everything Replicate with an all-reduce
+instead.
+
+So the flip is not a scheme we have to invent. **A plain residual stream is our deviation**,
+and it is the reason the declarative vocabulary has no output-side `to_local`: no upstream
+model has ever needed one.
+
+Two consequences:
+
+* The remaining work is not "convert 79 modules". It is removing one deviation, and the
+  26 per-layer norms, the tail norm, the 15 KDA layers and all 39 `use_local_output` sites
+  come back together.
+* It also de-risks step 2. The upstream modules assume a DTensor stream, so once ours is
+  one they drop in without an adapter layer.
