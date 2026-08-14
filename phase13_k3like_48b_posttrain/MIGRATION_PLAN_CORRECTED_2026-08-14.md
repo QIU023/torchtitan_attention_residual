@@ -325,3 +325,45 @@ clear, and it should have come first.
 The tower's TP and its dynamic CP are mechanisms this migration deliberately leaves alone,
 so an acceptable resolution is also to keep the whole tower behind a plain boundary in
 both directions and let the stream be DTensor only from the splice onward.
+
+## The declarative layer actually drives, at last: 4 -> 53 modules
+
+Three things had to be true at once, and each was hiding the next.
+
+**1. The sweep must run AFTER the driver.** It lived at the end of `apply_tp`, which is
+before `_drive_declarative_sharding`, so it promoted every declared-but-not-yet-distributed
+parameter to `DTensor(Replicate)`. The driver then found them distributed with the wrong
+placement and refused: "already a DTensor with placements (Replicate(),), but its
+sharding_config expects (Shard(dim=0),)". Extracted to
+`_sweep_remaining_to_replicate` and called after the driver, where "remaining" finally
+means what the name says.
+
+**2. `_already_distributed` must not recurse.** It asked `m.parameters()`, so a parent whose
+children the imperative plan had covered counted as finished -- and `parallelize()` only
+touches what a module itself declares, so the parent's own declarations were never applied.
+That is how the nine KDA layers' `A_log` and `dt_bias` reached `clip_grad_norm_` as plain
+tensors while everything around them was a DTensor.
+
+**3. Three imperative plan entries had to go**: the dense FFN's Colwise/Rowwise trio and
+both `shared_experts` sites. They state the same split the declarations state, and once the
+driver stops skipping those modules only one side can act.
+
+Result: the driver enters **53** modules -- 27 `AttnResProjection`, 13 `KimiMLP`, 9
+`KimiDeltaAttention`, 4 `ScaledDotProductAttention` -- against 4 before. `tp2` passes and
+the loss moves from 12.06776 to 12.03708, which is expected: replicated projections
+becoming a real column/row split is a different floating-point order for the same
+mathematics.
+
+### Two process failures worth keeping
+
+**Deleting an imperative entry is not handing the module over.** Three times today a
+removal was followed by a green matrix and no change in what the driver entered, because
+the sweep caught the parameter instead. The only reliable signal is the module count, and
+54/54 cannot distinguish the two.
+
+**Two edits were lost without any error.** One went to a path under a directory that
+`rm -rf` had just removed -- the write "succeeded" into nowhere. Two others sat in commits
+that a later `git reset` discarded, and I re-derived the same deletions a second time
+without noticing they had once existed. In both cases the code read as if the change was
+present. What caught it was measurement: the conflict probe reporting exactly the same 36
+mismatches, and the driver reporting exactly the same module count.
