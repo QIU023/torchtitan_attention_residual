@@ -89,9 +89,18 @@ three backward-compatible lines and no other model can observe it, so it stays f
 their approach is the more conservative one and step 3 adopts it. Recorded in
 `CORE_CHANGES_AUDIT_2026-08-14.md`.
 
-## Step 2's gate, and what it can and cannot cover
+## Step 2's gate: PASSED
 
-Queued: the text flavor on the upstream model, `dp1` and `fsdp2`.
+The text flavor on the upstream model, both expressible cells, 10/10 steps each:
+
+    fsdp2  8.05379 5.95749 4.70963 4.02371 3.77385 3.46373 3.27386 3.14310 3.41304 3.00021
+    dp1    8.10737 6.06124 4.53420 5.18495 4.40572 3.42116 3.26217 3.10474 2.96337 3.00935
+
+Our topology builds and trains on their tree with no change to their model code.
+
+These are NOT comparable to our own text arm (7.70979 -> 4.81907) for the same reason the
+multimodal head-to-head is not: the parameter init differs. The gate here is "does it
+train", which it does.
 
 Only those two cells are expressible. Their `parallelize.py` is 100 lines that call
 `apply_fsdp_to_decoder` and `apply_fsdp_to_vision_encoder` and nothing else -- there is no
