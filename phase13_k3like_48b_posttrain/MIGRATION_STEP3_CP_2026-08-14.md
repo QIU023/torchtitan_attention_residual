@@ -168,3 +168,44 @@ three arms, and report `54/54` with the per-cell table. The PP cells are the ris
 `pp2`, `fsdp2_tp2_pp2`, `tp2_pp2_cp2`, `fsdp2_pp2_cp2`, `ep2_fsdp2_tp2_pp2`,
 `ep2_fsdp2_pp2_cp2` plus maxdeg `pp4`/`pp8` -- and if they break it is the adapter's column
 semantics, not CP or EP.
+
+## Option (2) implemented, and where it stops
+
+`migrate_carrier_tensor` at `b82a2473a`. The upstream layout was confirmed stable first:
+`model.py` moved 309 lines between the head we vendored (`1da44c16a`) and their current one
+(`d7bb24013`), and the carrier's `new_zeros(B * L, 0, D)` and its `cat` are unchanged.
+
+**The change is twelve mechanical lines, not the rewrite I first called it.** `stack_blocks`
+and `unstack_blocks` moved to the `[T, N, D]` layout, the adapter's block-count axis moved
+from dim 0 to dim 1 in eight places, three empty-carrier constructions changed shape, and
+one semantic line -- the carrier detector -- went from `dim() == 4` to `dim() == 3`. The
+"information loss" I worried about does not exist: the adapter reasons about block INDICES
+and never about batch or sequence extents. When I called this the largest of the three
+options, 1571 was the file's length, not its exposure.
+
+Adapter tests 10/10. Bitwise equivalence still passes after the model loop switched.
+
+### The blocker, earlier than predicted
+
+The 54-cell run stopped at the text SMOKE, before any cell:
+
+    RuntimeError: aten.mul.Tensor got mixed torch.Tensor and DTensor
+    ... protocols/module.py:291 forward_with_redistribution -> rms_norm
+
+`attn_res_norm` and `mlp_res_norm` carry `sharding_config=_tp_replicate()`, added during
+**migration step A**. The declarative machinery lifts their plain input to a DTensor to
+match the weight, and that declaration was written against the 4-D `[N+1, B, T, D]` value
+stack. The tensor carrier hands them 3-D `[T, N+1, D]`, so the lift produces a placement
+that does not line up and the multiply inside `rms_norm` sees one of each.
+
+I predicted the risk surface was the PP cells and the adapter's column semantics. It is
+neither. **A sharding declaration is bound to the RANK of the tensor it was written for**,
+so changing a carrier's shape is not a container change as far as the declarative layer is
+concerned -- which is precisely the layer this migration exists to reach.
+
+### Next concrete action
+
+Re-derive the two AttnRes norm declarations for a 3-D input, then re-run the 54. The
+bitwise equivalence probe will NOT catch a regression here: it runs on one GPU with no
+mesh, so the declarations are inert in it. That is the gap -- it proved the arithmetic and
+said nothing about the layouts, and I read its PASS as broader than it was.
