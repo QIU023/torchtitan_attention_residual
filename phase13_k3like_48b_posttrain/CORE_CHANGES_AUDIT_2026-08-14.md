@@ -74,6 +74,32 @@ declaring the MoE an SP island with a replicated external boundary, which is wha
 gave the upstream layout something to redistribute to. The scatter branch has been dead
 since.
 
+## Verified on the cells each change claimed to need
+
+Four 8-GPU cells on `kimi_k3_debugmodel_report_arch`, on a tree with both changes removed:
+
+| cell | the change that claimed it | result |
+|---|---|---|
+| `fsdp2_tp2_pp2` | the PP divide | trains 10/10 |
+| `tp2_pp2_cp2` | the PP divide | trains 10/10 |
+| `ep2_fsdp2_tp2_pp2` | the moe scatter | trains 10/10 |
+| `ep2_fsdp2_tp2_cp2` | the moe scatter | **byte-identical, all ten steps** |
+
+The last row is the strongest form the verdict could take. On the exact cell the scatter
+branch was written for, removing it does not move a digit:
+
+    with:    12.04774 11.99212 11.83465 11.50495 11.09915 10.59955 10.25366 10.08881 10.02660 9.95135
+    without: 12.04774 11.99212 11.83465 11.50495 11.09915 10.59955 10.25366 10.08881 10.02660 9.95135
+
+It was not merely unnecessary; it was numerically inert, and had been since the SP-island
+fix landed.
+
+A note on how the fourth cell was nearly lost: its first attempt reported FAIL with no
+error line, which is the signature of `EADDRINUSE` from a socket left in TIME_WAIT.
+`run13_flav.sh` retries for exactly this; `run_cells.sh` did not, and now does. A port
+collision reads identically to a numerical failure, and would have left this the one cell
+that "did not pass".
+
 ## The one that stays, and why it is not the same case
 
 `router_input_BLD` is a keyword-only argument defaulting to `None`; when it is `None` the
