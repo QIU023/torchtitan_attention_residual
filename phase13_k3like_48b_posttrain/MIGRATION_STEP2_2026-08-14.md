@@ -28,8 +28,28 @@ full-attention set, per report sec 2.1's trailing global-attention layer; their 
 has it too.
 
 **Consequence**: the multimodal arm needs no flavor port at all. It needs a controlled
-head-to-head of the two implementations on one architecture, which is a much more
-informative measurement and is queued.
+head-to-head of the two implementations on one architecture.
+
+That head-to-head has now run, and the honest reading is that it is **not yet controlled**:
+
+    ours:   12.05090 11.98433 11.82505 11.52380 11.03637 10.56118 10.23745 10.05560 9.99942 9.91659
+    theirs: 12.45026 11.93980 10.50697  9.13622  7.38922  8.05780  7.57110  7.18937  6.31638 7.02810
+
+Two things differ besides the implementation, and both can produce a gap this size:
+
+* **Parameter init.** Their tree carries its own `param_init` per module -- `_LINEAR_INIT`,
+  `_output_linear_init(dim)`, `_EMBEDDING_INIT` at normal std 1.0. Ours does not match it.
+* **The loss wrapper.** Theirs is `ChunkedLossWrapper(CrossEntropyLoss)`; ours is bare
+  `CrossEntropyLoss`.
+
+Everything else -- dtype, seq_len, local batch, dataset, tokenizer, image budget, lr
+schedule -- is the same, checked field by field.
+
+So the numbers above measure "their config end to end" against "our config end to end", not
+"their model" against "our model". A control arm is only a control for what you have
+checked it shares. To make it one, either align init and the loss wrapper, or -- cleaner --
+load one checkpoint into both and compare a single forward at step 0, which is the same
+anchor trick the 48B graft uses.
 
 ## The text flavor, ported
 
