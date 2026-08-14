@@ -142,3 +142,16 @@ a round of pointless cleanup.
 
 Both runners now `rm -rf "$OUT/$name/checkpoint"` as each cell finishes, rather
 than after the matrix -- the disk fills DURING a matrix, not after it.
+
+
+## How long the three-arm gate actually takes
+
+**About 40 minutes** for all 54 cells (3 arms x 13-cell + 5 maxdeg), measured
+2026-08-14 on this box: `run_postmerge_gate.sh` started its first smoke at
+00:03:38 and finished at 00:43:55.
+
+Recorded because "about 2.5 hours" was repeated several times in conversation
+without anyone checking it against a run. It is not in any document -- it only
+survived by being restated. Budget the real number when deciding whether a
+change is worth a full gate: at 40 minutes the answer is almost always yes,
+which is a different decision from the one 2.5 hours implies.
