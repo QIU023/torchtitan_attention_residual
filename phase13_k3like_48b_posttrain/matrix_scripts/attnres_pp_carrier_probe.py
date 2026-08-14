@@ -74,3 +74,36 @@ def rel(a, b):
 
 print(f"whole vs split (carrier reset at the cut): {rel(whole_h, split_h):.3e}")
 print(f"whole vs carried (carrier handed across):  {rel(whole_h, carried_h):.3e}")
+
+# And the fix: KimiK3PipelineModel threads the carrier through the model
+# signature, so two stages built from it must reproduce the unsplit model.
+from torchtitan.models.kimi_k3_up.pp_model import KimiK3PipelineModel
+
+pp = KimiK3PipelineModel(cfg.model_spec.model).to("cuda").to(torch.bfloat16)
+pp.load_state_dict(model.state_dict())
+pp.eval()
+pp_layers = list(pp.layers.values())
+
+# No copy.copy on an nn.Module here: it is a SHALLOW copy that shares _modules,
+# so assigning .tok_embeddings = None on one "stage" silently rewires all of them.
+# Swap pp.layers in place instead and restore it, which touches nothing else.
+pp.tok_embeddings = None
+all_layers = type(pp.layers)(list(pp.layers.items()))
+first_half = type(pp.layers)(list(pp.layers.items())[:cut])
+second_half = type(pp.layers)(list(pp.layers.items())[cut:])
+
+with torch.no_grad():
+    pp.layers = all_layers
+    ref_full = pp.forward(h_BLD)
+
+    # Stage 0: no lm_head, so the tail is skipped and the carrier comes out.
+    pp.layers, saved_head = first_half, pp.lm_head
+    pp.lm_head = None
+    h0, c0 = pp.forward(h_BLD)
+
+    # Stage 1: lm_head restored, so it runs the output residual and the tail.
+    pp.layers, pp.lm_head = second_half, saved_head
+    pp_out = pp.forward(h0, c0)
+    pp.layers = all_layers
+
+print(f"unsplit model vs two PP stages:            {rel(ref_full, pp_out):.3e}")
