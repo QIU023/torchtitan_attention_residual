@@ -394,3 +394,42 @@ through `_splice` rather than straight into the residual stream.
 Next: decide which side changes. Either `embed_tokens` also takes a declaration so both
 ends agree on the partial type, or the aggregation redistributes to `Replicate` before
 combining. The first is the direction of the migration; the second is a local patch.
+
+## Scope, finally measured: CP/PP stay imperative, and TP/EP has 108 declarations left
+
+**CP and PP are imperative in every upstream model too**, so ours staying that way is the
+end state rather than a debt. llama3, deepseek_v3 and qwen3 all use
+`apply_cp_to_forward` and a `pipelining_fn`; the declarative vocabulary is six fields --
+`state_shardings`, `in_src`/`in_dst`, `out_src`/`out_dst`, `local_map`,
+`in_grad_placements` -- and every one of them is a placement. Sequence splitting and
+module splitting are not expressible there and are not meant to be. **Step 1's definition
+of done covers TP and EP only.**
+
+**The upstream 4025 tree needs little extra declarative work for TP/EP.** Their carrier is
+already a threaded tensor (`block_residual_TND`, 13 sites) and their modules subclass
+`Module` -- the two prerequisites. They carry zero sharding declarations today, and the
+comparable reference, `deepseek_v3/sharding.py`, is 192 lines for a model that is also
+MLA + MoE, declaring by module type rather than per instance. So adding TP/EP there is
+roughly "write a ~200-line sharding.py", not a per-module sweep. Everything this session
+spent on removing deviations -- the plain residual stream, `nn.Embedding`, 39
+`use_local_output` sites -- simply does not exist on that tree.
+
+**Our tree's remaining TP/EP surface, counted on a built model:**
+
+| class | declared | not declared |
+|---|---|---|
+| `AttnResProjection` | 27 | 0 |
+| `RMSNorm` | 62 | 12 |
+| `Linear` | 64 | **108** |
+
+The 108 split cleanly in two, and each is one repeated shape:
+
+* **72 KDA projections** -- 9 layers x `{q,k,v,f_a,f_b,g,b,o}_proj`. They used to be covered
+  wholesale by `NoParallel(use_local_output=True)`; that entry is gone, so they now fall
+  through to the sweep's Replicate. **This is why 54/54 still passes and why it is not
+  evidence of a handover.**
+* **36 MoE projections** -- 12 layers x `{latent.down, latent.up, router.gate}`.
+
+So the remaining work is writing 108 declarations in two batches, not deleting imperative
+entries. That is a different kind of task from everything before it in step 1, which was
+removing things that shadowed declarations that already existed.
