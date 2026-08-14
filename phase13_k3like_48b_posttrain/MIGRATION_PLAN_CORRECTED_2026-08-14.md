@@ -152,3 +152,35 @@ for.
 Next action: find what distributes `final_attn_res_proj.weight`. `_drive_declarative_sharding`
 returns the classes it entered, so instrument that return rather than the log line, and
 check whether `AttnResProjection` is reached and skipped or never visited.
+
+### The 1e-5 explained: 27 declarations that never existed
+
+`AttnResProjection` was constructed by calling the class:
+
+    self.attn_res_proj = AttnResProjection(proj_cfg)
+
+`_sharding_config` is assigned inside `Config.build()`, not in any `__init__`, so calling
+the class **drops the declaration at construction**. All 27 AttnRes pseudo-queries in the
+model were built that way, and the comment above them read "declared here so the module
+carries its own placement like every other linear after the migration" -- describing an
+intent the code never carried out.
+
+Their placement came from the **final sweep** at the end of `apply_tp`, which promotes
+every remaining plain parameter to `DTensor(tp, Replicate)`. So from outside the placement
+was correct and the matrix was green; what differed between the two trees was not the
+placement but WHO produced it, and at what point in the sequence. That is the 1e-5.
+
+Fixed to `proj_cfg.build()` in three places; 27/27 now carry the declaration. An AST scan
+for the same pattern -- both `Class(Class.Config(...))` inline and `cfg = ...Config(...)`
+then `Class(cfg)` -- returns **no other occurrences**.
+
+**Why this one matters more than its symptom.** Nothing raises, no placement is wrong, and
+every matrix cell passes. The only observable effect is that the declarative migration
+cannot advance: delete an imperative site and the corresponding declaration is empty, so
+the parameter silently falls through to the sweep. It would have made every remaining step
+of step 1 look inexplicable.
+
+**Method note.** Three hypotheses, and the cheapest one was tried last. Two 8-GPU runs
+went to "different mesh" and "the driver was suppressed"; the one that landed was a
+CPU-only check of `_sharding_config` on a meta-device build. When the question is "is this
+declaration active", build the model and look -- do not infer it from a training run.
