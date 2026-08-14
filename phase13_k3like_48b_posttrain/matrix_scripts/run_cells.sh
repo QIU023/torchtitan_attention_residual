@@ -67,9 +67,11 @@ for name in "$@"; do
   if [ -n "$losses" ]; then
     echo "    $losses"
   else
+    # Match any *Error:, not an enumerated list. A whitelist silently produces
+    # "rc=N FAIL:" with no reason whenever the failure is a type nobody listed --
+    # a FileNotFoundError from a relative tokenizer path did exactly that.
     echo "    rc=$rc FAIL: $(sed 's/\x1b\[[0-9;]*m//g' "$OUT/$name.log" \
-      | grep -oiE '(RuntimeError|ValueError|AssertionError|OutOfMemoryError): .{0,110}' \
-      | sort -u | head -1)"
+      | grep -oE '[A-Za-z_]*Error: .{0,110}' | sort -u | head -2 | tr '\n' ' ')"
   fi
   rm -rf "$OUT/$name/checkpoint"
 done
