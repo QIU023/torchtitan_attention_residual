@@ -10,7 +10,7 @@
 
 --- PASTE BEGIN ---
 
-Before: with bf16 grads, the per-tensor norms (`torch._foreach_norm` / `vector_norm`) and the norm-of-norms over their stack both ran in bf16, since `get_total_norm` keeps the input dtype — resulting in a total norm that is rounded per group and so depends on the PP/EP partition. After: both ops accumulate in `dtype=torch.float32`. Each rank's partial norm is rounded before the cross-mesh combine — at bf16's 2^-8 step that rounding differs visibly between groupings, at fp32's 2^-23 it is too small to show up, so every grouping combines to the same total. The gradients themselves stay bf16.
+The computation is structurally identical before and after — per-tensor norms, then each group's norm-of-norms, then the cross-mesh combine; the fix only changes the dtype those two norm ops accumulate in (`get_total_norm` keeps the input dtype, so with bf16 grads they ran in bf16). Each group's partial norm is rounded before the combine in both cases — at bf16's 2^-8 step that rounding is large enough that different PP/EP layouts of the same gradients yield visibly different totals, at fp32's 2^-23 it is negligible, so all layouts agree. The gradients themselves stay bf16.
 
 --- PASTE END ---
 
