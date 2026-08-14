@@ -219,3 +219,38 @@ The two checks that found this were both seconds of CPU: build the model on a me
 and read `_sharding_config`, and look at which function calls which. Two 8-GPU runs went to
 refuted hypotheses first. **When the question is "is this mechanism active", inspect the
 built object -- do not infer it from a training run.**
+
+### DEP with two vision stages: first run, and it works
+
+`vit_dep_stages` had only ever been 1. Report 5.2.3 wants vision forward and backward
+balanced ACROSS pipeline stages, the code supports it (`KimiK3ViTStage.set_dep_role` --
+share 0 takes `patch_embed` and `embed_tokens`, the last share takes the projector and
+the splice), and its own docstring says the value "needs measurement to set". No matrix
+cell had ever set it above 1.
+
+    pp4  dep_stages=2: 12.06363 ... 9.91233
+    pp8  dep_stages=2: 12.04840 ... 9.61217
+
+Both train 10/10. Two constraints had to be satisfied first, and both cost a run:
+
+* **two vision stages need `pp_degree >= 4`.** They come OUT of the text budget rather
+  than being added on top, so `pp2` has nothing left -- "DEP wants 2 vision stage(s) but
+  only 2 stages exist". That constraint is in `dep_vision_stages()`'s docstring, which I
+  had quoted one message earlier and then picked `pp2` cells anyway.
+* **microbatches must be >= stages**, so `--training.local-batch-size 2` fails at pp4.
+
+Neither was a DEP defect.
+
+### Per-layer AttnRes: the rule applied, after being ignored once
+
+Handing all four per-layer AttnRes modules to their declarations gives **33/54**, failing
+exactly the `tp>1` cells in all three arms. The KIND probe: `input plain, weight
+DTensor(R)` inside `rms_norm`.
+
+That is the rule measured earlier the same day and then not applied -- a regex deleted all
+four plan entries at once because it was convenient, when the rule says the projections
+and the norms are not the same case. Projections declared, norms left imperative:
+**54/54**.
+
+So the residual-stream flip now has a quantified prize: it releases all 26 per-layer
+norms, the tail norm, and the 38 `use_local_output` sites in one move.
