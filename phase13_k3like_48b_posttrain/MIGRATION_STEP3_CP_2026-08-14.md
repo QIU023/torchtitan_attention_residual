@@ -192,16 +192,29 @@ The 54-cell run stopped at the text SMOKE, before any cell:
     RuntimeError: aten.mul.Tensor got mixed torch.Tensor and DTensor
     ... protocols/module.py:291 forward_with_redistribution -> rms_norm
 
-`attn_res_norm` and `mlp_res_norm` carry `sharding_config=_tp_replicate()`, added during
-**migration step A**. The declarative machinery lifts their plain input to a DTensor to
-match the weight, and that declaration was written against the 4-D `[N+1, B, T, D]` value
-stack. The tensor carrier hands them 3-D `[T, N+1, D]`, so the lift produces a placement
-that does not line up and the multiply inside `rms_norm` sees one of each.
+**CORRECTED.** I first read this as the two AttnRes norms, whose declarations I assumed
+were bound to the 4-D value stack. Wrong -- I saw `rms_norm` plus `sharding_config` and
+named the module without checking the line number. The frame is
+`attn_res_model.py:257`, which is
 
-I predicted the risk surface was the PP cells and the adapter's column semantics. It is
-neither. **A sharding declaration is bound to the RANK of the tensor it was written for**,
-so changing a carrier's shape is not a container change as far as the declarative layer is
-concerned -- which is precisely the layer this migration exists to reach.
+    attn_out = self.self_attn(self.input_layernorm(x_BLD))
+
+so the failing norm is `input_layernorm`.
+
+The real mechanism is a semantic difference I introduced. In the LIST path the first layer
+still calls `block_attn_res(blocks=[], partial_block=h)`: with an empty list it stacks
+`[h]`, runs the whole fp32 aggregation and returns `.to(V.dtype)` -- which incidentally
+converts a DTensor input to a plain tensor. The tensor path copies upstream's
+`if block_residual_TND.shape[1] > 0` guard and SKIPS the aggregation when no block has been
+committed, so `x_BLD` passes through carrying whatever the embedding gave it.
+
+Upstream can skip it because their embedding is not declarative. Ours is, after migration
+step A. So the list path was silently acting as a DTensor-to-plain converter on the first
+layer, and removing a no-op-looking call removed that.
+
+The lesson is not about ranks. It is that **the aggregation call was doing two jobs and only
+one of them was named**, and the guard that makes it skippable is upstream's, written for a
+tree where the second job did not exist.
 
 ### Next concrete action
 
