@@ -1,6 +1,6 @@
 # PR #26 — `clip_grad_norm_` total norm computed in the gradients' dtype (filed as upstream PR 4135)
 
-**Status**: FILED as upstream PR 4135. Maintainer feedback on the first summary: "sorry I couldn't really understand the PR summary which seems to be written by AI." Body below is the rewrite per the CLAUDE.md PR-text rule -- Summary/Fix at 2-3 sentences, evidence as a runnable command plus one table, the 394-tensor split demo held back as follow-up ammo. Branch `grad-norm-fp32` (commit `5e88ff897`), evidence measured on upstream `f4e78188e`.
+**Status**: FILED as upstream PR 4135. Maintainer feedback on the first summary: "sorry I couldn't really understand the PR summary which seems to be written by AI." Body below is the rewrite per the CLAUDE.md PR-text rule -- Summary/Fix at 2-3 sentences, evidence as a runnable command plus one table, the 394-tensor split demo held back as follow-up ammo. Branch `grad-norm-fp32` (commit `5e88ff897`), evidence measured on upstream `f4e78188e`. 2026-08-14: reply + simplified description posted; Tianyu's follow-up confirms the root-cause reading ("get_total_norm doesn't support configurable norm dtype, or default to the safer fp32. Is that correct?") -- answer in the second reply block below.
 **Target**: `pytorch/torchtitan`, `torchtitan/distributed/utils.py` (`clip_grad_norm_` and `_clip_grad_norm_with_ep`)
 **Risk**: no behaviour change under the default `training.dtype="float32"`; with `bfloat16` the reported and applied norm changes, by design.
 
@@ -11,6 +11,14 @@
 --- PASTE BEGIN ---
 
 The computation is structurally identical before and after — per-tensor norms, then each group's norm-of-norms, then the cross-mesh combine; the fix only changes the dtype those two norm ops accumulate in (`get_total_norm` keeps the input dtype, so with bf16 grads they ran in bf16). Each group's partial norm is rounded before the combine in both cases — at bf16's 2^-8 step that rounding is large enough that different PP/EP layouts of the same gradients yield visibly different totals, at fp32's 2^-23 it is negligible, so all layouts agree. The gradients themselves stay bf16.
+
+--- PASTE END ---
+
+## Reply to the follow-up ("get_total_norm doesn't support configurable norm dtype, or default to the safer fp32. Is that correct?")
+
+--- PASTE BEGIN ---
+
+Yes, exactly. `get_total_norm` has no dtype parameter and inherits the input tensors' dtype — the ops underneath (`_foreach_norm` / `linalg.vector_norm`) both accept `dtype=`, it just never passes one. That's why the fix is a local mirror of `get_total_norm` with `dtype=torch.float32` on the per-tensor norm calls (the norm-of-norms then inherits fp32 from its inputs). Happy to propose a `dtype` argument on `get_total_norm` in pytorch/pytorch — defaulting to `None` to keep current behavior, since an unconditional fp32 would demote fp64 inputs — at which point this helper reduces to a one-line call.
 
 --- PASTE END ---
 
