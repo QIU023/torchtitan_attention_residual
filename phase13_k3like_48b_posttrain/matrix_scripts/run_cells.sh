@@ -24,14 +24,19 @@ FLAVOR=${FLAVOR:-kimi_k3_debugmodel_report_arch}
 # gave 12.04691 here and 12.07827 there, and that gap was briefly read as a
 # defect in the adapter's delta path. Default to matching the gate, and set
 # KNOBS="" explicitly when you want them off.
+# MODULE selects the model folder. The upstream-vendored tree registers its
+# flavors under kimi_k3_up, and its DEP / dynamic-CP knobs do not exist there, so
+# the knobs default to empty for it rather than to the gate's values.
+MODULE=${MODULE:-kimi_k3}
 case "$FLAVOR" in
   *mini_block_attn_res*) KNOBS=${KNOBS-} ;;
+  kimi_k3_up_*)          KNOBS=${KNOBS-} ;;
   *)                     KNOBS=${KNOBS-KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1} ;;
 esac
 mkdir -p "$OUT"; cd "$TITAN"; export PYTHONPATH=$TITAN
 source /venv/main/bin/activate
 
-BASE="--module kimi_k3 --config $FLAVOR --debug.seed 42 \
+BASE="--module $MODULE --config $FLAVOR --debug.seed 42 \
  --debug.deterministic --metrics.log_freq 1 --training.steps $STEPS \
  --training.global-batch-size 8 $EXTRA"
 PPB="--training.local-batch-size 2"
