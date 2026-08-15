@@ -54,8 +54,27 @@ in the model files:
 | attn_res.py | 6 | n/a |
 | total | **151** | **7** |
 
-Their model code is written for plain tensors under FSDP2 only. The vision
-encoder has not a single DTensor line. Every boundary we found has to be
+**Read that as a capability difference, not a quality one.** Their tree supports
+FSDP2 and nothing else -- its `parallelize.py` refuses TP and EP outright, it has
+no DEP, and the CP path there is one we added. Ours supports the full 5D plus ViT
+DEP and dynamic CP for the vision tower. Attributing our boundary code (115 lines
+excluding comments) to the capability that demands it:
+
+| what demands it | lines | where |
+| --- | --- | --- |
+| fla / third-party kernel unwrapping under TP | 21 | `_to_local_if_dtensor` 13, `_local_linear` 3, `_scalar_local` 3, `conv_subset` 2 |
+| CP -- Ulysses, KCP, vision dynamic CP | 27 | `_forward_cp` 12, `_forward_kcp` 2, `_encode_images_cp` 6, `_encode_images_dynamic_cp` 7 |
+| multimodal / DEP / vision tower under TP | 27 | `_splice_per_token` 10, `_tower_placeholder` 5, `_seal` 3, `_encode_images_replicated` 3, `encode_images` 2, `_PlainGradBoundary` 4 |
+| the DTensor residual stream and the carrier | 29 | `model.forward` 14, `attn_res_model.forward` 6, `_to_local_partial_grad` 7, `_attn_gate` 2 |
+
+86 of 115 lines exist because of a parallelism their tree does not have. The
+remaining 29 are the residual-stream design choice, and that was checked against
+llama3 and deepseek_v3 before it was made: keeping the stream a DTensor under
+TP+SP is what they do, and `clip_grad_norm_` requires the mesh consistency it
+buys.
+
+So this is work their tree still owes, not work ours added. When TP lands there,
+most of these 115 lines land with it. Every boundary we found has to be
 re-created against their class layout:
 
 * the SDPA output re-wrap (`from_local` on `Shard(2)`, then redistribute)
