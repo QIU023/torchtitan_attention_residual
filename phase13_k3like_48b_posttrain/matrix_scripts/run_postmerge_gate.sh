@@ -106,6 +106,13 @@ for arm in text mm_full mm_lora; do
     OUT=$OUT/${arm}_13 STEPS=$STEPS bash "$HERE/run13_flav.sh"
   env $(arm_knobs "$arm") EXTRA="$(arm_extra "$arm")" FLAVOR=$FLAVOR \
     OUT=$OUT/${arm}_max STEPS=$STEPS bash "$HERE/run_maxdeg.sh"
+  # Two extra cells on the fullest multimodal arm: the vision tower split across
+  # two pipeline stages. Nothing in the 18 above sets KIMI_VIT_DEP_STAGES, so
+  # multi-stage DEP had never been in a gate. 54 becomes 56.
+  if [ "$arm" = mm_full ]; then
+    env $(arm_knobs "$arm") EXTRA="$(arm_extra "$arm")" FLAVOR=$FLAVOR \
+      OUT=$OUT/${arm}_dep2 STEPS=$STEPS bash "$HERE/run_dep2.sh"
+  fi
   echo "--- $arm 13-cell table ---"
   bash "$HERE/collect13.sh" "$OUT/${arm}_13"
   df -h /workspace | tail -1
