@@ -42,7 +42,12 @@ export TITAN
 arm_knobs() {
   case $1 in
     text) echo "" ;;
-    *)    echo "KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1" ;;
+    # KIMI_VIT_PREFETCH=1 joins them: the vision encode for micro-batch m+1 is issued
+    # during m's text compute. Proven numerically inert (loss identical to prefetch-off
+    # step for step on four pp8xvp4 pairs), so it costs the gate nothing to carry and
+    # stops the one path implementing report 5.2.3's concurrency from regressing
+    # unnoticed -- before this it had run exactly once, on two cells.
+    *)    echo "KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1 KIMI_VIT_PREFETCH=1" ;;
   esac
 }
 
@@ -112,6 +117,10 @@ for arm in text mm_full mm_lora; do
   if [ "$arm" = mm_full ]; then
     env $(arm_knobs "$arm") EXTRA="$(arm_extra "$arm")" FLAVOR=$FLAVOR \
       OUT=$OUT/${arm}_dep2 STEPS=$STEPS bash "$HERE/run_dep2.sh"
+    # The pp8xvp4 pair, on the two flavors that can express it. This is where the
+    # prefetch is meaningfully exercised: eight micro-batches, so seven of them can be
+    # served from an encode issued ahead. 56 becomes 58.
+    OUT=$OUT/pp8vp4 STEPS=$STEPS bash "$HERE/run_pp8vp4.sh"
   fi
   echo "--- $arm 13-cell table ---"
   bash "$HERE/collect13.sh" "$OUT/${arm}_13"
