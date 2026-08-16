@@ -27,7 +27,15 @@ source /venv/main/bin/activate
 for pair in "mm:kimi_k3_debugmodel_report_arch_pp8vp4" "lora:kimi_k3_debugmodel_report_arch_pp8vp4_lora"; do
   label=${pair%%:*}; flavor=${pair#*:}
   rm -rf "$OUT/$label"
-  KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1 KIMI_VIT_BUBBLE=1 KIMI_VIT_BUBBLE_COST_RATIO=0.493 \
+  # COST_RATIO must match the SEQUENCE this cell runs, not the one where hiding is
+  # observable. dep_cost_ratio.py measured one ViT forward at 14 text-stage forwards at
+  # seq 256, against 0.493 at seq 4096. Passing 0.493 here told the planner each encode
+  # costs 0.493 units when it costs about 14: the encodes then ran at the planned points
+  # -- the occupancy counter is truthful about that -- while overrunning the idle
+  # interval roughly 28-fold, so they delayed the following actions instead of hiding.
+  # With the honest ratio the planner places 0 at this sequence length, which is the
+  # correct answer and what this cell should report.
+  KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1 KIMI_VIT_BUBBLE=1 KIMI_VIT_BUBBLE_COST_RATIO=14.0 \
   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 timeout 3600 torchrun \
     --nproc_per_node=8 --master_port=29751 -m torchtitan.train \
     --module kimi_k3 --config "$flavor" --debug.seed 42 --debug.deterministic \
@@ -42,5 +50,13 @@ for pair in "mm:kimi_k3_debugmodel_report_arch_pp8vp4" "lora:kimi_k3_debugmodel_
   echo "  pp8vp4 $label: $n loss lines  ${occ:-no bubble report}"
   # Occupancy is the point of the cell, so a green loss count with 0/N placed is a
   # regression this must not pass over in silence.
-  case "$occ" in *" 0/"*) echo "    WARNING: nothing was placed in a bubble" ;; esac
+  # 0/0 is not a regression: at seq 256 the cost ratio says no idle run can pay for an
+  # encode, so the plan places nothing and the mechanism still runs its upfront prefix
+  # and its drain. What IS a regression is planned-but-not-fired, i.e. 0/N with N > 0 --
+  # the plan and the schedule disagreeing, which would let the encodes fall back to
+  # their synchronous path while the cell stayed green.
+  case "$occ" in
+    *" 0/0 "*) : ;;
+    *" 0/"*) echo "    WARNING: $occ -- planned placements never fired" ;;
+  esac
 done
