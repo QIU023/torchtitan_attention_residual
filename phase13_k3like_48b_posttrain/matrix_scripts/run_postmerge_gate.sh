@@ -127,5 +127,29 @@ for arm in text mm_full mm_lora; do
   df -h /workspace | tail -1
 done
 
+# Count what actually produced a log, and say so against what was expected. This exists
+# because run_dep2.sh spent several gate runs calling run_cells.sh with pp4/pp8, which
+# resolves cell names against run13_flav.sh where those two do not live: it printed
+# "no such cell" and continued, so two cells silently did nothing while every tally
+# reported 58. A gate that cannot tell "passed" from "never ran" is not a gate.
+EXPECTED=58
+echo
+echo "=== cell accounting ==="
+found=0
+passed=0
+while IFS= read -r log; do
+  found=$((found + 1))
+  n=$(grep -oE "loss: +[0-9.]+" "$log" | awk '{print $2}' | uniq | wc -l)
+  if [ "$n" -ge 10 ]; then
+    passed=$((passed + 1))
+  else
+    echo "  FAIL $(echo "$log" | sed "s|$OUT/||"): $(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -oE '[A-Za-z_]*Error: .{0,70}' | sort -u | head -1)"
+  fi
+done < <(find "$OUT" -name '*.log' -not -name 'smoke_*' | sort)
+echo "  logs found: $found of $EXPECTED expected; passed: $passed"
+if [ "$found" -ne "$EXPECTED" ]; then
+  echo "  WARNING: $((EXPECTED - found)) cell(s) produced no log at all -- they did not run."
+fi
+
 echo
 echo "=== POST-MERGE GATE DONE ==="
