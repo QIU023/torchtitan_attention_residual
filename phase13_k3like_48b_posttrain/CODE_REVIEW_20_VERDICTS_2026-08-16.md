@@ -262,9 +262,23 @@ the cells that look related.
 
 ## Status of the code
 
-`244633ab3` on `dep_exp_impl` carries A2, B1, B2, B3, B4 plus the eight unit tests
-and the two new probes. The 58-cell gate is running against it, and what that gate
-can and cannot prove is the first section of this file: it exercises the new default
-CP path in 21 cells and confirms no regression elsewhere, and it does not enter the
-delta-mode code that A2, B3 and B4 changed. `run_attnres_cache_cells.sh` is what
-covers those, and it runs after the gate -- one GPU job at a time.
+Four commits on `dep_exp_impl`, ending at `c95e2703e`: the KCP default with A2/B1/B2/
+B3/B4, then the two gate-found regressions with B6, then B5 with C2, then the D-level
+documentation.
+
+**The gate is 58 of 58 at `c95e2703e`**, counted by the gate itself, after coming back
+45 of 58 on the first run. Beyond the cell count, four things it confirmed:
+
+* the three cells that died with illegal memory access and the four that died with
+  UnboundLocalError all pass, on both the text and the multimodal flavors;
+* no cell logged a capture-count mismatch, a step-end captured-grad slot, or a plain
+  parameter at clip time -- the three canaries this round added;
+* B6's mesh histogram came back `{"('tp',)": 250, "('ep',)": 30}` on the EP cells, which
+  is the evidence for why it asserts DTensor-ness and not a mesh whitelist: parameters
+  legitimately live on two meshes at once;
+* the KDA mode line reads `kda_cp_mode=kcp` on every rank that holds KDA layers and `-`
+  on the ranks that hold none, rather than inventing a mode for them.
+
+What the gate still cannot prove is the first section of this file: it does not enter
+delta mode, so A2, B3 and B4 are covered by `run_attnres_cache_cells.sh` instead, which
+runs separately -- one GPU job at a time.
