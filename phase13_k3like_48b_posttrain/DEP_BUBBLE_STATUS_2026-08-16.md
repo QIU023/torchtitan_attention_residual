@@ -57,6 +57,25 @@ For reference, at the ratio that was passed: 120 placements across ranks consumi
 of 312 idle slot-units, about 19% of the idle budget. That number describes a
 configuration that does not exist.
 
+## What the gate covers, and what it silently did not
+
+58 cells: the three arms' 54, two `vit_dep_stages=2` cells, two pp8xvp4 cells with the
+bubble runtime.
+
+The two-stage DEP pair spent several gate runs doing nothing. `run_dep2.sh` called
+`run_cells.sh` with `pp4`/`pp8`, and that script resolves a cell name against
+`run13_flav.sh`, where those two do not live -- they are `run_maxdeg.sh` cells. It printed
+"pp4: no such cell in run13_flav.sh" and continued, so every "58/58" was really 56 passing
+and 2 never executed. My own tally had a second bug that hid the first: a glob counted the
+pp8xvp4 pair twice, which made 56 look like 58.
+
+Fixed on both levels. The cells are invoked directly now and report the wiring line that
+proves multi-stage DEP is real -- "DEP vision stage wiring: 1 stage(s) on this rank, roles
+[head]", against `[both]` for single-stage, which is what the 54-cell gate had always been
+showing. And the gate itself now walks its output tree, counts logs against the expected
+58, and warns when a cell produced no log at all. Counting logs that exist rather than
+cells that were expected is what let this run for as long as it did.
+
 ## The three open items, and why they share one blocker
 
 **1. LoRA's backward -- DONE, and it found a real defect.** Verified at seq 256:
