@@ -30,6 +30,13 @@ Rank 0 proves less than rank 1 does. Its incoming recurrent state is zero either
 way and its conv needs no halo, so a probe that only printed rank 0 would pass
 with the prefix scan and the halo exchange both broken.
 
+Both halves are checked. The forward alone was what this probe first measured, and that
+is not enough for a DEFAULT path: a wrong gradient still lets the loss fall, so no matrix
+cell can see it. The backward compares each rank's parameter gradients against the
+single-rank reference's, which under sequence parallelism is a SUM rather than a slice --
+every rank's segment contributes to every weight -- so the reference is the full-sequence
+gradient and the check is on the all-reduced total.
+
     torchrun --nproc_per_node=2 kcp_batch_parity.py
 """
 
@@ -78,8 +85,12 @@ with torch.no_grad():
 torch.manual_seed(1234)
 x_BTD = torch.randn(B, T, DIM, device=device, dtype=torch.bfloat16)
 
-with torch.no_grad():
-    reference_BTD = kda.forward(x_BTD)
+reference_BTD = kda.forward(x_BTD)
+# Reference gradients from the full-sequence forward, before the CP run touches them.
+reference_BTD.sum().backward()
+ref_grads = {n: p.grad.detach().clone() for n, p in kda.named_parameters() if p.grad is not None}
+for p in kda.parameters():
+    p.grad = None
 
 ref_max = reference_BTD.float().abs().max().item()
 if not torch.isfinite(reference_BTD).all() or not (1e-6 < ref_max < 1e3):
@@ -93,8 +104,14 @@ t_loc = T // world
 x_local = x_BTD[:, rank * t_loc : (rank + 1) * t_loc].contiguous()
 
 kda._cp_group = dist.group.WORLD
-with torch.no_grad():
-    got_BLD = kda.forward(x_local)
+got_BLD = kda.forward(x_local)
+# Sum, not mean: the reference summed over the WHOLE sequence, and the shards partition
+# it, so summing each shard's local output and all-reducing the grads reproduces exactly
+# the same scalar objective.
+got_BLD.sum().backward()
+cp_grads = {n: p.grad.detach().clone() for n, p in kda.named_parameters() if p.grad is not None}
+for g in cp_grads.values():
+    dist.all_reduce(g)
 
 want_BLD = reference_BTD[:, rank * t_loc : (rank + 1) * t_loc]
 per_row = []
@@ -106,8 +123,27 @@ rel = max(per_row)
 rows = " ".join(f"row{b}={r:.3e}" for b, r in enumerate(per_row))
 print(f"[rank{rank}] relative {rel:.3e}  ({rows})", flush=True)
 
+# Gradients: every parameter, worst relative error, named. A single silently-dropped
+# contribution (the conv halo's dx is the one with a history here) shows up as one
+# parameter far off while the rest agree, which a max-over-all number would hide.
+missing = sorted(set(ref_grads) - set(cp_grads)) + sorted(set(cp_grads) - set(ref_grads))
+grad_rel = {}
+for name, want in ref_grads.items():
+    got = cp_grads.get(name)
+    if got is None:
+        continue
+    scale = want.float().abs().max().item()
+    grad_rel[name] = (got.float() - want.float()).abs().max().item() / max(scale, 1e-12)
+worst = max(grad_rel.items(), key=lambda kv: kv[1]) if grad_rel else ("none", 0.0)
+print(
+    f"[rank{rank}] grads: {len(grad_rel)} compared, worst {worst[0]} {worst[1]:.3e}"
+    + (f"  MISSING {missing}" if missing else ""),
+    flush=True,
+)
+
 # bf16 kernels, so the bar is bf16 noise rather than fp32 noise.
-ok = torch.tensor([1.0 if rel < 5e-2 else 0.0], device=device)
+grad_ok = worst[1] < 5e-2 and not missing
+ok = torch.tensor([1.0 if (rel < 5e-2 and grad_ok) else 0.0], device=device)
 dist.all_reduce(ok)
 if rank == 0:
     print("PARITY PASS" if ok.item() == world else "PARITY FAIL", flush=True)
