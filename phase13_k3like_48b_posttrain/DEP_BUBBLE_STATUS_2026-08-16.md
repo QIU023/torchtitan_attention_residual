@@ -59,13 +59,23 @@ configuration that does not exist.
 
 ## The three open items, and why they share one blocker
 
-**1. LoRA's backward.** The forward is verified on the LoRA flavor (8/8 occupancy, loss
-identical); the backward is verified only on multimodal. LoRA needs its own check rather
-than inference from multimodal: only adapters are trainable there, so on some stages the
-skip-edge gradients the cross-stage adapter routes are the only gradients produced, and a
-graph cut at the vision seam is exactly the kind of change that would show up there
-first. This one does NOT depend on hiding -- it is a gradient-correctness check and can
-run at seq 256 today.
+**1. LoRA's backward -- DONE, and it found a real defect.** Verified at seq 256:
+grad_norm identical to the mechanism off, loss identical, rc=0.
+
+It was not a formality. Under LoRA the tower's parameters are frozen, so its output does
+not require grad, and the cut ran anyway and produced a detached leaf with
+requires_grad=True. That turned the splicing stage's output from not-requiring-grad into
+requiring it, and torch's stage_backward was dragged down a path it would not otherwise
+take: "grad can be implicitly created only for scalar outputs". Full-parameter multimodal
+passed throughout, because there the gradient path exists either way -- so this was
+invisible to every check that did not run LoRA separately.
+
+The fix is a missing precondition rather than a workaround: with no gradient path there is
+no backward to defer, so the cut is skipped. Cutting a graph that has no gradient is not
+harmlessly redundant, it manufactures a gradient path that was not there.
+
+Worth generalising: the defect was not LoRA-specific, it was a condition the
+implementation never checked. LoRA was the configuration that exposed it.
 
 **2. Placement for the backward side.** It is greedy: one pending replay per idle
 interval after a backward action. Planning it needs a model of when each vision backward
@@ -78,7 +88,7 @@ choice matches the planned one in the common case.
 the replay, a longer window than the forward prefetch's. That window is what limits how
 much of the backward can move, and it is unmeasured.
 
-**The blocker for 2 and 3 is the same as for hiding: a box that can hold the
+**The blocker for the two remaining items is the same as for hiding: a box that can hold the
 configuration where hiding exists.** That needs, simultaneously:
 
 * `seq_len 4096` -- puts the cost ratio at 0.493, visual tokens 6.2% of the sequence,
