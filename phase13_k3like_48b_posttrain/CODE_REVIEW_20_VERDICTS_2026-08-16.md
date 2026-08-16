@@ -36,9 +36,43 @@ carries one geometry that genuinely has never run:
   `attn_res_block_size=1`, so every stage commits eight blocks. This is exactly
   what A2's restriction refused, so no run of any kind has entered it.
 
-Each cell is judged against its cache-off twin and must also show the wrap line,
-because delta mode is numerically neutral by design: a green loss count says
-nothing about whether it engaged.
+Each cell is judged against its cache-off twin and must also show the wrap line. That
+assertion earned its place immediately: the FIRST version of the script reused the matrix
+PP cells through `run_cells.sh`, those cells run the default schedule, delta mode is gated
+on `isinstance(pp_schedule, Interleaved1F1B)`, and so both halves of every A/B ran naive
+passthrough. The losses matched perfectly while measuring nothing, and the wrap-line check
+is the only thing that said so.
+
+Two more attempts failed before one ran, and the reasons are worth keeping because each
+looks like the thing under test:
+
+* `BlockLayoutTables` needs `n_layers % num_stages == 0`, and the multimodal pp8vp4
+  flavor's 30 layers are not divisible by 4;
+* that flavor is not an AttnRes model at all -- `num_blocks` is None, so the adapter passes
+  through no matter the schedule;
+* `first/last_stage_less_layers` default nonzero, which makes the split uneven, and the
+  adapter's contiguous-layout check then refuses with "layer 24 sits on stage 2";
+* the 48B L32_N8 carrier satisfies the arithmetic but OOMs with 16 layers on each of two
+  ranks.
+
+Hence `kimi_k3_mini_attnres_multicommit` (16 layers in 8 blocks of 2), added for the same
+reason `report_arch_pp8vp4` exists: so the geometry is expressible.
+
+**And the judge itself was wrong at first.** It required bit equality, and delta mode is
+NOT bit-identical to naive -- the mid-stage rebuild of the block stack is "the only
+reorder point" (`attn_res_model.py`), so the summation order differs and the curves
+separate from step 2 onward. Step 1 agreeing to the digit is what says the forward is
+unchanged. Measured:
+
+| geometry | wrap | max abs dLoss over 6 steps |
+| --- | --- | --- |
+| single, 1 commit/stage, pp2 x vp4 | 4 stages | 0.01981 |
+| multi, 2 commits/stage, pp2 x vp2 | 2 stages | 0.00828 |
+
+Both within phase3's recorded `|dLoss| <= 0.011` neighbourhood, and multi-commit is
+*better* than single-commit, which is the claim removing the restriction rests on. Neither
+run logged a capture-count mismatch (B3, now a hard failure) or a step-end slot sweep
+(B4). Had the bit-equality judge stood, it would have condemned a correct change.
 
 **Every CP cell was running the wrong CP.** See B1.
 
