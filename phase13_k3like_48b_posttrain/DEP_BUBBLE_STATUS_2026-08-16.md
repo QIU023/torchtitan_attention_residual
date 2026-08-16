@@ -76,6 +76,24 @@ showing. And the gate itself now walks its output tree, counts logs against the 
 58, and warns when a cell produced no log at all. Counting logs that exist rather than
 cells that were expected is what let this run for as long as it did.
 
+## The first run where all 58 cells executed
+
+    === cell accounting ===
+      logs found: 58 of 58 expected; passed: 58
+
+    dep2 pp4  : DEP vision stage wiring: 1 stage(s) on this rank, roles ['tail']
+    dep2 pp8  : DEP vision stage wiring: 1 stage(s) on this rank, roles ['head']
+    pp8vp4 mm : DEP bubble runtime: 0/0 planned
+    pp8vp4 lora: DEP bubble runtime: 0/0 planned
+
+The two DEP cells report different roles -- `tail` on pp4, `head` on pp8 -- which is
+stronger than a loss count: the tower is genuinely split and different ranks hold
+different shares. Single-stage DEP reports `both` on every rank.
+
+`0/0 planned` on the pp8xvp4 pair is the correct answer at seq 256, where the cost ratio
+is about 14 and no idle run can pay for an encode. The cell still exercises the mechanism:
+the upfront prefix runs, the drain runs, and planned-but-not-fired would warn.
+
 ## The three open items, and why they share one blocker
 
 **1. LoRA's backward -- DONE, and it found a real defect.** Verified at seq 256:
