@@ -20,6 +20,32 @@ Usage:
     python3 dep_cost_ratio.py                       # current pp8vp4 flavor
     python3 dep_cost_ratio.py --seq 4096            # what a longer sequence does
     python3 dep_cost_ratio.py --scan                # candidate configs reaching r<=0.3
+
+## What varies with the batch, and which way it fails (review item C3)
+
+This is ANALYTIC: parameter counts and FLOP shapes, not a timed kernel. And it takes a
+single patch count -- defaulting to 1024, the collator's ``max_patches`` -- rather than
+averaging over an image-size distribution. Neither is hidden, but both decide how the
+number behaves on a real batch, so state it:
+
+* ``max_patches`` is an UPPER bound on one image's cost, so the ratio it produces
+  overstates the ViT side whenever a batch holds images below the patch budget. A higher
+  ratio makes the planner place FEWER encodes.
+* So the failure direction is one-sided: the plan is too CONSERVATIVE, not too optimistic.
+  It leaves bubbles unused rather than overrunning them. That matters because overrunning
+  is the mode that costs step time, and it is the mode the review worried about -- an
+  encode that does not fit delays the actions behind it, while one that never gets placed
+  only forgoes a gain.
+* The ratio must stay a parameter rather than a runtime measurement, since a plan derived
+  from each rank's own timing would stop being identical across ranks and the placements
+  would diverge. Averaging over a measured distribution offline would be legitimate; per
+  step it would not.
+
+Not verified: whether this analytic number agrees with the encode time the runtime
+observes. ``dep_bubble_runtime`` now reports milliseconds per planned encode (review item
+C4), which makes that comparison possible for the first time -- at pp4 x vp2 seq 4096 it
+was 4.0 ms per encode against a computed ratio of 0.493, and nobody has converted one into
+the other's units to check. Do that before trusting either number at a new shape.
 """
 
 from __future__ import annotations

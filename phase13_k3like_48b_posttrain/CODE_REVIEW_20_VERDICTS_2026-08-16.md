@@ -240,11 +240,30 @@ the per-step report now carries four figures: ran-at-a-planned-slot,
 drained-at-step-end, forced-by-the-memory-bound, found-nothing. A high idle count is the
 signal to turn the greedy `min(pending)` into any-pending.
 
-**C3, C4 -- open. The reasoning in the review is right, including why the ratio
-must be a parameter** (a plan derived from each rank's own timing stops being
-identical across ranks). Worth adding: this session already paid for the failure
-mode, by passing a ratio measured at seq 4096 to a seq-256 cell where the true
-value is about 28x larger.
+**C4 -- done.** Per-encode milliseconds are in the bubble report now, timed around the
+launch and deliberately not synchronized (the encodes share the main stream with the next
+pipeline action, so a sync would serialize what the mechanism exists to overlap).
+
+**C3 -- answered, and the answer is neither of the two the review offered.**
+`dep_cost_ratio.py` does not average over an image distribution and does not take an upper
+bound over one: it is ANALYTIC (parameter counts and FLOP shapes, no timed kernel) and it
+takes a single patch count, defaulting to 1024, which is the collator's `max_patches`.
+
+That default is an upper bound on ONE image's cost, so the ratio overstates the ViT side
+for any batch holding smaller images -- and a higher ratio makes the planner place fewer
+encodes. **So the failure direction is one-sided: too conservative, never too optimistic.**
+That distinction matters, because overrunning a bubble is the mode that costs step time
+(the encode delays the actions behind it) while failing to place one only forgoes a gain.
+The review treated both directions as live; only one is.
+
+Documented in the script itself, together with the thing that is still unverified: whether
+this analytic number agrees with the encode time the runtime now reports. At pp4 x vp2 seq
+4096 the runtime measured 4.0 ms per encode against a computed ratio of 0.493, and nobody
+has converted one into the other's units. That comparison is the check to run before
+trusting either number at a new shape -- and it only became possible with C4.
+
+Also worth keeping: this session already paid for the ratio being static, by passing one
+measured at seq 4096 to a seq-256 cell where the true value is about 28x larger.
 
 **C5, C6 -- open, both profiling questions, correctly ranked low.**
 
