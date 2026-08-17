@@ -108,13 +108,16 @@ for mode in 0 1; do
     --training.global-batch-size 8 --training.local-batch-size 8 \
     --parallelism.data_parallel_shard_degree 1 \
     --parallelism.pipeline_parallel_degree 8 \
-    --parallelism.pipeline_parallel_layers_per_stage 4 \
+    --parallelism.pipeline_parallel_layers_per_stage 2 \
     --parallelism.pipeline_parallel_first_stage_less_layers 0 \
     --parallelism.pipeline_parallel_last_stage_less_layers 0 \
     --parallelism.pipeline_parallel_schedule Interleaved1F1B \
     --dump-folder "$OUT/$tag" > "$OUT/$tag.log" 2>&1
   rm -rf "$OUT/$tag/checkpoint"
 done
+# lps=2 over 32 layers is 16 stages, i.e. pp8 x vp2. lps=4 would be 8 stages == pp8, which
+# is vp=1, and Interleaved1F1B refuses that before the run starts -- how the first attempt
+# produced no output at all.
 w=$(grep -c "cache adapter wrapped" "$OUT/bias48b_cache1.log" || true)
 say "  wrap lines on the delta arm: $w $([ "$w" -eq 0 ] && echo '(NOT delta mode -- comparison void)')"
 python3 - "$OUT/bias48b_cache0.log" "$OUT/bias48b_cache1.log" <<'PY' | tee -a "$OUT/queue.log"
@@ -139,8 +142,14 @@ PY
 # ----- 4: multi-commit at other geometries ---------------------------------- #
 # pp2 x vp2 with two commits a stage is the only multi-commit shape verified. Four
 # commits a stage, and a different pp, exercise the per-commit indexing harder.
-say "job 4: multi-commit at pp2 x vp1-equivalent (4 commits/stage) and pp4"
-for spec in "mc4:2:8" "mc_pp4:4:4"; do
+# Interleaved1F1B needs num_stages > pp_degree, i.e. vp >= 2, and multi-commit needs
+# layers_per_stage > layers_per_block. Those two squeeze hard: at 16 layers with blocks of
+# 2 the only pp x vp product that satisfies both is 4, so pp2 x vp2 is the ONLY
+# multi-commit geometry this flavor can express. The first version of this job asked for
+# lps=8 at pp2 and lps=4 at pp4, both of which are vp=1 -- the schedule refuses them
+# before any of the code under test runs.
+say "job 4: multi-commit geometries this flavor can express"
+for spec in "mc_pp2vp2:2:4" "mc_pp1vp2:1:8"; do
   IFS=: read -r name pp lps <<<"$spec"
   gpus=$(seq -s, 0 $((pp - 1)))
   for mode in 0 1; do
@@ -162,7 +171,17 @@ for spec in "mc4:2:8" "mc_pp4:4:4"; do
     rm -rf "$OUT/$tag/checkpoint"
   done
   w=$(grep -c "cache adapter wrapped" "$OUT/${name}_cache1.log" || true)
-  same=$([ "$(losses "$OUT/${name}_cache0.log")" = "$(losses "$OUT/${name}_cache1.log")" ] && echo bitwise-equal || echo differs)
+  # Two empty logs compare equal, which the first version of this reported as
+  # "bitwise-equal" for a cell that never started. Require lines before comparing.
+  n0=$(losses "$OUT/${name}_cache0.log" | wc -l)
+  n1=$(losses "$OUT/${name}_cache1.log" | wc -l)
+  if [ "$n0" -eq 0 ] || [ "$n1" -eq 0 ]; then
+    same="DID NOT RUN ($n0 vs $n1 loss lines)"
+  elif [ "$(losses "$OUT/${name}_cache0.log")" = "$(losses "$OUT/${name}_cache1.log")" ]; then
+    same=bitwise-equal
+  else
+    same=differs
+  fi
   bad=$(sed 's/\x1b\[[0-9;]*m//g' "$OUT/${name}_cache1.log" | grep -oE "capture-count mismatch|cleared [0-9]+ captured-grad slot" | sort -u | tr '\n' ' ')
   say "  $name: wrap=$w, $(losses "$OUT/${name}_cache1.log" | wc -l) loss lines, $same${bad:+, ANOMALY: $bad}"
 done

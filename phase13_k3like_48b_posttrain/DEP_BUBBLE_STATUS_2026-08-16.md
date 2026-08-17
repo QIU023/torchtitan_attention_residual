@@ -180,8 +180,31 @@ conclusion HANDOFF_2026-08-16 reached from arithmetic (about 60 GiB per GPU), no
 actual failure point rather than an estimate: pp8 x vp2 halves the micro-batches in flight
 against pp8 x vp4 and still does not fit seq 4096 at local 16.
 
-What this does NOT say: that bubble scheduling cannot hide anything. It says that at the
-cost ratios reachable on this box, the placeable share is too small for the mechanism to
-pay for itself. Reporting -2.08% as "the bubble does not work" would be the mirror image of
-reporting 8/8 occupancy as "the bubble works" -- both read a cell-specific number as a
-property of the design.
+The theoretical best point then ran too, on four GPUs where seq 4096 fits at local 8:
+
+| shape | cost ratio | placed share | tps off -> on |
+| --- | --- | --- | --- |
+| pp8 x vp2, seq 2048, mb 16 | 2.0 | 2/16 = 12.5% | 432 -> 423 (-2.08%) |
+| pp4 x vp2, seq 4096, mb 8 | **0.493** | 2/8 = 25% | 3726 -> 3690 (**-0.95%**) |
+
+Two points, and together they show the mechanism rather than just a verdict. A better cost
+ratio and a larger placed share both move the number toward zero, exactly as the theory
+says they should -- and neither reaches a gain.
+
+**The binding constraint is the upfront prefix, not the cost ratio.** The report's own
+design cannot place the first few micro-batches' encodes, because nothing precedes them to
+anchor on. At pp=4 with 8 micro-batches that is 4 of 8 unplaceable before anything else
+happens; 2 more stayed synchronous; 2 were placed. So the ceiling on any gain was 25%, and
+against it a 4.0 ms encode plus the plan and hook overhead nets out negative.
+
+Placed share is roughly (mb - pp) / mb, so it only improves with mb >> pp -- and a larger
+mb is exactly what does not fit at seq 4096 in 15.5 GiB. That is the real content of the
+"about 60 GiB per GPU" figure: not that the configuration fails to start, but that the
+configurations which DO start leave too small a placeable share for the mechanism to pay
+for itself.
+
+What this does NOT say: that bubble scheduling cannot hide anything. Reporting -0.95% as
+"the bubble does not work" would be the mirror image of reporting 8/8 occupancy as "the
+bubble works" -- both read a cell-specific number as a property of the design. What is now
+established is a measurement, a direction, and the specific quantity (mb/pp) that a bigger
+box would change.
