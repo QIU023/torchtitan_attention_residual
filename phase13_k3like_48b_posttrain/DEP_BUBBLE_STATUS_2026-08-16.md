@@ -154,3 +154,34 @@ That is also why high-resolution video is where this mechanism helps least, not 
 raises r. The report's claim survives because dynamic CP divides the per-rank ViT cost by
 the CP degree first, and because a 1M-token context makes the text side enormous -- the
 two halves of sec 5.2.3 in the order they are written.
+
+## First step-time measurement of the hiding claim (2026-08-17)
+
+Occupancy was all this had ever measured. This is step time, which is the only thing that
+can answer "does it hide anything", at the shapes that fit in 15.5 GiB:
+
+| shape | cost ratio | tps off -> on | occupancy |
+| --- | --- | --- | --- |
+| pp8 x vp2, seq 4096, local 16 | 0.493 | **OOM** | -- |
+| pp8 x vp2, seq 2048, local 16 | 2.0 | 432 -> 423 (**-2.08%**) | 2/2 placed, 8 upfront, 6 synchronous, 3.9 ms each |
+
+**The bubble runtime makes this configuration 2.08% slower.** Not a defect -- the
+arithmetic of the cell explains it, and it agrees with the theory's direction:
+
+* at r = 2.0 the hideable share is already past its peak (which is near r = 0.5) and
+  heading for zero;
+* of sixteen micro-batches only TWO had their encode placed in a bubble. Eight fall in the
+  report's own upfront prefix, which cannot be placed because nothing precedes them, and
+  six stayed synchronous. So the ceiling on any gain was 2/16 before the mechanism ran;
+* against that ceiling, the plan construction and the per-forward hook are a real cost.
+
+The configuration where theory predicts a gain is the one that OOMs. That is the same
+conclusion HANDOFF_2026-08-16 reached from arithmetic (about 60 GiB per GPU), now with the
+actual failure point rather than an estimate: pp8 x vp2 halves the micro-batches in flight
+against pp8 x vp4 and still does not fit seq 4096 at local 16.
+
+What this does NOT say: that bubble scheduling cannot hide anything. It says that at the
+cost ratios reachable on this box, the placeable share is too small for the mechanism to
+pay for itself. Reporting -2.08% as "the bubble does not work" would be the mirror image of
+reporting 8/8 occupancy as "the bubble works" -- both read a cell-specific number as a
+property of the design.
