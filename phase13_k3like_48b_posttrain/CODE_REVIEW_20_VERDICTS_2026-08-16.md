@@ -417,13 +417,35 @@ This is configuration-dependent, which is why every delta run to date missed it:
 layers with pp2 x vp2 a stage receives exactly two tensors, so `rest` is empty. It needs a
 shape where the pipeline also threads tokens through.
 
-**Not fixed here, deliberately.** The fix is not the obvious reorder: the model's signature
-is `forward(tokens, blocks=None, *, ...)` with everything after `blocks` keyword-only, so
-there is no positional slot for a third tensor either way. Getting it right means deciding
-what that third input IS to a middle stage and passing it by name, which is a change to the
-PP input contract that every delta run goes through -- and the failure mode of getting it
-wrong is a silently mis-wired gradient, not a crash. That is not work to land unsupervised
-at 08:00 with no matrix run possible before morning.
+**Fixed, and the diagnosis in the paragraph above was wrong.** Probing the adapter's actual
+arguments -- rather than reading the traceback, which points at the consumer -- showed the
+stage receives TWO tensors, not three, and that the second one has rank 4:
+
+    stage=0  n=1  [(1,512) int64]                    tokens
+    stage=1  n=2  [(1,512,1280), (512,1,1280)]       fine
+    stage=2  n=2  [(1,512,1280), (1,1,512,1280)]     rank 4
+
+`_has_blocks_signature` tests `dim() == 3`, so a rank-4 carrier fails it, falls through to
+the naive call, and lands on `blocks`'s positional slot while `blocks=None` also arrives by
+keyword. The TypeError names the consumer; the defect is in the PRODUCER's shape inference.
+
+`_forward_shape_inference` builds the placeholder pipelining uses to size the next stage's
+recv buffer, and it must match what the runtime sends: `torch.stack(pieces, dim=1)` over
+`[T, D]` pieces, i.e. `[T, K, D]`. Two forms were wrong, both reachable only when
+`expected_K != N`: a stage committing NOTHING took `partial_out.shape` whole and produced
+`[K, B, L, D]`; a stage committing something took `new_blocks_out.shape[1:]` and put the
+block axis first. Derived from `partial_out` now. Three unit tests, each verified by
+restoring one of the old forms. 16-layer pp2 x vp2 delta mode is bitwise unchanged.
+
+Worth noting how close this came to not being found: the traceback blames a signature, the
+signature is fine, and the shape that is wrong is produced two stages earlier by a helper
+whose whole job is to be invisible.
+
+**32 layers at pp8 x vp2 still does not complete**, now failing in stage backward with all
+shapes and gradients present. It reproduces on the naive path as well, so it is not
+delta-specific and not this bug. Recorded as open. One candidate ruled out along the way:
+`local_batch_size` below the stage count (8 micro-batches into 16 stages) changes the
+failure but does not remove it.
 
 **Naive arm: a separate failure**, `Failed to run stage backward / Output gradient: None`
 on a scalar stage output. So the 48B-carrier-at-pp8-x-vp2 combination has a second problem
