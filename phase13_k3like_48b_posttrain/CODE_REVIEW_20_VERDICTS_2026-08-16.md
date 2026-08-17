@@ -393,3 +393,43 @@ keep taking the passthrough they already take; the ones that qualify would chang
 transport with no gate cell able to observe it, since the 58-cell gate never enters delta
 mode. Flipping it is a launch-configuration decision with the numbers now attached, not a
 correctness question.
+
+## A bug found by trying to re-measure at a production shape (2026-08-17), NOT fixed
+
+The delta-vs-naive bias was measured at 16 layers on two GPUs. Re-checking it on the 48B
+carrier (`kimi_linear_48b_block_attn_res_d1280_e16_L32_N8`, 32 layers, pp8 x vp2) failed on
+both arms, for two different reasons, and one of them is a real defect.
+
+**Delta arm: `TypeError: KimiK3AttnResModel.forward() got multiple values for argument
+'blocks'`.** The adapter engaged (8 wrap lines) and died in the first step. What the naive
+arm's traceback shows is why -- the stage's inputs at this shape are THREE tensors:
+
+    [1, 512, 1280]  grad=True    partial_block
+    [512, 8, 1280]  grad=True    the block carrier
+    [1, 512]        grad=False   int64 -- tokens
+
+`_forward_delta` does `partial, recv_delta_tensor, *rest = args` and then
+`self.wrapped(partial, *rest, blocks=blocks_tensor)`. With `rest = (tokens,)` the tokens
+tensor lands on `blocks`'s positional slot while `blocks` also arrives by keyword.
+`_call_wrapped_naive` has the same shape of call and the same exposure.
+
+This is configuration-dependent, which is why every delta run to date missed it: at 16
+layers with pp2 x vp2 a stage receives exactly two tensors, so `rest` is empty. It needs a
+shape where the pipeline also threads tokens through.
+
+**Not fixed here, deliberately.** The fix is not the obvious reorder: the model's signature
+is `forward(tokens, blocks=None, *, ...)` with everything after `blocks` keyword-only, so
+there is no positional slot for a third tensor either way. Getting it right means deciding
+what that third input IS to a middle stage and passing it by name, which is a change to the
+PP input contract that every delta run goes through -- and the failure mode of getting it
+wrong is a silently mis-wired gradient, not a crash. That is not work to land unsupervised
+at 08:00 with no matrix run possible before morning.
+
+**Naive arm: a separate failure**, `Failed to run stage backward / Output gradient: None`
+on a scalar stage output. So the 48B-carrier-at-pp8-x-vp2 combination has a second problem
+independent of delta mode -- plausibly that `layers_per_stage=2` against
+`layers_per_block=4` leaves stages that commit no block at all, but that is a hypothesis
+and is written down as one.
+
+What this costs: the +0.107% bias figure stands only at 16 layers. Whether it is
+shape-dependent is still open, and the shape needed to answer it does not currently run.
