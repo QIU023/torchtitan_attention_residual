@@ -441,11 +441,29 @@ Worth noting how close this came to not being found: the traceback blames a sign
 signature is fine, and the shape that is wrong is produced two stages earlier by a helper
 whose whole job is to be invisible.
 
-**32 layers at pp8 x vp2 still does not complete**, now failing in stage backward with all
-shapes and gradients present. It reproduces on the naive path as well, so it is not
-delta-specific and not this bug. Recorded as open. One candidate ruled out along the way:
-`local_batch_size` below the stage count (8 micro-batches into 16 stages) changes the
-failure but does not remove it.
+**32 layers at pp8 x vp2 does not complete, and that is OOM, not a defect.** Recorded here
+as an open PP-backward problem first, which was the second wrong diagnosis of the same
+failure. Both came from reading a wrapper's message instead of the original exception:
+torch's `forward_one_chunk` and `stage_backward` re-raise as `RuntimeError(exc_msg) from e`,
+so the shapes-and-gradients summary is what surfaces while `e` -- the actual cause -- sits
+further up the log.
+
+Digging to `e` gives `torch.OutOfMemoryError` in all three attempts:
+
+| shape | result |
+| --- | --- |
+| seq 1024, local 32, lps=1 (32 stages, phase3's own parameters) | OOM at step 68, action 19F4 |
+| seq 512, local 16, lps=2 (16 stages) | OOM, 40 MiB short |
+| seq 256, local 16, lps=2 | OOM after one logged step |
+
+So the 48B-layout carrier does not fit delta mode in 8 x 15.5 GiB at any sequence length
+tried -- it is the model (d1280, 32 layers, 16 experts a layer), not the schedule. phase3
+ran these parameters on different hardware.
+
+Consequence for the bias question: **whether +0.107% is shape-dependent remains unknown,
+and the reason is memory** -- the same constraint that blocks the DEP hiding measurement,
+not a separate obstacle. What the attempt did produce is the rank-4 placeholder bug above,
+which was real and is fixed.
 
 **Naive arm: a separate failure**, `Failed to run stage backward / Output gradient: None`
 on a scalar stage output. So the 48B-carrier-at-pp8-x-vp2 combination has a second problem
