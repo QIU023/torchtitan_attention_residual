@@ -356,10 +356,29 @@ So "smaller than the reseed spread" bounds the IMPACT and does not rule out a sy
 bias, and calling the difference "noise" -- as an earlier draft of this file did -- is the
 wrong word. In the single pair measured, delta finished worse (1.78017 against 1.77437),
 and one pair cannot separate a coincidence from a sign.
-`matrix_scripts/run_delta_sign_test.sh` runs the pair at three seeds and reads the SIGN of
-the tail difference: consistent across seeds means the reorder is a bias whose magnitude
-is the real price of the memory saving; mixed means it averages out and the conclusion
-above stands unqualified.
+`matrix_scripts/run_delta_sign_test.sh` runs the pair across seeds and reads the SIGN of
+the tail difference. Six seeds:
+
+| seed | tail (delta - naive) |
+| --- | --- |
+| 42 | +0.14% |
+| 7 | +0.24% |
+| 1234 | +0.20% |
+| 99 | **-0.16%** |
+| 2026 | +0.08% |
+| 31337 | +0.14% |
+
+Five positive, one negative, mean **+0.107%**. Five of six same-signed has probability
+0.219 under no bias, so there is no detectable systematic effect -- and the first three
+seeds all landing positive, which read as a consistent sign at the time, was the
+coincidence that 3/3 at p = 0.25 always risked being. Worth keeping as a record of the
+sequence: three seeds produced a confident wrong reading, and only running more of them
+corrected it.
+
+So the accurate statement is narrow: the difference is DETERMINISTIC in mechanism -- same
+seed, same digits -- and unbiased in aggregate, at a magnitude (0.107% mean) well inside
+the 0.56% spread between two runs of one configuration. It behaves like noise without
+being noise, and neither transport is favoured.
 
 The general lesson is worth more than this instance. A deterministic perturbation and a
 random spread are different objects, and comparing their magnitudes answers "can I detect
