@@ -316,3 +316,36 @@ documentation.
 What the gate still cannot prove is the first section of this file: it does not enter
 delta mode, so A2, B3 and B4 are covered by `run_attnres_cache_cells.sh` instead, which
 runs separately -- one GPU job at a time.
+
+## The one item that needed a long run
+
+The delta path differs from naive by max `|dLoss|` 0.0198 over six steps, and six steps
+cannot tell noise from a slow divergence. That distinction decides whether the adapter's
+-11.4% peak memory is a good trade, and nothing on record ran long enough: every
+delta-vs-naive comparison in this logbook is tens of steps.
+
+3000 steps per arm, `matrix_scripts/run_delta_convergence.sh`, pp2 x vp2 with two commits
+per stage:
+
+| arm | final loss | mean rel gap vs naive, first 10% -> last 10% |
+| --- | --- | --- |
+| naive (seed 42) | 1.77437 | -- |
+| delta (seed 42) | 1.78017 | 0.00245 -> 0.00342 |
+| naive, seed 7 | 1.76570 | 0.00465 -> 0.00555 |
+
+**The transport's difference is 62% of the run-to-run spread of one configuration**, and
+neither gap grows across the run. So the 0.0198 was noise being averaged away.
+
+The third arm is the whole argument. Without it, "0.34% apart at the end" reads as
+evidence; with it, that number is visibly smaller than what the same configuration does to
+itself when reseeded, and therefore not attributable to delta mode at all. Any future
+claim of the form "X changes the loss by Y%" on this stack needs the same floor measured
+alongside it.
+
+`attn_res_cache` stays False, and the reason is no longer trust. Engaging delta mode needs
+Interleaved1F1B, `n_layers % num_stages == 0`, and an even split
+(`first/last_stage_less_layers 0`). Most configurations satisfy none of those and would
+keep taking the passthrough they already take; the ones that qualify would change
+transport with no gate cell able to observe it, since the 58-cell gate never enters delta
+mode. Flipping it is a launch-configuration decision with the numbers now attached, not a
+correctness question.
