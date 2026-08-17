@@ -342,6 +342,31 @@ itself when reseeded, and therefore not attributable to delta mode at all. Any f
 claim of the form "X changes the loss by Y%" on this stack needs the same floor measured
 alongside it.
 
+**A caveat the first version of this section did not state, and it matters for how the
+number is used.** The two quantities being compared are not the same kind of thing. The
+delta-vs-naive difference is DETERMINISTIC: same seed, same result to the last digit --
+two delta runs at six steps agree bitwise, and `--debug.deterministic` suppresses the
+non-deterministic kernels -- because it is a floating-point summation order difference,
+not a sample of anything. Its sources are the mid-stage block-stack rebuild (the sort and
+restack of cached prefix plus incoming delta) and the explicit `grad + captured` where
+autograd would otherwise have accumulated. The reseed difference, by contrast, is genuine
+randomness.
+
+So "smaller than the reseed spread" bounds the IMPACT and does not rule out a systematic
+bias, and calling the difference "noise" -- as an earlier draft of this file did -- is the
+wrong word. In the single pair measured, delta finished worse (1.78017 against 1.77437),
+and one pair cannot separate a coincidence from a sign.
+`matrix_scripts/run_delta_sign_test.sh` runs the pair at three seeds and reads the SIGN of
+the tail difference: consistent across seeds means the reorder is a bias whose magnitude
+is the real price of the memory saving; mixed means it averages out and the conclusion
+above stands unqualified.
+
+The general lesson is worth more than this instance. A deterministic perturbation and a
+random spread are different objects, and comparing their magnitudes answers "can I detect
+it" rather than "is it unbiased". Whenever a claim on this stack takes the form "X changes
+the loss by Y%", it needs both: the reseed floor for detectability, and the sign across
+seeds for bias.
+
 `attn_res_cache` stays False, and the reason is no longer trust. Engaging delta mode needs
 Interleaved1F1B, `n_layers % num_stages == 0`, and an even split
 (`first/last_stage_less_layers 0`). Most configurations satisfy none of those and would
