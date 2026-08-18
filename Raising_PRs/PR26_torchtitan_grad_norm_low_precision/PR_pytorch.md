@@ -71,7 +71,9 @@ maintainer running the block would not have matched the table.
 
 `get_total_norm` accumulates in the input tensors' dtype. With bf16 gradients split across ranks, each rank's partial norm is rounded before the partials are combined, so under pipeline parallelism the reported total depends on how many stages the model was cut into rather than only on the gradients.
 
-The change passes a `dtype` through to the three norm calls the function already makes. One extra condition is needed: when `dtype` is set, a group containing DTensors has to take the `vector_norm` path, because `torch._foreach_norm` has no DTensor dispatch rule for the dtype overload and mis-parses `dtype` as a dim. That is the ordinary FSDP case, since FSDP gradients are DTensors.
+This passes a `dtype` through to the three norm calls the function already makes; `torch.linalg.vector_norm` and `torch._foreach_norm` both take `dtype` already.
+
+One fix underneath is needed first, as a separate commit here. DTensor gradients -- the FSDP case -- reach `torch._foreach_norm(..., dtype=)`, and that raises today: `_foreach_norm.Scalar` shares `vector_norm`'s DTensor sharding strategy, which reads `args_schema[2]` as `dim`, while `_foreach_norm`'s schema has no dim and position 2 is `dtype`. Setting `dim=None` for that overload fixes every `_foreach_norm(dtype=)` DTensor caller rather than only this one, and keeps `get_total_norm` a pure passthrough with no DTensor special-casing.
 
 512 bf16 gradients, the same tensors at every world size, nccl, torch 2.14. Two splits that both occur in training: FSDP, where each gradient is a DTensor `Shard(0)` and the partials combine through `_NormPartial`; and pipeline, where rank `r` owns `grads[r::world]` and the partials are all-reduced.
 
@@ -88,8 +90,7 @@ The pipeline split varies with the world size, so the same gradients report a di
 
 ```
 python repro_get_total_norm_dtype.py --module <clip_grad.py with this change>
-```>>>>>>> f619302 (Raising_PRs/PR26: the DTensor reading was wrong, and the body follows the patch again)
-
+```
 https://github.com/QIU023/torchtitan_attention_residual/blob/REPLACE_SHA/Raising_PRs/PR26_torchtitan_grad_norm_low_precision/repro_get_total_norm_dtype.py
 
 `dtype=None` is bitwise identical to today in 144 cases: 4 shapes including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in {1, 2, inf}.
@@ -211,18 +212,23 @@ Two details from that run that still apply:
 
 ## Blockers before this can be filed (2026-08-18)
 
-1. **The guard uses a string type check.** `type(t).__name__ == "DTensor"` matches any class
-   with that name and is not how core identifies a subclass. `torch/nn/utils/clip_grad.py`
-   cannot import `torch.distributed.tensor` at module scope, so the options are a local
-   import inside the branch, or testing membership in `_foreach_supported_types` minus
-   `torch.Tensor`. A reviewer will raise this; decide it before filing rather than in review.
-2. **The narrower fix may be the one they want.** The actual gap is that
-   `torch._foreach_norm`'s dtype overload has no DTensor dispatch rule. Adding that rule
-   fixes it for every caller instead of working around it in `clip_grad.py`. The guard
-   unblocks this PR; the dispatch rule is the better change and is worth offering in the
-   description.
-3. **The fork branch `ba370ede20` is not this patch.** Its docstring claims the norm is
-   "returned in the tensors' dtype regardless", which contradicts its own code -- measured,
-   bf16 input with `dtype=float32` returns float32 -- and it does not carry the empty-input
-   fix or the DTensor guard. It must be updated before a PR is opened from it.
-4. **The repro link needs the pushed SHA**, and the body's `REPLACE_SHA` filled in.>>>>>>> f619302 (Raising_PRs/PR26: the DTensor reading was wrong, and the body follows the patch again)
+Items 1 and 2 are CLOSED by taking route B -- the guard is gone and the dispatch fix is in
+`dtensor_foreach_norm_dtype_pytorch.patch`. Verified against pytorch/main here:
+`vector_norm_single_dim_strategy` takes `op` as its first parameter, so the new branch can
+test it, and `aten._foreach_norm.Scalar` really is registered to that same strategy by a
+separate `register_single_dim_strategy(...)` call below the function. The diagnosis holds.
+
+Still open:
+
+1. **A lint risk in the reverted passthrough.** The per-tensor branch is back to one line:
+   `[torch.linalg.vector_norm(g, norm_type, dtype=dtype) for g in device_tensors]` is 93
+   characters. The pre-existing over-88 lines in that file are f-strings and docstrings,
+   which a formatter cannot split; a list comprehension it can, so `lintrunner` may reformat
+   it. Splitting it to four lines up front (as the earlier version did) avoids a CI round
+   trip. Cosmetic, but it costs a cycle to find out in CI.
+2. **The fork branch `ba370ede20` is still not this patch** -- no empty-input fix, no
+   dispatch commit, and a docstring that contradicted its own code. Re-push before opening
+   the PR from it.
+3. **The repro link needs the pushed SHA**, and the body's `REPLACE_SHA` filled in.
+4. **Where the tests go**: `test/test_nn.py::test_clip_grad_norm` for the dtype argument;
+   the dispatch fix wants one under the DTensor op tests, which has not been located.
