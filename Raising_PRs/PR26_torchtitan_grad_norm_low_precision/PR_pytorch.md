@@ -4,9 +4,11 @@
 **Tag**: @janeyx99
 **Patch**: `get_total_norm_dtype_pytorch.patch` -- against `pytorch/main`, `git apply
 --check` clean, `py_compile` clean
-**Branch**: `get-total-norm-dtype` at `48e04ac`, base `0a9cc3c`, built on the Windows box
-and **unpushed**
-**Evidence script**: `probe_combine_precision.py`
+**Branch**: `get-total-norm-dtype` at `3846c1e`, base `0a9cc3c`, built on the Windows box
+and **unpushed** (no push credentials there; see `GPU_HANDOFF.md`)
+**Evidence**: `probe_combine_precision.py` (the body's table), `probe_default_unchanged.py`
+(the 144-case bitwise check, and it re-runs the body's snippet so the two cannot drift),
+`probe_get_total_norm_dtype.py` (the assertions)
 **Risk**: none at `dtype=None`, which is every existing call.
 **Do NOT file without a human's go-ahead.**
 
@@ -70,10 +72,26 @@ where the model was cut.
 
 This adds a `dtype` argument, passed to the three norm calls the function already makes.
 `torch.linalg.vector_norm` and `torch._foreach_norm` both take `dtype` already, so nothing
-below this function changes, and `dtype=None` is current behaviour.
+below this function changes.
 
-512 bf16 gradients grouped 1/2/4/8 ways, each group's norm from `get_total_norm` itself,
-partials combined in float64:
+512 bf16 gradients, grouped 1/2/4/8 ways, each group's norm from `get_total_norm` itself
+and the partials combined in float64:
+
+```python
+import torch
+gtn = torch.nn.utils.get_total_norm
+torch.manual_seed(0)
+grads = [torch.randn(128, dtype=torch.bfloat16) for _ in range(512)]
+truth = torch.linalg.vector_norm(torch.cat([g.double() for g in grads]), 2).item()
+
+def total(k, **kw):                        # k round-robin groups, combined in float64
+    parts = torch.stack([gtn(grads[i::k], 2.0, **kw).double() for i in range(k)])
+    return torch.linalg.vector_norm(parts, 2).item()
+
+print([f"{total(k):.4f}" for k in (1, 2, 4, 8)])
+print([f"{total(k, dtype=torch.float32):.4f}" for k in (1, 2, 4, 8)])  # needs this PR
+print(f"{truth:.4f}")
+```
 
 | grouping | k=1 | k=2 | k=4 | k=8 | spread |
 |---|---|---|---|---|---|
@@ -81,6 +99,10 @@ partials combined in float64:
 | `dtype=torch.float32` | 254.2790 | 254.2790 | 254.2790 | 254.2790 | 3.57e-08 |
 
 float32 truth is 254.2790. Same shape on CUDA at torch 2.14.
+
+At `dtype=None` the result is bitwise identical to today in 144 cases -- 4 shapes
+including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in
+{1, 2, inf}.
 
 Fixes #NNNNN.
 
@@ -122,7 +144,13 @@ them if the question comes.
 per-tensor branch reflows to four lines because the one-line form passes 88 characters
 with the kwarg.
 
-`torch.tensor(0.0, dtype=None)` is float32, so the empty case is unchanged at the default.
+`torch.tensor(0.0, dtype=None)` is float32, so the empty case is unchanged at the default --
+which is one of the 144 cases, not an argument.
+
+The body's snippet is executed by `probe_default_unchanged.py`, so the numbers quoted in the
+body are the numbers a reviewer gets by pasting it. That is worth keeping wired: the first
+version of the body quoted a 394-tensor fixture while the commit message quoted a different
+one, and nothing would have caught it.
 
 ## The test
 
