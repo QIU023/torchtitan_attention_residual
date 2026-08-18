@@ -16,7 +16,7 @@ set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../torchtitan" && pwd)
-BASE=${1:-upstream/main}
+BASE=${1:-$(cd "$HERE/../torchtitan" && git merge-base upstream/main HEAD)}
 OUT="$HERE/diffs"
 M=torchtitan/models/kimi_k3
 
@@ -30,14 +30,17 @@ cut() {
         "$(wc -l < "$OUT/$name.diff")" "$(grep -c '^diff --git' "$OUT/$name.diff" || true)"
 }
 
-cut 0_shared_parallelize $M/parallelize.py $M/knobs.py
+cut 0_shared_parallelize $M/parallelize.py $M/knobs.py torchtitan/models/__init__.py
 cut a_tp                 $M/quant_scope.py
-cut b_ep_moe             $M/moe.py $M/quantile_balance.py
+cut b_ep_moe             $M/moe.py $M/quantile_balance.py torchtitan/models/utils.py
 cut c_cp_kcp_dyncp       $M/kcp.py $M/vit_cp_plan.py $M/multimodal_model.py $M/moonvit.py
 cut d_pp_attnres_dep     $M/pipeline_adapter.py $M/layout.py $M/attn_res.py \
                          $M/attn_res_model.py $M/dep_bubble_plan.py \
                          $M/dep_bubble_runtime.py $M/dep_bubble_backward.py \
-                         $M/vit_prefetch.py
+                         $M/vit_prefetch.py \
+                         torchtitan/components/lr_scheduler.py \
+                         torchtitan/components/optimizer.py \
+                         torchtitan/distributed/fsdp.py
 
 echo "base: $BASE ($(git rev-parse --short "$BASE"))"
 echo "tree: $(git rev-parse --short HEAD)"
@@ -50,3 +53,26 @@ covered=$(grep -ho '^+++ b/.*' "$OUT"/*.diff | sort -u | wc -l)
 echo "covers $covered of $total changed files under $M/"
 echo "the rest is the model itself (model.py, config_registry.py, state_dict_adapter.py)"
 echo "plus its tests -- that is PR-4025's territory, not the axis PRs'"
+
+# Coverage assertion. The five diffs once silently omitted every modified upstream core
+# file -- PR23's slice was missing the lr_scheduler and optimizer changes that let a
+# LoRA+PP stage holding only frozen weights exist at all, and the fsdp.py change whose
+# absence is a deadlock rather than an error. Nothing caught it because nothing checked.
+#
+# Files owned by a separately-filed PR are declared here, not silently tolerated.
+declare -A ELSEWHERE=(
+  [torchtitan/distributed/utils.py]="PR26, filed upstream as 4135"
+  [torchtitan/models/common/moe.py]="PR27 (gate_up_combine) + PR28 (router_input_BLD)"
+  [torchtitan/models/common/moe_sharding.py]="PR28"
+)
+missing=0
+while IFS= read -r f; do
+    case "$f" in "$M"/*) continue ;; esac          # model folder: handled by the note above
+    grep -q "^+++ b/$f\$" "$OUT"/*.diff && continue
+    if [ -n "${ELSEWHERE[$f]:-}" ]; then
+        echo "  not in the five, by design: $f  -> ${ELSEWHERE[$f]}"
+    else
+        echo "  UNASSIGNED: $f"; missing=1
+    fi
+done < <(git diff "$BASE" --name-only --diff-filter=M)
+[ "$missing" -eq 0 ] || { echo "a modified upstream file belongs to no PR; assign it or declare it"; exit 1; }

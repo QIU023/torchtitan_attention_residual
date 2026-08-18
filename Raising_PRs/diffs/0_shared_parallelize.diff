@@ -1,3 +1,18 @@
+diff --git a/torchtitan/models/__init__.py b/torchtitan/models/__init__.py
+index 784b4110c..932072306 100644
+--- a/torchtitan/models/__init__.py
++++ b/torchtitan/models/__init__.py
+@@ -10,6 +10,10 @@ _supported_models = frozenset(
+         "flux",
+         "gpt_oss",
+         "kimi_k2_7",
++        "kimi_k3",
++        # Vendored copy of the upstream K3 reference model, registered alongside ours so
++        # both run in the same tree during the alignment migration.
++        "kimi_k3_up",
+         "llama3",
+         "muse_glimmer",
+         "qwen3",
 diff --git a/torchtitan/models/kimi_k3/knobs.py b/torchtitan/models/kimi_k3/knobs.py
 new file mode 100644
 index 000000000..1002a6398
@@ -204,7 +219,7 @@ index 000000000..1002a6398
 +    _WARNED_KNOBS.clear()
 diff --git a/torchtitan/models/kimi_k3/parallelize.py b/torchtitan/models/kimi_k3/parallelize.py
 new file mode 100644
-index 000000000..8ce03a460
+index 000000000..7ba9d43f5
 --- /dev/null
 +++ b/torchtitan/models/kimi_k3/parallelize.py
 @@ -0,0 +1,1765 @@
@@ -1731,7 +1746,7 @@ index 000000000..8ce03a460
 +    """
 +    from torch.distributed.tensor import DTensor as _DTensor
 +
-+    from torchtitan.protocols.module import Module as _TTModule
++    from torchtitan.protocols.module import Module
 +
 +    def _already_distributed(m: nn.Module) -> bool:
 +        """Has the imperative plan (or an earlier pass) already distributed this subtree?
@@ -1754,7 +1769,7 @@ index 000000000..8ce03a460
 +    queue = list(model.children())
 +    while queue:
 +        child = queue.pop()
-+        if isinstance(child, _TTModule) and not getattr(child, "_parallelized", False):
++        if isinstance(child, Module) and not getattr(child, "_parallelized", False):
 +            if getattr(child, "_kimi_ep_parallelized", False):
 +                continue
 +            if not _already_distributed(child):
