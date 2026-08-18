@@ -1,4 +1,39 @@
-# Parallel PR plan, after PR-4025's 2026-08-17 state
+# Parallel PR plan: the four parallelism PRs to file the moment PR-4025 merges
+
+## Where these sit relative to PR-4025
+
+The RFC covering all of K3 is ours. PR-4025 took the eager half -- module-by-module port with
+class substitutions, FSDP2 only -- and that division is not a loss: the distributed training
+half, which is the hard part, is still ours to land.
+
+How completely theirs stops at eager is worth quoting, because it defines our four PRs
+exactly. `KimiK3Model.Config.update_from_config` in `c3a80b01e`:
+
+    unsupported = {
+        "tensor parallel": parallelism.tensor_parallel_degree,
+        "pipeline parallel": parallelism.pipeline_parallel_degree,
+        "context parallel": parallelism.context_parallel_degree,
+        "expert parallel": parallelism.expert_parallel_degree,
+    }
+    enabled = [name for name, degree in unsupported.items() if degree > 1]
+    if enabled:
+        raise NotImplementedError(
+            "Kimi K3 supports FSDP2 data parallelism only; "
+            f"disable {', '.join(enabled)}."
+        )
+
+Four axes, four raises. Two more of the same kind: `parallelize.py` hardcodes `ep_degree=1`
+into the FSDP call, and the MoE uses `LocalTokenDispatcher` (rank-local, no all-to-all). They
+also refuse `packing_buffer_size > 0`.
+
+**So each of our PRs deletes one of those four lines and supplies the implementation behind
+it.** That is a much better PR story than a refactor of someone else's model: nothing to
+reconcile, one `NotImplementedError` removed per PR, and a matrix behind each.
+
+**File them immediately after 4025 merges, PP and CP first.** They are the two that are hard,
+the two nobody else has, and the two with the most evidence behind them here -- the
+cross-stage adapter validated to PP8xVP4, and KCP verified forward and backward at cp=2/4/8
+against a single-rank reference. TP and EP are more conventional and can follow.
 
 ## What changed upstream
 
