@@ -56,7 +56,7 @@ maintainer running the block would not have matched the table.
 | three norm call sites | `_get_total_norm` body on `main` |
 | `clip_grad_norm_` also scales | it calls `_clip_grads_with_norm_` -> `torch._foreach_mul_` |
 | `vector_norm` already documents `dtype` this way | "cast to :attr:`dtype` prior to doing the accumulation" |
-| DTensor already takes the non-foreach branch | `_foreach_supported_types = [torch.Tensor]`, matched by exact type |
+| ~~DTensor already takes the non-foreach branch~~ **WRONG** | I read the module-level literal `_foreach_supported_types = [torch.Tensor]` and did not check whether anything mutates it. Importing `torch.distributed.tensor` **appends DTensor to that list at import time** (measured: `[Tensor]` before, `[Tensor, DTensor]` after), so DTensors DO take the foreach path -- and `torch._foreach_norm` has no DTensor dispatch for the dtype overload, so the patch crashed on the exact input this PR targets |
 | `_foreach_norm` accepts explicit `dtype=None` | measured, torch 2.8 |
 | `_NormPartial` preserved under `dtype` | measured on gloo AND nccl, torch 2.14 -- `VERIFY_RESULTS_2026-08-18.md` |
 | existing test | `test/test_nn.py::test_clip_grad_norm`, line ~13381, "decomposed APIs" block |
@@ -69,49 +69,30 @@ maintainer running the block would not have matched the table.
 
 --- PASTE BEGIN ---
 
-`get_total_norm` accumulates in the input tensors' dtype. With bf16 tensors each group's
-norm is rounded before the groups are combined, so the total depends on how the tensors
-were grouped and not only on their values -- under pipeline or expert parallelism, on
-where the model was cut.
+`get_total_norm` accumulates in the input tensors' dtype. With bf16 gradients split across ranks, each rank's partial norm is rounded before the partials are combined, so under pipeline parallelism the reported total depends on how many stages the model was cut into rather than only on the gradients.
 
-This adds a `dtype` argument, passed to the three norm calls the function already makes.
-`torch.linalg.vector_norm` and `torch._foreach_norm` both take `dtype` already, so nothing
-below this function changes.
+The change passes a `dtype` through to the three norm calls the function already makes. One extra condition is needed: when `dtype` is set, a group containing DTensors has to take the `vector_norm` path, because `torch._foreach_norm` has no DTensor dispatch rule for the dtype overload and mis-parses `dtype` as a dim. That is the ordinary FSDP case, since FSDP gradients are DTensors.
 
-512 bf16 gradients, grouped 1/2/4/8 ways, each group's norm from `get_total_norm` itself
-and the partials combined in float64. Save as `repro.py`, `python repro.py`; the second
-`print` needs this PR applied, the rest runs on stock torch:
+512 bf16 gradients, the same tensors at every world size, nccl, torch 2.14. Two splits that both occur in training: FSDP, where each gradient is a DTensor `Shard(0)` and the partials combine through `_NormPartial`; and pipeline, where rank `r` owns `grads[r::world]` and the partials are all-reduced.
 
-```python
-import torch
-gtn = torch.nn.utils.get_total_norm
-torch.manual_seed(0)
-grads = [torch.randn(128, dtype=torch.bfloat16) for _ in range(512)]
-truth = torch.linalg.vector_norm(torch.cat([g.double() for g in grads]), 2).item()
-
-def total(k, **kw):                        # k round-robin groups, combined in float64
-    parts = torch.stack([gtn(grads[i::k], 2.0, **kw).double() for i in range(k)])
-    return torch.linalg.vector_norm(parts, 2).item()
-
-print([f"{total(k):.4f}" for k in (1, 2, 4, 8)])
-print([f"{total(k, dtype=torch.float32):.4f}" for k in (1, 2, 4, 8)])  # needs this PR
-print(f"{truth:.4f}")
+```
+                world=1    world=2    world=4    world=8    spread(rel)
+dtensor today   256.000    256.000    256.000    256.000    0.00e+00
+dtensor fp32    255.682    255.682    255.682    255.682    0.00e+00
+pp today        256.000    255.973    255.505    255.631    1.93e-03
+pp fp32         255.682    255.682    255.682    255.682    5.97e-08
+float64 truth   255.682226
 ```
 
-torch 2.14.0.dev+cu130, single process, CPU only -- no GPU and no distributed setup:
+The pipeline split varies with the world size, so the same gradients report a different norm depending only on where the model was cut, and under clipping take different-sized steps. The DTensor split does not vary but sits 0.12% off the truth. `dtype=torch.float32` puts both on it.
 
-| grouping | k=1 | k=2 | k=4 | k=8 | spread |
-|---|---|---|---|---|---|
-| today | 256.0000 | 255.9727 | 255.5015 | 255.6237 | 1.95e-03 |
-| `dtype=torch.float32` | 255.6823 | 255.6822 | 255.6822 | 255.6822 | 7.88e-08 |
+```
+python repro_get_total_norm_dtype.py --module <clip_grad.py with this change>
+```>>>>>>> f619302 (Raising_PRs/PR26: the DTensor reading was wrong, and the body follows the patch again)
 
-float64 truth is 255.6822. Same shape on CUDA.
+https://github.com/QIU023/torchtitan_attention_residual/blob/REPLACE_SHA/Raising_PRs/PR26_torchtitan_grad_norm_low_precision/repro_get_total_norm_dtype.py
 
-At `dtype=None` the result is bitwise identical to today in 144 cases -- 4 shapes
-including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in
-{1, 2, inf}, same environment.
-
-Fixes #NNNNN.
+`dtype=None` is bitwise identical to today in 144 cases: 4 shapes including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in {1, 2, inf}.
 
 --- PASTE END ---
 
@@ -122,9 +103,9 @@ them if the question comes.
 
 * **DTensor.** `dtype` preserves the `_NormPartial` placement, so the cross-rank combine
   still uses the norm rule rather than a sum; measured on gloo and nccl, end-to-end
-  relative error 0 on CPU and 1.06e-07 on CUDA. DTensor needs no special case because
-  `_foreach_supported_types` is matched by exact type, so it already takes the
-  `vector_norm` branch.
+  relative error 0 on CPU and 1.06e-07 on CUDA. DTensor DOES need a special case -- see the
+  guard in the body; the earlier claim that it did not was the wrong reading corrected
+  above.
 * **Why not on `clip_grad_norm_`.** That also scales the gradients through
   `_clip_grads_with_norm_`, so "which ops use this dtype" would be a real question there.
   A caller wanting an fp32 norm composes `get_total_norm(..., dtype=torch.float32)` with
@@ -198,14 +179,50 @@ The one case for the other order is a torchtitan maintainer preferring not to ca
 of a torch function at all. That is theirs to take, and the question belongs on the
 torchtitan thread.
 
-## The PASTE repro, run on this box
+## An independent cross-check on the table
 
-Its numbers ARE the table's now, so the table is what the block prints rather than a
-separate measurement. Two things that check out and are not obvious:
+An earlier draft of the body carried an inline snippet: single process, CPU, each group's
+norm from `get_total_norm` and the partials combined in float64. It was replaced by the
+cross-rank repro, but it was run first, and what it produced is worth keeping:
 
-* a naive hand-rolled emulation of the same idea does NOT reproduce -- rounding the
-  per-group norms yourself and combining them gives no spread, because CPU
-  `vector_norm` upcasts internally. It works because it calls the real
-  `get_total_norm` per group.
-* stock torch raises `_get_total_norm() got an unexpected keyword argument 'dtype'`, so
-  the "needs this PR" comment is accurate rather than decorative.
+    torch 2.14.0.dev20260802+cu130, CPU
+    256.000000  255.972655  255.501468  255.623747   spread 1.95e-03
+    truth 255.682232
+
+Those are the `pp` row of the cross-rank table to three decimals (256.000 / 255.973 /
+255.505 / 255.631, truth 255.682226), with no distribution at all. So the float64-combined
+single-process form and the real all-reduced pipeline split agree, which makes the table a
+measurement rather than an artifact of how the ranks were wired.
+
+**And it is why the earlier 254.x numbers are retired.** They were measured on torch
+2.8.0+cpu; `torch.randn` produces a different bfloat16 stream on 2.14 from the same seed,
+so the same script gives 256.0000 / 255.9727 / 255.5015 / 255.6237 there. A maintainer
+pasting a block would not have matched the table above it. Every number in the body is now
+from 2.14.
+
+Two details from that run that still apply:
+
+* Stock torch raises `_get_total_norm() got an unexpected keyword argument 'dtype'` on the
+  patched line, so a "needs this PR" marker in any snippet is accurate rather than
+  decorative.
+* Hand-rolling the same idea -- rounding the per-group norms yourself and combining them --
+  shows NO spread, because CPU `vector_norm` upcasts internally. It reproduces only when
+  each group's norm comes from `get_total_norm` itself.
+
+## Blockers before this can be filed (2026-08-18)
+
+1. **The guard uses a string type check.** `type(t).__name__ == "DTensor"` matches any class
+   with that name and is not how core identifies a subclass. `torch/nn/utils/clip_grad.py`
+   cannot import `torch.distributed.tensor` at module scope, so the options are a local
+   import inside the branch, or testing membership in `_foreach_supported_types` minus
+   `torch.Tensor`. A reviewer will raise this; decide it before filing rather than in review.
+2. **The narrower fix may be the one they want.** The actual gap is that
+   `torch._foreach_norm`'s dtype overload has no DTensor dispatch rule. Adding that rule
+   fixes it for every caller instead of working around it in `clip_grad.py`. The guard
+   unblocks this PR; the dispatch rule is the better change and is worth offering in the
+   description.
+3. **The fork branch `ba370ede20` is not this patch.** Its docstring claims the norm is
+   "returned in the tensors' dtype regardless", which contradicts its own code -- measured,
+   bf16 input with `dtype=float32` returns float32 -- and it does not carry the empty-input
+   fix or the DTensor guard. It must be updated before a PR is opened from it.
+4. **The repro link needs the pushed SHA**, and the body's `REPLACE_SHA` filled in.>>>>>>> f619302 (Raising_PRs/PR26: the DTensor reading was wrong, and the body follows the patch again)
