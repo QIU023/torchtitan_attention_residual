@@ -118,3 +118,53 @@ The MLA layers are head-parallel, not sequence-parallel. KCP gives the KDA layer
 sequence end to end, but a ring/zigzag formulation for softmax attention is separate work
 and is not here. (An earlier draft of this section said sequence-dimension CP was not
 implemented at all, which was true when Ulysses was the only path and is not now.)
+
+## PASTE (the body that goes upstream)
+
+Everything above is the kit. What follows is the PR description itself: no headers, no
+bold, numbers inline, per the maintainer note on the grad-norm PR.
+
+---
+
+K3's KDA layers cannot use the CP dispatcher. `apply_cp_to_forward` dispatches on
+torchtitan's SDPA type and applies ring attention; fla-core's `chunk_kda` is a sequential
+scan over the sequence with no ring formulation, and MLA's `inner_attention` is not a type
+that dispatcher recognises. So CP is wired inside the two attention modules instead: each
+gets a `_cp_group` and a `_forward_cp`.
+
+Two mechanisms on disjoint layer kinds, both live in one CP run rather than a choice
+between them. The KDA layers get KCP (tech report sec 5.1.2): the sequence stays sharded
+end to end, a prefix scan over (cumulative transition, zero-started state) fragments
+recovers each rank's true incoming recurrent state in one fixed-size all-gather, and fla's
+`causal_conv1d_cp` covers the short convolutions with a fixed-size halo. The MLA layers get
+Ulysses: one fused differentiable all-to-all on the cp sub-mesh, then SDPA on the local head
+subset over the full sequence. KCP decomposes the delta-rule recurrence and says nothing
+about softmax attention, so it does not replace Ulysses, it applies where Ulysses cannot.
+
+`kda_cp_mode` defaults to kcp. Ulysses for the KDA layers is kept as the A/B and is not what
+K3 does: it hands every rank the whole sequence for its head subset, so activation memory
+does not fall with cp.
+
+Checked against a single-rank reference forward and backward, because a wrong gradient
+still lets the loss fall and no training cell would see it. Rank r's output must equal the
+full-sequence forward's slice r, per batch row: cp=2 forward 4.3e-03, cp=4 worst gradient
+7.8e-03 on o_norm.weight, cp=8 worst 1.4e-02 on f_b_proj.weight, 14 gradients compared with
+none missing, all bf16 noise. cp>=4 is the load-bearing case, being the first configuration
+with a middle rank, so the prefix scan has to compose more than two fragments; a probe at
+cp=2 alone passes with the composition rule broken. The worst error landing on a conv weight
+is the point -- a hand-rolled all_gather halo here once had a bit-exact forward while
+silently dropping the gradient owed to the left neighbour, which made rank 0's last W-1
+tokens ~60% wrong without moving the loss curve.
+
+The MLA layers are head-parallel, not sequence-parallel; a ring or zigzag formulation for
+softmax attention is separate work and is not here. `apply_cp_to_forward`'s own TODO says CP
+should eventually be declarative via ShardingConfig. Ulysses would fit that, being one
+all-to-all, i.e. a Shard(seq) -> Shard(head) pair on the cp axis. KCP would not: no placement
+of the module's tensors describes recomputing the recurrence from prefix-scanned fragments.
+
+Requires `context_parallel_load_balancer=None`, and `num_heads % (tp * cp) == 0` under TP,
+since the head axis is already tp-sharded and Ulysses splits the local heads further. The CP
+path loops the batch because fla's `causal_conv1d_cp` asserts [1, T, D]; flattening into one
+packed sequence would be wrong rather than awkward, since `build_cp_context` cuts the global
+packed sequence into contiguous rank-ordered pieces while a rank holds piece r of every
+sequence.

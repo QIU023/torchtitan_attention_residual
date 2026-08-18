@@ -75,3 +75,41 @@ While verifying EP this fork found `moe_sharding.py` dropping the computed
 `in_grad_placements` when EP is off, which silently under-reduces TP gradients
 below the experts. That is filed separately (PR19) and reproduces on unmodified
 `deepseek_v3`; it is not part of this PR.
+
+## PASTE (the body that goes upstream)
+
+---
+
+The release stores routed experts per expert, as individual `nn.Linear`s, while a
+grouped-GEMM MoE needs them stacked on an expert dimension (`w1_EFD`, `w2_EDF`,
+`w3_EFD`) so all experts run in one kernel. Without a conversion either the released
+checkpoint will not load or the grouped kernel cannot be used, so this adds the mapping
+and the EP wiring on top of it.
+
+`hf_key_map.py` covers the whole released key set in both directions. The part that is
+not a string rewrite is the stacked-tensor indexing: one released key such as
+`...experts.3.w1.weight` maps to a slice, `...inner_experts.w1_EFD[3]`, so the reverse
+direction needs an `expert_idx`. The map also resolves `g_proj` by layer type, since KDA
+layers keep `g_proj` while MLA layers use `attn_gate_proj`, which is why it takes
+`kda_layers`. All 497,220 released keys map, and the by-layer-type resolution is what
+makes that complete rather than nearly complete.
+
+The expert class overrides one hook. It carries the same parameters as `GroupedExperts`
+and differs only in the GLU variant, K3's SiTU-GLU rather than SiLU. It used to copy the
+whole base `forward` -- DTensor unwrapping, offset cumsum, SPMD type mutation and all
+three grouped-mm calls -- to change that one line, and is 53 lines instead of 92 now that
+`GroupedExperts` exposes `gate_up_combine`. That hook is a separate PR and matters here
+specifically because the MXFP8 converter installs its quantized GEMM by overriding
+`_grouped_mm`: a copied forward calling `torch._grouped_mm` directly would silently opt
+every routed expert out of it.
+
+EP wiring shards the routed experts on the ep mesh, with the dense-vs-sparse split that
+keeps FSDP's mesh from overlapping EP's on the same ranks.
+
+Verified across ep2 x fsdp2, ep2 x fsdp2 x tp2 x pp2, ep2 x fsdp2 x tp2 x cp2 and
+ep2 x fsdp2 x pp2 x cp2. Per-parameter gradient checks show EP contributing nothing:
+ep2_fsdp2_pp2 equals fsdp2_pp2 to five decimals, so enabling EP changes no digit. On the
+hook version specifically, ep2 x fsdp2 and ep2 x fsdp2 x tp2 x cp2 converge normally over
+10 steps, 12.0509 -> 9.9162 and 12.0594 -> 11.8446.
+
+Checkpoint compatibility is the thing to review here; the model math does not change.
