@@ -72,6 +72,16 @@ No signature change to `vector_norm` or `_foreach_norm`: both already take `dtyp
 `vector_norm` documents it as the cast done "prior to doing the accumulation", so the name
 and the meaning carry over instead of being invented here.
 
+One wrinkle the naive three-line version hits: DTensor gradients (the FSDP case) pass
+`_has_foreach_support`, so they reach `torch._foreach_norm(..., dtype=dtype)` -- which has no
+DTensor dispatch for the `dtype` overload and raises, mis-parsing `dtype` as a dim.
+`vector_norm` handles `dtype` on DTensors and preserves `_NormPartial`, so the fix routes
+DTensors to the per-tensor path when `dtype` is set. Verified at world 1/2/4/8 on CUDA/nccl
+(torch 2.14): with the guard, the sharded (DTensor) and pipeline splits both reduce to the
+float64 truth; without it the DTensor arm crashes. This is worth a maintainer's eye -- the
+alternative is a DTensor `_foreach_norm.dtype` dispatch rule in core, which would keep this
+function's three-line form.
+
 On the ambiguity question -- `get_total_norm` computes nothing but those norms, so one
 argument covers all of it. It would be ambiguous one level up on `clip_grad_norm_`, which
 also scales the gradients through `_clip_grads_with_norm_`; a caller who wants fp32 there

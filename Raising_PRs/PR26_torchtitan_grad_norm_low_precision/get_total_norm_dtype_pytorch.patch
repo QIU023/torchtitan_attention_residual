@@ -1,5 +1,5 @@
 diff --git a/torch/nn/utils/clip_grad.py b/torch/nn/utils/clip_grad.py
-index c7b2d6f..8bb61fc 100644
+index c7b2d6fcdd..2eaecd2e9e 100644
 --- a/torch/nn/utils/clip_grad.py
 +++ b/torch/nn/utils/clip_grad.py
 @@ -51,6 +51,7 @@ def _get_total_norm(
@@ -31,13 +31,28 @@ index c7b2d6f..8bb61fc 100644
      first_device = tensors[0].device
      grouped_tensors: dict[
          tuple[torch.device, torch.dtype], tuple[list[list[Tensor]], list[int]]
-@@ -92,18 +98,21 @@ def _get_total_norm(
-         if (foreach is None and _has_foreach_support(device_tensors, device)) or (
-             foreach and _device_has_foreach_support(device)
-         ):
+@@ -89,21 +95,32 @@ def _get_total_norm(
+ 
+     norms: list[Tensor] = []
+     for (device, _), ([device_tensors], _) in grouped_tensors.items():
+-        if (foreach is None and _has_foreach_support(device_tensors, device)) or (
+-            foreach and _device_has_foreach_support(device)
+-        ):
 -            norms.extend(torch._foreach_norm(device_tensors, norm_type))
+-        elif foreach:
++        # DTensor + dtype must not take the foreach path: torch._foreach_norm has no
++        # DTensor dispatch rule for the dtype overload and raises, mis-parsing dtype as a
++        # dim. vector_norm handles dtype on DTensors and preserves _NormPartial. This is the
++        # ordinary FSDP case, where the gradients are DTensors, so it is not an edge.
++        dtensor_group = dtype is not None and any(
++            type(t).__name__ == "DTensor" for t in device_tensors
++        )
++        if (
++            (foreach is None and _has_foreach_support(device_tensors, device))
++            or (foreach and _device_has_foreach_support(device))
++        ) and not dtensor_group:
 +            norms.extend(torch._foreach_norm(device_tensors, norm_type, dtype=dtype))
-         elif foreach:
++        elif foreach and not dtensor_group:
              raise RuntimeError(
                  f"foreach=True was passed, but can't use the foreach API on {device.type} tensors"
              )
