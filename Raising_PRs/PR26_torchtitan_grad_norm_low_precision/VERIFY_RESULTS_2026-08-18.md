@@ -112,3 +112,29 @@ Nothing pushed, nothing filed. The PASTE blocks in `PR.md` are unchanged and sti
 human nod. Two probes added to this folder. The one substantive addition the verification
 suggests for the PR is the CPU-irreproducibility note above, so a reviewer who tries plain
 CPU tensors is not misled.
+
+
+## Upstream pytorch patch (2026-08-18)
+
+The torchtitan helper exists only because `get_total_norm` had no `dtype` parameter; PR.md's
+Fix paragraph offered to propose that upstream. Done, in `get_total_norm_dtype_pytorch.patch`
+against the pytorch submodule (QIU023/pytorch fork).
+
+The change adds `dtype: torch.dtype | None = None` to `_get_total_norm` (exported as
+`torch.nn.utils.get_total_norm`) and threads it into the three norm ops: `_foreach_norm`, the
+per-tensor `vector_norm`, and the norm-of-norms. Verified:
+
+* `dtype=None` is byte-identical to upstream (`torch.equal` against
+  `torch.nn.utils.get_total_norm`, torch 2.14) -- both `vector_norm` and `_foreach_norm` treat
+  `dtype=None` as a no-op, so the default path is unchanged;
+* the patch applies cleanly to the fork's `main` (`git apply --check`);
+* a dry-run push reached authentication (`No anonymous write access`) -- refspec valid, only
+  the box lacks HTTPS write credentials, so the actual push is a local step.
+
+Once this lands upstream, torchtitan's `_get_total_norm_fp32` reduces to a one-line
+`get_total_norm(..., dtype=torch.float32)` call, as PR.md's Fix paragraph notes.
+
+Commit message on the pytorch branch deliberately carries NO Claude-Session / Co-Authored-By
+trailer: it is destined for pytorch upstream, where CLAUDE.md's PR-text rule (terse human
+notes, no AI markers -- the maintainer complained about AI-written summaries) governs over the
+general trailer convention. Flagged for the filer.
