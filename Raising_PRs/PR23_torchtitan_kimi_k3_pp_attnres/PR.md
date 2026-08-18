@@ -1,7 +1,25 @@
 # PR #23 — Kimi K3: pipeline parallelism with Block Attention Residuals
 
 **Target**: `pytorch/torchtitan`, on top of #4025 and PR22 (TP)
-**Scope**: `pipeline_adapter.py` (1,321 lines), the layout, and the V=1 thin mode
+**Scope**: `pipeline_adapter.py` (1,770 lines) and `layout.py`, the V=1 thin mode, plus the
+AttnRes model itself (`attn_res.py`, `attn_res_model.py`) which upstream references by config
+in seven places without implementing. DEP -- the vision tower on its own stage, with the
+optional bubble scheduling (`dep_bubble_{plan,runtime,backward}.py`, `vit_prefetch.py`) --
+rides with this PR because it is the same pipeline machinery, but see the note below on what
+it does and does not deliver.
+
+**On DEP, stated plainly so a reviewer is not misled**: the mechanism is complete and
+numerically correct -- the tower gets its own stage, the encodes are placeable into the
+schedule's idle intervals, and the deferred vision backward is bit-identical to the inline
+one. What is NOT established is a speedup. Measured by step time, the bubble scheduling is
+NEGATIVE at both shapes that fit in 15.5 GiB per GPU: -0.95% at cost ratio 0.493 (the point
+theory calls maximal) and -2.08% at ratio 2.0. The binding constraint turns out to be the
+report's own upfront prefix rather than the cost ratio -- the first few micro-batches'
+encodes cannot be placed because nothing precedes them to anchor on, so at pp=4 with 8
+micro-batches half are unplaceable before the run starts and the ceiling on any gain is 25%.
+Placed share is about `(mb - pp) / mb`, which improves only with `mb >> pp`, and a larger mb
+is exactly what does not fit at seq 4096 here. So DEP is offered as working machinery whose
+benefit needs a bigger box to demonstrate, not as a measured win.
 **Risk**: this is the hard one. AttnRes makes PP non-standard, and the adapter is
 where that is handled.
 **Depends on** the structural ask in #4025 review: factor the decoder loop so it
