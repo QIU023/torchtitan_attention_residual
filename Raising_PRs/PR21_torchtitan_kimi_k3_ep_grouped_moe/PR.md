@@ -66,8 +66,8 @@ same ranks.
   its quantized GEMM by overriding `_grouped_mm`, so a copied `forward` calling
   `torch._grouped_mm` directly would silently opt every routed expert out of it. With the
   hook the seam cannot drift. The full three-arm matrix passes on the hook version, and
-  `ep2 x fsdp2` and `ep2 x fsdp2 x tp2 x cp2` converge normally over 10 steps
-  (12.0509 -> 9.9162 and 12.0594 -> 11.8446).
+  `ep2 x fsdp2`, `ep2 x fsdp2 x tp2 x cp2` and `ep8 x fsdp8` converge normally over 10
+  steps: 12.0509 -> 9.9162, 12.0594 -> 10.2364, and 12.0190 -> 9.9095.
 
 ## Related, already found and fixed upstream-facing
 
@@ -109,23 +109,29 @@ keeps FSDP's mesh from overlapping EP's on the same ranks.
 Verified across ep2 x fsdp2, ep2 x fsdp2 x tp2 x pp2, ep2 x fsdp2 x tp2 x cp2 and
 ep2 x fsdp2 x pp2 x cp2. Per-parameter gradient checks show EP contributing nothing:
 ep2_fsdp2_pp2 equals fsdp2_pp2 to five decimals, so enabling EP changes no digit. On the
-hook version specifically, ep2 x fsdp2 and ep2 x fsdp2 x tp2 x cp2 converge normally over
-10 steps, 12.0509 -> 9.9162 and 12.0594 -> 11.8446.
+hook version specifically, ep2 x fsdp2, ep2 x fsdp2 x tp2 x cp2 and ep8 x fsdp8 converge
+normally over 10 steps: 12.0509 -> 9.9162, 12.0594 -> 10.2364 and 12.0190 -> 9.9095.
 
 Checkpoint compatibility is the thing to review here; the model math does not change.
 
-## Note: ep8_fsdp8 is NOT taken from the gate
+## Where the ep8_fsdp8 row comes from, and one number that was wrong
 
-The gate's mm_full arm runs the same flavor and would seem to hand this cell over for
-free, and its numbers are 12.01898 -> 9.90946 over 10 steps, next to ep2_fsdp2's
-12.0509 -> 9.9162. Close enough to look like the third row of the same table.
+`11.8446` appeared in an earlier draft of this evidence as the endpoint of
+`ep2 x fsdp2 x tp2 x cp2`. It is that run's step 3. The step 10 value is `10.2364`. Caught
+by running the same cell in the gate and getting a different last column against an
+identical first one.
 
-It is not one. The gate sets `KIMI_VIT_PREFETCH=1` on that arm and `run_cells.sh`, which
-produced the other two rows, does not. Prefetch is documented numerically inert, but that
-was established on four pp8xvp4 pairs, not on an ep8 layout, so putting the three side by
-side would be asserting something nobody checked.
+The `ep8 x fsdp8` row is taken from the gate's mm_full arm rather than from a separate
+run. That needed checking, because the gate sets `KIMI_VIT_PREFETCH=1` on that arm and
+`run_cells.sh`, which produced the other two rows, does not -- and `run_cells.sh`'s own
+header records a case where exactly that kind of default mismatch made one tree read
+12.04691 and 12.07827 and got taken for an adapter defect.
 
-This is the failure `run_cells.sh`'s own header records -- the same tree gave 12.04691
-under one set of defaults and 12.07827 under the gate's, and the gap was briefly read as
-a defect in the adapter. Re-run this cell through `run_cells.sh` so all three rows share
-their knobs, rather than annotating the difference away.
+Checked instead of assumed: the two cells the two runs have in common are identical at
+every one of 10 steps to all 7 digits.
+
+    ep2_fsdp2          12.05090 11.97917 11.79904 11.50565 11.03584 10.55429 10.23278 10.05370 10.00390 9.91618
+    ep2_fsdp2_tp2_cp2  12.05941 11.98916 11.84457 11.58146 11.23144 10.80611 10.44410 10.30850 10.29510 10.23644
+
+Prefetch is documented numerically inert, but on four pp8xvp4 pairs; this extends that to
+these EP layouts, which is what licenses reading the third row off the gate.
