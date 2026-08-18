@@ -67,4 +67,20 @@
    (bit 级相同,见 `ae08727a2`)。"四个 PR 零共享文件"这个目标本身也没那么重要 ——
    三个轴各自成函数后 hunk 已经不重叠,rebase 摩擦基本消失。
 11. Config 化收尾(`KimiK3AttnResModel` / `KimiK3MTPLayer` / `KimiK3Spec`)—— 会改 `self.config` 类型而 `register_topology(model.config)` 读它,需要能在尝试间跑矩阵的时段
+
+    **量过了,比想象中靠前**:22 个 `Kimi*` 类里已有 7 个直接继承 torchtitan 的 config-based
+    `Module`,另有 2 个经 `FeedForward` / `GroupedExperts` 间接继承。真正还在裸 `nn.Module`
+    上的只有 `KimiK3MTPLayer`、`KimiK3MultimodalModel`(带子类 `KimiK3ViTStage`)、
+    `KimiLoRALinear` —— 与本条原本列的清单吻合。
+
+    所以缺的不是"把类改成 Module",而是**没有 `sharding.py` 承载 ShardingConfig**:现在
+    这些配置散在 `model.py` / `moonvit.py` / `attn_res_model.py` / `parallelize.py` 四个
+    文件里内联设置。上游的形状是 `model.parallelize(parallel_dims)` 让每个 Module 应用自己
+    的 config,于是 `parallelize.py` 塌成 100 行的驱动。我们 32 处 `parallelize_module` /
+    `ColwiseParallel` 手写 TP plan 是 config 化之前的写法。
+
+    **顺带一个待办(gate 跑完再动,会改 gate 正在读的文件)**:`model.py` /
+   `attn_res_model.py` / `parallelize.py` 把 `protocols.module.Module` 别名成 `_TTModule`
+   (共 18 处),而上游一律直接 `import Module`。查过没有命名冲突 —— `Module` 在我们文件里
+   只出现在 docstring 里。这是纯粹的无谓分歧,reviewer 一定会提。
 12. `dep_exp_impl` → fork main 的 ff 合并 + DEP 代码去留(等人定)
