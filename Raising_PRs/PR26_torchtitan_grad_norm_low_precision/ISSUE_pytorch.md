@@ -79,15 +79,16 @@ No signature change to `vector_norm` or `_foreach_norm`: both already take `dtyp
 `vector_norm` documents it as the cast done "prior to doing the accumulation", so the name
 and the meaning carry over instead of being invented here.
 
-One wrinkle the naive three-line version hits: DTensor gradients (the FSDP case) pass
-`_has_foreach_support`, so they reach `torch._foreach_norm(..., dtype=dtype)` -- which has no
-DTensor dispatch for the `dtype` overload and raises, mis-parsing `dtype` as a dim.
-`vector_norm` handles `dtype` on DTensors and preserves `_NormPartial`, so the fix routes
-DTensors to the per-tensor path when `dtype` is set. Verified at world 1/2/4/8 on CUDA/nccl
-(torch 2.14): with the guard, the sharded (DTensor) and pipeline splits both reduce to the
-float64 truth; without it the DTensor arm crashes. This is worth a maintainer's eye -- the
-alternative is a DTensor `_foreach_norm.dtype` dispatch rule in core, which would keep this
-function's three-line form.
+One dependency: DTensor gradients (the FSDP case) reach `torch._foreach_norm(..., dtype=)`,
+and today that raises -- `_foreach_norm.Scalar` shares `vector_norm`'s DTensor sharding
+strategy, which reads `args_schema[2]` as `dim`, but `_foreach_norm`'s position 2 is `dtype`
+(its schema has no dim), so `normalize_dim` gets a dtype and errors. The one-line dispatch
+fix (set `dim=None` for the `_foreach_norm.Scalar` overload) lets `get_total_norm` stay a
+pure passthrough with no DTensor special-casing, and fixes every `_foreach_norm(dtype=)`
+DTensor caller rather than only this function. It is a separate commit
+(`dtensor_foreach_norm_dtype_pytorch.patch`); this PR carries both. Verified together at
+world 1/2/4/8 on CUDA/nccl (torch 2.14): both the sharded (DTensor) and pipeline splits
+reduce to the float64 truth, and without the dispatch fix the DTensor arm crashes.
 
 On the ambiguity question -- `get_total_norm` computes nothing but those norms, so one
 argument covers all of it. It would be ambiguous one level up on `clip_grad_norm_`, which

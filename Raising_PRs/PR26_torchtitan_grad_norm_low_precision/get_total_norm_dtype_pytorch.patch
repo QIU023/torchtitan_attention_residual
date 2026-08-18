@@ -1,5 +1,5 @@
 diff --git a/torch/nn/utils/clip_grad.py b/torch/nn/utils/clip_grad.py
-index c7b2d6fcdd..2eaecd2e9e 100644
+index c7b2d6fcdd..d0103a277b 100644
 --- a/torch/nn/utils/clip_grad.py
 +++ b/torch/nn/utils/clip_grad.py
 @@ -51,6 +51,7 @@ def _get_total_norm(
@@ -10,19 +10,20 @@ index c7b2d6fcdd..2eaecd2e9e 100644
  ) -> torch.Tensor:
      r"""Compute the norm of an iterable of tensors.
  
-@@ -69,6 +70,11 @@ def _get_total_norm(
+@@ -69,6 +70,12 @@ def _get_total_norm(
              If ``None``, use the foreach implementation for CUDA and CPU native tensors and silently
              fall back to the slow implementation for other device types.
              Default: ``None``
-+        dtype (torch.dtype, optional): if specified, the tensors are cast to
-+            :attr:`dtype` prior to doing the accumulation, and the returned norm
-+            has this dtype. Use it when the tensors are in a low-precision dtype,
-+            where the accumulation error otherwise depends on how they are
-+            grouped. Default: ``None``
++        dtype (torch.dtype, optional): if set, the per-tensor norms and the norm-of-norms are
++            accumulated in this dtype and the result is returned in it. Low-precision inputs
++            (e.g. ``bfloat16``) accumulate in their own dtype by default, so the total depends
++            on how the tensors are grouped -- under pipeline or expert parallelism, on where
++            the model was split rather than only on the gradients. Passing ``torch.float32``
++            makes the reduction grouping-independent. Default: ``None`` (unchanged behaviour).
  
      Returns:
          Total norm of the tensors (viewed as a single vector).
-@@ -79,7 +85,7 @@ def _get_total_norm(
+@@ -79,7 +86,7 @@ def _get_total_norm(
          tensors = list(tensors)
      norm_type = float(norm_type)
      if len(tensors) == 0:
@@ -31,38 +32,20 @@ index c7b2d6fcdd..2eaecd2e9e 100644
      first_device = tensors[0].device
      grouped_tensors: dict[
          tuple[torch.device, torch.dtype], tuple[list[list[Tensor]], list[int]]
-@@ -89,21 +95,32 @@ def _get_total_norm(
- 
-     norms: list[Tensor] = []
-     for (device, _), ([device_tensors], _) in grouped_tensors.items():
--        if (foreach is None and _has_foreach_support(device_tensors, device)) or (
--            foreach and _device_has_foreach_support(device)
--        ):
+@@ -92,18 +99,18 @@ def _get_total_norm(
+         if (foreach is None and _has_foreach_support(device_tensors, device)) or (
+             foreach and _device_has_foreach_support(device)
+         ):
 -            norms.extend(torch._foreach_norm(device_tensors, norm_type))
--        elif foreach:
-+        # DTensor + dtype must not take the foreach path: torch._foreach_norm has no
-+        # DTensor dispatch rule for the dtype overload and raises, mis-parsing dtype as a
-+        # dim. vector_norm handles dtype on DTensors and preserves _NormPartial. This is the
-+        # ordinary FSDP case, where the gradients are DTensors, so it is not an edge.
-+        dtensor_group = dtype is not None and any(
-+            type(t).__name__ == "DTensor" for t in device_tensors
-+        )
-+        if (
-+            (foreach is None and _has_foreach_support(device_tensors, device))
-+            or (foreach and _device_has_foreach_support(device))
-+        ) and not dtensor_group:
 +            norms.extend(torch._foreach_norm(device_tensors, norm_type, dtype=dtype))
-+        elif foreach and not dtensor_group:
+         elif foreach:
              raise RuntimeError(
                  f"foreach=True was passed, but can't use the foreach API on {device.type} tensors"
              )
          else:
              norms.extend(
 -                [torch.linalg.vector_norm(g, norm_type) for g in device_tensors]
-+                [
-+                    torch.linalg.vector_norm(g, norm_type, dtype=dtype)
-+                    for g in device_tensors
-+                ]
++                [torch.linalg.vector_norm(g, norm_type, dtype=dtype) for g in device_tensors]
              )
  
      total_norm = torch.linalg.vector_norm(
