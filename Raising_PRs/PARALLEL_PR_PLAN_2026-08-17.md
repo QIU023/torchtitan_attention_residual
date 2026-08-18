@@ -27,16 +27,10 @@ Ours is 1656 lines because it holds TP, EP, CP and PP. **That means our parallel
 purely additive to their tree, which is good for splitting it up -- there is nothing to
 reconcile, only things to add.**
 
-## The problem with the four branches as they stand
+## What the four branches were
 
-`k3_pr_a_tp_kda`, `k3_pr_b_ep_grouped`, `k3_pr_c_pp_attnres`, `k3_pr_d_cp_ulysses` all point
-at `a146d1bf2` and all carry the same 69-file diff. They are four names for one change, so
-none of them is reviewable and they cannot be filed in parallel.
-
-They also cannot be split cleanly along the axis their names suggest, because **all four
-would touch `parallelize.py`** -- one file, four PRs, guaranteed conflict. Splitting by
-feature without accounting for that is what produced four identical branches in the first
-place.
+All four pointed at `a146d1bf2` with the same 69-file diff -- four names for one change, so
+none was reviewable. Reset now; see the next section.
 
 ## The split, as four diffs with no overlapping file
 
@@ -76,9 +70,9 @@ compiles.
   one of our PRs references those names. Filing now means rebasing four PRs through someone
   else's review cycle. This was already the standing decision (`HANDOFF_2026-08-16`) and the
   new commits strengthen it.
-* **PR 0 depends on where K3 lands.** If the maintainer keeps it in `models/`, PR 0 is a
-  diff against their file. If it moves, PR 0 is a diff against a moved file. Cheap to redo,
-  but not worth doing twice.
+* **Where K3 lands changes only diff A.** If the maintainer moves `kimi_k3` out of
+  `models/`, `parallelize.py`'s path moves with it and diff A has to be regenerated. The
+  other three add new files and are path-independent.
 * **The 0-based index flip is a real correctness item for us**, not a rename: our
   `kda_layers` and `full_attn_layers` are 1-based, and `state_dict_adapter` already had a
   bug from exactly this confusion (`kda_layers_zero_based` used where `is_kda_layer` was
@@ -91,6 +85,7 @@ compiles.
    `DIFF_VS_4025` against it. The three-bucket breakdown in that document was computed
    against the old base and the state-dict adapter bucket in particular is now stale.
 2. Resolve the 1-based/0-based layer index against their new convention.
-3. Build PR 0 as a branch off their merge commit, not off ours.
-4. Reset the four `k3_pr_*` branches; they currently assert something false (four
-   independent changes) and are worse than absent.
+3. Regenerate the four diffs off their merge commit once it lands, not off `upstream/main`
+   as they are now.
+4. Decide whether the AttnRes model goes as a fifth diff or rides with D -- D is the axis
+   that cannot be reviewed without it.
