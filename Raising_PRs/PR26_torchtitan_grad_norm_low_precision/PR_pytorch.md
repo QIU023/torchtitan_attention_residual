@@ -193,3 +193,23 @@ PyTorch nightly, so that is about one nightly after this merges.
 The one case for the other order is a torchtitan maintainer preferring not to carry a copy
 of a torch function at all. That is theirs to take, and the question belongs on the
 torchtitan thread.
+
+## The PASTE repro, run on this box
+
+Checked because a body's repro block is the one thing a maintainer will actually execute,
+and this one is CPU-only while the defect is usually described on GPU.
+
+    torch 2.14.0.dev20260802+cu130, CPU
+    first print   256.000000  255.972655  255.501468  255.623747   spread 1.95e-03
+    truth         255.682232
+
+So it does reproduce on CPU. That is worth stating because a naive hand-rolled emulation
+of the same idea does NOT -- rounding the per-group norms yourself and combining them
+gives no spread, since CPU `vector_norm` upcasts internally. The repro works precisely
+because it calls the real `get_total_norm` on each group.
+
+The k=1 value landing exactly on 256.000000 is bf16 snapping, and is the clearest single
+number in the block.
+
+Second print: stock torch raises `_get_total_norm() got an unexpected keyword argument
+'dtype'`, so the "needs this PR" comment is accurate rather than decorative.
