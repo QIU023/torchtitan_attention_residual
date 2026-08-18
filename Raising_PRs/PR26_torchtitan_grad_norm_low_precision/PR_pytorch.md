@@ -75,7 +75,8 @@ This adds a `dtype` argument, passed to the three norm calls the function alread
 below this function changes.
 
 512 bf16 gradients, grouped 1/2/4/8 ways, each group's norm from `get_total_norm` itself
-and the partials combined in float64:
+and the partials combined in float64. Save as `repro.py`, `python repro.py`; the second
+`print` needs this PR applied, the rest runs on stock torch:
 
 ```python
 import torch
@@ -93,16 +94,18 @@ print([f"{total(k, dtype=torch.float32):.4f}" for k in (1, 2, 4, 8)])  # needs t
 print(f"{truth:.4f}")
 ```
 
+torch 2.8.0+cpu, single process, CPU only -- no GPU and no distributed setup:
+
 | grouping | k=1 | k=2 | k=4 | k=8 | spread |
 |---|---|---|---|---|---|
 | today | 254.0000 | 254.5584 | 254.2504 | 254.2066 | 2.19e-03 |
 | `dtype=torch.float32` | 254.2790 | 254.2790 | 254.2790 | 254.2790 | 3.57e-08 |
 
-float32 truth is 254.2790. Same shape on CUDA at torch 2.14.
+float32 truth is 254.2790. Same shape on CUDA at torch 2.14.0.dev+cu130.
 
 At `dtype=None` the result is bitwise identical to today in 144 cases -- 4 shapes
 including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in
-{1, 2, inf}.
+{1, 2, inf}, same environment.
 
 Fixes #NNNNN.
 
