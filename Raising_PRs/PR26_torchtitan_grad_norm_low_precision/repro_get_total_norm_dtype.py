@@ -6,9 +6,10 @@
 
 """`get_total_norm`'s total depends on how the tensors are grouped. Repro at 1/2/4/8 ranks.
 
-    python repro_get_total_norm_dtype.py                      # CPU/gloo, world 1,2,4,8
-    python repro_get_total_norm_dtype.py --device cuda        # CUDA/nccl
     python repro_get_total_norm_dtype.py --module <patched clip_grad.py>
+
+CUDA/nccl when a GPU is present, which is the case this is for. ``--device cpu`` falls
+back to gloo and exists only for a machine without one.
 
 The same 512 bf16 gradients at every world size; the only thing that changes is how they
 are split across ranks. Two splits, both of which occur in real training:
@@ -123,7 +124,11 @@ def worker(rank, world, device_type, module_path, init_file, out):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--device", default="cpu", choices=("cpu", "cuda"))
+    ap.add_argument(
+        "--device",
+        default="cuda" if torch.cuda.is_available() else "cpu",
+        choices=("cpu", "cuda"),
+    )
     ap.add_argument("--module", default=None, help="path to a patched clip_grad.py")
     ap.add_argument("--world", default="1,2,4,8")
     args = ap.parse_args()
