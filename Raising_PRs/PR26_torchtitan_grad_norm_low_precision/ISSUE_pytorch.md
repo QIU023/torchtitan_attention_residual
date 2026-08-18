@@ -1,3 +1,9 @@
+> **SUPERSEDED as the primary route, 2026-08-18.** For a 13-line change with the
+> maintainer already inviting it, an issue plus a PR is process for its own sake. File
+> ONE PR (`PR_pytorch.md`) and answer her two design questions in a reply on the
+> torchtitan thread, where she asked them. This file stays in case she asks for the
+> design to be split out into its own issue -- the Q&A below is still the answer.
+
 # pytorch/pytorch issue: a dtype argument for `get_total_norm`
 
 Invited by janeyx99 on the torchtitan PR (2026-08-17): *"I'm more confident this can be
