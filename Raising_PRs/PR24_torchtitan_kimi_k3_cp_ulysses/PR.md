@@ -35,6 +35,13 @@ attention. Neither fits:
   sequence; there is no ring formulation of it.
 - **MLA's `inner_attention` is not the SDPA type the dispatcher recognises.**
 
+`apply_cp_to_forward`'s own TODO says it is a temporary workaround and that CP
+redistribution should eventually be declarative via `ShardingConfig`. Ulysses would fit
+that -- it is one all-to-all, i.e. a `Shard(seq) -> Shard(head)` pair on the cp axis. KCP
+would not: the sequence stays sharded and the recurrence is recomputed from prefix-scanned
+fragments, so no placement of the module's tensors describes it. This PR therefore matches
+the shape of upstream CP as it exists today and should move when that TODO does.
+
 So CP is wired module-internally: `KimiMLAAttention` and `KimiDeltaAttention`
 each get a `_cp_group` and a `._forward_cp`. The MLA branch validates
 `num_heads % (tp * cp) == 0`, since under TP the head axis is already tp-sharded
