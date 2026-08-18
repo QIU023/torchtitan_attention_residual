@@ -46,8 +46,9 @@ run() {
   local r; r=$(rows "$OUT/$name.log")
   if [ "$r" -eq "$STEPS" ]; then
     printf "%-16s %s\n" "$name" "$(sed -E 's/\x1b\[[0-9;]*m//g' "$OUT/$name.log" \
-      | grep -E "step: +[0-9]+ +loss" | sed -E 's/.*loss: +([-0-9.]+).*/\1/' \
-      | grep -vE '^-' | head -3 | tr '\n' ' ')..."
+      | grep -E "step: +[0-9]+ +loss" | sed -E 's/.*(step: +[0-9]+) +loss: +([-0-9.]+).*/\1 \2/' \
+      | grep -vE ' -' | sort -u -n -k2,2 | sed -E 's/^step: +[0-9]+ +//' \
+      | head -3 | tr '\n' ' ')..."
   else
     printf "%-16s FAIL (%d/%d) %s\n" "$name" "$r" "$STEPS" \
       "$(sed -E 's/\x1b\[[0-9;]*m//g' "$OUT/$name.log" | grep -oiE \
