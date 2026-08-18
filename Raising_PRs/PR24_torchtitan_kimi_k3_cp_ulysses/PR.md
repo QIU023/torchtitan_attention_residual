@@ -1,7 +1,7 @@
 # PR #24 — Kimi K3: context parallelism (KCP for KDA, Ulysses for MLA)
 
 **Target**: `pytorch/torchtitan`, on top of #4025 and PR22
-**Scope**: the CP wiring in `parallelize.py`, `kcp.py` (the KDA sequence-parallel path),
+**Scope**: `apply_cp_kimi_k3` in `parallelize.py`, `kcp.py` (the KDA sequence-parallel path),
 `vit_cp_plan.py` plus the dynamic-CP execution half in `multimodal_model.py` / `moonvit.py`
 
 ## What this is, precisely
@@ -106,10 +106,6 @@ passing with `kda_cp_mode=kcp` on every rank that holds KDA layers:
     Applied CP cp_degree=2: 4 MLA layer(s) Ulysses, 9 KDA layer(s) kda_cp_mode=kcp
 
 ## Honest gap
-
-There is no `apply_cp` function; the wiring is inline in the main entry. That is a
-structural inconsistency with the other axes, each of which has an `apply_*`, and it should
-be factored before merge.
 
 The MLA layers are head-parallel, not sequence-parallel. KCP gives the KDA layers a sharded
 sequence end to end, but a ring/zigzag formulation for softmax attention is separate work

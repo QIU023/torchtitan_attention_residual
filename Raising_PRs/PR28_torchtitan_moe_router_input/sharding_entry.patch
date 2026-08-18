@@ -1,0 +1,47 @@
+diff --git a/torchtitan/models/common/moe.py b/torchtitan/models/common/moe.py
+index 04b5e8024..fb8fa3841 100644
+--- a/torchtitan/models/common/moe.py
++++ b/torchtitan/models/common/moe.py
+@@ -430,13 +430,14 @@ class MoE(Module):
+         Args:
+             x_BLD: Input ``(B, L, D)`` -- what the experts consume.
+             router_input_BLD: Keyword-only. Optional ``(B, L, D_r)`` routed-on
+-                tensor -- keyword-only because ``Module._redistribute_inputs``
+-                enumerates the positional parameters. When
+-                None (the default) the router reads ``x_BLD``, which is the
+-                conventional MoE. Latent-expert designs route on the
+-                full-width token while dispatching a projected, narrower
++                tensor. When None (the default) the router reads ``x_BLD``,
++                which is the conventional MoE. Latent-expert designs route on
++                the full-width token while dispatching a projected, narrower
+                 tensor to the experts, so they need the two to differ; only
+-                the leading ``(B, L)`` must match.
++                the leading ``(B, L)`` must match. Keyword-only so it stays out
++                of ``_cache_pos_arg_names``: a positional parameter would extend
++                the list that ``LocalMapConfig.in_grad_placements`` is ordered
++                by.
+ 
+         Returns:
+             Output ``(B, L, D)``.
+diff --git a/torchtitan/models/common/moe_sharding.py b/torchtitan/models/common/moe_sharding.py
+index c98677d0e..230095054 100644
+--- a/torchtitan/models/common/moe_sharding.py
++++ b/torchtitan/models/common/moe_sharding.py
+@@ -289,8 +289,15 @@ def _moe_sharding_config(*, enable_ep: bool, enable_sp: bool) -> ShardingConfig:
+             "expert_bias_E": dense_param_placement(tp=spmd.R),
+             "tokens_per_expert_E": _tokens_per_expert_placement(enable_ep=enable_ep),
+         },
+-        in_src_shardings={"x_BLD": sp_layout},
+-        in_dst_shardings={"x_BLD": desired_input_layout},
++        # router_input_BLD is optional and skipped when None, but it must be named:
++        # an unnamed input reaches the router unredistributed, so a latent-expert
++        # model passing a Replicate activation would silently route on it while the
++        # gate declares SP.
++        in_src_shardings={"x_BLD": sp_layout, "router_input_BLD": sp_layout},
++        in_dst_shardings={
++            "x_BLD": desired_input_layout,
++            "router_input_BLD": desired_input_layout,
++        },
+         out_src_shardings=output_layout,
+         out_dst_shardings=sp_layout,
+     )

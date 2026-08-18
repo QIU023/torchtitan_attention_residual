@@ -46,7 +46,20 @@ Each is a small upstream PR that stands on its own and makes our axis PR smaller
 model whose gate is not SiLU carries a subclass. Three models already do: `gpt_oss` (clamped
 SwiGLU), `kimi_k3_up` -- PR-4025 itself -- and ours (SiTU-GLU, report Eq. 12). Parameterizing
 it deletes all three. Independent of PR-4025, since it touches only `models/common`, so it can
-be filed now rather than after the merge.
+be filed now rather than after the merge. **Kitted as PR27** (`gate_up_combine` hook).
+
+**1b. `MoE.forward` feeds the router and the experts the same tensor.** Latent-expert designs
+route on the full-width token and dispatch a narrower projection, so they need the two to
+differ. Our tree adds a keyword-only `router_input_BLD`; keyword-only because
+`LocalMapConfig.in_grad_placements` is a tuple ordered by `_cache_pos_arg_names()`, which a
+positional parameter would extend.
+
+The half that is easy to miss is in `moe_sharding.py`, not `moe.py`: `in_src_shardings` /
+`in_dst_shardings` are keyed by parameter NAME, and `_redistribute_inputs` silently skips a
+name it does not find. So an unnamed second input reaches the router unredistributed -- a
+Replicate activation arriving at a gate that declares SP, with nothing raised. We were
+patching around this with `dataclasses.replace` at model-build time. **Kitted as PR28**,
+independent of both PR-4025 and PR27.
 
 **2. `ShardingConfig` cannot express CP or PP.** Its six placement fields
 (`state_shardings`, `in_src`/`in_dst`, `out_src`/`out_dst`, `local_map`,
