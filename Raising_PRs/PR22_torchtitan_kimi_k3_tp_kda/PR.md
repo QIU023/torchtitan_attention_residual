@@ -1,7 +1,12 @@
 # PR #22 — Kimi K3: tensor parallelism, including the KDA path
 
 **Target**: `pytorch/torchtitan`, on top of #4025
-**Scope**: `apply_tp_kimi_k3` (~556 lines) plus the DTensor shims KDA needs.
+**Scope**: `apply_tp_kimi_k3` (~556 lines) plus the DTensor shims KDA needs, and
+`quant_scope.py` (the MXFP4/MXFP8 scope predicate, which has to know which modules TP
+touched). `apply_tp_kimi_k3` lives in `parallelize.py`, which TP, EP and CP all apply from --
+so that file lands once as shared infrastructure rather than inside any one axis PR. Splitting
+it into `tp_plan.py` / `ep_plan.py` / `cp_plan.py` is the cleaner end state and is a refactor
+that needs its own matrix run.
 #4025 rejects TP explicitly, citing data-dependent Python loops and incompatible
 forward signatures; this is the work that answers that.
 **Risk**: contained to `parallelize.py`. No change to model math.

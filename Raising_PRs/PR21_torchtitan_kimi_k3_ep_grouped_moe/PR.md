@@ -1,6 +1,11 @@
 # PR #21 — Kimi K3: expert parallelism and the grouped-GEMM expert layout
 
 **Target**: `pytorch/torchtitan`, on top of #4025
+**Scope**: `moe.py` (the SiTU-GLU routed experts, 53 lines now that it overrides a hook
+instead of duplicating the base `forward`) and `quantile_balance.py` (the router-side load
+balancing of report sec 2.3.3). `apply_ep_kimi_k3` and `verify_ep_applied` live in
+`parallelize.py`, which lands once with PR22 as shared infrastructure since TP, EP and CP all
+apply from it.
 **Depends on**: the state_dict layout hook #4025 review asks for (per-expert
 <-> grouped-GEMM). This PR is the other side of that hook.
 **Risk**: medium — it changes how expert weights are stored, so checkpoint
