@@ -54,6 +54,17 @@
 9. `ShardingConfig` 能否表达 CP/PP —— 它六个 placement 字段说的是"模块参数与 IO 在 mesh 上怎么切",表达不了"这个轴切序列"或"这个模块跨 stage 切开"。这是我们 CP/PP 只能命令式、`parallelize.py` 1656 行对他们 99 行的最大单项来源。该上 RFC 问,答案决定 CP/PP 两个 PR 是按现状提还是重写
 
 **本地技术债**
-10. `parallelize.py` 按轴拆成三个文件,让四个 PR 真正零共享文件
+10. ~~`parallelize.py` 按轴拆成三个文件~~ **方向错了,已撤销。** 查了上游:`deepseek_v3`、
+   `llama3`、`qwen3`、`gpt_oss`、`qwen3_5` **每一个**都是 `parallelize.py` + `sharding.py`
+   两个文件,没有任何一个按轴拆。拆成 `tp_plan.py/cp_plan.py/ep_plan.py` 是我们发明的布局,
+   会离约定更远,不是更近。
+
+   真正的差距是我们**没有 `sharding.py`**:deepseek_v3 是 sharding 192 行 + parallelize
+   100 行,我们是 parallelize 1768 行 + 0。凡是能声明式表达的都被写成了命令式。所以这条
+   并入第 11 条,目标是补出 `kimi_k3/sharding.py`,不是拆 `parallelize.py`。
+
+   本轮已做的那部分是对的且保留:CP 从入口内联块提成 `apply_cp_kimi_k3`,与 TP/EP 对齐
+   (bit 级相同,见 `ae08727a2`)。"四个 PR 零共享文件"这个目标本身也没那么重要 ——
+   三个轴各自成函数后 hunk 已经不重叠,rebase 摩擦基本消失。
 11. Config 化收尾(`KimiK3AttnResModel` / `KimiK3MTPLayer` / `KimiK3Spec`)—— 会改 `self.config` 类型而 `register_topology(model.config)` 读它,需要能在尝试间跑矩阵的时段
 12. `dep_exp_impl` → fork main 的 ff 合并 + DEP 代码去留(等人定)
