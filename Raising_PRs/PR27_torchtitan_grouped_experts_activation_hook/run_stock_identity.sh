@@ -33,7 +33,7 @@ torchrun --nproc_per_node=2 --rdzv_backend=c10d --rdzv_endpoint=localhost:0 \
   --training.steps "$STEPS" --training.seq_len 512 \
   --debug.seed 42 --debug.deterministic \
   --metrics.log_freq 1 --metrics.enable_tensorboard \
-  --job.dump_folder "$OUT/$TAG" \
+  --dump-folder "$OUT/$TAG" \
   > "$OUT/$TAG.log" 2>&1
 echo "rc=$? -> $OUT/$TAG.log"
 
