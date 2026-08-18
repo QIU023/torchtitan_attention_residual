@@ -12,6 +12,13 @@
 
 **④ DeepEP/MoonEP —— draft,卡硬件不卡代码。** `moon_ep_dispatcher.py` 已按 `BaseEPTokenDispatcher` 的 ABC 写好(`dispatch`/`combine` 参数名与基类逐字一致,import 可选不破坏 collection),两个方法 `raise NotImplementedError`,因为 MoonEP 要 8×NVLink 而这台没有那个拓扑。**关键复用发现**:torchtitan 已经有这个 seam,DeepEP 已经通过它接进 inference 路径,`deep_ep.*` 已在 `pyproject.toml` 可选导入列表 —— 所以 MoonEP 只需一个子类加一行,不需要"引入依赖"。
 
+**用 inspect 实测过,不是看代码推断的**(2026-08-18):`dispatch` / `combine` / `wire_meshes` /
+`init_buffer` 四个方法的参数名与 kind 与 `BaseEPTokenDispatcher` 逐字一致;ABC 的抽象方法只有
+`dispatch` 和 `combine` 两个,draft 都覆盖了。更有意义的是覆盖**模式**:draft 覆盖 `init_buffer`
+而继承 `wire_meshes` —— 与 `DeepEPTokenDispatcher` 完全相同(基类 `wire_meshes` 存下 mesh 再调
+`init_buffer`,所以缓冲区分配挂在 `init_buffer` 上就够了)。`MinimalAsyncEPTokenDispatcher` 两个
+都覆盖,是需要更多控制时的另一种形状,我们不需要。
+
 ## 这一夜做什么
 
 ### A. 无 GPU,优先(PR 内容对齐)
