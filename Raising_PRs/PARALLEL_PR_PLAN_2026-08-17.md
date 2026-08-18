@@ -38,34 +38,36 @@ would touch `parallelize.py`** -- one file, four PRs, guaranteed conflict. Split
 feature without accounting for that is what produced four identical branches in the first
 place.
 
-## The split that actually parallelizes
+## The split, as four diffs with no overlapping file
 
-One sequential prerequisite, then three genuinely independent PRs.
+Done. `Raising_PRs/diffs/` holds one diff per axis, and the four branches now point at one
+axis each instead of four names for one 69-file change:
 
-**PR 0 (prerequisite, not parallel): declarative model + parallelize skeleton.**
-The config-driven conversion (eleven classes, adapters deleted, 172 Linear and 74 RMSNorm
-now core's) plus a `parallelize_kimi_k3` whose body is FSDP-only -- i.e. functionally
-equivalent to theirs -- with the per-axis application points as separate functions that do
-nothing yet. Reviewable on its own: it changes no numerics (loss bit-identical to the
-pre-conversion baseline on four cells) and it is the shape every other model in the repo
-already has. Nothing else can land in parallel before this, because each later PR fills in
-one of those functions.
-
-**Then, in parallel, each touching one function and its own new file:**
-
-| PR | adds | files it owns |
+| branch | files | diff lines |
 | --- | --- | --- |
-| A: TP | `apply_tp_kimi_k3` + KDA's NoParallel/local-linear seam | `parallelize.py::apply_tp_*`, declarations in model |
-| B: EP | `apply_ep_kimi_k3` + `verify_ep_applied` | `parallelize.py::apply_ep_*`, `moe.py` |
-| C: CP | KCP (`kcp.py`) + Ulysses seams, per-mode wiring | `kcp.py`, `parallelize.py`'s CP block |
-| D: PP | the AttnRes cross-stage adapter | `pipeline_adapter.py`, `layout.py` |
+| `k3_pr_a_tp_kda` | `parallelize.py` | 1754 |
+| `k3_pr_b_ep_grouped` | `moe.py`, `quantile_balance.py` | 514 |
+| `k3_pr_c_cp_kcp` | `kcp.py`, `vit_cp_plan.py` | 444 |
+| `k3_pr_d_pp_attnres` | `pipeline_adapter.py`, `layout.py` | 2066 |
 
-D is the largest and the least entangled -- it is two new files plus a `pipelining_fn`,
-touching `parallelize.py` not at all. It can be filed first among the four, or last, without
-affecting the others.
+Six of those seven files do not exist upstream at all, which is what makes the split clean:
+`moe.py`, `quantile_balance.py`, `kcp.py`, `vit_cp_plan.py`, `pipeline_adapter.py`,
+`layout.py` are ours. Only `parallelize.py` is shared, and it belongs to exactly one of the
+four (A), so no two PRs touch the same file. The earlier worry about all four colliding in
+`parallelize.py` was wrong: TP is the axis that lives there, and the other three axes live in
+their own modules and are reached from it.
 
-A and C interact but do not conflict: the `num_heads % (tp * cp) == 0` rule belongs to
-whichever lands second, and the other's review does not need it.
+An earlier draft of this plan proposed a "PR 0" holding the declarative model conversion plus
+an FSDP-only skeleton. That was empty as written -- the skeleton is what upstream already
+has, and the conversion largely tracks work they did themselves. What genuinely sits outside
+the four diffs is the AttnRes model (`attn_res.py`, `attn_res_model.py`), which upstream
+references by config in seven places but does not implement. That is a fifth diff if it is
+ever needed separately, not a prerequisite dressed up as one.
+
+**What the four diffs are and are not.** Each is a reviewable slice of one axis. None is a
+standalone build: they need the AttnRes model and the converted model definition, which are
+outside their file sets. Each branch's commit message says so rather than implying the branch
+compiles.
 
 ## Sequencing constraints that are NOT about code
 
