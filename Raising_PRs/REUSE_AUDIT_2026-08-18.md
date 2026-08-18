@@ -25,6 +25,62 @@ would have left the other two without their application code. Splitting it into
 `tp_plan.py` / `cp_plan.py` / `ep_plan.py` is the real fix and is a refactor that needs a
 matrix run; until then it is shared infrastructure that lands first.
 
+## Direction correction
+
+This file was written as "align our code to theirs". That is the wrong frame. What we are
+doing is writing every parallelism axis on top of their bare eager model, so:
+
+* **where their interface cannot express what a parallelism needs, the fix goes UPSTREAM**,
+  as its own PR, not into a local workaround;
+* **only our own unjustified duplication needs cleaning** -- redundant inheritance, classes
+  that repeat something `models/common` already has.
+
+Their naming and index conventions are not the target. Two items below moved sides once that
+was clear.
+
+## Upstream interface changes the parallelism work needs
+
+Each is a small upstream PR that stands on its own and makes our axis PR smaller.
+
+**1. `GroupedExperts` hardcodes its activation.** `F.silu` is fixed in the forward, so every
+model whose gate is not SiLU carries a subclass. Three models already do: `gpt_oss` (clamped
+SwiGLU), `kimi_k3_up` -- PR-4025 itself -- and ours (SiTU-GLU, report Eq. 12). Parameterizing
+it deletes all three. Independent of PR-4025, since it touches only `models/common`, so it can
+be filed now rather than after the merge.
+
+**2. `ShardingConfig` cannot express CP or PP.** Its six placement fields
+(`state_shardings`, `in_src`/`in_dst`, `out_src`/`out_dst`, `local_map`,
+`in_grad_placements`) say how a module's parameters and IO are sharded on a mesh. They cannot
+say "this axis splits the SEQUENCE" (CP) or "this module is split across stages" (PP), because
+neither is a placement on the module's own tensors. That is why our CP and PP are imperative
+while TP and EP can be declarative, and the biggest single reason our `parallelize.py` is 1656
+lines against their 99.
+
+Worth raising as a design question BEFORE the axis PRs, because the answer decides whether
+CP/PP ship imperative as written or get rewritten declarative. Ask on the RFC rather than
+guessing locally.
+
+**3. EP transport needs nothing.** `BaseEPTokenDispatcher` is an ABC with exactly `dispatch`
+and `combine`, `wire_meshes` installs the mesh, `init_buffer` is the persistent-buffer hook,
+and `deep_ep.*` is already an optional import in `pyproject.toml`. MoonEP needs one subclass
+and one entry in that list. Checked -- see `kimi_k3/moon_ep_dispatcher.py`.
+
+## Our own duplication: one real item, and a claim of mine that was wrong
+
+An earlier draft of this file said three of our files subclass `GroupedExperts` for three
+different reasons, and used it as the strongest argument for the upstream change. That came
+from reading `grep -l` output as inheritance. Actually:
+
+| file | what it really does |
+| --- | --- |
+| `moe.py` | `KimiSiTUGroupedExperts(GroupedExperts)` -- the one real subclass |
+| `mxfp4_qat.py` | `MXFP4QATGroupedExperts(parent_cls)` -- dynamic factory, parent passed in |
+| `quant_scope.py` | `isinstance(module, GroupedExperts)` -- a type test |
+| `lora.py` | mentions it in comments only |
+
+So we subclass it ONCE. The upstream case survives on three separate MODELS doing it, not on
+the three-files-of-ours version I wrote.
+
 ## `moe.py`: our writing style is upstream's own, and that is the finding
 
 The question was whether a whole file subclassing `GroupedExperts` to change one activation
@@ -49,14 +105,14 @@ it BEFORE the K3 parallelism diffs, so `b_ep_moe` shrinks to just `quantile_bala
 | ours | already in torchtitan | action |
 | --- | --- | --- |
 | `moe.py` (SiTU-GLU subclass) | `GroupedExperts` (silu hardcoded), `gpt_oss/moe.py` precedent | upstream PR to parameterize the activation, then delete ours |
-| `quant_scope.py` subclassing `GroupedExperts` | same base, for MXFP4 scope | folds into the same upstream PR if the activation hook is a general converter hook |
-| `lora.py` subclassing `GroupedExperts` | same base | third caller of the same missing parameter -- strengthens the upstream case |
+| `quant_scope.py` | does NOT subclass -- `isinstance` test | nothing to do |
+| `lora.py` | does NOT subclass -- comments only | nothing to do |
 | `vit_cp_plan.py` (pure planning) | nothing comparable | keep; it exists so scheduling is testable without ranks |
 | `layout.py` (block propagation tables) | nothing comparable | keep |
 | `knobs.py` (config-first topology) | `torchtitan/config` for job config | keep, but it is model-local by design; do not upstream |
 
-Three of our files subclass `GroupedExperts` for three different reasons. That is the
-strongest single argument for the upstream change: it is not one model's quirk.
+Corrected above: we subclass it ONCE. The upstream case rests on three separate models doing
+it (gpt_oss, PR-4025, ours) -- still not one model's quirk, but not the version I wrote.
 
 ## Alignment cost against PR-4025, measured
 
@@ -71,7 +127,9 @@ The 2055-line gap in `model.py` is not duplication to remove: their 760 lines ge
 and MoE from `models/common`, and ours carries the AttnRes graft, MTP, the quantization scope
 and the LoRA attachment points -- all things they lack and all of which stay.
 
-**The 63 index sites are the one alignment item that is a correctness risk, not a rename.**
+**Naming and index base are not alignment targets** (see the direction correction above).
+The 63 index sites matter only where our code meets theirs -- the state-dict adapter and the
+config fields a user sets -- not across our whole tree. Where they do meet:
 `state_dict_adapter` already carried a bug from exactly this confusion (`kda_layers_zero_based`
 used where `is_kda_layer` was meant, disagreeing on layer 0). Do it in one commit, before the
 diffs are regenerated against their merge, or the ambiguity propagates into five of them.
