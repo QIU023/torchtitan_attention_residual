@@ -113,3 +113,19 @@ hook version specifically, ep2 x fsdp2 and ep2 x fsdp2 x tp2 x cp2 converge norm
 10 steps, 12.0509 -> 9.9162 and 12.0594 -> 11.8446.
 
 Checkpoint compatibility is the thing to review here; the model math does not change.
+
+## Note: ep8_fsdp8 is NOT taken from the gate
+
+The gate's mm_full arm runs the same flavor and would seem to hand this cell over for
+free, and its numbers are 12.01898 -> 9.90946 over 10 steps, next to ep2_fsdp2's
+12.0509 -> 9.9162. Close enough to look like the third row of the same table.
+
+It is not one. The gate sets `KIMI_VIT_PREFETCH=1` on that arm and `run_cells.sh`, which
+produced the other two rows, does not. Prefetch is documented numerically inert, but that
+was established on four pp8xvp4 pairs, not on an ep8 layout, so putting the three side by
+side would be asserting something nobody checked.
+
+This is the failure `run_cells.sh`'s own header records -- the same tree gave 12.04691
+under one set of defaults and 12.07827 under the gate's, and the gap was briefly read as
+a defect in the adapter. Re-run this cell through `run_cells.sh` so all three rows share
+their knobs, rather than annotating the difference away.
