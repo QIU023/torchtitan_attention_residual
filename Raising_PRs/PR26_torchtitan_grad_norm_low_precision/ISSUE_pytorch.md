@@ -38,20 +38,27 @@ measures both arms and asserts the patched one.
 
 `get_total_norm` accumulates in the input tensors' dtype. With bf16 tensors both the
 per-tensor norms and the norm-of-norms are bf16, and since the rounding happens per group
-the result depends on how the tensors were grouped rather than only on their values. 394
-bf16 tensors of 64 elements, seed 0, one grouping per row, partials combined in float64 so
-the only rounding under test is the per-group one:
+the result depends on how the tensors were grouped rather than only on their values. 512 bf16
+gradients, seed 0, the same tensors at every world size; the only thing that changes is how
+they are split across ranks, and the cross-rank reduce is the real one (nccl), not a float64
+emulation. Two splits that both occur in training -- FSDP (each gradient a DTensor `Shard(0)`,
+combined via `_NormPartial` + `full_tensor()`) and pipeline (rank r owns `grads[r::world]`,
+partials all-reduced):
 
 ```
-float64 reference     158.057787
-one group             158.000000     0.037% off
-split 100/294         157.896327     0.102%
-split 200/194         158.041925     0.010%
-split 300/94          157.648343     0.259%
+                world=1    world=2    world=4    world=8    spread(rel)
+dtensor today   256.000    256.000    256.000    256.000    0.00e+00
+dtensor fp32    255.682    255.682    255.682    255.682    0.00e+00
+pp today        256.000    255.973    255.505    255.631    1.93e-03
+pp fp32         255.682    255.682    255.682    255.682    5.97e-08
+float64 truth   255.682226
 ```
 
-Spread across groupings 2.49e-03 relative; with the argument set to `torch.float32` the
-same four agree to 1.00e-07.
+The pipeline split is world-dependent -- 256.000 at world 1, 255.505 at world 4, relative
+spread 1.93e-3 -- so the same gradients report a different norm depending only on the number
+of stages. The DTensor split is world-independent but bf16-imprecise (256.000 against the
+truth 255.682). With the argument set to `torch.float32` both splits reduce to the float64
+truth and the spread collapses to 6e-8.
 
 Under pipeline parallelism that partition is the model cut. Two torchtitan layouts of one
 model with bit-identical gradients (788 shard norms, max relative difference 0.000e+00)
