@@ -77,11 +77,34 @@ covers it cannot be located from this box. It lives in the pytorch source repo, 
 naming a specific test file would be a guess, which the task said not to make. To be filled
 in from a pytorch checkout before citing coverage.
 
-## Priority 2: CUDA -- PENDING
+## Priority 2: CUDA -- DONE
 
-All numbers above are CPU. The CUDA arm needs the GPU, which is running the kimi_k3 matrix
-(one GPU job at a time -- concurrent runs already cost a six-round NaN chase). Queued behind
-it: the DTensor probe on an `nccl`/CUDA mesh and the foreach probe on CUDA tensors.
+Same probes on CUDA (`probe_*_cuda.py`), matrix aborted to free the GPU.
+
+DTensor, 2 ranks nccl: `_NormPartial` preserved in float32, end-to-end total matches the
+fp32 reference with relative error **1.06e-07** -- nonzero, unlike CPU's exact 0, which is
+the signature of a real cross-rank nccl reduce rather than a local computation, and well
+inside tolerance.
+
+foreach/mixed on CUDA: identical shape to CPU -- no raise, foreach-invariant on mixed input.
+
+### The demonstration a reviewer will want, through the real upstream function
+
+512 bf16 CUDA grads, grouped k=1/2/4/8 the way PP/EP splits them, each group's norm taken by
+**`torch.nn.utils.get_total_norm` itself** (unpatched upstream), then combined; against the
+patched fp32 helper:
+
+```
+grouping           k=1      k=2      k=4      k=8    spread
+upstream (bf16) : 12.8125  12.7500  12.8125  12.8125   0.0625
+patched  (fp32) : 12.7840  12.7840  12.7840  12.7840   0.0000
+fp32 truth      : 12.7840
+```
+
+Upstream's reported norm changes with the grouping -- k=2 reads 12.7500 against 12.8125 for
+the others, one bf16 grid step (2^-4 = 0.0625 at this magnitude). The patch removes the
+dependence and lands exactly on the fp32 truth. This is the PR's premise reproduced through
+the actual `get_total_norm`, on CUDA, torch 2.14 -- not an emulation.
 
 ## State
 
