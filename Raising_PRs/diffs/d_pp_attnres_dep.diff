@@ -1,0 +1,4180 @@
+diff --git a/torchtitan/models/kimi_k3/attn_res.py b/torchtitan/models/kimi_k3/attn_res.py
+new file mode 100644
+index 000000000..2292ae0e7
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/attn_res.py
+@@ -0,0 +1,176 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Block Attention Residuals (AttnRes).
++
++Implements Block AttnRes from "Attention Residuals" (Kimi Team, 2026),
++https://arxiv.org/abs/2603.15031. AttnRes replaces fixed residual accumulation
++with softmax attention over preceding layer outputs, using a per-layer learned
++pseudo-query vector. Block AttnRes partitions layers into N blocks, applies
++standard residuals within a block, and uses attention only across block
++boundaries to keep memory and cross-stage communication at O(Nd).
++
++Pseudocode reference: paper Figure 2.
++"""
++
++from dataclasses import dataclass
++
++import torch
++import torch.nn as nn
++from torch.distributed.tensor import DTensor
++from torch.nn import functional as F
++
++from torchtitan.models.common.linear import Linear as _TTLinear
++from torchtitan.protocols.module import Module
++
++
++@dataclass(kw_only=True, slots=True)
++class AttnResConfig:
++    """Configuration for Block Attention Residuals.
++
++    Attributes:
++        enabled: Master switch. When False, the model uses standard residuals
++            and all AttnRes code paths are skipped.
++        num_blocks: Number of blocks to partition layers into (N in the paper).
++            Sweet spot is ~8; N=2,4,8 all perform similarly, N>=16 degrades.
++        norm_eps: Epsilon for the RMSNorm applied to keys.
++    """
++
++    enabled: bool = False
++    num_blocks: int = 8
++    norm_eps: float = 1e-5
++
++
++def block_attn_res(
++    blocks: list[torch.Tensor],
++    partial_block: torch.Tensor,
++    proj: nn.Linear,
++    norm: nn.Module,
++) -> torch.Tensor:
++    """Inter-block attention: attend over completed blocks + current partial.
++
++    Follows paper Figure 2. Pseudo-query is ``proj.weight`` (shape [1, D]),
++    values are the stacked blocks (including the current partial). Keys are
++    RMSNorm-ed values. Softmax over the block axis produces mixing weights.
++
++    Args:
++        blocks: List of completed block representations, each [B, T, D].
++        partial_block: Current intra-block partial sum [B, T, D].
++        proj: Linear(D, 1, bias=False). Its weight vector is the pseudo-query
++            w_l. MUST be zero-initialized so softmax weights start uniform.
++        norm: RMSNorm over D, applied to keys.
++
++    Returns:
++        Aggregated hidden state [B, T, D].
++    """
++    V = torch.stack(blocks + [partial_block], dim=0)  # [N+1, B, T, D]
++    # ORDER IS LOAD-BEARING under FSDP2: proj.weight is read directly below,
++    # never through proj.forward, so nothing all-gathers it except this call
++    # to norm, which shares proj's FSDP param group. See apply_fsdp's
++    # attn_res_tail note.
++    #
++    # Float BEFORE the norm so variance and rsqrt are fp32 too, matching the
++    # release. proj is zero-initialized, so the pseudo-query gradient is a
++    # difference of nearly equal terms (6x to 15x cancellation here) and bf16
++    # is where that costs: normalizing in the stream dtype leaves 3.6e-3
++    # relative error against the release form.
++    K = norm(V.float())
++    # Under TP, proj is NoParallel-wrapped so proj.weight is DTensor(Replicate)
++    # and the einsum below would mix it with the plain K. to_local unwraps it;
++    # its default Replicate grad placement is the correct spec, because K and V
++    # are replicated on the tp axis in the forward and the rowwise projections
++    # feeding them use local_output_grad_placements=(Replicate(),), so every tp
++    # rank already computes the full gradient. Requesting Partial instead sums
++    # tp identical copies and inflates proj.weight.grad by exactly tp
++    # (measured: 1/tp on both AttnRes projections at tp2 and tp4, all other
++    # parameters unaffected).
++    # No to_local: with the residual stream a DTensor, K is one too, and
++    # unwrapping only the query is what makes the einsum mixed. Both operands are
++    # Replicate on the tp axis, so the contraction is local either way.
++    query = proj.weight.squeeze(0).float()
++    logits = torch.einsum("d,nbtd->nbt", query, K)
++    weights = F.softmax(logits, dim=0)
++    h = torch.einsum("nbt,nbtd->btd", weights, V.float())
++    return h.to(V.dtype)
++
++
++def block_attn_res_tensor(
++    prefix_sum_BLD: torch.Tensor,
++    block_residual_TND: torch.Tensor,
++    proj: nn.Linear,
++    norm: nn.Module,
++) -> torch.Tensor:
++    """``block_attn_res`` with the block history as one ``[T, N, D]`` tensor.
++
++    Same computation, different container: the values are the committed blocks
++    followed by the current partial, which is exactly what the list form stacks.
++    Bitwise equality with ``block_attn_res`` is the gate.
++    """
++    B, L, D = prefix_sum_BLD.shape
++    values_TND = torch.cat(
++        (block_residual_TND, prefix_sum_BLD.reshape(-1, 1, D)), dim=1
++    )
++    # Same order as block_attn_res: float BEFORE the norm, and the norm call is
++    # what all-gathers proj.weight under FSDP2 (see the note there).
++    keys_TND = norm(values_TND.float())
++    # No to_local here. With the residual stream a DTensor, keys_TND is one too,
++    # and unwrapping only the query is what makes the einsum mixed. Both operands
++    # are Replicate on the tp axis, so the contraction is local either way -- the
++    # difference is purely whether DTensor's dispatcher can see it.
++    query_D = proj.weight.squeeze(0).float()
++    probs_TN = F.softmax(torch.einsum("d,tnd->tn", query_D, keys_TND), dim=-1)
++    out_TD = torch.einsum("tn,tnd->td", probs_TN, values_TND.float())
++    return out_TD.to(values_TND.dtype).view(B, L, D)
++
++
++class AttnResProjection(_TTLinear):
++    """Pseudo-query projection for AttnRes (D -> 1, no bias).
++
++    Inherits from ``torchtitan.models.common.linear.Linear`` (which is
++    ``nn.Linear + Module``) so instances satisfy
++    ``Float8LinearConverter.verify_module_protocol``. The weight IS the
++    per-layer pseudo-query vector ``w_l`` from the paper.
++    ``param_init`` must zero-initialize the weight for training stability.
++
++    NOTE: filter via ``filter_fqns`` to keep AttnRes pseudo-queries in
++    high precision -- the zero-init carrier story relies on small
++    deltas accumulating, which rowwise FP8 quantization noise would
++    destroy.
++    """
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(Module.Config):
++        dim: int
++
++    def __init__(self, config: Config):
++        nn.Linear.__init__(self, config.dim, 1, bias=False)
++
++
++def stack_blocks(blocks: list[torch.Tensor]) -> torch.Tensor:
++    """Stack per-block tensors into the ``[T, N, D]`` carrier.
++
++    ``T`` is ``B * L`` flattened and ``N`` is the block axis, which is the
++    layout the upstream K3 model threads through its block signature. Nothing
++    downstream needs B or L back: the pipeline adapter slices and stacks along
++    the block axis and reasons about block INDICES, never about batch or
++    sequence extents.
++
++    Used when crossing a pipeline stage boundary, where the list has to become
++    one tensor for P2P send/recv.
++    """
++    if not blocks:
++        raise ValueError("stack_blocks needs at least one block to infer D")
++    D = blocks[0].shape[-1]
++    return torch.stack([b.reshape(-1, D) for b in blocks], dim=1)
++
++
++def unstack_blocks(blocks_tensor: torch.Tensor) -> list[torch.Tensor]:
++    """Inverse of ``stack_blocks``: the columns of a ``[T, N, D]`` carrier.
++
++    Returns ``[T, D]`` views, one per block. Views share storage with the input
++    so autograd gradients flow back correctly.
++    """
++    return [blocks_tensor[:, i] for i in range(blocks_tensor.shape[1])]
+diff --git a/torchtitan/models/kimi_k3/attn_res_model.py b/torchtitan/models/kimi_k3/attn_res_model.py
+new file mode 100644
+index 000000000..a17149398
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/attn_res_model.py
+@@ -0,0 +1,922 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""AttnRes-woven Kimi Linear model.
++
++``KimiK3AttnResModel`` subclasses :class:`KimiK3Model` and threads
++Block Attention Residuals through the decoder layer stack, reusing the
++paper's Figure 2 aggregation primitive
++:func:`torchtitan.models.kimi_k3.attn_res.block_attn_res`
++(shared with the existing ``AttnResLlama3Model`` / ``AttnResModel`` so
++that a single implementation is used across both experiments).
++
++Per-layer AttnRes (matching ``AttnResTransformerBlock`` in the
++``attn_res/`` experiment):
++
++* Two AttnRes applications per decoder layer — one before attention,
++  one before the FFN — each contributing an RMSNorm + zero-initialized
++  pseudo-query ``w_l ∈ R^d``.
++* At a block-start layer the running ``partial_block`` is committed
++  into ``blocks`` and reset; subsequent layers accumulate into the new
++  ``partial_block`` until the next block start.
++* On the last stage the final aggregation (one extra pseudo-query +
++  RMSNorm) runs before ``norm`` + ``lm_head``, mirroring the reference.
++
++``_return_only_new_blocks`` flag is respected on forward so the
++cross-stage cache adapter (``pipeline_adapter.py``) can drive this model
++unchanged at multi-node scale. Local FSDP-only training leaves the flag ``False`` and passes
++the full accumulated block stack forward.
++
++Paper (Kimi Linear tech report §5):
++
++> "AttnRes introduces only one RMSNorm and one pseudo-query vector
++> wl ∈ R^d per layer, amounting to a negligible fraction of the total
++> parameter count. Crucially, all pseudo-query vectors must be
++> initialized to zero."
++
++We use the two-per-layer pattern from the ``attn_res/`` experiment to
++stay consistent with the validated PP adapter + CPU tests. The
++paper's "one per layer" count treats each (attention, FFN) pair as a
++sub-layer pair; the two-per-layer count here is the sub-layer-level
++view and is equivalent.
++"""
++
++from __future__ import annotations
++
++import torch
++import torch.nn as nn
++from torch.distributed.tensor import DTensor, Replicate
++
++from dataclasses import dataclass
++
++from torchtitan.models.common.embedding import Embedding as _TTEmbedding
++from torchtitan.protocols.module import Module as _TTModule
++from torchtitan.models.kimi_k3.attn_res import (
++    block_attn_res_tensor,
++    AttnResProjection,
++    block_attn_res,
++    stack_blocks,
++    unstack_blocks,
++)
++from torchtitan.models.kimi_k3.model import (
++    RMSNorm,
++    _tp_replicate,
++    _tp_shard,
++    KimiDecoderLayer,
++    KimiK3Config,
++    KimiK3Model,
++    Linear,
++    splice_vision_embeds,
++    UpstreamFSDPNames,
++)
++
++
++def _scalar_local(a: torch.Tensor, like: torch.Tensor) -> torch.Tensor:
++    """Under TP the graft alphas are NoParallel DTensors (Replicate); the
++    plain block stream is a plain Tensor, so ``alpha * (h - plain)`` mixes
++    DTensor and Tensor. The alpha is a replicated scalar -- to_local gives
++    the identical value on every rank and keeps the mul plain.
++
++    Also cast to ``like``'s dtype: frozen-base LoRA keeps the trainable
++    alpha as an fp32 master while the stream is bf16; without the cast
++    the elementwise mix silently promotes the residual stream to fp32
++    (matches FSDP mixed-precision compute when the cast is a no-op)."""
++    a = a.to_local() if isinstance(a, DTensor) else a
++    return a.to(like.dtype) if a.dtype != like.dtype else a
++
++
++def _plain_stream(
++    blocks: list[torch.Tensor], partial_block: torch.Tensor
++) -> torch.Tensor:
++    """Reconstruct the standard residual stream: sum of committed blocks
++    plus the current partial. This is the exact input the plain
++    (non-AttnRes) backbone would see at this point."""
++    out = partial_block
++    for b in blocks:
++        out = out + b
++    return out
++
++
++# ----- Per-layer AttnRes wrapper ------------------------------------------ #
++
++
++class KimiAttnResDecoderLayer(_TTModule, UpstreamFSDPNames):
++    """Kimi decoder layer with AttnRes woven around attn and FFN.
++
++    Structurally the same as :class:`KimiDecoderLayer` (per-layer KDA/MLA
++    choice + MoE/MLP choice) but the forward is driven by the model's
++    block-threading loop: takes ``(blocks, partial_block, is_block_start)``
++    and returns the updated ``(blocks, partial_block)``.
++
++    Four extra AttnRes params (per layer):
++      * ``attention_res_proj`` — pseudo-query for pre-attention aggregation
++      * ``attention_res_norm`` — RMSNorm for keys in that aggregation
++      * ``ffn_res_proj``  — pseudo-query for pre-FFN aggregation
++      * ``ffn_res_norm``  — RMSNorm for keys in that aggregation
++
++    ``_*_proj`` are Linear(d, 1, bias=False). Their weight vector IS
++    the per-layer pseudo-query ``w_l``. :meth:`init_weights` zero-inits
++    these (paper mandates it: uniform initial attention weights → at
++    t=0 training is equivalent to standard residuals).
++    """
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(_TTModule.Config):
++        """This block plus the four AttnRes reads.
++
++        ``base`` is the plain block's own config, so the attention/FFN choice and
++        the norms are described once and this class only adds the residual reads.
++        """
++
++        layer_idx: int
++        base: "KimiDecoderLayer.Config"
++        attention_res_proj: "AttnResProjection.Config"
++        ffn_res_proj: "AttnResProjection.Config"
++        attention_res_norm: "RMSNorm.Config"
++        ffn_res_norm: "RMSNorm.Config"
++        attn_res_gated: bool = False
++
++    @staticmethod
++    def make_config(
++        config: KimiK3Config, layer_idx: int, gated: bool = False
++    ) -> "KimiAttnResDecoderLayer.Config":
++        """The one place this class reads the flat config."""
++        d = config.hidden_size
++
++        def _norm() -> "RMSNorm.Config":
++            return RMSNorm.Config(
++                normalized_shape=d,
++                eps=config.rms_norm_eps,
++                sharding_config=_tp_replicate(),
++            )
++
++        return KimiAttnResDecoderLayer.Config(
++            layer_idx=layer_idx,
++            base=KimiDecoderLayer.make_config(config, layer_idx),
++            attention_res_proj=AttnResProjection.Config(
++                dim=d, sharding_config=_tp_replicate()
++            ),
++            ffn_res_proj=AttnResProjection.Config(
++                dim=d, sharding_config=_tp_replicate()
++            ),
++            attention_res_norm=_norm(),
++            ffn_res_norm=_norm(),
++            attn_res_gated=gated,
++        )
++
++    def __init__(self, config: "KimiAttnResDecoderLayer.Config") -> None:
++        super().__init__()
++        gated = config.attn_res_gated
++        # Reuse the base KimiDecoderLayer entirely -- we just delegate
++        # to its sub-modules rather than calling its forward.
++        base = config.base.build()
++        self.layer_idx = config.layer_idx
++        self.attention = base.attention
++        self.delta_attention = base.delta_attention
++        self.moe = base.moe
++        self.feed_forward = base.feed_forward
++        self.input_layernorm = base.input_layernorm
++        self.post_attention_layernorm = base.post_attention_layernorm
++        self.is_linear_attn = base.is_linear_attn
++        self.is_moe = base.is_moe
++
++        # AttnRes params: two pseudo-queries + two RMSNorms per layer.
++        # ``AttnResProjection`` is the shared Linear(d, 1, bias=False)
++        # wrapper from attn_res/; its weight [1, d] is the pseudo-query
++        # vector ``w_l``. Zero-init happens in ``init_weights`` below.
++        # NoParallel in the imperative plan -- the output dim is 1, so there
++        # is nothing to shard; declared here so the module carries its own
++        # placement like every other linear after the migration.
++        # .build(), not AttnResProjection(cfg): _sharding_config is assigned inside
++        # Config.build, so calling the class drops the declaration silently. Every
++        # AttnRes pseudo-query in this model was constructed that way, so the
++        # comment above described an intent the code never carried out.
++        self.attention_res_proj = config.attention_res_proj.build()
++        self.ffn_res_proj = config.ffn_res_proj.build()
++        self.attention_res_norm = config.attention_res_norm.build()
++        self.ffn_res_norm = config.ffn_res_norm.build()
++        # Graft gate: per-read scalar alpha, zero-init, so at step 0 the
++        # model is exactly the plain backbone (adapter-correctness anchor).
++        # h = partial + alpha * (mix - partial): alpha=0 makes the read the
++        # plain residual stream, so a pretrained backbone's step-0 function
++        # is EXACTLY preserved; alpha then trains away from identity.
++        # Ungated (from-scratch pretraining) keeps the paper's uniform-mix
++        # zero-init read, matching all historical numerics evidence.
++        self.attn_res_gated = gated
++        if gated:
++            self.attention_res_alpha = nn.Parameter(torch.zeros(1))
++            self.ffn_res_alpha = nn.Parameter(torch.zeros(1))
++
++    def _attention(self, h: torch.Tensor) -> torch.Tensor:
++        """Whichever of the two attention attributes this layer has.
++
++        The layout is upstream's: MLA layers hold ``attention``, KDA layers
++        hold ``delta_attention``, and the other is None.
++        """
++        if self.attention is not None:
++            return self.attention(h)
++        assert self.delta_attention is not None
++        return self.delta_attention(h)
++
++    def _feed_forward(self, h: torch.Tensor) -> torch.Tensor:
++        """Whichever of the two FFN attributes this layer has.
++
++        MoE layers hold ``moe``, the dense ones ``feed_forward``, and the
++        other is None -- upstream's layout.
++        """
++        if self.moe is not None:
++            return self.moe(h)
++        assert self.feed_forward is not None
++        return self.feed_forward(h)
++
++    def forward(
++        self,
++        blocks,
++        partial_block: torch.Tensor,
++        is_block_start: bool,
++        plain_stream: torch.Tensor | None = None,
++    ):
++        # Dispatch on the carrier's type rather than exposing
++        # forward_tensor_carrier as a method the model calls directly. Calling
++        # it directly bypasses nn.Module.__call__, so FSDP2's pre-forward hook
++        # never fires and the parameters stay sharded -- measured as
++        # input_layernorm meeting a plain input against a DTensor(S(0)) weight.
++        if isinstance(blocks, torch.Tensor):
++            return self.forward_tensor_carrier(partial_block, blocks, is_block_start)
++        return self._forward_list_carrier(
++            blocks, partial_block, is_block_start, plain_stream
++        )
++
++    def _forward_list_carrier(
++        self,
++        blocks: list[torch.Tensor],
++        partial_block: torch.Tensor,
++        is_block_start: bool,
++        plain_stream: torch.Tensor | None = None,
++    ) -> tuple[list[torch.Tensor], torch.Tensor, torch.Tensor | None]:
++        # Pre-attention aggregation (paper Figure 2, pre-attention step).
++        h = block_attn_res(
++            blocks, partial_block, self.attention_res_proj, self.attention_res_norm
++        )
++        if self.attn_res_gated:
++            # plain_stream is accumulated SEQUENTIALLY (same op order as
++            # the plain backbone) so alpha=0 is bit-identical to it;
++            # reconstructing sum(blocks)+partial would reorder additions.
++            assert plain_stream is not None
++            h = plain_stream + _scalar_local(self.attention_res_alpha, plain_stream) * (
++                h - plain_stream
++            )
++
++        # Block boundary: commit partial into blocks, start fresh accumulator.
++        if is_block_start:
++            blocks = blocks + [partial_block]
++            partial_block = None
++
++        # Attention sub-layer (KDA or MLA).
++        attn_out = self._attention(self.input_layernorm(h))
++        partial_block = attn_out if partial_block is None else partial_block + attn_out
++        if self.attn_res_gated:
++            plain_stream = plain_stream + attn_out
++
++        # Pre-FFN aggregation (paper Figure 2, pre-FFN step).
++        h = block_attn_res(blocks, partial_block, self.ffn_res_proj, self.ffn_res_norm)
++        if self.attn_res_gated:
++            h = plain_stream + _scalar_local(self.ffn_res_alpha, plain_stream) * (
++                h - plain_stream
++            )
++
++        # FFN sub-layer (MoE or dense SwiGLU).
++        ffn_out = self._feed_forward(self.post_attention_layernorm(h))
++        partial_block = partial_block + ffn_out
++        if self.attn_res_gated:
++            plain_stream = plain_stream + ffn_out
++        return blocks, partial_block, plain_stream
++
++    def forward_tensor_carrier(
++        self,
++        x_BLD: torch.Tensor,
++        block_residual_TND: torch.Tensor,
++        is_block_start: bool,
++    ) -> tuple[torch.Tensor, torch.Tensor]:
++        """``forward`` with the block history as one ``[T, N, D]`` tensor.
++
++        Same arithmetic as ``forward``; the three Python accumulators collapse
++        to two tensors that are both in the signature. That is the point: no
++        ``sharding_config`` can reach a value the model holds in a local, which
++        is what stopped the declarative TP migration -- ``ffn_out`` became a
++        DTensor while ``partial_block`` stayed plain and the residual add died
++        with "aten.add.Tensor got mixed". A column of a threaded tensor can be
++        declared; a list element cannot.
++
++        The running partial sum rides inside ``x_BLD`` rather than travelling
++        as its own argument, which is what gets the count down from three
++        carriers to two.
++
++        Bitwise equality with ``forward`` is the gate, not loss convergence --
++        see ``matrix_scripts/carrier_equivalence_probe.py``.
++        """
++        if self.attn_res_gated:
++            # plain_stream is a THIRD accumulator and only the gated graft has
++            # it. Off in all three matrix arms, so it keeps the list path until
++            # the tensor form is proven, rather than being ported blind.
++            raise NotImplementedError(
++                "gated AttnRes still uses the list carrier; "
++                "forward_tensor_carrier does not carry plain_stream"
++            )
++
++        # EVERY layer, not just the model's entry. In the list path
++        # block_attn_res runs at the top of each layer, so its stack-and-cast
++        # round trip normalised the stream once per layer; an FFN or MoE that
++        # returns a DTensor was silently unwrapped by the next layer's
++        # aggregation. Doing this only at the entry was measured to be too
++        # narrow -- the same input_layernorm failed on a later layer instead.
++        B, L, D = x_BLD.shape
++        prefix_sum_BLD: torch.Tensor | None = x_BLD
++
++        if block_residual_TND.shape[1] > 0:
++            x_BLD = block_attn_res_tensor(
++                prefix_sum_BLD, block_residual_TND, self.attention_res_proj,
++                self.attention_res_norm,
++            )
++
++        if is_block_start:
++            block_residual_TND = torch.cat(
++                (block_residual_TND, prefix_sum_BLD.reshape(-1, 1, D)), dim=1
++            )
++            prefix_sum_BLD = None
++
++        attn_out = self._attention(self.input_layernorm(x_BLD))
++        prefix_sum_BLD = (
++            attn_out if prefix_sum_BLD is None else prefix_sum_BLD + attn_out
++        )
++
++        h_BLD = block_attn_res_tensor(
++            prefix_sum_BLD, block_residual_TND, self.ffn_res_proj, self.ffn_res_norm
++        )
++        ffn_out = self._feed_forward(self.post_attention_layernorm(h_BLD))
++        return prefix_sum_BLD + ffn_out, block_residual_TND
++
++
++# ----- Top-level AttnRes-woven model -------------------------------------- #
++
++
++class _DenseGrad(torch.autograd.Function):
++    """Identity forward; makes the gradient dense on the way back.
++
++    torch's pipeline P2P rejects a non-dense tensor
++    ("Tensors for P2P must be non-overlapping and dense"), and what it ships
++    backwards is the raw ``grad_input`` autograd produced for a stage's PP
++    inputs. Our last stage aggregates the block stack together with the
++    partial block, so the gradient w.r.t. the partial block comes back as a
++    slice of that wider buffer -- dense-looking shape, strided layout.
++
++    Making the stage OUTPUTS contiguous does not help: the buffer in question
++    belongs to the inputs. This barrier sits on the inputs instead, so
++    whatever layout autograd picks, what crosses the wire is dense.
++
++    Found by pp8 over 13 layers, where the grad arrived as [1, 256, 256] with
++    stride [256, 768, 1] (768 = 3 x 256: two blocks plus the partial). pp2 and
++    pp4 never produced a strided grad there, which is why this survived to
++    degree 8.
++    """
++
++    @staticmethod
++    def forward(ctx, x: torch.Tensor) -> torch.Tensor:
++        return x
++
++    @staticmethod
++    def backward(ctx, grad: torch.Tensor) -> torch.Tensor:
++        return grad.contiguous()
++
++
++def _dense_grad(x: torch.Tensor | None) -> torch.Tensor | None:
++    """Apply :class:`_DenseGrad` where autograd can actually carry a gradient."""
++    if x is None or not x.is_floating_point() or not x.requires_grad:
++        return x
++    return _DenseGrad.apply(x)
++
++
++class KimiK3MTPLayer(nn.Module):
++    """One multi-token-prediction layer, mirroring a backbone block.
++
++    Report sec 3.3: "Kimi K3 is pre-trained with a multi-token-prediction (MTP)
++    layer that mirrors the structure of a backbone block", and Table 1 lists
++    one. The released config.json ships ``num_nextn_predict_layers: 0``, so the
++    published artifact was exported without it -- which is why this is built
++    only when the field is set, and why the default is 0.
++
++    Structure follows the MTP formulation this family uses: the depth-k input
++    fuses the backbone's final hidden state with the embedding of the token k
++    positions ahead, each RMSNormed, concatenated and projected back to the
++    model width, then run through a block with the same structure as a
++    backbone layer. Embedding and output head are shared with the backbone, as
++    the released weight contract expects.
++    """
++
++    def __init__(self, config, layer_idx: int, *, gated: bool) -> None:
++        super().__init__()
++        d = config.hidden_size
++        self.enorm = RMSNorm.Config(normalized_shape=d, eps=config.rms_norm_eps, sharding_config=_tp_replicate()).build()
++        self.hnorm = RMSNorm.Config(normalized_shape=d, eps=config.rms_norm_eps, sharding_config=_tp_replicate()).build()
++        self.eh_proj = Linear.Config(in_features=2 * d, out_features=d, bias=False, sharding_config=_tp_shard(0)).build()
++        self.gated = gated
++        self.block = KimiAttnResDecoderLayer.make_config(
++            config, layer_idx, gated=gated
++        ).build()
++
++    def forward(self, h: torch.Tensor, emb: torch.Tensor) -> torch.Tensor:
++        fused = self.eh_proj(torch.cat([self.hnorm(h), self.enorm(emb)], dim=-1))
++        # An MTP layer has no incoming block stack: it mirrors one block's
++        # structure, not the AttnRes depth-mixing across the backbone.
++        _, out, _ = self.block([], fused, True, fused if self.gated else None)
++        return out
++
++
++class KimiK3AttnResModel(KimiK3Model):
++    """Kimi Linear with Block Attention Residuals threaded through layers.
++
++    Backbone identical to :class:`KimiK3Model` (KDA/MLA alternation,
++    MoE/MLP FFN per layer). AttnRes weaving adds:
++
++      * per-layer :class:`KimiAttnResDecoderLayer` in place of
++        :class:`KimiDecoderLayer`
++      * one final aggregation (``output_res_proj`` + norm) before
++        ``norm`` + ``lm_head`` on the last stage
++      * ``layers_per_block`` attribute so block-start detection is
++        layout-table-compatible with the cross-stage cache adapter.
++
++    ``num_blocks`` chooses between Full AttnRes (``num_blocks == L``,
++    1 layer per block → every layer is block-start) and Block AttnRes
++    (``num_blocks < L``, multiple layers per block → only every k-th
++    layer commits a block).
++
++    Forward signature changes vs base:
++
++      * First / non-PP stage: ``forward(input_ids)`` — blocks start empty,
++        ``partial_block = tok_embeddings(tokens)``.
++      * Middle / last PP stage: ``forward(partial_in, blocks_in)`` —
++        threads (partial, blocks) through the layer stack. PP adapter
++        (:mod:`torchtitan.models.kimi_k3.pipeline_adapter`) handles
++        the rebuild / delta.
++
++    FSDP-only training (no PP) keeps ``_return_only_new_blocks=False``,
++    layers receive the full accumulated block list every layer.
++    """
++
++    def __init__(
++        self,
++        config: KimiK3Config,
++        *,
++        num_blocks: int,
++        layers_per_block: int | None = None,
++        gated: bool = False,
++    ) -> None:
++        # Skip KimiK3Model.__init__'s layer build (it builds
++        # KimiDecoderLayer); we need KimiAttnResDecoderLayer instead.
++        # Call nn.Module's init, then build what we need ourselves.
++        nn.Module.__init__(self)
++        self.config = config
++
++        n_layers = config.num_hidden_layers
++        assert n_layers > 0
++        assert (
++            1 <= num_blocks <= n_layers
++        ), f"num_blocks={num_blocks} out of range [1, {n_layers}]"
++        # K3 partitions by BLOCK SIZE, not by an equal split: the official
++        # config ships attn_res_block_size=12 over 93 layers, i.e. 7 full
++        # blocks plus a 9-layer partial tail (report sec 2.2: "we partition
++        # its layers into 8 blocks with 12-layer size, giving a partial final
++        # block"). The last block is allowed to be short; the commit rule
++        # (layer_idx % layers_per_block) simply never fires inside the partial
++        # tail, matching the reference (its remainder layer does not commit).
++        #
++        # layers_per_block is the operative quantity, so take it directly when
++        # the caller knows the block size. Deriving it from num_blocks instead
++        # loses information and cannot be inverted: block size 12 over 21
++        # layers is 2 blocks, but ceil(21 / 2) is 11, and no num_blocks
++        # whatsoever satisfies ceil(21 / n) == 12. The ceil fallback below is
++        # exact when num_blocks came from the config directly (the official
++        # pair 93/8 gives 12) and is only lossy for a size-derived count.
++        if layers_per_block is not None:
++            if not 1 <= layers_per_block <= n_layers:
++                raise ValueError(
++                    f"layers_per_block={layers_per_block} out of range "
++                    f"[1, {n_layers}]"
++                )
++            self.layers_per_block = layers_per_block
++        else:
++            self.layers_per_block = -(-n_layers // num_blocks)  # ceil
++        self.num_blocks = num_blocks
++        self.num_committed_blocks = -(-n_layers // self.layers_per_block)
++
++        # torchtitan's Embedding, not nn.Embedding. It runs vocab-parallel in
++        # its own forward -- to_local the weight, chunk the vocab, all-reduce --
++        # and never produces a DTensor partial. Ours went through
++        # RowwiseParallel instead, which makes DTensor do the vocab split and
++        # yields MaskPartial; that meets the plain P(sum) coming out of the
++        # now-declared AttnRes projections inside block_attn_res_tensor, and
++        # DTensor has no conversion between two partial types. Every upstream
++        # model uses this class for exactly this reason.
++        self.embed_tokens = _TTEmbedding.Config(
++            num_embeddings=config.vocab_size, embedding_dim=config.hidden_size
++        ).build()
++        # ModuleDict for pipeline_module_split compatibility — see
++        # KimiK3Model.__init__ for the same pattern.
++        self.attn_res_gated = gated
++        self.layers = nn.ModuleDict(
++            {
++                str(i): KimiAttnResDecoderLayer.make_config(
++                    config, i, gated=gated
++                ).build()
++                for i in range(n_layers)
++            }
++        )
++        # Off unless the config asks for it; see KimiK3MTPLayer for why the
++        # released artifact has none.
++        num_mtp = getattr(config, "num_nextn_predict_layers", 0)
++        self.mtp_layers = (
++            nn.ModuleDict(
++                {
++                    str(i): KimiK3MTPLayer(config, n_layers + i, gated=gated)
++                    for i in range(num_mtp)
++                }
++            )
++            if num_mtp
++            else None
++        )
++        self.norm = RMSNorm.Config(normalized_shape=config.hidden_size, eps=config.rms_norm_eps, sharding_config=_tp_replicate()).build()
++        self.lm_head = Linear.Config(
++            in_features=config.hidden_size,
++            out_features=config.vocab_size,
++            bias=False,
++            sharding_config=_tp_shard(0),
++        ).build()
++
++        # Final AttnRes aggregation (one extra pseudo-query + RMSNorm
++        # before lm_head). Same ``AttnResProjection`` shared with the
++        # attn_res/ experiment.
++        # .build(), not AttnResProjection(Config(...)): _sharding_config is
++        # assigned inside Config.build, so constructing the class directly drops
++        # the declaration silently -- the module then looks declared in the source
++        # and is invisible to the declarative driver.
++        self.output_res_proj = AttnResProjection.Config(
++            dim=config.hidden_size, sharding_config=_tp_replicate()
++        ).build()
++        self.output_res_norm = RMSNorm.Config(
++            normalized_shape=config.hidden_size,
++            eps=config.rms_norm_eps,
++            sharding_config=_tp_replicate(),
++        ).build()
++        if gated:
++            self.output_res_alpha = nn.Parameter(torch.zeros(1))
++
++        if config.tie_word_embeddings:
++            self.lm_head.weight = self.embed_tokens.weight
++
++        # PP cache adapter hook — FSDP-only training leaves this False.
++        self._return_only_new_blocks: bool = False
++
++    # Default sentinel token id used to mark image-token positions in input_ids
++    # when ``image_mask`` is not supplied alongside ``vision_embeds``. The
++    # multimodal path picks 32000 (a Llama-3.1 reserved special token);
++    # any caller can override by passing ``image_token_id`` as a kwarg.
++    _DEFAULT_IMAGE_TOKEN_ID = 32_000
++
++    def forward(
++        self,
++        tokens: torch.Tensor,
++        blocks: torch.Tensor | None = None,
++        *,
++        inputs_embeds: torch.Tensor | None = None,
++        vision_embeds: torch.Tensor | None = None,
++        image_mask: torch.Tensor | None = None,
++        image_token_id: int | None = None,
++        **kwargs,
++    ):
++        """AttnRes forward with PP-split awareness + block threading.
++
++        The dispatch mirrors ``attn_res/model.py:AttnResModel.forward`` so
++        the ``CrossStageCacheAdapter`` can drive this class via
++        duck-typing on ``self.embed_tokens`` / ``self.lm_head`` /
++        ``self.norm`` presence (pipeline_module_split strips these off
++        non-first / non-last stages).
++
++        Args:
++            tokens: On stage 0 / non-PP: ``[B, T]`` int64 token ids. On
++                PP middle / last stages: ``[B, T, D]`` hidden state from
++                upstream stage's ``partial_block``.
++            blocks: ``[N, B, T, D]`` stacked AttnRes blocks from upstream
++                PP stage. ``None`` on stage 0 / non-PP.
++
++        Returns:
++            * Non-last PP stage: ``(partial_block, stacked_blocks)`` —
++              PipelineStage sends both over P2P.
++            * Last stage / single-GPU: ``[B, T, vocab_size]`` logits.
++
++        The PP cache adapter toggles ``_return_only_new_blocks`` so
++        non-last middle stages emit only THIS stage's new block
++        commits rather than the full accumulated stack (constant per-hop
++        bytes regardless of depth).
++        """
++        # 1) Initial hidden: pre-computed embeds (multimodal), embed on stage 0,
++        #    pass-through on middle/last PP stages.
++        if inputs_embeds is not None:
++            h = inputs_embeds
++        elif self.embed_tokens is not None:
++            h = self.embed_tokens(tokens)
++            # Multimodal scatter: replace embed positions for image tokens
++            # with externally-supplied vision_embeds. Done INSIDE this
++            # forward so FSDP sees a single root call. Under PP, only stage 0
++            # has ``embed_tokens``, so this branch fires there exclusively.
++            # ``image_mask`` is recomputed from ``tokens`` when not supplied
++            # so callers don't have to plumb a bool mask through PP P2P
++            # (which would chunk it as a separate kwarg without semantic
++            # benefit — the mask is a deterministic function of input_ids).
++            #
++            # Implementation note: ``masked_scatter`` is used instead of
++            # ``h[image_mask] = vision_embeds.reshape(-1, D)`` so the
++            # operation is safe under PP shape inference, where the
++            # scheduler runs forward once with zero-filled token tensors
++            # to determine activation shapes — image_mask is then all
++            # False and advanced-indexing assignment would crash with
++            # "shape mismatch". masked_scatter copies as many elements
++            # as the mask requires (zero in shape-inference, B*N_vision
++            # in regular forward) and is autograd-friendly so the
++            # downstream PP backward path still reaches vision_embeds.
++            if vision_embeds is not None:
++                if image_mask is None:
++                    sentinel = (
++                        image_token_id
++                        if image_token_id is not None
++                        else self._DEFAULT_IMAGE_TOKEN_ID
++                    )
++                    image_mask = tokens == sentinel
++                h = splice_vision_embeds(h, vision_embeds, image_mask)
++        else:
++            h = tokens
++
++        # PP inputs only: keep the gradient that crosses the wire dense.
++        # See _DenseGrad -- the last stage's aggregation makes the grad for the
++        # partial block a slice of a wider buffer, and P2P refuses it.
++        blocks = _dense_grad(blocks)
++        h = _dense_grad(h)
++        partial_block_src = h
++
++        # 2) Unstack incoming blocks; empty list on stage 0 / non-PP.
++        if blocks is None:
++            block_list: list[torch.Tensor] = []
++        else:
++            block_list = unstack_blocks(blocks)
++        initial_num_blocks = len(block_list)
++        partial_block = partial_block_src
++
++        # 3) Thread blocks + partial through this stage's layer slice.
++        # ModuleDict keys are original layer indices (preserved across
++        # pipeline_module_split); int() them to drive block-start detection.
++        # Gated graft: seed the sequential plain stream. First stage:
++        # the embedding; PP mid-stage: reconstruct once at entry (the
++        # only reorder point -- single-stage runs stay bit-exact).
++        plain_stream = (
++            _plain_stream(block_list, partial_block) if self.attn_res_gated else None
++        )
++        if self.attn_res_gated:
++            # The gated graft carries a third accumulator that the tensor
++            # carrier has no column for, so it keeps the list path.
++            for layer_key, layer in self.layers.items():
++                is_block_start = int(layer_key) % self.layers_per_block == 0
++                block_list, partial_block, plain_stream = layer(
++                    block_list, partial_block, is_block_start, plain_stream
++                )
++        else:
++            # Tensor carrier: the block history is one [T, N, D] tensor and the
++            # running partial sum rides inside the hidden state. Bitwise equal
++            # to the list path -- see matrix_scripts/carrier_equivalence_probe.py.
++            D = partial_block.shape[-1]
++            carrier = (
++                torch.stack([b.reshape(-1, D) for b in block_list], dim=1)
++                if block_list
++                else partial_block.new_zeros(
++                    partial_block.shape[0] * partial_block.shape[1], 0, D
++                )
++            )
++            # Lift the stream once, here. torchtitan's Embedding returns a
++            # plain tensor (it does vocab-parallel itself and never makes a
++            # DTensor), while every declared module inside a layer produces one.
++            # Upstream models get this for free because a layer's first op is a
++            # norm, whose declaration lifts its input; AttnRes's first op is the
++            # carrier cat, which has no declaration to do it.
++            x = partial_block
++            _tpm = getattr(self, "_tp_mesh", None)
++            if _tpm is not None:
++                # Lift each independently. The text path arrives plain from the
++                # vocab-parallel Embedding, but the multimodal path arrives as a
++                # DTensor from _splice -- and gating both on x's kind left the
++                # carrier plain there, so the carrier cat inside
++                # block_attn_res_tensor met one of each.
++                if not isinstance(x, DTensor):
++                    x = DTensor.from_local(
++                        x, _tpm, (Replicate(),), run_check=False
++                    )
++                if not isinstance(carrier, DTensor):
++                    carrier = DTensor.from_local(
++                        carrier, _tpm, (Replicate(),), run_check=False
++                    )
++            for layer_key, layer in self.layers.items():
++                is_block_start = int(layer_key) % self.layers_per_block == 0
++                x, carrier = layer(carrier, x, is_block_start)
++            partial_block = x
++            block_list = [
++                c.view(partial_block.shape[0], partial_block.shape[1], D)
++                for c in unstack_blocks(carrier)
++            ]
++
++        is_last_stage = self.lm_head is not None
++
++        if not is_last_stage:
++            # PP middle stage: ship (partial_block, stacked_blocks) downstream.
++            if self._return_only_new_blocks:
++                new_blocks = block_list[initial_num_blocks:]
++                if not new_blocks:
++                    # This stage span covers no block boundary — emit a
++                    # zero-first-dim tensor so the adapter's P2P handoff
++                    # preserves a static per-stage shape.
++                    empty = partial_block.new_zeros((partial_block.shape[0] * partial_block.shape[1], 0, partial_block.shape[-1]))
++                    return partial_block, empty
++                return partial_block, stack_blocks(new_blocks)
++            if not block_list:
++                # Non-delta mode has the same hole delta mode guards above: a
++                # stage span that has not yet crossed any block boundary has
++                # nothing to stack. VP is what exposes it -- with 4 virtual
++                # stages per rank the early ones sit entirely inside the first
++                # block, where pp8 with one stage per rank never landed.
++                # .contiguous(): P2P requires non-overlapping dense tensors,
++                # and a zero-first-dim new_zeros is not guaranteed to satisfy
++                # that. VP4 is what surfaced it -- VP1 never sends an empty
++                # stack because every rank's single stage spans a boundary.
++                empty = partial_block.new_zeros((partial_block.shape[0] * partial_block.shape[1], 0, partial_block.shape[-1])).contiguous()
++                return partial_block, empty
++            return partial_block, stack_blocks(block_list)
++
++        # Last stage / single-GPU: final aggregation + norm + lm_head.
++        h_final = block_attn_res(
++            block_list,
++            partial_block,
++            self.output_res_proj,
++            self.output_res_norm,
++        )
++        if self.attn_res_gated:
++            h_final = plain_stream + _scalar_local(
++                self.output_res_alpha, plain_stream
++            ) * (h_final - plain_stream)
++        # Keep the PRE-norm hidden state for MTP. The reference feeds MTP's hnorm the
++        # unnormalised state (hnorm(h_pre_norm)); passing the already-normalised one
++        # applies two RMSNorms in series, which is not an identity and silently breaks
++        # parity against official MTP weights. The backbone's own norm still applies to
++        # the backbone logits below.
++        h_pre_norm = h_final
++        if self.norm is not None:
++            h_final = self.norm(h_final)
++
++        # Multi-token prediction (report sec 3.3). Runs only where both the
++        # embedding table and the head are present -- which is the last stage
++        # only when PP has not split them apart; see _mtp_logits for why that is
++        # checked rather than assumed.
++        if self.mtp_layers is not None and self.lm_head is not None:
++            from torchtitan.models.kimi_k3.mtp_loss import put_mtp_logits
++
++            if self._skip_lm_head:
++                # finding 44. This branch used to sit ahead of the _skip_lm_head return,
++                # so a chunked-loss run still materialised a full [B, L, V] logits tensor
++                # PER MTP DEPTH -- exactly the allocation chunking exists to avoid (OOM at
++                # seq 8192), retaining ~1.3 GiB per depth across steps, and handing the
++                # loss chunk-misaligned labels.
++                #
++                # Raised rather than skipped. Skipping would leave take_mtp_logits()
++                # returning None, the MTP loss component contributing nothing, and a run
++                # that looks like it is training MTP while it is not. Making MTP work
++                # under chunked loss means computing its logits per chunk too, which is a
++                # change to mtp_loss rather than a guard here.
++                raise ValueError(
++                    "MTP and chunked loss cannot be combined yet: MTP needs full-vocab "
++                    "logits and ChunkedLossWrapper exists so they are never "
++                    "materialised. Use a non-chunked loss for MTP flavors, or extend "
++                    "mtp_loss to consume per-chunk logits."
++                )
++            self._mtp_logits = self._compute_mtp_logits(tokens, h_pre_norm)
++            put_mtp_logits(self._mtp_logits)
++
++        # _skip_lm_head is an attribute rather than a forward kwarg because PP
++        # backward calls .requires_grad on all stage inputs, which fails on bool
++        # kwargs -- same reason core's decoder does it this way. Set by the
++        # trainer when ChunkedLossWrapper is in use, which then applies lm_head
++        # per sequence chunk so the [B, L, V] logits are never materialised whole.
++        if self._skip_lm_head:
++            return h_final
++        return self.lm_head(h_final)
++
++    # Set by forward when MTP is on: one logits tensor per MTP depth, for a loss
++    # component to consume. Not returned from forward because the trainer's
++    # loss_fn takes a single ``pred``, and changing that is a core change.
++    _mtp_logits: list[torch.Tensor] | None = None
++
++    def _compute_mtp_logits(
++        self, tokens: torch.Tensor, h_final: torch.Tensor
++    ) -> list[torch.Tensor]:
++        """Logits for each MTP depth. Depth k predicts the token k+1 ahead.
++
++        The depth-k input fuses the backbone's final hidden state with the
++        embedding of the token k+1 positions ahead, so the last k+1 positions
++        have no target and are dropped by the loss rather than padded here --
++        padding would invent supervision.
++
++        MTP needs the embedding table AND the head, and raises when it cannot
++        have both rather than silently producing nothing: a multi-token objective
++        that quietly degrades to single-token is worse than a failed run.
++
++        Two distinct reasons ``embed_tokens`` can be absent, and the message says
++        which, because they need different answers:
++
++        * PP has put the embedding and the head on different stages.
++        * The multimodal wrapper set it to None on purpose. That is how it selects
++          the backbone's pre-embedded branch after splicing vision features, so
++          MTP under a multimodal model is not a plumbing problem -- the spliced
++          sequence is LONGER than ``input_ids`` (each sentinel expands to many
++          visual tokens), so "the token k+1 ahead" is no longer a shift of
++          ``input_ids`` and the depth-k target has to come from the spliced
++          sequence. Handing the table back would produce a misaligned objective
++          that still trains, which is the worst outcome.
++        """
++        if self.embed_tokens is None:
++            raise RuntimeError(
++                "MTP needs embed_tokens and lm_head together, and embed_tokens "
++                "is None. Either PP split them across stages, or the multimodal "
++                "wrapper cleared it to take the pre-embedded branch -- in which "
++                "case MTP needs targets from the SPLICED sequence, not from "
++                "input_ids, because the splice changes the sequence length."
++            )
++        out = []
++        for k in range(len(self.mtp_layers)):
++            shift = k + 1
++            # Token k+1 ahead, aligned to position t: drop the first `shift`
++            # tokens and let the loss ignore the tail that has no target.
++            ahead = tokens[:, shift:]
++            emb = self.embed_tokens(ahead)
++            h = h_final[:, : ahead.size(1)]
++            hidden = self.mtp_layers[str(k)](h, emb)
++            if self.norm is not None:
++                hidden = self.norm(hidden)
++            out.append(self.lm_head(hidden))
++        return out
++
++    def init_weights(
++        self,
++        init_range: float | None = None,
++        **kwargs,
++    ) -> None:
++        """Normal init + mandatory zero-init of every pseudo-query.
++
++        Paper §5 requires ``w_l`` zero-init so initial softmax weights
++        are uniform (equivalent to standard residuals at t=0, avoids
++        training volatility).
++
++        ``**kwargs`` forwards trainer-supplied args (e.g. ``buffer_device``)
++        to :meth:`KimiK3Model.init_weights`.
++        """
++        super().init_weights(init_range, **kwargs)
++        # Zero-init every AttnRes pseudo-query (paper requirement).
++        # Guard against PP-split stages that dropped some modules
++        # (pipeline_module_split replaces non-owned modules with None
++        # or Identity).
++
++        # One helper over every AttnRes-bearing block, so a block reachable by a new
++        # route cannot be missed. That is what happened with MTP: this loop walked
++        # self.layers only, while an MTP layer wraps its own KimiAttnResDecoderLayer,
++        # leaving those pseudo-queries and gate alphas at raw torch.empty values after
++        # meta -> to_empty -> init. Garbage alphas are a step-0 NaN, and garbage
++        # pseudo-queries violate the paper's zero-init requirement silently.
++        def _zero_attn_res(block) -> None:
++            for name in ("attention_res_proj", "ffn_res_proj"):
++                m = getattr(block, name, None)
++                if m is not None:
++                    nn.init.zeros_(m.weight)
++            # Graft-gate alphas start at exact zero (identity anchor).
++            for name in ("attention_res_alpha", "ffn_res_alpha"):
++                a = getattr(block, name, None)
++                if isinstance(a, nn.Parameter):
++                    nn.init.zeros_(a)
++
++        for layer in self.layers.values():
++            _zero_attn_res(layer)
++        if self.mtp_layers is not None:
++            for mtp in self.mtp_layers.values():
++                block = getattr(mtp, "block", None)
++                if block is not None:
++                    _zero_attn_res(block)
++        if self.output_res_proj is not None:
++            nn.init.zeros_(self.output_res_proj.weight)
++        a = getattr(self, "output_res_alpha", None)
++        if isinstance(a, nn.Parameter):
++            nn.init.zeros_(a)
+diff --git a/torchtitan/models/kimi_k3/dep_bubble_backward.py b/torchtitan/models/kimi_k3/dep_bubble_backward.py
+new file mode 100644
+index 000000000..3d8d80590
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/dep_bubble_backward.py
+@@ -0,0 +1,254 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Defer the vision tower's backward so it can run in a pipeline bubble.
++
++Report sec 5.2.3: "the backward passes are handled analogously". The forward half only
++had to decide WHEN to call the encode, because nothing else consumes it. The backward
++has no such freedom by default: the tower's output is spliced into the text embedding
++and the two share one autograd graph, so the tower's backward happens inside the
++splicing stage's ``backward_one_chunk``, inline, wherever the schedule put that action.
++
++Moving it means cutting the graph at the seam. :func:`cut_for_deferred_backward`
++detaches the tower's output, splices the detached stand-in, and captures the gradient
++that arrives on it with a tensor hook; the tower's own backward is then replayed later,
++explicitly, at a planned slot.
++
++## The invariant that matters more than the placement
++
++Every deferred backward MUST run before the optimizer step. A gradient that was cut off
++and never re-run is not a slow step, it is silently wrong training: the tower's
++parameters simply do not get that micro-batch's contribution, and nothing raises.
++:meth:`GradQueue.drain` is therefore called unconditionally at step end for whatever the
++plan did not place, and :meth:`GradQueue.assert_empty` exists so a caller can turn a
++leak into an exception rather than a quiet accuracy loss.
++
++Ordering does not matter for correctness -- parameter gradients accumulate -- so a
++deferred backward is free to run in any bubble after its gradient arrives. What it costs
++is memory: the tower's forward graph for that micro-batch has to stay alive from the
++encode until the deferred backward runs, which is a longer window than the forward
++prefetch's and is the real bound on how much of the backward can be moved.
++"""
++
++from __future__ import annotations
++
++import torch
++
++from torchtitan.tools.logging import logger
++
++
++def cut_for_deferred_backward(
++    features: torch.Tensor, queue: "GradQueue", microbatch: int
++) -> torch.Tensor:
++    """Return a stand-in for ``features`` whose gradient is queued, not propagated.
++
++    Splice the RESULT into the text embedding. The tower's graph stays alive and
++    untouched until :meth:`GradQueue.run_one` or :meth:`GradQueue.drain` replays the
++    captured gradient into it.
++
++    A detached leaf plus a tensor hook, and both halves of that are load-bearing.
++
++    The detach makes the tower's graph unreachable from the text's, which is what keeps
++    the text's ``.backward()`` from freeing it. An ``autograd.Function`` wrapping the
++    tower's output does NOT achieve that even when its backward returns ``None``:
++    measured, the deferred pass then dies with "Trying to backward through the graph a
++    second time", and it only survives if the text backward is given
++    ``retain_graph=True`` -- which would mean holding the whole text graph for the sake
++    of the tower, and the pipeline calls that backward itself.
++
++    The hook, rather than a Function, is what fires at the right moment without putting
++    anything back in the graph: ``detached`` is a leaf of the text graph, so autograd
++    computes its gradient and calls the hook there. Returning ``None`` from the hook
++    leaves that gradient as it is; returning anything else would rewrite it.
++    """
++    if not features.requires_grad:
++        # Nothing to defer: the tower has no gradient path this step, which is the normal
++        # case under LoRA when no adapter sits inside it. Cutting anyway would be worse
++        # than useless -- it introduces a grad-requiring leaf where the graph had none,
++        # so the splicing stage's output starts requiring grad and torch's stage_backward
++        # is dragged down a path it would not have taken. Measured: LoRA + bubble died in
++        # stage_backward with "grad can be implicitly created only for scalar outputs"
++        # while full-parameter passed.
++        return features
++
++    detached = features.detach().requires_grad_(True)
++
++    def _capture(grad: torch.Tensor):
++        queue.stash(microbatch, features, grad)
++        return None
++
++    detached.register_hook(_capture)
++    return detached
++
++
++class GradQueue:
++    """Vision backwards whose gradient has arrived but which have not run yet.
++
++    ``max_pending`` bounds how many may wait at once. Each waiting entry keeps one
++    micro-batch's tower forward graph alive from the encode until the replay, which
++    is a longer window than the forward prefetch's and is the real limit on how much
++    of the backward can be moved. Above the bound the earliest pending entry runs
++    immediately, turning the memory window into a configured quantity instead of
++    whatever the plan happened to imply.
++
++    Zero means unbounded, and that is the default deliberately. The window has not
++    been measured (it needs a box that can hold the configuration where hiding
++    exists), so a nonzero default would replace a known behaviour with a guessed
++    number. What the bound is for is the run that hits its memory ceiling: there it
++    is a knob rather than a rewrite.
++    """
++
++    def __init__(self, max_pending: int = 0) -> None:
++        self._pending: dict[int, list[tuple[torch.Tensor, torch.Tensor]]] = {}
++        self._max_pending = max(0, int(max_pending))
++        self.ran = 0
++        self.drained = 0
++        # Ran early because the bound was reached, not because a slot came up.
++        self.forced = 0
++        # Slots that came up with nothing pending. The backward side is greedy and
++        # its placement assumes the earliest micro-batch's gradient arrives first;
++        # a high count here says that assumption does not hold for this schedule
++        # and the greedy min() should become any-pending.
++        self.idle_slots = 0
++
++    def stash(self, microbatch: int, output: torch.Tensor, grad: torch.Tensor) -> None:
++        self._pending.setdefault(microbatch, []).append((output, grad))
++        while self._max_pending and self.pending_count() > self._max_pending:
++            before = self.ran
++            if not self.run_one(min(self._pending)):
++                break
++            self.forced += self.ran - before
++
++    def has(self, microbatch: int) -> bool:
++        return bool(self._pending.get(microbatch))
++
++    def run_one(self, microbatch: int) -> bool:
++        """Run the tower's backward for ``microbatch`` if its gradient has arrived.
++
++        False when it has not: the plan is derived from the schedule's shape, so a slot
++        can come up before the gradient does, and that is not an error -- the entry stays
++        pending and the step-end drain will take it.
++        """
++        entries = self._pending.pop(microbatch, None)
++        if not entries:
++            return False
++        for output, grad in entries:
++            torch.autograd.backward(output, grad)
++            self.ran += 1
++        return True
++
++    def run_next(self) -> bool:
++        """Run the earliest pending vision backward, if any.
++
++        The backward side is greedy rather than budget-planned, and that is a deliberate
++        difference from the forward. A placement plan needs to know when the work becomes
++        runnable, and on the forward side that is static -- the pixels are there from step
++        entry. A vision backward only becomes runnable once the text backward for its
++        micro-batch has produced the gradient, which is a schedule-dependent moment the
++        planner would have to model. Taking one pending item per idle interval after a
++        backward action is the same placement the plan would make in the common case and
++        needs no model of arrival time.
++        """
++        if not self._pending:
++            self.idle_slots += 1
++            return False
++        return self.run_one(min(self._pending))
++
++    def drain(self) -> int:
++        """Run everything still pending. Called unconditionally at step end.
++
++        This is not a fallback for tidiness. A deferred backward that never runs means
++        the tower silently misses that micro-batch's gradient, with no error anywhere,
++        so the drain is the correctness guarantee and the placement is only the
++        optimisation.
++        """
++        count = 0
++        for microbatch in sorted(self._pending):
++            for output, grad in self._pending[microbatch]:
++                torch.autograd.backward(output, grad)
++                count += 1
++        self._pending.clear()
++        self.drained += count
++        return count
++
++    def assert_empty(self, where: str) -> None:
++        if self._pending:
++            raise AssertionError(
++                f"{where}: {sum(len(v) for v in self._pending.values())} vision "
++                f"backward(s) still pending for micro-batches "
++                f"{sorted(self._pending)}. Running the optimizer now would train the "
++                f"tower on incomplete gradients."
++            )
++
++    def pending_count(self) -> int:
++        return sum(len(v) for v in self._pending.values())
++
++    def report(self, placed: int) -> None:
++        level = logger.info if self.drained == 0 else logger.warning
++        # forced and idle_slots are the two ways the placement can be working
++        # against the schedule while every gradient still runs: forced means the
++        # memory bound is what decided when, and idle_slots means slots came up
++        # with nothing to put in them. Both are silent in the loss.
++        level(
++            "DEP bubble backward: %d ran at a planned slot, %d drained at step end, "
++            "%d forced by the pending bound, %d slot(s) found nothing pending "
++            "(%d slots planned)",
++            self.ran - self.forced,
++            self.drained,
++            self.forced,
++            self.idle_slots,
++            placed,
++        )
++        self.ran = 0
++        self.drained = 0
++        self.forced = 0
++        self.idle_slots = 0
++
++
++def install_backward_slots(pp_schedule, queue: GradQueue) -> int:
++    """Run one queued vision backward after each of this rank's backward actions.
++
++    Same shape as the forward's hook and for the same reason: the idle interval starts
++    when an action completes, so firing after ``backward_one_chunk`` returns puts the
++    work in the gap rather than in front of the next action's wait.
++
++    Also makes ``step`` drain whatever is left. That is not tidiness -- a deferred
++    backward that never runs leaves the tower without that micro-batch's gradient and
++    raises nothing.
++    """
++    wrapped = 0
++    for stage in getattr(pp_schedule, "_stages", []) or []:
++        if getattr(stage, "_kimi_bubble_bwd_wrapped", False):
++            continue
++        inner = getattr(stage, "backward_one_chunk", None)
++        if inner is None:
++            continue
++
++        def make(inner=inner):
++            def backward_one_chunk(*args, **kwargs):
++                out = inner(*args, **kwargs)
++                queue.run_next()
++                return out
++
++            return backward_one_chunk
++
++        stage.backward_one_chunk = make()  # type: ignore[method-assign]
++        stage._kimi_bubble_bwd_wrapped = True
++        wrapped += 1
++
++    if not getattr(pp_schedule, "_kimi_bubble_backward_step", False):
++        orig_step = pp_schedule.step
++
++        def patched_step(*args, **kwargs):
++            try:
++                return orig_step(*args, **kwargs)
++            finally:
++                left = queue.drain()
++                queue.report(placed=queue.ran + left)
++
++        pp_schedule.step = patched_step  # type: ignore[method-assign]
++        pp_schedule._kimi_bubble_backward_step = True
++    return wrapped
+diff --git a/torchtitan/models/kimi_k3/dep_bubble_plan.py b/torchtitan/models/kimi_k3/dep_bubble_plan.py
+new file mode 100644
+index 000000000..e9dee468e
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/dep_bubble_plan.py
+@@ -0,0 +1,227 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Where to run each vision encode so it lands in a pipeline bubble.
++
++Report sec 5.2.3: "The ViT forward passes of the first PP micro-batches are executed
++synchronously upfront, the remaining forward passes are scheduled into pipeline
++bubbles." This module answers only the scheduling question -- which slot each encode
++goes in -- and knows nothing about the model.
++
++Two properties it is built for.
++
++**Every rank derives the same plan.** The plan is a pure function of (pp, vp,
++micro-batch count, schedule name, cost ratio). All of those are known to every rank
++before the step, so no rank can reach a vision collective the others do not. That is
++what makes this safe where issuing collectives off a side stream has to be argued
++about: consistency is derived, not assumed.
++
++**A bubble is only usable before its consumer.** Idle time after a micro-batch's
++features are needed cannot pay for encoding them, so the budget accumulates along the
++rank's action list and is spent in order -- the same walk ``dep_hiding_theory.py``
++uses to estimate the hideable share, reused here to decide placement.
++
++The cost ratio ``r`` is in units of one text-stage forward, measured by
++``dep_cost_ratio.py``. It is a parameter rather than something inferred at runtime: a
++plan that depended on a measurement each rank took locally would stop being identical
++across ranks.
++"""
++
++from __future__ import annotations
++
++from dataclasses import dataclass
++
++
++@dataclass(frozen=True)
++class Placement:
++    """Encode ``microbatch`` immediately after the action named by ``anchor``.
++
++    Anchored on the following action's IDENTITY rather than on a slot index,
++    because the index does not survive lowering: the runtime iterates
++    ``pipeline_order_with_comms``, which inserts SEND/RECV actions and contains no
++    idle entries at all, so "slot 37" means nothing there. The relative order of the
++    compute actions is the same in both representations, so the first real action
++    after the bubble run is a stable name for the position.
++
++    ``anchor`` names the action the runtime fires AFTER, as
++    ``(computation_type_name, stage_index, microbatch_index)``.
++    ``slot`` is kept for reporting and for the occupancy check against the simulator.
++    """
++
++    slot: int
++    microbatch: int
++    anchor: tuple[str, int, int]
++
++
++@dataclass(frozen=True)
++class BubblePlan:
++    """One rank's plan.
++
++    ``upfront`` are the micro-batches whose encodes run synchronously before the
++    action loop, which the report prescribes rather than concedes. ``placed`` are the
++    ones that fit in a bubble. ``synchronous`` are the ones that fit nowhere and stay
++    inline at their consumption point -- they lengthen the step, and counting them is
++    how "most of the ViT computation is hidden" gets a number instead of an adjective.
++    """
++
++    rank: int
++    upfront: tuple[int, ...]
++    placed: tuple[Placement, ...]
++    synchronous: tuple[int, ...]
++    idle_slots: int
++    cost_ratio: float
++
++    @property
++    def hidden_share(self) -> float:
++        total = len(self.upfront) + len(self.placed) + len(self.synchronous)
++        return len(self.placed) / total if total else 0.0
++
++
++def plan_for_rank(
++    actions,
++    *,
++    rank: int,
++    vision_microbatches: int,
++    cost_ratio: float,
++    upfront: int,
++    vision_stage: int = 0,
++) -> BubblePlan:
++    """Walk one rank's action list and place the encodes.
++
++    ``actions`` is the per-rank list the schedule produces, with ``None`` for a slot
++    the rank cannot fill because a dependency is unmet. ``upfront`` micro-batches are
++    taken out of the walk entirely: the report runs the first ones eagerly.
++
++    An encode is placed at the LAST idle slot whose accumulated budget first covers
++    ``cost_ratio``, so it sits as close to its consumer as the budget allows. Placing
++    it earlier would work equally well for occupancy and worse for memory, since the
++    features stay resident from the moment they are produced.
++    """
++    if cost_ratio <= 0:
++        raise ValueError(f"cost_ratio must be positive, got {cost_ratio}")
++    # Where each micro-batch's features are CONSUMED: the vision-owning stage's forward
++    # of that micro-batch. A bubble after that point cannot pay for the encode, however
++    # much budget has accumulated -- the consumer has already run. Without this the walk
++    # happily placed micro-batch 8's encode before micro-batch 14's forward, which reads
++    # as a successful placement and is a wrong answer.
++    consume_slot: dict[int, int] = {}
++    for slot, action in enumerate(actions):
++        if action is None:
++            continue
++        mb = getattr(action, "microbatch_index", None)
++        if mb is None or "FORWARD" not in str(getattr(action, "computation_type", "")):
++            continue
++        if int(getattr(action, "stage_index", -1)) != vision_stage:
++            continue
++        consume_slot.setdefault(int(mb), slot)
++    pending = [m for m in range(vision_microbatches) if m >= upfront]
++    placed: list[Placement] = []
++    budget = 0.0
++    idle = 0
++    # The action most recently completed. Placements anchor on THIS, and the runtime
++    # fires after it returns -- the start of the idle interval, reachable without any
++    # receive to hook.
++    #
++    # Anchoring on the action AFTER the bubble was the first attempt and it cannot work
++    # where it matters. The hook available there is fwd_recv_ops.pop, the moment the
++    # runtime is about to wait for a receive; but the rank owning the tower owns
++    # pipeline stage 0, whose forward receives nothing, so no pop ever happens for it.
++    # Measured on a real pp8xvp4 cell: 8 placements planned, 0 fired, which the
++    # fired-vs-placed warning reported instead of hiding.
++    prev: tuple[str, int, int] | None = None
++    for slot, action in enumerate(actions):
++        if action is None:
++            budget += 1.0
++            idle += 1
++            if budget >= cost_ratio and prev is not None:
++                for k, mb in enumerate(pending):
++                    if consume_slot.get(mb, 1 << 30) > slot:
++                        budget -= cost_ratio
++                        placed.append(
++                            Placement(slot=slot, microbatch=pending.pop(k), anchor=prev)
++                        )
++                        break
++            continue
++        prev = (
++            str(getattr(action, "computation_type", "?")),
++            int(getattr(action, "stage_index", -1)),
++            int(
++                action.microbatch_index
++                if getattr(action, "microbatch_index", None) is not None
++                else -1
++            ),
++        )
++        budget = 0.0  # an executed action ends the idle run
++    return BubblePlan(
++        rank=rank,
++        upfront=tuple(range(min(upfront, vision_microbatches))),
++        placed=tuple(placed),
++        synchronous=tuple(pending),
++        idle_slots=idle,
++        cost_ratio=cost_ratio,
++    )
++
++
++def build_plans(
++    *,
++    pp_size: int,
++    vp: int,
++    n_microbatches: int,
++    cost_ratio: float,
++    upfront: int | None = None,
++    vision_stage: int = 0,
++) -> dict[int, BubblePlan]:
++    """Plans for every rank of an Interleaved1F1B schedule.
++
++    ``upfront`` defaults to ``pp_size``: the report's "first PP micro-batches", which
++    is also exactly the set that cannot be prefetched, since nothing precedes them.
++    """
++    from torch.distributed.pipelining.schedules import ScheduleInterleaved1F1B
++
++    if upfront is None:
++        upfront = pp_size
++    num_stages = pp_size * vp
++    sched = ScheduleInterleaved1F1B.__new__(ScheduleInterleaved1F1B)
++    # Bypassing __init__ deliberately: it validates and wires real stages, and this is
++    # a planning question with no model in it. Everything the action generation reads
++    # is set explicitly below so nothing is left implicit.
++    sched._num_stages = num_stages
++    sched.pp_group_size = pp_size
++    sched._n_microbatches = n_microbatches
++    sched.n_microbatches = n_microbatches
++    sched.stage_index_to_group_rank = {s: s % pp_size for s in range(num_stages)}
++    sched.number_of_rounds = max(1, n_microbatches // pp_size)
++    sched.microbatches_per_round = n_microbatches // sched.number_of_rounds
++    if n_microbatches % sched.number_of_rounds != 0:
++        raise ValueError(
++            f"Interleaved1F1B needs n_microbatches ({n_microbatches}) to be a "
++            f"multiple of the round count ({sched.number_of_rounds})"
++        )
++
++    class _FakeStage:
++        def __init__(self, index: int) -> None:
++            self.stage_index = index
++            self.num_stages = num_stages
++            self.group_rank = index % pp_size
++            self.is_first = index == 0
++            self.is_last = index == num_stages - 1
++
++    plans = {}
++    for rank in range(pp_size):
++        stages = [_FakeStage(s) for s in range(rank, num_stages, pp_size)]
++        sched._stages = stages
++        sched.n_local_stages = len(stages)
++        sched.rank = rank
++        actions = sched._calculate_single_rank_operations(rank)
++        plans[rank] = plan_for_rank(
++            actions,
++            rank=rank,
++            vision_microbatches=n_microbatches,
++            cost_ratio=cost_ratio,
++            upfront=upfront,
++            vision_stage=vision_stage,
++        )
++    return plans
+diff --git a/torchtitan/models/kimi_k3/dep_bubble_runtime.py b/torchtitan/models/kimi_k3/dep_bubble_runtime.py
+new file mode 100644
+index 000000000..972b8a525
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/dep_bubble_runtime.py
+@@ -0,0 +1,210 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Run the vision encodes inside the schedule's idle time, on the main stream.
++
++The companion to :mod:`dep_bubble_plan`, which decides WHERE each encode goes. This
++puts it there.
++
++## Why the hook is after a forward returns, and not before a receive wait
++
++Two hook points look equally reasonable and only one of them can fire where it
++matters.
++
++``fwd_recv_ops.pop`` sits immediately before ``_wait_batch_p2p`` in the runtime's
++FORWARD branch, which is the moment the rank is about to block on a receive -- the
++start of an idle interval, and it carries the ``(stage, microbatch)`` an anchor needs.
++That was the first implementation. It fires for a FORWARD that RECEIVES activations,
++and the rank owning the tower owns pipeline stage 0, whose input comes from the
++dataloader: no receive, no pop, nothing fires. Measured on a real pp8xvp4 cell -- 8
++placements planned, 0 fired.
++
++So the anchor moved to the action BEFORE the interval, and the hook to after
++``forward_one_chunk`` returns. The interval starts exactly there: that action has
++completed and the next cannot begin until a dependency lands. No receive is involved,
++so it works on the stage that actually holds the tower.
++
++## Main stream, not the side stream
++
++The prefetch path issues encodes on a side stream so they overlap with whatever the
++main stream is doing. This path is the opposite by design: the bubble IS main-stream
++idle time, so the encode belongs on the main stream, where it occupies the gap rather
++than competing for SMs with text compute.
++
++## What is not here yet
++
++Backward. The report handles the backward passes analogously, and the same hook exists
++for it (``bwd_recv_ops``), but the vision backward is triggered by the spliced
++features' gradient rather than by a schedule action, so it needs the adapter's gradient
++path involved. Forward first, with the occupancy criterion, then backward.
++"""
++
++from __future__ import annotations
++
++import time
++from collections.abc import Callable, Sequence
++
++from torchtitan.models.kimi_k3.dep_bubble_plan import BubblePlan
++
++from torchtitan.tools.logging import logger
++
++
++class _AnchorFirer:
++    """Runs the planned encodes after the action they are anchored to.
++
++    Anchored on the action BEFORE the idle interval and fired after it returns, so the
++    encode occupies the gap from its start. The first attempt anchored on the action
++    AFTER the interval and hooked ``fwd_recv_ops.pop`` -- the moment the runtime is
++    about to wait for a receive. Correct in principle and useless in practice: the rank
++    owning the tower owns pipeline stage 0, whose forward receives nothing, so no pop
++    ever happens for it. That version planned 8 placements on a real pp8xvp4 cell and
++    fired 0, which the fired-vs-placed warning reported rather than hiding.
++    """
++
++    def __init__(self, on_anchor) -> None:
++        self._on_anchor = on_anchor
++        self._by_anchor: dict[tuple[int, int], list[int]] = {}
++        self.fired = 0
++        # Wall-clock actually spent inside the planned encodes, and the count of them.
++        # The plan is built from a STATIC cost ratio, and this session paid for the gap
++        # that leaves: a ratio measured at seq 4096 (0.493) was handed to a seq-256 cell
++        # where the true value is about 14, so each encode overran its interval roughly
++        # 28-fold. Every counter still read green, because "ran at the planned point" was
++        # true -- occupancy is not hiding. Measuring the encodes is what makes that
++        # visible as something other than a slower step.
++        self.encode_seconds = 0.0
++        self.encode_calls = 0
++
++    def arm(self, plan: BubblePlan) -> None:
++        """Load this step's placements. Called once per step, before the loop."""
++        self._by_anchor = {}
++        for placement in plan.placed:
++            kind, stage_index, mb_index = placement.anchor
++            if "FORWARD" not in kind:
++                # Backward anchors need the adapter's gradient path; forward first.
++                continue
++            self._by_anchor.setdefault((stage_index, mb_index), []).append(
++                placement.microbatch
++            )
++
++    def after_forward(self, stage_index: int, mb_index: int) -> None:
++        queued = self._by_anchor.pop((stage_index, mb_index), None)
++        if not queued:
++            return
++        # perf_counter around a CUDA call measures launch, not execution, unless the
++        # stream is synchronized. The encodes run on the MAIN stream and the next
++        # pipeline action is issued to it immediately, so a sync here would serialize
++        # what the mechanism exists to overlap. Timing the launch window is still worth
++        # having: an encode whose kernels do not fit the interval shows up as the launch
++        # blocking on a full queue, and the step-time comparison remains the real
++        # measurement.
++        start = time.perf_counter()
++        self._on_anchor(queued)
++        self.encode_seconds += time.perf_counter() - start
++        self.encode_calls += len(queued)
++        self.fired += len(queued)
++
++
++def _wrap_stage_forwards(pp_schedule, firer: _AnchorFirer) -> int:
++    """Call ``firer.after_forward`` after each stage's ``forward_one_chunk`` returns.
++
++    Wrapped outermost and marked, so the adapter's own micro-batch-index patch on the
++    same method keeps working -- that one runs first and unconditionally under DEP, and
++    double-wrapping it was already a known way to break it.
++    """
++    wrapped = 0
++    for stage in getattr(pp_schedule, "_stages", []) or []:
++        if getattr(stage, "_kimi_bubble_wrapped", False):
++            continue
++        inner = stage.forward_one_chunk
++        stage_index = int(getattr(stage, "stage_index", -1))
++
++        def make(inner=inner, stage_index=stage_index):
++            def forward_one_chunk(fwd_chunk_id, *args, **kwargs):
++                out = inner(fwd_chunk_id, *args, **kwargs)
++                firer.after_forward(stage_index, int(fwd_chunk_id))
++                return out
++
++            return forward_one_chunk
++
++        stage.forward_one_chunk = make()  # type: ignore[method-assign]
++        stage._kimi_bubble_wrapped = True
++        wrapped += 1
++    return wrapped
++
++
++def install_bubble_runtime(
++    pp_schedule,
++    *,
++    plan_for_step: Callable[[], BubblePlan | None],
++    encode_now: Callable[[Sequence[int]], None],
++    upfront_encode: Callable[[Sequence[int]], None],
++) -> None:
++    """Make ``pp_schedule`` run planned vision encodes in its idle intervals.
++
++    ``plan_for_step`` returns this rank's plan, or None to leave the schedule alone --
++    which is how a step with no visual items, or a rank owning no vision work, opts out
++    without a second code path.
++
++    ``encode_now`` runs the encodes on the current (main) stream. ``upfront_encode``
++    runs the report's synchronous prefix before the action loop.
++
++    Patches the instance, not the class: torchtitan chooses which schedule class to
++    build, and the same reasoning already applies to the cross-stage adapter's own
++    ``step`` patch next door.
++    """
++    if getattr(pp_schedule, "_kimi_bubble_runtime", False):
++        return
++    firer = _AnchorFirer(encode_now)
++    if not _wrap_stage_forwards(pp_schedule, firer):
++        raise AttributeError(
++            "no pipeline stages on this schedule to wrap: the bubble runtime fires "
++            "after a stage's forward_one_chunk, so a schedule without _stages cannot "
++            "host it."
++        )
++    orig_step = pp_schedule.step
++
++    def patched_step(*args, **kwargs):
++        plan = plan_for_step()
++        if plan is None:
++            return orig_step(*args, **kwargs)
++        firer.arm(plan)
++        before = firer.fired
++        if plan.upfront:
++            # The report's own design: the first micro-batches' encodes cannot be
++            # placed, because nothing precedes them.
++            upfront_encode(plan.upfront)
++        try:
++            return orig_step(*args, **kwargs)
++        finally:
++            placed = len(plan.placed)
++            fired = firer.fired - before
++            # Placed-but-never-fired means the anchor action did not run on this rank
++            # this step, i.e. the plan and the schedule disagree. Silence there would
++            # let the encode fall back to its synchronous path and still look correct.
++            level = logger.info if fired == placed else logger.warning
++            # Encode time per call alongside the counts, because the counts alone
++            # cannot distinguish "hidden in the bubble" from "ran at the planned point
++            # and overran it". The plan's budget comes from a static cost ratio, and a
++            # ratio measured at a different sequence length is how this session got 8/8
++            # placements that each overran roughly 28-fold while every number read green.
++            per = (
++                firer.encode_seconds / firer.encode_calls if firer.encode_calls else 0.0
++            )
++            level(
++                "DEP bubble runtime: %d/%d planned encode(s) ran in a bubble, "
++                "%d upfront, %d left synchronous, %.1f ms per planned encode",
++                fired,
++                placed,
++                len(plan.upfront),
++                len(plan.synchronous),
++                per * 1e3,
++            )
++            firer.encode_seconds = 0.0
++            firer.encode_calls = 0
++
++    pp_schedule.step = patched_step  # type: ignore[method-assign]
++    pp_schedule._kimi_bubble_runtime = True
+diff --git a/torchtitan/models/kimi_k3/layout.py b/torchtitan/models/kimi_k3/layout.py
+new file mode 100644
+index 000000000..c2661bc5f
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/layout.py
+@@ -0,0 +1,284 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Static block-layout algebra for AttnRes under Interleaved1F1B.
++
++Given a schedule shape ``(P, V, num_blocks, n_layers, layers_per_block)``
++this module enumerates, offline and deterministically, which block each
++stage commits, which blocks each rank's shared cache holds at every
++virtual-stage entry, and which subset a stage must ship on its outgoing
++P2P (the "delta"). The adapter reads these tables at runtime so no
++metadata ever travels over the wire.
++"""
++
++from __future__ import annotations
++
++
++class BlockLayoutTables:
++    """Precomputed per-microbatch Interleaved1F1B block-propagation tables.
++
++    Given the tuple ``(P, V, num_blocks, n_layers, layers_per_block)``, this
++    helper simulates the full single-microbatch forward in the schedule's
++    execution order and materializes deterministic lookups:
++
++    * ``commits_at(S)``            -> list[int] of block indices stage ``S`` commits.
++    * ``rank_cache_at_entry(R, v)``-> ``frozenset[int]`` of block indices held in
++      rank ``R``'s cache at the moment its ``v``-th virtual stage calls forward.
++    * ``delta_to_send(S)``         -> list[int] of block indices stage ``S``
++      ships on its P2P send to stage ``S+1`` (``[]`` for the last stage).
++    * ``producer_stage_of_block(b)`` -> int, the stage that commits block ``b``.
++    * ``cache_consumers_of_block(b)`` -> list[int] of stages that pull block ``b``
++      out of THEIR rank-cache (not via the delta buffer).
++
++    A stage may commit more than one block: that happens whenever its layer span
++    is wider than ``layers_per_block`` (e.g. 96 layers over P=2, V=2 with
++    ``attn_res_block_size=12`` puts two boundaries on every stage). Everything
++    here is keyed by the commit's index WITHIN its producer stage, and so is the
++    runtime -- the rank cache stores ``(rank, stage, block_idx_in_producer)`` and
++    the producer installs one augment hook per commit.
++
++    Expected delta sizes for the canonical config
++    ``(P=8, V=2, num_blocks=8, n_layers=16, layers_per_block=2)``:
++
++    * v=0 hops: sizes = [1, 1, 2, 2, 3, 3, 4, 3]
++    * v=1 hops: sizes = [4, 3, 4, 3, 4, 3, 4]
++    """
++
++    def __init__(
++        self,
++        *,
++        pp_size: int,
++        virtual_stages_per_rank: int,
++        num_blocks: int,
++        n_layers: int,
++        layers_per_block: int,
++        layer_to_stage: dict[int, int] | None = None,
++    ) -> None:
++        if pp_size < 1 or virtual_stages_per_rank < 1:
++            raise ValueError("pp_size and virtual_stages_per_rank must be >= 1")
++        if n_layers <= 0 or layers_per_block <= 0:
++            raise ValueError("n_layers and layers_per_block must be positive")
++        # A partial final block is legal: K3 uses attn_res_block_size=12 over
++        # 93 layers (report sec 2.2), so the last block holds 9 layers and
++        # never reaches a commit. num_blocks is therefore the CEIL.
++        expected_blocks = -(-n_layers // layers_per_block)
++        if num_blocks != expected_blocks:
++            raise ValueError(
++                f"num_blocks ({num_blocks}) must equal ceil(n_layers / "
++                f"layers_per_block) = {expected_blocks} for n_layers="
++                f"{n_layers}, layers_per_block={layers_per_block}"
++            )
++
++        self.P = pp_size
++        self.V = virtual_stages_per_rank
++        self.num_stages = pp_size * virtual_stages_per_rank
++        self.num_blocks = num_blocks
++        self.n_layers = n_layers
++        self.layers_per_block = layers_per_block
++
++        if layer_to_stage is None:
++            if n_layers % self.num_stages != 0:
++                raise ValueError(
++                    f"Default layer_to_stage requires n_layers ({n_layers}) "
++                    f"to be divisible by num_stages ({self.num_stages}). "
++                    f"Pass an explicit layer_to_stage map."
++                )
++            layers_per_stage = n_layers // self.num_stages
++            layer_to_stage = {ell: ell // layers_per_stage for ell in range(n_layers)}
++        self._layer_to_stage = dict(layer_to_stage)
++
++        self._commits_at: dict[int, list[int]] = {}
++        self._producer_stage_of_block: dict[int, int] = {}
++        self._cache_at_entry: dict[tuple[int, int], frozenset[int]] = {}
++        self._delta_to_send: dict[int, list[int]] = {}
++
++        self._build()
++
++    # ----- public lookups ---------------------------------------------- #
++
++    def commits_at(self, stage_id: int) -> list[int]:
++        return list(self._commits_at.get(stage_id, ()))
++
++    def rank_cache_at_entry(self, rank: int, v: int) -> frozenset[int]:
++        return self._cache_at_entry[(rank, v)]
++
++    def delta_to_send(self, stage_id: int) -> list[int]:
++        return list(self._delta_to_send.get(stage_id, ()))
++
++    def producer_stage_of_block(self, block_idx: int) -> int:
++        return self._producer_stage_of_block[block_idx]
++
++    def cache_consumers_of_block(self, block_idx: int) -> list[int]:
++        """Stages that consume ``block_idx`` via their shared rank cache."""
++        return list(self._cache_consumers_of_block.get(block_idx, ()))
++
++    def expected_same_rank_captures(
++        self,
++        producer_stage: int,
++        block_idx_in_producer: int,
++    ) -> int:
++        """Count of later same-rank virtual stages that read producer
++        ``producer_stage``'s ``block_idx_in_producer``-th commit from
++        their shared rank cache.
++
++        Each such consumer triggers exactly one
++        :class:`pipeline_adapter._LocalCacheCapture.backward` deposit
++        into the producer's captured-grad slot for the current mb. The
++        producer-side hook uses this count to turn silent grad loss
++        (a consumer backward that never ran) into an explicit warning
++        at the moment its own backward fires.
++        """
++        commits = self._commits_at.get(producer_stage, [])
++        if block_idx_in_producer < 0 or block_idx_in_producer >= len(commits):
++            return 0
++        b = commits[block_idx_in_producer]
++        producer_rank = producer_stage % self.P
++        return sum(
++            1
++            for c in self._cache_consumers_of_block.get(b, [])
++            if c % self.P == producer_rank and c > producer_stage
++        )
++
++    # ----- the full simulation ----------------------------------------- #
++
++    def _build(self) -> None:
++        # 1) commits_at / producer_stage_of_block from the layer map.
++        for stage_id in range(self.num_stages):
++            self._commits_at[stage_id] = []
++        for ell in range(self.n_layers):
++            if ell % self.layers_per_block != 0:
++                continue
++            block_idx = ell // self.layers_per_block
++            stage_id = self._layer_to_stage[ell]
++            self._commits_at[stage_id].append(block_idx)
++            self._producer_stage_of_block[block_idx] = stage_id
++
++        if len(self._producer_stage_of_block) != self.num_blocks:
++            raise ValueError(
++                "Internal: not all blocks have a producer stage. "
++                f"Expected {self.num_blocks}, got "
++                f"{len(self._producer_stage_of_block)}."
++            )
++
++        # 2) Walk the mb forward stage-by-stage and track each rank's
++        # cache. Interleaved1F1B per-rank ordering: rank R owns stages
++        # R, R+P, R+2P, ..., R+(V-1)P. Forward order is stage 0 -> ... ->
++        # num_stages-1 (matches the autograd graph).
++        rank_cache: dict[int, set[int]] = {r: set() for r in range(self.P)}
++        accumulated: set[int] = set()
++        for r in range(self.P):
++            self._cache_at_entry[(r, 0)] = frozenset()
++
++        for stage_id in range(self.num_stages):
++            R = stage_id % self.P
++            v = stage_id // self.P
++            self._cache_at_entry.setdefault((R, v), frozenset(rank_cache[R]))
++
++            for b in self._commits_at[stage_id]:
++                accumulated.add(b)
++                rank_cache[R].add(b)
++            # Receiver cached what it just saw on the wire.
++            rank_cache[R].update(accumulated)
++
++            next_stage = stage_id + 1
++            if next_stage < self.num_stages:
++                next_R = next_stage % self.P
++                next_v = next_stage // self.P
++                receiver_cache = frozenset(rank_cache[next_R])
++                self._cache_at_entry[(next_R, next_v)] = receiver_cache
++                delta = sorted(accumulated - receiver_cache)
++                self._delta_to_send[stage_id] = delta
++            else:
++                self._delta_to_send[stage_id] = []
++
++        # 3) cache_consumers_of_block: the later stages that read a block from
++        # their RANK CACHE rather than from the delta buffer. Each such read
++        # deposits one grad into the producer's slot, which is what
++        # expected_same_rank_captures counts.
++        cache_consumers_of_block: dict[int, list[int]] = {
++            b: [] for b in range(self.num_blocks)
++        }
++        for stage_id in range(self.num_stages):
++            R = stage_id % self.P
++            v = stage_id // self.P
++            for b in self._cache_at_entry[(R, v)]:
++                cache_consumers_of_block[b].append(stage_id)
++        self._cache_consumers_of_block = {
++            b: list(stages) for b, stages in cache_consumers_of_block.items()
++        }
++
++
++def _infer_block_layout_tables_from_stages(
++    stages,
++    *,
++    pp_size: int,
++    num_blocks: int,
++    n_layers: int,
++    layers_per_block: int,
++) -> BlockLayoutTables:
++    """Build :class:`BlockLayoutTables` from live ``PipelineStage`` objects.
++
++    The layout itself is the contiguous default (layer ``ell`` on stage
++    ``ell // layers_per_stage``). ``stages`` holds only the local rank's stages,
++    so a complete layer-id -> stage-id map is not obtainable here without a
++    collective; what the local stages DO expose is used to verify the default
++    instead. A non-contiguous split raises rather than producing a layout that
++    is wrong in a way only the gradients would show.
++
++    Stages that expose no ``layers`` attribute (CPU unit tests) leave nothing to
++    verify, which is not an error.
++    """
++    num_local_stages = len(stages)
++    if num_local_stages < 1:
++        raise ValueError("need at least one stage to infer layout")
++    # Under Interleaved1F1B ``pp_schedule._stages`` returns only the local
++    # rank's stages, so ``len(stages) == V``.
++    V = num_local_stages
++    num_stages = pp_size * V
++
++    layer_to_stage: dict[int, int] = {}
++    for stage in stages:
++        submod = getattr(stage, "submod", None)
++        inner = getattr(submod, "wrapped", submod)
++        layers = getattr(inner, "layers", None)
++        if layers is None:
++            continue
++        stage_idx = getattr(stage, "stage_index", None)
++        if stage_idx is None:
++            continue
++        for key in layers.keys():
++            try:
++                layer_id = int(key)
++            except (TypeError, ValueError):
++                continue
++            layer_to_stage[layer_id] = stage_idx
++
++    # Verify, do not adopt: the map above covers this rank's layers only.
++    # BlockLayoutTables raises on its own if the layer count is not divisible,
++    # and its message is the clearer one, so leave that case to it.
++    if layer_to_stage and n_layers % num_stages == 0:
++        layers_per_stage = n_layers // num_stages
++        for layer_id, stage_idx in sorted(layer_to_stage.items()):
++            expected = layer_id // layers_per_stage
++            if stage_idx != expected:
++                raise ValueError(
++                    f"layer {layer_id} sits on stage {stage_idx}, but the "
++                    f"contiguous layout this adapter assumes puts it on stage "
++                    f"{expected} (n_layers={n_layers}, num_stages={num_stages}). "
++                    "A non-contiguous pipeline split is not supported: the "
++                    "cross-stage cache would route block deltas to the wrong "
++                    "stages."
++                )
++    layer_to_stage = None  # type: ignore[assignment]
++
++    return BlockLayoutTables(
++        pp_size=pp_size,
++        virtual_stages_per_rank=V,
++        num_blocks=num_blocks,
++        n_layers=n_layers,
++        layers_per_block=layers_per_block,
++        layer_to_stage=layer_to_stage,
++    )
+diff --git a/torchtitan/models/kimi_k3/pipeline_adapter.py b/torchtitan/models/kimi_k3/pipeline_adapter.py
+new file mode 100755
+index 000000000..5838fdcdb
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/pipeline_adapter.py
+@@ -0,0 +1,1770 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Cross-stage caching adapter + custom ``pipelining_fn`` for AttnRes.
++
++:class:`CrossStageCacheAdapter` wraps a per-stage AttnRes decoder. In
++delta mode (Interleaved1F1B with :class:`BlockLayoutTables` from
++:mod:`.layout`) each hop ships only the blocks the receiver's shared
++rank cache doesn't already have; the receiver rebuilds the full stack
++by concatenating its cached prefix with the incoming delta.
++
++Per-block backward grads ride the normal autograd + PP SEND_B path:
++
++* Blocks this rank received from an earlier PP hop are slices of a
++  ``recv_delta_tensor``; their grad flows back through that tensor
++  and PP's built-in ``SEND_B`` ships it to the previous rank.
++* Blocks this rank committed in an earlier virtual stage are bridged
++  via a *rank-local* slot. At producer emission a tensor grad hook
++  (:func:`_install_augment_hook`) is registered on the new block, and
++  a DETACHED copy is written into the rank cache. At consumer read
++  the detached cache entry is wrapped in :class:`_LocalCacheCapture`,
++  whose backward deposits the grad in the slot and stops. When the
++  producer's own backward runs, the hook pops the slot and SUMS the
++  captured grad into the incoming grad before propagating into the
++  producer's wrapped model. Detach is what guarantees the consumer's
++  backward physically cannot traverse into the producer's forward
++  graph -- a tensor-grad hook + ``Function.backward returning None``
++  alone did NOT suffice under real PP + FSDP + AC rerun (PP8xVP4
++  pressure-test reports: https://github.com/QIU023/torchtitan_attention_residual).
++
++Both bridge mechanisms are pure local Python + a dict -- zero NCCL,
++zero cross-rank state. The grad walks backwards hop-by-hop along the
++same PP stage chain that forward uses (PP owns all NCCL, so no
++deadlock risk), and each stage's forward graph is traversed exactly
++once per mb so peak memory equals the naive-PP baseline.
++
++:func:`pipeline_kimi_k3_with_cache_adapter` is a ``pipelining_fn`` plugged
++into the experiment's ``ModelSpec``; it delegates to core
++``pipeline_llm`` and (when ``TORCHTITAN_ATTNRES_CACHE=1``) wraps each
++stage's submod. Schedule must be Interleaved1F1B; otherwise we warn.
++
++Microbatch keying: the adapter keys its per-microbatch cache by the
++schedule-owned integer chunk id. ``forward_one_chunk`` /
++``backward_one_chunk`` are monkey-patched to stash the index on a
++thread-local keyed per-adapter; forward and backward run synchronously
++on the same thread, so autograd hooks that fire during backward can
++read the mb index. The integer key is stable across P2P crossings
++(unlike ``id()`` of a tensor).
++
++See ``adapter_design.md`` at the project root for the full state
++machine and invariants.
++"""
++
++from __future__ import annotations
++
++import math
++import os
++import threading
++import warnings
++
++import torch
++import torch.distributed as dist
++import torch.nn as nn
++
++from torch.distributed.pipelining.schedules import (
++    _PipelineSchedule,
++    PipelineScheduleMulti,
++    PipelineScheduleSingle,
++)
++
++# Resolve Interleaved1F1B at import time so the schedule guard is a direct
++# isinstance check instead of a string-match.
++try:
++    from torch.distributed.pipelining.schedules import get_schedule_class
++
++    _INTERLEAVED_1F1B_CLASS = get_schedule_class("Interleaved1F1B")
++except Exception:  # pragma: no cover - fallback for older torch
++    _INTERLEAVED_1F1B_CLASS = None
++
++from torchtitan.models.kimi_k3.attn_res import unstack_blocks
++from torchtitan.models.kimi_k3.layout import (
++    _infer_block_layout_tables_from_stages,
++    BlockLayoutTables,
++)
++from torchtitan.tools.logging import logger
++
++
++def adapter_enabled() -> bool:
++    """Config gate for delta mode. Opt-in, and the trust now has a measurement.
++
++    3000 steps per arm at pp2 x vp2, two commits per stage
++    (matrix_scripts/run_delta_convergence.sh): naive 1.77437, delta 1.78017, and the
++    SAME configuration reseeded 1.76570. The delta-vs-naive mean relative gap runs
++    0.00245 over the first tenth to 0.00342 over the last; the reseed-vs-naive gap runs
++    0.00465 to 0.00555. Neither grows, so it is not a divergence.
++
++    But it is not noise either, and the distinction is the point. Delta's difference is
++    DETERMINISTIC -- a summation-order difference from the mid-stage block-stack rebuild
++    and from ``grad + captured`` where autograd would have accumulated -- so comparing it
++    against a reseed spread bounds detectability, not bias.
++    ``run_delta_sign_test.sh`` runs the pair across seeds and reads the sign of the tail
++    difference, which is what separates a coincidence from a bias. At six seeds: +0.14%,
++    +0.24%, +0.20%, -0.16%, +0.08%, +0.14% -- five positive, one negative, mean +0.107%.
++    Five of six same-signed has probability 0.219 under no bias, so this is NOT a
++    detectable systematic effect; the first three seeds all landing positive was the
++    coincidence that 3/3 at p = 0.25 always risked being.
++
++    The accurate statement is therefore narrow: the difference is DETERMINISTIC in
++    mechanism -- same seed, same digits -- and unbiased in aggregate, with a magnitude
++    (0.107% mean) well inside the 0.56% spread between two runs of one configuration. It
++    behaves like noise without being noise, and neither transport is favoured.
++
++    Still False by default, because engaging it needs more than trust: Interleaved1F1B
++    (otherwise this returns and the adapter passes through), n_layers divisible by the
++    stage count, and an even split (first/last_stage_less_layers 0). Flipping the default
++    would leave most configurations on the passthrough they already take, while the ones
++    that do qualify would change transport without a gate cell able to see it -- the
++    58-cell gate never enters delta mode at all.
++    """
++    from torchtitan.models.kimi_k3.knobs import topology
++
++    return topology().attn_res_cache
++
++
++# ----- Rank-shared cache across virtual stages ----------------------------- #
++
++
++class RankLocalCache:
++    """Per-rank, per-microbatch forward-block cache shared across VP stages.
++
++    Every adapter on the same physical rank reads/writes the SAME cache
++    (Kimi §4.1 invariant). Holds only forward-path state: the cached
++    block tensors (autograd-live against their original source) and
++    producer metadata for layout bookkeeping.
++
++    Grad-send-back has no state here: backward rides the autograd graph
++    via PP's built-in SEND_B, so there's nothing for this cache to
++    track on the backward path.
++    """
++
++    def __init__(self) -> None:
++        self._blocks: dict[int, list[torch.Tensor]] = {}
++        self._producer_meta: dict[int, list[tuple[int, int, int]]] = {}
++        # Every backward marks its mb here so the step-end drop sweep
++        # on the last virtual stage knows which mbs to evict.
++        self._seen_mbs: set[int] = set()
++        # Captured grads for the local-only _LocalCacheAugment/Capture
++        # dance. Keyed by (mb_index, producer_stage_id, block_idx). A
++        # consumer-side Capture.backward accumulates grad here; the
++        # producer-side Augment.backward pops and sums the captured
++        # grad into its incoming grad when stage R's own backward runs.
++        self._captured_grads: dict[tuple[int, int, int], torch.Tensor] = {}
++        # Parallel counter: how many Capture.backward calls have deposited
++        # into each slot. The producer-side hook compares this against
++        # ``layout.expected_same_rank_captures(...)`` to turn silent grad
++        # loss (a consumer's backward never fired) into a raised error.
++        self._capture_counts: dict[tuple[int, int, int], int] = {}
++        # Commits whose producer installed no augment hook (no gradient path through
++        # them). A consumer must not deposit into those slots; see mark_no_hook.
++        self._no_hook: set[tuple[int, int, int]] = set()
++
++    def append(
++        self,
++        mb_index: int,
++        block: torch.Tensor,
++        meta: tuple[int, int, int],
++    ) -> None:
++        self._blocks.setdefault(mb_index, []).append(block)
++        self._producer_meta.setdefault(mb_index, []).append(meta)
++
++    def get_blocks(self, mb_index: int) -> list[torch.Tensor]:
++        return self._blocks.get(mb_index, [])
++
++    def get_meta(self, mb_index: int) -> list[tuple[int, int, int]]:
++        return self._producer_meta.get(mb_index, [])
++
++    def put_forward(
++        self,
++        mb_index: int,
++        blocks: list[torch.Tensor],
++        producer_meta: list[tuple[int, int, int]] | None = None,
++    ) -> None:
++        """Back-compat shim used by unit tests: overwrite the per-mb list."""
++        self._blocks[mb_index] = list(blocks)
++        if producer_meta is not None:
++            self._producer_meta[mb_index] = list(producer_meta)
++
++    def drop(self, mb_index: int) -> None:
++        self._blocks.pop(mb_index, None)
++        self._producer_meta.pop(mb_index, None)
++        self._seen_mbs.discard(mb_index)
++        # Drop any leftover captured-grad slots + counters for this mb
++        # (defensive; the on_microbatch_end assertion should have already
++        # caught any real leak).
++        for key in list(self._captured_grads.keys()):
++            if key[0] == mb_index:
++                self._captured_grads.pop(key, None)
++        for key in list(self._capture_counts.keys()):
++            if key[0] == mb_index:
++                self._capture_counts.pop(key, None)
++        for key in list(self._no_hook):
++            if key[0] == mb_index:
++                self._no_hook.discard(key)
++
++    # ----- captured-grad slot helpers -------------------------------- #
++
++    def capture_grad(
++        self,
++        key: tuple[int, int, int],
++        grad: torch.Tensor,
++    ) -> None:
++        """Accumulate (sum) ``grad`` into the captured-grad slot at
++        ``key`` and bump the capture counter. Multiple consumer-side
++        Captures for the same producer block (V>2, one cached block
++        read by >1 later virtual stage on the same rank) sum into the
++        same slot.
++
++        The first deposit is ``detach().clone()``-ed to decouple from
++        whatever storage the autograd engine / FSDP2 post-backward
++        pipeline hands us. The per-mb cost is O(Np*d) per consumer,
++        which is insignificant next to the PP collective cost at
++        realistic scale, and it removes a fragility: if a downstream
++        framework were to reuse the grad tensor's storage, the slot
++        value would silently corrupt.
++        """
++        prior = self._captured_grads.get(key)
++        if prior is None:
++            self._captured_grads[key] = grad.detach().clone()
++        else:
++            # `prior` is already our own detached clone, so out-of-place
++            # addition keeps the semantics clean without aliasing.
++            self._captured_grads[key] = prior + grad
++        self._capture_counts[key] = self._capture_counts.get(key, 0) + 1
++
++    def pop_grad(
++        self,
++        key: tuple[int, int, int],
++    ) -> tuple[torch.Tensor | None, int]:
++        """Return-and-clear ``(captured_grad, capture_count)`` for
++        ``key``. ``captured_grad`` is ``None`` / ``capture_count`` is
++        ``0`` when no consumer deposited into this slot during the
++        current mb's backward window.
++
++        The producer-side hook uses ``capture_count`` to validate
++        against the static expectation from
++        :meth:`BlockLayoutTables.expected_same_rank_captures` -- any
++        mismatch means a producer's forward graph never saw a
++        consumer's backward, which would silently drop grad.
++        """
++        grad = self._captured_grads.pop(key, None)
++        count = self._capture_counts.pop(key, 0)
++        return grad, count
++
++    def mark_no_hook(self, key: tuple[int, int, int]) -> None:
++        """Record that this commit has NO producer-side augment hook.
++
++        A consumer must then leave the cached block alone. The cache always stores a
++        DETACHED copy, so ``blk.requires_grad`` is False for every entry and cannot tell
++        a consumer whether the producer's own tensor had a gradient path -- which is why
++        the consumer used to force ``requires_grad_(True)`` unconditionally. That made
++        the two sides asymmetric: a deposit with no hook to pop it is a lost gradient
++        caught only by the mb-end assertion. Measured as unreachable in training (the
++        AttnRes graft projections are trainable even under LoRA, so the block always
++        requires grad), so this records the invariant rather than fixing a live bug.
++        """
++        self._no_hook.add(key)
++
++    def has_augment_hook(self, key: tuple[int, int, int]) -> bool:
++        return key not in self._no_hook
++
++    def clear_capture_slots(self) -> int:
++        """Drop every captured-grad slot and counter. Returns how many there were.
++
++        For the step-end sweep: an aborted backward can leave a slot behind that
++        no mb-keyed ``drop`` reaches.
++        """
++        count = len(self._captured_grads)
++        self._captured_grads.clear()
++        self._capture_counts.clear()
++        return count
++
++    def has_captured_for_mb(self, mb_index: int) -> bool:
++        """True iff any captured-grad slot for ``mb_index`` survives.
++        Called by the mb-end assertion as a lingering-bug canary.
++        """
++        return any(k[0] == mb_index for k in self._captured_grads)
++
++
++# One RankLocalCache per pipeline-group rank, shared by every adapter
++# on that rank. Lock-protected against concurrent construction.
++_rank_caches: dict[int, RankLocalCache] = {}
++_rank_caches_lock = threading.Lock()
++
++
++def _get_or_create_rank_cache(pp_rank: int) -> RankLocalCache:
++    """Return (creating if absent) the shared cache for ``pp_rank``."""
++    cache = _rank_caches.get(pp_rank)
++    if cache is not None:
++        return cache
++    with _rank_caches_lock:
++        cache = _rank_caches.get(pp_rank)
++        if cache is None:
++            cache = RankLocalCache()
++            _rank_caches[pp_rank] = cache
++        return cache
++
++
++def _reset_rank_caches_for_testing() -> None:
++    """Clear the module-level registry. Unit-test isolation only."""
++    with _rank_caches_lock:
++        _rank_caches.clear()
++
++
++# ----- Local-only grad bridge for own-rank cached commits ------------------ #
++#
++# A block committed by an earlier virtual stage and read back by a later one ON THE SAME
++# RANK would otherwise have its forward graph freed by the consumer's backward, and the
++# producer's own backward then fails with "backward through the graph a second time". A
++# producer-side grad hook plus a consumer-side detached leaf sever that link structurally;
++# both halves are rank-local, with no collectives. The detach is load-bearing, and
++# recv-originated blocks are deliberately left attached so PP's SEND_B still carries their
++# gradient to the producing rank.
++#
++# Full reasoning, including the two designs that did not hold, is in the PR-C body
++# (Raising_PRs/k3_pr_c_pp_attnres/PR_BODY.md, "The local grad bridge").
++
++
++_DBG = os.environ.get("ATTNRES_ADAPTER_DBG") == "1"
++
++
++def _dbg(msg: str) -> None:
++    if _DBG:
++        rank = os.environ.get("RANK", "?")
++        print(f"[adapter-dbg rank={rank}] {msg}", flush=True)
++
++
++def _install_augment_hook(
++    block_tensor: torch.Tensor,
++    slot_key: tuple[int, int, int],
++    rank_cache: "RankLocalCache",
++    *,
++    expected_captures: int | None = None,
++) -> bool:
++    """Register a tensor grad hook on ``block_tensor`` that, when the
++    tensor receives its incoming grad during the producer stage's own
++    backward, pops the matching captured-grad slot from ``rank_cache``
++    and SUMS the captured grad into the incoming grad.
++
++    ``expected_captures``, if provided, is the number of same-rank
++    later virtual stages that SHOULD deposit into this slot during the
++    mb's backward window (from
++    :meth:`BlockLayoutTables.expected_same_rank_captures`). The hook
++    RAISES when the observed count diverges -- the failure this catches is
++    a consumer's backward not firing, which drops its grad contribution
++    into the bit bucket, and the step that follows would apply an
++    incomplete gradient with nothing anywhere saying so. There is no
++    configuration in which continuing is the right answer, so this is not
++    a warning: the count is derived from the static layout, delta mode is
++    gated on Interleaved1F1B, and under that schedule every same-rank
++    consumer's backward provably precedes the producer's own.
++
++    Replaces the prior ``_LocalCacheAugment`` autograd.Function pattern:
++    under real PP scheduling the Function's output-view trick did not
++    reliably sever the consumer->producer autograd chain under the
++    PP8xVP4 pressure tests, so the producer's own backward
++    was being triggered during the CONSUMER's backward traversal,
++    freeing the producer's saved tensors before the producer's own
++    backward ran.
++
++    A tensor grad hook fires exactly once per backward call on the
++    tensor's accumulated grad, strictly DURING the containing stage's
++    own backward. No Function layer is interposed, so the consumer's
++    backward can not reach ``block_tensor.grad_fn`` at all (the consumer
++    only ever sees the detached cache entry — see ``_append_own_commit``).
++
++    Eval / no_grad path: when this is called inside a no_grad / eval
++    context (e.g. ``pp_schedule.eval()`` in torchtitan's Validator),
++    ``block_tensor.requires_grad`` is False and ``register_hook``
++    raises. There is no backward in eval, so the augment-on-backward
++    semantics are vacuous — silently skip hook installation.
++    """
++    if not block_tensor.requires_grad:
++        return False
++
++    def _hook(grad: torch.Tensor) -> torch.Tensor:
++        captured, count = rank_cache.pop_grad(slot_key)
++        _dbg(
++            f"augment_hook slot={slot_key} "
++            f"captured={'yes' if captured is not None else 'no'} "
++            f"count={count} expected={expected_captures}"
++        )
++        if expected_captures is not None and count != expected_captures:
++            mb_index, producer_stage, block_idx_in_producer = slot_key
++            raise RuntimeError(
++                f"AttnRes adapter: capture-count mismatch at slot {slot_key} "
++                f"(mb={mb_index}, producer stage={producer_stage}, commit "
++                f"{block_idx_in_producer} of that stage): observed {count} "
++                f"deposits, the layout expected {expected_captures}. Fewer "
++                "means a same-rank consumer's backward did not fire and its "
++                "grad contribution is lost; more means a consumer deposited "
++                "into the wrong slot. Either way this micro-batch's gradient "
++                "for that block is wrong, so the step is refused rather than "
++                "taken."
++            )
++        if captured is None:
++            return grad
++        return grad + captured
++
++    block_tensor.register_hook(_hook)
++    return True
++
++
++class _LocalCacheCapture(torch.autograd.Function):
++    """Identity forward; backward deposits grad in the slot and STOPS.
++
++    The input tensor comes from the rank cache where it was stored in
++    DETACHED form (see ``_append_own_commit``), so even if autograd
++    were to attempt to traverse upstream from Capture's input, there
++    is no upstream graph to walk. ``None`` for the tensor-input grad
++    is belt-and-suspenders; detach is the primary guarantee.
++
++    Multiple later virtual stages on this rank reading the same cached
++    own-commit block each fire ``backward`` once per mb; each call sums
++    into the slot via :meth:`RankLocalCache.capture_grad`.
++    """
++
++    @staticmethod
++    def forward(ctx, block_tensor, slot_key, rank_cache):  # type: ignore[override]
++        ctx.slot_key = slot_key
++        ctx.rank_cache = rank_cache
++        _dbg(f"Capture.forward slot={slot_key}")
++        # Return a distinct Tensor wrapper so Function.apply builds a
++        # fresh grad_fn node here. ``view(shape)`` is zero-copy.
++        return block_tensor.view(block_tensor.shape)
++
++    @staticmethod
++    def backward(ctx, grad_out):  # type: ignore[override]
++        _dbg(f"Capture.backward slot={ctx.slot_key}")
++        ctx.rank_cache.capture_grad(ctx.slot_key, grad_out)
++        return None, None, None
++
++
++# ----- Microbatch-index threading ------------------------------------------ #
++
++# Each adapter stashes its *current* mb index under its own object id.
++# Forward and backward of a single mb run on the same thread.
++_mb_state = threading.local()
++
++
++def _current_mb_index(adapter_key: int) -> int | None:
++    d = getattr(_mb_state, "indices", None)
++    if not d:
++        return None
++    return d.get(adapter_key)
++
++
++def _set_mb_index(adapter_key: int, mb_index: int | None) -> None:
++    d = getattr(_mb_state, "indices", None)
++    if d is None:
++        d = {}
++        _mb_state.indices = d
++    if mb_index is None:
++        d.pop(adapter_key, None)
++    else:
++        d[adapter_key] = mb_index
++
++
++# ----- state_dict key rewriting -------------------------------------------- #
++# The adapter stores its wrapped model under ``self.wrapped``. The Llama3 HF
++# state_dict_adapter keys off raw names like ``tok_embeddings.weight``, so
++# we strip the prefix on save and re-prepend on load.
++
++_WRAPPED_PREFIX = "wrapped."
++
++
++def _strip_wrapped_prefix_hook(
++    module: nn.Module, state_dict: dict, prefix: str, local_metadata: dict
++) -> dict:
++    """Save hook: drop the adapter's ``wrapped.`` namespace."""
++    target = prefix + _WRAPPED_PREFIX
++    rewrites = [k for k in state_dict if k.startswith(target)]
++    for old_key in rewrites:
++        new_key = prefix + old_key[len(target) :]
++        state_dict[new_key] = state_dict.pop(old_key)
++    return state_dict
++
++
++def _prepend_wrapped_prefix_pre_hook(
++    state_dict: dict,
++    prefix: str,
++    local_metadata: dict,
++    strict: bool,
++    missing_keys: list,
++    unexpected_keys: list,
++    error_msgs: list,
++) -> None:
++    """Load pre-hook: add the ``wrapped.`` namespace back."""
++    target = prefix + _WRAPPED_PREFIX
++    rewrites = [
++        k for k in state_dict if k.startswith(prefix) and not k.startswith(target)
++    ]
++    for old_key in rewrites:
++        inner = old_key[len(prefix) :]
++        state_dict[target + inner] = state_dict.pop(old_key)
++
++
++# ----- The adapter module -------------------------------------------------- #
++
++
++class CrossStageCacheAdapter(nn.Module):
++    """Wraps an ``AttnResModel`` stage with cross-stage caching.
++
++    In delta mode (``layout_tables`` supplied) each forward pulls earlier
++    blocks from the shared :class:`RankLocalCache`, receives the incoming
++    delta, rebuilds the full block stack in block-index order, and lets
++    backward flow through the autograd graph. Cached-prefix blocks are
++    handled two ways depending on who committed them:
++
++    * **Different rank** (producer_rank != self.pp_rank) → cached block
++      is a slice of an older ``recv_delta_tensor``. Passed through
++      unwrapped; its grad flows back via that tensor and PP's built-in
++      ``SEND_B`` drains it to the producer rank.
++    * **Same rank** (producer_rank == self.pp_rank) → cached block
++      came from an earlier virtual stage on this rank and was stored
++      DETACHED in the cache (no autograd link to the producer). At
++      read time it is wrapped in :class:`_LocalCacheCapture`; Capture's
++      backward deposits the grad in a rank-local slot. The matching
++      producer-side hook installed by :func:`_install_augment_hook`
++      pops the slot and SUMS the captured grad into the producer's
++      incoming grad when the producer's own backward runs.
++
++    Without layout tables the adapter is a naive passthrough.
++
++    Adapters sharing a ``pp_rank`` share ONE :class:`RankLocalCache`.
++    """
++
++    def __init__(
++        self,
++        wrapped: nn.Module,
++        *,
++        stage_id: int,
++        num_stages: int,
++        group: "dist.ProcessGroup | None" = None,
++        stage_to_rank: dict[int, int] | None = None,
++        pp_rank: int | None = None,
++        layout_tables: BlockLayoutTables | None = None,
++    ) -> None:
++        super().__init__()
++        self.wrapped = wrapped
++        self.stage_id = stage_id
++        self.num_stages = num_stages
++        self._group = group
++        self._stage_to_rank = stage_to_rank or {i: i for i in range(num_stages)}
++        if pp_rank is None:
++            pp_rank = self._stage_to_rank.get(stage_id, stage_id)
++        self.pp_rank = pp_rank
++        self._cache = _get_or_create_rank_cache(self.pp_rank)
++        self._layout = layout_tables
++        self._delta_mode = layout_tables is not None
++
++        # Delta mode: wrapped returns only own commits. Naive mode: full stack.
++        if hasattr(wrapped, "_return_only_new_blocks"):
++            wrapped._return_only_new_blocks = bool(self._delta_mode)
++        else:
++            warnings.warn(
++                "Wrapped model does not expose _return_only_new_blocks; "
++                "adapter will run in naive (full-stack) mode.",
++                stacklevel=2,
++            )
++
++        # Hide ``wrapped.`` from state_dict consumers.
++        self._register_state_dict_hook(_strip_wrapped_prefix_hook)
++        self._register_load_state_dict_pre_hook(
++            _prepend_wrapped_prefix_pre_hook, with_module=False
++        )
++
++    # Torchtitan trainer iterates model_parts and calls init_weights /
++    # init_states; __getattr__ delegates the rest.
++    def init_weights(self, *args, **kwargs) -> None:
++        self.wrapped.init_weights(*args, **kwargs)
++
++    def init_states(self, *args, **kwargs) -> None:
++        self.wrapped.init_states(*args, **kwargs)
++
++    def __getattr__(self, name: str):
++        """Fall back to the wrapped model for unknown attributes."""
++        try:
++            return super().__getattr__(name)
++        except AttributeError:
++            pass
++        wrapped = self.__dict__.get("_modules", {}).get("wrapped")
++        if wrapped is None:
++            raise AttributeError(
++                f"'CrossStageCacheAdapter' object has no attribute '{name}' "
++                "and wrapped model is not yet bound."
++            )
++        return getattr(wrapped, name)
++
++    def _adapter_key(self) -> int:
++        return id(self)
++
++    def _current_mb(self) -> int:
++        mb = _current_mb_index(self._adapter_key())
++        assert mb is not None, (
++            "CrossStageCacheAdapter.forward called without an mb index; "
++            "stage.forward_one_chunk monkey-patch missing."
++        )
++        return mb
++
++    @staticmethod
++    def _has_blocks_signature(args) -> bool:
++        """True if ``args[1]`` is the [T, N, D] block carrier (middle/last stage)."""
++        return (
++            len(args) >= 2 and isinstance(args[1], torch.Tensor) and args[1].dim() == 3
++        )
++
++    def _call_wrapped_naive(self, args, kwargs):
++        """Dispatch to the wrapped model with the appropriate signature."""
++        if self._has_blocks_signature(args):
++            partial, new_blocks_tensor, *rest = args
++            return self.wrapped(partial, *rest, blocks=new_blocks_tensor, **kwargs)
++        return self.wrapped(*args, blocks=None, **kwargs)
++
++    def forward(self, *args, **kwargs):
++        """Dispatch to delta-P2P, shape inference, or naive passthrough."""
++        # ``PipelineStage._shape_inference`` invokes ``self.submod(...)``
++        # directly, bypassing the ``forward_one_chunk`` patch that stashes
++        # the mb index. Route to the shape-inference helper in that case.
++        if _current_mb_index(self._adapter_key()) is None:
++            return self._forward_shape_inference(*args, **kwargs)
++        if self._delta_mode:
++            return self._forward_delta(*args, **kwargs)
++        return self._call_wrapped_naive(args, kwargs)
++
++    def _forward_shape_inference(self, *args, **kwargs):
++        """Run wrapped model and reshape its blocks output to the delta
++        size the runtime will emit; pipelining uses this return shape to
++        size the next stage's recv buffer.
++        """
++        wrapped_out = self._call_wrapped_naive(args, kwargs)
++        if not isinstance(wrapped_out, tuple):  # last stage
++            return wrapped_out
++
++        partial_out, new_blocks_out = wrapped_out
++        if not self._delta_mode or self._layout is None:
++            return partial_out, new_blocks_out
++
++        expected_K = len(self._layout.delta_to_send(self.stage_id))
++        if expected_K == new_blocks_out.shape[1]:
++            return partial_out, new_blocks_out
++
++        # The placeholder must have the shape the RUNTIME emits, because the
++        # downstream recv buffer is sized from it. The runtime sends
++        # ``torch.stack(send_pieces, dim=1)`` over ``[T, D]`` pieces, i.e.
++        # ``[T, K, D]`` with T the flattened batch-sequence -- the carrier layout
++        # stack_blocks documents. Deriving it from partial_out is what makes that
++        # true for a stage that commits nothing, where new_blocks_out has no
++        # column to read a per-block shape from.
++        #
++        # Both previous forms were wrong and both needed expected_K != N to show
++        # it, which is why every delta run to date missed them: an empty commit
++        # took partial_out.shape whole and produced a FOUR-dimensional
++        # [K, B, L, D], and a non-empty one took new_blocks_out.shape[1:] and
++        # produced [K, N, D] with the block axis first. The four-dimensional case
++        # surfaced as a consumer failing _has_blocks_signature (which tests
++        # dim() == 3) and then passing the carrier positionally into ``blocks``:
++        # "got multiple values for argument 'blocks'", 32 layers at pp8 x vp2.
++        tokens_times_batch = partial_out.shape[0] * partial_out.shape[1]
++        # requires_grad must mirror the runtime delta emission: torch >= 2.12
++        # derives the downstream recv-buffer and grad-send metadata from the
++        # shape-inference tensors, and a requires_grad=False placeholder makes
++        # the consumer stage drop the delta's backward edge (None grads at
++        # SEND_B -> PipeliningMetadataError).
++        return partial_out, partial_out.new_zeros(
++            (tokens_times_batch, expected_K, partial_out.shape[-1]),
++            requires_grad=partial_out.requires_grad,
++        )
++
++    def _forward_delta(self, *args, **kwargs):
++        """Interleaved1F1B delta forward (spec §4.1).
++
++        Cached-prefix blocks whose producer is on a DIFFERENT rank are
++        passed through unwrapped: their autograd graph already goes
++        back to the original ``recv_delta_tensor`` and PP's built-in
++        ``SEND_B`` drains it to the producer rank. Cached-prefix
++        blocks whose producer is ON THIS RANK (earlier virtual stage)
++        are wrapped in :class:`_LocalCacheCapture` at read time,
++        severing the consumer->producer autograd link and depositing
++        their grad in a rank-local captured-grad slot for the matching
++        producer-side :class:`_LocalCacheAugment` to re-inject during
++        the producer's own backward pass.
++        """
++        mb = self._current_mb()
++        layout = self._layout
++        assert layout is not None, "_forward_delta called without layout tables"
++
++        if self.stage_id == 0:
++            partial_out, new_blocks_tensor = self.wrapped(*args, blocks=None, **kwargs)
++            return self._finish_forward(
++                mb,
++                partial_out,
++                new_blocks_tensor,
++                prev_recv_tensor=None,
++                incoming_block_indices=[],
++            )
++
++        if not self._has_blocks_signature(args):
++            return self.wrapped(*args, blocks=None, **kwargs)
++        partial, recv_delta_tensor, *rest = args
++
++        # Unstack incoming delta; wire order MUST match sender's layout.
++        incoming_block_indices = layout.delta_to_send(self.stage_id - 1)
++        recv_list = unstack_blocks(recv_delta_tensor)
++        assert len(recv_list) == len(incoming_block_indices), (
++            f"Incoming delta size mismatch at stage {self.stage_id} mb {mb}: "
++            f"expected {len(incoming_block_indices)}, got {len(recv_list)}."
++        )
++
++        # Pull earlier cached blocks out of the rank cache. Recv-originated
++        # entries were stored attached to their recv_delta_tensor, so leaving
++        # them unwrapped lets PP's own SEND_B drain their grad to the producer
++        # rank. Own-rank commits were stored DETACHED (see _finish_forward), so
++        # they need requires_grad plus a _LocalCacheCapture wrapper: Capture
++        # deposits the grad in a rank-local slot and the producer-side hook
++        # from _install_augment_hook sums it in when the producer's backward
++        # runs. Routing it through a slot rather than the graph is the point --
++        # detached means autograd cannot walk into the producer and free its
++        # saved tensors early.
++        earlier_blocks_raw = list(self._cache.get_blocks(mb))
++        earlier_meta = list(self._cache.get_meta(mb))
++        cached_indices = [layout.commits_at(meta[1])[meta[2]] for meta in earlier_meta]
++        earlier_blocks: list[torch.Tensor] = []
++        # Eval / no_grad path: skip the Capture wrapping. With no
++        # backward to run, there is nothing to capture into a slot, and
++        # ``requires_grad_(True)`` + ``autograd.Function.apply`` both
++        # fail under ``torch.no_grad()`` (which the torchtitan Validator
++        # uses via ``pp_schedule.eval()``). Use the cached block tensors
++        # raw — fwd math is identical.
++        grad_active = torch.is_grad_enabled()
++        for blk, meta in zip(earlier_blocks_raw, earlier_meta):
++            producer_rank, producer_stage, block_idx_in_producer = meta
++            slot_key = (mb, producer_stage, block_idx_in_producer)
++            if (
++                producer_rank == self.pp_rank
++                and grad_active
++                and self._cache.has_augment_hook(slot_key)
++            ):
++                if not blk.requires_grad:
++                    blk.requires_grad_(True)
++                earlier_blocks.append(
++                    _LocalCacheCapture.apply(blk, slot_key, self._cache)
++                )
++            else:
++                earlier_blocks.append(blk)
++
++        # Rebuild the full blocks tensor in block-index order.
++        pairs = list(zip(cached_indices, earlier_blocks)) + list(
++            zip(incoming_block_indices, recv_list)
++        )
++        pairs.sort(key=lambda p: p[0])
++        ordered_blocks = [p[1] for p in pairs]
++        blocks_tensor = (
++            torch.stack(ordered_blocks, dim=1) if ordered_blocks else recv_delta_tensor
++        )
++
++        wrapped_ret = self.wrapped(partial, *rest, blocks=blocks_tensor, **kwargs)
++
++        if self.stage_id == self.num_stages - 1:
++            # Last stage: keepalive keeps recv tensor on the autograd graph.
++            return self._keepalive_touch(wrapped_ret, recv_delta_tensor)
++
++        partial_out, new_blocks_tensor = wrapped_ret
++        return self._finish_forward(
++            mb,
++            partial_out,
++            new_blocks_tensor,
++            prev_recv_tensor=recv_delta_tensor,
++            incoming_block_indices=incoming_block_indices,
++        )
++
++    def _finish_forward(
++        self,
++        mb: int,
++        partial_out: torch.Tensor,
++        new_blocks_tensor: torch.Tensor,
++        *,
++        prev_recv_tensor: torch.Tensor | None,
++        incoming_block_indices: list[int],
++    ):
++        """Common tail for first + middle stages: append relayed and
++        committed blocks to the shared rank cache, then stack the
++        outgoing delta.
++        """
++        layout = self._layout
++        assert layout is not None
++        my_commits = layout.commits_at(self.stage_id)
++        assert new_blocks_tensor.shape[1] == len(my_commits), (
++            f"Wrapped model returned {new_blocks_tensor.shape[1]} new "
++            f"blocks at stage {self.stage_id}, expected {len(my_commits)}."
++        )
++
++        # Append relayed blocks so later virtual stages on this rank see
++        # them; producer metadata comes from the static layout. Slices
++        # of ``prev_recv_tensor`` stay autograd-live against it, so
++        # PP's SEND_B on backward will drain their grads upstream.
++        if prev_recv_tensor is not None:
++            recv_list = unstack_blocks(prev_recv_tensor)
++            for bidx, blk in zip(incoming_block_indices, recv_list):
++                producer_stage = layout.producer_stage_of_block(bidx)
++                producer_rank = self._stage_to_rank.get(producer_stage, producer_stage)
++                block_idx_in_producer = layout.commits_at(producer_stage).index(bidx)
++                self._cache.append(
++                    mb,
++                    blk,
++                    (producer_rank, producer_stage, block_idx_in_producer),
++                )
++
++        # Append own commits. Each new block gets a grad hook that, during THIS
++        # stage's backward, sums in any grad a later same-rank virtual stage's
++        # _LocalCacheCapture deposited; the outgoing-delta path uses the
++        # attached block, so the next stage's SEND_B reaches the same grad_fn.
++        # The RANK CACHE gets a DETACHED copy: that severs it from the
++        # producer's forward graph, so a later same-rank consumer's backward
++        # physically cannot walk into the producer and free its saved tensors
++        # early -- the double-backward crash the previous
++        # _LocalCacheAugment.apply + view pattern hit under PP + FSDP + AC.
++        new_blocks_list = unstack_blocks(new_blocks_tensor)
++        for local_idx, blk in enumerate(new_blocks_list):
++            slot_key = (mb, self.stage_id, local_idx)
++            expected_captures = layout.expected_same_rank_captures(
++                self.stage_id,
++                local_idx,
++            )
++            if not _install_augment_hook(
++                blk,
++                slot_key,
++                self._cache,
++                expected_captures=expected_captures,
++            ):
++                # No gradient path through this commit, so no consumer may deposit into
++                # its slot either. Keeps the two sides of the bridge in agreement.
++                self._cache.mark_no_hook(slot_key)
++            # Cache entry must be detached so same-rank consumers cannot
++            # reach the producer's forward graph via autograd.
++            self._cache.append(
++                mb,
++                blk.detach(),
++                (self.pp_rank, self.stage_id, local_idx),
++            )
++        # `new_blocks_list` (attached) is used below for the outgoing
++        # delta. Keep the name alias for readability vs. the previous
++        # `wrapped_new_blocks` variable.
++        attached_new_blocks = new_blocks_list
++
++        # Build outgoing delta: subset of (cache + new), by canonical bidx.
++        # ``cache_by_bidx`` reads from the rank cache directly so
++        # relayed (recv-originated) blocks that show up in the outgoing
++        # delta also route grad correctly via their existing autograd
++        # link to ``prev_recv_tensor``.
++        out_indices = layout.delta_to_send(self.stage_id)
++        cache_by_bidx = {
++            layout.commits_at(meta[1])[meta[2]]: blk
++            for meta, blk in zip(self._cache.get_meta(mb), self._cache.get_blocks(mb))
++        }
++        new_by_bidx = {
++            my_commits[i]: attached_new_blocks[i]
++            for i in range(len(attached_new_blocks))
++        }
++        send_pieces: list[torch.Tensor] = []
++        for bidx in out_indices:
++            if bidx in new_by_bidx:
++                send_pieces.append(new_by_bidx[bidx])
++            elif bidx in cache_by_bidx:
++                send_pieces.append(cache_by_bidx[bidx])
++            else:
++                raise RuntimeError(
++                    f"Outgoing delta asks for block {bidx} at stage "
++                    f"{self.stage_id} but it's neither cached nor committed."
++                )
++
++        out_blocks_tensor = (
++            torch.stack(send_pieces, dim=1)
++            if send_pieces
++            else partial_out.new_zeros(
++                (partial_out.shape[0] * partial_out.shape[1], 0, partial_out.shape[-1])
++            )
++        )
++        partial_out = self._keepalive_touch(partial_out, prev_recv_tensor)
++        return partial_out, out_blocks_tensor
++
++    @staticmethod
++    def _keepalive_touch(payload, prev_recv_tensor: torch.Tensor | None):
++        """Ensure ``prev_recv_tensor`` is on the autograd graph that
++        produces ``payload``. Preserves tuple returns.
++
++        Profiled rather than left as a suspicion (matrix_scripts/pp_cp_overheads.py):
++        the touch costs 0.037 ms at 256x512, 4096x2048 and every shape between, rising
++        to 0.18 ms only at 16384x2048. It is launch-bound, not arithmetic-bound, so the
++        O(T*D) reduction it looks like is not what is being paid -- and a cheaper
++        formulation that reads one element instead of reducing would save nothing.
++        Against one projection it is 137% at 256x512 and 5.2% at 4096x2048; against a
++        whole stage's forward, which runs dozens of projections, it is well under a
++        percent at any production shape. Left as is.
++        """
++        if prev_recv_tensor is None:
++            return payload
++        touch = 0.0 * prev_recv_tensor.sum()
++        if isinstance(payload, tuple):
++            head, *tail = payload
++            return (head + touch, *tail)
++        return payload + touch
++
++    def _drop_all_cached_and_clear(self) -> None:
++        """Drop every mb the cache saw during the step and clear the
++        seen-set. Called by the step-end monkey-patch after every
++        adapter on this rank has finished backward. Honors the VP
++        drop-guard: only the LAST virtual stage on the rank evicts;
++        earlier virtual stages no-op so the shared cache survives for
++        them.
++        """
++        if self._delta_mode:
++            pp_size = self._layout.P if self._layout is not None else self.num_stages
++            if self.stage_id + pp_size < self.num_stages:
++                return
++        # Union, not just the seen-set: only backward marks an mb as seen, so a
++        # forward-only pass (evaluation) caches blocks that nothing would ever
++        # announce for eviction. Nothing in the cache outlives the step, so the
++        # keys actually present are the right thing to drop.
++        for mb_index in set(self._cache._seen_mbs) | set(self._cache._blocks):
++            self._cache.drop(mb_index)
++        # Defensive: ensure the seen-set is clear even if drop() didn't
++        # remove every entry.
++        self._cache._seen_mbs.clear()
++        # The step-end patch calls this from a ``finally``, so it also runs when
++        # the step raised. On that path a micro-batch's backward can stop between
++        # a consumer's deposit and the producer's pop, and the mb-keyed drop above
++        # only reaches slots whose mb still had cached blocks -- so clear the slot
++        # tables outright. A grad tensor per slot is real memory, and a step that
++        # dies in the backward of one micro-batch (OOM being the ordinary cause)
++        # would otherwise accumulate them for as long as the process keeps
++        # retrying. Reported rather than silent: outside the exception path a
++        # residual slot means an on_microbatch_end assertion did not run.
++        leaked = self._cache.clear_capture_slots()
++        if leaked:
++            logger.warning(
++                "cross-stage cache: cleared %d captured-grad slot(s) at step end "
++                "on rank %s; expected zero unless the step raised mid-backward.",
++                leaked,
++                self.pp_rank,
++            )
++
++    def on_microbatch_end(self, mb_index: int) -> None:
++        """Mark ``mb_index`` as seen on this rank so the step-end sweep
++        drops it. Actual eviction is deferred to ``pp_schedule.step``
++        return; see :func:`_install_step_drop_patch`.
++
++        In delta mode, this is also the moment to assert that every
++        :class:`_LocalCacheCapture` deposit for this mb has been drained
++        by a matching :class:`_LocalCacheAugment` -- a surviving slot
++        would mean a producer's backward never ran, which is a bug.
++        Interleaved1F1B runs backward in reverse virtual-stage order
++        on each rank, so the EARLIEST virtual stage on this rank is
++        the last to call on_microbatch_end for a given mb. That is
++        the only point at which every producer-side Augment has had a
++        chance to drain its slot, so we guard the assertion to fire
++        there only (``stage_id < pp_size`` == "this rank's earliest
++        virtual stage").
++        """
++        self._cache._seen_mbs.add(mb_index)
++        if self._delta_mode and self._layout is not None:
++            pp_size = self._layout.P
++            # Earliest virtual stage on this rank: stage_id < pp_size.
++            # Its backward fires LAST among the rank's virtual stages
++            # for this mb, so by the time we reach here every slot
++            # for this mb should have been popped by an Augment.
++            if self.stage_id < pp_size:
++                assert not self._cache.has_captured_for_mb(mb_index), (
++                    f"Captured grad slot for mb {mb_index} survived past "
++                    f"stage {self.stage_id}'s backward on rank {self.pp_rank}; "
++                    "producer-side _LocalCacheAugment never fired. "
++                    "This indicates a producer forward graph was never "
++                    "backward-traversed for this mb."
++                )
++
++    def extra_repr(self) -> str:
++        return f"stage_id={self.stage_id}, num_stages={self.num_stages}"
++
++
++# ----- Stage iteration + monkey-patching ----------------------------------- #
++
++
++def _iter_schedule_stages(schedule: _PipelineSchedule):
++    """Yield the ``PipelineStage`` objects a schedule holds."""
++    if isinstance(schedule, PipelineScheduleSingle):
++        yield schedule._stage
++    elif isinstance(schedule, PipelineScheduleMulti):
++        yield from schedule._stages
++    else:
++        raise RuntimeError(
++            f"Unexpected pipeline schedule class {type(schedule).__name__}; "
++            "extend _iter_schedule_stages."
++        )
++
++
++def _install_mb_index_patch(stage, adapter: CrossStageCacheAdapter) -> None:
++    """Patch ``forward_one_chunk`` / ``backward_one_chunk`` to stash the
++    schedule-owned mb index for the adapter. Per-(stage, adapter) via
++    closure so multi-stage ranks (VP) demux correctly.
++
++    Backward is a plain call: no retain_graph override, no custom
++    transport. The cached-prefix autograd graph + PP's built-in SEND_B
++    route all cross-rank grads; the adapter only needs the mb index
++    threaded through forward + on_microbatch_end.
++    """
++    adapter_key = id(adapter)
++    orig_fwd = stage.forward_one_chunk
++    orig_bwd = stage.backward_one_chunk
++
++    # ``save_forward_output`` was added to ``_PipelineStageBase.forward_one_chunk``
++    # in torch nightly (>=2.10). On torch 2.9 stable the kwarg doesn't
++    # exist, so passing it raises TypeError. Detect once and dispatch.
++    import inspect as _inspect
++
++    _orig_fwd_sig = _inspect.signature(orig_fwd)
++    _has_save_kw = "save_forward_output" in _orig_fwd_sig.parameters
++
++    def patched_fwd(fwd_chunk_id, args, kwargs=None, save_forward_output=True):
++        _set_mb_index(adapter_key, fwd_chunk_id)
++        try:
++            if _has_save_kw:
++                return orig_fwd(
++                    fwd_chunk_id,
++                    args,
++                    kwargs,
++                    save_forward_output=save_forward_output,
++                )
++            return orig_fwd(fwd_chunk_id, args, kwargs)
++        finally:
++            _set_mb_index(adapter_key, None)
++
++    def patched_bwd(
++        bwd_chunk_id,
++        loss=None,
++        full_backward: bool = True,
++        last_backward: bool = False,
++    ):
++        # Plain backward pass. The double-backward risk on own-rank
++        # cached commits is now handled structurally by
++        # :class:`_LocalCacheAugment` / :class:`_LocalCacheCapture`:
++        # the consumer-side Capture severs the consumer->producer
++        # autograd link (so the producer's graph is NOT traversed or
++        # freed by this stage's backward), and the producer-side
++        # Augment sums the captured grad into the producer's own
++        # incoming grad when THE PRODUCER's backward runs. Each
++        # stage's forward graph is thus traversed exactly once per mb,
++        # which is the naive-PP baseline.
++        _set_mb_index(adapter_key, bwd_chunk_id)
++        _dbg(f"patched_bwd ENTER stage={adapter.stage_id} mb={bwd_chunk_id}")
++        try:
++            return orig_bwd(
++                bwd_chunk_id,
++                loss=loss,
++                full_backward=full_backward,
++                last_backward=last_backward,
++            )
++        finally:
++            _dbg(f"patched_bwd EXIT stage={adapter.stage_id} mb={bwd_chunk_id}")
++            # Mark the mb as seen so the step-end drop sweep evicts it.
++            # We don't drop here: the shared rank cache is still live
++            # for peers / later virtual stages.
++            adapter.on_microbatch_end(bwd_chunk_id)
++            _set_mb_index(adapter_key, None)
++
++    stage.forward_one_chunk = patched_fwd
++    stage.backward_one_chunk = patched_bwd
++
++
++def _install_step_drop_patch(
++    pp_schedule: _PipelineSchedule, adapters: list[CrossStageCacheAdapter]
++) -> None:
++    """Wrap ``pp_schedule.step`` so every registered adapter on this
++    rank evicts its seen mbs from the shared cache EXACTLY ONCE after
++    ``orig_step`` returns. The VP drop-guard inside
++    :meth:`_drop_all_cached_and_clear` ensures only the last virtual
++    stage on the rank actually frees memory.
++    """
++    orig_step = pp_schedule.step
++
++    def patched_step(*args, **kwargs):
++        try:
++            return orig_step(*args, **kwargs)
++        finally:
++            for adapter in adapters:
++                try:
++                    adapter._drop_all_cached_and_clear()
++                except Exception:
++                    # Continue so one poisoned adapter cannot keep the others
++                    # from clearing -- but say so. Swallowing this silently
++                    # turns a cache that stopped evicting into a slow memory
++                    # leak with no symptom until OOM.
++                    logger.warning(
++                        "cross-stage cache sweep failed for one adapter; "
++                        "continuing with the rest",
++                        exc_info=True,
++                    )
++
++    pp_schedule.step = patched_step  # type: ignore[method-assign]
++
++
++# ----- FQN-split injection ------------------------------------------------- #
++
++_ATTN_RES_EXTRA_LAST_STAGE_FQNS = ("output_res_proj", "output_res_norm")
++
++
++# ----- Custom pipelining_fn ------------------------------------------------ #
++
++
++# ----- Kimi Linear / K3 pipelining wiring (merged from kimi_linear/) ----- #
++
++# Kimi-specific FQNs injected into the last PP stage when AttnRes is enabled.
++_KIMI_ATTN_RES_LAST_STAGE_FQNS = ("output_res_proj", "output_res_norm")
++
++
++def _kimi_llm_fqns(
++    num_stages: int,
++    num_layers: int,
++    input_weight: int = 1,
++    output_weight: int = 1,
++) -> list[list[str]]:
++    """Kimi-named version of ``generate_llm_fqn_per_model_part``.
++
++    Substitutes ``tok_embeddings``→``embed_tokens`` and
++    ``output``→``lm_head``. Keeps the layer distribution logic
++    (delegated to core's function, then re-mapped) so any future
++    tweaks there apply to us automatically.
++    """
++    from torchtitan.distributed.pipeline_parallel import (
++        _generate_llm_fqn_per_model_part as generate_llm_fqn_per_model_part,
++    )
++
++    raw = generate_llm_fqn_per_model_part(
++        num_stages, num_layers, input_weight, output_weight
++    )
++    rename = {"tok_embeddings": "embed_tokens", "output": "lm_head"}
++    return [[rename.get(n, n) for n in stage] for stage in raw]
++
++
++def _unwrap_multimodal_for_pp(model: nn.Module, kwargs: dict) -> nn.Module:
++    """Split the TEXT model, and re-wrap the stage that owns ``embed_tokens``.
++
++    Core's ``_split_module`` iterates only top-level ``named_children()``. On the
++    multimodal wrapper those children are ``vision_tower`` and
++    ``language_model``, so no FQN scheme reaches the text stack: flat names
++    (``embed_tokens``, ``layers.N``) match nothing, and dotted ones
++    (``language_model.layers.N``) are not recursed into either. Every child then
++    takes the "not in modules_to_keep" branch and is set to None, so the stage
++    holds zero parameters and the optimizer reports
++    ``pattern '.*' matched no parameters``.
++
++    Vision features are spliced into the embeddings, so the tower belongs with
++    whichever chunk kept ``embed_tokens`` -- nothing vision-side crosses a stage
++    boundary. Re-wrapping happens inside ``parallelize_fn`` so the tower is
++    present before SPMD is applied, not bolted on afterwards.
++
++    Returns the module to hand to ``pipeline_llm``: the text model when this is
++    the multimodal wrapper, otherwise ``model`` untouched.
++    """
++    tower = getattr(model, "vision_tower", None)
++    inner = getattr(model, "language_model", None)
++    if tower is None or inner is None:
++        return model
++
++    from torchtitan.models.kimi_k3.multimodal_model import KimiK3MultimodalModel
++
++    mm_config = model.config
++    inner_parallelize = kwargs["parallelize_fn"]
++
++    step_inputs = None
++    if dep_enabled():
++        from torchtitan.models.kimi_k3.vit_prefetch import VisionStepInputs
++
++        # Marker submodules so each vision chunk knows WHICH share it is. They must
++        # really exist on the module being split: _split_module keeps children whose
++        # name is in the chunk's FQN list and sets the rest to None, so a marker that
++        # matched nothing (the previous scheme) leaves every share indistinguishable.
++        # They hold no parameters, so they add nothing to any stage.
++        for i in range(dep_vision_stages()):
++            inner.add_module(f"{_DEP_VISION_FQN}{i}", nn.Module())
++        step_inputs = VisionStepInputs()
++        # Read back by the pipelining_fn, which needs to hook the schedule that does
++        # not exist yet at this point.
++        inner._dep_step_inputs_holder = step_inputs
++
++    def _parallelize_with_tower(part: nn.Module, **pk):
++        if dep_enabled():
++            from torchtitan.models.kimi_k3.multimodal_model import KimiK3ViTStage
++
++            # Which vision share is this? The marker submodule that survived
++            # _split_module carries the index, so identity comes from the chunk
++            # itself. Call order cannot be used: a rank holding several virtual
++            # stages sees them in an order this function is not told. And "holds
++            # embed_tokens and no layers" only identifies share 0 -- the later
++            # shares hold neither, so they are indistinguishable from a text chunk
++            # without the marker.
++            share = _dep_vision_share_index(part)
++            if share is not None:
++                n_vit = dep_vision_stages()
++                stage = KimiK3ViTStage.from_parts(mm_config, tower, part)
++                if n_vit > 1:
++                    bounds = stage.vision_tower.block_bounds(n_vit)
++                    role = (
++                        "head"
++                        if share == 0
++                        else ("tail" if share == n_vit - 1 else "body")
++                    )
++                    stage.set_dep_role(
++                        role,
++                        bounds=bounds[share],
++                        num_shares=n_vit,
++                        step_inputs=step_inputs,
++                    )
++                return inner_parallelize(stage, **pk)
++            _register_mm_prefix_hooks(part)
++            return inner_parallelize(part, **pk)
++
++        # The embed_tokens-owning chunk is the first stage by construction.
++        if getattr(part, "embed_tokens", None) is not None:
++            part = KimiK3MultimodalModel.from_parts(mm_config, tower, part)
++        else:
++            _register_mm_prefix_hooks(part)
++        return inner_parallelize(part, **pk)
++
++    kwargs["parallelize_fn"] = _parallelize_with_tower
++    return inner
++
++
++def _install_vision_stage_wiring(pp_schedule, step_inputs) -> int:
++    """Give every vision stage its micro-batch index, and the step its ``kwarg_mbs``.
++
++    Required whenever the tower spans stages, not just for the run-ahead: a body or
++    tail share reads ``grid_thw`` by micro-batch index, and without the index it takes
++    the metadata-inference path -- passing activations through unprocessed, with no
++    error. A silently unsplit tower and a silently un-spliced batch are exactly the
++    failure shape to design out, so this is installed unconditionally under DEP and its
++    count is logged.
++
++    Returns how many stages were wired, so a caller can assert engagement instead of
++    inferring it from numerics.
++    """
++    from torchtitan.models.kimi_k3.multimodal_model import KimiK3ViTStage
++    from torchtitan.models.kimi_k3.vit_prefetch import install_step_hook
++
++    if step_inputs is not None:
++        install_step_hook(pp_schedule, step_inputs)
++
++    wired = 0
++    for stage in _iter_schedule_stages(pp_schedule):
++        submod = getattr(stage, "submod", None)
++        if not isinstance(submod, KimiK3ViTStage):
++            continue
++        orig_fwd = stage.forward_one_chunk
++
++        def patched(fwd_chunk_id, args, kwargs=None, _f=orig_fwd, _m=submod, **kw):
++            _m._dep_current_mb = fwd_chunk_id
++            try:
++                return _f(fwd_chunk_id, args, kwargs, **kw)
++            finally:
++                _m._dep_current_mb = None
++
++        stage.forward_one_chunk = patched
++        wired += 1
++
++    if wired:
++        logger.info(
++            "DEP vision stage wiring: %d stage(s) on this rank, roles %s",
++            wired,
++            [
++                getattr(s.submod, "_dep_role", "?")
++                for s in _iter_schedule_stages(pp_schedule)
++                if isinstance(getattr(s, "submod", None), KimiK3ViTStage)
++            ],
++        )
++    return wired
++
++
++def _dep_vision_share_index(part: nn.Module) -> int | None:
++    """Which vision share ``part`` is, from the marker submodule that survived the split.
++
++    Returns None for a text chunk. Reading identity off the chunk rather than off call
++    order matters because a rank holding several virtual stages receives them in an
++    order ``parallelize_fn`` is not told.
++    """
++    for name, child in part.named_children():
++        if child is not None and name.startswith(_DEP_VISION_FQN):
++            try:
++                return int(name[len(_DEP_VISION_FQN) :])
++            except ValueError:
++                continue
++    return None
++
++
++_MM_INNER_PREFIX = "language_model."
++
++
++def _register_mm_prefix_hooks(part: nn.Module) -> None:
++    """Make a bare-text PP stage save and load under the wrapper's namespace.
++
++    Only the stage owning ``embed_tokens`` is re-wrapped as the multimodal
++    model, so its parameters are named ``language_model.*``. Every other stage
++    is the bare text model and names them ``layers.*``,
++    ``output_res_norm.weight`` and so on -- while a non-PP save, and the
++    first stage's own save, use the prefixed form.
++
++    That split namespace makes ANY checkpoint unloadable under PP for this
++    model, not just a seed checkpoint: a resume fails with
++    "Missing key in checkpoint state_dict: output_res_norm.weight". Cold
++    starts never noticed because they load nothing.
++
++    Fixed in the checkpoint path rather than by re-wrapping every stage: the
++    wrapper's forward expects a tower and an image-splice path, and giving the
++    middle stages one to satisfy a key-naming issue would trade a naming bug for
++    a forward bug.
++    """
++
++    def _add_prefix(module, state_dict, prefix, local_metadata):
++        del module, local_metadata
++        for key in [k for k in state_dict if k.startswith(prefix)]:
++            state_dict[prefix + _MM_INNER_PREFIX + key[len(prefix) :]] = state_dict.pop(
++                key
++            )
++
++    def _strip_prefix(
++        state_dict, prefix, local_metadata, strict, missing, unexpected, errors
++    ):
++        del local_metadata, strict, missing, unexpected, errors
++        wrapped = prefix + _MM_INNER_PREFIX
++        for key in [k for k in state_dict if k.startswith(wrapped)]:
++            state_dict[prefix + key[len(wrapped) :]] = state_dict.pop(key)
++
++    part._register_state_dict_hook(_add_prefix)
++    part._register_load_state_dict_pre_hook(_strip_prefix)
++
++
++_DEP_VISION_FQN = "__kimi_dep_vision__"
++"""A name no text module has, so its PP chunk comes back parameterless."""
++
++
++def dep_enabled() -> bool:
++    """DEP is opt-in while it is being brought up.
++
++    Off by default because it changes the stage count, so a run that enables it
++    silently would report a different pipeline shape than the config asked for.
++    """
++    from torchtitan.models.kimi_k3.knobs import topology
++
++    return topology().vit_dep
++
++
++def _install_bubble_runtime_for(pp_schedule, prefetcher) -> None:
++    """Wire the bubble planner and runtime to one vision stage's prefetcher.
++
++    The plan is rebuilt per step from the schedule's own shape rather than cached,
++    because the micro-batch count can change between steps (a short final batch) and a
++    stale plan would anchor on actions the schedule no longer runs. Rebuilding is pure
++    Python over a list of actions, so it is not worth caching against that risk.
++    """
++    from torchtitan.models.kimi_k3.dep_bubble_plan import build_plans
++    from torchtitan.models.kimi_k3.dep_bubble_runtime import install_bubble_runtime
++    from torchtitan.models.kimi_k3.knobs import topology
++
++    cost_ratio = float(topology().vit_bubble_cost_ratio)
++
++    def plan_for_step():
++        n_mb = int(getattr(pp_schedule, "_n_microbatches", 0) or 0)
++        pp_size = int(getattr(pp_schedule, "pp_group_size", 0) or 0)
++        n_stages = int(getattr(pp_schedule, "_num_stages", 0) or 0)
++        rank = int(getattr(pp_schedule, "rank", -1))
++        if not (n_mb and pp_size and n_stages) or rank < 0:
++            return None
++        vp, rem = divmod(n_stages, pp_size)
++        if rem or vp < 1:
++            # A non-looped schedule has no interleaved action list to plan against.
++            return None
++        try:
++            plans = build_plans(
++                pp_size=pp_size,
++                vp=vp,
++                n_microbatches=n_mb,
++                cost_ratio=cost_ratio,
++            )
++        except ValueError as err:
++            # e.g. a micro-batch count Interleaved1F1B rejects. Saying so beats
++            # silently running without the mechanism under test.
++            logger.warning("DEP bubble plan unavailable: %s", err)
++            return None
++        return plans.get(rank)
++
++    def encode_now(microbatches):
++        # Synchronous on the CURRENT stream: this is the bubble, so the point is to
++        # occupy it, not to overlap with it.
++        for mb in microbatches:
++            prefetcher.ensure_sync(mb)
++
++    install_bubble_runtime(
++        pp_schedule,
++        plan_for_step=plan_for_step,
++        encode_now=encode_now,
++        upfront_encode=encode_now,
++    )
++
++    # The backward half. The queue lives on the OWNER module, because the seam that
++    # cuts the graph is inside its forward and that is the only place the micro-batch
++    # index and the features meet.
++    from torchtitan.models.kimi_k3.dep_bubble_backward import (
++        GradQueue,
++        install_backward_slots,
++    )
++
++    queue = GradQueue(max_pending=int(topology().vit_bubble_max_pending))
++    prefetcher._owner._vision_grad_queue = queue
++    install_backward_slots(pp_schedule, queue)
++
++
++def dep_vision_stages() -> int:
++    """How many stages the vision tower occupies.
++
++    Report 5.2.3 requires vision forward and backward to be "balanced across PP
++    stages", so more than one is the target. It starts at 1 because the total stage
++    count must stay divisible by ``pp_degree`` -- the schedule asserts that -- and
++    the vision stages are taken OUT of the text budget rather than added on top.
++    Growing this therefore trades text stages for vision stages, which is the
++    balance the report is describing and which needs measurement to set.
++
++    Above 1 the tower is split: share 0 takes ``patch_embed`` plus its blocks and
++    ``embed_tokens``, the last share takes its blocks plus the projector and the
++    splice, and what crosses each hop is a fixed-capacity patch stream alongside the
++    text embeddings. See ``KimiK3ViTStage.set_dep_role``.
++    """
++    from torchtitan.models.kimi_k3.knobs import topology
++
++    return max(1, topology().vit_dep_stages)
++
++
++def _inject_kimi_k3_fqns(model: nn.Module, kwargs: dict) -> None:
++    """Populate ``parallelism.module_fqns_per_model_part`` so the PP
++    split uses Kimi module names and the last stage includes the
++    AttnRes final-aggregation modules.
++    """
++    if not any(
++        hasattr(model, n) for n in _KIMI_ATTN_RES_LAST_STAGE_FQNS
++    ) and not hasattr(model, "embed_tokens"):
++        return  # Not a Kimi model; pass through
++    parallelism = kwargs.get("parallelism")
++    if parallelism is None or parallelism.module_fqns_per_model_part is not None:
++        return
++    model_config = kwargs.get("model_config")
++    pp = kwargs["parallel_dims"].pp
++    if pp <= 1 or model_config is None:
++        return
++
++    # Layer count: kimi's config stores it at ``num_hidden_layers``.
++    num_layers = getattr(model_config, "num_hidden_layers", None)
++    if num_layers is None:
++        return
++    input_weight = parallelism.pipeline_parallel_first_stage_less_layers
++    output_weight = parallelism.pipeline_parallel_last_stage_less_layers
++    layers_per_stage = parallelism.pipeline_parallel_layers_per_stage
++
++    if layers_per_stage is not None:
++        num_virtual_stages = math.ceil(
++            (num_layers + input_weight + output_weight) / layers_per_stage
++        )
++    else:
++        from torchtitan.distributed.pipeline_parallel import get_schedule_class
++
++        schedule_class = get_schedule_class(parallelism.pipeline_parallel_schedule)
++        stages_per_rank = 1 if issubclass(schedule_class, PipelineScheduleSingle) else 2
++        num_virtual_stages = pp * stages_per_rank
++
++    n_vit = dep_vision_stages() if dep_enabled() else 0
++    if n_vit:
++        # Taken out of the text budget, not added on top: the schedule asserts
++        # num_stages % pp_degree == 0, so appending would break pp=2 at the first
++        # vision stage.
++        if num_virtual_stages - n_vit < 1:
++            raise ValueError(
++                f"DEP wants {n_vit} vision stage(s) but only {num_virtual_stages} "
++                "stages exist; raise pipeline_parallel_degree or lower "
++                "KIMI_VIT_DEP_STAGES"
++            )
++        num_virtual_stages -= n_vit
++
++    fqns = _kimi_llm_fqns(num_virtual_stages, num_layers, input_weight, output_weight)
++    # Append AttnRes tail modules if present (last stage only).
++    extras = [n for n in _KIMI_ATTN_RES_LAST_STAGE_FQNS if hasattr(model, n)]
++    if extras:
++        fqns[-1].extend(extras)
++    if dep_enabled():
++        # DEP: one stage ahead of the text ones that owns the vision tower. The
++        # FQN deliberately matches NOTHING in the text model, so core's
++        # _split_module -- which sets every non-matching child to None -- yields a
++        # zero-parameter chunk. pipeline_llm then does `stages[i].submod = m` with
++        # whatever parallelize_fn returns, so the empty chunk is replaced by the
++        # ViT stage module. That is why this needs no core change and no rename of
++        # language_model.*, which the alternative (hoisting the text stack's
++        # children to the wrapper) would have forced.
++        # The vision stage owns embed_tokens too, so the pipe carries the spliced
++        # EMBEDDING stream rather than ids. Ids cannot travel the pipe: PP's
++        # metadata inference pushes dummy values through it, and indexing an
++        # embedding with those asserts out of bounds. The first text stage
++        # therefore must NOT keep embed_tokens -- it receives pre-embedded input,
++        # which the backbone already supports when embed_tokens is None.
++        fqns[0] = [f for f in fqns[0] if f != "embed_tokens"]
++        vision = [[f"{_DEP_VISION_FQN}{i}"] for i in range(n_vit)]
++        vision[0].append("embed_tokens")
++        fqns = vision + fqns
++    parallelism.module_fqns_per_model_part = fqns
++
++
++def _install_vision_prefetch(pp_schedule, model_parts) -> None:
++    """Give the DEP vision stage a prefetcher and tell it which micro-batch it serves.
++
++    The vision stage is NOT wrapped by :class:`CrossStageCacheAdapter` -- it holds the
++    tower and embed_tokens, not AttnRes blocks -- so it does not get that wrapper's
++    mb-index patch and needs its own. Same shape, and for the same reason: the index
++    is schedule-owned and there is no other way to learn it from inside a forward.
++
++    A no-op when the prefetch depth is 0, which is the default, so enabling DEP alone
++    changes nothing here.
++    """
++    from torchtitan.models.kimi_k3.knobs import topology
++    from torchtitan.models.kimi_k3.multimodal_model import KimiK3ViTStage
++    from torchtitan.models.kimi_k3.vit_prefetch import (
++        install_step_hook,
++        prefetch_depth,
++        VisionPrefetcher,
++    )
++
++    bubble = bool(topology().vit_bubble)
++    if prefetch_depth() <= 0 and not bubble:
++        return
++    if prefetch_depth() > 0 and bubble:
++        # Alternatives, not layers: the prefetch issues ahead on a side stream, the
++        # bubble runtime places encodes in idle intervals on the main stream. Both at
++        # once would have the prefetch satisfy every micro-batch before the planned slot
++        # arrived, so the placements would report as fired while the side stream did the
++        # work -- a green occupancy number for the wrong mechanism.
++        raise ValueError(
++            "KIMI_VIT_PREFETCH and KIMI_VIT_BUBBLE are alternatives; set exactly one. "
++            f"Got prefetch={prefetch_depth()}, bubble={bubble}."
++        )
++
++    if dep_vision_stages() > 1:
++        # The run-ahead prefetches by calling encode_images, which assumes one stage
++        # performs the whole encode. With the tower split that would run every block
++        # on share 0 and defeat the split. Refuse rather than silently negate it.
++        warnings.warn(
++            f"KIMI_VIT_PREFETCH={prefetch_depth()} ignored: the run-ahead has no "
++            f"cross-stage form yet, and KIMI_VIT_DEP_STAGES="
++            f"{dep_vision_stages()} splits the tower. Running without the run-ahead."
++        )
++        return
++
++    vision_stage_modules = [m for m in model_parts if isinstance(m, KimiK3ViTStage)]
++    if not vision_stage_modules:
++        # Normal on a text-only rank: the vision stage is global stage 0, so only
++        # one rank holds it. Logged rather than silent because "the run-ahead did
++        # not install" and "the run-ahead did nothing" are otherwise the same
++        # observation -- but WARN only where the stage was supposed to be, or
++        # every text rank cries wolf on a correct run.
++        owns_vision_stage = any(
++            getattr(s, "stage_index", None) == 0
++            for s in _iter_schedule_stages(pp_schedule)
++        )
++        message = (
++            "DEP vision prefetch NOT installed: depth=%d, this rank's model parts "
++            "are %s"
++        )
++        parts = [type(m).__name__ for m in model_parts]
++        if owns_vision_stage:
++            warnings.warn(
++                f"KIMI_VIT_PREFETCH={prefetch_depth()} requested and this rank "
++                f"owns pipeline stage 0, but no KimiK3ViTStage is present in its "
++                f"model parts ({parts}); the run-ahead is OFF."
++            )
++        else:
++            logger.info(message, prefetch_depth(), parts)
++        return
++
++    for module in vision_stage_modules:
++        prefetcher = VisionPrefetcher(module)
++        module._vision_prefetcher = prefetcher
++        install_step_hook(pp_schedule, prefetcher)
++        if bubble:
++            _install_bubble_runtime_for(pp_schedule, prefetcher)
++
++    # The micro-batch index patch lives in _install_vision_stage_wiring, which runs
++    # first and unconditionally under DEP -- patching it here too would wrap
++    # forward_one_chunk twice.
++    for stage in _iter_schedule_stages(pp_schedule):
++        if not isinstance(getattr(stage, "submod", None), KimiK3ViTStage):
++            continue
++        logger.info(
++            "DEP vision prefetch installed: depth=%d on stage %s",
++            prefetch_depth(),
++            getattr(stage, "stage_index", "?"),
++        )
++
++
++def pipeline_kimi_k3_with_cache_adapter(model: nn.Module, **kwargs):
++    """``pipelining_fn`` for Kimi Linear (baseline + AttnRes variants).
++
++    Behavior:
++
++    * Always: patch ``parallelism.module_fqns_per_model_part`` to use
++      Kimi names and include final AttnRes modules on the last stage,
++      then delegate to core ``pipeline_llm`` for the actual PP setup.
++    * When ``TORCHTITAN_ATTNRES_CACHE=1`` AND the schedule is
++      Interleaved1F1B AND the wrapped model is AttnRes (has
++      ``num_blocks`` + ``layers_per_block`` attrs): wrap each stage's
++      ``submod`` in ``CrossStageCacheAdapter`` (the
++      implementation, reused unchanged — it duck-types the wrapped
++      model's forward signature).
++    * Otherwise: pass through (plain PP, no cache adapter).
++    """
++    # Resolve the topology knobs from config ONCE (finding 32). This entry can run
++    # before parallelize, so whichever comes first registers; register_topology is
++    # idempotent and reports a disagreement rather than letting order decide.
++    from torchtitan.models.kimi_k3.knobs import register_topology
++
++    if hasattr(model, "config"):
++        register_topology(model.config)
++
++    from torchtitan.distributed.pipeline_parallel import pipeline_llm
++
++    model = _unwrap_multimodal_for_pp(model, kwargs)
++    step_inputs = getattr(model, "_dep_step_inputs_holder", None)
++    _inject_kimi_k3_fqns(model, kwargs)
++    pp_schedule, model_parts, has_first_stage, has_last_stage = pipeline_llm(
++        model, **kwargs
++    )
++    # Every kimi_k3 flavor registers THIS pipelining_fn, so the DEP wiring has to be
++    # installed here; having it only in pipeline_llm_with_cache_adapter left it dead
++    # code, and its absence read as "the prefetch changes nothing".
++    if dep_enabled():
++        # Wiring first, and unconditionally: a split tower's later shares need the
++        # micro-batch index to find grid_thw, and without it they pass activations
++        # through with no error at all.
++        wired = _install_vision_stage_wiring(pp_schedule, step_inputs)
++        # A split tower whose shares were never wired would run the
++        # metadata-inference path for real micro-batches: activations passed
++        # through, no tower, no splice, no error. So assert engagement -- but
++        # against what THIS rank should own, not against a global count.
++        #
++        # The vision stages are the first dep_vision_stages() global stage
++        # indices, so a rank owning none of them correctly wires zero. The first
++        # version of this check read `wired == 0 and n_vit > 1`, which assumed
++        # every rank owns a vision stage once the tower is split. That holds only
++        # when n_vit == pp_degree; at pp=4 with n_vit=2 the two ranks holding
++        # only text stages raised, and n_vit > 1 could not run at all.
++        n_vit = dep_vision_stages()
++        expected = sum(
++            1
++            for stage in _iter_schedule_stages(pp_schedule)
++            if getattr(stage, "stage_index", None) is not None
++            and stage.stage_index < n_vit
++        )
++        if wired != expected:
++            raise RuntimeError(
++                f"KIMI_VIT_DEP_STAGES={n_vit}: this rank owns {expected} vision "
++                f"stage(s) by stage index but {wired} were wired; an unwired share "
++                "passes activations through unprocessed and reports no error"
++            )
++        _install_vision_prefetch(pp_schedule, model_parts)
++    passthrough = (pp_schedule, model_parts, has_first_stage, has_last_stage)
++
++    if not adapter_enabled():
++        return passthrough
++
++    if _INTERLEAVED_1F1B_CLASS is None or not isinstance(
++        pp_schedule, _INTERLEAVED_1F1B_CLASS
++    ):
++        warnings.warn(
++            "Kimi Linear cross-stage caching supports only Interleaved1F1B; "
++            "running without the adapter."
++        )
++        return passthrough
++
++    stages = list(_iter_schedule_stages(pp_schedule))
++    parallel_dims = kwargs.get("parallel_dims")
++    pp_size = parallel_dims.pp if parallel_dims is not None else len(stages)
++    num_stages = pp_size * len(stages)
++    stage_to_rank = {s: s % pp_size for s in range(num_stages)}
++
++    # Detect AttnRes by Kimi-specific marker attributes on the wrapped model.
++    inner0 = getattr(stages[0], "submod", None)
++    num_blocks = getattr(inner0, "num_blocks", None)
++    layers_per_block = getattr(inner0, "layers_per_block", None)
++    if num_blocks is None or layers_per_block is None:
++        warnings.warn(
++            "Stage 0 model has no 'num_blocks'/'layers_per_block' — "
++            "this is a baseline (non-AttnRes) Kimi Linear run; the "
++            "cross-stage cache adapter only applies to AttnRes variants. "
++            "Running without the adapter."
++        )
++        return passthrough
++
++    # Layout tables: same math as attn_res, just with Kimi's layer count.
++    model_config = kwargs.get("model_config")
++    n_layers_total = getattr(model_config, "num_hidden_layers", None)
++    if n_layers_total is None:
++        warnings.warn(
++            "Cannot determine total layer count; cache adapter falls back to passthrough."
++        )
++        return passthrough
++
++    try:
++        layout_tables = _infer_block_layout_tables_from_stages(
++            stages,
++            pp_size=pp_size,
++            num_blocks=num_blocks,
++            n_layers=n_layers_total,
++            layers_per_block=layers_per_block,
++        )
++    except ValueError:
++        # An unsupported configuration, not a rank-local mishap. Falling back
++        # here would leave this rank without an adapter while its peers have
++        # one, and a rank with no adapter sends no delta -- the first
++        # cross-stage hop would hang instead of reporting the real problem.
++        raise
++    except Exception as e:  # pragma: no cover - defensive
++        warnings.warn(
++            f"Failed to build Kimi Linear block-layout tables ({e!r}); "
++            "falling back to passthrough."
++        )
++        return passthrough
++
++    installed_adapters: list[CrossStageCacheAdapter] = []
++    for i, stage in enumerate(stages):
++        adapter = CrossStageCacheAdapter(
++            stage.submod,
++            stage_id=stage.stage_index,
++            num_stages=num_stages,
++            group=getattr(stage, "group", None),
++            stage_to_rank=stage_to_rank,
++            pp_rank=getattr(stage, "group_rank", None),
++            layout_tables=layout_tables,
++        )
++        stage.submod = adapter
++        _install_mb_index_patch(stage, adapter)
++        installed_adapters.append(adapter)
++        if i < len(model_parts):
++            model_parts[i] = adapter
++
++    _install_step_drop_patch(pp_schedule, installed_adapters)
++
++    # Say so on success, not only on the fallback paths. The adapter is numerically
++    # neutral by design, so loss reads the same whether it engaged or not -- without
++    # this line "wrapped" and "silently fell back" are indistinguishable from the
++    # outside.
++    logger.info(
++        "cross-stage cache adapter wrapped %d stage(s): %s",
++        len(installed_adapters),
++        [s.stage_index for s in stages],
++    )
++
++    return pp_schedule, model_parts, has_first_stage, has_last_stage
+diff --git a/torchtitan/models/kimi_k3/vit_prefetch.py b/torchtitan/models/kimi_k3/vit_prefetch.py
+new file mode 100644
+index 000000000..82f7cb64f
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/vit_prefetch.py
+@@ -0,0 +1,289 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Run the vision encode AHEAD of the text pipeline (report 5.2.3's DEP).
++
++The report: "The ViT forward passes of the first PP micro-batches are executed
++synchronously upfront, the remaining forward passes are scheduled into pipeline
++bubbles, and the backward passes are handled analogously."
++
++Measured earlier, three ways, that this cannot be done by making the ViT a pipeline
++STAGE: the bubble count is identical with and without that (2019 either way), every
++IR reorder is rejected by the lowering as unschedulable, and the reason both hold is
++that a stage sits in the dependency chain -- at one vision stage it IS the pipeline
++head, so the bubbles are downstream of the work that would fill them. Overlap
++therefore has to come from concurrency, not from placement.
++
++## Why the hook is on the STEP and not the stage
++
++PP hands the first stage one micro-batch's inputs at a time, so at micro-batch m the
++stage cannot see m+k's pixels. But ``kwarg_mbs`` -- the per-micro-batch kwargs list --
++is passed to ``schedule.step()`` whole. Capturing it at step entry makes every
++micro-batch's vision input available from the first action onward, with no change to
++core: the hook goes on the schedule instance from our own ``pipelining_fn``.
++
++## The two constraints that are not negotiable
++
++**Same Python thread.** The AttnRes adapter keys its per-micro-batch cache in a
++``threading.local``, and its ``forward`` reads a missing key as "this call is PP's
++shape inference" and diverts WITHOUT raising. Driving any model code from a worker
++thread would silently return shape-inference outputs. Concurrency comes from a CUDA
++stream; the prefetch is issued from the same thread that runs the schedule.
++
++**Collectives gated on the mesh, never on the data.** The vision encode issues
++collectives (dynamic CP's gather-KV, the feature all-gather, FSDP's tower
++all-gather). Every rank in those groups must reach every one of them in the same
++order, or two communicators deadlock on a cyclic wait without either one's ordering
++being violated. So the prefetch schedule is a function of the micro-batch COUNT --
++which every rank agrees on before the step -- and never of what a rank's own batch
++contains.
++
++## Memory is the bound on the lookahead
++
++Holding k micro-batches of vision features live is the cost, and it is what decides
++whether "most" of the encoder can be hidden or only some. ``depth`` defaults to 1 for
++that reason: one micro-batch of slack is enough to overlap an encode with a text
++forward, and every extra unit is paid for in resident activations.
++"""
++
++from __future__ import annotations
++
++
++import torch
++
++from torchtitan.tools.logging import logger
++
++
++def prefetch_depth() -> int:
++    """How many micro-batches ahead to encode. 0 disables the prefetch."""
++    from torchtitan.models.kimi_k3.knobs import topology
++
++    return max(0, topology().vit_prefetch)
++
++
++class VisionPrefetcher:
++    """Per-step cache of vision features, encoded ahead on a side stream.
++
++    Keyed by micro-batch index, populated by ``ensure(m)`` and drained by ``take(m)``.
++    ``take`` removes the entry: a feature tensor held past its micro-batch is resident
++    memory for nothing, and the lookahead's whole cost is residency.
++    """
++
++    def __init__(self, owner) -> None:
++        self._owner = owner
++        self._features: dict[int, list[torch.Tensor]] = {}
++        self._kwargs: list[dict] | None = None
++        self._num_mbs = 0
++        # Hit/miss counters, reported once per step. Installing the hook proves the
++        # patch is in place; only a HIT proves a micro-batch's encode was already
++        # done when its forward asked for it, which is the whole claim.
++        self._hits = 0
++        self._misses = 0
++        # Async bookkeeping. The overlap metric is DEFAULT-STREAM TIME BETWEEN ISSUE AND
++        # JOIN, not "was the encode complete on arrival" -- that first attempt was useless
++        # because the synchronous wrapper also leaves the encode complete by the time
++        # take() runs, so it read the same either way. Time on the current stream between
++        # ensure() and take() is zero when the issue path joins immediately and positive
++        # only when real work was interleaved.
++        self._pending: dict[int, object] = {}
++        self._issued_at: dict[int, object] = {}
++        # The encode's own GPU time, bracketed on the side stream. This is what decides
++        # whether there is anything to hide at all: if it is microseconds, no scheduling
++        # change can show up in a step time, and that is a fact about the config rather
++        # than about the implementation.
++        self._encode_spans: list[tuple[object, object]] = []
++
++    def begin_step(self, kwarg_mbs) -> None:
++        """Record the step's per-micro-batch kwargs and reset the cache.
++
++        Called at ``schedule.step`` entry. The count is taken from the list, so it is
++        identical on every rank -- which is what lets the prefetch order be a mesh
++        property rather than a data one.
++        """
++        if self._hits or self._misses:
++            # Read the spans now: the previous step's events are all complete by the time
++            # the next step begins, so elapsed_time needs no extra synchronisation.
++            enc_total, enc_n = 0.0, 0
++            for a, b in self._encode_spans:
++                try:
++                    enc_total += a.elapsed_time(b)
++                    enc_n += 1
++                except (RuntimeError, ValueError):
++                    pass
++            logger.info(
++                "DEP vision prefetch: %d hit(s), %d miss(es); encode GPU time %.2f ms "
++                "over %d encode(s)",
++                self._hits,
++                self._misses,
++                enc_total,
++                enc_n,
++            )
++            self._hits = self._misses = 0
++        self._features.clear()
++        self._pending.clear()
++        self._issued_at.clear()
++        self._encode_spans.clear()
++        if kwarg_mbs is None:
++            self._kwargs, self._num_mbs = None, 0
++            return
++        self._kwargs = list(kwarg_mbs)
++        self._num_mbs = len(self._kwargs)
++
++    def _inputs_for(self, mb: int):
++        if self._kwargs is None or not (0 <= mb < self._num_mbs):
++            return None
++        kw = self._kwargs[mb] or {}
++        pixel_values = kw.get("pixel_values")
++        grid_thw = kw.get("grid_thw")
++        if pixel_values is None or grid_thw is None:
++            return None
++        return pixel_values, grid_thw
++
++    def ensure(self, mb: int) -> None:
++        """Encode micro-batch ``mb`` now if it is not cached yet.
++
++        Issued on the owner's vision stream, so it can proceed while the default
++        stream runs text compute. The encode itself is the owner's existing
++        ``encode_images``, which already carries the dynamic-CP and replicated paths.
++        """
++        if mb in self._features:
++            return
++        inputs = self._inputs_for(mb)
++        if inputs is None:
++            return
++        pixel_values, grid_thw = inputs
++        # ISSUE without joining. Using the synchronous wrapper here would block the
++        # current stream on the encode straight away, so the encode would merely happen
++        # EARLIER rather than concurrently -- which is what it did before this split, and
++        # is why a 31/32 hit rate coexisted with no measurable overlap. The join happens
++        # in take(), when the consumer actually needs the features.
++        feats, done = self._owner._issue_on_vision_stream(
++            lambda: self._owner.encode_images(pixel_values, grid_thw),
++            pixel_values if isinstance(pixel_values, torch.Tensor) else None,
++        )
++        # JOIN HERE, unconditionally. The deferred join that made the encode genuinely
++        # concurrent is reverted: the side-stream encode contains NCCL collectives (FSDP's
++        # tower all-gather, dynamic CP's gather-KV), and host issue order does NOT order
++        # device execution across streams, so leaving them in flight is the two-communicator
++        # cyclic wait this module's own docstring calls non-negotiable. An aborted step also
++        # leaves un-joined collectives and lets the allocator reuse buffers still being
++        # written.
++        #
++        # What decided it was the measurement, not caution: the encode costs 4.0 ms and the
++        # GPU is idle 99.88% of the step here (mfu 0.12%), so async and sync differ by
++        # 0.45% -- inside the 2-3% run-to-run spread. An unmeasurable gain does not buy a
++        # real deadlock risk. The deferred form is the right design on a SATURATED GPU,
++        # where the encode competes for SMs; it needs cross-stream collective ordering that
++        # is not established here.
++        self._owner._join_vision_stream(feats, done)
++        if isinstance(feats, torch.Tensor):
++            feats = [feats]
++        self._features[mb] = feats
++        self._pending[mb] = done
++        if done is not None:
++            issued = torch.cuda.Event(enable_timing=True)
++            issued.record(torch.cuda.current_stream())
++            self._issued_at[mb] = issued
++            enc = getattr(self._owner, "_last_encode_span", None)
++            if enc is not None:
++                self._encode_spans.append(enc)
++
++    def ensure_sync(self, mb: int) -> None:
++        """Encode ``mb`` on the CURRENT stream, completing before returning.
++
++        The bubble runtime's entry point. Where :meth:`ensure` issues on a side stream
++        so the encode overlaps with text compute, this one occupies the caller's stream
++        deliberately: the caller is standing in a pipeline bubble, so the whole point is
++        to spend that idle interval on the encode rather than to race with anything.
++
++        That also sidesteps what the side-stream path has to be careful about -- the
++        encode contains NCCL collectives, and cross-stream collective ordering is the
++        part that needs an argument. Here they are issued on the stream everything else
++        is issued on, in an order every rank derives identically from the plan.
++
++        Cached in the same place :meth:`ensure` fills, so :meth:`take` serves it and the
++        hit/miss counters keep counting the same thing.
++        """
++        if mb in self._features:
++            return
++        inputs = self._inputs_for(mb)
++        if inputs is None:
++            return
++        pixel_values, grid_thw = inputs
++        self._features[mb] = self._owner.encode_images(pixel_values, grid_thw)
++
++    def take(self, mb: int):
++        """Features for ``mb`` if prefetched, else None. Removes the entry.
++
++        Joins the side stream here rather than at issue time, which is the whole point:
++        between ``ensure(mb)`` and ``take(mb)`` the default stream runs text compute while
++        the encode is in flight.
++        """
++        feats = self._features.pop(mb, None)
++        self._pending.pop(mb, None)
++        self._issued_at.pop(mb, None)
++        if feats is None:
++            self._misses += 1
++            return None
++        self._hits += 1
++        return feats
++
++    def advance(self, mb: int, depth: int) -> None:
++        """After serving ``mb``, start the encodes for the next ``depth``.
++
++        Driven by the micro-batch index the schedule is on, not by wall clock or by a
++        queue depth measured at runtime, so every rank issues the same encodes in the
++        same order.
++        """
++        for ahead in range(1, depth + 1):
++            self.ensure(mb + ahead)
++
++
++class VisionStepInputs:
++    """Per-step ``grid_thw`` lookup for tower shares that never see the batch.
++
++    When the tower spans PP stages (report 5.2.3's "balances vision forward and
++    backward passes across PP stages"), every share needs ``grid_thw`` to recompute its
++    RoPE frequencies and segment bounds. Only the first stage receives the batch, and
++    the value cannot be sent down the pipe: PP's metadata inference pushes dummy values
++    through pipe tensors, and these are used as indices and bounds where a dummy
++    asserts out of bounds.
++
++    ``kwarg_mbs`` is handed to ``schedule.step`` whole, so capturing it at step entry
++    makes every micro-batch's grid available to every stage on this rank, with no change
++    to core and nothing extra on the wire.
++    """
++
++    def __init__(self) -> None:
++        self._kwargs: list[dict] | None = None
++
++    def begin_step(self, kwarg_mbs) -> None:
++        self._kwargs = None if kwarg_mbs is None else list(kwarg_mbs)
++
++    def grid_for(self, mb: int):
++        """This micro-batch's ``grid_thw``, or None when it carries no images."""
++        if self._kwargs is None or not (0 <= mb < len(self._kwargs)):
++            return None
++        return (self._kwargs[mb] or {}).get("grid_thw")
++
++
++def install_step_hook(schedule, observer) -> None:
++    """Make ``schedule.step`` hand its ``kwarg_mbs`` to ``observer.begin_step`` first.
++
++    Takes any object with ``begin_step`` -- :class:`VisionPrefetcher` for the run-ahead
++    and :class:`VisionStepInputs` for a split tower -- so both can be installed on the
++    same schedule without either knowing about the other.
++
++    Bound on the instance rather than the class: two schedules in one process (a
++    validator alongside a trainer) must not share one.
++    """
++    original = schedule.step
++
++    def step(*args, **kwargs):
++        observer.begin_step(kwargs.get("kwarg_mbs"))
++        return original(*args, **kwargs)
++
++    schedule.step = step
