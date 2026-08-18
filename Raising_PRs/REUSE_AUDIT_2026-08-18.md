@@ -7,13 +7,23 @@ it locally.
 
 ## The five diffs, after regrouping
 
+Re-cut by `Raising_PRs/cut_diffs.sh` (base `upstream/main`), so the numbers below track
+the tree instead of a one-time hand cut. They already drifted once: `0_shared` grew 17
+lines when `apply_cp_kimi_k3` was extracted, and `b_ep_moe` lost 39 when `moe.py` stopped
+copying the base `forward`.
+
 | diff | files | lines |
 | --- | --- | --- |
-| `0_shared_parallelize` | `parallelize.py`, `knobs.py` | 1958 |
+| `0_shared_parallelize` | `parallelize.py`, `knobs.py` | 1975 |
 | `a_tp` | `quant_scope.py` | 106 |
-| `b_ep_moe` | `moe.py`, `quantile_balance.py` | 514 |
+| `b_ep_moe` | `moe.py`, `quantile_balance.py` | 475 |
 | `c_cp_kcp_dyncp` | `kcp.py`, `vit_cp_plan.py`, `multimodal_model.py`, `moonvit.py` | 2970 |
 | `d_pp_attnres_dep` | `pipeline_adapter.py`, `layout.py`, `attn_res.py`, `attn_res_model.py`, `dep_bubble_{plan,runtime,backward}.py`, `vit_prefetch.py` | 4180 |
+
+These cover 17 of the 86 changed files under `models/kimi_k3/`. The other 69 are the model
+itself (`model.py` alone is 2815 lines), its config registry, its state-dict adapter and
+its tests -- PR-4025's territory, not the axis PRs'. Worth stating because "the five
+diffs" reads like the whole change and is a fifth of it.
 
 Vision dynamic CP now rides with CP and DEP rides with PP, as instructed. 17 files, against
 the 7 the previous split covered.
