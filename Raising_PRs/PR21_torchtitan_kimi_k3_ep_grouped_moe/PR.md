@@ -54,6 +54,15 @@ same ranks.
   `ep2 x fsdp2 x pp2 x cp2` all train, and per-parameter gradient checks show EP
   contributing nothing -- `ep2_fsdp2_pp2` equals `fsdp2_pp2` to five decimals,
   so enabling EP changes no digit.
+- Re-checked after the expert class stopped duplicating the base `forward`. It used to
+  copy the whole method -- DTensor unwrapping, offset cumsum, SPMD type mutation, three
+  grouped-mm calls -- to change one line, and now overrides a `gate_up_combine` hook
+  instead (92 -> 53 lines). That matters for EP specifically: the MXFP8 converter installs
+  its quantized GEMM by overriding `_grouped_mm`, so a copied `forward` calling
+  `torch._grouped_mm` directly would silently opt every routed expert out of it. With the
+  hook the seam cannot drift. The full three-arm matrix passes on the hook version, and
+  `ep2 x fsdp2` and `ep2 x fsdp2 x tp2 x cp2` converge normally over 10 steps
+  (12.0509 -> 9.9162 and 12.0594 -> 11.8446).
 
 ## Related, already found and fixed upstream-facing
 
