@@ -138,3 +138,47 @@ Commit message on the pytorch branch deliberately carries NO Claude-Session / Co
 trailer: it is destined for pytorch upstream, where CLAUDE.md's PR-text rule (terse human
 notes, no AI markers -- the maintainer complained about AI-written summaries) governs over the
 general trailer convention. Flagged for the filer.
+---
+
+## CORRECTION 2026-08-18 (Windows box): the CPU-irreproducibility note is wrong, do not add it
+
+The section above recommends telling reviewers that "anyone trying to reproduce on CPU
+with plain tensors will see nothing and wrongly conclude there is no bug". Measured on
+torch 2.8, single process, plain CPU tensors, `probe_combine_precision.py`:
+
+| fixture (exact) | combine bf16 | combine fp32 | combine fp64 |
+|---|---|---|---|
+| n=394 numel=64 (158.06) | **0.000e+00 dead** | 1.603e-03 | 1.603e-03 |
+| n=394 numel=64 (15.81) | 3.953e-03 | 2.233e-03 | 2.233e-03 |
+| n=788 numel=64 (223.27) | 4.464e-03 | 2.240e-03 | 2.240e-03 |
+| n=256 numel=64 (127.11) | 3.922e-03 | 2.209e-03 | 2.209e-03 |
+| n=512 numel=128 (254.28) | 3.922e-03 | 2.194e-03 | 2.194e-03 |
+
+Per-group norm is bf16 in every cell; only the combine dtype differs. **Above bf16 the
+spread is present in every fixture at ~2e-3**, so the note would be refuted by the first
+reviewer who tried it -- which is worse than saying nothing.
+
+What is true is narrower and is the same trap from the other side: **combined at bf16 the
+effect is quantized to the bf16 grid and can vanish for a particular fixture.** The dead
+zone is fixture-dependent, not magnitude-monotone -- 158.06 is dead while 127.11 and
+254.28, both larger and smaller, are not. A sweep that kept the bf16 combine would find
+dead cells and could read them as "CPU cannot show this".
+
+The explanation offered above is also the wrong way round. CPU `vector_norm` does upcast
+internally, so each group's norm is accumulated in fp32 and rounded to bf16 once at the
+end -- and that final per-group rounding is exactly what grouping moves, because different
+groupings round different partial sums. It is the mechanism, not a reason the mechanism is
+invisible.
+
+Nothing else in this document is affected: the DTensor result, the CUDA result and the
+foreach/mixed result all stand, and the `_NormPartial` confirmation is the one that
+mattered.
+
+**What to carry into the PR instead**: state how the partials were combined whenever a
+number is quoted, and do not pick a fixture that is dead at bf16. The two probes in this
+folder now do both -- `probe_get_total_norm_dtype.py` combines in float64 and says so in
+its docstring, `probe_combine_precision.py` is the table above.
+
+Also missing rather than wrong: the k=1/2/4/8 CUDA demonstration through the real
+`get_total_norm` -- the strongest single piece of evidence here -- has no script in this
+folder, only its output. It should be committed before it is cited in a PR.
