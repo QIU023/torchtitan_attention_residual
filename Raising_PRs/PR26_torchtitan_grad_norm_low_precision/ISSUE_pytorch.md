@@ -16,12 +16,11 @@ questions, both answered in the body below because she asked them.
 | the three norm call sites are as quoted | read `_get_total_norm` verbatim on `main` |
 | `clip_grad_norm_` also scales | it calls `_clip_grads_with_norm_`, which does `torch._foreach_mul_(device_grads, clip_coef_clamped.to(device))` |
 | `vector_norm` documents `dtype` as the pre-accumulation cast | its docstring: "If specified :attr:`x` is cast to :attr:`dtype` prior to doing the accumulation" |
-| `_foreach_norm` accepts `dtype` | the torchtitan patch calls it that way and runs |
+| `_foreach_norm` accepts `dtype`, including an explicit `None` | measured on torch 2.8: omitted and `dtype=None` both return bfloat16, `dtype=torch.float32` returns float32 |
 
-One thing to confirm when writing the PR rather than the issue: that
-`torch._foreach_norm(t, ord, dtype=None)` accepts an explicit `None` (the schema is
-`ScalarType? dtype=None`, so it should). If it does not, the branch needs
-`**({"dtype": dtype} if dtype is not None else {})` or an if.
+The patch and its probe are in this folder: `get_total_norm_dtype_pytorch.patch`
+(against `main`, `git apply --check` clean) and `probe_get_total_norm_dtype.py`, which
+measures both arms and asserts the patched one.
 
 ## Title
 
@@ -34,15 +33,19 @@ One thing to confirm when writing the PR rather than the issue: that
 `get_total_norm` accumulates in the input tensors' dtype. With bf16 tensors both the
 per-tensor norms and the norm-of-norms are bf16, and since the rounding happens per group
 the result depends on how the tensors were grouped rather than only on their values. 394
-synthetic bf16 tensors, same values, partitioned four ways:
+bf16 tensors of 64 elements, seed 0, one grouping per row, partials combined in float64 so
+the only rounding under test is the per-group one:
 
 ```
-float32 exact         121.222923
-one group             121.000000
-split 100/294         121.153351
-split 200/194         121.050613
-split 300/94          121.011543
+float64 reference     158.057787
+one group             158.000000     0.037% off
+split 100/294         157.896327     0.102%
+split 200/194         158.041925     0.010%
+split 300/94          157.648343     0.259%
 ```
+
+Spread across groupings 2.49e-03 relative; with the argument set to `torch.float32` the
+same four agree to 1.00e-07.
 
 Under pipeline parallelism that partition is the model cut. Two torchtitan layouts of one
 model with bit-identical gradients (788 shard norms, max relative difference 0.000e+00)
@@ -50,7 +53,7 @@ reported grad_norm 10.008054 and 9.951641 against a true 9.989287; with max_norm
 clipping fires every step, so the two layouts took steps differing by 0.566% from the same
 gradients.
 
-Proposal: `dtype: Optional[torch.dtype] = None`, passed to the calls the function already
+Proposal: `dtype: torch.dtype | None = None`, passed to the calls the function already
 makes.
 
 ```python
@@ -72,9 +75,9 @@ already has `get_total_norm(..., dtype=torch.float32)` followed by
 `dtype=None` is current behaviour exactly. The one visible change when it is set is that
 the returned norm is in `dtype` rather than the inputs', matching `vector_norm`.
 
-Happy to send the PR. torchtitan carries a private copy of this function today to get the
-fp32 reduction (pytorch/torchtitan#4135); with this argument it goes back to a one-line
-call.
+Happy to send the PR -- the patch and a probe that measures both arms are written.
+torchtitan carries a private copy of this function today to get the fp32 reduction
+(pytorch/torchtitan#4135); with this argument it goes back to a one-line call.
 
 --- PASTE END ---
 

@@ -1,5 +1,5 @@
 diff --git a/torch/nn/utils/clip_grad.py b/torch/nn/utils/clip_grad.py
-index c7b2d6fcdd..fea0562940 100644
+index c7b2d6f..8bb61fc 100644
 --- a/torch/nn/utils/clip_grad.py
 +++ b/torch/nn/utils/clip_grad.py
 @@ -51,6 +51,7 @@ def _get_total_norm(
@@ -10,21 +10,28 @@ index c7b2d6fcdd..fea0562940 100644
  ) -> torch.Tensor:
      r"""Compute the norm of an iterable of tensors.
  
-@@ -69,6 +70,13 @@ def _get_total_norm(
+@@ -69,6 +70,11 @@ def _get_total_norm(
              If ``None``, use the foreach implementation for CUDA and CPU native tensors and silently
              fall back to the slow implementation for other device types.
              Default: ``None``
-+        dtype (torch.dtype, optional): if set, the per-tensor norms and the norm-of-norms are
-+            computed in this dtype rather than the tensors' dtype. The norm is returned in the
-+            tensors' dtype regardless. Low-precision tensors (e.g. ``bfloat16``) accumulate the
-+            norm in their own dtype by default, so the result depends on how the tensors are
-+            grouped -- under pipeline or expert parallelism, on where the model was split rather
-+            than only on the gradients. Passing ``torch.float32`` makes the reduction
-+            grouping-independent. Default: ``None`` (unchanged behaviour).
++        dtype (torch.dtype, optional): if specified, the tensors are cast to
++            :attr:`dtype` prior to doing the accumulation, and the returned norm
++            has this dtype. Use it when the tensors are in a low-precision dtype,
++            where the accumulation error otherwise depends on how they are
++            grouped. Default: ``None``
  
      Returns:
          Total norm of the tensors (viewed as a single vector).
-@@ -92,18 +100,21 @@ def _get_total_norm(
+@@ -79,7 +85,7 @@ def _get_total_norm(
+         tensors = list(tensors)
+     norm_type = float(norm_type)
+     if len(tensors) == 0:
+-        return torch.tensor(0.0)
++        return torch.tensor(0.0, dtype=dtype)
+     first_device = tensors[0].device
+     grouped_tensors: dict[
+         tuple[torch.device, torch.dtype], tuple[list[list[Tensor]], list[int]]
+@@ -92,18 +98,21 @@ def _get_total_norm(
          if (foreach is None and _has_foreach_support(device_tensors, device)) or (
              foreach and _device_has_foreach_support(device)
          ):
