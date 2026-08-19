@@ -1,7 +1,9 @@
 # PR29 -- Kimi K3, whole tree, DO NOT MERGE
 
 **Target**: `pytorch/torchtitan`, `main`. Draft, and marked DO NOT MERGE in the title.
-**Branch**: `QIU023/torchtitan:k3_full_tree_draft` (`70e897f73`)
+**Branch**: `QIU023/torchtitan:k3_pr_classified` -- 15 commits on `upstream/main`,
+sliced by content. `k3_full_tree_draft` is where the merge and the adaptations were done and
+is not what gets filed.
 **Size**: 96 files, +28165 -28 against `upstream/main` `48cb7ae1f`, excluding the vendored
 reference tree under `models/kimi_k3_up/` which must be dropped before filing.
 
@@ -41,7 +43,7 @@ record, not a review sequence. Fifteen commits:
 Both are pinned in the gate rather than worked around in the model, and both are stated
 here because a reviewer running the branch with stock defaults will hit them immediately.
 
-**`spmd_backend` defaults to `spmd_types` (#4085), and this tree needs
+**`spmd_backend` defaults to `spmd_types` PR-4085, and this tree needs
 `partial_dtensor`.** Not a flag we forgot: `fully_shard()` under `spmd_types` requires every
 parameter to already be a DTensor on the full SPMD mesh, and TP additionally trips
 `assert_type() does not support DTensor. SPMD type checking operates on local tensors
@@ -50,7 +52,7 @@ the declarative conversion -- the same work as giving this model a `sharding.py`
 than a patch on top of it. That is the single largest gap between this `parallelize.py` and
 an upstream model's, and it is the next thing we do.
 
-**CUDA graph capture is on by default (#3559), and this tree needs
+**CUDA graph capture is on by default PR-3559, and this tree needs
 `--training.disable-cuda-graphs`.** The vision path's patch count varies per batch, so
 capture validation rejects it: `input 4 changed from (1, 256, 588) to (1, 192, 588)`. This
 one is not specific to us -- any VLM with a dynamic patch count reaches it -- so it may be
@@ -75,9 +77,8 @@ commits moved essentially nothing, which is the claim worth making about a merge
 
 ## Before filing
 
-* drop `models/kimi_k3_up/` (8 files) -- a vendored copy of the other K3 PR's tree, kept
-  locally to diff against and not something to send upstream;
-* 14 of our own commits carry a bare `#NNNN`, which would fire cross-reference events in
-  this repo's timeline on open. The fifteen-commit rebuild is written fresh, so those
-  messages do not travel -- but check the rebuilt messages before pushing;
+* ~~drop `models/kimi_k3_up/`~~ -- done, `k3_pr_classified` never had it;
+* ~~14 of our own commits carry a bare `#NNNN`~~ -- handled by construction. Those 14 are
+  in the working branch's history; `k3_pr_classified` is written fresh on `upstream/main`
+  and scans clean at 0 of 15. Nothing rewrites anyone else's commits to get there.
 * the title must carry DO NOT MERGE, and the PR must be opened as a draft.

@@ -137,3 +137,26 @@ multimodal wrapper does not work: the splitter divides `model.layers`, which on 
 model is a property forwarding into `.language_model`, so some stages receive a wrapper
 whose text model has been taken away. Text-only PP is unaffected; teaching the split
 about the wrapper is separate work.
+
+## RETRACTED: the DEP hiding numbers above (2026-08-19)
+
+Every DEP hiding figure in this kit was measured with `KIMI_VIT_DEP_STAGES` at its default
+of 1, which leaves the vision tower on the same pipeline stage as the text side. That
+changes where the features are consumed, and the consumption point is exactly what decides
+whether a bubble can serve a micro-batch. So the placed/unplaced split those numbers report
+is not the split the report's design produces.
+
+Three claims are withdrawn outright: that the binding constraint is the upfront prefix (at
+pp4/mb64 the prefix is 4 of 64 while 56 stay synchronous); that placed share is about
+(mb - pp) / mb (placed stayed at 4 as mb went 16 to 64); and that the mechanism needs 60
+GiB per GPU (that was without activation checkpointing, which no flavor enables -- with
+full AC, pp2 x vp2 at seq 4096 and mb 16 fits locally at 76.86% memory).
+
+Fixed rather than withdrawn: the planner placed at most one encode per idle slot, which
+bounded placements by the slot count however small the cost ratio got. Removing that took
+pp4/mb64 from 4 to 8, and the new diagnostics say 0 starved / 10 exhausted, so the
+constraint is bubble-to-consumption-point timing rather than budget.
+
+Full accounting in `phase13_k3like_48b_posttrain/DEP_MEASUREMENT_RETRACTION_2026-08-19.md`.
+DEP should not be described in an upstream PR until item 1 of that document's next steps is
+done.
