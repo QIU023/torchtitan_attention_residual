@@ -30,10 +30,16 @@ cut() {
         "$(wc -l < "$OUT/$name.diff")" "$(grep -c '^diff --git' "$OUT/$name.diff" || true)"
 }
 
-cut 0_shared_parallelize $M/parallelize.py $M/knobs.py torchtitan/models/__init__.py
+# The base: the model, plus the parallelize entry with TP/CP/EP raising. Every axis PR
+# sits on this. multimodal_model.py and moonvit.py belong HERE, not in the CP group where
+# they used to sit -- CP uses their dynamic-CP execution half, but PP's DEP path imports
+# KimiK3MultimodalModel and KimiK3ViTStage from them too, so assigning them to CP made PP
+# depend on the CP PR for no reason. They are model files.
+cut 0_base               $M/parallelize.py $M/knobs.py $M/multimodal_model.py \
+                         $M/moonvit.py torchtitan/models/__init__.py
 cut a_tp                 $M/quant_scope.py
 cut b_ep_moe             $M/moe.py $M/quantile_balance.py torchtitan/models/utils.py
-cut c_cp_kcp_dyncp       $M/kcp.py $M/vit_cp_plan.py $M/multimodal_model.py $M/moonvit.py
+cut c_cp_kcp_dyncp       $M/kcp.py $M/vit_cp_plan.py
 cut d_pp_attnres_dep     $M/pipeline_adapter.py $M/layout.py $M/attn_res.py \
                          $M/attn_res_model.py $M/dep_bubble_plan.py \
                          $M/dep_bubble_runtime.py $M/dep_bubble_backward.py \
