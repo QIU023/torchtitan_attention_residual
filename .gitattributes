@@ -1,2 +1,4 @@
-phase5/runs/v11_4d_*/tier_b_trace/*.csv.gz filter=lfs diff=lfs merge=lfs -text
-phase5/runs/v12_4d_*/tier_b_trace/*.csv.gz filter=lfs diff=lfs merge=lfs -text
+# Patch files must stay LF: git apply rejects a CRLF patch against an LF tree,
+# and reports it as "patch does not apply", which reads as a stale patch.
+*.patch -text
+*.diff -text

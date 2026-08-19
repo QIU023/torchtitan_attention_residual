@@ -220,15 +220,36 @@ separate `register_single_dim_strategy(...)` call below the function. The diagno
 
 Still open:
 
-1. **A lint risk in the reverted passthrough.** The per-tensor branch is back to one line:
-   `[torch.linalg.vector_norm(g, norm_type, dtype=dtype) for g in device_tensors]` is 93
-   characters. The pre-existing over-88 lines in that file are f-strings and docstrings,
-   which a formatter cannot split; a list comprehension it can, so `lintrunner` may reformat
-   it. Splitting it to four lines up front (as the earlier version did) avoids a CI round
-   trip. Cosmetic, but it costs a cycle to find out in CI.
+1. ~~A lint risk in the reverted passthrough~~ -- **WRONG, retracted.** I assumed 88 was the
+   gate. `E501` is explicitly ignored in BOTH `pyproject.toml` and `.flake8` ("E501 is not
+   flexible enough, we're using B950 instead"), and flake8's `max-line-length = 120`, so
+   B950 permits 132. The longest line these patches introduce is 94. No lint problem.
 2. **The fork branch `ba370ede20` is still not this patch** -- no empty-input fix, no
    dispatch commit, and a docstring that contradicted its own code. Re-push before opening
    the PR from it.
 3. **The repro link needs the pushed SHA**, and the body's `REPLACE_SHA` filled in.
 4. **Where the tests go**: `test/test_nn.py::test_clip_grad_norm` for the dtype argument;
    the dispatch fix wants one under the DTensor op tests, which has not been located.
+5. **`dtensor_foreach_norm_dtype_pytorch.patch`'s `index` line is stale.**
+   `_math_ops.py` moved upstream after it was cut (blob `89ddcfeb2a` now, `d6f7a19147` in
+   the header). It still applies because the context matches, but regenerate it against the
+   head being filed so the header is not a false claim about the base.
+
+## Final check against pytorch/main `0e12e565cf`, 2026-08-18
+
+| check | result |
+|---|---|
+| both patches apply | CLEAN (see the CRLF note below) |
+| `py_compile` on both touched files | ok |
+| size | +20/-6 across 2 files |
+| `vector_norm_single_dim_strategy` takes `op` first | YES, on current main |
+| `aten._foreach_norm.Scalar` registered to that strategy | YES, by a separate `register_single_dim_strategy(...)` call below the function |
+| `args_schema[2]` still read as `dim` | YES -- so the diagnosis holds on today's main |
+| longest introduced line | 94 chars, under B950's 132 |
+
+**The CRLF trap, found by this check.** On a Windows checkout of this logbook, `git apply`
+rejects both patches with `patch does not apply` -- and `clip_grad.py` is byte-identical to
+the blob the patch names, so the message points at the wrong thing entirely. The cause is
+that git checks the `.patch` files out as CRLF here; the repo blobs are LF, so a Linux
+checkout is unaffected. Fixed with a `.gitattributes` marking `*.patch` and `*.diff` as
+`-text`. Anyone who hit this before would have concluded the patch was stale.
