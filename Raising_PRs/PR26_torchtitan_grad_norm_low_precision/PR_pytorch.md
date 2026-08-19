@@ -75,7 +75,40 @@ This passes a `dtype` through to the three norm calls the function already makes
 
 One fix underneath is needed first, as a separate commit here. DTensor gradients -- the FSDP case -- reach `torch._foreach_norm(..., dtype=)`, and that raises today: `_foreach_norm.Scalar` shares `vector_norm`'s DTensor sharding strategy, which reads `args_schema[2]` as `dim`, while `_foreach_norm`'s schema has no dim and position 2 is `dtype`. Setting `dim=None` for that overload fixes every `_foreach_norm(dtype=)` DTensor caller rather than only this one, and keeps `get_total_norm` a pure passthrough with no DTensor special-casing.
 
-512 bf16 gradients, the same tensors at every world size, nccl, torch 2.14. Two splits that both occur in training: FSDP, where each gradient is a DTensor `Shard(0)` and the partials combine through `_NormPartial`; and pipeline, where rank `r` owns `grads[r::world]` and the partials are all-reduced.
+### The two splits
+
+512 bf16 gradients, byte-identical at every world size -- the only thing that changes is
+how they are divided across ranks. Both divisions come from real training:
+
+* **FSDP.** Every gradient is a DTensor `Shard(0)` over the mesh. `get_total_norm` returns
+  a DTensor carrying `_NormPartial`, and `full_tensor()` performs the cross-rank combine.
+* **Pipeline.** Rank `r` owns `grads[r::world]` as plain tensors -- what a stage holds.
+  Each rank norms its own, then the partials are all-reduced.
+
+The reference is float64 over the whole set, computed identically on every rank, so it does
+not depend on the world size. Neither should the reported norm.
+
+### Reproducing
+
+nccl, 8 GPUs, torch 2.14, both commits built:
+
+```
+python repro_get_total_norm_dtype.py --module torch/nn/utils/clip_grad.py --world 1,2,4,8
+```
+
+Script: https://github.com/QIU023/torchtitan_attention_residual/blob/315b1a247bd9f1f81526ae84f6a92373f096643e/Raising_PRs/PR26_torchtitan_grad_norm_low_precision/repro_get_total_norm_dtype.py
+
+The two `today` rows need no patch and reproduce on stock torch -- drop `--module`. The
+fp32 DTensor row needs the DTensor commit built in, not just the `clip_grad.py` change;
+without it that case raises instead of printing, which is what the commit is for:
+
+```
+RuntimeError: '>=' not supported between instances of 'torch.dtype' and 'int'
+  torch._foreach_norm(device_tensors, norm_type, dtype=dtype)
+  -> _propagate_op_sharding_dispatch_slow_path
+```
+
+### Result
 
 ```
                 world=1    world=2    world=4    world=8    spread(rel)
@@ -86,14 +119,20 @@ pp fp32         255.682    255.682    255.682    255.682    5.97e-08
 float64 truth   255.682226
 ```
 
-The pipeline split varies with the world size, so the same gradients report a different norm depending only on where the model was cut, and under clipping take different-sized steps. The DTensor split does not vary but sits 0.12% off the truth. `dtype=torch.float32` puts both on it.
+The pipeline row is the defect: the same gradients report a different norm depending only
+on how many stages the model was cut into, so clipping takes a different-sized step for a
+reason that has nothing to do with the gradients. The DTensor row does not vary with the
+world size but sits 0.12% off the truth, bf16 having snapped the total to 256. Passing
+`dtype=torch.float32` puts both on the truth.
+
+### Default unchanged
+
+`dtype=None` is bitwise identical to today in all 144 cases -- 4 shapes including empty, x
+{bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in {1, 2, inf}:
 
 ```
-python repro_get_total_norm_dtype.py --module <clip_grad.py with this change>
+python probe_default_unchanged.py --module torch/nn/utils/clip_grad.py
 ```
-https://github.com/QIU023/torchtitan_attention_residual/blob/315b1a247bd9f1f81526ae84f6a92373f096643e/Raising_PRs/PR26_torchtitan_grad_norm_low_precision/repro_get_total_norm_dtype.py
-
-`dtype=None` is bitwise identical to today in 144 cases: 4 shapes including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in {1, 2, inf}.
 
 --- PASTE END ---
 
