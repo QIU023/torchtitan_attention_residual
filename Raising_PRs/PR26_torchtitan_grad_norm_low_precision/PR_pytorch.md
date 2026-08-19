@@ -44,6 +44,10 @@ maintainer already inviting it, an issue is process for its own sake. Answer her
 design questions in a reply on the torchtitan thread, where she asked them.
 `ISSUE_pytorch.md` stays in the kit in case she asks for the design to be split out.
 
+Table numbers are from torch 2.14.0.dev+cu130, not the 2.8 build the first draft used:
+the same seed gives different values there because `randn`'s bf16 stream changed, so a
+maintainer running the block would not have matched the table.
+
 ## Verified before drafting (kit-internal, not PR content)
 
 | claim | source |
@@ -94,14 +98,14 @@ print([f"{total(k, dtype=torch.float32):.4f}" for k in (1, 2, 4, 8)])  # needs t
 print(f"{truth:.4f}")
 ```
 
-torch 2.8.0+cpu, single process, CPU only -- no GPU and no distributed setup:
+torch 2.14.0.dev+cu130, single process, CPU only -- no GPU and no distributed setup:
 
 | grouping | k=1 | k=2 | k=4 | k=8 | spread |
 |---|---|---|---|---|---|
-| today | 254.0000 | 254.5584 | 254.2504 | 254.2066 | 2.19e-03 |
-| `dtype=torch.float32` | 254.2790 | 254.2790 | 254.2790 | 254.2790 | 3.57e-08 |
+| today | 256.0000 | 255.9727 | 255.5015 | 255.6237 | 1.95e-03 |
+| `dtype=torch.float32` | 255.6823 | 255.6822 | 255.6822 | 255.6822 | 7.88e-08 |
 
-float32 truth is 254.2790. Same shape on CUDA at torch 2.14.0.dev+cu130.
+float64 truth is 255.6822. Same shape on CUDA.
 
 At `dtype=None` the result is bitwise identical to today in 144 cases -- 4 shapes
 including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in
@@ -196,20 +200,12 @@ torchtitan thread.
 
 ## The PASTE repro, run on this box
 
-Checked because a body's repro block is the one thing a maintainer will actually execute,
-and this one is CPU-only while the defect is usually described on GPU.
+Its numbers ARE the table's now, so the table is what the block prints rather than a
+separate measurement. Two things that check out and are not obvious:
 
-    torch 2.14.0.dev20260802+cu130, CPU
-    first print   256.000000  255.972655  255.501468  255.623747   spread 1.95e-03
-    truth         255.682232
-
-So it does reproduce on CPU. That is worth stating because a naive hand-rolled emulation
-of the same idea does NOT -- rounding the per-group norms yourself and combining them
-gives no spread, since CPU `vector_norm` upcasts internally. The repro works precisely
-because it calls the real `get_total_norm` on each group.
-
-The k=1 value landing exactly on 256.000000 is bf16 snapping, and is the clearest single
-number in the block.
-
-Second print: stock torch raises `_get_total_norm() got an unexpected keyword argument
-'dtype'`, so the "needs this PR" comment is accurate rather than decorative.
+* a naive hand-rolled emulation of the same idea does NOT reproduce -- rounding the
+  per-group norms yourself and combining them gives no spread, because CPU
+  `vector_norm` upcasts internally. It works because it calls the real
+  `get_total_norm` per group.
+* stock torch raises `_get_total_norm() got an unexpected keyword argument 'dtype'`, so
+  the "needs this PR" comment is accurate rather than decorative.
