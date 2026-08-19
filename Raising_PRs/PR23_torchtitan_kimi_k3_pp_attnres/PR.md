@@ -1,6 +1,6 @@
 # PR #23 — Kimi K3: pipeline parallelism with Block Attention Residuals
 
-**Target**: `pytorch/torchtitan`, on top of #4025 and PR22 (TP)
+**Target**: `pytorch/torchtitan`, `main`. Draft.
 **Scope**: `pipeline_adapter.py` (1,770 lines) and `layout.py`, the V=1 thin mode, plus the
 AttnRes model itself (`attn_res.py`, `attn_res_model.py`) which upstream references by config
 in seven places without implementing. DEP -- the vision tower on its own stage, with the
@@ -77,6 +77,10 @@ stage split is real rather than a merge artifact: per-rank parameter counts are
 ## PASTE (the body that goes upstream)
 
 ---
+
+Draft. This branch is our Kimi K3 implementation carrying the pipeline parallel plan; the other two axes raise in the parallelize entry, so what is under review here is PP and the model it needs.
+
+PR-4025 is a separate implementation of the same model, further along on the model itself and with all four parallelism axes raising `NotImplementedError`. When it lands this rebases onto it and the diff narrows to the PP plan alone. It is a draft now so the axis work is visible while that happens -- and so the three axis PRs can be read as a set, since today each carries the model and they overlap heavily for that reason.
 
 A standard decoder stage takes a hidden state and returns a hidden state. With Block
 AttnRes each layer also reads a stack of completed block representations and appends to

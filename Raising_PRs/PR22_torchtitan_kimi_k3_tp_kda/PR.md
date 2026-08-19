@@ -1,6 +1,6 @@
 # PR #22 — Kimi K3: tensor parallelism, including the KDA path
 
-**Target**: `pytorch/torchtitan`, on top of #4025
+**Target**: `pytorch/torchtitan`, `main`. Draft.
 **Scope**: `apply_tp_kimi_k3` (~556 lines) plus the DTensor shims KDA needs, and
 `quant_scope.py` (the MXFP4/MXFP8 scope predicate, which has to know which modules TP
 touched). `apply_tp_kimi_k3` lives in `parallelize.py`, which TP, EP and CP all apply from --
@@ -104,6 +104,10 @@ and tp4 only.
 ## PASTE (the body that goes upstream)
 
 ---
+
+Draft. This branch is our Kimi K3 implementation carrying the tensor parallel plan; the other two axes raise in the parallelize entry, so what is under review here is TP and the model it needs.
+
+PR-4025 is a separate implementation of the same model, further along on the model itself and with all four parallelism axes raising `NotImplementedError`. When it lands this rebases onto it and the diff narrows to the TP plan alone. It is a draft now so the axis work is visible while that happens -- and so the three axis PRs can be read as a set, since today each carries the model and they overlap heavily for that reason.
 
 Every Colwise/Rowwise entry in this TP plan uses `use_local_output=True`, so module
 boundaries stay plain tensors while the TP collectives still fire inside each Linear.

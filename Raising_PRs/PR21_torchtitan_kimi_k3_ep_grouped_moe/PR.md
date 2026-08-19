@@ -1,6 +1,6 @@
 # PR #21 — Kimi K3: expert parallelism and the grouped-GEMM expert layout
 
-**Target**: `pytorch/torchtitan`, on top of #4025
+**Target**: `pytorch/torchtitan`, `main`. Draft.
 **Scope**: `moe.py` (the SiTU-GLU routed experts, 53 lines now that it overrides a hook
 instead of duplicating the base `forward`) and `quantile_balance.py` (the router-side load
 balancing of report sec 2.3.3). `apply_ep_kimi_k3` and `verify_ep_applied` live in
@@ -79,6 +79,10 @@ below the experts. That is filed separately (PR19) and reproduces on unmodified
 ## PASTE (the body that goes upstream)
 
 ---
+
+Draft. This branch is our Kimi K3 implementation carrying the expert parallel plan; the other two axes raise in the parallelize entry, so what is under review here is EP and the model it needs.
+
+PR-4025 is a separate implementation of the same model, further along on the model itself and with all four parallelism axes raising `NotImplementedError`. When it lands this rebases onto it and the diff narrows to the EP plan alone. It is a draft now so the axis work is visible while that happens -- and so the three axis PRs can be read as a set, since today each carries the model and they overlap heavily for that reason.
 
 The release stores routed experts per expert, as individual `nn.Linear`s, while a
 grouped-GEMM MoE needs them stacked on an expert dimension (`w1_EFD`, `w2_EDF`,
