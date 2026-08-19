@@ -24,6 +24,19 @@ bit-exactness claim in those docstrings cannot currently be re-run.
     torchrun --nproc_per_node=2 ulysses_mla_parity.py
 """
 
+# NOTE (2026-08-19): this probe imports the VENDORED upstream K3 tree, which has been
+# deleted -- torchtitan/models/kimi_k3_up/ existed to be diffed against, and the pr4025
+# git remote does that without a copy that drifts. Two of the four probes that used it
+# were already broken by the 2026-08-15 rollback that stripped our work out of the
+# vendored tree, and nothing noticed.
+#
+# To run this again, restore the tree from history:
+#     git -C torchtitan checkout 0cadf15e0 -- torchtitan/models/kimi_k3_up
+# and re-add "kimi_k3_up" to the registry list in torchtitan/models/__init__.py.
+# Prefer pinning to their CURRENT head instead, since the vendored copy was already
+# three reuse commits behind by the time it was deleted:
+#     git -C torchtitan show pr4025/agent/add-kimi-k3-reference-model:<path>
+
 import os
 
 import torch

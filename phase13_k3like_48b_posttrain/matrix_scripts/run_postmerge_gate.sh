@@ -65,10 +65,23 @@ nvidia-smi --query-gpu=index,memory.used --format=csv,noheader
 # does not fit 16 GB per rank -- this is the trap that cost a whole text-arm launch once
 # and it OOMs the smoke here too. seq_len 2048 cuts activations 4x; float32 is KEPT so the
 # cells that did pass in the earlier text table stay comparable.
+# GATE_EXTRA is appended to every arm. It exists because the 2026-08-19 upstream merge
+# changed two defaults out from under us and both have to be pinned or all 58 cells fail
+# identically, which reads as "our tree broke" rather than "a default moved":
+#   --parallelism.spmd_backend partial_dtensor
+#       spmd_types is the new default (#4085) and needs every parameter to be a DTensor on
+#       the full SPMD mesh before fully_shard. That is the declarative conversion, not a
+#       flag.
+#   --training.disable-cuda-graphs
+#       CUDA graph capture is new in the core trainer (#3559) and on by default; our vision
+#       patch count varies per batch, so validation rejects it.
+# Unset GATE_EXTRA once either of those stops being needed, rather than editing this.
+GATE_EXTRA=${GATE_EXTRA-"--parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs"}
+
 arm_extra() {
   case $1 in
-    text) echo "--training.seq-len 4096" ;;
-    *)    echo "" ;;
+    text) echo "--training.seq-len 4096 $GATE_EXTRA" ;;
+    *)    echo "$GATE_EXTRA" ;;
   esac
 }
 

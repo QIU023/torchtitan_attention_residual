@@ -2,6 +2,19 @@
 
 Same judge as ``ulysses_mla_parity.py`` and for the same reason: comparing dp1
 and cp2 training losses does not measure this. Every rank builds the same module
+# NOTE (2026-08-19): this probe imports the VENDORED upstream K3 tree, which has been
+# deleted -- torchtitan/models/kimi_k3_up/ existed to be diffed against, and the pr4025
+# git remote does that without a copy that drifts. Two of the four probes that used it
+# were already broken by the 2026-08-15 rollback that stripped our work out of the
+# vendored tree, and nothing noticed.
+#
+# To run this again, restore the tree from history:
+#     git -C torchtitan checkout 0cadf15e0 -- torchtitan/models/kimi_k3_up
+# and re-add "kimi_k3_up" to the registry list in torchtitan/models/__init__.py.
+# Prefer pinning to their CURRENT head instead, since the vendored copy was already
+# three reuse commits behind by the time it was deleted:
+#     git -C torchtitan show pr4025/agent/add-kimi-k3-reference-model:<path>
+
 from the same seed, generates the same full input, and then
 
   reference  the module's ORIGINAL forward on the full [B, T, D]

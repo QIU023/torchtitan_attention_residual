@@ -9,6 +9,13 @@
 # would silently measure plain pp8, which is the mistake the first version of the DEP
 # prefetch experiment made.
 set -uo pipefail
+
+# GATE_EXTRA: extra flags appended to every launch here. This script builds its own
+# torchrun line rather than going through run_cells.sh, so the gate's arm_extra never
+# reached it -- four cells failed the 2026-08-19 merge gate on
+# "CUDA graphs do not support pipeline parallelism yet" while the other 54 passed with
+# the flag. Same variable name and default as run_postmerge_gate.sh so they cannot drift.
+GATE_EXTRA=${GATE_EXTRA-"--parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs"}
 : "${TITAN:?}"; : "${OUT:?}"
 STEPS=${STEPS:-10}
 mkdir -p "$OUT"; cd "$TITAN"; export PYTHONPATH=$TITAN
@@ -44,6 +51,7 @@ for pair in "mm:kimi_k3_debugmodel_report_arch_pp8vp4" "lora:kimi_k3_debugmodel_
     --parallelism.pipeline_parallel_degree 8 \
     --parallelism.pipeline_parallel_layers_per_stage 1 \
     --parallelism.pipeline_parallel_schedule Interleaved1F1B \
+    $GATE_EXTRA \
     --dump-folder "$OUT/$label" > "$OUT/$label.log" 2>&1
   n=$(grep -oE "loss: +[0-9.]+" "$OUT/$label.log" | wc -l)
   occ=$(sed 's/\x1b\[[0-9;]*m//g' "$OUT/$label.log" | grep -oE 'DEP bubble runtime: [0-9]+/[0-9]+ planned' | tail -1)

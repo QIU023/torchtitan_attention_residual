@@ -17,6 +17,13 @@
 # mm_lora exercises the same adapter path with fewer trainable params, so it would
 # add runtime without adding coverage of the thing under test.
 set -uo pipefail
+
+# GATE_EXTRA: extra flags appended to every launch here. This script builds its own
+# torchrun line rather than going through run_cells.sh, so the gate's arm_extra never
+# reached it -- four cells failed the 2026-08-19 merge gate on
+# "CUDA graphs do not support pipeline parallelism yet" while the other 54 passed with
+# the flag. Same variable name and default as run_postmerge_gate.sh so they cannot drift.
+GATE_EXTRA=${GATE_EXTRA-"--parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs"}
 HERE=$(cd "$(dirname "$0")" && pwd)
 : "${TITAN:?}"; : "${OUT:?}"
 FLAVOR=${FLAVOR:-kimi_k3_debugmodel_report_arch}
@@ -42,6 +49,7 @@ for pair in "pp4:4" "pp8:8"; do
     --training.global-batch-size 8 --training.local-batch-size "$deg" \
     --parallelism.data_parallel_shard_degree 1 \
     --parallelism.pipeline_parallel_degree "$deg" \
+    $GATE_EXTRA \
     --dump-folder "$OUT/$cell" > "$OUT/$cell.log" 2>&1
   n=$(grep -oE "loss: +[0-9.]+" "$OUT/$cell.log" | wc -l)
   roles=$(sed 's/\x1b\[[0-9;]*m//g' "$OUT/$cell.log" | grep -oE "DEP vision stage wiring: .{0,50}" | tail -1)
