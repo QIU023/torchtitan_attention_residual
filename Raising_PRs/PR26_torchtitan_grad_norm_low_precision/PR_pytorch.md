@@ -91,7 +91,7 @@ The pipeline split varies with the world size, so the same gradients report a di
 ```
 python repro_get_total_norm_dtype.py --module <clip_grad.py with this change>
 ```
-https://github.com/QIU023/torchtitan_attention_residual/blob/REPLACE_SHA/Raising_PRs/PR26_torchtitan_grad_norm_low_precision/repro_get_total_norm_dtype.py
+https://github.com/QIU023/torchtitan_attention_residual/blob/315b1a247bd9f1f81526ae84f6a92373f096643e/Raising_PRs/PR26_torchtitan_grad_norm_low_precision/repro_get_total_norm_dtype.py
 
 `dtype=None` is bitwise identical to today in 144 cases: 4 shapes including empty, x {bf16, fp16, fp32, fp64}, x foreach {None, True, False}, x p in {1, 2, inf}.
 
@@ -224,16 +224,32 @@ Still open:
    gate. `E501` is explicitly ignored in BOTH `pyproject.toml` and `.flake8` ("E501 is not
    flexible enough, we're using B950 instead"), and flake8's `max-line-length = 120`, so
    B950 permits 132. The longest line these patches introduce is 94. No lint problem.
-2. **The fork branch `ba370ede20` is still not this patch** -- no empty-input fix, no
-   dispatch commit, and a docstring that contradicted its own code. Re-push before opening
-   the PR from it.
-3. **The repro link needs the pushed SHA**, and the body's `REPLACE_SHA` filled in.
-4. **Where the tests go**: `test/test_nn.py::test_clip_grad_norm` for the dtype argument;
-   the dispatch fix wants one under the DTensor op tests, which has not been located.
-5. **`dtensor_foreach_norm_dtype_pytorch.patch`'s `index` line is stale.**
-   `_math_ops.py` moved upstream after it was cut (blob `89ddcfeb2a` now, `d6f7a19147` in
-   the header). It still applies because the context matches, but regenerate it against the
-   head being filed so the header is not a false claim about the base.
+2. ~~The fork branch is still not this patch~~ -- **resolved, and the reading was of a
+   superseded line.** `ba370ede20` is not an ancestor of the branch head; it is the
+   pre-split single commit with the same title. `git ls-remote` gives
+   `refs/heads/get-total-norm-dtype = b198c32e5e`, which HAS the empty-input fix
+   (`torch.tensor(0.0, dtype=dtype)` against `torch.tensor(0.0)`), HAS the dispatch commit
+   `c54b24b7a7`, and whose docstring matches its code -- it says the per-tensor norms and
+   the norm-of-norms accumulate in the given dtype, and all three call sites plus the empty
+   case pass it. Do NOT push `ba370ede20`: it would revert both fixes.
+3. ~~The repro link needs the pushed SHA~~ -- done, pinned to the full
+   `315b1a247bd9f1f81526ae84f6a92373f096643e`, which is on `origin/main` and contains the
+   script. Full sha rather than the short one, so it stays a permalink.
+4. ~~Where the tests go~~ -- located. `test/test_nn.py::test_clip_grad_norm` for the dtype
+   argument, and for the dispatch fix
+   `test/distributed/tensor/test_math_ops.py::DistMathOpsTest`, which already has
+   `test_foreach_norm` and `test_foreach_norm_partial` calling
+   `torch.ops.aten._foreach_norm([...], 2)` on the same overload. So it is a `dtype=` case
+   next to those, not a new file -- and their not having one is why the bug survived:
+   without `dtype` there is nothing at `args_schema[2]` for the borrowed strategy to
+   misread.
+5. **The patch's `index` line is true of our base, not of today's main.** Regenerating it
+   from the commit (`git diff c54b24b7a7^ c54b24b7a7 -- _math_ops.py`) reproduces the file
+   byte for byte, so `d6f7a19147` is exactly the blob at the branch's parent. That parent is
+   the fork's `main`, `6a34faa284` from 2026-08-06, while upstream main is 12 days ahead at
+   `0e12e565cf` -- which is where `89ddcfeb2a` comes from. Nothing to correct in the header;
+   what is wanted before filing is a rebase onto current upstream main, and this clone has
+   no `pytorch/pytorch` remote to do it from.
 
 ## Final check against pytorch/main `0e12e565cf`, 2026-08-18
 
