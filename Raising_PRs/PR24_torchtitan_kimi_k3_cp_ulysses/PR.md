@@ -168,3 +168,35 @@ path loops the batch because fla's `causal_conv1d_cp` asserts [1, T, D]; flatten
 packed sequence would be wrong rather than awkward, since `build_cp_context` cuts the global
 packed sequence into contiguous rank-ordered pieces while a rank holds piece r of every
 sequence.
+
+## STOP before filing: upstream is deleting the path this PR matches (2026-08-19)
+
+PR-4218 (fegin, draft, ghstack on top of PR-4217) is titled "Remove apply_cp_to_forward,
+the partial_dtensor Context Parallel path" and says: "It's too much for us to maintain
+difference CP path. This PR remove apply_cp_to_forward CP mechanism. Only config-based CP
+is preserved." It deletes `apply_cp_to_forward` (-89 lines in `context_parallel/api.py`)
+and replaces the call in every model's parallelize with `validate_cp_backend`, which
+REJECTS CP on backends that do not implement it.
+
+The new docstring states what upstream CP will be: "CP redistribution is declared in
+``ShardingConfig`` -- q stays seq-sharded on the CP axis while k/v are all-gathered at the
+``local_map`` boundary -- and only the spmd_types backend applies those annotations."
+
+Two things this does to the sections above.
+
+The "Why not the upstream dispatcher" argument is about to be moot -- there will be no
+dispatcher. Worse, the sentence "this PR matches the shape of upstream CP as it exists
+today and should move when that TODO does" now reads as matching a shape being deleted.
+
+But the underlying claim gets sharper, not weaker. Upstream's declarative CP is one
+specific mechanism: keep q sharded, all-gather k/v. That is neither of ours. Ulysses is an
+all-to-all seq<->head, a different redistribution. KCP is not a redistribution at all --
+the sequence stays sharded on every rank and the recurrence is recomputed from
+prefix-scanned fragments. A placement pair can describe an all-gather; nothing in
+`ShardingConfig` describes a scan.
+
+So the RFC question drafted in `RFC_QUESTION_sharding_config_cp_pp.md` stops being a design
+conversation to have eventually and becomes the question to ask ON PR-4218, while the
+decision is open: if the only supported CP is declarative k/v all-gather, where does a
+state-passing CP for linear attention live? Rewrite this kit's framing around that before
+filing anything.
