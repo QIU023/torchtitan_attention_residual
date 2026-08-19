@@ -106,11 +106,17 @@ every routed expert out of it.
 EP wiring shards the routed experts on the ep mesh, with the dense-vs-sparse split that
 keeps FSDP's mesh from overlapping EP's on the same ranks.
 
-Verified across ep2 x fsdp2, ep2 x fsdp2 x tp2 x pp2, ep2 x fsdp2 x tp2 x cp2 and
-ep2 x fsdp2 x pp2 x cp2. Per-parameter gradient checks show EP contributing nothing:
-ep2_fsdp2_pp2 equals fsdp2_pp2 to five decimals, so enabling EP changes no digit. On the
-hook version specifically, ep2 x fsdp2, ep2 x fsdp2 x tp2 x cp2 and ep8 x fsdp8 converge
-normally over 10 steps: 12.0509 -> 9.9162, 12.0594 -> 10.2364 and 12.0190 -> 9.9095.
+Per-parameter gradient checks show EP contributing nothing: with the same seed
+checkpoint, enabling EP changes no digit to five decimals.
+
+Ten steps on three model arms -- text, multimodal, multimodal plus LoRA -- first and last
+loss:
+
+    ep2 x fsdp2   text 7.70385 -> 4.87498   mm 12.05090 -> 9.91618   mm+lora 12.03633 -> 11.89115
+    ep8 x fsdp8   text 7.71120 -> 4.87902   mm 12.01898 -> 9.90946   mm+lora 12.05817 -> 11.86901
+
+Those are the ep-only cells; ep8 is the full 8-rank case. This branch carries no TP or CP
+plan, so combinations with them belong to the sibling PRs rather than here.
 
 Checkpoint compatibility is the thing to review here; the model math does not change.
 

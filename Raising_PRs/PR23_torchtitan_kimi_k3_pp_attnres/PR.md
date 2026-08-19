@@ -104,6 +104,17 @@ matching the no-PP baseline on every leg. The split is real rather than a merge 
 per-rank parameter counts are 312/280 at pp2 and 138/174/168/112 at pp4, unioning to
 exactly 592.
 
+Ten steps on three model arms -- text, multimodal, multimodal plus LoRA -- first and last
+loss:
+
+    pp2   text 7.70844 -> 4.92657   mm 12.07827 -> 9.90401   mm+lora 12.05631 -> 11.89396
+    pp4   text 7.70131 -> 4.86812   mm 12.06958 -> 9.80813   mm+lora 12.07972 -> 11.89169
+    pp8   text 7.71037 -> 4.81359   mm 12.06663 -> 9.90860   mm+lora 12.02343 -> 11.89581
+
+Those are the pp-only cells. This branch has no TP, CP or EP plan -- all three raise in
+the parallelize entry -- so it is the model plus the pipeline path, and the axis
+combinations belong to the sibling PRs.
+
 DEP -- the vision tower on its own stage with optional bubble scheduling -- rides along
 because it is the same machinery, and it needs stating plainly. The mechanism is complete
 and numerically correct: the tower gets its own stage, encodes are placeable into the

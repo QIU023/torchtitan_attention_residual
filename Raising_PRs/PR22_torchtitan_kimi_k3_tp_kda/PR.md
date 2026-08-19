@@ -133,9 +133,17 @@ reproduces on unmodified deepseek_v3 and is filed separately.
 
 Per-parameter gradient comparison against a shared seed checkpoint, varying only tp:
 one dense MLA layer 0.00002 (tp2) and 0.00003 (tp4) max |ratio-1|, one KDA layer 0.0010,
-one warm MLA+MoE layer 0.00836 and 0.01518, 21 dense layers plus AttnRes 0.0004. Loss
-over 8 steps against a reference sharing the accumulation structure: tp2 0.00301,
-tp2 x pp2 0.00292, tp2 x cp2 0.00824, tp2 x pp2 x cp2 0.01007.
+one warm MLA+MoE layer 0.00836 and 0.01518, 21 dense layers plus AttnRes 0.0004.
+
+Ten steps on three model arms -- text, multimodal, multimodal plus LoRA -- with only tp
+varied, first and last loss:
+
+    tp2   text 7.72089 -> 4.96644   mm 12.04522 -> 10.20116   mm+lora 12.02691 -> 11.91231
+    tp4   text 7.70643 -> 4.93963   mm 12.07788 -> 10.26537   mm+lora 12.08271 -> 11.94110
+
+Those are the tp-only cells. This branch carries no CP or EP plan, so combinations with
+them are not what it should be judged on; they exist and are the subject of the sibling
+PRs.
 
 tp8 is not reachable here: k3mini has 4 attention heads, and a widened 8-head flavor
 then trips "strides should be multiple of 16 bytes" at that shard width. Verified at
