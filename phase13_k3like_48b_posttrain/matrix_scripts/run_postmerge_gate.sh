@@ -46,14 +46,15 @@ arm_knobs() {
     # during m's text compute -- the one path implementing report 5.2.3's concurrency,
     # which had otherwise run exactly once, on two cells.
     #
-    # It does NOT cost the gate nothing, contrary to what this comment said until
-    # 2026-08-20. Prefetch is inert in expectation (with DEP off it is bit-identical to
-    # prefetch-off, because pf.take() needs the _dep_current_mb that only DEP installs),
-    # but WITH DEP it makes mm_full/tp2_pp2_cp2 unreproducible: seven runs, seven
-    # distinct 10-step traces, every pair differing. DEP alone is stable over six runs.
-    # So that cell's numbers cannot support a before/after claim while this is set --
-    # see NONDETERMINISM_tp2_pp2_cp2_2026-08-20.md. The earlier "proven inert on four
-    # pp8xvp4 pairs" claim compared too few steps to see it.
+    # This comment claimed until 2026-08-20 that prefetch was "proven numerically inert"
+    # and cost nothing to carry. It did cost something: with DEP on it made
+    # mm_full/tp2_pp2_cp2 unreproducible (seven runs, seven distinct 10-step traces),
+    # because the encode recorded its autograd graph on the vision side stream and
+    # several micro-batches then accumulated into the tower unordered. Fixed the same
+    # day -- the side stream is now skipped while a graph is being recorded -- so the
+    # cell is ordinary evidence again and prefetch really does carry for free here.
+    # The old claim's four pp8xvp4 pairs compared too few steps to see any of it.
+    # Full account: NONDETERMINISM_tp2_pp2_cp2_2026-08-20.md.
     *)    echo "KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1 KIMI_VIT_PREFETCH=1" ;;
   esac
 }

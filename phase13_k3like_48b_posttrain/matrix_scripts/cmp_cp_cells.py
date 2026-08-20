@@ -5,9 +5,9 @@
 
 <baseline> is either a gate percell.txt or a directory of run logs.
 
-The CP declarative rewrite touched no numerical path, so the bar here is
-IDENTICAL, not close. Any difference means the rewrite reached something it was
-not supposed to reach.
+The bar is IDENTICAL, not close. These comparisons back claims of the form "this
+change did not move the numbers", and a tolerance would let exactly the drift
+they are meant to catch through.
 
 Two things this parser gets right that a naive one does not:
 
@@ -125,9 +125,14 @@ def main() -> int:
     current = load_dir(out_dir)
 
     # Cells proven not to reproduce themselves cannot support a before/after claim in
-    # either direction. Reported separately rather than dropped, so the exclusion stays
+    # either direction. Reported separately rather than dropped, so an exclusion stays
     # visible in the output instead of living only in someone's memory.
-    UNRELIABLE = {("mm_full", "tp2_pp2_cp2")}
+    #
+    # Empty since 2026-08-20: mm_full/tp2_pp2_cp2 was the only entry and its cause is
+    # fixed (the vision encode no longer records an autograd graph on the side stream),
+    # so it is back to being ordinary evidence. Kept as a mechanism rather than deleted,
+    # because the next such cell should be listed here rather than argued about.
+    UNRELIABLE: set[tuple[str, str]] = set()
 
     identical = differing = missing = 0
     for (arm, cell), want in sorted(baseline.items()):
