@@ -146,7 +146,8 @@ scale we can actually train.
 
 ## 2. Distributed-infra completeness (audited 2026-07-16 @ `90d85eba3`)
 
-`torchtitan/experiments/kimi_k3/kimi_linear/parallelize.py` (1077 lines)
+`torchtitan/experiments/kimi_k3/kimi_linear/parallelize.py` (a snapshot of ~1.1k lines when
+this was written; the file has since moved and grown -- take it with `wc -l`)
 + `pipeline_adapter.py` (1143 lines).
 
 | Axis | Status | Location |

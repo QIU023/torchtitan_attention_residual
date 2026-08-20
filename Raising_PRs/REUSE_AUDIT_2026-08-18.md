@@ -31,9 +31,13 @@ the 7 the previous split covered.
 **`parallelize.py` is its own diff, not TP's.** All three of TP, EP and CP apply from inside
 it -- `apply_tp_kimi_k3` at 797, the CP block at 199 with `_build_cp_subgroups` at 497,
 `apply_ep_kimi_k3` at 1289 -- so calling it "the TP file" was wrong, and giving it to one axis
-would have left the other two without their application code. Splitting it into
-`tp_plan.py` / `cp_plan.py` / `ep_plan.py` is the real fix and is a refactor that needs a
-matrix run; until then it is shared infrastructure that lands first.
+would have left the other two without their application code.
+
+An earlier version of this paragraph called splitting it into `tp_plan.py` / `cp_plan.py` /
+`ep_plan.py` "the real fix". **Withdrawn.** Every upstream model folder is `parallelize.py`
+plus `sharding.py` and none splits by axis, so that layout would have been one we invented.
+The real gap is that we have no `sharding.py`. All three axes are `apply_*` functions now,
+so the axis PRs' hunks do not overlap even though the file is shared.
 
 ## Direction correction
 
@@ -76,7 +80,7 @@ independent of both PR-4025 and PR27.
 `in_grad_placements`) say how a module's parameters and IO are sharded on a mesh. They cannot
 say "this axis splits the SEQUENCE" (CP) or "this module is split across stages" (PP), because
 neither is a placement on the module's own tensors. That is why our CP and PP are imperative
-while TP and EP can be declarative, and the biggest single reason our `parallelize.py` is 1656
+while TP and EP can be declarative, and the biggest single reason our `parallelize.py` is ~1.8k
 lines against their 99.
 
 Worth raising as a design question BEFORE the axis PRs, because the answer decides whether

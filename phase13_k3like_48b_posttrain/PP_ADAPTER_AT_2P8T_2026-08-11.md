@@ -157,7 +157,7 @@ when scaling GRPO**, and it is measurable today at 48B rather than 2.8T.
 The split tower is verified exact from a shared checkpoint at 13 and 30 layers, and it only
 became runnable under FSDP after a fix this week (the shares were calling
 `forward_head`/`forward_body`/`forward_tail` directly, bypassing FSDP2's all-gather, so the
-split tower had never run under FSDP at all). At 93 layers with a 447M-parameter tower split
+split tower had never run under FSDP at all). At 93 layers with a 447M-parameter tower (Table 1's 401M plus the projector) split
 across stages, nothing has exercised it. The report REQUIRES more than one ViT stage, so
 this is on the path to a faithful DEP, not optional.
 

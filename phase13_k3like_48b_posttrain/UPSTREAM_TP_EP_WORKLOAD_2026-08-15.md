@@ -7,7 +7,7 @@ is `torchtitan/models/kimi_k3_up/` (3067 lines).
 
 ## What upstream's tree already gives us
 
-Their `parallelize.py` is 140 lines and raises `NotImplementedError` for both
+Their `parallelize.py` was 140 lines when this was written (128 today) and raises `NotImplementedError` for both
 tensor parallel and expert parallel. So TP/EP is entirely unwritten there. But
 the two preconditions that would have been expensive are already satisfied:
 

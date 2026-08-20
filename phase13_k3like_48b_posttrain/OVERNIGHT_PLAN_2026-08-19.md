@@ -58,7 +58,7 @@
 8. MoonEP 实现与测量(8×NVLink)
 
 **需要一次设计对话**
-9. `ShardingConfig` 能否表达 CP/PP —— 它六个 placement 字段说的是"模块参数与 IO 在 mesh 上怎么切",表达不了"这个轴切序列"或"这个模块跨 stage 切开"。这是我们 CP/PP 只能命令式、`parallelize.py` 1656 行对他们 99 行的最大单项来源。该上 RFC 问,答案决定 CP/PP 两个 PR 是按现状提还是重写
+9. `ShardingConfig` 能否表达 CP/PP —— 它六个 placement 字段说的是"模块参数与 IO 在 mesh 上怎么切",表达不了"这个轴切序列"或"这个模块跨 stage 切开"。这是我们 CP/PP 只能命令式、`parallelize.py` 一千七百多行对他们百行量级(行数是快照,用 `wc -l` 现取)的最大单项来源。该上 RFC 问,答案决定 CP/PP 两个 PR 是按现状提还是重写
 
 **本地技术债**
 10. ~~`parallelize.py` 按轴拆成三个文件~~ **方向错了,已撤销。** 查了上游:`deepseek_v3`、
@@ -67,7 +67,7 @@
    会离约定更远,不是更近。
 
    真正的差距是我们**没有 `sharding.py`**:deepseek_v3 是 sharding 192 行 + parallelize
-   100 行,我们是 parallelize 1768 行 + 0。凡是能声明式表达的都被写成了命令式。所以这条
+   100 行,我们是 parallelize 一千七百多行 + 0(行数是快照,用 `wc -l` 现取)。凡是能声明式表达的都被写成了命令式。所以这条
    并入第 11 条,目标是补出 `kimi_k3/sharding.py`,不是拆 `parallelize.py`。
 
    本轮已做的那部分是对的且保留:CP 从入口内联块提成 `apply_cp_kimi_k3`,与 TP/EP 对齐

@@ -29,8 +29,8 @@ hold, and all three are in or under KDA:
    not survive.
 
 So the plan keeps module BOUNDARIES as plain tensors -- every Colwise/Rowwise
-entry uses `use_local_output=True` (or `output_layouts=Replicate()` plus
-`use_local_output=True`) -- while the TP collectives still fire inside each
+entry uses `use_local_output=False` (or `output_layouts=Replicate()` plus
+`use_local_output=False`) -- while the TP collectives still fire inside each
 Linear. That is the design constraint the whole file is organised around.
 
 It is also why a declarative `sharding_config`-only approach cannot simply replace
@@ -109,7 +109,7 @@ Draft. This branch is our Kimi K3 implementation carrying the tensor parallel pl
 
 PR-4025 is a separate implementation of the same model, further along on the model itself and with all four parallelism axes raising `NotImplementedError`. When it lands this rebases onto it and the diff narrows to the TP plan alone. It is a draft now so the axis work is visible while that happens -- and so the three axis PRs can be read as a set, since today each carries the model and they overlap heavily for that reason.
 
-Every Colwise/Rowwise entry in this TP plan uses `use_local_output=True`, so module
+Every Colwise/Rowwise entry in this TP plan uses `use_local_output=False`, so module
 boundaries stay plain tensors while the TP collectives still fire inside each Linear.
 That is the constraint the whole file is organised around, and it comes from three
 places in K3 where DTensor does not compose: fla-core's triton kernels
