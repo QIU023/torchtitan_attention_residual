@@ -8,18 +8,23 @@ optional bubble scheduling (`dep_bubble_{plan,runtime,backward}.py`, `vit_prefet
 rides with this PR because it is the same pipeline machinery, but see the note below on what
 it does and does not deliver.
 
-**On DEP, stated plainly so a reviewer is not misled**: the mechanism is complete and
-numerically correct -- the tower gets its own stage, the encodes are placeable into the
-schedule's idle intervals, and the deferred vision backward is bit-identical to the inline
-one. What is NOT established is a speedup. Measured by step time, the bubble scheduling is
-NEGATIVE at both shapes that fit in 15.5 GiB per GPU: -0.95% at cost ratio 0.493 (the point
-theory calls maximal) and -2.08% at ratio 2.0. The binding constraint turns out to be the
-report's own upfront prefix rather than the cost ratio -- the first few micro-batches'
-encodes cannot be placed because nothing precedes them to anchor on, so at pp=4 with 8
-micro-batches half are unplaceable before the run starts and the ceiling on any gain is 25%.
-Placed share is about `(mb - pp) / mb`, which improves only with `mb >> pp`, and a larger mb
-is exactly what does not fit at seq 4096 here. So DEP is offered as working machinery whose
-benefit needs a bigger box to demonstrate, not as a measured win.
+**On DEP, restated 2026-08-20 after the earlier numbers were retracted.** What is
+verified: the tower gets its own stage(s), the deferred vision backward is bit-identical to
+the inline one, and with the tower split across stages every one of 64 deferred backwards
+runs at a planned slot. That last part is a fix, not a measurement -- the seam that cuts the
+graph lived only on the unsplit path, so a split tower silently ran every vision gradient
+inline while the counters read zero. Backward is roughly two thirds of the vision compute
+and is the half the report's bubbles can absorb.
+
+Forward is different and the report says why. Its bubbles sit in cooldown ("the text
+backward passes of the last PP micro-batches finish only at the very end") while a
+micro-batch's vision features are needed at the head, so 4 of 64 encodes run upfront by
+design, 8 land in bubbles and the rest stay synchronous. That ratio is the mechanism's
+shape, not our shortfall, and this PR does not claim a forward hiding rate.
+
+No step-time gain is claimed either. On this box tps cannot resolve the difference, and the
+configuration where theory predicts one needs more memory than 15.5 GiB per GPU.
+
 **Risk**: this is the hard one. AttnRes makes PP non-standard, and the adapter is
 where that is handled.
 **Depends on** the structural ask in #4025 review: factor the decoder loop so it
@@ -120,16 +125,17 @@ the parallelize entry -- so it is the model plus the pipeline path, and the axis
 combinations belong to the sibling PRs.
 
 DEP -- the vision tower on its own stage with optional bubble scheduling -- rides along
-because it is the same machinery, and it needs stating plainly. The mechanism is complete
-and numerically correct: the tower gets its own stage, encodes are placeable into the
-schedule's idle intervals, and the deferred vision backward is bit-identical to the
-inline one. There is no speedup. By step time the bubble scheduling is negative at both
-shapes that fit in 15.5 GiB per GPU, -0.95% at cost ratio 0.493 (the point theory calls
-maximal) and -2.08% at ratio 2.0. The binding constraint is the report's own upfront
-prefix rather than the cost ratio: the first few micro-batches' encodes have nothing
-preceding them to anchor on, so at pp=4 with 8 micro-batches half are unplaceable before
-the run starts and the ceiling on any gain is 25%. Placed share is about (mb - pp) / mb,
-which improves only with mb >> pp, and a larger mb is what does not fit at seq 4096 here.
+because it is the same machinery, and it needs stating precisely. The tower gets its own
+stage, the deferred vision backward is bit-identical to the inline one, and with the tower
+split every one of 64 deferred backwards runs at a planned slot. Backward is about two
+thirds of the vision compute and is the half pipeline bubbles can absorb, because its window
+is "after the gradient arrives, before the optimizer step" and the bubbles are in cooldown.
+
+Forward is not hidden to the same degree and the schedule is why: a micro-batch's features
+are needed at the head while the bubbles are at the tail, so 4 of 64 encodes run upfront as
+the design intends, 8 land in bubbles, and the rest stay synchronous. That is the shape of
+the mechanism rather than a shortfall, so no forward hiding rate is claimed here. No
+step-time gain is claimed either -- this hardware cannot resolve it.
 
 Two limits. pp8 needs dp_shard=1, which on this GPU leaves KDA in fp32 and asks for
 108,160 B of shared memory against a 101,376 B limit, so it is not measured. PP with the

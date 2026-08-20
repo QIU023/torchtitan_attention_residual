@@ -36,8 +36,23 @@ source we already had. The number was never in the report; it was in our notes.
 | **Number of MTP Layers: 1 layer** | **`num_nextn_predict_layers`: 0** | **absent** | **three-way mismatch** |
 | **ViT 401M, 27 layers, patch 14, 12 heads** | `vision_config` present | **flavor is text-only** | **gap** |
 
-The 1% activated overshoot is accounting, not structure: 105.4 vs 104.2 is
-within what embedding/lm_head tying and shared-expert bucketing move.
+The 1% activated overshoot is accounting, and 2026-08-20 pinned WHICH accounting
+rather than leaving it at "within what tying could move":
+
+    backbone                                42.24 B
+    shared experts                          12.16 B
+    routed, activated  2722.74 x 16/896  =  48.62 B
+    embed_tokens                             1.17 B
+    lm_head                                  1.17 B
+                                          --------
+    our activated                          105.42 B
+    minus one embedding (tied)             104.25 B
+    report Table 1                         104.2  B
+
+So the report counts embed_tokens and lm_head as ONE tied weight and we count two.
+The residual after that is 0.05 B. Nothing structural is missing, and the earlier
+figure of 105.8 B in this file's own summary table is a third value that came from a
+different build; 105.42 B is the one that reproduces.
 
 Where the parameters are, from the meta build:
 
