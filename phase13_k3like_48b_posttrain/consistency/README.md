@@ -30,9 +30,10 @@
     Composition 69 KDA + 24 MLA    MoE hidden/expert 3,072    Latent MoE 3584
     Context 1M        ViT 401M / 27 layers / patch 14 / 12 heads
 
-抽查过的都与树里一致。唯一的差是 **activated:报告 104.2B,我们在 meta device 上算出 105.8B
-(差 1.5%)** —— `SCALE_AUDIT_2p8t_2026-08-04.md` 记了这个差但没定性,尚未查清(可能是 MTP 层或
-shared expert 的计入方式)。
+抽查过的都与树里一致。曾经唯一的差 —— activated 报告 104.2B 而我们算 105.8B —— **2026-08-20
+查清了**:报告把 `embed_tokens` 与 `lm_head` 算作一份绑定权重(各 1.17B),我们算两份。
+105.42 − 1.17 = 104.25,残差 0.05B。那份 audit 里同时存在 105.4 和 105.8 两个值,105.42 才是
+能复现的那个。拆解见 `SCALE_AUDIT_2p8t_2026-08-04.md`。
 
 ## 一条使用纪律
 
