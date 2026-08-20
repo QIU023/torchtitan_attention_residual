@@ -74,3 +74,46 @@ pipeline degree",4 报 "requires at least 2 stages per rank"。15 层几乎没�
 3. prefetch 的跨 stage 形式是缺口,不是 bug —— 要么实现,要么在文档里承认 forward 只有气泡一条路。
 
 在 1 完成之前,任何关于"DEP 有没有用"的判断都不该写进 PR。
+
+## 更根本的一条:我们实现的机制和报告的不是同一个(2026-08-20)
+
+重读报告后,上面所有测量还有一个共同前提是错的。
+
+**报告把 ViT 摊到所有 PP stage,我们放在一个。** 5.2.3 原文:DEP "splits ViT and text
+training into separate stages and **balances vision forward and backward passes across PP
+stages**"。Fig 11 的三行 micro-batch 编号是三个 PP rank,而 `ViT fwd` / `ViT bwd` 出现在同一条
+Computation 时间线的两端 —— ViT 工作是摊开的,于是**每个 rank 都有 ViT 活可干,每个 rank 的气泡
+都能用**。
+
+我们的 `KIMI_VIT_DEP_STAGES` 默认 1,pp=4 时只有一个 rank 持有视觉工作,**另外三个 rank 的气泡对
+ViT 不可达** —— 可用气泡池被结构性砍到 1/pp。之前测到的 `10 exhausted` 因此有了第二种解释:不是
+"气泡与消费点时序错配"这么单纯,而是"能看到的气泡本来就只有四分之一"。
+
+**结构上是支持的,只是从没跑过。** 实测 `DEP_STAGES` 1/2/4 在 pp=4 上都能建起来,16 步跑满:
+
+    stages=1   roles ['both']                        1 个 rank 有视觉
+    stages=2   roles ['head'] ['tail']               2 个
+    stages=4   roles ['head'] ['body'] x2 ['tail']   4 个 -- 全覆盖
+
+所以报告那种配置我们建得出来。问题是 `pipeline_adapter.py` 里 `dep_vision_stages() > 1` 那个
+**无条件 `return`** 把气泡装配一起挡掉了(注释只谈 prefetch 没有跨 stage 形式,但 return 不区分)。
+于是"塔摊开 + 气泡开启"这个组合 —— 也就是报告描述的东西 —— **我们一次都没跑过**。
+
+**第二处偏差:重叠的对象。** Fig 11 显示 `ViT fwd` 压在开头的 `gather param` 上,`ViT bwd` 压在
+结尾的 `reduce grad (reduce_scatter + onload + add + offload)` 上。那是 ZeRO 的 DP 集合通信,在步
+边界上又长又确定。我们的规划器只认 1F1B 动作表里的 `None` 槽位,**看不到通信流上的窗口**。
+
+合起来:我们实现的是"在单个 rank 的调度空隙里塞 encode",报告做的是"把 ViT 摊到所有 rank,并与步
+边界的集合通信重叠"。名字相同,机制不同。这解释了为什么反复调 mb / cost_ratio / vp 都撞墙 ——
+调的是错的那台机器上的旋钮。
+
+### 修的顺序(判据先写下来)
+
+1. 收窄那个 `return`,只跳过 prefetch,让气泡在 `DEP_STAGES>1` 下装配;
+2. `vision_stage` 从单值改成集合 —— `consume_slot` 现在按 `stage_index != vision_stage` 跳过,
+   塔摊开后会认错消费点,单独做第 1 项会得到一个"装上了但认错"的绿数字;
+3. 在 `DEP_STAGES=pp` 下测 forward/backward 的 hidden share。**判据事先定死**:backward >= 90%,
+   forward >= 25%(现状 12.5%,翻倍才算机制在工作)。判定只看 hidden share,不看 tps ——
+   这台机器分辨不了 ±0.5%。
+
+**forward 若达不到 25%,结论就是"forward 的气泡隐藏在我们的实现里不成立"**,而不是再找一层解释。
