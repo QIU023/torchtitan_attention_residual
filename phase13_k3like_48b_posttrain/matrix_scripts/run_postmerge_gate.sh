@@ -43,10 +43,17 @@ arm_knobs() {
   case $1 in
     text) echo "" ;;
     # KIMI_VIT_PREFETCH=1 joins them: the vision encode for micro-batch m+1 is issued
-    # during m's text compute. Proven numerically inert (loss identical to prefetch-off
-    # step for step on four pp8xvp4 pairs), so it costs the gate nothing to carry and
-    # stops the one path implementing report 5.2.3's concurrency from regressing
-    # unnoticed -- before this it had run exactly once, on two cells.
+    # during m's text compute -- the one path implementing report 5.2.3's concurrency,
+    # which had otherwise run exactly once, on two cells.
+    #
+    # It does NOT cost the gate nothing, contrary to what this comment said until
+    # 2026-08-20. Prefetch is inert in expectation (with DEP off it is bit-identical to
+    # prefetch-off, because pf.take() needs the _dep_current_mb that only DEP installs),
+    # but WITH DEP it makes mm_full/tp2_pp2_cp2 unreproducible: seven runs, seven
+    # distinct 10-step traces, every pair differing. DEP alone is stable over six runs.
+    # So that cell's numbers cannot support a before/after claim while this is set --
+    # see NONDETERMINISM_tp2_pp2_cp2_2026-08-20.md. The earlier "proven inert on four
+    # pp8xvp4 pairs" claim compared too few steps to see it.
     *)    echo "KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1 KIMI_VIT_PREFETCH=1" ;;
   esac
 }
