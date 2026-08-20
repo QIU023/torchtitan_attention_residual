@@ -1,0 +1,55 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+
+########## text : kimi_k3_mini_block_attn_res ##########
+--- text_cp2  gpus=4,5  args: --parallelism.data_parallel_shard_degree 1 --parallelism.context_parallel_degree 2
+  ok  7.71140 7.69643 7.63945 7.50693 7.34184 6.98355 6.38726 5.55644 5.06274 4.88897 
+--- text_fsdp2_tp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --parallelism.data_parallel_shard_degree 2 --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  7.71445 7.69642 7.64383 7.52164 7.33330 7.03452 6.43563 5.64987 5.38030 4.94779 
+--- text_tp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 1 --parallelism.tensor_parallel_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  7.70981 7.69697 7.64586 7.52007 7.35831 7.01797 6.44725 5.62432 5.07236 4.88151 
+--- text_fsdp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  7.71629 7.70046 7.64968 7.51765 7.31883 7.02016 6.38979 5.57826 5.27223 4.83877 
+--- text_ep2_fsdp2_tp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  7.71842 7.70289 7.64478 7.51997 7.33327 7.02620 6.43549 5.64222 5.36049 4.93301 
+--- text_ep2_fsdp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  7.71186 7.69537 7.64131 7.52143 7.32886 7.03075 6.41528 5.59949 5.27991 4.83610 
+--- text_cp4  gpus=0,1,2,3  args: --parallelism.data_parallel_shard_degree 1 --parallelism.context_parallel_degree 4
+  ok  7.70812 7.69513 7.64384 7.50558 7.33886 6.98733 6.39401 5.56206 5.07436 4.89425 
+
+########## mm_full : kimi_k3_debugmodel_report_arch ##########
+--- mm_full_cp2  gpus=4,5  args: --parallelism.data_parallel_shard_degree 1 --parallelism.context_parallel_degree 2
+  ok  12.03861 11.99514 11.81990 11.55587 11.08970 10.61446 10.24268 10.05810 10.02252 9.93771 
+--- mm_full_fsdp2_tp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --parallelism.data_parallel_shard_degree 2 --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.06724 11.97917 11.81376 11.58771 11.18338 10.79508 10.43250 10.28205 10.27250 10.19577 
+--- mm_full_tp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 1 --parallelism.tensor_parallel_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.05472 11.97227 11.76575 11.42518 10.91173 10.53855 10.22365 10.09068 10.01907 10.01138 
+--- mm_full_fsdp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.04848 11.95088 11.74479 11.34176 10.75854 10.36717 10.02830 9.86168 9.75355 9.74471 
+--- mm_full_ep2_fsdp2_tp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.05941 11.98916 11.84457 11.58146 11.23144 10.80611 10.44410 10.30850 10.29510 10.23644 
+--- mm_full_ep2_fsdp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.07240 11.96940 11.77694 11.36327 10.76249 10.37254 10.03462 9.86900 9.76135 9.75372 
+--- mm_full_cp4  gpus=0,1,2,3  args: --parallelism.data_parallel_shard_degree 1 --parallelism.context_parallel_degree 4
+  ok  12.04880 11.99456 11.81695 11.48405 10.99706 10.54710 10.19690 10.03232 9.98822 9.90465 
+
+########## mm_lora : kimi_k3_debugmodel_report_arch_lora ##########
+--- mm_lora_cp2  gpus=4,5  args: --parallelism.data_parallel_shard_degree 1 --parallelism.context_parallel_degree 2
+  ok  12.04343 12.04552 12.05124 12.04347 11.91412 11.93726 11.92928 11.96973 11.84597 11.87651 
+--- mm_lora_fsdp2_tp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --parallelism.data_parallel_shard_degree 2 --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.06923 12.05752 12.05805 12.03314 11.92698 11.95283 11.94544 11.94348 11.86046 11.91126 
+--- mm_lora_tp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 1 --parallelism.tensor_parallel_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.04563 12.07662 12.08321 12.05589 11.94952 11.96999 11.95564 11.98573 11.85656 11.92886 
+--- mm_lora_fsdp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.04438 12.05603 12.05795 12.06679 11.88689 11.93676 11.94622 11.98038 11.83521 11.88652 
+--- mm_lora_ep2_fsdp2_tp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 --parallelism.tensor_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.06415 12.05166 12.03479 12.03295 11.94984 11.97317 11.94357 11.96276 11.87613 11.91765 
+--- mm_lora_ep2_fsdp2_pp2_cp2  gpus=0,1,2,3,4,5,6,7  args: --training.local-batch-size 2 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 --parallelism.pipeline_parallel_degree 2 --parallelism.context_parallel_degree 2
+  ok  12.05346 12.03964 12.05963 12.05715 11.91413 11.94461 11.94696 11.95549 11.85367 11.88086 
+--- mm_lora_cp4  gpus=0,1,2,3  args: --parallelism.data_parallel_shard_degree 1 --parallelism.context_parallel_degree 4
+  ok  12.05261 12.07008 12.04341 12.05269 11.93221 11.95705 11.93005 11.96590 11.83311 11.89748 
+
+=== ran 21 of 21 CP cells ===
+=== diff vs baseline: /workspace/mx_cp_before ===
+  EXCLUDED mm_full   tp2_pp2_cp2          (differs; backward is nondeterministic -- proves nothing either way)
+
+  identical: 20/20   differing: 0   missing: 0

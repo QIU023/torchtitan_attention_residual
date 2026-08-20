@@ -49,7 +49,13 @@ arm_flavor() {
     mm_lora) echo kimi_k3_debugmodel_report_arch_lora ;;
   esac
 }
-arm_knobs() { case $1 in text) echo "" ;; *) echo "$MM_KNOBS" ;; esac; }
+# KNOBS overrides the per-arm default, for probes that need to vary one knob (e.g.
+# running a cell with DEP off to see whether DEP is what makes it nondeterministic).
+# Set it to the empty string with KNOBS="" -- unset and empty mean different things.
+arm_knobs() {
+  if [ "${KNOBS+set}" = set ]; then echo "$KNOBS"; return; fi
+  case $1 in text) echo "" ;; *) echo "$MM_KNOBS" ;; esac
+}
 arm_extra() {
   case $1 in
     text) echo "--training.seq-len 4096 $GATE_EXTRA" ;;
@@ -92,7 +98,7 @@ total=0; ran=0; port_base=52000
 for arm in $ARMS; do
   FLAVOR=$(arm_flavor "$arm")
   EXTRA=$(arm_extra "$arm")
-  KNOBS=$(arm_knobs "$arm")
+  CELL_KNOBS=$(arm_knobs "$arm")
   BASE="--module kimi_k3 --config $FLAVOR --debug.seed 42 --debug.deterministic \
  --metrics.log_freq 1 --training.steps $STEPS --training.global-batch-size 8 $EXTRA"
   echo
@@ -111,7 +117,7 @@ for arm in $ARMS; do
     for attempt in 1 2 3; do
       port=$((port_base + total * 7 + 300 * (attempt - 1)))
       rm -rf "$OUT/$tag"
-      CUDA_VISIBLE_DEVICES="$gpus" env $KNOBS timeout 7200 torchrun \
+      CUDA_VISIBLE_DEVICES="$gpus" env $CELL_KNOBS timeout 7200 torchrun \
         --nproc_per_node="$n" --master_port="$port" ${ENTRY:--m torchtitan.train} \
         $BASE $cellargs --dump-folder "$OUT/$tag" > "$OUT/$tag.log" 2>&1
       rm -rf "$OUT/$tag/checkpoint"
