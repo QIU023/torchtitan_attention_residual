@@ -117,3 +117,46 @@ ViT 不可达** —— 可用气泡池被结构性砍到 1/pp。之前测到的 
    这台机器分辨不了 ±0.5%。
 
 **forward 若达不到 25%,结论就是"forward 的气泡隐藏在我们的实现里不成立"**,而不是再找一层解释。
+
+## 逐字重读原文之后:forward 藏不住是机制的形状,不是缺陷(2026-08-20)
+
+上一节我预期"把塔摊到所有 PP stage 能放大气泡池",实测 `DEP_STAGES` 1 与 4 的三个数字**一字未变**
+(8/64 placed、14 idle、10 exhausted)。预期不成立。回退。
+
+再逐字读 5.2.3,错在我读串了主语。原文:
+
+> We observe that, under the interleaved 1F1B pipeline schedule, the text forward passes of
+> the first PP micro-batches are all scheduled at the very beginning, while the text
+> backward passes of the last PP micro-batches finish only at the very end.
+
+这句在讲**气泡在哪**:开头被文本 forward 挤满(所以前 PP 个 ViT forward 只能
+"executed synchronously upfront"),结尾被文本 backward 拖长 —— **气泡主要在 cooldown 那一段**。
+而 forward 的消费点在头部。**气泡在尾、需求在头,天生错位**,这就是 `10 exhausted` 的成因。
+
+"the backward passes are handled analogously" 之所以成立,是因为 backward 的可行域与气泡位置
+**同向**:尾部气泡 + 梯度已到达 = 可用。所以 `backward 100% / forward 12.5%` 不是我们实现得差,
+**这就是这个机制的形状**。而 "most of the ViT computation is hidden" 也因此站得住 —— 反向约占 ViT
+计算的三分之二,且几乎全藏。
+
+而 `balances vision forward and backward passes across PP stages` 讲的是 **K2.5 的 DEP 做了什么**
+(把 ViT 与文本拆成不同 stage、把视觉前后向在 stage 间做负载均衡),不是"气泡池随 stage 数放大"。
+我把它读成了后者。
+
+**结论:forward 的气泡隐藏不再作为优化目标。** 它的上限就是"尾部气泡里能捡到的那点",按原文设计
+如此。PR 里不该承诺 forward 的隐藏率。
+
+## 塔摊开时 backward 半边从未生效(既存 bug)
+
+`cut_for_deferred_backward` 只出现在 `_forward_single_stage` 里。而 `forward` 按 role 分派:
+
+    if self._dep_role in ("body", "tail"):  return self._dep_forward_later(...)
+    if self._dep_role == "head":            return self._dep_forward_head(...)
+    return self._forward_single_stage(...)   # 只有未拆分时走这里
+
+所以**塔一拆开就走不到那个切图点** —— GradQueue 永远空,运行时报
+`0 ran at a planned slot, 0 slots planned`,而每个梯度照样内联跑完。不是新引入的回归:
+`DEP_STAGES>1` 下 DEP 的 backward 半边**从来没生效过**,而它正是"藏住大部分"的主体。
+
+修法是在 `tail`(encode 真正完成的那一片)补同一个切图。切在 head 或 body 只会重放一个前缀。
+另外把 `dep_vision_stages() > 1` 那个无条件 `return` 收窄成只跳过 prefetch —— 原来它把气泡运行时
+一起带走,于是只有 `DEP_STAGES=1` 装得上气泡,而那恰是塔没拆的情形。
