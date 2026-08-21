@@ -91,11 +91,30 @@ norm 切片没做成,但把路探清楚了。四条都不是读代码能得出�
 **同名不同类看起来完全一样**。这直接改变工作量:fla 的模块不是我们的,加不了声明,
 和 `ShortConvolution`、`FusedRMSNormGated` 是同一类问题。
 
-### 仍未解决
+### 追到了具体函数(2026-08-21 续)
 
-已声明的那 20 个 norm 施加后**仍是 plain**。原因未查明 —— 可能是驱动器跳过了它们
-(`_already_distributed` 或 ep 标记),也可能是 `norm_config` 的 state_shardings 需要的 mesh
-在那个时点不可用。**下次从这里开始**,而不是从头。
+排除法一步步收紧,每步都是实测:
+
+* **时机不是问题** —— 声明时零个 norm 已被 parallelize;
+* **驱动器确实进了** —— `entered parallelize() on 26 outermost Modules:
+  {'KimiAttnResDecoderLayer': 21, 'RMSNorm': 2, ...}`;
+* **声明确实读得到** —— `Module.parallelize` 读的就是 `_sharding_config`,而且先递归子模块;
+* **不是漏声明** —— 驱动器之后直接数:`RMSNorm params dtensor=0 plain=118,
+  modules without a declaration=0`。**118 个全有声明,全是 plain。**
+
+(`declare_norm_sharding` 报 20 是因为它跳过已有声明的;另外 98 个早就有。)
+
+落点因此是 `Module._distribute_states` 里的分支:`spmd_backend == "spmd_types"` 走的是
+**`_spmd_distribute_state`**,和 partial_dtensor 的 `distribute_tensor` 是两条不同的路。
+它调 `spmd_distribute_tensor` 并配 `set_current_spmd_mesh`,而结果没有变成 DTensor。
+
+### 下次从这里开始:先证伪判据本身
+
+有一个可能推翻整条推理的点:**`spmd_types` 也许用类型标注而不是 DTensor**,那么探针里的
+`isinstance(param, DTensor)` 就是错的判据,"全是 plain" 也就不构成问题。
+
+但 FSDP 的报错明确说要 DTensor。两者必须对齐,而**先分清这一点再动手**,否则可能在修一个
+不存在的问题 —— 这一轮已经有两次归因错在"没先证伪前提"上。
 
 ### 安全属性守住了
 
