@@ -4,8 +4,8 @@
 **Branch**: `QIU023/torchtitan:k3_pr_classified` -- 15 commits on `upstream/main`,
 sliced by content. `k3_full_tree_draft` is where the merge and the adaptations were done and
 is not what gets filed.
-**Size**: 96 files, +28165 -28 against `upstream/main` `48cb7ae1f`, excluding the vendored
-reference tree under `models/kimi_k3_up/` which must be dropped before filing.
+**Size**: 96 files, +27788 -28 against `upstream/main` `48cb7ae1f`. The vendored reference
+tree under `models/kimi_k3_up/` is gone, and so is its entry in `models/__init__.py`.
 
 **Why this exists alongside the axis PRs.** PR21/22/23 each carry one parallelism axis with
 the other two raising, which is what makes them reviewable. That deliberately hides the rest
@@ -77,8 +77,56 @@ commits moved essentially nothing, which is the claim worth making about a merge
 
 ## Before filing
 
-* ~~drop `models/kimi_k3_up/`~~ -- done, `k3_pr_classified` never had it;
+* ~~drop `models/kimi_k3_up/`~~ -- done. The directory was never on `k3_pr_classified`, but
+  its registration in `models/__init__.py` was, so the branch declared a model whose files
+  it did not carry and shipped a comment about an alignment migration upstream has no part
+  in. Removed in commit 01 and the other fourteen replayed on top; the three axis branches
+  carried the directory itself and were stripped the same way.
 * ~~14 of our own commits carry a bare `#NNNN`~~ -- handled by construction. Those 14 are
   in the working branch's history; `k3_pr_classified` is written fresh on `upstream/main`
   and scans clean at 0 of 15. Nothing rewrites anyone else's commits to get there.
 * the title must carry DO NOT MERGE, and the PR must be opened as a draft.
+
+## PASTE
+
+Everything above is ours. What follows is the PR description, verbatim.
+
+--- PASTE BEGIN ---
+
+Draft, and not for merge -- this is the whole Kimi K3 tree in one place so the parts the
+axis PRs leave out are visible: MXFP4 QAT and packed-MXFP4 import, quantile load balancing,
+MTP, LoRA, DEP, the MoonEP dispatcher, and the HF<->DCP key map. It is 96 files and 28
+deletions, so it is almost entirely additive.
+
+PR-4025 is a separate implementation of the same model and is further along on the model
+itself. When it lands this rebases onto it. Filing now is so nobody discovers a piece of
+this late, not a request to review 28k lines.
+
+The fifteen commits are sliced by content rather than by the history that produced them:
+the model, Block AttnRes, the SiTU-GLU experts and quantile balancing, MoonViT and the
+multimodal wrapper, then one per parallelism axis, then DEP, MoonEP, QAT, LoRA, the key
+map, the parallelize entry that applies all of it, the core changes it needs, and the
+tests.
+
+Two upstream defaults this tree does not satisfy yet, both pinned in our gate rather than
+worked around in the model, and both hit immediately by anyone running the branch as-is.
+
+`spmd_backend` defaults to `spmd_types`; this needs `partial_dtensor`. `fully_shard()`
+under `spmd_types` wants every parameter to already be a DTensor on the full SPMD mesh, and
+TP additionally trips `assert_type() does not support DTensor. SPMD type checking operates
+on local tensors only`. A partially declarative model satisfies neither, so supporting
+`spmd_types` is the declarative conversion itself -- the same work as giving this model a
+`sharding.py` -- rather than a patch on top. That is the largest gap between this
+`parallelize.py` and an upstream model's, and it is what we are doing next.
+
+CUDA graph capture is on by default; this needs `--training.disable-cuda-graphs`. The
+vision path's patch count varies per batch, so capture validation rejects it: `input 4
+changed from (1, 256, 588) to (1, 192, 588)`. That is not specific to this model -- any VLM
+with a dynamic patch count reaches it -- so it may deserve its own issue.
+
+58 of 58 gate cells pass on this branch across three model arms (text, multimodal,
+multimodal+LoRA) with those two pins. Against the same gate before merging 41 upstream
+commits, `fsdp2`, `cp2` and `ep2_fsdp2` are identical at four steps and `tp2` differs by one
+in the last digit of step 1.
+
+--- PASTE END ---

@@ -12,19 +12,19 @@ body 全文在同目录 `.md` 里,直接粘。
 
 | 分支 | 内容 | 标题 | body |
 | --- | --- | --- | --- |
-| `k3_pr_classified` | 全树 DO NOT MERGE,15 个按内容切的提交 | `[DO NOT MERGE] Kimi K3: full tree, pending rebase onto the reference-model PR` | `../PR29_torchtitan_kimi_k3_full_tree_draft/PR.md` 的 PASTE |
+| `k3_pr_classified` | 全树 DO NOT MERGE,15 个按内容切的提交 | `[DO NOT MERGE] Kimi K3: full tree, pending rebase onto the reference-model PR` | `../PR29_torchtitan_kimi_k3_full_tree_draft/PR.md` 末尾的 PASTE 块 |
 | `k3_pr_tp_clean` | 模型 + TP,CP/EP 各一句 raise | `[do not review yet] Kimi K3: tensor parallelism, including the KDA path` | `k3_pr_tp.md` |
 | `k3_pr_ep_clean` | 模型 + EP,TP/CP 各一句 raise | `[do not review yet] Kimi K3: expert parallelism and the grouped-GEMM expert layout` | `k3_pr_ep.md` |
-| `k3_pr_base_clean` | 模型 + PP adapter,三个轴都 raise | `[do not review yet] Kimi K3: pipeline parallelism with Block Attention Residuals` | `k3_pr_base.md` |
+| `k3_pr_pp_clean` | 模型 + PP adapter,三个轴都 raise | `[do not review yet] Kimi K3: pipeline parallelism with Block Attention Residuals` | `k3_pr_base.md` |
 
 compare 链接:
 
 * https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_classified?expand=1
 * https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_tp_clean?expand=1
 * https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_ep_clean?expand=1
-* https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_base_clean?expand=1
+* https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_pp_clean?expand=1
 
 三个轴分支各含完整模型,所以 diff 大量重叠 —— body 里已写明,免得被读成三份重复工作。
-`parallelize.py` 的行数是它们真正的区别:TP 1422 / EP 646 / PP(base)482。
+`parallelize.py` 的行数是它们真正的区别:TP 1422 / EP 646 / PP 540。
 
 **发之前 body 要你逐字过一遍**(pytorch 的 AI policy 要求),我不自行提交。
