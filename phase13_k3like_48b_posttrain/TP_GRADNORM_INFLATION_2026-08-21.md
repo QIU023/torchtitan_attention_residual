@@ -69,3 +69,100 @@ spmd_types 下的 TP 数值(2.8975)看起来更接近正确,但**不能据此宣
 它也可能因为别的原因恰好落在那个量级。两条路都要独立验证,而不是互相背书。
 
 在这条查清之前,**任何"TP 格子逐位一致"的比对都只是在比对同一个缺陷的两次复现**。
+
+
+> **已修复(同日)。** 根因是 embedding 声明缺了输入侧那两件,不是下面一度写的
+> "`_redistribute_outputs` 不支持 plain"。TP 现在对 grad_norm 透明:3.2444(有 TP)对
+> 3.2618(无 TP),三步全程贴合,修复前是 18.24。提交 `d315cdd64`。
+> 下面保留完整过程,因为归因错了一次,而**发现它错的是"llama3 为什么没事"这一问**。
+
+## 追因过程(2026-08-21 续)
+
+### 先修好的是另一个 bug
+
+`Embedding.forward` 的 vocab-parallel 分支按 `chunk = ceil(vocab / tp)` 索引权重,而我们的 TP 计划
+在 08-14 删掉 `embed_tokens` 条目后**没有任何东西再切权重** —— 实测 `local_rows=2016` 对
+`chunk=1008`,**rank 1 一直在读错误的行**。加上 `tp=S(0)` 声明后变 OK(提交 `a75d93f83`)。
+
+这是真实的前向错误,窗口 **08-14 至今**。但它**不解释 grad_norm**:修完之后 `embed_tokens`
+的梯度平方和 592.5 -> 594.8,几乎没动。**两个是独立的 bug。**
+
+### grad_norm 的根因
+
+补上上游那份完整声明(输出 `tp=P`,再重分布到 `R`,那次重分布就是跨 rank 求和)之后,
+**数值一点没变**。逐层查下去:
+
+| 观测 | 结果 |
+|---|---|
+| 驱动器进了 Embedding | 是(`entered ... {'Embedding': 1}`) |
+| 声明装上了、forward 被包装 | 是(`cfg=True forward_wrapped=True`) |
+| 包装后的 forward 被调用 | 是 |
+| **包装后的返回值** | **plain tensor,不是 Partial DTensor** |
+
+根因在 `Module._redistribute_outputs` 的 `partial_dtensor` 分支:**它的两处重分布都写在
+`if isinstance(outputs, DTensor)` 里**。我们的 `Embedding.forward` 在 vocab-parallel 分支里
+显式 `to_local()` 后返回 plain,于是两个分支都不进,**原样返回**。
+
+上游 llama3 不受影响,是因为它的 embedding 输出本来就是 DTensor。
+
+**所以声明写着 `P -> R`,而没有任何代码把 plain 提升成 Partial 去执行那次求和。**
+各 rank 的置零结果从未相加 —— 这就是缺失的跨 rank 归约。
+
+### 一条方法上的教训
+
+中途我用探针钩 `Module._redistribute_outputs` 想看它是否被调用,**没有输出**,当时读成了
+"包装没生效"。但另一个探针证明包装后的 forward 确实被调用了。两个观测矛盾时,**先怀疑探针**:
+那次钩子没生效,而"没有输出"看起来和"代码没跑"一模一样。改成直接看返回值才拿到真相。
+
+
+## 修复:声明要五件套,不是两件
+
+上游 `tok_embeddings` 的声明是:
+
+    state_shardings   {"weight": tp=S(0)}          # 权重按词表切
+    in_src / in_dst   {"input": tp=R}              # <- 我最初漏掉的
+    out_src / out_dst  tp=P -> tp=R                # 各 rank 的部分和求和
+    local_map          in_grad_placements=None
+
+我分三次补,每次都实测:
+
+| 补了什么 | grad_norm | 说明 |
+|---|---|---|
+| `state`(权重切分) | 18.24 -> 25.12 | 修好了读错行,**没解决膨胀** |
+| `+ out_src/out_dst` | 25.12(不变) | 完全没效果 |
+| **`+ in_src/in_dst`** | **25.12 -> 3.2444** | **解决** |
+
+为什么是输入侧:`Module._redistribute_outputs` 在 partial_dtensor 下**只对 DTensor 做重分布**,
+而 `Embedding.forward` 的 vocab-parallel 分支 `to_local()` 后返回 plain。声明输入会把它提升成
+DTensor,于是 `F.embedding` 的输出**自然是 DTensor**,那条 `P -> R` 的路径才进得去。
+
+实测确认:补齐后 embedding 输出从 `plain` 变成 `DTensor(Replicate())`。
+
+## 归因错过一次,以及是什么纠正了它
+
+中间版本写的根因是"`_redistribute_outputs` 不支持 plain,所以要改 `models/common` 的共享模块"。
+那个说法**命名了一个真实行为却归错了因**,而且它有一个自己解释不了的事实:**llama3 用同一个
+`Embedding` 类、同样 `to_local()` 返回 plain,为什么不受影响?**
+
+实测两边的 embedding 输出:
+
+| | 输出 |
+|---|---|
+| llama3 | `DTensor(Shard(dim=1))` |
+| kimi_k3(修复前) | `plain` |
+
+同类同代码不同结果 -> 差别只能在声明。查上游声明,发现是五件套,我抄了两件。
+
+**沿着错误归因走下去会去改共享模块**,而缺陷完全是本地的。拦住它的不是更仔细的代码阅读,
+是"为什么别人没事"这个问题 —— **一个正确的根因必须能解释所有的观测,包括没出问题的那些。**
+
+## 三个 bug 同源
+
+都来自 08-14 那次"删掉 `embed_tokens: RowwiseParallel`,改用模块自带的 vocab-parallel 前向":
+
+1. 权重没人再切 -> rank 1 读错行(前向错误);
+2. 输出 P 声明缺失(被 3 掩盖,单独补无效果);
+3. **输入声明缺失 -> 输出不是 DTensor -> 跨 rank 求和从未执行 -> grad_norm 膨胀 5.6 倍**。
+
+删 style 的理由本身成立(MaskPartial 无法与 P(sum) 重分布),漏的是**删掉 style 之后要补等价的
+声明**,而"等价"意味着五件套,不是其中一件。
