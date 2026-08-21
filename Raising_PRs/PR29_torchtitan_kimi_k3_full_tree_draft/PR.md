@@ -60,9 +60,13 @@ worth a separate issue rather than a flag.
 
 ## Evidence
 
-58 of 58 cells across three model arms (text / multimodal / multimodal+LoRA), on this
-branch, with the two pins above. Per-cell loss and grad_norm for all 10 steps are in the
-logbook (`gate_logs/gate_58_2026-08-19_merged_percell.txt`) rather than here.
+58 of 58 cells across three model arms (text / multimodal / multimodal+LoRA), with the two
+pins above, on `afc3e4287` -- the merged tree carrying the 2026-08-21 embedding and
+grad-norm fixes, which is zero files different from the re-cut `k3_pr_classified_v2` once
+the vendored tree is excluded. Per-cell loss and grad_norm for all 10 steps:
+`gate_logs/gate_58_2026-08-21_final_percell.txt`. TP cells sit at grad_norm 3.2-3.5 there;
+the 08-19 log's 12-18 was the inflation, fixed the same day
+(`TP_GRADNORM_INFLATION_2026-08-21.md`).
 
 The run's own accounting line says 54, and that number is worth explaining rather than
 hiding: the four DEP and pp8xvp4 cells are launched by two scripts that build their own
@@ -77,56 +81,60 @@ commits moved essentially nothing, which is the claim worth making about a merge
 
 ## Before filing
 
-* ~~drop `models/kimi_k3_up/`~~ -- done. The directory was never on `k3_pr_classified`, but
-  its registration in `models/__init__.py` was, so the branch declared a model whose files
-  it did not carry and shipped a comment about an alignment migration upstream has no part
-  in. Removed in commit 01 and the other fourteen replayed on top; the three axis branches
-  carried the directory itself and were stripped the same way.
-* ~~14 of our own commits carry a bare `#NNNN`~~ -- handled by construction. Those 14 are
-  in the working branch's history; `k3_pr_classified` is written fresh on `upstream/main`
-  and scans clean at 0 of 15. Nothing rewrites anyone else's commits to get there.
+* ~~drop `models/kimi_k3_up/`~~ -- done, twice over. v1 removed it by amending commit 01;
+  `k3_pr_classified_v2` is a re-cut on `00cffaeb3` with the registration removed inside the
+  model commit where that file belongs. Verified on v2: zero `kimi_k3_up` files, zero
+  registry references. The three axis branches still carry the pre-fix numerics and get
+  re-cut after PR-4025, not now.
+* ~~bare `#NNNN` in commit messages~~ -- v2 scans clean at 0 of 15, re-verified after the
+  re-cut. Nothing rewrites anyone else's commits.
+* **commit 05's title does not match its content.** On v2 it says "tensor parallelism,
+  including the KDA DTensor shims" and touches only `quant_scope.py` (+100) -- the TP plan
+  and the shims are in commit 13's `parallelize.py`. A reviewer clicking the commit sees a
+  quantization-scope module under a TP title. Either retitle 05 (it is the quantization
+  scope shared by QAT and QLoRA) or fold it into 10; one more re-cut of the top commits
+  either way, before filing.
 * the title must carry DO NOT MERGE, and the PR must be opened as a draft.
 
 ## PASTE
 
-Everything above is ours. What follows is the PR description, verbatim.
+Everything above is ours. What follows is the PR description, verbatim. Paragraphs are single
+lines on purpose -- GitHub reflows them, and hard-wrapped source is what the PR-text rule calls out.
 
 --- PASTE BEGIN ---
 
-Draft, and not for merge -- this is the whole Kimi K3 tree in one place so the parts the
-axis PRs leave out are visible: MXFP4 QAT and packed-MXFP4 import, quantile load balancing,
-MTP, LoRA, DEP, the MoonEP dispatcher, and the HF<->DCP key map. It is 98 files and 28
-deletions, so it is almost entirely additive.
+Draft, and not for merge. The three axis PRs each carry one parallelism with the others raising, which is what makes them reviewable, and that deliberately leaves out most of the work. This is the whole Kimi K3 tree so none of it is a surprise later: MXFP4 QAT and packed-MXFP4 import, quantile load balancing, MTP, LoRA, the decoupled vision encoder, a MoonEP token dispatcher, and the HF <-> DCP key map for the released checkpoint.
 
-PR-4025 is a separate implementation of the same model and is further along on the model
-itself. When it lands this rebases onto it. Filing now is so nobody discovers a piece of
-this late, not a request to review 28k lines.
+PR-4025 is a separate implementation of the same model and is further along on the model itself. When it lands, this rebases onto it and what remains is the parallelism and the post-training pieces. Filing now is disclosure, not a request to review 28k lines.
 
-The fifteen commits are sliced by content rather than by the history that produced them:
-the model, Block AttnRes, the SiTU-GLU experts and quantile balancing, MoonViT and the
-multimodal wrapper, then one per parallelism axis, then DEP, MoonEP, QAT, LoRA, the key
-map, the parallelize entry that applies all of it, the core changes it needs, and the
-tests.
+98 files, +28307 -28. The 28 deletions are the thing to notice -- this is almost entirely additive, and the five core files it does touch are listed in commit 14.
 
-Two upstream defaults this tree does not satisfy yet, both pinned in our gate rather than
-worked around in the model, and both hit immediately by anyone running the branch as-is.
+The fifteen commits are sliced by content rather than by the 409 commits of history that produced them:
 
-`spmd_backend` defaults to `spmd_types`; this needs `partial_dtensor`. `fully_shard()`
-under `spmd_types` wants every parameter to already be a DTensor on the full SPMD mesh, and
-TP additionally trips `assert_type() does not support DTensor. SPMD type checking operates
-on local tensors only`. A partially declarative model satisfies neither, so supporting
-`spmd_types` is the declarative conversion itself -- the same work as giving this model a
-`sharding.py` -- rather than a patch on top. That is the largest gap between this
-`parallelize.py` and an upstream model's, and it is what we are doing next.
+| # | commit | main files |
+| --- | --- | --- |
+| 01 | the K3 model: KDA, MLA, latent MoE, MTP, and its config tree | `model.py` `model_configs.py` `config_registry.py` |
+| 02 | Block Attention Residuals: the primitive and the layout tables | `attn_res.py` `attn_res_model.py` `layout.py` |
+| 03 | SiTU-GLU routed experts and quantile load balancing | `moe.py` `quantile_balance.py` `common/moe.py` |
+| 04 | MoonViT and the multimodal wrapper | `moonvit.py` `multimodal_model.py` `vision_preprocess.py` |
+| 05 | tensor parallelism, including the KDA DTensor shims | `quant_scope.py` |
+| 06 | context parallelism: KCP for KDA, Ulysses for MLA, dynamic CP for the tower | `kcp.py` `vit_cp_plan.py` |
+| 07 | pipeline parallelism: the cross-stage AttnRes adapter | `pipeline_adapter.py` |
+| 08 | the decoupled vision encoder, with bubble scheduling | `dep_bubble_*.py` `vit_prefetch.py` |
+| 09 | a MoonEP token dispatcher against torchtitan's EP seam | `moon_ep_dispatcher.py` |
+| 10 | MXFP4 QAT and packed-MXFP4 weight import | `mxfp4_qat.py` `packed_mxfp4.py` |
+| 11 | LoRA, including the skip-edge gradients PP has to route | `lora.py` `muon.py` |
+| 12 | HF <-> DCP conversion for the released key set | `hf_key_map.py` `state_dict_adapter.py` |
+| 13 | the parallelize entry that applies all of the above | `parallelize.py` |
+| 14 | the core changes the above needs | `distributed/{fsdp,utils}.py` `components/{lr_scheduler,optimizer}.py` |
+| 15 | tests | `tests/` (56 files) |
 
-CUDA graph capture is on by default; this needs `--training.disable-cuda-graphs`. The
-vision path's patch count varies per batch, so capture validation rejects it: `input 4
-changed from (1, 256, 588) to (1, 192, 588)`. That is not specific to this model -- any VLM
-with a dynamic patch count reaches it -- so it may deserve its own issue.
+Two upstream defaults have to be overridden to run it, both pinned in our gate rather than worked around in the model. `spmd_backend` needs `partial_dtensor`: under `spmd_types`, `fully_shard()` wants every parameter to already be a DTensor on the full SPMD mesh, and TP additionally trips `assert_type() does not support DTensor`, so supporting it is the declarative conversion itself rather than a patch on top -- that is the largest gap between this `parallelize.py` and an upstream model's, and it is what we are doing next. And CUDA graph capture needs `--training.disable-cuda-graphs`, because the vision path's patch count varies per batch and capture validation rejects it; that one is not specific to this model, so it may deserve its own issue.
 
-58 of 58 gate cells pass on this branch across three model arms (text, multimodal,
-multimodal+LoRA) with those two pins. Against the same gate before merging 41 upstream
-commits, `fsdp2`, `cp2` and `ep2_fsdp2` are identical at four steps and `tp2` differs by one
-in the last digit of step 1.
+Evidence: 58 of 58 gate cells pass on this tree, ten steps each, with those two pins. Per-cell loss and grad_norm for every step of all 58 are here, one line per cell:
+
+https://github.com/QIU023/torchtitan_attention_residual/blob/f81a19319506ef1c3d3e2b8fc6eadbf7e6d99feb/phase13_k3like_48b_posttrain/gate_logs/gate_58_2026-08-21_final_percell.txt
+
+The three model arms are text, multimodal, and multimodal+LoRA, 18 cells each, over dp / fsdp / tp / cp / pp / ep and their combinations up to `ep2_fsdp2_tp2_cp2`; the remaining four are the two decoupled-encoder cells at pp4 and pp8 and the two pp8xvp4 cells.
 
 --- PASTE END ---
