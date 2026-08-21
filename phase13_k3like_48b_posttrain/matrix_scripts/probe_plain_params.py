@@ -46,7 +46,13 @@ def _dump(model, when: str) -> None:
             full = f"{mod_name}.{p_name}" if mod_name else p_name
             owner[full] = type(mod).__name__
 
-    by_class = defaultdict(lambda: [0, 0])  # class -> [dtensor, plain]
+    # has_local_type is the criterion that actually separates a working model from a
+    # failing one under spmd_types. DTensor-ness does not: llama3_debugmodel trains
+    # with 45 plain parameters and zero DTensors. Both are reported so the difference
+    # stays visible instead of being asserted.
+    from spmd_types.runtime import has_local_type
+
+    by_class = defaultdict(lambda: [0, 0, 0])  # class -> [dtensor, plain, untyped]
     plain_names = defaultdict(lambda: defaultdict(int))  # class -> suffix -> count
     for name, param in model.named_parameters():
         cls = owner.get(name, "?")
@@ -54,6 +60,8 @@ def _dump(model, when: str) -> None:
             by_class[cls][0] += 1
         else:
             by_class[cls][1] += 1
+        if not has_local_type(param):
+            by_class[cls][2] += 1
             plain_names[cls][name.rsplit(".", 1)[-1]] += 1
 
     # "Declared but nobody applied it" and "never declared" need opposite fixes, and
@@ -68,14 +76,21 @@ def _dump(model, when: str) -> None:
 
     total_d = sum(v[0] for v in by_class.values())
     total_p = sum(v[1] for v in by_class.values())
+    total_u = sum(v[2] for v in by_class.values())
     print(f"\n=== parameters {when} ===", flush=True)
-    print(f"  DTensor: {total_d}   plain: {total_p}\n", flush=True)
-    print(f"  {'owning module':38s} {'DTensor':>8s} {'plain':>7s}", flush=True)
-    for cls, (d, p) in sorted(by_class.items(), key=lambda kv: (-kv[1][1], kv[0])):
+    print(
+        f"  DTensor: {total_d}   plain: {total_p}   WITHOUT spmd type: {total_u}\n",
+        flush=True,
+    )
+    print(
+        f"  {'owning module':34s} {'DTensor':>8s} {'plain':>7s} {'untyped':>8s}",
+        flush=True,
+    )
+    for cls, (d, p, u) in sorted(by_class.items(), key=lambda kv: (-kv[1][2], kv[0])):
         # No verdict attached: plain is normal under spmd_types (see the warning
         # in the module docstring). The useful signal is which classes appear at all.
-        flag = ""
-        print(f"  {cls:38s} {d:>8d} {p:>7d}{flag}", flush=True)
+        flag = "  <-- untyped" if u else ""
+        print(f"  {cls:34s} {d:>8d} {p:>7d} {u:>8d}{flag}", flush=True)
 
     print("\n  modules owning parameters, by whether a sharding_config exists:", flush=True)
     print(f"    {'module':36s} {'declared':>9s} {'undeclared':>11s}", flush=True)
@@ -83,7 +98,7 @@ def _dump(model, when: str) -> None:
         print(f"    {cls:36s} {yes:>9d} {no:>11d}", flush=True)
 
     if plain_names:
-        print("\n  plain parameter names, by owning module:", flush=True)
+        print("\n  UNTYPED parameter names, by owning module:", flush=True)
         for cls in sorted(plain_names):
             names = ", ".join(
                 f"{n} x{c}" for n, c in sorted(plain_names[cls].items())

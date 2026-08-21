@@ -32,9 +32,15 @@ CELLS=${CELLS:-"$CP_CELLS_13 $CP_CELLS_MAX"}
 # 12.07827 under the other, and the gap was briefly read as an adapter defect. Rather
 # than trust that this copy stays in sync, assert the gate still says what we assume.
 GATE=$HERE/run_postmerge_gate.sh
-GATE_EXTRA="--parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs"
+# The gate's settings, and the default here. Overridable for a targeted sweep on a
+# different backend (SPMD_BACKEND=spmd_types), but the drift assertion below still
+# checks the gate against its OWN value -- an override must not disable the check that
+# this script and the gate have not diverged.
+GATE_BACKEND=${SPMD_BACKEND:-partial_dtensor}
+GATE_EXTRA="--parallelism.spmd_backend $GATE_BACKEND --training.disable-cuda-graphs"
+GATE_EXTRA_EXPECTED="--parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs"
 MM_KNOBS="KIMI_VIT_DEP=1 KIMI_VIT_DYNAMIC_CP=1 KIMI_VIT_PREFETCH=1"
-for expect in "$GATE_EXTRA" "$MM_KNOBS" "--training.seq-len 4096"; do
+for expect in "$GATE_EXTRA_EXPECTED" "$MM_KNOBS" "--training.seq-len 4096"; do
   grep -qF -- "$expect" "$GATE" || {
     echo "FATAL: run_postmerge_gate.sh no longer contains: $expect" >&2
     echo "       This script's settings have drifted from the gate; fix before running." >&2

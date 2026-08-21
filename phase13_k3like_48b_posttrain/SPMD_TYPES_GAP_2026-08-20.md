@@ -158,3 +158,50 @@ norm 切片没做成,但把路探清楚了。四条都不是读代码能得出�
 量"参数是否带 spmd 标注",不是量 DTensor。llama3 是现成的参考实现:它一行
 `model.parallelize(parallel_dims)` 覆盖整棵树,而我们只覆盖了零散几处 —— 那才是真正的差别,
 也是最初"零声明"那个观察真正指向的东西。
+
+
+## 修复:非 TP 配置已通(2026-08-21)
+
+`spmd_types` 现在能跑,**CP 也能跑** —— 这是上游 PR-4218 要求的组合,也是这条线的目标。
+
+### 判据换对之后
+
+| 判据 | llama3(可跑) | kimi_k3(不可跑) |
+|---|---|---|
+| `isinstance(p, DTensor)` | 0 DTensor / 45 plain | 2 / 590 |
+| **`has_local_type(p)`** | **0 无标注** | **143 无标注** |
+
+用 DTensor 量,两边看起来一样;用 `has_local_type` 量,差别一目了然。**换判据也让先前的工作显出效果**:
+RMSNorm 117 个、AttnResProjection 42 个、KimiDeltaAttention 30 个早已带标注,只是用错尺子看不见。
+
+### 三处改动
+
+1. **`annotate_untyped_params`** —— 给声明到不了的参数补 replicate 标注:fla 的
+   `ShortConvolution`/`FusedRMSNormGated`(根本不是 torchtitan `Module`)、EP 的专家权重、
+   少数在已声明子树外的 Linear 和 embedding。**replicate 不是占位**:未分片的参数本来就在每个轴上
+   复制,标注只是把已为真的事实告诉 FSDP —— 所以数值一点不动。
+2. **`drop_declarations_on_distributed`** —— 摘掉命令式 TP 已分发模块上的声明。驱动器的
+   `_already_distributed` 守卫只在子树根成立,而 `Module.parallelize()` 一旦调用就带着递归走遍
+   全树、不带守卫,于是撞上 `assert_type() does not support DTensor`。
+   `partial_dtensor` 下同样的递归无害,因为 `_distribute_states` 对 DTensor 另有一条只校验的分支。
+3. **`verify_params_distributed` 按后端选判据** —— 它要求"TP 后全是 DTensor",而 spmd_types 下
+   参数**本来就该是本地张量加标注**,那个要求会拒掉正确状态(实测拒掉 80 个)。改成
+   "DTensor 或带标注",保护力不变:没标注的本地张量照样会在 `clip_grad_norm_` 里炸。
+
+### 验证
+
+| 检查 | 结果 |
+|---|---|
+| cp2 + spmd_types | **与 partial_dtensor 逐位相同**(7.71140 / 3.3554 …) |
+| 文本 flavor | 通(141 补标注) |
+| 多模态 flavor | 通(105 补标注),两个 FSDP 入口都过 |
+| partial_dtensor(含 TP) | 数值不变,且**完全不进新代码** |
+
+### 仍不通:TP + spmd_types
+
+TP 格失败在 FSDP:`Expected param's DTensor mesh to be the same mesh passed to fully_shard`。
+
+**命令式 TP 造的 DTensor 在 tp mesh 上,而 spmd_types 的 FSDP 要参数在完整 SPMD 存储 mesh 上。**
+这不是能绕的接线问题 —— 它就是"TP 也必须声明化"本身,是独立且更大的下一块。
+
+所以现状是:**非 TP 的 CP 配置已经兼容上游要求,带 TP 的还不行。**
