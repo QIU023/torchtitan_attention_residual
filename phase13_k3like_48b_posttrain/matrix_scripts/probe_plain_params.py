@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Which parameters are still plain tensors when FSDP is reached under spmd_types.
+"""Parameter inventory at the FSDP boundary, grouped by owning module.
+
+WARNING about what this does NOT measure. It reports DTensor vs plain, and under
+spmd_types that distinction is NOT the pass/fail criterion: llama3_debugmodel
+trains fine on this exact torch with 45 plain parameters and zero DTensors. What
+separates a working model from this one is whether the parameters carry spmd type
+annotations (attached by Module._spmd_distribute_state via spmd.assert_type),
+which `isinstance(t, DTensor)` cannot see. Use the counts to find which modules
+were never visited; do not read "plain" as "broken".
 
     PROBE_ARGS="<train args...>" torchrun --nproc_per_node=2 probe_plain_params.py
 
@@ -64,7 +72,9 @@ def _dump(model, when: str) -> None:
     print(f"  DTensor: {total_d}   plain: {total_p}\n", flush=True)
     print(f"  {'owning module':38s} {'DTensor':>8s} {'plain':>7s}", flush=True)
     for cls, (d, p) in sorted(by_class.items(), key=lambda kv: (-kv[1][1], kv[0])):
-        flag = "  <-- blocks spmd_types" if p else ""
+        # No verdict attached: plain is normal under spmd_types (see the warning
+        # in the module docstring). The useful signal is which classes appear at all.
+        flag = ""
         print(f"  {cls:38s} {d:>8d} {p:>7d}{flag}", flush=True)
 
     print("\n  modules owning parameters, by whether a sharding_config exists:", flush=True)

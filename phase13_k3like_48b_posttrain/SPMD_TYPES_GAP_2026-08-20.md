@@ -1,5 +1,11 @@
 # `spmd_types` 缺口清点(2026-08-20)
 
+> **2026-08-21 重要更正:本文的核心判据是错的。** 下面按 "DTensor vs plain" 计数,
+> 并把 plain 当成阻塞证据。**它不是。** 对照实验:`llama3_debugmodel` 在同一个 torch、
+> 同样的 `spmd_types` 下**训练正常**,而它的参数是 **0 DTensor / 45 plain**。
+> 所以"590 个 plain"这个说法量错了东西,详见文末"判据更正"。
+> 缺口本身仍然是真的 —— 我们失败、llama3 成功 —— 但差别不在 DTensor 上。
+
 工具:`matrix_scripts/probe_plain_params.py`。它不改树 —— 钩住 FSDP 的两个入口,在那里
 把整棵树的参数按拥有模块归类。
 
@@ -120,3 +126,35 @@ norm 切片没做成,但把路探清楚了。四条都不是读代码能得出�
 
 声明只在 `spmd_backend == "spmd_types"` 分支执行,`partial_dtensor` 一行都不走。
 已验证:cp2 冒烟 step 1 = 7.71140 / 3.3554,与基线逐位相同;427 单测通过。
+
+
+## 判据更正(2026-08-21)
+
+追查一路收窄到 `Module._distribute_states` 的 spmd 分支后,发现两条互相矛盾的事实:
+
+* `spmd_distribute_tensor` 用 `spmd.shard` 切出**本地分片并返回 plain tensor**,从不造 DTensor;
+* FSDP 的 `_init_sharding_spec` 却在 `is_spmd_mesh and not is_dtensor` 时抛错。
+
+若两者都成立,所有模型在 spmd_types + FSDP 下都该失败 —— 而它是上游默认。**这个矛盾说明
+我某个前提错了**,于是做对照实验而不是继续推理:
+
+| 模型 | spmd_types + FSDP | 参数形态 |
+|---|---|---|
+| `llama3_debugmodel` | **训练正常** | 0 DTensor / 45 plain |
+| `kimi_k3_mini_kcp` | 报错 | 0 DTensor / 590 plain |
+
+**两边参数形态一样,结果不同。** 所以 `isinstance(param, DTensor)` 不是区分标准,
+"plain" 也不构成缺陷。差别在那些 plain 张量**是否携带 spmd 类型标注** ——
+由 `_spmd_distribute_state` 经 `spmd.assert_type` 附加,而 `isinstance` 看不见它。
+
+同时被这个对照推翻的还有另一个刚成形的假设:**不是 torch 与 torchtitan 的版本错位**。
+同一个 torch,llama3 通、我们不通。
+
+`probe_plain_params.py` 里那句 `<-- blocks spmd_types` 已删。**一个会自信地给出错误结论的
+探针,比没有探针更糟**;它当时让"590 plain"看起来像已证实的诊断。
+
+### 下次从这里开始
+
+量"参数是否带 spmd 标注",不是量 DTensor。llama3 是现成的参考实现:它一行
+`model.parallelize(parallel_dims)` 覆盖整棵树,而我们只覆盖了零散几处 —— 那才是真正的差别,
+也是最初"零声明"那个观察真正指向的东西。
