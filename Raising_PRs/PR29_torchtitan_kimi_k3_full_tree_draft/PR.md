@@ -1,10 +1,10 @@
 # PR29 -- Kimi K3, whole tree, DO NOT MERGE
 
 **Target**: `pytorch/torchtitan`, `main`. Draft, and marked DO NOT MERGE in the title.
-**Branch**: `QIU023/torchtitan:k3_pr_classified` -- 15 commits on `upstream/main`,
+**Branch**: `QIU023/torchtitan:k3_pr_classified_v2` -- 15 commits on `upstream/main`,
 sliced by content. `k3_full_tree_draft` is where the merge and the adaptations were done and
 is not what gets filed.
-**Size**: 96 files, +27788 -28 against `upstream/main` `48cb7ae1f`. The vendored reference
+**Size**: 98 files, +28307 -28 against `upstream/main` `00cffaeb3`. The vendored reference
 tree under `models/kimi_k3_up/` is gone, and so is its entry in `models/__init__.py`.
 
 **Why this exists alongside the axis PRs.** PR21/22/23 each carry one parallelism axis with
@@ -17,7 +17,7 @@ The 28 deletions are the point to notice: this is almost entirely additive.
 
 ## What is in it, by commit
 
-Sliced by content rather than by history -- the branch's own 381 commits are a working
+Sliced by content rather than by history -- the branch's own 409 commits are a working
 record, not a review sequence. Fifteen commits:
 
 | # | commit | files |
@@ -36,7 +36,7 @@ record, not a review sequence. Fifteen commits:
 | 12 | HF <-> DCP conversion for the released key set | `hf_key_map.py` `state_dict_adapter.py` |
 | 13 | the parallelize entry that applies all of the above | `parallelize.py` |
 | 14 | the core changes the above needs | `components/{lr_scheduler,optimizer}.py` `distributed/{fsdp,utils}.py` `tools/grouped_mm_empty_shim.py` |
-| 15 | tests for all of it | `tests/` (55 files) |
+| 15 | tests for all of it | `tests/` (56 files) |
 
 ## Two upstream defaults this tree does not yet satisfy
 
@@ -95,7 +95,7 @@ Everything above is ours. What follows is the PR description, verbatim.
 
 Draft, and not for merge -- this is the whole Kimi K3 tree in one place so the parts the
 axis PRs leave out are visible: MXFP4 QAT and packed-MXFP4 import, quantile load balancing,
-MTP, LoRA, DEP, the MoonEP dispatcher, and the HF<->DCP key map. It is 96 files and 28
+MTP, LoRA, DEP, the MoonEP dispatcher, and the HF<->DCP key map. It is 98 files and 28
 deletions, so it is almost entirely additive.
 
 PR-4025 is a separate implementation of the same model and is further along on the model
