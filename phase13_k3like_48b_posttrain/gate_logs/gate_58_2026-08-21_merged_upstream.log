@@ -1,0 +1,133 @@
+=== post-merge gate: TITAN=/workspace/torchtitan_attention_residual/torchtitan OUT=/workspace/mx_gate_merged2 steps=10 ===
+overlay         380G  318G   63G  84% /
+0, 15 MiB
+1, 15 MiB
+2, 15 MiB
+3, 15 MiB
+4, 15 MiB
+5, 15 MiB
+6, 15 MiB
+7, 15 MiB
+
+########## SMOKE text : kimi_k3_mini_block_attn_res --training.seq-len 4096 --parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs ##########
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+  smoke text rc=0
+
+########## SMOKE mm_full : kimi_k3_debugmodel_report_arch --parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs ##########
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+  smoke mm_full rc=0
+
+########## SMOKE mm_lora : kimi_k3_debugmodel_report_arch_lora --parallelism.spmd_backend partial_dtensor --training.disable-cuda-graphs ##########
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+  smoke mm_lora rc=0
+
+########## text : kimi_k3_mini_block_attn_res ##########
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+### batch A (concurrent, 2 GPUs each) ###
+### batch B (concurrent) ###
+### 8-GPU legs (serial) ###
+### DONE ###
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+### max-degree cells, flavor=kimi_k3_mini_block_attn_res steps=10 ###
+ep8_fsdp8        7.71120 7.69537 7.63547 ...
+pp4              7.70131 7.69353 7.63952 ...
+pp8              7.71037 7.69453 7.64286 ...
+tp4              7.71098 7.69714 7.64449 ...
+cp4              7.70812 7.69513 7.64384 ...
+### skipped, not expressible on the twin config ###
+tp8 / cp8 / tp4xcp4 : only 4 attention heads (MLA and KDA) to shard
+pp8 x vp4           : 13 layers cannot host 32 virtual stages
+### MAXDEG DONE ###
+--- text 13-cell table ---
+dp1                    7.70130 7.69158 7.63476 7.49617 7.31981 6.93778 6.30092 5.47326 5.03097 4.86599 
+fsdp2                  7.70385 7.69999 7.64344 7.51353 7.31710 7.00202 6.35596 5.56863 5.30250 4.87570 
+pp2                    7.70844 7.69711 7.64450 7.51404 7.34716 6.99376 6.41783 5.58829 5.09013 4.92657 
+cp2                    7.71140 7.69643 7.63945 7.50693 7.34184 6.98355 6.38726 5.55644 5.06274 4.88897 
+tp2                    7.72269 7.71103 7.65764 7.53046 7.36036 7.01840 6.45662 5.62915 5.10873 4.92655 
+fsdp2_tp2_pp2          7.71004 7.69252 7.64241 7.51661 7.32169 7.03159 6.40689 5.59986 5.28584 4.83571 
+fsdp2_tp2_cp2          7.71419 7.69849 7.64745 7.51847 7.31654 7.00574 6.37035 5.58209 5.32823 4.88838 
+tp2_pp2_cp2            7.71186 7.69758 7.64529 7.51602 7.34652 6.99861 6.42623 5.57433 5.03740 4.84559 
+fsdp2_pp2_cp2          7.71629 7.70046 7.64968 7.51765 7.31883 7.02016 6.38979 5.57826 5.27223 4.83877 
+ep2_fsdp2              7.70385 7.70161 7.64046 7.51131 7.31134 7.00631 6.35574 5.56462 5.30308 4.87498 
+ep2_fsdp2_tp2_pp2      7.70757 7.69797 7.64865 7.51749 7.32451 7.04045 6.43302 5.62154 5.29273 4.83044 
+ep2_fsdp2_tp2_cp2      7.71334 7.70049 7.64518 7.51333 7.31208 7.01222 6.38031 5.58981 5.31957 4.88096 
+ep2_fsdp2_pp2_cp2      7.71186 7.69537 7.64131 7.52143 7.32886 7.03075 6.41528 5.59949 5.27991 4.83610 
+overlay         380G  319G   62G  84% /
+
+########## mm_full : kimi_k3_debugmodel_report_arch ##########
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+### batch A (concurrent, 2 GPUs each) ###
+### batch B (concurrent) ###
+### 8-GPU legs (serial) ###
+  (ep2_fsdp2_tp2_cp2: port 49116 in use, retrying)
+### DONE ###
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+### max-degree cells, flavor=kimi_k3_debugmodel_report_arch steps=10 ###
+ep8_fsdp8        12.01898 11.99064 11.80825 ...
+pp4              12.06958 11.96742 11.76888 ...
+pp8              12.06663 11.98418 11.80206 ...
+tp4              12.08308 11.99766 11.79856 ...
+cp4              12.04880 11.99456 11.81466 ...
+### skipped, not expressible on the twin config ###
+tp8 / cp8 / tp4xcp4 : only 4 attention heads (MLA and KDA) to shard
+pp8 x vp4           : 13 layers cannot host 32 virtual stages
+### MAXDEG DONE ###
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+  dep2 pp4: 10 loss lines  DEP vision stage wiring: 1 stage(s) on this rank, roles ['head']
+  dep2 pp8: 10 loss lines  DEP vision stage wiring: 1 stage(s) on this rank, roles ['tail']
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+  pp8vp4 mm: 10 loss lines  DEP bubble runtime: 0/0 planned
+  pp8vp4 lora: 10 loss lines  DEP bubble runtime: 0/0 planned
+--- mm_full 13-cell table ---
+dp1                    12.05446 11.98841 11.80441 11.48874 10.98528 10.55696 10.17742 10.04504 9.93185 9.90074 
+fsdp2                  12.05090 11.98430 11.82490 11.50890 11.02976 10.56941 10.23661 10.05781 9.99851 9.92069 
+pp2                    12.07827 11.98083 11.79186 11.47504 11.01138 10.54979 10.17697 10.03278 9.94501 9.90146 
+cp2                    12.03861 11.99514 11.81990 11.55587 11.08970 10.61446 10.24268 10.05810 10.02252 9.93771 
+tp2                    12.03708 11.96595 11.81982 11.48363 11.01150 10.53302 10.18829 10.02973 9.97324 9.89703 
+fsdp2_tp2_pp2          12.06266 11.96716 11.74230 11.34867 10.73441 10.34407 10.00905 9.85668 9.74933 9.73780 
+fsdp2_tp2_cp2          12.06802 12.02632 11.84052 11.47713 11.02040 10.56050 10.21458 10.06117 10.01876 9.94112 
+tp2_pp2_cp2            12.05212 11.95035 11.74421 11.33467 10.70528 10.33940 10.00965 9.85606 9.74418 9.74470 
+fsdp2_pp2_cp2          12.04848 11.95088 11.74479 11.34176 10.75854 10.36752 10.02979 9.86120 9.75451 9.74509 
+ep2_fsdp2              12.05090 11.97917 11.79993 11.51045 11.04112 10.56651 10.23618 10.05412 10.00457 9.91775 
+ep2_fsdp2_tp2_pp2      12.08265 11.98884 11.72570 11.32936 10.70446 10.31777 9.99787 9.84082 9.72343 9.72417 
+ep2_fsdp2_tp2_cp2      12.07220 12.00499 11.82705 11.52333 11.07182 10.61055 10.25228 10.10344 10.04122 9.96882 
+ep2_fsdp2_pp2_cp2      12.07240 11.96940 11.77695 11.34829 10.76310 10.37146 10.03413 9.86604 9.76339 9.75320 
+overlay         380G  322G   59G  85% /
+
+########## mm_lora : kimi_k3_debugmodel_report_arch_lora ##########
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+### batch A (concurrent, 2 GPUs each) ###
+### batch B (concurrent) ###
+### 8-GPU legs (serial) ###
+### DONE ###
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+### max-degree cells, flavor=kimi_k3_debugmodel_report_arch_lora steps=10 ###
+ep8_fsdp8        12.05817 12.06546 12.05229 ...
+pp4              12.07972 12.03926 12.06112 ...
+pp8              12.02343 12.06643 12.04425 ...
+tp4              12.07727 12.06727 12.06363 ...
+cp4              12.05261 12.07008 12.04341 ...
+### skipped, not expressible on the twin config ###
+tp8 / cp8 / tp4xcp4 : only 4 attention heads (MLA and KDA) to shard
+pp8 x vp4           : 13 layers cannot host 32 virtual stages
+### MAXDEG DONE ###
+--- mm_lora 13-cell table ---
+dp1                    12.03615 12.06356 12.06186 12.04609 11.91974 11.97389 11.97554 11.97615 11.86252 11.91178 
+fsdp2                  12.03633 12.03720 12.04857 12.03724 11.91850 11.94177 11.94044 11.97018 11.84819 11.89115 
+pp2                    12.05631 12.05962 12.03055 12.02713 11.92276 11.95076 11.94975 11.94811 11.84225 11.89396 
+cp2                    12.04343 12.04552 12.05124 12.04347 11.91412 11.93726 11.92928 11.96973 11.84597 11.87651 
+tp2                    12.07452 12.03799 12.05966 12.03215 11.93013 11.93019 11.94698 11.94538 11.84602 11.88244 
+fsdp2_tp2_pp2          12.05031 12.04925 12.06413 12.06123 11.92478 11.96874 11.97968 11.98499 11.84310 11.91073 
+fsdp2_tp2_cp2          12.04673 12.05029 12.05650 12.04574 11.89074 11.93691 11.92788 11.96081 11.83250 11.87327 
+tp2_pp2_cp2            12.04488 12.05637 12.07093 12.05255 11.92455 11.95211 11.96638 11.96879 11.84644 11.90190 
+fsdp2_pp2_cp2          12.04438 12.05603 12.05795 12.06679 11.88689 11.93676 11.94622 11.98037 11.83379 11.88668 
+ep2_fsdp2              12.03633 12.03720 12.04857 12.03724 11.91850 11.94177 11.94044 11.97018 11.84819 11.89115 
+ep2_fsdp2_tp2_pp2      12.04459 12.03525 12.04454 12.03879 11.94696 11.93452 11.92929 11.96328 11.84256 11.88208 
+ep2_fsdp2_tp2_cp2      12.05586 12.03963 12.04142 12.04244 11.92682 11.91359 11.92856 11.95014 11.84791 11.87126 
+ep2_fsdp2_pp2_cp2      12.05346 12.03964 12.05963 12.05715 11.91413 11.94461 11.94696 11.95549 11.85367 11.88086 
+overlay         380G  322G   59G  85% /
+
+=== cell accounting ===
+  logs found: 58 of 58 expected; passed: 58
+
+=== POST-MERGE GATE DONE ===
