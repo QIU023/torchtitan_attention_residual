@@ -205,3 +205,46 @@ TP 格失败在 FSDP:`Expected param's DTensor mesh to be the same mesh passed t
 这不是能绕的接线问题 —— 它就是"TP 也必须声明化"本身,是独立且更大的下一块。
 
 所以现状是:**非 TP 的 CP 配置已经兼容上游要求,带 TP 的还不行。**
+
+
+## 剩余两块,各自独立(2026-08-21)
+
+`spmd_types` 下现在**无 TP 无 EP 的 CP 配置全部可用且与 partial_dtensor 逐位一致**。
+21 格里能通的是 `cp2`、`fsdp2_pp2_cp2`、`cp4`;剩下四格分属两个独立问题。
+
+### TP:命令式计划与 spmd_types 互斥
+
+`Expected param's DTensor mesh to be the same mesh passed to fully_shard` ——
+命令式 TP 把参数放在 tp mesh,spmd_types 的 FSDP 要完整 SPMD 存储 mesh。
+
+试过声明化,**回退了**,因为发现三个必须先处理对的点:
+
+* KDA 层的模块叫 `delta_attention.*`,后缀匹配 `attention.q_proj` 会**连它一起命中**;
+* KDA 层在命令式计划里**根本不做 TP**(`pass`,保持复制),照抄 MLA 的 colwise/rowwise
+  会给它强加错误分片;
+* LoRA 包装要跟进 `.base`。
+
+回退的直接理由不是"没写完",而是它有**现实危害**:那段代码在 spmd_types 下跳过了命令式 TP,
+自己却声明了 0 个,等于**静默地完全没有 TP** —— 比报错更糟,报错至少会停下来。
+
+好消息是规模比看上去小:TP 计划 13 个条目里真正分片的只有 6 个,其余都是 replicate,
+而补标注扫描已经覆盖。
+
+### EP:专家侧缺 mesh_dims
+
+`spmd_types parameters require fully_shard() to be called with both a named full
+DeviceMesh and dp_mesh_dims`。密集侧用 `resolve_fsdp_mesh` 同时算出 mesh 和 dp_mesh_dims,
+**专家侧没有对应物** —— `apply_fsdp` 收 `edp_mesh` 但从没有人传 `edp_mesh_dims`。
+
+### 判据按后端分叉,已修三处
+
+`_distribute_states`、`verify_params_distributed`、`verify_ep_applied` —— 三处都在用
+"是不是 DTensor"当判据,而 spmd_types 下正确状态就是本地张量。**每一处都是保留问题、只换证据**,
+并各自补了守护新分支的测试。第三处(EP)的等价证据是本地形状:专家维被切,dim 0 应缩小 ep 倍。
+
+## 一条工作方法上的教训
+
+取证跑到一半改被测的树,发生了**两次**。每个格子是新进程、导入当前代码,所以那种跑混了版本,
+产出的证据需要靠记忆加注解才能读 —— 我两次都直接删掉了产物,而不是留着。
+
+不是注意力问题,是节奏错了:**代码改动全部做完并过单测,再冻结树开跑,跑期间只读不写。**
