@@ -143,16 +143,11 @@ The three model arms are text, multimodal, and multimodal+LoRA, 18 cells each, o
 
 --- PASTE BEGIN ---
 
-The K3 folder is re-merged onto current upstream main and re-validated: 58/58 gate cells, three arms, 10 deterministic steps each; non-LoRA cells bit-identical across the TP migration.
-
-Verified:
-- FSDP2/HSDP, TP, PP (incl. interleaved 8x4), CP, EP, and their combinations
-- LoRA on all of the above; adapter sharding derived from the base declaration
-- TP declared on module configs following deepseek_v3 (apply_tp 428 -> 374 lines)
+Rebased onto current upstream main and re-validated: 58 parallelism configurations -- FSDP2/HSDP, TP, PP (incl. interleaved 8x4), CP, EP and their combinations, each across a text, a multimodal, and a multimodal+LoRA debug model -- train 10 steps under `--debug.seed 42 --debug.deterministic`. The TP plan moved from an imperative plan to sharding configs declared on the modules, following deepseek_v3 (apply_tp 428 -> 374 lines); loss and grad_norm are bit-identical before vs after in every configuration without LoRA. LoRA configurations move because adapter sharding now derives from the base layer's declaration.
 
 Pending final evaluation:
 - MXFP4 QAT, packed-MXFP4 weight import, quantile expert balancing
-- MoonEP dispatcher -- interface draft; needs NVLink hardware (a 2-GPU NVLink pair is enough)
+- MoonEP token dispatcher -- interface draft; needs NVLink hardware (a 2-GPU NVLink pair is enough)
 
 Still to do:
 - finish the TP declarative migration (per-layer AttnRes norms, MoonViT, packed-MXFP4 remain imperative)
