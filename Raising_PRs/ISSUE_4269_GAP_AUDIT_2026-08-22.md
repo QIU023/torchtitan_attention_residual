@@ -129,6 +129,60 @@ gate 三臂的 flavor 是 `mini_block_attn_res` / `report_arch` / `report_arch_l
   dequant 成本地张量,于是整条链保持 plain,撞上 DTensor 的残差流。
   **在 `afc3e4287`(TP 迁移之前)上复现,同样失败 —— 是既有缺陷,不是迁移引入的。**
 
+## 里程碑 3 的 Gate:已跑,三条全过(2026-08-22)
+
+spec 的 Gate 3 原话是 "200-step debug run has finite loss/gradients, decreasing
+tail loss, no unexpected parameters/scales in DCP state"。此前从未跑过。
+
+`kimi_k3_mini_qat_mxfp4`,dp2+tp2,200 步,`--debug.seed 42 --debug.deterministic`:
+
+| 判据 | 结果 |
+|---|---|
+| 有限 loss / 梯度 | 全程无 nan/inf |
+| 尾部 loss 下降 | 7.70829 -> 2.00759,单调 |
+| DCP 无意外参数/scale | 9525 个 key 里 qdata/scale 命中 0 |
+
+第三条在 QAT flavor 上"命中 0"是意料之中(fake-quant 不产生 packed 参数),
+所以又在真正有 packed 参数的 `kimi_k3_debugmodel_gated_qlora_mxfp4` 上验了一次
+(dp2+tp2,12 步,interval 5 以取到中途 checkpoint):
+
+| | |
+|---|---|
+| 中途 checkpoint 内容 | `train_state` / `optimizer`(615)/ `dataloader` / `lr_scheduler` + 模型 |
+| packed/scale 在 **model** state | 14 个(它们是模型的存储形态,应该在) |
+| packed/scale 在 **optimizer** state | **0** |
+| optimizer 的实际内容 | 210 个 LoRA adapter + AttnRes 的 alpha,别无其他 |
+
+spec 的 "Packed weights and E8M0 scales materialize only for import/export,
+never installed as optimizer parameters" 满足。optimizer 里那批非 LoRA 的条目是
+`*_res_alpha`,即 `lora.py` 记的 alpha-fullparam exception,是设计上就该训的。
+
+(最后一步的 checkpoint 是 model-only,那是 torchtitan 的 `last_save_model_only`
+默认行为,不是缺陷 —— 第一次查的时候我拿了 step-10 这个末步存档,看到
+optimizer 为 0 差点当成缺失。)
+
+## 崩溃修复:六个,全部修完(2026-08-22)
+
+补验第一次就把这条路径上串着的六个缺陷全暴露了,逐个剥出来:
+
+| # | 缺陷 | 位置 |
+|---|---|---|
+| 1 | router gate 输出 DTensor 撞未拆的 bias | `quantile_balance.py` |
+| 2 | 无 latent MoE 时输出 plain 撞 DTensor 残差流 | `KimiMoE.forward` |
+| 3 | 事后 `from_local` 与内部 `to_local` 的反向错位 | 第一次修法本身 |
+| 4 | gated 变体:alpha 拆本地使梯度变成 DTensor | `_scalar_local` |
+| 5 | rowwise packed base 收到 Replicate 输入 | `_forward_packed_tp` |
+| 6 | Replicate base 被当 rowwise 注册,packed 权重被错切 | `_register_lora_tp`(自己引入) |
+
+**六个全是崩溃,不是静默错误** —— 没有任何一次训练因它们产出过错误数字。
+这与词表那个缺陷性质相反,后者是静默的。
+
+因为 QAT 是 fake-quant(bf16 计算),这六个全在 layout / placement 层,
+碰不到数值语义。**真正能让数字静默错掉的只有 Gate 1(字节对照),而那一条我们没有。**
+
+验证:58 格 0 挂且与上轮逐格逐位相同;429 单测;9 格特性矩阵全过,
+其中 6 个回归格逐位不变。
+
 ## 认领建议
 
 4269 无人认领,而第 3 条(分片不全聚)是里程碑里最难的一条且我们已经做完。
