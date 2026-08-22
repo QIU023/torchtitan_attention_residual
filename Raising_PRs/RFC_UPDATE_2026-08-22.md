@@ -3,7 +3,7 @@
 接 `RFC3029_UPDATE_2026-08-04.md`(主体)与 `RFC_PASTE_FAITHFUL_2026-08-05.md`
 (矩阵小节的替换块)。这份是自 08-04 以来的第一次主体更新。
 
-三件事变了:上游合并进来了、TP 从命令式计划迁到声明式、上游开了两个 K3 tracking
+三件事变了:上游 main 合并进了 fork(4025 本身未合并,PASTE 里已写明)、TP 从命令式计划迁到声明式、上游开了两个 K3 tracking
 issue(4272 总表,4269 是 MXFP4/MXFP8 QAT 与 checkpoint 互操作,当前无人认领)。
 
 格式按 `CLAUDE.md` 的 PR-text 规则:单行段落(表格与列表除外)以便逐字复制,
@@ -12,25 +12,25 @@ issue(4272 总表,4269 是 MXFP4/MXFP8 QAT 与 checkpoint 互操作,当前无人
 
 --- PASTE BEGIN ---
 
-Since the last update the folder has been merged onto current upstream main and re-validated. The gate is 58 cells across three arms -- text, multimodal, multimodal plus LoRA -- each trained 10 steps under `--debug.seed 42 --debug.deterministic`, covering FSDP2/HSDP, TP, PP including 8 stages by 4 virtual, CP, EP and their combinations. All 58 pass.
+Rebased onto current torchtitan main and re-validated: 58 parallelism configurations -- FSDP2/HSDP, TP, PP (incl. interleaved 8x4), CP, EP and their combinations, each across a text, a multimodal, and a multimodal+LoRA debug model -- train 10 steps under `--debug.seed 42 --debug.deterministic`, all passing. The upstream K3 reference-model PR has not merged; when it does, the model half of this rebases onto it.
 
-Tensor parallelism is now declared on the module configs following deepseek_v3 rather than carried in an imperative plan. The migration is behaviour-free by construction: every cell that does not involve LoRA is bit-identical to the pre-migration table, including all fourteen that use TP. `apply_tp` went from 428 lines to 374.
+Complete and review-ready:
+- the model -- KDA + MLA + latent MoE + Block Attention Residuals + MTP -- loading the released 48B weights
+- TP declared on the module configs following deepseek_v3; the migration is behaviour-free -- every non-LoRA configuration bit-identical, including all fourteen with TP
+- PP carrying the block residual across stages through an adapter private to the model's parallelize, validated to 8 stages x 4 virtual; CP as Ulysses on the MLA layers and a rank-to-rank state pass on the KDA layers; EP; four-axis combinations of the above
+- LoRA on all of the above, adapter sharding derived from the base layer's declaration
+- MXFP4-weight / MXFP8-activation QAT semantics (fake-quant, straight-through backward) under FSDP and TP, and streaming quantize-then-shard import of the packed checkpoint -- no rank materialises the full bf16 model
+- quantile expert balancing: distributed aggregation, offline convergence (expert-load cv 0.607 -> 0.053), and the TP interaction fixed
 
-The highest combinations run are four-way: EP with FSDP with TP with CP, EP with FSDP with TP with PP, and EP with FSDP with PP with CP. All five axes together has not been run -- at degree 2 each that needs 32 ranks and we have 8.
+Working and validated, pending migration to the idiomatic form:
+- the TP remainder: the per-layer AttnRes norms, packed-MXFP4 under TP, and the module-boundary unwrapping (`use_local_output` / `to_local`) -- removing it is the `spmd_types` conversion
+- the vision tower: its TP and dynamic CP are imperative and model-private
 
-CP is split by layer kind, because ring attention does not apply to the linear-attention path: Ulysses on the MLA layers, a sequential rank-to-rank state pass on the KDA layers. The two are declared as a contract pair rather than branched on inside the forward.
-
-PP carries the Block Attention Residual across stages through an adapter private to the model's parallelize, validated to 8 stages by 4 virtual. We are not re-proposing that as a generic mechanism.
-
-Three defects surfaced during the migration, all in code the gate cannot reach, and all fixed: a vocab-parallel embedding declaration missing on the non-AttnRes trunk, which left one rank indexing the wrong rows and the per-rank partial sums never added; LoRA adapters replicated against sharded bases, six of which predate the migration because their modules had already moved to a declaration while the LoRA path still walked the imperative plan; and a DTensor leaking into the CP all-to-all once the attention kernel started returning one.
-
-On the QAT and checkpoint side, the emulated MXFP4-weight plus MXFP8-activation QAT trains under FSDP and under TP. The quantize-then-shard import path streams tensor by tensor, so no rank ever materialises the full bf16 model -- which is the constraint that matters at 896 experts by 92 layers. Two gaps are open and we would rather name them than have them found: the packed codec has no byte-level comparison against compressed-tensors, and the reverse direction, DCP back to HF packed safetensors, is not implemented -- the adapter refuses packed input rather than guessing at it. The QAT is fake-quant with a straight-through backward, not an MXFP8 grouped-GEMM.
-
-Quantile balancing is implemented with distributed aggregation, unit tests, and offline convergence -- expert-load cv drops from 0.607 to 0.053. It failed under TP until this week; the router's gate became a declared module and its DTensor output met an unwrapped bias inside the top-k.
-
-The MoonEP dispatcher in this tree is an interface draft: dispatch and combine raise, and it wants 8-way NVLink we do not have.
-
-Everything above is validated on 48B real weights and a K3-faithful topology. The 2.8T configuration is config-level and has never been run.
+Not done, and what blocks each:
+- all five axes in one run: 32 ranks at degree 2, we have 8
+- MoonEP token dispatcher: interface draft, dispatch and combine raise; needs NVLink hardware (a 2-GPU NVLink pair covers the correctness half)
+- packed checkpoint export (DCP -> HF packed safetensors), and a byte-level codec comparison against compressed-tensors
+- the 2.8T configuration: config-level only, never run -- validation is on 48B real weights and a K3-faithful topology
 
 --- PASTE END ---
 
