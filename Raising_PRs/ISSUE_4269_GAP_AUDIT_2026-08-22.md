@@ -212,6 +212,30 @@ chunk mode (T > 64)`,所以这个 flavor 上做不到:8 个专家 top-2,可行�
 同样未测的:mixed image/text rank batches、DCP resume 后与不中断运行的一致性。
 前者 58 格的多模态臂间接覆盖了一部分,但不是 Gate 5 说的那种刻意构造。
 
+## Gate 5:除全拓扑 smoke 外全部满足(2026-08-23)
+
+| 子项 | 结果 |
+|---|---|
+| FSDP / TP / EP+TP | 已验(9 格特性矩阵) |
+| ragged routing | 已验(dp4/ep2 下 min 519 / max 1231) |
+| **零 token 专家** | 已验 —— `zero_token_expert_harness.py` 把一个专家的 bias 压到 -inf,该专家三步全程 0 token 且训练正常 |
+| **mixed image/text ranks** | 已验 —— `mixed_rank_image_harness.py` 让奇数 rank 丢 pixel_values,dp2/cp2 下 12/12 完成,无 watchdog |
+| **DCP resume 一致性** | 已验,而且是**逐位相同**,强于 spec 的"容差内" |
+| 全拓扑集群 smoke | 未做 —— 需要卡 |
+
+resume 此前是坏的,两个缺陷都在上游核心里,详见提交 `04fc4c92b` 与 `10b937f68`。
+
+quantile 的 DCP 存取(4272 P0 的子项)一并验完:不中断与 resume 的 step 6-10 逐位相同,
+`expert_bias_E` 在 step-10 的取值也完全一致(min=-0.025539 max=0.017409)。
+
+### 一处方法上的教训
+
+58 格之外的 26 个核心单测失败,我先按错误信息把其中 5 个归成"GPU 被 gate 占满"。
+GPU 空闲后复跑,**照样失败**。正确的证明是把纯 `upstream/main` 检出成 worktree 跑同样的测试 ——
+同样 5 个失败,这才是"与我们无关"的直接证据。
+
+从错误信息推原因能得到一个像样的解释,但像样不等于对。**能一锤定音的对照组要先做,而不是最后做。**
+
 ## 认领建议
 
 4269 无人认领,而第 3 条(分片不全聚)是里程碑里最难的一条且我们已经做完。
