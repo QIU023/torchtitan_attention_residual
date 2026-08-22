@@ -11,10 +11,15 @@
 | # | spec 里程碑 | 我们 | 性质 |
 |---|---|---|---|
 | 1 | Freeze checkpoint format against compressed-tensors | ❌ | 缺口,Gate 1 |
-| 2 | Training primitives with STE backward | ✅(emulated fake-quant) | 需坦白 scope |
-| 3 | Integrate QAT without modifying expert implementations | ✅ | 可直接声称 |
+| 2 | Training primitives with STE backward | ✅ | spec 本身要的就是 fake-quant,见第 6 节 |
+| 3 | Integrate QAT without modifying expert implementations | ✅ **Gate 已跑,三条全过** | 可直接声称 |
 | 4 | Packed checkpoint import / export | ⚠️ import 有且流式;**export 明确未实现** | 半 |
-| 5 | Validate across FSDP / EP / mixed topologies | ⚠️ QAT 过 FSDP+TP;**packed x TP 挂** | 半 |
+| 5 | Validate across FSDP / EP / mixed topologies | ⚠️ FSDP / TP / EP+TP 全过;**零 token 专家、ragged routing、DCP resume 未测** | 半 |
+
+关于第 2 条要更正一句:早先版本写"我们是 fake-quant,需坦白 scope"。读完完整 spec 后
+这句不成立 —— spec 原文就是 "Stateless 1x32 MXFP4 weight **fake quantization**" 加
+"Forward pass derives MXFP4 **quantize/dequantize view**",权重侧要的正是我们做的。
+真正短的是激活侧的 grouped GEMM,而那条 spec 明写归 torchao,且 "emulated" 可接受。
 
 ## 1. 量化集的来源:抄下来的,不是解析出来的
 
@@ -182,6 +187,30 @@ optimizer 为 0 差点当成缺失。)
 
 验证:58 格 0 挂且与上轮逐格逐位相同;429 单测;9 格特性矩阵全过,
 其中 6 个回归格逐位不变。
+
+## 里程碑 5 的一部分:ragged routing 已验,零 token 未达(2026-08-22)
+
+Gate 5 要 "Exercise FSDP, EP, zero-token experts, ragged routing, mixed ranks"。
+
+用一个临时前向 hook 统计 router 的 top-k 分配(`kimi_k3_mini_qat_mxfp4`,
+dp_shard 4 + ep2,4 卡):
+
+| seq_len | 每专家 token 数 | 零 token 专家 |
+|---|---|---|
+| 4096 | min 519 / max 1231(2.4x 不均衡) | 0 |
+| 128 | min 17 / max 51(3.0x 不均衡) | 0 |
+
+**ragged routing 覆盖到了** —— 分配显著不均且训练照常。
+
+**零 token 专家没能自然触发。** 继续压小 token 数会撞上 `KDA training requires
+chunk mode (T > 64)`,所以这个 flavor 上做不到:8 个专家 top-2,可行的最小规模仍给
+每个专家几十个 token。
+
+要覆盖它得**人为把 router 偏置成某个专家永不被选**。那是有意义的测试,但形态是单测
+(构造路由后驱动一次 MoE 前向),不是训练矩阵里的一格。记为待办,不要写成"已验证"。
+
+同样未测的:mixed image/text rank batches、DCP resume 后与不中断运行的一致性。
+前者 58 格的多模态臂间接覆盖了一部分,但不是 Gate 5 说的那种刻意构造。
 
 ## 认领建议
 
