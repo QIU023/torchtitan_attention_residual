@@ -229,3 +229,34 @@ dp2 + tp2 + cp2,一个 step:
 
 两个模板是 `ls torchtitan/models/` 加一次 grep 找出来的。这与更早那次"拿 llama3 对不上就断定
 没有参照"是同一个毛病:**参照物不存在这种结论,必须来自把候选列全,而不是来自试过一个。**
+
+
+## 视觉塔在 TP 下的实测基线(2026-08-23)
+
+MoonViT 声明式迁移之前先测一遍现状,作为等价性判据。
+`kimi_k3_debugmodel_report_arch`,dp2 + tp2,mesh 两维依次是 (fsdp, tp):
+
+| 参数 | fsdp 轴 | **tp 轴** |
+|---|---|---|
+| `encoder.blocks.N.mlp.fc0.weight` | `_StridedShard(0, sf=2)` | **`Shard(0)`** |
+| `encoder.blocks.N.mlp.fc1.weight` | `Shard(0)` | **`Shard(1)`** |
+| `encoder.blocks.N.wqkv.weight` | `Shard(0)` | `Replicate()` |
+| `encoder.blocks.N.wo.weight` | `Shard(0)` | `Replicate()` |
+| `norm0` / `norm1` / `final_layernorm` | `Shard(0)` | `Replicate()` |
+| `patch_embed.proj` / `pos_emb` | `Shard(0)` | `Replicate()` |
+| `mm_projector.proj.N` / `post_norm` | `Shard(0)` | `Replicate()` |
+
+**只有 MLP 被 TP 切,注意力全复制。**
+
+`_apply_tp_moonvit_mlp` 里确实有注意力头切分的分支(`wo` 走 RowwiseParallel),
+`vit_tp_heads` 也默认 True,但它的条件是 `num_heads >= tp_size and num_heads % tp_size == 0`,
+而这个 flavor 的 ViT 是 3 个头、tp=2 -> 走了复制分支。**开关是开的,头数不允许。**
+
+### 记一笔:这轮第三次从代码推断出错
+
+先是"零 token 已被 EP 覆盖"(探针显示每个专家都有几十到上千 token),
+再是"5 个核心单测失败是 GPU 被 gate 占满"(空闲后照样失败,拿纯上游树跑才证明与我们无关),
+然后是这条"注意力头是切的"(实测两个都是 Replicate)。
+
+三次的共同形态:**读到一段看起来能解释现象的代码就停下**,而没有去跑那个能一锤定音的观测。
+代码告诉你意图,探针告诉你结果 —— 判据要建立在后者上。
