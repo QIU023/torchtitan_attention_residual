@@ -138,3 +138,25 @@ https://github.com/QIU023/torchtitan_attention_residual/blob/f81a19319506ef1c3d3
 The three model arms are text, multimodal, and multimodal+LoRA, 18 cells each, over dp / fsdp / tp / cp / pp / ep and their combinations up to `ep2_fsdp2_tp2_cp2`; the remaining four are the two decoupled-encoder cells at pp4 and pp8 and the two pp8xvp4 cells.
 
 --- PASTE END ---
+
+## Update comment (rolling; post after the TP-migration push lands on the branch)
+
+--- PASTE BEGIN ---
+
+The K3 folder is re-merged onto current upstream main and re-validated: 58/58 gate cells, three arms, 10 deterministic steps each; non-LoRA cells bit-identical across the TP migration.
+
+Verified:
+- FSDP2/HSDP, TP, PP (incl. interleaved 8x4), CP, EP, and their combinations
+- LoRA on all of the above; adapter sharding derived from the base declaration
+- TP declared on module configs following deepseek_v3 (apply_tp 428 -> 374 lines)
+
+Pending final evaluation:
+- MXFP4 QAT, packed-MXFP4 weight import, quantile expert balancing
+- MoonEP dispatcher -- interface draft; needs NVLink hardware (a 2-GPU NVLink pair is enough)
+
+Still to do:
+- finish the TP declarative migration (per-layer AttnRes norms, MoonViT, packed-MXFP4 remain imperative)
+- remove the module-boundary unwrapping (use_local_output / to_local)
+- rebase onto the reference-model PR when it lands
+
+--- PASTE END ---
