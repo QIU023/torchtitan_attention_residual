@@ -12,14 +12,14 @@ body 全文在同目录 `.md` 里,直接粘。
 
 | 分支 | 内容 | 标题 | body |
 | --- | --- | --- | --- |
-| `k3_pr_classified` | 全树 DO NOT MERGE,15 个按内容切的提交 | `[DO NOT MERGE] Kimi K3: full tree, pending rebase onto the reference-model PR` | `../PR29_torchtitan_kimi_k3_full_tree_draft/PR.md` 末尾的 PASTE 块 |
+| `k3_pr_classified_v2` | 全树 DO NOT MERGE,15 个按内容切的提交 | `[DO NOT MERGE] Kimi K3: full tree, pending rebase onto the reference-model PR` | `../PR29_torchtitan_kimi_k3_full_tree_draft/PR.md` 末尾的 PASTE 块 |
 | `k3_pr_tp_clean` | 模型 + TP,CP/EP 各一句 raise | `[do not review yet] Kimi K3: tensor parallelism, including the KDA path` | `k3_pr_tp.md` |
 | `k3_pr_ep_clean` | 模型 + EP,TP/CP 各一句 raise | `[do not review yet] Kimi K3: expert parallelism and the grouped-GEMM expert layout` | `k3_pr_ep.md` |
 | `k3_pr_pp_clean` | 模型 + PP adapter,三个轴都 raise | `[do not review yet] Kimi K3: pipeline parallelism with Block Attention Residuals` | `k3_pr_base.md` |
 
 compare 链接:
 
-* https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_classified?expand=1
+* https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_classified_v2?expand=1
 * https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_tp_clean?expand=1
 * https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_ep_clean?expand=1
 * https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_pr_pp_clean?expand=1

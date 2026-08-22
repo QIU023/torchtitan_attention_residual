@@ -1,7 +1,7 @@
 # PR29 -- Kimi K3, whole tree, DO NOT MERGE
 
 **Target**: `pytorch/torchtitan`, `main`. Draft, and marked DO NOT MERGE in the title.
-**Branch**: `QIU023/torchtitan:k3_pr_classified_v2` -- 15 commits on `upstream/main`,
+**Branch**: `QIU023/torchtitan:k3_pr_classified_v2` at `f0f2e6986` -- 15 commits on `upstream/main`,
 sliced by content. `k3_full_tree_draft` is where the merge and the adaptations were done and
 is not what gets filed.
 **Size**: 98 files, +28307 -28 against `upstream/main` `00cffaeb3`. The vendored reference
@@ -26,7 +26,7 @@ record, not a review sequence. Fifteen commits:
 | 02 | Block Attention Residuals: the primitive and the layout tables | `attn_res.py` `attn_res_model.py` `layout.py` |
 | 03 | SiTU-GLU routed experts and quantile load balancing | `moe.py` `quantile_balance.py` `common/moe.py` `common/moe_sharding.py` `models/utils.py` |
 | 04 | MoonViT and the multimodal wrapper | `moonvit.py` `multimodal_model.py` `vision_preprocess.py` |
-| 05 | tensor parallelism, including the KDA DTensor shims | `quant_scope.py` |
+| 05 | the quantization scope -- what K3 quantizes, shared by QAT and QLoRA | `quant_scope.py` |
 | 06 | context parallelism: KCP for KDA, Ulysses for MLA, dynamic CP for the tower | `kcp.py` `vit_cp_plan.py` |
 | 07 | pipeline parallelism: the cross-stage AttnRes adapter | `pipeline_adapter.py` |
 | 08 | DEP: the vision tower on its own stage, with bubble scheduling | `dep_bubble_{plan,runtime,backward}.py` `vit_prefetch.py` |
@@ -34,7 +34,7 @@ record, not a review sequence. Fifteen commits:
 | 10 | MXFP4 QAT and packed-MXFP4 weight import | `mxfp4_qat.py` `packed_mxfp4.py` |
 | 11 | LoRA, including the skip-edge gradients PP must route | `lora.py` `muon.py` |
 | 12 | HF <-> DCP conversion for the released key set | `hf_key_map.py` `state_dict_adapter.py` |
-| 13 | the parallelize entry that applies all of the above | `parallelize.py` |
+| 13 | the parallelize entry that applies all of the above, incl. the TP plan and the KDA DTensor shims | `parallelize.py` |
 | 14 | the core changes the above needs | `components/{lr_scheduler,optimizer}.py` `distributed/{fsdp,utils}.py` `tools/grouped_mm_empty_shim.py` |
 | 15 | tests for all of it | `tests/` (56 files) |
 
@@ -88,12 +88,12 @@ commits moved essentially nothing, which is the claim worth making about a merge
   re-cut after PR-4025, not now.
 * ~~bare `#NNNN` in commit messages~~ -- v2 scans clean at 0 of 15, re-verified after the
   re-cut. Nothing rewrites anyone else's commits.
-* **commit 05's title does not match its content.** On v2 it says "tensor parallelism,
-  including the KDA DTensor shims" and touches only `quant_scope.py` (+100) -- the TP plan
-  and the shims are in commit 13's `parallelize.py`. A reviewer clicking the commit sees a
-  quantization-scope module under a TP title. Either retitle 05 (it is the quantization
-  scope shared by QAT and QLoRA) or fold it into 10; one more re-cut of the top commits
-  either way, before filing.
+* ~~commit 05's title does not match its content~~ -- fixed by a message-only rewrite,
+  trees byte-identical (verified: `git diff` against the pre-rewrite head is empty). 05 is
+  now "the quantization scope -- what K3 quantizes, shared by QAT and QLoRA" and 13 picks
+  up the TP plan and the KDA DTensor shims it actually contains. Force-pushed; the branch
+  head is `f0f2e6986`. All fifteen titles re-scanned against their files: no other
+  mismatch.
 * the title must carry DO NOT MERGE, and the PR must be opened as a draft.
 
 ## PASTE
@@ -117,7 +117,7 @@ The fifteen commits are sliced by content rather than by the 409 commits of hist
 | 02 | Block Attention Residuals: the primitive and the layout tables | `attn_res.py` `attn_res_model.py` `layout.py` |
 | 03 | SiTU-GLU routed experts and quantile load balancing | `moe.py` `quantile_balance.py` `common/moe.py` |
 | 04 | MoonViT and the multimodal wrapper | `moonvit.py` `multimodal_model.py` `vision_preprocess.py` |
-| 05 | tensor parallelism, including the KDA DTensor shims | `quant_scope.py` |
+| 05 | the quantization scope -- what K3 quantizes, shared by QAT and QLoRA | `quant_scope.py` |
 | 06 | context parallelism: KCP for KDA, Ulysses for MLA, dynamic CP for the tower | `kcp.py` `vit_cp_plan.py` |
 | 07 | pipeline parallelism: the cross-stage AttnRes adapter | `pipeline_adapter.py` |
 | 08 | the decoupled vision encoder, with bubble scheduling | `dep_bubble_*.py` `vit_prefetch.py` |
@@ -125,7 +125,7 @@ The fifteen commits are sliced by content rather than by the 409 commits of hist
 | 10 | MXFP4 QAT and packed-MXFP4 weight import | `mxfp4_qat.py` `packed_mxfp4.py` |
 | 11 | LoRA, including the skip-edge gradients PP has to route | `lora.py` `muon.py` |
 | 12 | HF <-> DCP conversion for the released key set | `hf_key_map.py` `state_dict_adapter.py` |
-| 13 | the parallelize entry that applies all of the above | `parallelize.py` |
+| 13 | the parallelize entry that applies all of the above, incl. the TP plan and the KDA DTensor shims | `parallelize.py` |
 | 14 | the core changes the above needs | `distributed/{fsdp,utils}.py` `components/{lr_scheduler,optimizer}.py` |
 | 15 | tests | `tests/` (56 files) |
 
