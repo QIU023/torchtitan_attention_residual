@@ -45,10 +45,14 @@ BIG="--training.num-tokens-per-microbatch-per-dp-rank 2048"
 echo; echo "########## warm-up (discarded) ##########"
 cell warmup 2 kimi_k3_debugmodel_text --parallelism.data_parallel_shard_degree 2
 
-for arm in text mm; do
+for arm in text mm lora; do
   case $arm in
     text) F=kimi_k3_debugmodel_text ;;
     mm)   F=kimi_k3_debugmodel ;;
+    # LoRA is not compared against the dense arms: it trains 36 parameters of
+    # 786, so its losses live somewhere else entirely. Its cells are judged
+    # against each other, per the pairing rule.
+    lora) F=kimi_k3_debugmodel_lora ;;
   esac
   echo; echo "########## $arm : $F ##########"
   cell ${arm}_dp1            1 $F
