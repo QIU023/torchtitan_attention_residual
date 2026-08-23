@@ -81,3 +81,46 @@ state_dict_adapter 加映射,挂 `set_vision_transformer_block_sharding_config`�
 第二条需要给 `LoRAConverter.target_modules` 加带点后缀匹配 —— 我们自己的 `apply_lora`
 早就支持,上游没有。那是**加功能**,与 optimizer / dataloader 那两处**修缺陷**性质不同,
 应当单独提。
+
+
+## 4a 试做过了,卡在边界约定(2026-08-23)
+
+把 `MoonViTMLP` 改成带 `Config` 的 `Module`、两个 linear 从 `Linear.Config` 构建、
+挂上声明、删掉 `_apply_tp_moonvit_mlp` 里的两条 `plan[...]`。逐步撞到四层问题,
+前三层都修掉了,第四层是结构性的。
+
+| # | 现象 | 处理 |
+|---|---|---|
+| 1 | `Linear.weight is already a DTensor with placements (Replicate(),)` | `apply_tp` 里的 `distribute_module(vision_tower)` 在驱动器之前把整塔变成 Replicate。改成在 `apply_tp` 之前先对塔跑一次驱动器 |
+| 2 | `input DTensor has placements (Shard(dim=1),), but in_src expects` | 上游 `vision_scaled_bias_rowwise_config` 假定 3-D `[B,L,D]`(特征轴 2);MoonViT 是 varlen packed 的 2-D `[L,D]`(特征轴 1)。写了 2-D 变体 |
+| 3 | `SpmdLayout has multiple mesh axes sharding tensor dim 1` | `dense_activation_placement` 同时给 CP 轴 `S(1)`,与 TP 撞在同一张量维。改用只含 DP/TP 两轴的 `SpmdLayout`,和上游视觉 helper 一致 |
+| 4 | **`aten.mm.default got mixed torch.Tensor and DTensor`** | **未解决** |
+
+第 4 层不是配置写错。实测三件事同时成立:
+
+* placement **正确**:`fc0` = `Shard(0)`,`fc1` = `Shard(1)`,与迁移前基线一致
+* forward wrapper **装上了**:报错位置在 `protocols/module.py:291 forward_with_redistribution` 内部
+* **plain 输入没有被提升成 DTensor**
+
+也就是说声明生效了、参数切对了,但输入侧的重分布没有把 plain 张量抬进 DTensor。
+
+### 根因:MoonViT 是 plain 张量边界
+
+文本侧的声明式能工作,是因为残差流早已翻成 DTensor 端到端。MoonViT 相反 ——
+`apply_tp` 里 `distribute_module` + 每个 style 的 `use_local_output=False` 就是为了让
+**模块边界始终是 plain 张量**(fla 内核、PP send/recv、AttnRes 的 `torch.stack` 都不吃 DTensor)。
+
+声明式的输入重分布假定流里已经是 DTensor。要让 4a 成立,得先把视觉塔的边界约定翻成
+DTensor —— 那不是"迁移 MLP",那是改整个塔的张量约定,规模等同于文本侧当初那次翻转。
+
+**这与层内两个 AttnRes norm 迁不动是同一个根因**:声明式词汇表描述的是 DTensor 流上的
+placement,而这两处的流是 plain。
+
+### 结论
+
+4a 不是"低风险的可行性验证",它和 4b 一样要动结构。真实的先决条件是:
+
+**先把视觉塔的边界约定从 plain 翻成 DTensor,再谈声明式。**
+
+在那之前,MoonViT 的命令式 TP 实现是正确的、有实测基线的,不应该为了形式一致去动它。
+本次尝试已回退,树回到 `cfd84b87c` 的状态。
