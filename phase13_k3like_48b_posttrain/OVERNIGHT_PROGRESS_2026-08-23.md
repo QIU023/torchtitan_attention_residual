@@ -84,30 +84,35 @@ loss 12.51502 / 11.35441 / 9.89706。
 但既然前向逐位相同,差异来自调度/微批切分/loss 汇报,不在模型里。
 **这一条按 58 格用新树自己的基线判,不在这里下结论。**
 
-## 最重要的发现:这棵树上 `--debug.deterministic` 不保证逐位可复现
+## 最重要的发现:冷缓存上的第一次运行,数值与之后所有次不同
 
-同一份代码、同一个 seed、`--debug.deterministic`,只改 inductor 缓存状态:
+同一份代码、同一 seed、`--debug.deterministic`,只看 inductor 缓存目录的新旧:
 
-| inductor 缓存 | step-1 loss | grad_norm |
+| 同一个全新缓存目录 | step-1 loss | grad_norm |
 |---|---|---|
-| 热(共享缓存) | 12.38712 | 19.2500 |
-| 冷(全新目录 A) | **12.40963** | 19.0000 |
-| 冷(全新目录 B) | 12.40963 | 19.0000 |
+| 第 1 次(冷) | **12.40963** | 19.0000 |
+| 第 2 次 | 12.38712 | 19.2500 |
+| 第 3 次 | 12.38712 | 19.2500 |
 
-每一种状态内部**连跑两次完全一致**,彼此不同。
+两个互不相干的全新目录,首次都给 12.40963;之后一律 12.38712。**完全可复现。**
 
-原因:`common/attention.py` 的 `FlexAttention` 用
-`torch.compile(flex_attention, options={... "max_autotune": True,
-"coordinate_descent_tuning": True ...})`。**kernel 选择来自 benchmark 计时**,
-计时随机器负载变,不同 kernel 给不同浮点结果。那段注释自己写着推荐流程是
-"先跑一次 max_autotune 找到好的 kernel_options,然后显式写死并关掉 max_autotune"。
+### 我先后猜错两次,记下来
 
-**后果:58 格"非 LoRA 格逐位不变"的判据在这棵树上,必须先把 kernel 选择钉死
-(关 `max_autotune` 或显式 `kernel_options`),否则跨格比较测的是自动调优的噪声。**
-旧树没有这个问题,因为它用的是 SDPA;新 core 已经不允许语言模型用 SDPA。
+1. "是 `max_autotune` 造成的" —— **错**。`distributed/utils.py:227` 在
+   `debug.deterministic` 下已经把 `max_autotune` 和 `coordinate_descent_tuning`
+   关掉并重新编译 flex。
+2. "是我那个不走 `set_determinism` 的探针污染了共享缓存" —— **也错**。
+   在同一个新目录上先跑两次训练,第二次就已经变了,污染发生在那之后。
 
-这也解释了我早先看到的"基线从 12.40265 变成 12.38712":二分到
-`dfc04cbb9` 复跑得到 12.38712,和 HEAD 一样 —— 不是任何一次改动造成的。
+真正的规律只有一条,而且是实测的:**冷编译与命中缓存产生不同的数值。**
+具体是 inductor 哪一层造成的没有诊断。
+
+### 对 58 格的后果(这才是要紧的)
+
+从冷缓存开跑的矩阵,**头几格会和其余格不同**,而这会被读成"某个并行轴改变了数值"。
+缓解办法便宜:**跑矩阵前先用一次性 run 把缓存热起来**,或固定一个已预热的
+`TORCHINDUCTOR_CACHE_DIR`。旧树没这个问题是因为它用 SDPA;新 core 已禁止
+语言模型用 SDPA,所以新树必须显式处理。
 
 ## EP 分支 — 推进但未完成(`995f4b151`)
 
