@@ -83,3 +83,56 @@ loss 12.51502 / 11.35441 / 9.89706。
 (`12.53727 / 9.87605 / 8.55103` vs `12.46284 / 9.62380 / 7.44679`),
 但既然前向逐位相同,差异来自调度/微批切分/loss 汇报,不在模型里。
 **这一条按 58 格用新树自己的基线判,不在这里下结论。**
+
+## 最重要的发现:这棵树上 `--debug.deterministic` 不保证逐位可复现
+
+同一份代码、同一个 seed、`--debug.deterministic`,只改 inductor 缓存状态:
+
+| inductor 缓存 | step-1 loss | grad_norm |
+|---|---|---|
+| 热(共享缓存) | 12.38712 | 19.2500 |
+| 冷(全新目录 A) | **12.40963** | 19.0000 |
+| 冷(全新目录 B) | 12.40963 | 19.0000 |
+
+每一种状态内部**连跑两次完全一致**,彼此不同。
+
+原因:`common/attention.py` 的 `FlexAttention` 用
+`torch.compile(flex_attention, options={... "max_autotune": True,
+"coordinate_descent_tuning": True ...})`。**kernel 选择来自 benchmark 计时**,
+计时随机器负载变,不同 kernel 给不同浮点结果。那段注释自己写着推荐流程是
+"先跑一次 max_autotune 找到好的 kernel_options,然后显式写死并关掉 max_autotune"。
+
+**后果:58 格"非 LoRA 格逐位不变"的判据在这棵树上,必须先把 kernel 选择钉死
+(关 `max_autotune` 或显式 `kernel_options`),否则跨格比较测的是自动调优的噪声。**
+旧树没有这个问题,因为它用的是 SDPA;新 core 已经不允许语言模型用 SDPA。
+
+这也解释了我早先看到的"基线从 12.40265 变成 12.38712":二分到
+`dfc04cbb9` 复跑得到 12.38712,和 HEAD 一样 —— 不是任何一次改动造成的。
+
+## EP 分支 — 推进但未完成(`995f4b151`)
+
+* 之前:`model.parallelize` 之后 **680 个参数全是 plain**(树上零声明)
+* 现在:调用上游的 `set_decoder_sharding_config` / `set_moe_sharding_config`,
+  声明落地、dispatcher 运行,失败点移到 grouped GEMM:
+  `matrix batch sizes have to match` —— 本地专家数与 offsets 在 dispatch 与
+  `inner_experts` 之间某处不一致。**未诊断**,EP 仍挡在 NotImplementedError 后面。
+
+## 回归(HEAD,全部 rc=0)
+
+| 格 | step1 / step2 loss |
+|---|---|
+| text dp2 | 12.38712 / 10.07772 |
+| text cp2 | 12.45262 / 10.25607 |
+| mm cp2 | 12.45567 / 11.43767 |
+| text pp2 | 12.53727 / 9.87605 |
+| text cp4 / mm cp4 | 12.42091 / 12.39273(3 步全过) |
+
+## 未完成 / 跳过的
+
+1. **EP 的 grouped GEMM 不匹配** —— 见上,未诊断。
+2. **TP** —— 需要 MLA/FFN/KDA 的声明(根级和 MoE 已做)。KDA 只能声明为 invariant,
+   fla kernel 不走 DTensor。
+3. **vit dynamic CP / DEP** —— 文件已搬(`vit_cp_plan.py` / `dep_bubble_*`),未接线未测。
+4. **PP 端到端与无 PP 的 loss 差异** —— 模型侧 stage 接口已证明逐位精确
+   (`max_abs=0.000e+00`),差异在调度/微批/汇报,未定位。
+5. **LoRA** —— 未开始。
