@@ -192,3 +192,36 @@ KDA 的 `q_proj` Replicate —— 与设计一致。
 | text pp2 | 12.53727 |
 | text ep2 | 12.38712 |
 | mm ep2 | 12.47105 |
+
+## TP 停在哪(精确到算子)
+
+不是 AC —— `activation-checkpoint:none` 同样报错。模型编译本来就是关的,
+dynamo 来自 **FlexAttention 自己的 `torch.compile`**。失败的算子是:
+
+    getitem(int32[256], DTensor(标量 int32, Replicate on tp))
+    -> aten.index.Tensor got mixed torch.Tensor and DTensor
+
+即用一个 DTensor 标量去索引普通张量,发生在 MoE 的 router/dispatcher 路径上。**未诊断。**
+
+## 新树的矩阵(`matrix_scripts/run_4025_matrix.sh`)
+
+覆盖已迁移的轴,**TP 格子故意不在里面** —— TP 仍挡在 NotImplementedError 后,
+一个表达不了自己拓扑的格子不算通过。
+
+脚本第一件事是 **warm-up 一格然后丢弃**,因为冷缓存首跑与之后所有次数值不同
+(见上)。`TORCHINDUCTOR_CACHE_DIR` 固定在 OUT 目录下,矩阵内部因此自洽。
+
+两臂 x 10 格:`dp1 / fsdp2 / cp2 / cp4 / pp2 / pp4 / ep2_fsdp2 / ep2_cp2 /
+fsdp2_pp2_cp2 / ep8_fsdp8`。
+
+## 固化成测试的两件事(`289ac3490`)
+
+都是 CPU 测试,跟其余单测一起跑。
+
+1. **CP 契约的折叠维度**。没有 batch 轴,Ulysses 在 dim 0 和 1 之间搬;
+   batched 那版用的是 1 和 2。**任何形状检查都抓不到这个交换** —— 两个维度都存在,
+   all-to-all 会产出一个"看起来合理"但头和序列对调的张量。
+2. **FQN 注入**。它曾经在 Config 树模型上直接 return 且不出声;切分退回 core 的默认,
+   聚合模块落在没有任何一段上,唯一症状是 loss 训到别处去了。
+   第三个用例检查每个发出的名字都能匹配到子模块 —— core 对匹配不到的子模块是**置 None**,
+   不是报错。
