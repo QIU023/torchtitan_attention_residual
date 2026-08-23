@@ -52,3 +52,34 @@ loss 12.51502 / 11.35441 / 9.89706。
   (`_templated_ring_attention` / `_RotateMethod`),**不是 Ulysses**。
   torchtitan 只在 docstring 里提它。
 * 所以 MLA 的 Ulysses 和 KDA 的 KCP **上游都没有**。
+
+## PP 分支 — 主体完成(`51f861fd5`)
+
+搬过去的文件:`pipeline_adapter.py` 1702、`dep_bubble_{plan,backward,runtime}.py` 707、
+`attn_res.py`、`layout.py`、`knobs.py`。唯一的重命名是 `vision_tower` -> `vision_encoder`(3 处)。
+
+### 修掉的三个缺陷(都在他们的树上,都静默)
+
+1. **块残差不跨 stage**。每个 stage 的 forward 都从 `new_zeros(T, 0, D)` 开始,
+   stage 0 完成的块被丢弃,stage 1 训的是另一个模型 —— 全程没有任何形状报错。
+   实测(同 tokens/step):无 PP `12.46284 / 9.62380 / 7.44679`,
+   pp2 `12.48449 / 11.93899 / 9.30017`。现在残差是 stage 的第二个输出/输入。
+2. **最终聚合在每个 stage 都跑**。非末段的 `output_res_proj` 是 None(和 `norm`/`lm_head`
+   一样),现在只在持有 head 的那一段跑。
+3. **FQN 注入在这个模型上直接 return 了** —— 它从扁平 config 的 `num_hidden_layers` 取层数,
+   而这棵树把 layers 本身放在 config 里。没有任何提示:切分静默退回 core 的默认,
+   末段就没有 AttnRes 聚合模块。同时把历史拼写(`embed_tokens`)映射回 core 的
+   (`tok_embeddings`)——否则 FQN 匹配不到任何子模块,而 core 会把每个不匹配的子模块置 None,
+   结果是一个没有 head 的 stage。
+
+### 决定性验证:stage 接口逐位精确
+
+`pp_stage_parity_4025.py`:把模型按 core 的做法切成两段(留一半层,其余模块置 None),
+手工串起来,**不经调度、不经 loss、不经微批**。
+
+    stage-split vs whole model: max_abs=0.000e+00 rel=0.000e+00
+
+**模型侧的 PP 是对的。**端到端 pp2 与无 PP 的 loss 仍有差异
+(`12.53727 / 9.87605 / 8.55103` vs `12.46284 / 9.62380 / 7.44679`),
+但既然前向逐位相同,差异来自调度/微批切分/loss 汇报,不在模型里。
+**这一条按 58 格用新树自己的基线判,不在这里下结论。**
