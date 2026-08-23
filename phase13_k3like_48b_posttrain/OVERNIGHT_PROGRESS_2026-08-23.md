@@ -141,3 +141,54 @@ loss 12.51502 / 11.35441 / 9.89706。
 4. **PP 端到端与无 PP 的 loss 差异** —— 模型侧 stage 接口已证明逐位精确
    (`max_abs=0.000e+00`),差异在调度/微批/汇报,未定位。
 5. **LoRA** —— 未开始。
+
+## EP 分支 — 完成(`95f5bd8da`)
+
+差的那一块是 token dispatcher。他们的 config 写死 `LocalTokenDispatcher`,
+它只在 rank 内部重排 token,交给专家的是**全局**每专家计数。专家权重按 E 切分之后,
+grouped GEMM 拿到 32 个 offsets 对 16 个本地专家,报
+`matrix batch sizes have to match` —— 读起来像模型的形状 bug,其实不是。
+EP 下换成 `AllToAllTokenDispatcher`(两个 Config 字段完全相同)。
+
+换完实测:16 本地专家对 16 offsets,两个 rank 收到**不同**的 token 数(1030 / 1018),
+token 确实在跨 rank。**step-1 loss 12.38712,与 dp2 基线五位全同** —— EP 本就不该
+改变前向。
+
+## TP 分支 — 声明生效,但前向跑不通(`3728ef835`)
+
+### 一个只有实测才抓得到的静默空转
+
+第一次 tp2 "跑通"了,loss 12.45942。**但参数全是 PLAIN、形状是完整的**
+(`wq_b` 1536x512 而不是 768x512)—— 纯复制,TP 一点没生效。
+原因:我写 `model.parallelize` 的触发条件时漏了 `tp_enabled`
+(dsv3 的条件是 `spmd_types or tp_enabled or ep_enabled`)。
+
+**一个"能跑且 loss 合理"的 TP 格子完全可能什么都没做。**只有直接量 placement 才看得出来。
+补上之后实测:`wq_b` Shard(0)、`wo` Shard(1)、`w1` Shard(0)、`lm_head` Shard(0)、
+KDA 的 `q_proj` Replicate —— 与设计一致。
+
+### 逐层剥出来的接触面(每修一个露出下一个)
+
+1. 每层 norm 未声明 -> `aten._fused_rms_norm.default got mixed`
+2. KDA 的三个 Conv1d 和它自己的 `A_log`/`dt_bias` -> `aten.convolution.default got mixed`
+3. fla kernel 拿到 DTensor -> **非法内存访问**,没有可读报错(我们树里记过这个形态)
+4. `vision_invariant_linear_config` 不能用于 dense `Linear`:它声明了四个激活边界,
+   把输入提升成 DTensor,而 `common/linear.py` 的 `Linear.forward` 自己把权重
+   `to_local()`,两者相撞 -> `aten.mm.default got mixed`。
+   **core 的 dense `colwise_config`/`rowwise_config` 把这些边界留 None 正是为此;
+   复制版本 core 没有,这里补了一个。**
+5. `KimiLatentMoE` 的 `routed_down/norm/up` 是 Kimi 加在 core MoE 之外的,
+   `set_moe_sharding_config` 不认识 -> `moe.py:135` 的 `aten.mm got mixed`
+
+现在停在 dynamo 的 `RuntimeError when making fake tensor call`。**未诊断。**
+
+## HEAD 回归(全部 rc=0)
+
+| 格 | step-1 loss |
+|---|---|
+| text dp2 | 12.38712 |
+| text cp2 | 12.45262 |
+| mm cp2 | 12.45567 |
+| text pp2 | 12.53727 |
+| text ep2 | 12.38712 |
+| mm ep2 | 12.47105 |
