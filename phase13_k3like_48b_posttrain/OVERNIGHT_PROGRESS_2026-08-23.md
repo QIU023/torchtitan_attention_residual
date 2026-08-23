@@ -260,3 +260,26 @@ EP 是对照:它 step-1 loss 与 dp2 基线**五位全同**,因为 EP 不改变�
 新树 core 自带 `components/lora.py`。加一个 flavor:786 个参数里 36 个可训,
 适配器在 `wq_b`/`wkv_b`/`wo`。**我们那 939 行的 `lora.py` 在新树上基本多余** ——
 和 `attn_res_model.py` 同一形态:上游已经有了。
+
+## 一次作废的矩阵,和它证明的事
+
+第一轮 `run_4025_matrix.sh` 是**从活树跑的**,而我在它运行期间提交了四次改动。
+每个格子是新起的 torchrun,读的是当时的文件 —— 所以那一轮混了多个代码版本,
+**作为一份证据无效**,已停掉重跑。
+
+这正是 08-23 早些时候我给自己写下的那条纪律("gate 从冻结副本跑,不从活树跑"),
+第二次犯。这次的做法是 `git worktree add --detach /workspace/tt_frozen_titan HEAD`,
+矩阵指向冻结副本,开发继续在 `/workspace/tt_4025/torchtitan`。
+
+作废那轮有一条信息仍然有用:**它跑到 21 格,mm 臂的 PP 格是过的** ——
+因为塔的修复在那些格子启动之前已经提交。也就是说修复本身是对的,
+只是不能拿那一轮当证据。
+
+## 多模态 PP 的视觉塔缺陷(`2cd239daf`)
+
+塔没有被任何一段点名,而 **core 会把没被点名的子模块置 None**,
+于是每段都拿到 None 的塔,第一个多模态 batch 报
+`pixel_values were provided without a vision encoder`。
+
+适配器自己的 docstring 就写着该放哪:视觉特征拼进 embedding,没有东西跨 stage,
+所以塔跟着持有 embedding 的那一段。CPU 测试断言**恰好一段**持有它、且是 embedding 那段。
