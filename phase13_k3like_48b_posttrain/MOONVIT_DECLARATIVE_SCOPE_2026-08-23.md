@@ -201,3 +201,45 @@ TP-only 声明版本的最后一次测量:
 
 树已还原到 `cfd84b87c`。命令式实现是正确的、有实测基线,不构成阻塞;
 这条线要继续,从上面"下一个该测的"那一步开始。
+
+
+## 按头切分那条路:gate 从未执行,实测是好的(2026-08-23)
+
+`_apply_tp_moonvit_mlp` 里 `shard_heads` 那条分支(`wo` 走 RowwiseParallel、
+q/k/v `to_local(grad_placements=[Partial()])` 后切片)的条件是
+`num_heads >= tp_size and num_heads % tp_size == 0`。
+
+| flavor | 视觉塔头数 | tp2 下 |
+|---|---|---|
+| `kimi_k3_debugmodel_report_arch`(**gate 用**) | 3 | `3%2!=0` -> 复制 |
+| `kimi_k3_mini_vl` | 4 | -> **按头切** |
+| `MoonViTConfig` 默认(官方) | **12** | -> 按头切 |
+
+**所以 58 格从来没有执行过这条分支。** 官方配置是 12 头,真实训练会走它。
+
+用 `kimi_k3_mini_vl`(4 头)在 dp2+tp2 下实测:
+
+    [VIT] encoder.blocks.N.wo.weight    (Shard(dim=0), Shard(dim=1))   <- tp 轴切了
+    [VIT] encoder.blocks.N.wqkv.weight  (Shard(dim=0), Replicate())    <- 按设计保持复制
+
+5 步训练正常。TP 是否透明,用查词表缺陷那次的同一把尺子对照:
+
+| | step 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| dp4(无 TP) | 25.588 | 19.156 | 19.588 | 16.095 | 17.581 |
+| dp2+tp2(按头切) | 24.761 | 18.914 | 19.902 | 16.405 | 17.348 |
+
+差 1-3%,与 llama3 对照的量级一致(切分改变初始化时的 RNG 消耗),
+**不是词表那种 5.6 倍膨胀**。grad_norm 绝对值大是这个 flavor 的规模/lr 特性。
+
+### 这改变了拆 wqkv 的性价比
+
+现有方案(复制 wqkv + 投影后切片)**能工作且 TP 透明**。所以拆成 `wq`/`wk`/`wv` 的收益只剩:
+
+* 省掉冗余的 qkv matmul —— 每个 rank 现在算全部头再丢掉别人的
+* 结构与 core 的 `VisionAttention` 一致,PR 更容易过
+
+代价是**改官方 checkpoint 的加载映射**(released 侧是融合的 `wqkv`)。
+
+**这是性能与一致性的改动,不是修缺陷。** 先前我把它写成"解锁视觉注意力的 TP 切分",
+那是错的 —— 切分已经解锁了,只是 gate 的 flavor 头数不整除所以看不到。
