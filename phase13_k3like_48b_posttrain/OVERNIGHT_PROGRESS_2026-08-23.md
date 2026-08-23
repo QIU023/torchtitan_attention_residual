@@ -225,3 +225,38 @@ fsdp2_pp2_cp2 / ep8_fsdp8`。
    聚合模块落在没有任何一段上,唯一症状是 loss 训到别处去了。
    第三个用例检查每个发出的名字都能匹配到子模块 —— core 对匹配不到的子模块是**置 None**,
    不是报错。
+
+## TP 暂停(maintainer 要求),但成因已测出来
+
+`getitem(int32[256], DTensor 标量)` 的成因**不是缺声明,是一处逻辑分叉**:
+
+* **我们原来的树不重写 `MoE.forward`** —— 它把 core 的 MoE 组合成 `self._moe`,
+  只在模块边界处理 DTensor,所以手里从来不会有一个 DTensor 的专家计数。
+* **4025 的 `KimiLatentMoE` 重写了 forward**,路由的整数簿记
+  (`routing_map_TE` / `num_tokens_per_expert_E`)因此在模块级的 DTensor 环境里算出来,
+  dispatcher 再拿它去索引普通张量。
+
+实测(tp2):`x=DTensor scores=DTensor ids=DTensor counts=DTensor`,四个全是。
+
+顺带记下原树另一处不能丢的知识:它给 `set_moe_sharding_config` 传的是
+`enable_sp = moe_enable_ep and moe_enable_tp`,**不是常量**;EP 开时 tp 在 MoE 区域内
+变成 token 轴,只按 enable_sp 键会要求 `S(1) -> P(sum)`,DTensor 拒绝。
+EP+TP 同开时还要把 MoE 声明成"外部 Replicate、内部 SP"的自足岛。
+**恢复 TP 时从这两条出发,不要从报错反推。**
+
+## PP 与无 PP 的 loss 差异 — 已定性
+
+不是缺陷。排除法:
+
+1. `pp_stage_parity_4025.py` 证明**在权重相同的前提下**,两段前向与整模型前向
+   `max_abs = 0.000e+00`;
+2. 所以端到端差异只能来自权重或数据;
+3. PP 下每个 rank 只初始化自己那一段,RNG 消耗与整模型不同。
+
+EP 是对照:它 step-1 loss 与 dp2 基线**五位全同**,因为 EP 不改变初始化的消耗顺序。
+
+## LoRA — 用上游 converter(`7bcb25f22`)
+
+新树 core 自带 `components/lora.py`。加一个 flavor:786 个参数里 36 个可训,
+适配器在 `wq_b`/`wkv_b`/`wo`。**我们那 939 行的 `lora.py` 在新树上基本多余** ——
+和 `attn_res_model.py` 同一形态:上游已经有了。
