@@ -134,7 +134,29 @@ placement,而这两处的流是 plain。
 | AttnRes 的 `torch.stack` | **否** —— 塔里 0 处 `torch.stack` |
 | PP send/recv | 仅在 DEP 的 stage 边界,不是塔内部 |
 
-## 停在哪里(2026-08-23)
+## 做完了(2026-08-23),根因是 Linear.forward 自己拆权重
+
+第六次尝试才测对。`torchtitan/models/common/linear.py`:
+
+    def forward(self, input):
+        weight = self.weight.to_local() if isinstance(self.weight, DTensor) else self.weight
+        return F.linear(input, weight, bias)
+
+**`Linear.forward` 自己把权重 `to_local()`。** 所以只要声明了 `in_src`/`in_dst`,
+框架就会把输入提升成 DTensor,它撞上本地权重 -> `aten.mm.default got mixed`。
+
+core 的 `colwise_config` / `rowwise_config` 的 `in_src`/`in_dst` **都是 `None`**,正是为此。
+**加输入声明才是错的**,与边界约定、mesh 维度都无关。
+
+最终形态(`91feba654`):`MoonViTMLP` 成为带 `Config` 的 `Module`,两个 linear 从
+`Linear.Config` 构建,只声明**权重切分与输出布局**;`_apply_tp_moonvit_mlp` 里那两条
+`plan[...]` 删除;驱动器在 `apply_tp` 之前先跑一次塔,以免 `distribute_module` 抢先。
+
+验证:placement 与基线一致(`fc0`=`Shard(0)`、`fc1`=`Shard(1)`),
+两个多模态臂十步数值与迁移前完全相同,429 单测通过。
+(该文件里 4 个 N814 lint 警告是预先存在的。)
+
+## 曾经卡住的地方,以及五个被推翻的结论
 
 TP-only 声明版本的最后一次测量:
 
@@ -149,9 +171,9 @@ TP-only 声明版本的最后一次测量:
 探针打在 `MoonViTMLP.forward` 开头,即 `fc0` 被调用之前;所以 mix 发生在
 `Linear.forward_with_redistribution` 对输入做重分布**之后**。
 
-下一个该测的就是这一处:在 `protocols/module.py` 的 `_redistribute_inputs` 里
-打印 `mesh = parallel_dims.resolve_shared_mesh([src, dst])` 和重分布前后 `value` 的类型。
-猜测(**未验证**)是 1 轴的 `SpmdLayout({TP: ...})` 在 2 维 mesh 上解析时把 DTensor 掉成了本地张量。
+那个猜测(1 轴 `SpmdLayout` 在 2 维 mesh 上把 DTensor 掉成本地张量)**也是错的**。
+真正的位置在 `Linear.forward` 自身,见上一节。输入重分布从不拆 DTensor ——
+`_redistribute_inputs` 只做提升、断言、重分布三件事。
 
 ### 过程中修掉的三层(都是真问题,重做时会再遇到)
 
