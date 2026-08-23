@@ -116,11 +116,66 @@ DTensor —— 那不是"迁移 MLP",那是改整个塔的张量约定,规模等
 **这与层内两个 AttnRes norm 迁不动是同一个根因**:声明式词汇表描述的是 DTensor 流上的
 placement,而这两处的流是 plain。
 
-### 结论
+### 上面这个"根因"是错的,当天就被自己的测量推翻
 
-4a 不是"低风险的可行性验证",它和 4b 一样要动结构。真实的先决条件是:
+写完上一节后我去测了当前(命令式)树上 MLP 实际收到什么:
 
-**先把视觉塔的边界约定从 plain 翻成 DTensor,再谈声明式。**
+    [MLPIN] x=DT(Replicate(),)  fc0.w=DT(Shard(dim=0),)
 
-在那之前,MoonViT 的命令式 TP 实现是正确的、有实测基线的,不应该为了形式一致去动它。
-本次尝试已回退,树回到 `cfd84b87c` 的状态。
+**输入本来就是 DTensor。** `encode_images` 在进塔之前就做了提升
+(`multimodal_model.py:292-296`:`DTensor.from_local(packed, tp_mesh, (Replicate(),))`),
+所以"MoonViT 全程 plain 边界"不成立。
+
+而且 `apply_tp` 注释里给 plain 约定的三个理由,逐条核下来只有一个沾边:
+
+| 理由 | 对视觉塔是否成立 |
+|---|---|
+| fla 内核不吃 DTensor | **否** —— MoonViT 全文 0 处 fla,用的是 `F.scaled_dot_product_attention` |
+| AttnRes 的 `torch.stack` | **否** —— 塔里 0 处 `torch.stack` |
+| PP send/recv | 仅在 DEP 的 stage 边界,不是塔内部 |
+
+## 停在哪里(2026-08-23)
+
+TP-only 声明版本的最后一次测量:
+
+| 观测 | 命令式(基线) | 声明式 |
+|---|---|---|
+| 权重(静止) | `(_StridedShard(0,sf=2), Shard(0))` | **相同** |
+| MLP 输入 | `DT(Replicate(),)` | **相同** |
+| `fc0.weight`(前向中) | `DT(Shard(dim=0),)` | **相同** |
+| 结果 | 训练正常 | `aten.mm.default got mixed` |
+
+**输入、权重、placement 三者都与基线一致,但 `Linear` 内部的 mm 仍报 mixed。**
+探针打在 `MoonViTMLP.forward` 开头,即 `fc0` 被调用之前;所以 mix 发生在
+`Linear.forward_with_redistribution` 对输入做重分布**之后**。
+
+下一个该测的就是这一处:在 `protocols/module.py` 的 `_redistribute_inputs` 里
+打印 `mesh = parallel_dims.resolve_shared_mesh([src, dst])` 和重分布前后 `value` 的类型。
+猜测(**未验证**)是 1 轴的 `SpmdLayout({TP: ...})` 在 2 维 mesh 上解析时把 DTensor 掉成了本地张量。
+
+### 过程中修掉的三层(都是真问题,重做时会再遇到)
+
+| # | 现象 | 处理 |
+|---|---|---|
+| 1 | `weight is already a DTensor with placements (Replicate(),)` | `apply_tp` 的 `distribute_module(vision_tower)` 抢在驱动器前面。在 `apply_tp` 之前先对塔跑一次 `_drive_declarative_sharding` |
+| 2 | `input DTensor has placements (Shard(dim=1),), but in_src expects` | core 的 `vision_scaled_bias_rowwise_config` 假定 3-D `[B,L,D]`;MoonViT 是 varlen packed 的 2-D `[L,D]` |
+| 3 | `SpmdLayout has multiple mesh axes sharding tensor dim 1` | `dense_activation_placement` 同时给 CP 轴 `S(1)`,与 TP 撞在同一张量维 |
+
+还有一个自己制造的:替换类头时留下了**重复的 `forward`**,后定义的覆盖前者,
+导致探针整整两轮没有输出而我以为"forward 没被调用"。
+
+### 这一节该记的教训
+
+**同一个问题上连续五次下结论、五次被自己的下一个测量推翻:**
+
+1. "视觉侧几乎没开始" -> `_apply_tp_moonvit_mlp` 同时处理 MLP 和注意力头
+2. "注意力头是切的" -> 实测 `wqkv`/`wo` 都是 `Replicate`(3 头 / tp2 除不尽)
+3. "MoonViT 要从零 config 化" -> core 有 170 行的 `vision_encoder.py`
+4. "边界是 plain,要翻整个塔" -> 实测输入本来就是 DTensor
+5. "是 mesh 维度不匹配" -> 实测两版权重与输入完全一致
+
+每一次都是**读了一段能解释现象的代码就下结论**,而没有先跑那个能一锤定音的观测。
+正确的顺序是:先测当前行为,再改;不是先改,再用报错反推当前行为。
+
+树已还原到 `cfd84b87c`。命令式实现是正确的、有实测基线,不构成阻塞;
+这条线要继续,从上面"下一个该测的"那一步开始。
