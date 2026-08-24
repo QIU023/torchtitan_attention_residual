@@ -232,3 +232,52 @@ TP-only 修复。需要 A/B 定位是哪一个,以及是"引入"还是"暴露"�
 1. 跨格比较必须**同一个 seed checkpoint**,即同一脚本内;跨脚本不可比。
 2. 每格必须**自带同配置的预热格**;"整个矩阵跑两遍"不等价。
 3. 每格独立 cache 不构成跨格可比性。
+
+## 更正:CP 的 1.4e-1 是我删掉了运行中实验的 seed(2026-08-24 16:0x)
+
+`cpprec_0824_150738` 的日志:
+
+    text_dp1_warm      Loading the checkpoint from ...   <- 只有第一格加载了
+    text_dp1_measure   No checkpoint was provided        <- fresh init
+    text_cp2_warm      No checkpoint was provided        <- fresh init
+    text_cp2_measure   No checkpoint was provided        <- fresh init
+
+seed 目录只剩 `comm_traces` / `structured_logs`,`checkpoint` 不见了。
+
+**成因是我自己**:为防磁盘看门狗而执行的清盘命令
+`find ... -name checkpoint -prune -exec rm -rf {} +`,目录列表里包含了
+**当时正在运行**的 `cpprec_0824_150738`。
+
+于是 dp1 与 cp2 都变成 fresh init。而 `distributed/utils.py` 在 `world_size == 1`
+时提前返回、只设 `torch.manual_seed`;`> 1` 时还会装 DTensor 的 offset RNG tracker
+—— 两者**从不同的生成器取初值**。所以 12.52573 vs 12.38074 是两个不同随机初始化在比,
+**不是 CP 的问题**。
+
+**CP 真实偏差**:最后一次 seed 确实加载的那轮(02:11 门)是
+dp1 12.58783 / cp2 12.59032,**差 2.5e-3**。
+
+**连带更正**:10 步基线里 `text_cp2` 同样是 fresh start,所以
+"PP 退化到 1e-2~1e-1" 那条结论**也作废**。`zab` 那轮 A/B 是干净的
+(两格都加载了 seed),结论成立:pp4 与 dp1 逐位相同。
+
+`ppmat_0824_153056` 已核实干净(dp1/pp2/pp4 三格都 `Loading the checkpoint`),
+结果有效:**dp1 = pp2 = pp4 = 12.44529**。
+
+### 已加的防护
+
+三个 harness 脚本(`pp_matrix.sh` / `cp_precision.sh` / `gate_no_tp.sh`)在每个计量格后
+断言日志里出现 `Loading the checkpoint from`,否则写入 `ASSERT-SEED FAIL`。
+静默 fresh-start 是今晚多条错误结论的共同放大器。
+
+### 纪律(补第 4 条)
+
+4. **绝不对正在运行的实验目录做清理。** 清盘只针对已归档结论的目录,
+   且执行前必须确认没有作业在写它。
+
+### agent 查出的一个真实待修项(与本次测量无关)
+
+CP 的 MLA 因果 mask 只重建了 causal,**丢掉了 packed-document mask mod**
+(`model.py` 的 `_full_sequence_causal_mask` vs `common/decoder.py:356-369`)。
+当前配置每微批一个文档,所以两者等价、不触发;一旦
+`num-tokens-per-microbatch-per-dp-rank > seq_len`,CP 会让样本 n 注意到样本 n-1,
+而 dp1 不会 —— **静默错误**。raise CP 的 PR 前应当修,且应加断言而不是只写注释。
