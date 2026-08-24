@@ -97,3 +97,34 @@ step3 仍差 ~1.5e-2,但同配置内 off_w vs off 在 step3 就差 1e-1 —— 8
 
 * DEP clause-1(塔独占 stage):**通过**,partition-invariant
 * DEP clause-2(n_vit>1):**未接通**(R3 死代码),仍待处理
+
+### lora_pp8:结构性限制,非回归(已归因)
+
+`ValueError: Optimizer param_groups pattern '.*' matched no parameters`。
+
+K3 的注意力是 3 KDA : 1 MLA 交替,debugmodel 24 层的 MLA 在 `{3,7,11,15,19,23}`。
+LoRA 目标 `wq_b / wkv_b / wo` 是 **MLA 专有**(KDA 没有这些投影)。pp8 把 24 层切成
+约 3 层一段后:
+
+| stage | layers | MLA |
+|---|---|---|
+| 0 | 0,1,2 | **无** |
+| 1 | 3,4,5,6 | 3 |
+| 2 | 7,8,9 | 7 |
+| 3 | 10,11,12 | 11 |
+| 4 | 13,14,15 | 15 |
+| 5 | 16,17,18 | **无** |
+| 6 | 19,20,21 | 19 |
+| 7 | 22,23 | 23 |
+
+stage 0 与 stage 5 整段没有 MLA 层 -> 零 LoRA 可训练参数 -> 优化器空参数组。
+
+**与老树同一类限制**:老树 `LORA_DEP_2026-08-11.md` 记录 LoRA+DEP 下八个 PP 格全挂在
+同一个错(DEP 的视觉 stage 只有塔+embedding,都不是 LoRA 目标),用对照法归因
+(pp2 DEP 开=挂,关=训练正常),**并未修复**,作为已知限制留存。
+
+差别:新树这个**不需要 DEP** 就会发生,取决于 pp 度与 3:1 混合模式的对齐 ——
+pp2/pp4 每段都含 MLA 所以通过,pp8 段太薄就会出现纯 KDA 段。
+
+**判定:不是迁移回归,是 LoRA x 高 PP 度 x 3:1 混合注意力的结构性约束。**
+不在新树自行"修复"(会偏离老树);记录为已知限制,LoRA 臂按老树的配对规则判定。
