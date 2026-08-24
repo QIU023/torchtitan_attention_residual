@@ -77,3 +77,49 @@ PP&DEP、CP&Dynamic CP 的多模态实现已在 k3_pp / k3_cp 分支,draft 完�
 
 **文本侧 PP / CP / EP 三个分支合格,可 raise(CP 需 PR body 说明 step-1 口径)。**
 多模态侧 draft 完成,按 progressive 策略后置,实验待做。
+
+---
+
+# 补充实验与全量代码校验(同日晚)
+
+## 新增实验(全部单一 seed + 每格预热 + seed 断言通过)
+
+* **EP 文本**:ep2 7.6e-4 / ep4 1.4e-4 / ep8 2.4e-4(各自对 dp2/dp4/dp8)
+* **EP 多模态**:ep2 1.4e-3 / ep4 1.3e-3 / ep8 1.2e-3
+* **PP x DP2 文本**:`fsdp2_pp2` = `fsdp2_pp4` = dp2 = 12.42251,**逐位相同**
+* **PP x DP2 多模态**:`fsdp2_pp2` = dp2 = 12.46440,**逐位相同**
+* **CP x DP2 文本**:`fsdp2_cp2` 4.1e-3;`fsdp2_cp4`(seq512)2.75e-3
+* **CP x DP2 多模态**:`fsdp2_cp2` 1.7e-2(相对 1.4e-3)
+
+pp8 / cp8 按要求略去。cp4 需 seq 512(上游 FlexAttention BlockMask 的
+Q_LEN % (cp*128) 约束)。
+
+## 全量 diff 对照老树的正确性校验
+
+6504 行 / 27 文件逐文件对照参照树,**数值零偏差**:所有集合通信的 group 与可微性一致、
+折叠布局下规约轴正确重映射、老树注释记录的实测硬约束(ceiling split 余数落尾部 rank
+并带断言、必须经 `__call__` 让 FSDP2 all-gather 触发)原样保留、k3 配置数值全部匹配。
+
+查出并已修复三个非数值缺陷(commit `8516debcb`):
+
+1. KDA head 整除判据用 `tp*cp`,应为 `cp`(KDA 是 TP-replicated,实现只按 cp 切);
+   为其辩护的注释是事实错误,一并改正。会拒绝合法配置。
+2. `cp_via_sharding_config` 在 `Decoder.Config` 重复定义两次,已去重。
+3. `_unwrap_multimodal_for_pp` 引用不存在的 `multimodal_model` 模块(wrapper 布局分支
+   本树不可达),已删除并改为明确报错。
+
+## 两条不属于本 PR scope / 已转待办
+
+* **KDA 的 gate/beta-sigmoid 在 fla kernel 内计算**(老树在外部算):这是**上游模型实现的
+  选择**,我们只是消费。三条并行路径(非CP / KCP / Ulysses)用法一致,CP 不引入不对称。
+  **不属于并行 PR 的 scope。**
+* **DEP bubble 的 deferred backward 在折叠布局下不触发**(`cut_for_deferred_backward`
+  零调用):梯度值不变(内联 autograd 等价于延迟重放),loss/grad_norm 不动,但该 PP
+  特性未实际运行。**多模态侧,已转待办,按 progressive 后置。**
+
+## 最终判断
+
+**文本侧 PP / CP / EP 三个分支合格,可 raise。** EP 证据现覆盖文本+多模态、ep2/4/8;
+PP 在 dp1 与 dp2 mesh 下均逐位相同;CP 偏差全部在 bf16 精度内且与老树同量级或更紧。
+
+多模态侧 draft 完成、实验已补齐(见上),按 progressive 策略在文本侧之后 raise。

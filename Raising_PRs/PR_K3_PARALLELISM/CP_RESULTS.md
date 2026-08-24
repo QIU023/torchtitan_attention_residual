@@ -34,3 +34,27 @@ CP 改变序列分片,所以 step-1 本就不与 dp1 逐位相同(老树同理,S
   `NotImplementedError: Q_LEN not divisible by CP mesh world size * BLOCK_SIZE`。
 * 折叠流多文档:microbatch 宽于 context window 时,CP 的 causal-only mask 无法表达
   文档边界,已加断言明确报错(commit "reject a CP stream that folds more than one document")。
+
+## 补充:与 DP2 组成 mesh(文本)
+
+| cell | step-1 | 基线 | 相对 |
+|---|---|---|---|
+| dp2 (seq 256) | 12.42251 | - | - |
+| fsdp2 x cp2 | 12.42659 | dp2 | 4.1e-3 |
+| dp2 (seq 512) | 12.43604 | - | - |
+| fsdp2 x cp4 | 12.43329 | dp2(seq512) | 2.75e-3 |
+
+cp4 需 seq 512:FlexAttention 的 BlockMask 要求 Q_LEN % (cp*128) == 0
+(上游后端约束,非本 PR 引入)。cp8 已按要求略去。
+
+## 补充:多模态侧
+
+| cell | step-1 | 基线 | 相对 |
+|---|---|---|---|
+| dp2 | 12.46440 | - | - |
+| fsdp2 x cp2 | 12.48589 | dp2 | 1.7e-2 |
+
+多模态 cp2 偏差 1.7e-2(相对 1.4e-3),视觉塔的 dynamic CP 参与其中,仍在 bf16
+相对精度内,且与老树 cp2 的 1.3e-3 相对偏差同量级。
+
+方法学同上:单一 seed、每格自带预热、seed 断言全绿。

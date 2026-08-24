@@ -27,3 +27,26 @@
   真实跨格差,不预热会把它误读成并行 bug。
 * 每个计量格断言日志出现 `Loading the checkpoint from`,否则标 ASSERT-FAIL ——
   静默 fresh-start(seed 没载入)是最隐蔽的污染源。
+
+## 补充:与 DP2 组成 mesh(文本,kimi_k3_debugmodel_text)
+
+| cell | step-1 | 相对 dp2 |
+|---|---|---|
+| dp2 | 12.42251 | - |
+| fsdp2 x pp2 | 12.42251 | **逐位相同** |
+| fsdp2 x pp4 | 12.42251 | **逐位相同** |
+
+PP 与数据并行组成 2D mesh 后,step-1 仍与纯 dp2 逐位相同。
+
+## 补充:多模态侧(kimi_k3_debugmodel,含视觉塔)
+
+| cell | step-1 | 相对基线 |
+|---|---|---|
+| dp2 | 12.46440 | - |
+| fsdp2 x pp2 | 12.46440 | **逐位相同** |
+| dp1 x pp4 | 12.45941 | 5.0e-3 vs dp2(不同 dp 度,数据不同,不可比) |
+
+多模态下 PP 与 dp2 组 mesh 同样逐位相同。dp1_pp4 的 dp 度不同,按上游 first-fit
+打包在 DP 分片之后的性质,数据本就不同,列出仅为跑通证据。
+
+方法学同上:单一 seed、每格自带预热、seed 断言全绿。
