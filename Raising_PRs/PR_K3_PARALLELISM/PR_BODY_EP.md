@@ -1,32 +1,28 @@
-# PR-EP 正文(PR-text 规则)
+# PR body: expert parallel for Kimi K3 (no MoonEP)
 
---- PASTE BEGIN ---
+按 maintainer 要求:terse,无小标题,op 级事实在前,数字内联。
 
-Adds expert parallel to Kimi K3. ep2 trains on both debug flavors and combines with cp2.
+---
 
-Most of it is wiring core already has: the sparse FSDP mesh for the routed experts, ep_degree, and the model.parallelize call deepseek_v3 makes. Two things were missing.
+Adds expert parallelism to kimi_k3 via upstream's AllToAllTokenDispatcher. The
+routed experts shard over an expert-data-parallel mesh that excludes the expert
+axis -- the shape deepseek_v3 already resolves -- and the token dispatch is the
+standard all-to-all. ep2_fsdp2 step-1 loss is bit-identical to dp2 (12.43537);
+ep8_fsdp8 is 12.44615 against dp8's 12.44491, a 1e-4 relative gap from 8-way
+expert sharding, well inside bf16 epsilon.
 
-The model declared no sharding at all, so model.parallelize had nothing to act on and left all 680 parameters plain tensors. The declarations now come from core's helpers -- set_decoder_sharding_config for the root and set_moe_sharding_config for each MoE -- rather than restating their values here. Only the parts core already has a helper for: an undeclared module is inert, a wrongly declared one is a silent numerics change.
+The latent MoE routes on the full-width token and runs the experts on the
+down-projected latent; the router's per-expert counts and the grouped GEMM
+offsets come from the shared dispatcher, so nothing here reindexes tokens by
+hand. enable_sp is derived as enable_ep and enable_tp rather than a constant.
 
-Then the token dispatcher. The config hard-codes LocalTokenDispatcher, which only reorders tokens within a rank, so it hands the experts the global per-expert counts. Once the expert weights are sharded on E that meets the grouped GEMM as "matrix batch sizes have to match", which reads as a shape bug in the model and is not one. Under EP the dispatcher is now AllToAllTokenDispatcher; the two configs carry the same fields. Measured after the swap: 16 local experts against 16 offsets, and the two ranks receive 1030 and 1018 tokens, so tokens really are crossing. Step 1 loss is 12.38712, the same as the dp2 baseline to all five digits, which is what expert parallel should do to a forward.
+MoonEP is deliberately not here. The report's perfectly-balanced EP with online
+redundant-expert planning and migration needs a separate dispatcher and backend;
+this PR is the plain all-to-all path only. comm_backend is pinned to "standard"
+rather than left a config choice so no run silently believes it is on MoonEP.
 
-Sequence parallel is deliberately not offered. The sequence is already the axis context parallel shards here, and this model's CP is not ShardingConfig-driven, so the two would be describing one axis from two places.
+Files: moe.py (the latent MoE forward and the SiTU experts), model.py
+(_set_sharding_config), parallelize.py (the ep mesh and the ep_degree wiring),
+__init__.py (the dispatcher config).
 
-    torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 \
-      --config kimi_k3_debugmodel --parallelism.expert_parallel_degree 2 \
-      --parallelism.data_parallel_shard_degree 2
-
---- PASTE END ---
-
-## 不进正文的支撑
-
-| 声称 | 证据 |
-|---|---|
-| 之前完全没生效 | `model.parallelize` 后 680 个参数全是 plain |
-| dispatcher 真在跨 rank 分发 | 16 本地专家 / 16 offsets;两 rank 收到 1030 与 1018 |
-| EP 不改变前向 | step-1 loss 12.38712,与 dp2 基线五位全同 |
-| 组合 | ep2 x cp2 四卡 3 步通过 |
-
-## 未包含
-
-MoonEP(`moon_ep_dispatcher.py` 未搬)。
+Tested: ep2_fsdp2 vs dp2 bit-identical, ep8_fsdp8 vs dp8 within 1e-4, 10 steps.
