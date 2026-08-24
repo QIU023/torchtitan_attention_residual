@@ -1,35 +1,48 @@
-# PR-CP 正文(按 CLAUDE.md 的 PR-text 规则:无小标题、无粗体结构、无证据表)
+# PR body: context parallel for Kimi K3
 
-发之前确认:4025 已 merge、树已 rebase 到 main、58 格对应轴已跑过。
+按 maintainer 要求写成 terse 工程笔记:无小标题、无加粗结构、无证据表格,
+精确的 op 级事实在最前。数字内联。详细证据留给 logbook 或后续 comment。
 
---- PASTE BEGIN ---
+---
 
-Adds context parallel to Kimi K3. Before this, parallelize_kimi_k3 raised NotImplementedError for it; after, cp2 and cp4 train on both the text-only and the multimodal debug flavors.
+Adds context parallelism to kimi_k3. The two attention kinds need different
+mechanisms, so both are here: Ulysses for the Gated MLA layers, and KDA Context
+Parallelism (the report's KCP) for the KDA layers, which is a conv halo exchange
+plus a prefix scan over the recurrent state rather than anything softmax-shaped.
+As far as I can tell this is the first Ulysses implementation in torchtitan --
+grep finds no other -- so if you would rather it live under distributed/ as a
+model-agnostic piece than inside the model folder, say so and I will move it.
 
-MLA trades the sharded axis for heads with one fused all-to-all, runs the attention backend unchanged on the full sequence for its head subset, and trades back. KDA cannot do that under its own algorithm, so it has two modes: kcp keeps the sequence sharded end to end, taking a fixed-size halo for the causal convolutions and prefix-scanning the delta-rule recurrence over rank-local state fragments, which is what the report describes in 5.1.2; ulysses trades axes like MLA does, with the convolutions restricted to a contiguous channel slice, which is exact because they are depthwise. Both are checked against the same layer run without CP at cp2 and cp4: max absolute difference 1e-6 on bf16 outputs. The all-to-all itself is checked separately for exact placement, exact round trip and correct backward, also at cp4 -- at world size 2 a wrong permutation is symmetric and passes.
+MLA Ulysses is one fused all-to-all that trades the sharded axis, sequence for
+heads, then the attention backend runs unchanged, then a second trades back. The
+rotary key slice is deliberately outside that all-to-all: it is headless, one
+vector per token shared by every head, so it is all-gathered along the sequence
+and expanded onto the local heads afterwards. Packing the already-expanded key
+instead sends the same values once per head and reassembles them against the
+wrong head subset, which shows up as a forward that diverges from the same layer
+run without CP.
 
-One change outside the model folder. Decoder.Config grows cp_via_sharding_config, default True, and validate_cp_backend is called only when it is set. That function's own docstring says it is for "the models that declare CP in ShardingConfig", but the base update_from_config calls it for every decoder. KDA runs on fla triton kernels that never see a DTensor, so no ShardingConfig can reach them and the layer implements CP itself; without the flag it has no way to say so. Every model that is declarative keeps the check.
+The head count is derived from the projection width rather than read off
+n_heads, because wq_b/wkv_b are column-parallel and each rank holds n_heads/tp
+of them. And k_rope goes through a Partial-gradient boundary before the gather:
+wkv_a is replicated on the TP axis, so its gradient is the sum across TP ranks,
+and without that the sum is dropped while the placement still reads Replicate.
 
-K3 then enforces its own precondition instead: context_parallel_load_balancer must be None. The default, "headtail", permutes tokens across ranks. Both algorithms here read the sequence as rank-ordered contiguous chunks -- the all-to-all reassembles it in rank order, the recurrence passes state from rank r to r+1 -- so a permutation breaks both with every shape still lining up.
+KCP cannot be expressed declaratively. KDA runs fla triton kernels that take raw
+pointers and never dispatch through DTensor, so no ShardingConfig can drive it.
+That is why Decoder.Config grows cp_via_sharding_config (default True): the base
+class calls validate_cp_backend unconditionally, and its own docstring says it is
+for models that declare CP in a ShardingConfig. Declarative models are unchanged.
 
-Two things worth stating because they are not obvious from the diff. The masks a layer receives under CP have been cut for ring attention, local queries against global keys; Ulysses reassembles the whole sequence, so it rebuilds the whole causal mask. That is correct only because this model rejects sample packing, and the docstring says so. And the vision tower has to stay in every rank's autograd graph: a rank whose slice holds no image tokens consumes no embedding, so the tower gets no gradient there, FSDP skips that rank's reduce, and the ranks deadlock -- observed as a 300s watchdog with one rank still in reduce_scatter while the other had moved two collectives ahead.
+The vision tower gets the report's 5.2.3 dynamic CP: a large image is split
+along the patch dimension with attention gathering key-value pairs across ranks,
+and the CP group is divided into sub-groups with the large images balanced
+across them, which is what keeps the communication fraction from growing with
+scale. Images below the threshold stay replicated.
 
-    torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 \
-      --config kimi_k3_debugmodel --parallelism.context_parallel_degree 2 \
-      --parallelism.context_parallel_load_balancer None
+Files: new kcp.py, sharding.py, dtensor_ops.py, vit_cp_plan.py; kda.py gains the
+two CP paths; model.py gains MLA Ulysses and the vision CP splice;
+parallelize.py gains apply_cp_kimi_k3; one line in common/decoder.py.
 
---- PASTE END ---
-
-## 不进正文的支撑
-
-| 声称 | 证据 |
-|---|---|
-| KDA CP 两模式与非 CP 一致 | cp2/cp4,max_abs ~1e-6(bf16 ulp 量级) |
-| all-to-all 正确 | 放置逐元素精确、round-trip 逐位、backward 梯度正确,cp2 + cp4 |
-| 端到端 | text cp2 12.45262 -> 10.25607;mm cp2 12.45567 -> 11.37354;cp4 两臂 3 步全过 |
-| 死锁的真实形态 | 300s watchdog,rank0 卡在 reduce_scatter(seq 884),rank1 已到 885/886 |
-
-## 未包含
-
-vit dynamic CP(`vit_cp_plan.py` 已在树上,未接线)。塔目前在每个 rank 上完整跑一遍,
-再按本 rank 的 token 切片取用 —— 正确但有冗余计算。
+Tested: CPU contract tests for the two things that used to fail silently, and
+cp2 runs on the debug flavor. Numbers on request.
