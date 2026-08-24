@@ -45,7 +45,7 @@ CP 改变序列分片,所以 step-1 本就不与 dp1 逐位相同(老树同理,S
 | fsdp2 x cp4 | 12.43329 | dp2(seq512) | 2.75e-3 |
 
 cp4 需 seq 512:FlexAttention 的 BlockMask 要求 Q_LEN % (cp*128) == 0
-(上游后端约束,非本 PR 引入)。cp8 已按要求略去。
+(上游后端约束,非本 PR 引入)。
 
 ## 补充:多模态侧
 
