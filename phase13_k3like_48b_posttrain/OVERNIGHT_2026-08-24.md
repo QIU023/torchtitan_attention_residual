@@ -295,3 +295,25 @@ commit `8516debcb`(KDA 整除判据改 cp、去重 `cp_via_sharding_config`、�
 
 **两步都逐位相同。** 与预期一致:KDA 整除判据只是校验(tp=1 时 tp*cp == cp 等价)、
 重复字段两处同为 True、删掉的分支不可达 —— 三处都不在数值路径上。
+
+## DEP bubble 断链的真实成因(比初判更深,2026-08-24 晚)
+
+初判是"`_install_vision_prefetch` 按 `isinstance(KimiK3ViTStage)` 找视觉 stage,
+折叠布局下该类从不构造"。改成按"是否持有 vision_encoder"识别后,发现**第二层断点**:
+
+`VisionPrefetcher` 要求 owner 提供三个方法(`vit_prefetch.py:126/144/179`):
+
+    encode_images(pixel_values, grid_thw)
+    _issue_on_vision_stream(fn, *tensors)
+    _join_vision_stream(out, done)
+
+老树 `KimiK3MultimodalModel` 三个都有(`multimodal_model.py:232 / 374 / 410`,
+side-stream 那一对约 51 行)。**新树的 `KimiK3Model` 一个都没有**(只有私有的
+`_encode_images`),我搬的 `KimiK3ViTStage` 也没有。
+
+所以 DEP bubble 不是"接一下类型判断"就能通:**老树整套 vision side-stream 机制
+没有迁移过来。** 半截修改(只改识别条件)会让 prefetcher 拿到不满足接口的对象、
+在运行时炸,已回退。
+
+**对数值无影响**:梯度值不变(内联 autograd 等价于延迟重放),loss/grad_norm 不动,
+所有已得实验结果不受影响。属多模态侧,按 progressive 后置。
