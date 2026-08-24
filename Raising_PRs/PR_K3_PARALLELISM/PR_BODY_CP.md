@@ -46,3 +46,13 @@ parallelize.py gains apply_cp_kimi_k3; one line in common/decoder.py.
 
 Tested: CPU contract tests for the two things that used to fail silently, and
 cp2 runs on the debug flavor. Numbers on request.
+
+---
+
+补充说明(cu_seqlens,回应可能的 maintainer 疑问):
+
+KCP path passes cu_seqlens into chunk_kda. That is the CP shard boundary the KDA
+prefix-scan runs over, not a packed-document boundary. It does not touch and does
+not change the existing KDA rejection of packed-document masks / MMSamplePacking
+-- sample packing stays unsupported exactly as upstream leaves it. The name
+cu_seqlens is shared with the sample-packing convention, hence this note.
