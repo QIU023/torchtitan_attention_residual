@@ -128,3 +128,25 @@ pp2/pp4 每段都含 MLA 所以通过,pp8 段太薄就会出现纯 KDA 段。
 
 **判定:不是迁移回归,是 LoRA x 高 PP 度 x 3:1 混合注意力的结构性约束。**
 不在新树自行"修复"(会偏离老树);记录为已知限制,LoRA 臂按老树的配对规则判定。
+
+### 更正:lora_pp8 是迁移 bug,不是结构性约束
+
+上一节判定"结构性约束、老树同类限制、不修"是**错的**。真正原因:
+
+| | LoRA 目标 |
+|---|---|
+| 老树 `lora.py:37` `DEFAULT_LORA_TARGETS` | 15 个:MLA(`q_proj`/`q_a_proj`/`q_b_proj`/`kv_a_proj_with_mqa`/`kv_b_proj`/`o_proj`)、`attn_gate_proj`、**dense FFN 与 shared experts(`gate_proj`/`up_proj`/`down_proj`)**、**latent MoE(`latent.down`/`latent.up`)** |
+| 新树 `config_registry.py:174` | **3 个**:`["wq_b", "wkv_b", "wo"]`,全是 MLA 专有 |
+
+老树把 FFN / MoE 投影也作为 LoRA 目标,而**每一层都有 FFN/MoE**,所以任何 PP 切分下
+每个 stage 都有可训练参数 —— 这就是老树 pp8 能过的原因,与层数或 MLA 分布无关。
+
+新树只挂 MLA 专有的三个,于是纯 KDA 段(pp8 的 stage 0 与 stage 5)零可训练参数。
+
+而且新树 flavor 的 docstring 自称 "wo covers MLA and **output_proj covers KDA**",
+但 `output_proj` **不在** target 列表里 —— **代码与自己的注释矛盾**,是我搬 LoRA flavor 时
+漏搬了目标集。
+
+**判定改为:迁移 bug(漏搬 LoRA 目标集),需按老树补齐。** 影响不止 pp8 ——
+目标集缺失意味着 LoRA 臂**所有格**训练的参数子集都与老树不同,整个 LoRA 臂的数值
+都不可与老树比对。
