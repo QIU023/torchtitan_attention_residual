@@ -82,3 +82,18 @@ Windows 侧完成的清理都在 `k3_on_4025`,已推。GPU 侧接手:剩余合�
 * 清理脚本:`phase13_k3like_48b_posttrain/cleanup_scripts/pp_cleanup.py`
   (GPU 写的;Windows 上要 `PYTHONUTF8=1` 跑,pathlib 缺省 GBK 会炸)。
 * 我的分步脚本在 Windows 临时目录,内容已全部落进 commit,无需保留。
+
+## 2026-08-25 追加:Ulysses 挪移 + 全目录注释清扫(Windows 侧,已推 k3_on_4025)
+
+* `e3848460` — MLA 的 Ulysses 本体从 model.py 挪到 sharding.py:
+  `_full_sequence_causal_mask` / `_ulysses_attention` 两个方法变成自由函数
+  `full_sequence_causal_mask(attn, ...)` / `mla_ulysses_attention(attn, ...)`,
+  forward 里只留可见的分派分支。无行为变化;sharding.py 不 import model,
+  无环。CP 分支重切时此文件按"文本在上"排布直接切。
+* `343a4ccb` — 全目录 >3 行注释块清扫:74 块 → 16 块(纯注释 diff,
+  −408/+219,无代码行)。删除全部 Measured/first-attempt/reference-tree
+  叙事;保留的 16 块 = pipeline_adapter 两个已获批 bullet 分节
+  (grad bridge、placeholder metadata)+ 少数双约束设计注释(压到 4 行)
+  + vit_cp_plan 分节横幅(7 行)。顺带修了 `__init__.py` dispatcher
+  注释上一轮部分替换造成的新旧堆叠。
+* 判据不变:注释-only + 纯移动,58 格 gate 应逐位。
