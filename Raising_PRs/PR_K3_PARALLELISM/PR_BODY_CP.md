@@ -6,7 +6,21 @@ KCP cannot be declarative: the fla kernels take raw pointers and never dispatch 
 
 CP resplits the sequence, so unlike PP and EP it is not expected to be bit-identical to dp1. One seed checkpoint is loaded by every cell; dp2 is in the table because changing the data-parallel degree alone moves the loss more than any of these axes do, so a dp2-mesh cell measured against dp1 would mostly be measuring that. kimi_k3_debugmodel_text at seq 1024 -- FlexAttention's BlockMask needs Q_LEN % (cp * 128) == 0, which is what sets the length -- seed 42, --debug.deterministic:
 
-<<TABLE_CP>>
+| cell | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | 1 | 12.59324 | 6.89766 | 3.33038 |
+| cp2 | 2 | 12.59408 | 7.01636 | 3.18600 |
+| cp4 | 4 | 12.59255 | 7.18131 | 3.31972 |
+| cp8 | 8 | 12.59119 | 7.19044 | 3.29694 |
+| dp2 | 2 | 12.59212 | 7.39612 | 3.45591 |
+| dp2 x cp2 | 4 | 12.58957 | 7.36327 | 3.48256 |
+| dp2 x cp4 | 8 | 12.58948 | 7.43662 | 3.49025 |
+
+Step 1 is within 1.6e-4 relative of dp1 across every cell. At step 2, the three
+single-axis cells sit at 2.2e-3, 2.6e-3 and 2.7e-3 against dp1, while dp2 --
+which enables no parallelism axis at all -- sits at 1.2e-2: the sequence split
+moves the loss less than changing the data-parallel degree does. The two mesh
+cells are 9.9e-3 and 4.0e-3 against dp2.
 
 Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a folded microbatch wider than the context window, since the CP mask rebuild is causal-only and cannot represent a document boundary.
 
