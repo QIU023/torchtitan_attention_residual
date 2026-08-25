@@ -317,3 +317,29 @@ side-stream 那一对约 51 行)。**新树的 `KimiK3Model` 一个都没有**(�
 
 **对数值无影响**:梯度值不变(内联 autograd 等价于延迟重放),loss/grad_norm 不动,
 所有已得实验结果不受影响。属多模态侧,按 progressive 后置。
+
+## DEP run-ahead 修复完成:四层断点(2026-08-25 凌晨)
+
+初判是一层(stage 识别按类型),实际是四层,逐层暴露:
+
+| | 断点 | 修法 |
+|---|---|---|
+| 1 | `_install_vision_prefetch` 按 `isinstance(KimiK3ViTStage)` 找视觉 stage,而该类在折叠布局下从不构造 | 改为按"是否持有 tower" |
+| 2 | `VisionPrefetcher` 要求 owner 提供 `encode_images` / `_issue_on_vision_stream` / `_join_vision_stream`,新树一个都没有 | 从老树搬 92 行 side-stream + 公开 `encode_images` |
+| 3 | 整个安装块门控在 `step_inputs`,而它只在 wrapper 布局里创建(代码注释自己写着) | DEP 开启且模型持有 tower 时直接创建 |
+| 4 | FSDP2 替换类名(`KimiK3Model` -> `FSDPKimiK3Model`),直接 `getattr("vision_encoder")` 取不到 | `_holds_vision_tower` 遍历 `.modules()` 穿透包装 |
+
+**一个必须记下的假阳性**:修到第二层时,DEP 跑通(rc=0、loss 12.50030)且**没有
+"run-ahead is OFF" 警告** —— 但日志里**完全没有安装痕迹**。没警告是因为整个函数没被
+调用,不是因为装成功。只看 rc 和"无警告"就会误报修好。
+
+**最终验证**(4 卡,DEP 开,塔独占 stage 0):
+
+    warning "run-ahead is OFF"        0 条
+    info "prefetch NOT installed"     3 条(= 3 个无塔 rank,正常)
+    vision stage wiring               1 stage(s) on this rank(持塔的那个)
+    stage_idx 0 with modules          ['tok_embeddings', 'vision_encoder']
+    rc=0, loss 12.50030
+
+对数值无影响(内联 autograd 等价于延迟重放),此前所有实验结果不受影响。
+提交 `a2da63f64` + `1dfc84f76`。
