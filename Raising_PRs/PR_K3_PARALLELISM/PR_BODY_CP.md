@@ -41,7 +41,7 @@ Files:
                                    at wiring time if fla's CP ops are missing
       __init__.py              +13  the text flavor's model spec
       config_registry.py       +13  the text trainer flavor
-    torchtitan/models/common/decoder.py  +9/-3  the spmd_types requirement becomes
+    torchtitan/models/common/decoder.py  +7/-3  the spmd_types requirement becomes
                                    an overridable method
     tests/
       unit_tests/cpu/test_kimi_k3_cp_contracts.py  +63  the folded-layout contracts
