@@ -28,4 +28,5 @@ a config choice, so no run can silently believe it is on MoonEP.
 
 Without expert_parallel_degree > 1 none of this executes.
 
-Tested: an ep2 integration cell.
+Tested: a CPU test on the declaration, including the enable_sp derivation; an
+ep2 integration cell.

@@ -42,4 +42,6 @@ stage of its own. Those come next, on the multimodal path.
 
 Without pipeline_parallel_degree > 1 none of this executes.
 
-Tested: a CPU unit test for the FQN split; pp2 and pp2 x vp2 integration cells.
+Tested: a CPU unit test for the FQN split; a pp2 integration cell, and a pp8 x
+vp4 one on the 32-layer flavor -- one layer per stage over 32 stages, so the
+residual crosses every boundary the schedule has.
