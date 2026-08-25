@@ -97,3 +97,36 @@ Windows 侧完成的清理都在 `k3_on_4025`,已推。GPU 侧接手:剩余合�
   + vit_cp_plan 分节横幅(7 行)。顺带修了 `__init__.py` dispatcher
   注释上一轮部分替换造成的新旧堆叠。
 * 判据不变:注释-only + 纯移动,58 格 gate 应逐位。
+
+## 2026-08-25 追加 2:分支收敛指令(给 GPU Claude,解除 confusion)
+
+**权威源只有一个:`k3_on_4025` tip(现 `26047888`)。** 用户手动做的
+EP/CP 清理与 Windows 侧 commit 内容重叠且少于后者 -- 属重复劳动,
+**直接丢弃,不要合并、不要 cherry-pick**。
+
+现 PR 分支 tip(k3_cp_text `55f82b30`、k3_ep `d7c884b3`)也不是最终历史:
+它们落后于 4025 的 Ulysses 挪移 + 注释清扫,且 **k3_cp_text 带一个真 bug**
+-- decoder.py 的 `_validate_cp_backend` 方法裸调 `validate_cp_backend`,而该
+名字只存在于 `update_from_config` 的函数内局部 import,CP>1 一进校验就
+`NameError`(4025 版方法自带局部 import,无此问题;4025 顺带删了那个已死的
+局部 import,`26047888`)。这两个 tip 的唯一价值 = **TP 剥离配方**:重切时
+按它们相对 4025 的 diff 剥 TP。
+
+操作序列:
+
+1. **rebase `k3_on_4025` 到 `30eb5e50`**(或当日上游)。三个 PR 分支都已在
+   30eb5e50,基点必须一致。rebase 后跑 gate;跨上游 rebase 不承诺与旧基线
+   逐位(上游有 TextCollator padding、qk_clip 等数值改动),判据改为:在新
+   基点上建一次新基线,后续我们的 refactor 相对它逐位。
+2. **从 rebase 后的 4025 重切三个轴分支**(文件内 text-top 排布就是为按行
+   切分准备的),每支叠加 TP 剥离:
+   * CP:删 dtensor_ops.py;kda.py 去 kernel/conv 的 DTensor unwrap;
+     parallelize 除数 cp-only(4025 是 tp*cp);model.py 去 TP sharding 声明。
+   * EP:model.py 去 enable_sp/TP 内容;单测用 EP-only 版
+     (tests/unit_tests/cpu/test_kimi_k3_ep_sharding.py 现 k3_ep tip 版)。
+   * PP:以 GPU 已重切的 origin/k3_pp_text(`84690400`)为基准继续,
+     Windows 本地旧 3 commit 已被取代,勿用。
+3. **force-push 轴分支**(先例:v2 重切),QIU023 身份、无 trailer、
+   commit message 无第三方 `#N`/URL。
+4. **每支重跑 evidence**(PP 9 格、CP cp2/4/8、EP ep2/4/8),PR body 数字
+   必须来自重切后的 head;CP 的 cp2 第一格就会验证 NameError 已消失。
