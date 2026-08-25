@@ -4,13 +4,9 @@ Ulysses is one all-to-all trading the sharded axis from sequence to heads, the u
 
 KCP cannot be declarative: the fla kernels take raw pointers and never dispatch through DTensor, so no ShardingConfig reaches them. Hence one core change: the spmd_types requirement moves into a protected method, Decoder.Config._validate_cp_backend, and a model whose CP is not ShardingConfig-driven overrides it with its own preconditions. No new config field; declarative models are unchanged.
 
-CP resplits the sequence, so unlike PP and EP it is not expected to be bit-identical to dp1. kimi_k3_debugmodel_text at seq 1024 (FlexAttention's BlockMask needs Q_LEN % (cp * 128) == 0), seed 42, --debug.deterministic, one seed checkpoint loaded by every cell:
+CP resplits the sequence, so unlike PP and EP it is not expected to be bit-identical to dp1. One seed checkpoint is loaded by every cell; dp2 is in the table because changing the data-parallel degree alone moves the loss more than any of these axes do, so a dp2-mesh cell measured against dp1 would mostly be measuring that. kimi_k3_debugmodel_text at seq 1024 -- FlexAttention's BlockMask needs Q_LEN % (cp * 128) == 0, which is what sets the length -- seed 42, --debug.deterministic:
 
-<<TABLE_CPSEQ>>
-
-Same, on a 2D mesh with data parallel, seq 512:
-
-<<TABLE_CPDP>>
+<<TABLE_CP>>
 
 Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a folded microbatch wider than the context window, since the CP mask rebuild is causal-only and cannot represent a document boundary.
 

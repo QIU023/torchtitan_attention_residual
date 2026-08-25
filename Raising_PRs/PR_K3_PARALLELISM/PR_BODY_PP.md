@@ -2,15 +2,11 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Everything except Block A
 
 The adapter's design: model.py returns (hidden, block_residual) from a non-head stage and takes the pair back on the next. Each hop ships only the blocks the receiver does not already hold -- layout.py precomputes, per (pp, vp, num_blocks, n_layers), which blocks every stage commits and which subset its outgoing P2P carries, so both ends agree without any metadata on the wire, and the receiver rebuilds the stack from its cached prefix plus the delta. The stack is a live autograd path, not a cache: a block cached on the same rank is stored detached and re-wrapped at read time so its gradient reaches the producer exactly once, and a block from another rank drains its gradient through PP's built-in backward P2P. The carry is configured by a config field, not an environment variable: a launcher exporting a variable non-uniformly gives ranks different topologies and hangs in a collective with nothing pointing at the cause.
 
-Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00. Dropping the carry and keeping everything else moves step 3 at pp2 from 7.44679 to 9.30017.
+Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
 
-kimi_k3_debugmodel_text_32l, seed 42, --debug.deterministic, every cell loading the same seed checkpoint:
+kimi_k3_debugmodel_text_32l, seed 42, --debug.deterministic, every cell loading the same seed checkpoint. dp2 is in the table because changing the data-parallel degree alone moves the loss more than pipelining does, so a dp2-mesh cell measured against dp1 would mostly be measuring that:
 
-<<TABLE_PPVP>>
-
-Same, on a 2D mesh with data parallel, kimi_k3_debugmodel_text:
-
-<<TABLE_PPDP>>
+<<TABLE_PP>>
 
 Not in this PR: the vision tower (its stage assignment and DEP) -- next, on the multimodal path. Without pipeline_parallel_degree > 1 none of this executes.
 
