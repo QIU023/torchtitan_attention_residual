@@ -1,60 +1,93 @@
-# CP 数值结果(文本侧,for draft PR)
+# CP 文本侧证据(2026-08-25 重测)
 
-树:`k3_on_4025` @ 已 rebase 到 upstream/main。flavor `kimi_k3_debugmodel_text`。
-seq_len 1024(FlexAttention 的 BlockMask 要求 Q_LEN % (cp*128) == 0,cp8 需 >=1024;
-FlexAttention 是上游 4025 自带的后端,非我们引入)。10 步,单一 seed,每格自带预热,
-每个计量格断言 `Loading the checkpoint`。
+判据见 `EVIDENCE_METHOD_2026-08-25.md`。**本文件 2026-08-25 之前的所有数字已作废** ——
+换了上游基点(`5fecad929` -> `30eb5e502`)、换了全局 batch、换了分支代码。
 
-## dp1 vs cp2/cp4/cp8
+树:`k3_cp_text` @ `3557bbe7d`(已推 fork)。flavor `kimi_k3_debugmodel_text`。
+seq **1024** 全程 —— FlexAttention 的 BlockMask 要求 `Q_LEN % (cp * 128) == 0`,
+cp8 需要 >= 1024;固定成一个长度是为了七格共用一条曲线。全局 batch **16384**。
+单一 seed checkpoint,每格自带同配置预热,每格断言 `Loading the checkpoint from`。
+7 格,**0 挂,断言全绿**。
 
-| cell | step-1 loss | 相对 dp1 | step-10 |
+## 一、主表(分支当前 head)
+
+`mx3_v2_cp_0825_074438`
+
+| cell | world | step 1 | step 3 | step 10 | 基线 | step-2 相对 |
+|---|---|---|---|---|---|---|
+| dp1 | 1 | 12.59324 | 6.89766 | 3.33038 | - | - |
+| cp2 | 2 | 12.59408 | 7.01636 | 3.18600 | dp1 | 2.19e-3 |
+| cp4 | 4 | 12.59255 | 7.18131 | 3.31972 | dp1 | 2.63e-3 |
+| cp8 | 8 | 12.59119 | 7.19044 | 3.29694 | dp1 | 2.66e-3 |
+| **dp2** | 2 | 12.59212 | 7.39612 | 3.45591 | dp1 | **1.20e-2** |
+| dp2 x cp2 | 4 | 12.58957 | 7.36327 | 3.48256 | dp2 | 9.90e-3 |
+| dp2 x cp4 | 8 | 12.58948 | 7.43662 | 3.49025 | dp2 | 4.03e-3 |
+
+**三个单轴 CP 格的 step-2 偏差是 2.2e-3 / 2.6e-3 / 2.7e-3,而 `dp2` —— 一个并行轴
+都不开 —— 是 1.20e-2。切序列比换数据并行度动得少。**
+
+step-1 全部在 5e-5 ~ 1.6e-4,比老树 CP 格典型的 1.3e-3 紧一个数量级。
+step-2 三格都在老树 58 格范围(1.2e-4 ~ 3.2e-3)内,且 cp2/cp4/cp8 **饱和**
+(2.19 -> 2.63 -> 2.66e-3),不随 CP 度数增长。
+
+`dp2 x cp4`(4.03e-3)比 `dp2 x cp2`(9.90e-3)更紧,非单调 —— 与"CP 度数越高越差"
+矛盾,与混沌一致。
+
+**mesh 格不是单变量对照**:`fsdp = dp_shard * cp`,所以 `dp2 -> dp2 x cp2` 同时改了
+序列切分和 FSDP 分片宽度(2 路 reduce-scatter 变 4 路)。量出来的不是 CP 的贡献。
+正文对 mesh 格只列表,不写因果。
+
+## 二、第二张表(叠上游 grad-norm fp32 补丁,该补丁不在本分支上)
+
+`mx3_gn2_cp_0825_150427`,同代码同 seed 同 batch,只在本地叠一个 cherry-pick。
+
+| cell | s3 无补丁 | s3 有补丁 | 相对 |
 |---|---|---|---|
-| dp1 | 12.44662 | - | 3.43712 |
-| cp2 | 12.44292 | 3.0e-4 | 3.44543 |
-| cp4 | 12.45092 | 3.5e-4 | 3.43541 |
-| cp8 | 12.44724 | 5.0e-6 | 3.40910 |
+| dp1 | 6.89766 | 6.90509 | **1.1e-3** |
+| cp2 | 7.01636 | 7.01636 | **0** |
+| cp4 | 7.18131 | 7.18347 | 3.0e-4 |
+| cp8 | 7.19044 | 7.19044 | **0** |
+| dp2 | 7.39612 | 7.39612 | **0** |
+| dp2 x cp2 | 7.36327 | 7.36461 | 1.8e-4 |
+| dp2 x cp4 | 7.43662 | 7.43833 | 2.3e-4 |
 
-## 与老树对比(证据)
+**七格里三格逐位不变,最大变动 1.1e-3 且落在 dp1 基线格上,不在任何 CP 格。**
 
-老树 58 格(`MATRIX_18_SDPA_2026-08-09.md`,SDPA 后端):
+这张表的作用是**排除**:主表里那些 gap **不是** grad-norm 依赖参数分组造成的。
+同一个对照在 PP 上是九格从两个值塌成一个(见 `PP_TEXT_EVIDENCE.md`),
+所以同一个补丁在两份正文里承担相反的角色,各自写清楚。
 
-| | 我们相对 dp1 | 老树相对 dp1 |
-|---|---|---|
-| cp2 | **3.0e-4** | 1.3e-2 / dp1 = 1.3e-3 |
-| cp4 | **3.5e-4** | 1.5e-2 / dp1 = 1.2e-3 |
+## 三、修掉的一个真 bug,由 cp2 那格验证
 
-我们 cp2/cp4 比老树紧约 4 倍,全部远在 bf16 相对精度(2^-8 = 3.9e-3)内。
+重切前的 `k3_cp_text` 上,`Decoder.Config._validate_cp_backend` 裸调
+`validate_cp_backend`,而该名字只由 `update_from_config` 里的**函数内**局部 import
+绑定 —— 方法体解析到模块全局,那里没有。**任何 `context_parallel_degree > 1` 的 run
+在进校验时就 NameError**,连模型都建不起来。
 
-CP 改变序列分片,所以 step-1 本就不与 dp1 逐位相同(老树同理,SDPA/FlexAttention 皆然)。
-偏差量级正常且稳定(cp8 = 5e-6)。
+现在方法自带局部 import(与集成树一致),`update_from_config` 里那个已死的 import 删掉。
+cp2 是这条分支上第一个 CP>1 的格,它跑通即为判据:两个日志里 `NameError` 出现 0 次。
 
-## 边界(已在代码里 guard)
+这个 bug 有两条独立的产生路径 —— 用户手工切分时写成裸调,我用正则搬运方法体时把
+调用行截断只留下 import。两次都被同一件事挡住:核对方法体里到底有没有那行调用。
 
-* FlexAttention BlockMask:Q_LEN 必须被 cp*128 整除,否则上游报
-  `NotImplementedError: Q_LEN not divisible by CP mesh world size * BLOCK_SIZE`。
-* 折叠流多文档:microbatch 宽于 context window 时,CP 的 causal-only mask 无法表达
-  文档边界,已加断言明确报错(commit "reject a CP stream that folds more than one document")。
+## 四、收回的两条读数
 
-## 补充:与 DP2 组成 mesh(文本)
+1. **cp8 "超出老树 s2 上限 2.1 倍"** —— gbs 8192 下 s2 = 6.8e-3。本表 gbs 16384 下
+   是 2.66e-3,族内;且 cp2/cp4/cp8 平坦。那个上升趋势是 batch,不是 CP 度数。
+   据此设计的 `cp8_shard.sh`(扫每 rank 分片宽度)不必要,未执行。
+2. **`fsdp2_cp2` "出族"** —— s2 = 1.79e-2,拿 dp2 当基线量的,而当时**没有测过 dp2
+   自己相对 dp1 的漂移**(1.2e-2)。那格从来不是异常值。
 
-| cell | step-1 | 基线 | 相对 |
-|---|---|---|---|
-| dp2 (seq 256) | 12.42251 | - | - |
-| fsdp2 x cp2 | 12.42659 | dp2 | 4.1e-3 |
-| dp2 (seq 512) | 12.43604 | - | - |
-| fsdp2 x cp4 | 12.43329 | dp2(seq512) | 2.75e-3 |
+共同成因:拿一个自身漂移未测量的基线去判别格子。
 
-cp4 需 seq 512:FlexAttention 的 BlockMask 要求 Q_LEN % (cp*128) == 0
-(上游后端约束,非本 PR 引入)。
+## 五、待查
 
-## 补充:多模态侧
+* cp2 和 cp8 在补丁前后逐位不变,cp4 动 3.0e-4。若只是"分组变细",三格都该动。
+  数据不足以判断,记为待查。
+* CP 的算术地板:PP 的偏差随 batch 增大而塌,CP 未观察到同样的塌陷,但两次观测
+  来自不同 run,不能相减。需同一分支同一 seed 只扫 batch。
 
-| cell | step-1 | 基线 | 相对 |
-|---|---|---|---|
-| dp2 | 12.46440 | - | - |
-| fsdp2 x cp2 | 12.48589 | dp2 | 1.7e-2 |
+## 六、复现
 
-多模态 cp2 偏差 1.7e-2(相对 1.4e-3),视觉塔的 dynamic CP 参与其中,仍在 bf16
-相对精度内,且与老树 cp2 的 1.3e-3 相对偏差同量级。
-
-方法学同上:单一 seed、每格自带预热、seed 断言全绿。
+    matrix_scripts/mx3.sh          # 报 step 1/3/10,含 seed 断言与磁盘闸门
+    matrix_scripts/cp_matrix.sh    # 7 格
