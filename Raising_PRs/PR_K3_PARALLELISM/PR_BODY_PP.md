@@ -4,29 +4,13 @@ The adapter's design: model.py returns (hidden, block_residual) from a non-head 
 
 Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
 
-kimi_k3_debugmodel_text_32l, seed 42, --debug.deterministic, every cell loading the same seed checkpoint. dp2 is in the table because changing the data-parallel degree alone moves the loss more than pipelining does, so a dp2-mesh cell measured against dp1 would mostly be measuring that:
+<<TABLE_PP>>
 
-| cell | stages | world | step 1 | step 3 | step 10 |
-|---|---|---|---|---|---|
-| dp1 | - | 1 | 12.48548 | 7.92534 | 3.41439 |
-| pp2 | 2 | 2 | 12.48548 | 7.91227 | 3.35806 |
-| pp4 | 4 | 4 | 12.48548 | 7.91227 | 3.35881 |
-| pp8 | 8 | 8 | 12.48548 | 7.90930 | 3.40345 |
-| pp2 x vp2 | 4 | 2 | 12.48548 | 7.91227 | 3.35876 |
-| pp2 x vp4 | 8 | 2 | 12.48548 | 7.90930 | 3.40269 |
-| pp4 x vp2 | 8 | 4 | 12.48548 | 7.91227 | 3.35819 |
-| pp4 x vp4 | 16 | 4 | 12.48548 | 7.90930 | 3.40257 |
-| pp8 x vp2 | 16 | 8 | 12.48548 | 7.90930 | 3.40356 |
-| pp8 x vp4 | 32 | 8 | 12.48548 | 7.90930 | 3.40396 |
-| dp2 | - | 2 | 12.47951 | 7.60609 | 3.22524 |
-| dp2 x pp2 | 2 | 4 | 12.47951 | 7.65625 | 3.46469 |
-| dp2 x pp4 | 4 | 8 | 12.47951 | 7.63091 | 3.46144 |
-
-Step 1 is bit-identical to the baseline in all twelve pipelined cells -- to dp1
-for the nine dp1 cells, to dp2 for the two mesh cells -- across two to thirty-two
-stages, 1F1B and Interleaved1F1B, two to eight ranks. At step 2 the nine dp1
-cells are 3.6e-4 and 6.9e-4 from dp1, and the two mesh cells 1.3e-3 and 6.3e-4
-from dp2, against 1.6e-2 for the dp2 row measured the same way against dp1.
+The tables previously here measured the naive block transport, not the delta
+one: attn_res_cache was never a declared config field, so pipeline_kimi_k3
+returned passthrough on every cell and the cross-stage cache adapter never
+ran. They are removed rather than annotated. The replacement is measured with
+the transport engaged on every virtual-stage cell.
 
 Not in this PR: the vision tower (its stage assignment and DEP) -- next, on the multimodal path. Without pipeline_parallel_degree > 1 none of this executes.
 
