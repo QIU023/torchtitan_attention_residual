@@ -26,6 +26,26 @@ Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a 
 
 Not in this PR: CP inside the vision tower and the report's dynamic CP for large images -- next, on the multimodal path. Without context_parallel_degree > 1 none of this executes.
 
+A second measurement with one patch on top: the grad-norm reduction carried in
+float32 rather than in the gradients' dtype. That patch is a separate upstream
+change, still open, and is not on this branch. It is here because it is the one
+thing that could have explained the gaps above, and it does not: six of the
+seven cells move by 1.1e-3 or less at step 3, three of them not at all.
+
+| cell | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | 1 | 12.59324 | 6.90509 | 3.29062 |
+| cp2 | 2 | 12.59408 | 7.01636 | 3.18646 |
+| cp4 | 4 | 12.59255 | 7.18347 | 3.28306 |
+| cp8 | 8 | 12.59119 | 7.19044 | 3.29651 |
+| dp2 | 2 | 12.59212 | 7.39612 | 3.45638 |
+| dp2 x cp2 | 4 | 12.58957 | 7.36461 | 3.42474 |
+| dp2 x cp4 | 8 | 12.58948 | 7.43833 | 3.49202 |
+
+The reduction's grouping follows how a run partitions the parameters, which is
+why it matters under pipeline parallelism. Context parallelism reaches the same
+numbers either way, so whatever the sequence split costs, it is not this.
+
 Files:
 
     torchtitan/models/kimi_k3/
