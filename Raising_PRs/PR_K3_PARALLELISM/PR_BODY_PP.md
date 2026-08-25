@@ -51,4 +51,31 @@ Files:
       integration_tests/features.py                     +14  pp2 and pp8 x vp4 cells
     torchtitan_recipes/tests/features.py                +33  their configurations
 
+A second measurement, with one patch on top: the grad-norm reduction carried in
+float32 rather than in the gradients' dtype. That patch is not part of this PR
+and is not on this branch -- it is a separate upstream change, still open. The
+table above is what this branch produces today; this one is what it produces
+with that change applied, and the difference is the reason the step-3 column
+above has two values instead of one.
+
+| cell | stages | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|
+| dp1 | - | 1 | 12.48548 | 7.90621 | 3.40567 |
+| pp2 | 2 | 2 | 12.48548 | 7.87346 | 3.43178 |
+| pp4 | 4 | 4 | 12.48548 | 7.87346 | 3.43178 |
+| pp8 | 8 | 8 | 12.48548 | 7.87346 | 3.43178 |
+| pp2 x vp2 | 4 | 2 | 12.48548 | 7.87346 | 3.43178 |
+| pp2 x vp4 | 8 | 2 | 12.48548 | 7.87346 | 3.43178 |
+| pp4 x vp2 | 8 | 4 | 12.48548 | 7.87346 | 3.43178 |
+| pp4 x vp4 | 16 | 4 | 12.48548 | 7.87346 | 3.43178 |
+| pp8 x vp2 | 16 | 8 | 12.48548 | 7.87346 | 3.43178 |
+| pp8 x vp4 | 32 | 8 | 12.48548 | 7.87346 | 3.43178 |
+| dp2 | - | 2 | 12.47951 | 7.60609 | 3.22524 |
+| dp2 x pp2 | 2 | 4 | 12.47951 | 7.63091 | 3.47191 |
+| dp2 x pp4 | 4 | 8 | 12.47951 | 7.63091 | 3.47191 |
+
+Nine pipelined cells, one curve, every digit: two to thirty-two stages, both
+schedules, two to eight ranks. The two mesh cells likewise agree with each
+other. Where a run cuts the model stops being visible in its numbers.
+
 Tested: a CPU unit test for the FQN split; a pp2 integration cell, and a pp8 x vp4 one on the 32-layer flavor -- one layer per stage over 32 stages, so the residual crosses every boundary the schedule has.
