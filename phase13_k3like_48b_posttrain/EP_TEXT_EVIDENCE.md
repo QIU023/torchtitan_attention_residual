@@ -1,42 +1,95 @@
-# EP 数值结果(文本 + 多模态,for draft PR)
+# EP 文本侧证据(2026-08-25 重测)
 
-树:`k3_on_4025` @ rebase 到 upstream/main。上游 `AllToAllTokenDispatcher`,
-`comm_backend="standard"`,**不含 MoonEP**。2 步,单一 seed,每格自带同配置预热,
-每个计量格断言 `Loading the checkpoint`(全部通过)。
+判据见 `EVIDENCE_METHOD_2026-08-25.md`。**本文件 2026-08-25 之前的所有数字已作废。**
+旧表只跑了 2 步,没有 step-3/step-10 列。
 
-EP 在 data 轴内分片专家(ep_degree 整除 dp),所以与**同 world-size 的纯 dp 基线**比。
+树:`k3_ep` @ `86708027f`(已推 fork)。flavor `kimi_k3_debugmodel_text`,
+全局 batch **8192**,微批 256/dp rank。上游 `AllToAllTokenDispatcher`,
+`comm_backend` 钉成 `"standard"`,**不含 MoonEP**。
+单一 seed checkpoint,每格自带预热,每格断言 `Loading the checkpoint from`。
+7 格,**0 挂**(其中 `ep4_fsdp4` 因端口冲突重跑一次,见第四节)。
 
-## 文本(kimi_k3_debugmodel_text)
+EP 在 data 轴内分片专家,所以每格与**同 world size 的纯 dp 格**比,不与 dp1 比。
 
-| cell | step-1 | 基线 | 相对基线 |
+## 一、主表(分支当前 head)
+
+`mx3_v2_ep_0825_093501`
+
+| cell | world | step 1 | step 3 | step 10 | 基线 | step-2 相对 |
+|---|---|---|---|---|---|---|
+| dp1 | 1 | 12.58955 | 7.55365 | 3.46009 | - | - |
+| dp2 | 2 | 12.57725 | 7.57439 | 3.19128 | dp1 | 3.66e-3 |
+| ep2 x fsdp2 | 2 | 12.57718 | 7.64509 | 3.20056 | dp2 | **2.85e-4** |
+| dp4 | 4 | 12.59366 | 7.20509 | 3.30981 | dp1 | 3.51e-3 |
+| ep4 x fsdp4 | 4 | 12.59386 | 7.25484 | 3.31417 | dp4 | **1.17e-3** |
+| dp8 | 8 | 12.58336 | 7.32668 | 3.36729 | dp1 | 5.17e-3 |
+| ep8 x fsdp8 | 8 | 12.58286 | 7.40832 | 3.44799 | dp8 | **1.07e-3** |
+
+**三个 EP 格对同度数 dp 的 step-1 偏差是 5.6e-6 / 1.6e-5 / 4.0e-5,step-2 是
+2.9e-4 / 1.2e-3 / 1.1e-3;而 dp2/dp4/dp8 对 dp1 是 3.7e-3 / 3.5e-3 / 5.2e-3。
+分片专家比换数据并行度动得少,三个度数都成立。**
+
+这是三条轴里 step-1 最紧的。与机制一致:EP 不动序列、不动层划分,只把 routed
+expert 的权重按 expert 轴分片,token 经 all-to-all 送到持有对应 expert 的 rank,
+数学上是同一组 GEMM 换了执行位置。
+
+s2 在 ep4 -> ep8 没有继续上升(1.17e-3 -> 1.07e-3),与 CP 那边 cp4 -> cp8 饱和同形。
+
+## 二、第二张表(叠上游 grad-norm fp32 补丁,该补丁不在本分支上)
+
+`mx3_gn2_ep_0825_165517`
+
+| cell | s3 无补丁 | s3 有补丁 | 相对 |
 |---|---|---|---|
-| dp2 | 12.42251 | - | - |
-| ep2_fsdp2 | 12.42327 | dp2 | 7.6e-4 |
-| dp4 | 12.40849 | - | - |
-| ep4_fsdp4 | 12.40863 | dp4 | **1.4e-4** |
-| dp8 | 12.41676 | - | - |
-| ep8_fsdp8 | 12.41700 | dp8 | 2.4e-4 |
+| dp1 | 7.55365 | 7.54919 | 5.9e-4 |
+| dp2 | 7.57439 | 7.57439 | **0** |
+| ep2 x fsdp2 | 7.64509 | 7.64509 | **0** |
+| dp4 | 7.20509 | 7.20509 | **0** |
+| ep4 x fsdp4 | 7.25484 | 7.25484 | **0** |
+| dp8 | 7.32668 | 7.32668 | **0** |
+| **ep8 x fsdp8** | 7.40832 | **7.42252** | **1.9e-3** |
 
-## 多模态(kimi_k3_debugmodel,含视觉塔)
+**只有 ep8 动。** 六格逐位不变,包括 ep2 和 ep4。
 
-| cell | step-1 | 基线 | 相对基线 |
+机制:`_get_total_norm_fp32` 有两个调用点,第二个(`torchtitan/distributed/utils.py:722`)
+是 EP 组路径 —— 参数被分成 EP 组和非 EP 组,分别求范数再合并,所以总范数依赖这个
+划分。ep2 / ep4 时两组的范数在 bf16 下舍入到同一个值,ep8 时不再。
+
+**一条被推翻的预判**:ep2 和 ep4 都不动的时候,我写过"EP 侧大概率不受影响,4025
+commit message 里点名 EP 的措辞在我们这个配置下不成立"。ep8 推翻了它。教训是
+**度数要跑到头再下结论** —— 分组依赖是否显形取决于分片度数,低度数的零变化不能外推。
+
+## 三、跨轴对照(三张第二表放在一起才有结论)
+
+| 轴 | 补丁前后 | 形状 | 何时显形 |
 |---|---|---|---|
-| dp2 | 12.46440 | - | - |
-| ep2_fsdp2 | 12.46579 | dp2 | 1.4e-3 |
-| dp4 | 12.42986 | - | - |
-| ep4_fsdp4 | 12.43112 | dp4 | 1.3e-3 |
-| dp8 | 12.45809 | - | - |
-| ep8_fsdp8 | 12.45933 | dp8 | 1.2e-3 |
+| **PP** | 九格从 7.91227 / 7.90930 **两个值塌成 7.87346 一个值**(3.0e-3) | 多值收敛 | 每个度数都显形 |
+| **EP** | ep2 / ep4 不变,**ep8 变 1.9e-3** | 单格移动 | 高度数才显形 |
+| **CP** | 七格里三格不变,最大 1.1e-3 且落在 dp1 基线格 | 基本不动 | 不显形 |
 
-六格全部远在 bf16 相对精度(2^-8 = 3.9e-3)内。多模态偏差略大于文本,与视觉塔参与一致。
+对上了 4135 commit message 点名的两条轴(PP 与 EP),CP 不在其中。三条轴的差别在于
+**是否产生新的参数分组**:PP 按 stage 切成互不相交的组、分组随切点跳变;EP 切成
+EP 组与非 EP 组两分;CP 只改序列,参数分片是均匀变细,不产生新的分组语义。
 
-## 与老树对比
+## 四、`ep4_fsdp4` 的重跑
 
-老树 58 格 `ep2_fsdp2` step-1 与 dp2 五位全同(换 AllToAllTokenDispatcher 之后)。
-我们 ep2 文本 7.6e-4 —— 同量级,且 ep4/ep8 一致地更紧或相当。
+第一次 measure pass 报 `DistNetworkError: ... EADDRINUSE, port 50638` ——
+`mx3.sh` 原来的端口范围只有 1200 个候选(`49800+RANDOM%1200`),warm pass 刚退出、
+端口还在 TIME_WAIT,measure pass 撞上同一个。与数值和 EP 实现无关,traceback 直接
+指明地址被占。
 
-## MoonEP:明确排除
+用 `matrix_scripts/rerun_cell.sh` 在**同一个矩阵目录、同一个 seed** 下重跑该格,
+所以它仍属于同一张表,不违反"一张表 = 一次 run"。端口范围已放宽到
+`30000+RANDOM%20000`。重跑结果 s3 = 7.25484,与主表逐位相同。
 
-MoonEP(report 的完美负载均衡 EP + 冗余专家在线规划/迁移)超出本 PR 范围:
-需要独立 dispatcher 和专家规划后端,本树没有。dispatcher 的 `comm_backend` pin 成
-`"standard"`(非配置项),确保没有 run 误以为在跑 MoonEP。
+## 五、MoonEP:明确排除
+
+MoonEP(report 的完美负载均衡 EP + 冗余专家在线规划/迁移)超出本 PR:需要独立
+dispatcher 和专家规划后端,本树没有。`comm_backend` 钉成 `"standard"` 而不是留作
+配置项,确保没有 run 会误以为在跑 MoonEP。
+
+## 六、复现
+
+    matrix_scripts/mx3.sh          # 报 step 1/3/10,含 seed 断言与磁盘闸门
+    matrix_scripts/ep_matrix.sh    # 7 格
+    matrix_scripts/rerun_cell.sh   # 单格重跑,复用同一矩阵的 seed
