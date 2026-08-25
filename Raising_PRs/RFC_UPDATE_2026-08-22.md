@@ -12,7 +12,7 @@ issue(4272 总表,4269 是 MXFP4/MXFP8 QAT 与 checkpoint 互操作,当前无人
 
 --- PASTE BEGIN ---
 
-Rebased onto current torchtitan main and re-validated: 58 parallelism configurations -- FSDP2/HSDP, TP, PP (incl. interleaved 8x4), CP, EP and their combinations, each across a text, a multimodal, and a multimodal+LoRA debug model -- train 10 steps under `--debug.seed 42 --debug.deterministic`, all passing. The upstream K3 reference-model PR has not merged; when it does, the model half of this rebases onto it.
+Rebased onto current torchtitan main and re-validated: 58 parallelism configurations -- FSDP2/HSDP, TP, PP (incl. interleaved 8x4), CP, EP and their combinations, each across a text, a multimodal, and a multimodal+LoRA debug model -- train 10 steps under `--debug.seed 42 --debug.deterministic`, all passing. The K3 reference-model PR has since merged; our tree is rebased onto post-merge main and the parallelism is re-verified there -- per-axis branches below.
 
 Complete and review-ready:
 - the model -- KDA + MLA + latent MoE + Block Attention Residuals + MTP -- loading the released 48B weights
