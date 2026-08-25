@@ -26,4 +26,26 @@ Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a 
 
 Not in this PR: CP inside the vision tower and the report's dynamic CP for large images -- next, on the multimodal path. Without context_parallel_degree > 1 none of this executes.
 
+Files:
+
+    torchtitan/models/kimi_k3/
+      sharding.py            +259  the two CP contracts, the head/sequence
+                                   all-to-all, MLA's Ulysses body and the
+                                   causal-mask rebuild it needs
+      kda.py                 +120  KCP on the KDA layers: conv halo exchange and
+                                   the prefix scan over the recurrent state
+      model.py              +55/-14 MLA branches to Ulysses when a CP group is set;
+                                   overrides _validate_cp_backend
+      parallelize.py         +71/-5 apply_cp_kimi_k3: wires the group onto both
+                                   layer kinds, checks head divisibility, and fails
+                                   at wiring time if fla's CP ops are missing
+      __init__.py              +13  the text flavor's model spec
+      config_registry.py       +13  the text trainer flavor
+    torchtitan/models/common/decoder.py  +9/-3  the spmd_types requirement becomes
+                                   an overridable method
+    tests/
+      unit_tests/cpu/test_kimi_k3_cp_contracts.py  +63  the folded-layout contracts
+      integration_tests/features.py                 +7  the cp2 cell
+    torchtitan_recipes/tests/features.py           +13  its configuration
+
 Tested: CPU contract tests for the two things that used to fail silently; a cp2 integration cell.

@@ -30,4 +30,25 @@ from dp2, against 1.6e-2 for the dp2 row measured the same way against dp1.
 
 Not in this PR: the vision tower (its stage assignment and DEP) -- next, on the multimodal path. Without pipeline_parallel_degree > 1 none of this executes.
 
+Files:
+
+    torchtitan/models/kimi_k3/
+      pipeline_adapter.py   +1205  the pipelining_fn: FQN split, the block-residual
+                                   carry across stages, the rank-shared stack, and
+                                   the topology record that used to be an env var
+      layout.py              +293  offline algebra over (pp, vp, num_blocks,
+                                   n_layers, layers_per_block): which blocks each
+                                   stage commits, which subset its P2P ships
+      __init__.py           +47/-5 registers pipelining_fn and the 32-layer text
+                                   flavor; zero-init on the AttnRes projections
+      model.py              +25/-3 returns (hidden, block_residual) off a non-head
+                                   stage, takes the pair back on the next, and
+                                   guards the head-only aggregation
+      config_registry.py       +24 the 32-layer trainer flavor
+      parallelize.py         +2/-3 pipeline parallel off the unsupported list
+    tests/
+      unit_tests/cpu/test_kimi_k3_pp_fqn_injection.py  +105  the FQN split, on CPU
+      integration_tests/features.py                     +14  pp2 and pp8 x vp4 cells
+    torchtitan_recipes/tests/features.py                +33  their configurations
+
 Tested: a CPU unit test for the FQN split; a pp2 integration cell, and a pp8 x vp4 one on the 32-layer flavor -- one layer per stage over 32 stages, so the residual crosses every boundary the schedule has.

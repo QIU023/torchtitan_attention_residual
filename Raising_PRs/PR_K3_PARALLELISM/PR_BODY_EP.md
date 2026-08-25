@@ -20,4 +20,20 @@ changing the data-parallel degree does.
 
 MoonEP is not here: the report's balanced EP with online redundant-expert planning needs its own dispatcher and backend, and this is the plain all-to-all path. comm_backend is pinned to "standard" so no run can silently believe it is on MoonEP. Without expert_parallel_degree > 1 none of this executes.
 
+Files:
+
+    torchtitan/models/kimi_k3/
+      model.py                 +31  _set_sharding_config: the routed-expert layout
+                                   and the decoder-level distribution above it
+      __init__.py           +19/-2 core's dispatcher factory, pinned to the
+                                   standard all-to-all; the text flavor's spec
+      config_registry.py       +15  the text trainer flavor
+      parallelize.py         +14/-2 the efsdp mesh, ep_degree through to
+                                   apply_fsdp_to_decoder, and expert parallel off
+                                   the unsupported list
+    tests/
+      unit_tests/cpu/test_kimi_k3_ep_sharding.py  +51  the declaration, on CPU
+      integration_tests/features.py                +7  the ep2 cell
+    torchtitan_recipes/tests/features.py          +13  its configuration
+
 Tested: a CPU test on the declaration (plain DP declares nothing; EP shards the routed experts on the expert axis); an ep2 integration cell.
