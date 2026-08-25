@@ -17,9 +17,15 @@ A PR body answers, in this order, and stops:
 1. **What changes.** The ops, the call sites, the flag. Concretely enough that a reviewer
    can predict the diff before reading it.
 2. **Why it is wrong today.** One mechanism, one sentence.
-3. **Evidence.** A table of numbers, or a repro command. No prose around it.
+3. **Evidence.** A table of numbers, or a repro command. No prose around it. One row per
+   configuration, and report steps 1, 3 and 10 -- a step-1 column alone shows that a
+   configuration started, not that it trains the same model (user, 2026-08-25).
 4. **What does not change.** One line, when there is a default configuration people will
    worry about.
+
+The body describes the branch being filed and nothing else. A paragraph about work that
+lives on a different branch is the same failure as a paragraph about design history.
+English only; a Chinese note to ourselves at the top of a paste-ready body ships.
 
 Everything else -- design history, alternatives considered, pre-empted objections,
 reassurance about scope -- belongs in the linked issue, a review comment when asked, or
