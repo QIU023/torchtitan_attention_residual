@@ -20,6 +20,28 @@ changing the data-parallel degree does.
 
 MoonEP is not here: the report's balanced EP with online redundant-expert planning needs its own dispatcher and backend, and this is the plain all-to-all path. comm_backend is pinned to "standard" so no run can silently believe it is on MoonEP. Without expert_parallel_degree > 1 none of this executes.
 
+A second measurement with one patch on top: the grad-norm reduction carried in
+float32 rather than in the gradients' dtype. That patch is a separate upstream
+change, still open, and is not on this branch.
+
+| cell | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | 1 | 12.58955 | 7.54919 | 3.50680 |
+| dp2 | 2 | 12.57725 | 7.57439 | 3.19060 |
+| ep2 x fsdp2 | 2 | 12.57718 | 7.64509 | 3.20221 |
+| dp4 | 4 | 12.59366 | 7.20509 | 3.31005 |
+| ep4 x fsdp4 | 4 | 12.59386 | 7.25484 | 3.30867 |
+| dp8 | 8 | 12.58336 | 7.32668 | 3.36718 |
+| ep8 x fsdp8 | 8 | 12.58286 | 7.42252 | 3.43101 |
+
+Only ep8 moves: 7.40832 to 7.42252 at step 3, while ep2, ep4 and all four
+pure-data-parallel rows are unchanged to every printed digit. The reduction is
+taken over an expert group and a non-expert group separately, so the total
+depends on that split; at two and four experts per group the two norms are
+close enough that bf16 rounds them the same way, and at eight they are not.
+Against its own-degree baseline with the patch applied, ep2 is 2.8e-4 at step 2
+and ep8 is 5.1e-4.
+
 Files:
 
     torchtitan/models/kimi_k3/
