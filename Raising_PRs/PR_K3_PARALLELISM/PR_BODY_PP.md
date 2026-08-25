@@ -1,49 +1,45 @@
-# PR body: pipeline parallel for Kimi K3
+Adds pipeline parallelism to the Kimi K3 text decoder. Everything except Block
+Attention Residuals is mechanical; the residual is not. A block residual is
+defined over the whole layer stack, so under PP it has to travel between stages
+as a second stage payload alongside the hidden states, and the final aggregation
+-- output_res_proj then output_res_norm -- has to run on the stage that owns
+lm_head and nowhere else.
 
-按 maintainer 要求:terse,无小标题,op 级事实在前,数字内联。
+Three things fail silently today rather than raising. The block residual does
+not cross a stage boundary at all, so every stage past the first accumulates
+onto a zero it was handed. output_res_proj / output_res_norm run on every stage
+instead of the last. And the FQN injection returns early on a Config-tree model
+without logging, so the split falls back to core's generic one and the last
+stage loses those two modules entirely.
 
----
+model.py returns (hidden, block_residual) from a non-head stage and takes the
+pair back on the next. pipeline_adapter.py holds the pipelining_fn, the FQN
+split (tok_embeddings + layers.N + norm/lm_head/output_res_proj/output_res_norm)
+and the cross-stage adapter that carries the residual under Interleaved1F1B.
+layout.py precomputes, per (P, V, num_blocks, n_layers, layers_per_block), which
+blocks a stage commits and which subset its outgoing P2P must ship, so no
+metadata travels on the wire. knobs.py moves the carry's topology off the
+TORCHTITAN_ATTNRES_CACHE environment variable onto a config field: a launcher
+that exports it non-uniformly gives different ranks different topologies and
+hangs in a collective with nothing pointing at the cause.
 
-Adds pipeline parallelism to kimi_k3. The part that is not mechanical is Block
-Attention Residuals: a block residual is defined over the whole stack, so it has
-to travel between stages as a second stage payload alongside the hidden states.
-A stage that dropped it trains a different model -- measured on the debug flavor
-at pp2, dropping it moved step 3 from 7.44679 to 9.30017.
+Splitting the model in two by hand and running the halves in sequence -- no
+schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs
+0.000e+00. Dropping the carry and keeping everything else moves step 3 at pp2
+from 7.44679 to 9.30017.
 
-Three things in the current tree fail silently without this, all fixed here.
-The block residual did not cross stages at all. The final aggregation
-(output_res_proj/output_res_norm) ran on every stage instead of only the one
-that owns the head. And the FQN injection returned early on a Config-tree model
-and said nothing, so the split silently fell back to the generic one and the
-last stage lost the aggregation modules.
+kimi_k3_debugmodel_text_32l, seed 42, --debug.deterministic, every cell loading
+the same seed checkpoint:
 
-The strongest check is not a loss curve: splitting the model in two by hand and
-running the halves in sequence, with no schedule, no loss and no micro-batches,
-reproduces the unsplit forward at max_abs 0.000e+00.
+<<TABLE_PPVP>>
 
-The vision tower needs a stage assignment or core's _split_module sets it to
-None on every stage, and the first multimodal batch then reports "pixel_values
-were provided without a vision encoder". It rides with whichever chunk kept the
-embedding, since vision features are spliced into the embeddings and nothing
-vision-side crosses a boundary.
+Same, on a 2D mesh with data parallel, kimi_k3_debugmodel_text:
 
-Also here is the report's 5.2.3 DEP clause 1: the tower gets a pipeline stage of
-its own, ahead of the text stages, so its compute is off the critical path of the
-stage that owns the embedding. It is opt-in because it changes the stage count.
-Verified as a pure scheduling change: at dp2 x pp4 from a shared seed
-checkpoint, DEP off and on give the same step-1 and step-2 loss, 12.49453, with
-one shared warm compile cache and each cell run twice.
+<<TABLE_PPDP>>
 
-Clause 2, splitting the tower across several stages, is not in this PR. It needs
-the stage split to address vision_encoder.layers, and _split_module descends only
-into a ModuleDict or ModuleList that is a direct child of the model. Asking for
-it raises with that reason rather than silently running clause 1. The tower's own
-share decomposition is here and is unit-tested bit-identical to the unsplit tower
-at 2, 3 and 4 shares, so clause 2 has something to build on.
+Not in this PR: the vision tower's stage assignment, and the tower on a pipeline
+stage of its own. Those come next, on the multimodal path.
 
-Files: new pipeline_adapter.py, attn_res.py, layout.py, knobs.py, the dep_bubble
-trio and dep_vision_stage.py; model.py carries the block residual in and out of a
-stage; parallelize.py and __init__.py wire pipelining_fn.
+Without pipeline_parallel_degree > 1 none of this executes.
 
-Tested: CPU tests for the FQN injection and the tower share decomposition; pp2,
-pp4 and pp8 run on the debug flavor.
+Tested: a CPU unit test for the FQN split; pp2 and pp2 x vp2 integration cells.
