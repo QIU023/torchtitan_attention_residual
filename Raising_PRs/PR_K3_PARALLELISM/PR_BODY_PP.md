@@ -4,13 +4,54 @@ The adapter's design: model.py returns (hidden, block_residual) from a non-head 
 
 Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
 
-<<TABLE_PP>>
+| cell | stages | world | transport | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|
+| dp1 | - | 1 | - | 12.48548 | 7.92534 | 3.41439 |
+| pp2 | 2 | 2 | fallback | 12.48548 | 7.91227 | 3.35806 |
+| pp4 | 4 | 4 | fallback | 12.48548 | 7.91227 | 3.35881 |
+| pp8 | 8 | 8 | fallback | 12.48548 | 7.90930 | 3.40345 |
+| pp2 x vp2 | 4 | 2 | delta | 12.48548 | 7.89923 | 3.42837 |
+| pp2 x vp4 | 8 | 2 | delta | 12.48548 | 7.94984 | 3.39687 |
+| pp4 x vp2 | 8 | 4 | delta | 12.48548 | 7.93775 | 3.28493 |
+| pp4 x vp4 | 16 | 4 | delta | 12.48548 | 7.89573 | 3.33794 |
+| pp8 x vp2 | 16 | 8 | delta | 12.48548 | 7.93965 | 3.25196 |
+| pp8 x vp4 | 32 | 8 | delta | 12.48548 | 7.91517 | 3.38148 |
 
-The tables previously here measured the naive block transport, not the delta
-one: attn_res_cache was never a declared config field, so pipeline_kimi_k3
-returned passthrough on every cell and the cross-stage cache adapter never
-ran. They are removed rather than annotated. The replacement is measured with
-the transport engaged on every virtual-stage cell.
+Step 1 is bit-identical to dp1 in all nine, across two to thirty-two stages and
+two to eight ranks. The transport is the delta one wherever the schedule can
+carry it: plain 1F1B gives a rank one stage, so there is no rank-shared stack to
+reuse and it falls back to shipping the whole stack.
+
+The same six virtual-stage cells with the transport turned off, against the rows
+above:
+
+| cell | step 1 | step 2 | step 3 | step 10 |
+|---|---|---|---|---|
+| pp2 x vp2 | identical | 3.5e-4 | 1.6e-3 | 2.1e-2 |
+| pp2 x vp4 | identical | 3.5e-4 | 5.1e-3 | 1.7e-3 |
+| pp4 x vp2 | identical | 1.5e-4 | 3.2e-3 | 2.2e-2 |
+| pp4 x vp4 | identical | 4.9e-4 | 1.7e-3 | 1.9e-2 |
+| pp8 x vp2 | identical | 5.2e-4 | 3.8e-3 | 4.5e-2 |
+| pp8 x vp4 | identical | 6.4e-4 | 7.4e-4 | 6.6e-3 |
+
+Same forward, different gradients: routing the same blocks a different way, and
+summing them in a different order.
+
+Peak memory per rank, same topology and schedule, transport against fallback:
+
+| pp8 x vp4 | per-rank peak (GiB) | max | spread |
+|---|---|---|---|
+| delta | 2.62 x6, 6.57, 6.60 | 6.60 | 3.98 |
+| fallback | 2.66 x6, 7.83, 8.50 | 8.50 | 5.84 |
+
+The six ranks that hold little are unchanged; the saving is on the two that
+would otherwise accumulate the stack. pp8 x vp2 is the same shape, 7.92 down to
+6.03.
+
+Each cell runs twice and the first run is discarded. A cold compile cache moves
+this model's step-1 loss by 6.8e-3 (12.59459 against 12.58783, both
+reproducible), which is larger than most of the differences above; the discard
+applies to the baseline row too.
 
 Not in this PR: the vision tower (its stage assignment and DEP) -- next, on the multimodal path. Without pipeline_parallel_degree > 1 none of this executes.
 
