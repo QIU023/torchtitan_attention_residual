@@ -35,6 +35,23 @@ with $`P`$ the pipeline degree, $`V`$ the virtual stages per rank, $`T = P \cdot
 
 Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
 
+To reproduce, from the torchtitan checkout root on this branch, 8 GPUs. Every cell loads the same seed checkpoint; run each cell twice and read the second run (a cold compile cache moves step 1). The runner we used, with the seed-load assertion and a disk gate, is https://github.com/QIU023/torchtitan_attention_residual/blob/611385d4e123d4d0527c6d08b06f8d701bb63e21/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh.
+
+```sh
+COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_text_32l --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+torchrun --nproc_per_node=1 $COMMON --training.steps 1 --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint --dump-folder seed
+cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 10 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
+P="--parallelism.pipeline_parallel_degree"; L="--parallelism.pipeline-parallel-layers-per-stage"
+MB="--parallelism.num-pp-microbatches 8 --parallelism.pipeline_parallel_first_stage_less_layers 0 --parallelism.pipeline_parallel_last_stage_less_layers 0"
+IL="$MB --parallelism.pipeline_parallel_schedule Interleaved1F1B"
+cell dp1 1
+cell pp2 2 $P 2 $MB;  cell pp4 4 $P 4 $MB;  cell pp8 8 $P 8 $MB
+cell pp2_vp2 2 $P 2 $L 8 $IL;  cell pp2_vp4 2 $P 2 $L 4 $IL
+cell pp4_vp2 4 $P 4 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL
+cell pp8_vp2 8 $P 8 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
+# the transport-off rows: the same cells with --config kimi_k3_debugmodel_text_32l_naive
+```
+
 `kimi_k3_debugmodel_text_32l`, seed 42, `--debug.deterministic`, every cell loading the same seed checkpoint; each cell runs twice and the first run is discarded, because a cold compile cache moves this model's step-1 loss by 6.8e-3 (12.59459 against 12.58783, both reproducible). Step 1 is bit-identical to dp1 in all nine cells, two to thirty-two stages, two to eight ranks; the transport is the delta one wherever the schedule can carry it and falls back on plain `1F1B`, where a rank holds one stage:
 
 | cell | stages | world | transport | step 1 | step 3 | step 10 |
