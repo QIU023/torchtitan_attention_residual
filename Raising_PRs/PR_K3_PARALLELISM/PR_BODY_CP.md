@@ -6,20 +6,27 @@ Adds context parallelism to the Kimi K3 text decoder. The two attention kinds ne
 
 #### Diagram
 
-<img width="1080" height="700" alt="cp_mla_ulysses_flow" src="https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/bd70511f6dee102a5e3483f8905419ab9c363eb0/Raising_PRs/PR_K3_PARALLELISM/cp_mla_ulysses_flow.svg" />
+<img width="1080" height="440" alt="cp_mla_ulysses_flow" src="https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/26bf162c61caa4946f9ef251a47304a2e6ceabb6/Raising_PRs/PR_K3_PARALLELISM/cp_mla_ulysses_flow.svg" />
 
 #### Design points: Ulysses on the MLA layers
 
 Ulysses (Jacobs et al., DeepSpeed Ulysses, arXiv:2309.14509). Shapes: $T$ tokens, $L = T/cp$ local tokens, $H$ heads on this rank, $G = H/cp$, $Q$/$N$/$V$ the query, nope-key and value head dims, $R$ the rotary width, $W = Q+N+V$.
 
-- Entry: the projections run on the local sequence chunk, giving *q* `[L, H, Q]`, *kv* `[L, H, N+V]` and the headless rotary key *k_rope* `[L, R]`. The layer branches to Ulysses when a CP group was set on it (`model.py:131-135` in `KimiMLAAttention.forward`; `apply_cp_kimi_k3` sets it, `parallelize.py:117-133`).
-- *q* and *kv* are packed along the channel dim into one `[L, H, W]` tensor so a single collective moves both (`sharding.py:223` in `mla_ulysses_attention`).
-- All-to-all 1, sequence to heads: `[L, H, W]` is viewed as `[cp, L, G, W]` with dim 0 the destination rank, goes through `all_to_all_single`, and comes back as `[T, G, W]`: every rank now holds the full sequence for its $G$ heads (`sharding.py:156-165` in `cp_all_to_all_headseq`, called at `sharding.py:224-227`). `torch.distributed.nn.functional` makes it differentiable; the backward is the transposed all-to-all.
-- The packed tensor splits back into *q* `[T, G, Q]`, *k_nope* `[T, G, N]`, *v* `[T, G, V]` (`sharding.py:228-232`).
-- The rotary key stays out of the all-to-all: it is one vector per token shared by every head, so it is all-gathered along the sequence to `[T, R]` and expanded onto the $G$ local heads to form *k* `[T, G, N+R]` (`sharding.py:234-247`). Packing the already-expanded key would send the same values once per head and reassemble them against the wrong head subset.
-- The attention backend runs unchanged on the full sequence, with a causal mask rebuilt for length $T$ (`sharding.py:249-255`; `full_sequence_causal_mask`, `sharding.py:176-196`, rejects a folded stream wider than the context window, since a causal-only mask cannot see a document boundary).
-- All-to-all 2, heads to sequence: the output `[T, G, V]` is viewed as `[cp, L, G, V]` with dim 0 the destination sequence chunk, goes through `all_to_all_single`, and returns as `[L, H, V]`, the layer's normal layout (`sharding.py:166-173` in `cp_all_to_all_headseq`, called at `sharding.py:256-259`).
-- The placement pair `S(seq) <-> S(heads)` is declared once as a contract (`sharding.py:99-109`, `ULYSSES`) and the all-to-all takes its dims from it (`sharding.py:149-153`), so a pair with no implementation raises instead of being ignored. `n_heads % cp == 0` is checked at wiring time (`parallelize.py:128-132` in `apply_cp_kimi_k3`).
+- Before the first all-to-all: sequence-sharded, all heads local
+  - The projections run on this rank's chunk of $L$ tokens and give *q* $[L, H, Q]$, *kv* $[L, H, N+V]$ and the headless rotary key *k_rope* $[L, R]$. The layer takes this path when a CP group was set on it (`model.py:131-135` in `KimiMLAAttention.forward`; `apply_cp_kimi_k3` sets it, `parallelize.py:117-133`).
+  - *q* and *kv* are packed along the channel dim into one $[L, H, W]$ tensor so a single collective moves both (`sharding.py:223` in `mla_ulysses_attention`).
+- All-to-all 1: sequence-sharded to head-sharded
+  - $[L, H, W]$ is viewed as $[cp, L, G, W]$ with dim 0 the destination rank and goes through `all_to_all_single`; it comes back as $[T, G, W]$, the full sequence for this rank's $G$ heads (`sharding.py:156-165` in `cp_all_to_all_headseq`, called at `sharding.py:224-227`).
+  - `torch.distributed.nn.functional` makes it differentiable: the backward is the transposed all-to-all.
+- Inside the rank: head-sharded, full-sequence MLA
+  - The packed tensor splits back into *q* $[T, G, Q]$, *k_nope* $[T, G, N]$, *v* $[T, G, V]$ (`sharding.py:228-232`).
+  - The rotary key stays out of the all-to-all: it is one vector per token shared by every head, so it is all-gathered along the sequence to $[T, R]$ and expanded onto the $G$ local heads to form *k* $[T, G, N+R]$ (`sharding.py:234-247`). Packing the already-expanded key would send the same values once per head and reassemble them against the wrong head subset.
+  - The attention backend runs unchanged on the full sequence, with a causal mask rebuilt for length $T$ (`sharding.py:249-255`; `full_sequence_causal_mask`, `sharding.py:176-196`, rejects a folded stream wider than the context window, since a causal-only mask cannot see a document boundary).
+- All-to-all 2: head-sharded back to sequence-sharded
+  - The output $[T, G, V]$ is viewed as $[cp, L, G, V]$ with dim 0 the destination sequence chunk, goes through `all_to_all_single`, and returns as $[L, H, V]$ (`sharding.py:166-173` in `cp_all_to_all_headseq`, called at `sharding.py:256-259`).
+- After the second all-to-all: sequence-sharded again
+  - $[L, H, V]$ is the layer's normal layout; the output projection and the gate run on it exactly as without CP (`model.py:144-145`).
+  - The placement pair `S(seq) <-> S(heads)` is declared once as a contract (`sharding.py:99-109`, `ULYSSES`) and the all-to-all takes its dims from it (`sharding.py:149-153`), so a pair with no implementation raises instead of being ignored. `n_heads % cp == 0` is checked at wiring time (`parallelize.py:128-132` in `apply_cp_kimi_k3`).
 
 #### Design points: KCP on the KDA layers
 
