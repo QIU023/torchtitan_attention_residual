@@ -6,7 +6,7 @@ Adds context parallelism to the Kimi K3 text decoder. The two attention kinds ne
 
 #### Diagram
 
-<img width="1080" height="700" alt="cp_mla_ulysses_flow" src="https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/e3e0aca9dfff9cb868a294e0ada46bada8f4ca74/Raising_PRs/PR_K3_PARALLELISM/cp_mla_ulysses_flow.svg" />
+<img width="1080" height="700" alt="cp_mla_ulysses_flow" src="https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/bd70511f6dee102a5e3483f8905419ab9c363eb0/Raising_PRs/PR_K3_PARALLELISM/cp_mla_ulysses_flow.svg" />
 
 #### Design points: Ulysses on the MLA layers
 
