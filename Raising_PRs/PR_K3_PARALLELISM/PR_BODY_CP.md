@@ -1,10 +1,21 @@
-Adds context parallelism to the Kimi K3 text decoder. The two attention kinds need different mechanisms, so both are here: Ulysses on the Gated MLA layers, and the report's KCP on the KDA layers -- a conv halo exchange plus a prefix scan over the recurrent state, nothing softmax-shaped. As far as I can tell this is the first Ulysses in torchtitan; if you would rather it live under distributed/ as a model-agnostic piece, say so and I will move it.
+Adds context parallelism to the Kimi K3 text decoder. The two attention kinds need different mechanisms, so both are here on disjoint layer kinds: Ulysses on the Gated MLA layers, and the report's KCP on the KDA layers. As far as I can tell this is the first Ulysses in torchtitan; if you would rather it live under distributed/ as a model-agnostic piece, say so and I will move it.
 
-Ulysses is one all-to-all trading the sharded axis from sequence to heads, the unchanged attention backend, and a second all-to-all trading back. The rotary key slice stays outside the exchange: it is headless -- one vector per token shared by every head -- so it is all-gathered along the sequence and expanded onto local heads afterwards; packing the already-expanded key sends the same values once per head and reassembles them against the wrong head subset.
+Ulysses (Jacobs et al., DeepSpeed Ulysses, arXiv:2309.14509) on MLA. Shapes: T tokens, L = T/cp local tokens, H heads on this rank, G = H/cp, Q/N/V the query, nope-key and value head dims, R the rotary width, W = Q+N+V.
 
-KCP cannot be declarative: the fla kernels take raw pointers and never dispatch through DTensor, so no ShardingConfig reaches them -- which is also why this model runs on spmd_backend="partial_dtensor", and core's unconditional check rejects context_parallel_degree > 1 on any backend but spmd_types before the model's own wiring runs. Hence one core change: that requirement moves into a protected method, Decoder.Config._validate_cp_backend, and a model whose CP is not ShardingConfig-driven overrides it with its own preconditions. The method's default body just calls the existing validate_cp_backend, so it is only the override point: a model that does not override it runs today's check verbatim. No new config field; declarative models are unchanged. The override is transitional, tied to the backend, not to how CP is wired: a torch-native KDA that lets this model run under spmd_types deletes the override and the default check applies here too.
+- Entry: the projections run on the local sequence chunk, giving q [L, H, Q], kv [L, H, N+V] and the headless rotary key [L, R]. The layer branches to Ulysses when a CP group was set on it (model.py:131-135; apply_cp_kimi_k3 sets it, parallelize.py:117-133).
+- q and kv are packed along the channel dim into one [L, H, W] tensor so a single collective moves both (sharding.py:223).
+- All-to-all 1, sequence to heads: [L, H, W] is viewed as [cp, L, G, W] with dim 0 the destination rank, goes through all_to_all_single, and comes back as [T, G, W]: every rank now holds the full sequence for its G heads (sharding.py:156-165, called at 224-227). torch.distributed.nn.functional makes it differentiable; the backward is the transposed all-to-all.
+- The packed tensor splits back into q [T, G, Q], k_nope [T, G, N], v [T, G, V] (sharding.py:228-232).
+- The rotary key stays out of the all-to-all: it is one vector per token shared by every head, so it is all-gathered along the sequence to [T, R] and expanded onto the G local heads to form k [T, G, N+R] (sharding.py:234-247). Packing the already-expanded key would send the same values once per head and reassemble them against the wrong head subset.
+- The attention backend runs unchanged on the full sequence, with a causal mask rebuilt for length T (sharding.py:249-255; full_sequence_causal_mask at 176-196 rejects a folded stream wider than the context window, since a causal-only mask cannot see a document boundary).
+- All-to-all 2, heads to sequence: the output [T, G, V] is viewed as [cp, L, G, V] with dim 0 the destination sequence chunk, goes through all_to_all_single, and returns as [L, H, V], the layer's normal layout (sharding.py:166-173, called at 256-259).
+- The placement pair S(seq) <-> S(heads) is declared once as a contract (sharding.py:99-109) and the all-to-all takes its dims from it (149-153), so a pair with no implementation raises instead of being ignored. n_heads % cp == 0 is checked at wiring time (parallelize.py:128-132).
 
-CP resplits the sequence, so unlike PP and EP it is not expected to be bit-identical to dp1. One seed checkpoint is loaded by every cell; dp2 is in the table because changing the data-parallel degree alone moves the loss more than any of these axes do, so a dp2-mesh cell measured against dp1 would mostly be measuring that. kimi_k3_debugmodel_text at seq 1024 -- FlexAttention's BlockMask needs Q_LEN % (cp * 128) == 0, which is what sets the length -- seed 42, --debug.deterministic:
+KCP on KDA is not written here: the two cross-rank pieces are fla-core's CP ops (>= 0.5.1). The causal convolutions need only the previous rank's tail, which fla.modules.conv.cp.ops.causal_conv1d_cp exchanges as a fixed-size halo; the delta-rule recurrence needs the true incoming state, which chunk_kda prefix-scans across ranks given a cp_context from fla.ops.cp.context.build_cp_context. This branch wires them: one context per forward (kda.py:251-256), the q/k/v convolutions through the halo op (258-275), the kernel call with the context (281-290) and the kernel handing it to chunk_kda (61-95). The sequence stays sharded end to end; no rank ever holds it whole. The import is checked at wiring time so a missing fla-core fails with an actionable message rather than inside a layer's first forward (parallelize.py:138-150).
+
+One core change. KCP cannot be declarative (the fla kernels take raw pointers and never see a DTensor), which is why this model runs on spmd_backend="partial_dtensor", and core's unconditional check rejects context_parallel_degree > 1 on any backend but spmd_types before the model's own wiring runs. So that check moves into a protected method, Decoder.Config._validate_cp_backend, whose default body just calls the existing validate_cp_backend; a model that does not override it runs today's check verbatim, and this model overrides it with its own preconditions. No new config field. The override is tied to the backend, not to how CP is wired: a torch-native KDA that lets this model run under spmd_types deletes it.
+
+kimi_k3_debugmodel_text at seq 1024 (FlexAttention's BlockMask needs Q_LEN % (cp * 128) == 0), seed 42, --debug.deterministic, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does (step 2: cp2/cp4/cp8 at 2.2e-3/2.6e-3/2.7e-3 from dp1, dp2 at 1.2e-2 from dp1; the mesh cells at 9.9e-3 and 4.0e-3 from dp2):
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -16,13 +27,7 @@ CP resplits the sequence, so unlike PP and EP it is not expected to be bit-ident
 | dp2 x cp2 | 4 | 12.58957 | 7.36327 | 3.48256 |
 | dp2 x cp4 | 8 | 12.58948 | 7.43662 | 3.49025 |
 
-Step 1 is within 1.6e-4 relative of dp1 across every cell. At step 2, the three single-axis cells sit at 2.2e-3, 2.6e-3 and 2.7e-3 against dp1, while dp2 -- which enables no parallelism axis at all -- sits at 1.2e-2: the sequence split moves the loss less than changing the data-parallel degree does. The two mesh cells are 9.9e-3 and 4.0e-3 against dp2.
-
-Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a folded microbatch wider than the context window, since the CP mask rebuild is causal-only and cannot represent a document boundary.
-
-Not in this PR: CP inside the vision tower and the report's dynamic CP for large images -- next, on the multimodal path. Without context_parallel_degree > 1 none of this executes.
-
-A second measurement with one patch on top: the grad-norm reduction carried in float32 rather than in the gradients' dtype. That patch is a separate upstream change, still open at https://github.com/pytorch/torchtitan/pull/4135, and is not on this branch. It is here because it is the one thing that could have explained the gaps above, and it does not: six of the seven cells move by 1.1e-3 or less at step 3, three of them not at all.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): context parallelism reaches the same numbers either way, so whatever the sequence split costs, it is not the reduction's grouping.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -34,7 +39,7 @@ A second measurement with one patch on top: the grad-norm reduction carried in f
 | dp2 x cp2 | 4 | 12.58957 | 7.36461 | 3.42474 |
 | dp2 x cp4 | 8 | 12.58948 | 7.43833 | 3.49202 |
 
-The reduction's grouping follows how a run partitions the parameters, which is why it matters under pipeline parallelism. Context parallelism reaches the same numbers either way, so whatever the sequence split costs, it is not this.
+Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a folded microbatch wider than the context window. Not in this PR: CP inside the vision tower and the report's dynamic CP for large images. Without context_parallel_degree > 1 none of this executes.
 
 Files:
 

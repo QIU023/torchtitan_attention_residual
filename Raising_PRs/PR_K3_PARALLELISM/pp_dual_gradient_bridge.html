@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AttnRes under Pipeline Parallelism: the two gradient channels</title>
+<style>
+  body{margin:0;background:#f4f6f9;color:#0e1626;font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6}
+  main{max-width:1120px;margin:0 auto;padding:36px 28px 60px}
+  h1{font-size:22px;margin:0 0 6px}
+  .sub{color:#4b5a70;margin:0 0 22px}
+  .plate{background:#fff;border:1px solid #c6cdd9;border-radius:6px;padding:16px;overflow-x:auto}
+  svg{display:block;width:100%;max-width:1080px;height:auto;margin:0 auto}
+  svg text{font-family:ui-monospace,Menlo,Consolas,monospace;fill:#0e1626}
+  .t{font-size:11.5px}.s{font-size:10px;fill:#4b5a70}.b{font-size:12.5px;font-weight:700}
+  ul{margin:22px 0 0;padding-left:20px}li{margin:7px 0}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background:#e3e8ef;padding:1px 5px;border-radius:3px}
+  .legend{display:flex;gap:18px;font-size:12px;color:#4b5a70;margin:0 0 12px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Block Attention Residual under Pipeline Parallelism: one block, two gradient channels</h1>
+  <p class="sub">P = pipeline degree, V = virtual stages per rank, T = P&middot;V stages; stage S runs on rank S mod P (Interleaved1F1B). A block committed by stage S_p is fresh on the wire for P&minus;1 hops, then lives in every rank's cache.</p>
+
+  <div class="legend">
+    <span><i style="background:#2547d0"></i>forward P2P (the delta)</span>
+    <span><i style="background:#a81e7a"></i>channel A: PP's own backward P2P (SEND_B)</span>
+    <span><i style="background:#0f7b5f"></i>channel B: rank-local slot bridge</span>
+    <span><i style="background:#9a6100"></i>read from the rank cache, no communication</span>
+  </div>
+
+  <div class="plate">
+    <svg viewBox="0 0 1080 540" role="img" aria-label="Two gradient channels for one AttnRes block under pipeline parallelism">
+      <defs>
+        <marker id="ab" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 Z" fill="#2547d0"/></marker>
+        <marker id="am" markerWidth="10" markerHeight="10" refX="8" refY="3.4" orient="auto"><path d="M0,0 L8,3.4 L0,6.8 Z" fill="#a81e7a"/></marker>
+        <marker id="ag" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 Z" fill="#0f7b5f"/></marker>
+        <marker id="ao" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 Z" fill="#9a6100"/></marker>
+      </defs>
+
+      <text class="b" x="20" y="22">Forward: where block b (committed by stage S_p, rank R_p) is read from</text>
+
+      <!-- stage boxes -->
+      <g>
+        <rect x="20" y="62" width="118" height="48" rx="4" fill="#2547d0"/>
+        <text class="t" x="79" y="82" text-anchor="middle" fill="#fff">S_p</text>
+        <text class="s" x="79" y="99" text-anchor="middle" fill="#dfe4ec">commits b</text>
+
+        <rect x="170" y="62" width="112" height="48" rx="4" fill="#eef1f8" stroke="#2547d0" stroke-width="1.4"/>
+        <text class="t" x="226" y="82" text-anchor="middle">S_p+1</text>
+        <text class="s" x="226" y="99" text-anchor="middle">fresh recv</text>
+
+        <text class="t" x="312" y="90" text-anchor="middle">...</text>
+
+        <rect x="340" y="62" width="124" height="48" rx="4" fill="#eef1f8" stroke="#2547d0" stroke-width="1.4"/>
+        <text class="t" x="402" y="82" text-anchor="middle">S_p+P-1</text>
+        <text class="s" x="402" y="99" text-anchor="middle">fresh recv</text>
+
+        <rect x="496" y="62" width="124" height="48" rx="4" fill="#fbeff6" stroke="#a81e7a" stroke-width="2"/>
+        <text class="t" x="558" y="82" text-anchor="middle" fill="#a81e7a">S_p+P</text>
+        <text class="s" x="558" y="99" text-anchor="middle" fill="#a81e7a">same rank: cache</text>
+
+        <rect x="652" y="62" width="124" height="48" rx="4" fill="#fdf4e7" stroke="#9a6100" stroke-width="1.4"/>
+        <text class="t" x="714" y="82" text-anchor="middle" fill="#9a6100">S_p+P+1</text>
+        <text class="s" x="714" y="99" text-anchor="middle" fill="#9a6100">other rank: relay</text>
+
+        <text class="t" x="806" y="90" text-anchor="middle">...</text>
+
+        <rect x="836" y="62" width="124" height="48" rx="4" fill="#fbeff6" stroke="#a81e7a" stroke-width="2"/>
+        <text class="t" x="898" y="82" text-anchor="middle" fill="#a81e7a">S_p+2P</text>
+        <text class="s" x="898" y="99" text-anchor="middle" fill="#a81e7a">same rank: cache</text>
+
+        <text class="t" x="990" y="90" text-anchor="middle">...</text>
+        <rect x="1008" y="62" width="56" height="48" rx="4" fill="#eef1f8" stroke="#2547d0" stroke-width="1.4"/>
+        <text class="t" x="1036" y="90" text-anchor="middle">T-1</text>
+      </g>
+
+      <!-- forward P2P arrows over the delta window -->
+      <g stroke="#2547d0" stroke-width="2" fill="none" marker-end="url(#ab)">
+        <path d="M138,54 C154,36 166,36 182,54"/>
+        <path d="M282,54 C296,38 304,38 318,52"/>
+        <path d="M330,52 C342,38 352,38 366,54"/>
+      </g>
+      <rect x="20" y="118" width="444" height="22" rx="11" fill="#2547d0" opacity=".1" stroke="#2547d0" stroke-dasharray="5 3"/>
+      <text class="s" x="242" y="133" text-anchor="middle" fill="#2547d0">delta window: b rides the P2P for P-1 hops only</text>
+      <text class="s" x="760" y="133" text-anchor="middle" fill="#9a6100">from S_p+P on, every rank already holds b in its cache</text>
+
+      <!-- backward -->
+      <text class="b" x="20" y="186">Backward: how every consumer's gradient for b reaches S_p</text>
+
+      <!-- channel A chain along the axis -->
+      <path d="M1008,214 L142,214" stroke="#a81e7a" stroke-width="2.4" fill="none" marker-end="url(#am)"/>
+      <g stroke="#a81e7a" stroke-width="2.4" fill="none" marker-end="url(#am)">
+        <path d="M1036,206 L1036,214"/>
+        <path d="M714,206 L714,214"/>
+        <path d="M402,206 L402,214"/>
+        <path d="M226,206 L226,214"/>
+      </g>
+      <text class="s" x="570" y="236" text-anchor="middle" fill="#a81e7a">channel A: SEND_B walks the recv chain hop by hop; each stage's own contribution merges into it on the way (recv-originated and relayed blocks stay autograd-attached)</text>
+
+      <!-- channel B: same-rank consumers to the slot -->
+      <g stroke="#0f7b5f" stroke-width="2" fill="none" marker-end="url(#ag)">
+        <path d="M558,206 L558,262"/>
+        <path d="M898,206 L898,262"/>
+      </g>
+      <rect x="380" y="266" width="640" height="46" rx="5" fill="#fff" stroke="#0f7b5f" stroke-width="1.6"/>
+      <text class="t" x="700" y="285" text-anchor="middle" fill="#0f7b5f" font-weight="700">rank-local slot, key = (micro-batch, S_p, commit index)</text>
+      <text class="s" x="700" y="303" text-anchor="middle" fill="#0f7b5f">the cache holds b DETACHED; _LocalCacheCapture.backward deposits here and stops; no collective</text>
+      <path d="M380,289 C250,289 180,250 142,230" stroke="#0f7b5f" stroke-width="2.2" fill="none" marker-end="url(#ag)"/>
+      <text class="s" x="236" y="262" fill="#0f7b5f">pop and add, inside S_p's own backward</text>
+
+      <!-- producer sum -->
+      <rect x="20" y="340" width="1044" height="64" rx="5" fill="#eef1f8" stroke="#0e1626" stroke-width="1.4"/>
+      <text class="t" x="36" y="362" font-weight="700">At S_p, the grad hook on the attached block (_install_augment_hook):</text>
+      <text class="t" x="36" y="386"><tspan fill="#a81e7a">grad arriving on channel A</tspan>  +  <tspan fill="#0f7b5f">sum of the slot deposits (channel B)</tspan>  =  the block's full gradient, then S_p's forward graph is traversed exactly once</text>
+
+      <!-- counts -->
+      <rect x="20" y="424" width="512" height="96" rx="5" fill="#fff" stroke="#c6cdd9"/>
+      <text class="t" x="36" y="446" font-weight="700">Counts for a block from S_p, v_p = S_p div P</text>
+      <text class="t" x="36" y="470">consumers in total          = T - 1 - S_p</text>
+      <text class="t" x="36" y="490" fill="#0f7b5f">channel B (same rank)       = V - 1 - v_p</text>
+      <text class="t" x="36" y="510" fill="#a81e7a">channel A (everything else) = (T - 1 - S_p) - (V - 1 - v_p)</text>
+
+      <rect x="552" y="424" width="512" height="96" rx="5" fill="#fff" stroke="#c6cdd9"/>
+      <text class="t" x="568" y="446" font-weight="700">Self-check</text>
+      <text class="s" x="568" y="468">layout.expected_same_rank_captures(S_p, i) returns V - 1 - v_p offline.</text>
+      <text class="s" x="568" y="486">The hook compares the deposits it pops against it and refuses the step</text>
+      <text class="s" x="568" y="504">on a mismatch: a missing capture is a lost gradient no loss curve shows.</text>
+    </svg>
+  </div>
+
+  <ul>
+    <li>A block committed by stage S_p is fresh on the wire for P&minus;1 hops (S_p+1 .. S_p+P&minus;1). From S_p+P on, every receiving rank already holds it: its previous virtual stage was S&minus;P. The per-hop payload is therefore bounded by the commits of the last P&minus;1 stages, independent of depth.</li>
+    <li>Which channel a consumer uses depends on one thing: whether the producer is on the consumer's rank. Same rank (S_c &equiv; S_p mod P, S_c &gt; S_p) takes channel B; every other consumer, fresh or relayed, takes channel A.</li>
+    <li>Channel B exists because a same-rank consumer must not walk into the producer's autograd graph: that frees it, and the producer's own backward then fails with "backward through the graph a second time". So the cache stores a detached copy and the gradient crosses by a slot instead.</li>
+    <li>Plain 1F1B is V = 1: channel B count is zero, the rank-shared cache is empty, and the transport falls back to shipping the whole carrier.</li>
+  </ul>
+</main>
+</body>
+</html>

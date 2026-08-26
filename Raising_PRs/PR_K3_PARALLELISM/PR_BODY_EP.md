@@ -1,6 +1,6 @@
 Enables expert parallelism for Kimi K3 on the existing all-to-all token dispatcher. Three pieces: set_moe_sharding_config declares the routed-expert layout (w1_EFD S(1), w2_EDF S(2), w3_EFD S(1)), with set_decoder_sharding_config above it so the activations reaching the MoE boundary are DTensors that can be redistributed onto the expert mesh; parallelize builds the expert-data-parallel mesh that excludes the expert axis and hands it to apply_fsdp_to_decoder with ep_degree -- the shape deepseek_v3 already resolves; and expert parallel comes off the unsupported list.
 
-EP shards experts inside the data axis, so each cell is compared against the pure-data-parallel run at the same world size. kimi_k3_debugmodel_text, seed 42, --debug.deterministic, one seed checkpoint loaded by every cell:
+EP shards experts inside the data axis, so each cell is compared against the pure-data-parallel run at the same world size. kimi_k3_debugmodel_text, seed 42, --debug.deterministic, one seed checkpoint loaded by every cell; at step 2 the EP cells are 2.9e-4, 1.2e-3 and 1.1e-3 from their own-degree baseline, against 3.7e-3, 3.5e-3 and 5.2e-3 for the dp2, dp4 and dp8 rows measured the same way against dp1:
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -12,11 +12,7 @@ EP shards experts inside the data axis, so each cell is compared against the pur
 | dp8 | 8 | 12.58336 | 7.32668 | 3.36729 |
 | ep8 x fsdp8 | 8 | 12.58286 | 7.40832 | 3.44799 |
 
-At step 1 each EP cell is within 5.6e-6, 1.6e-5 and 4.0e-5 relative of the pure-data-parallel run at its own degree. At step 2 they are 2.9e-4, 1.2e-3 and 1.1e-3, against 3.7e-3, 3.5e-3 and 5.2e-3 for the dp2, dp4 and dp8 rows measured the same way against dp1 -- sharding the experts moves the loss less than changing the data-parallel degree does.
-
-MoonEP is not here: the report's balanced EP with online redundant-expert planning needs its own dispatcher and backend, and this is the plain all-to-all path. comm_backend is pinned to "standard" so no run can silently believe it is on MoonEP. Without expert_parallel_degree > 1 none of this executes.
-
-A second measurement with one patch on top: the grad-norm reduction carried in float32 rather than in the gradients' dtype. That patch is a separate upstream change, still open at https://github.com/pytorch/torchtitan/pull/4135, and is not on this branch.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): only ep8 moves (7.40832 to 7.42252 at step 3), because the reduction is taken over an expert group and a non-expert group separately and the split only rounds differently in bf16 once there are enough experts per group.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -28,7 +24,7 @@ A second measurement with one patch on top: the grad-norm reduction carried in f
 | dp8 | 8 | 12.58336 | 7.32668 | 3.36718 |
 | ep8 x fsdp8 | 8 | 12.58286 | 7.42252 | 3.43101 |
 
-Only ep8 moves: 7.40832 to 7.42252 at step 3, while ep2, ep4 and all four pure-data-parallel rows are unchanged to every printed digit. The reduction is taken over an expert group and a non-expert group separately, so the total depends on that split; at two and four experts per group the two norms are close enough that bf16 rounds them the same way, and at eight they are not. Against its own-degree baseline with the patch applied, ep2 is 2.8e-4 at step 2 and ep8 is 5.1e-4.
+MoonEP is not here: the report's balanced EP with online redundant-expert planning needs its own dispatcher and backend, and this is the plain all-to-all path; comm_backend is pinned to "standard" so no run can silently believe it is on MoonEP. Without expert_parallel_degree > 1 none of this executes.
 
 Files:
 
