@@ -1,6 +1,17 @@
+### Summary
+
 Adds pipeline parallelism to the Kimi K3 text decoder. Everything except Block Attention Residuals is mechanical; the residual is not. A block residual is defined over the whole layer stack, so under PP it must travel between stages as a second payload alongside the hidden states, and the final aggregation (output_res_proj, then output_res_norm) must run only on the stage that owns lm_head.
 
-The design, with P the pipeline degree, V the virtual stages per rank, T = P*V stages, and stage S running on rank S mod P under Interleaved1F1B.
+
+### PP Virtual Stage Cache Adapter Design for Attention Residual
+
+#### Diagram
+
+<img width="1080" height="540" alt="pp_dual_gradient_bridge" src="https://github.com/user-attachments/assets/8a5674a0-575f-4ab0-80ab-b22ace2a67b4" />
+
+#### Design points
+
+with P the pipeline degree, V the virtual stages per rank, T = P*V stages, and stage S running on rank S mod P under Interleaved1F1B.
 
 - The carrier: a non-head stage returns (hidden, block_residual [tokens, N, D]) and the next stage takes the pair back (model.py:358-404); the head-owning stage alone runs the aggregation (403-407). Without the adapter the whole carrier travels on every hop; that is the fallback transport, and it is what plain 1F1B (V = 1) runs.
 - The static layout: layout.py:149-211 simulates one micro-batch's forward in schedule order and tabulates, per stage, the blocks it commits, the blocks its rank's cache already holds, and the delta its P2P must carry (delta = accumulated minus the receiver's cache, 187-194). Sender and receiver compute the same tables, so nothing travels on the wire but the delta.
@@ -11,7 +22,7 @@ The design, with P the pipeline degree, V the virtual stages per rank, T = P*V s
 - Both channels sum at the producer, so every stage's forward graph is traversed exactly once. The channel-B count is static: for a block from stage S_p with v_p = S_p div P it is V-1-v_p (layout.expected_same_rank_captures 120-145); the hook compares the observed deposits to it and refuses the step on a mismatch (344-356), since a missing capture is a lost gradient no loss curve shows, and the rank's earliest virtual stage asserts every slot drained at micro-batch end (868-890).
 - The carry is a config field, attn_res_cache, on by default under PP; a launcher exporting an environment variable non-uniformly would give ranks different topologies and hang in a collective with nothing pointing at the cause.
 
-![one block, two gradient channels](https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/b8805c2f458548774fce8688c84fddf60b85c83a/Raising_PRs/PR_K3_PARALLELISM/pp_dual_gradient_bridge.svg)
+### K3 PP with VP runs:
 
 Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
 
@@ -48,24 +59,9 @@ Peak memory per rank, same topology and schedule, transport against fallback; th
 | delta | 2.62 x6, 6.57, 6.60 | 6.60 | 3.98 |
 | fallback | 2.66 x6, 7.83, 8.50 | 8.50 | 5.84 |
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): the six virtual-stage cells with the transport off collapse to one value (7.87346, all six), and with it on they stay apart, because the delta a hop carries depends on the cut and summing it in a different order is arithmetic that patch does not touch.
-
-| cell | stages | world | transport | step 1 | step 3 | step 10 |
-|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | 12.48548 | 7.90621 | 3.40567 |
-| pp2 | 2 | 2 | fallback | 12.48548 | 7.87346 | 3.43178 |
-| pp4 | 4 | 4 | fallback | 12.48548 | 7.87346 | 3.43178 |
-| pp8 | 8 | 8 | fallback | 12.48548 | 7.91590 | 3.41976 |
-| pp2 x vp2 | 4 | 2 | delta | 12.48548 | 7.90505 | 3.34575 |
-| pp2 x vp4 | 8 | 2 | delta | 12.48548 | 7.94826 | 3.32969 |
-| pp4 x vp2 | 8 | 4 | delta | 12.48548 | 7.95831 | 3.38758 |
-| pp4 x vp4 | 16 | 4 | delta | 12.48548 | 7.90776 | 3.31534 |
-| pp8 x vp2 | 16 | 8 | delta | 12.48548 | 7.92740 | 3.31839 |
-| pp8 x vp4 | 32 | 8 | delta | 12.48548 | 7.91857 | 3.37609 |
-
 Not in this PR: the vision tower (its stage assignment and DEP). Without pipeline_parallel_degree > 1 none of this executes.
 
-Files:
+### Changed files
 
     torchtitan/models/kimi_k3/
       pipeline_adapter.py   +1228  the pipelining_fn: FQN split, the block-residual
@@ -87,4 +83,24 @@ Files:
       integration_tests/features.py                     +14  pp2 and pp8 x vp4 cells
     torchtitan_recipes/tests/features.py                +33  their configurations
 
-Tested: a CPU unit test for the FQN split; a pp2 integration cell, and a pp8 x vp4 one on the 32-layer flavor -- one layer per stage over 32 stages, so the residual crosses every boundary the schedule has.
+### CI/CD Coverage
+
+CPU unit test for the FQN split; a pp2 integration cell, and a pp8 x vp4 one on the 32-layer flavor -- one layer per stage over 32 stages, so the residual crosses every boundary the schedule has.
+
+
+### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
+
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): the six virtual-stage cells with the transport off collapse to one value (7.87346, all six), and with it on they stay apart, because the delta a hop carries depends on the cut and summing it in a different order is arithmetic that patch does not touch.
+
+| cell | stages | world | transport | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|
+| dp1 | - | 1 | - | 12.48548 | 7.90621 | 3.40567 |
+| pp2 | 2 | 2 | fallback | 12.48548 | 7.87346 | 3.43178 |
+| pp4 | 4 | 4 | fallback | 12.48548 | 7.87346 | 3.43178 |
+| pp8 | 8 | 8 | fallback | 12.48548 | 7.91590 | 3.41976 |
+| pp2 x vp2 | 4 | 2 | delta | 12.48548 | 7.90505 | 3.34575 |
+| pp2 x vp4 | 8 | 2 | delta | 12.48548 | 7.94826 | 3.32969 |
+| pp4 x vp2 | 8 | 4 | delta | 12.48548 | 7.95831 | 3.38758 |
+| pp4 x vp4 | 16 | 4 | delta | 12.48548 | 7.90776 | 3.31534 |
+| pp8 x vp2 | 16 | 8 | delta | 12.48548 | 7.92740 | 3.31839 |
+| pp8 x vp4 | 32 | 8 | delta | 12.48548 | 7.91857 | 3.37609 |
