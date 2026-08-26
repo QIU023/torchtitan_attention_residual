@@ -1,6 +1,6 @@
 ### Summary
 
-Adds pipeline parallelism to the Kimi K3 text decoder. Everything except Block Attention Residuals is mechanical; the residual is not. A block residual is defined over the whole layer stack, so under PP it must travel between stages as a second payload alongside the hidden states, and the final aggregation (output_res_proj, then output_res_norm) must run only on the stage that owns lm_head.
+Adds pipeline parallelism to the Kimi K3 text decoder. Everything except Block Attention Residuals is mechanical; the residual is not. A block residual is defined over the whole layer stack, so under PP it must travel between stages as a second payload alongside the hidden states, and the final aggregation (`output_res_proj`, then `output_res_norm`) must run only on the stage that owns `lm_head`.
 
 
 ### PP Virtual Stage Cache Adapter Design for Attention Residual
@@ -11,22 +11,22 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Everything except Block A
 
 #### Design points
 
-with P the pipeline degree, V the virtual stages per rank, T = P*V stages, and stage S running on rank S mod P under Interleaved1F1B.
+with $P$ the pipeline degree, $V$ the virtual stages per rank, $T = P \cdot V$ stages, and stage $S$ running on rank $S \bmod P$ under `Interleaved1F1B`.
 
-- The carrier: a non-head stage returns (hidden, block_residual [tokens, N, D]) and the next stage takes the pair back (model.py:358-404); the head-owning stage alone runs the aggregation (403-407). Without the adapter the whole carrier travels on every hop; that is the fallback transport, and it is what plain 1F1B (V = 1) runs.
-- The static layout: layout.py:149-211 simulates one micro-batch's forward in schedule order and tabulates, per stage, the blocks it commits, the blocks its rank's cache already holds, and the delta its P2P must carry (delta = accumulated minus the receiver's cache, 187-194). Sender and receiver compute the same tables, so nothing travels on the wire but the delta.
-- Why the delta is bounded: a block committed by stage S_p is fresh on the wire for P-1 hops (S_p+1 .. S_p+P-1); from S_p+P on, every receiving rank already holds it, because its previous virtual stage was S-P. The per-hop payload is bounded by the commits of the last P-1 stages, independent of depth.
-- The rank-shared cache: one RankLocalCache per rank (pipeline_adapter.py:140-290), shared by its V virtual stages, keyed (micro-batch, producer stage, commit index).
-- Two gradient channels, chosen by whether the producer sits on the consumer's rank. Channel A is PP's own backward P2P: blocks that arrived by recv, and relayed copies of them cached on other ranks, stay autograd-attached to the recv tensor (_finish_forward 744-754, _forward_delta 685-686), so SEND_B carries their gradient hop by hop back to the producing rank, every consumer's contribution merging on that chain.
-- Channel B is a rank-local slot bridge for blocks a rank committed itself. The cache holds a DETACHED copy (778-782): a later virtual stage's backward walking into the producer's graph would free it, and the producer's own backward then fails with "backward through the graph a second time". At read time the consumer re-wraps the copy with requires_grad and _LocalCacheCapture (672-684, 365-390), whose backward deposits the gradient in a slot and stops; the grad hook on the producer's attached block (_install_augment_hook 327-362, installed at 761-772) pops the slot and adds it to the incoming gradient during the producer's own backward. No collectives on this path.
-- Both channels sum at the producer, so every stage's forward graph is traversed exactly once. The channel-B count is static: for a block from stage S_p with v_p = S_p div P it is V-1-v_p (layout.expected_same_rank_captures 120-145); the hook compares the observed deposits to it and refuses the step on a mismatch (344-356), since a missing capture is a lost gradient no loss curve shows, and the rank's earliest virtual stage asserts every slot drained at micro-batch end (868-890).
-- The carry is a config field, attn_res_cache, on by default under PP; a launcher exporting an environment variable non-uniformly would give ranks different topologies and hang in a collective with nothing pointing at the cause.
+- The carrier: a non-head stage returns (*hidden*, *block_residual*) with *block_residual* `[tokens, N, D]` and the next stage takes the pair back (`model.py:358-404`); the head-owning stage alone runs the aggregation (`403-407`). Without the adapter the whole carrier travels on every hop; that is the fallback transport, and it is what plain `1F1B` ($V = 1$) runs.
+- The static layout: `layout.py:149-211` simulates one micro-batch's forward in schedule order and tabulates, per stage, the blocks it commits, the blocks its rank's cache already holds, and the delta its P2P must carry (delta = accumulated minus the receiver's cache, `187-194`). Sender and receiver compute the same tables, so nothing travels on the wire but the delta.
+- Why the delta is bounded: a block committed by stage $S_p$ is fresh on the wire for $P-1$ hops ($S_p+1, \ldots, S_p+P-1$); from $S_p+P$ on, every receiving rank already holds it, because its previous virtual stage was $S-P$. The per-hop payload is bounded by the commits of the last $P-1$ stages, independent of depth.
+- The rank-shared cache: one `RankLocalCache` per rank (`pipeline_adapter.py:140-290`), shared by its $V$ virtual stages, keyed (micro-batch, producer stage, commit index).
+- Two gradient channels, chosen by whether the producer sits on the consumer's rank. Channel A is PP's own backward P2P: blocks that arrived by recv, and relayed copies of them cached on other ranks, stay autograd-attached to the recv tensor (`_finish_forward` `744-754`, `_forward_delta` `685-686`), so `SEND_B` carries their gradient hop by hop back to the producing rank, every consumer's contribution merging on that chain.
+- Channel B is a rank-local slot bridge for blocks a rank committed itself. The cache holds a DETACHED copy (`778-782`): a later virtual stage's backward walking into the producer's graph would free it, and the producer's own backward then fails with "backward through the graph a second time". At read time the consumer re-wraps the copy with `requires_grad` and `_LocalCacheCapture` (`672-684`, `365-390`), whose backward deposits the gradient in a slot and stops; the grad hook on the producer's attached block (`_install_augment_hook` `327-362`, installed at `761-772`) pops the slot and adds it to the incoming gradient during the producer's own backward. No collectives on this path.
+- Both channels sum at the producer, so every stage's forward graph is traversed exactly once. The channel-B count is static: for a block from stage $S_p$ with $v_p = \lfloor S_p / P \rfloor$ it is $V-1-v_p$ (`layout.expected_same_rank_captures` `120-145`); the hook compares the observed deposits to it and refuses the step on a mismatch (`344-356`), since a missing capture is a lost gradient no loss curve shows, and the rank's earliest virtual stage asserts every slot drained at micro-batch end (`868-890`).
+- The carry is a config field, `attn_res_cache`, on by default under PP; a launcher exporting an environment variable non-uniformly would give ranks different topologies and hang in a collective with nothing pointing at the cause.
 
 ### K3 PP with VP runs:
 
 Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
 
-kimi_k3_debugmodel_text_32l, seed 42, --debug.deterministic, every cell loading the same seed checkpoint; each cell runs twice and the first run is discarded, because a cold compile cache moves this model's step-1 loss by 6.8e-3 (12.59459 against 12.58783, both reproducible). Step 1 is bit-identical to dp1 in all nine cells, two to thirty-two stages, two to eight ranks; the transport is the delta one wherever the schedule can carry it and falls back on plain 1F1B, where a rank holds one stage:
+`kimi_k3_debugmodel_text_32l`, seed 42, `--debug.deterministic`, every cell loading the same seed checkpoint; each cell runs twice and the first run is discarded, because a cold compile cache moves this model's step-1 loss by 6.8e-3 (12.59459 against 12.58783, both reproducible). Step 1 is bit-identical to dp1 in all nine cells, two to thirty-two stages, two to eight ranks; the transport is the delta one wherever the schedule can carry it and falls back on plain `1F1B`, where a rank holds one stage:
 
 | cell | stages | world | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
@@ -59,7 +59,7 @@ Peak memory per rank, same topology and schedule, transport against fallback; th
 | delta | 2.62 x6, 6.57, 6.60 | 6.60 | 3.98 |
 | fallback | 2.66 x6, 7.83, 8.50 | 8.50 | 5.84 |
 
-Not in this PR: the vision tower (its stage assignment and DEP). Without pipeline_parallel_degree > 1 none of this executes.
+Not in this PR: the vision tower (its stage assignment and DEP). Without `pipeline_parallel_degree > 1` none of this executes.
 
 ### Changed files
 

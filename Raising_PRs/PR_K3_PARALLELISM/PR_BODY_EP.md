@@ -1,19 +1,19 @@
 ### Summary
 
-Enables expert parallelism for Kimi K3 on the existing all-to-all token dispatcher. Expert parallel comes off the unsupported list; MoonEP (the report's balanced EP with online redundant-expert planning) is not here, it needs its own dispatcher and backend, and comm_backend is pinned to "standard" so no run can silently believe it is on MoonEP.
+Enables expert parallelism for Kimi K3 on the existing all-to-all token dispatcher. Expert parallel comes off the unsupported list; MoonEP (the report's balanced EP with online redundant-expert planning) is not here, it needs its own dispatcher and backend, and `comm_backend` is pinned to "standard" so no run can silently believe it is on MoonEP.
 
 ### EP Design
 
 #### Design points
 
-- set_moe_sharding_config declares the routed-expert layout, w1_EFD S(1), w2_EDF S(2), w3_EFD S(1), on the expert axis (model.py:285-300).
-- set_decoder_sharding_config sits above it so the activations reaching the MoE boundary are DTensors that can be redistributed onto the expert mesh.
-- parallelize builds the expert-data-parallel mesh, efsdp, that excludes the expert axis and hands it to apply_fsdp_to_decoder with ep_degree (parallelize.py:67-69, 104): the shape deepseek_v3 already resolves, so expert parameters shard on (dp_shard x cp x tp) / ep and everything else on the full data axis.
-- Without expert_parallel_degree > 1 none of this executes.
+- `set_moe_sharding_config` declares the routed-expert layout, `w1_EFD S(1), w2_EDF S(2), w3_EFD S(1)`, on the expert axis (`model.py:285-300`).
+- `set_decoder_sharding_config` sits above it so the activations reaching the MoE boundary are DTensors that can be redistributed onto the expert mesh.
+- parallelize builds the expert-data-parallel mesh, `efsdp`, that excludes the expert axis and hands it to `apply_fsdp_to_decoder` with `ep_degree` (`parallelize.py:67-69`, `104`): the shape `deepseek_v3` already resolves, so expert parameters shard on `(dp_shard x cp x tp) / ep` and everything else on the full data axis.
+- Without `expert_parallel_degree > 1` none of this executes.
 
 ### K3 EP runs:
 
-EP shards experts inside the data axis, so each cell is compared against the pure-data-parallel run at the same world size. kimi_k3_debugmodel_text, seed 42, --debug.deterministic, one seed checkpoint loaded by every cell; at step 2 the EP cells are 2.9e-4, 1.2e-3 and 1.1e-3 from their own-degree baseline, against 3.7e-3, 3.5e-3 and 5.2e-3 for the dp2, dp4 and dp8 rows measured the same way against dp1:
+EP shards experts inside the data axis, so each cell is compared against the pure-data-parallel run at the same world size. `kimi_k3_debugmodel_text`, seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; at step 2 the EP cells are 2.9e-4, 1.2e-3 and 1.1e-3 from their own-degree baseline, against 3.7e-3, 3.5e-3 and 5.2e-3 for the dp2, dp4 and dp8 rows measured the same way against dp1:
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
