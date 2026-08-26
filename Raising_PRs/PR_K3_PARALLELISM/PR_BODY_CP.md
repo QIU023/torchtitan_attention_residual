@@ -16,20 +16,13 @@ CP resplits the sequence, so unlike PP and EP it is not expected to be bit-ident
 | dp2 x cp2 | 4 | 12.58957 | 7.36327 | 3.48256 |
 | dp2 x cp4 | 8 | 12.58948 | 7.43662 | 3.49025 |
 
-Step 1 is within 1.6e-4 relative of dp1 across every cell. At step 2, the three
-single-axis cells sit at 2.2e-3, 2.6e-3 and 2.7e-3 against dp1, while dp2 --
-which enables no parallelism axis at all -- sits at 1.2e-2: the sequence split
-moves the loss less than changing the data-parallel degree does. The two mesh
-cells are 9.9e-3 and 4.0e-3 against dp2.
+Step 1 is within 1.6e-4 relative of dp1 across every cell. At step 2, the three single-axis cells sit at 2.2e-3, 2.6e-3 and 2.7e-3 against dp1, while dp2 -- which enables no parallelism axis at all -- sits at 1.2e-2: the sequence split moves the loss less than changing the data-parallel degree does. The two mesh cells are 9.9e-3 and 4.0e-3 against dp2.
 
 Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a folded microbatch wider than the context window, since the CP mask rebuild is causal-only and cannot represent a document boundary.
 
 Not in this PR: CP inside the vision tower and the report's dynamic CP for large images -- next, on the multimodal path. Without context_parallel_degree > 1 none of this executes.
 
-A second measurement with one patch on top: the grad-norm reduction carried in
-float32 rather than in the gradients' dtype. That patch is a separate upstream change, still open at https://github.com/pytorch/torchtitan/pull/4135, and is not on this branch. It is here because it is the one
-thing that could have explained the gaps above, and it does not: six of the
-seven cells move by 1.1e-3 or less at step 3, three of them not at all.
+A second measurement with one patch on top: the grad-norm reduction carried in float32 rather than in the gradients' dtype. That patch is a separate upstream change, still open at https://github.com/pytorch/torchtitan/pull/4135, and is not on this branch. It is here because it is the one thing that could have explained the gaps above, and it does not: six of the seven cells move by 1.1e-3 or less at step 3, three of them not at all.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -41,9 +34,7 @@ seven cells move by 1.1e-3 or less at step 3, three of them not at all.
 | dp2 x cp2 | 4 | 12.58957 | 7.36461 | 3.42474 |
 | dp2 x cp4 | 8 | 12.58948 | 7.43833 | 3.49202 |
 
-The reduction's grouping follows how a run partitions the parameters, which is
-why it matters under pipeline parallelism. Context parallelism reaches the same
-numbers either way, so whatever the sequence split costs, it is not this.
+The reduction's grouping follows how a run partitions the parameters, which is why it matters under pipeline parallelism. Context parallelism reaches the same numbers either way, so whatever the sequence split costs, it is not this.
 
 Files:
 
