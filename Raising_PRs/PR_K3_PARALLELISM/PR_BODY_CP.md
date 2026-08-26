@@ -27,8 +27,7 @@ Two boundaries raise instead of running: Q_LEN not divisible by cp * 128, and a 
 Not in this PR: CP inside the vision tower and the report's dynamic CP for large images -- next, on the multimodal path. Without context_parallel_degree > 1 none of this executes.
 
 A second measurement with one patch on top: the grad-norm reduction carried in
-float32 rather than in the gradients' dtype. That patch is a separate upstream
-change, still open, and is not on this branch. It is here because it is the one
+float32 rather than in the gradients' dtype. That patch is a separate upstream change, still open at https://github.com/pytorch/torchtitan/pull/4135, and is not on this branch. It is here because it is the one
 thing that could have explained the gaps above, and it does not: six of the
 seven cells move by 1.1e-3 or less at step 3, three of them not at all.
 

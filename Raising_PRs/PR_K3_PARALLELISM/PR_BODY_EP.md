@@ -21,8 +21,7 @@ changing the data-parallel degree does.
 MoonEP is not here: the report's balanced EP with online redundant-expert planning needs its own dispatcher and backend, and this is the plain all-to-all path. comm_backend is pinned to "standard" so no run can silently believe it is on MoonEP. Without expert_parallel_degree > 1 none of this executes.
 
 A second measurement with one patch on top: the grad-norm reduction carried in
-float32 rather than in the gradients' dtype. That patch is a separate upstream
-change, still open, and is not on this branch.
+float32 rather than in the gradients' dtype. That patch is a separate upstream change, still open at https://github.com/pytorch/torchtitan/pull/4135, and is not on this branch.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|

@@ -77,8 +77,7 @@ Files:
     torchtitan_recipes/tests/features.py                +33  their configurations
 
 The same matrix with one patch on top: the grad-norm reduction carried in float32
-rather than in the gradients' dtype. That patch is a separate upstream change, still
-open, and is not on this branch.
+rather than in the gradients' dtype. That patch is a separate upstream change, still open at https://github.com/pytorch/torchtitan/pull/4135, and is not on this branch.
 
 | cell | stages | world | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
