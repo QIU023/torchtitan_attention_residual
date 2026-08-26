@@ -11,6 +11,8 @@ The design, with P the pipeline degree, V the virtual stages per rank, T = P*V s
 - Both channels sum at the producer, so every stage's forward graph is traversed exactly once. The channel-B count is static: for a block from stage S_p with v_p = S_p div P it is V-1-v_p (layout.expected_same_rank_captures 120-145); the hook compares the observed deposits to it and refuses the step on a mismatch (344-356), since a missing capture is a lost gradient no loss curve shows, and the rank's earliest virtual stage asserts every slot drained at micro-batch end (868-890).
 - The carry is a config field, attn_res_cache, on by default under PP; a launcher exporting an environment variable non-uniformly would give ranks different topologies and hang in a collective with nothing pointing at the cause.
 
+![one block, two gradient channels](https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/b8805c2f458548774fce8688c84fddf60b85c83a/Raising_PRs/PR_K3_PARALLELISM/pp_dual_gradient_bridge.svg)
+
 Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
 
 kimi_k3_debugmodel_text_32l, seed 42, --debug.deterministic, every cell loading the same seed checkpoint; each cell runs twice and the first run is discarded, because a cold compile cache moves this model's step-1 loss by 6.8e-3 (12.59459 against 12.58783, both reproducible). Step 1 is bit-identical to dp1 in all nine cells, two to thirty-two stages, two to eight ranks; the transport is the delta one wherever the schedule can carry it and falls back on plain 1F1B, where a rank holds one stage:
