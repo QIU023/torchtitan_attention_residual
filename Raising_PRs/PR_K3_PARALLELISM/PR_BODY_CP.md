@@ -55,17 +55,17 @@ cell cp2 2 $D 1 $C 2 $NB;  cell cp4 4 $D 1 $C 4 $NB;  cell cp8 8 $D 1 $C 8 $NB
 cell dp2 2 $D 2;  cell dp2_cp2 4 $D 2 $C 2 $NB;  cell dp2_cp4 8 $D 2 $C 4 $NB
 ```
 
-`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does (step 2: cp2/cp4/cp8 at 2.2e-3/2.6e-3/2.7e-3 from dp1, dp2 at 1.2e-2 from dp1; the mesh cells at 9.9e-3 and 4.0e-3 from dp2):
+`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does (step 2: cp2/cp4/cp8 at 1.30e-2/1.24e-2/8.78e-3 from dp1, dp2 at 2.47e-2 from dp1; the mesh cells at 1.35e-2 and 7.14e-3 from dp2):
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| dp1 | 1 | 12.59324 | 6.89766 | 3.33038 |
-| cp2 | 2 | 12.59408 | 7.01636 | 3.18600 |
-| cp4 | 4 | 12.59255 | 7.18131 | 3.31972 |
-| cp8 | 8 | 12.59119 | 7.19044 | 3.29694 |
-| dp2 | 2 | 12.59212 | 7.39612 | 3.45591 |
-| dp2 x cp2 | 4 | 12.58957 | 7.36327 | 3.48256 |
-| dp2 x cp4 | 8 | 12.58948 | 7.43662 | 3.49025 |
+| dp1 | 1 | 12.60544 | 7.30226 | 3.22742 |
+| cp2 | 2 | 12.61167 | 7.22870 | 3.29899 |
+| cp4 | 4 | 12.60373 | 7.37109 | 3.32085 |
+| cp8 | 8 | 12.61195 | 7.29104 | 3.35507 |
+| dp2 | 2 | 12.58193 | 7.44923 | 3.32128 |
+| dp2 x cp2 | 4 | 12.58133 | 7.66567 | 3.54059 |
+| dp2 x cp4 | 8 | 12.57584 | 7.48673 | 3.39561 |
 
 Two boundaries raise instead of running: `Q_LEN` not divisible by `cp * 128`, and a folded microbatch wider than the context window. Not in this PR: CP inside the vision tower and the report's dynamic CP for large images. Without `context_parallel_degree > 1` none of this executes.
 
