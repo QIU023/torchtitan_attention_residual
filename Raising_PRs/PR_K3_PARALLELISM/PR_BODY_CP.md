@@ -97,15 +97,14 @@ CPU contract tests for the two things that used to fail silently; a cp2 integrat
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): context parallelism reaches the same numbers either way, so whatever the sequence split costs, it is not the reduction's grouping.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): six of the seven cells print the same step-3 loss to every digit and one, cp4, moves by 9.4e-3. Both cp4 values reproduce to every printed digit on same-seed re-runs, so the deviation is the patch's deterministic effect on that cell rather than run-to-run noise.
 
-<!-- NUMBERS BELOW ARE FROM THE RETIRED TEXT FLAVOR: mx3_cp_mm_gn in flight, swap before filing. dp1 and cp2 already confirm s3 bitwise-identical to the main table -->
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| dp1 | 1 | 12.59324 | 6.90509 | 3.29062 |
-| cp2 | 2 | 12.59408 | 7.01636 | 3.18646 |
-| cp4 | 4 | 12.59255 | 7.18347 | 3.28306 |
-| cp8 | 8 | 12.59119 | 7.19044 | 3.29651 |
-| dp2 | 2 | 12.59212 | 7.39612 | 3.45638 |
-| dp2 x cp2 | 4 | 12.58957 | 7.36461 | 3.42474 |
-| dp2 x cp4 | 8 | 12.58948 | 7.43833 | 3.49202 |
+| dp1 | 1 | 12.60544 | 7.30226 | 3.23705 |
+| cp2 | 2 | 12.61167 | 7.22870 | 3.32182 |
+| cp4 | 4 | 12.60373 | 7.44103 | 3.32613 |
+| cp8 | 8 | 12.61195 | 7.29104 | 3.35434 |
+| dp2 | 2 | 12.58193 | 7.44923 | 3.32140 |
+| dp2 x cp2 | 4 | 12.58133 | 7.66567 | 3.51558 |
+| dp2 x cp4 | 8 | 12.57584 | 7.48673 | 3.39561 |
