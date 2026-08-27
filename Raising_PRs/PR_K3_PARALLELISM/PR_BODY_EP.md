@@ -43,8 +43,7 @@ EP shards experts inside the data axis, so each cell is compared against the pur
                                    routed-expert layout and the decoder-level
                                    distribution above it (new file, following
                                    qwen3_5/sharding.py)
-      model.py               +7/-36 the one call under the ep>1 gate; the
-                                   declaration body moves to sharding.py
+      model.py                  +4  the one call under the ep>1 gate
       __init__.py            +6/-2 core's dispatcher factory, pinned to the
                                    standard all-to-all
       parallelize.py         +14/-2 the efsdp mesh, ep_degree through to
