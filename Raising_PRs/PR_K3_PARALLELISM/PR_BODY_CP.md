@@ -99,6 +99,7 @@ CPU contract tests for the two things that used to fail silently; a cp2 integrat
 
 The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): context parallelism reaches the same numbers either way, so whatever the sequence split costs, it is not the reduction's grouping.
 
+<!-- NUMBERS BELOW ARE FROM THE RETIRED TEXT FLAVOR: mx3_cp_mm_gn in flight, swap before filing. dp1 and cp2 already confirm s3 bitwise-identical to the main table -->
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
 | dp1 | 1 | 12.59324 | 6.90509 | 3.29062 |
