@@ -24,18 +24,17 @@ cell dp1 1 $D 1;  cell dp2 2 $D 2;  cell ep2_fsdp2 2 $D 2 $E 2
 cell dp4 4 $D 4;  cell ep4_fsdp4 4 $D 4 $E 4;  cell dp8 8 $D 8;  cell ep8_fsdp8 8 $D 8 $E 8
 ```
 
-EP shards experts inside the data axis, so each cell is compared against the pure-data-parallel run at the same world size. `kimi_k3_debugmodel`, seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; at step 2 the EP cells are 2.9e-4, 1.2e-3 and 1.1e-3 from their own-degree baseline, against 3.7e-3, 3.5e-3 and 5.2e-3 for the dp2, dp4 and dp8 rows measured the same way against dp1:
+EP shards experts inside the data axis, so each cell is compared against the pure-data-parallel run at the same world size. `kimi_k3_debugmodel`, seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; at step 2 the EP cells are 3.3e-3, 9.0e-3 and 1.6e-5 from their own-degree baseline, against 1.7e-2, 2.5e-2 and 5.2e-2 for the dp2, dp4 and dp8 rows measured the same way against dp1 -- sharding the experts moves the loss less than changing the data-parallel degree does, at every degree:
 
-<!-- NUMBERS BELOW ARE FROM THE RETIRED TEXT FLAVOR: re-measure on kimi_k3_debugmodel in flight (mx3_ep_mm / mx3_ep_mm_gn); swap both tables before filing -->
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| dp1 | 1 | 12.58955 | 7.55365 | 3.46009 |
-| dp2 | 2 | 12.57725 | 7.57439 | 3.19128 |
-| ep2 x fsdp2 | 2 | 12.57718 | 7.64509 | 3.20056 |
-| dp4 | 4 | 12.59366 | 7.20509 | 3.30981 |
-| ep4 x fsdp4 | 4 | 12.59386 | 7.25484 | 3.31417 |
-| dp8 | 8 | 12.58336 | 7.32668 | 3.36729 |
-| ep8 x fsdp8 | 8 | 12.58286 | 7.40832 | 3.44799 |
+| dp1 | 1 | 12.59245 | 7.46936 | 3.18111 |
+| dp2 | 2 | 12.58904 | 7.61204 | 3.33502 |
+| ep2 x fsdp2 | 2 | 12.59108 | 7.59337 | 3.29070 |
+| dp4 | 4 | 12.58372 | 7.65474 | 3.24291 |
+| ep4 x fsdp4 | 4 | 12.58128 | 7.59719 | 3.17962 |
+| dp8 | 8 | 12.60943 | 8.26416 | 3.35955 |
+| ep8 x fsdp8 | 8 | 12.61045 | 8.38947 | 3.20613 |
 
 ### Changed files
 
@@ -63,14 +62,14 @@ Two CPU checks in test_kimi_k3.py (plain DP declares nothing; EP shards the rout
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): only ep8 moves (7.40832 to 7.42252 at step 3), because the reduction is taken over an expert group and a non-expert group separately and the split only rounds differently in bf16 once there are enough experts per group.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): dp1, dp4 and ep4 move (largest 2.0e-2 at step 3, on the dp1 baseline itself) and the other four cells are bitwise unchanged. The total norm is reduced over an expert group and a non-expert group separately, and which cells cross a bf16 rounding boundary shifts with what is in the groups -- the vision tower's parameters are part of the non-expert group here.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| dp1 | 1 | 12.58955 | 7.54919 | 3.50680 |
-| dp2 | 2 | 12.57725 | 7.57439 | 3.19060 |
-| ep2 x fsdp2 | 2 | 12.57718 | 7.64509 | 3.20221 |
-| dp4 | 4 | 12.59366 | 7.20509 | 3.31005 |
-| ep4 x fsdp4 | 4 | 12.59386 | 7.25484 | 3.30867 |
-| dp8 | 8 | 12.58336 | 7.32668 | 3.36718 |
-| ep8 x fsdp8 | 8 | 12.58286 | 7.42252 | 3.43101 |
+| dp1 | 1 | 12.59245 | 7.62176 | 3.19563 |
+| dp2 | 2 | 12.58904 | 7.61204 | 3.32351 |
+| ep2 x fsdp2 | 2 | 12.59108 | 7.59337 | 3.28553 |
+| dp4 | 4 | 12.58372 | 7.61710 | 3.23680 |
+| ep4 x fsdp4 | 4 | 12.58128 | 7.61100 | 3.14353 |
+| dp8 | 8 | 12.60943 | 8.26416 | 3.33049 |
+| ep8 x fsdp8 | 8 | 12.61045 | 8.38947 | 3.20156 |
