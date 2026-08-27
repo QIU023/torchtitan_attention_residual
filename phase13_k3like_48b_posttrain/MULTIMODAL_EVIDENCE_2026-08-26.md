@@ -197,3 +197,60 @@ FQN 注入那边没有。已补 CPU 单测钉住:撤掉修复它红,装回去绿
 `--comm.init-timeout-seconds 3600` 是这批表比早先表多的一个 flag:冷 KDA/tilelang
 编译要七分多钟,超过 NCCL 默认 300 秒 watchdog,会在编译中途把 pp4 基线格打死。
 它只抬高那个上限,不进任何数值路径。
+
+## 七、气泡隐藏与 run-ahead:时间维度(2026-08-27)
+
+树 `a0a14b63b`。逐步 wall-time 由日志时间戳计算(8-12 步取每步最小消抖),
+比整数 tps 细两个数量级。同拓扑 pp4 + DEP,12 步。
+
+### 7.1 bubble:调度层完美,debug 规模时间上是净亏
+
+| 臂 | 每步中位 | 相对 | 调度 |
+|---|---|---|---|
+| off(塔反向内联) | 2.879 s | - | - |
+| bubble | 3.000 s | **+4.2%** | **8/8 计划槽,0 兜底,0 强制** |
+
+debug 塔只有 8 层 ViT,pp4 x 8mb 的空隙本来就小,而 deferred 机制的固定开销
+(detach/hook/重放、每步重建 plan)是真实的 —— **塔太小,省的没有花的多**。
+
+**边界声明**:本机只能证明"调度 100% + 数值中性 + 机制活着";
+"隐藏在 wall-clock 上为正收益"在 debug 规模**不可证**(实测 -4%),它的经济性
+要到塔占比真实的规模(2.8T)才可能反转,需要 profiler 级空闲区间占用证据。
+`vit_bubble` 保持 opt-in 是正确默认。
+
+### 7.2 run-ahead(vit_prefetch):第三个"有 writer 无 reader",修复后首跑
+
+历史上从未执行过。两层无声缺陷,与 bubble 队列同族:
+
+1. **消费缝没接**:`_vision_prefetcher` 有 writer 无 reader,`ensure()` 在前向
+   路径上没有调用者。模型侧 `encode_images` / `_issue_on_vision_stream` /
+   `_join_vision_stream` 都在,只缺老树 `multimodal_model.py:1426` 那一读。
+   已从老树移植(`d49400544`):encode 前 `take(mb)`,取到就跳过内联 encode,
+   服务完 `advance(mb, depth)` 发起后续。
+2. **确认日志钉在错的类型上**:"prefetch installed" 只对 `KimiK3ViTStage` 打,
+   而塔占一段(run-ahead 唯一支持的形态)时折叠布局从不构造该类 —— 恰好在
+   它要确认的那种 run 上沉默。改为 `_holds_vision_tower`。
+3. 首跑暴露第三层:`ensure()` 按老树约定把 features 包成**每图一项的 list**,
+   折叠布局的 splice 要拼接流 —— `'list' object has no attribute 'to'`。
+   消费端补上老树同款 `torch.cat`(`a0a14b63b`)。
+
+修复后 A/B(都在 `vit_dep_stages=1`,run-ahead 的唯一合法形态;塔切分下它
+被守卫显式忽略并告警,该守卫工作正常):
+
+| 臂 | 每步中位 | s2 loss |
+|---|---|---|
+| off | 2.751 s | 9.98687 |
+| prefetch depth=1 | 2.770 s(+0.7%,噪声级) | **9.98687(逐位相同)** |
+
+`DEP vision prefetch installed: depth=1 on stage 0` 首次出现在日志里。
+
+### 7.3 本周同类缺陷清单(全部已修)
+
+| 机构 | writer | 缺的 reader | 修复 |
+|---|---|---|---|
+| cache adapter | 配置/marker | 七处布局适配 | `7606e3cc7` 等 |
+| bubble 队列 | `_vision_grad_queue` | `cut_for_deferred_backward` 调用点 | `e973802e6` |
+| prefetcher | `_vision_prefetcher` | `take()`/`advance()` | `d49400544` + `a0a14b63b` |
+
+同一个移植断层:老树的消费端都在 `multimodal_model.py`,折叠布局没有该文件,
+机构随移植过来、缝没接上,且全部无声。**判据永远是那行成功日志,不是"跑完没报错"。**
