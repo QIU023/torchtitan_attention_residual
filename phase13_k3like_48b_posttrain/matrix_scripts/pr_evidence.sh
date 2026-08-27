@@ -19,7 +19,7 @@ NB="--parallelism.context_parallel_load_balancer None"
 E="--parallelism.expert_parallel_degree"
 
 # ---- PP: pp x vp cross product, 32-layer text flavor, dp=1 --------------------
-TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_text_32l \
+TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_32l \
 BATCH="--training.num-tokens-per-train-step 2048 --training.num-tokens-per-microbatch-per-dp-rank 256" \
 CELLS="dp1|1|$D 1
 pp2|2|$D 1 $P 2 $MB $LESS
@@ -32,14 +32,14 @@ pp8_vp2|8|$D 1 $P 8 $L 2 $IL $LESS
 pp8_vp4|8|$D 1 $P 8 $L 1 $IL $LESS" $MX ppvp
 
 # ---- PP: 2D mesh with data parallel ------------------------------------------
-TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_text \
+TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel \
 BATCH="--training.num-tokens-per-train-step 2048 --training.num-tokens-per-microbatch-per-dp-rank 256" \
 CELLS="dp2|2|$D 2
 fsdp2_pp2|4|$D 2 $P 2 $MB $LESS
 fsdp2_pp4|8|$D 2 $P 4 $MB $LESS" $MX ppdp
 
 # ---- CP: dp1 vs cp2/cp4/cp8 at seq 1024 --------------------------------------
-TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel_text \
+TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel \
 BATCH="--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 1024 --training.max-context-length 1024" \
 CELLS="dp1|1|$D 1
 cp2|2|$D 1 $C 2 $NB
@@ -47,14 +47,14 @@ cp4|4|$D 1 $C 4 $NB
 cp8|8|$D 1 $C 8 $NB" $MX cpseq
 
 # ---- CP: 2D mesh with data parallel, seq 512 so cp2 and cp4 share a baseline --
-TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel_text \
+TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel \
 BATCH="--training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 512 --training.max-context-length 512" \
 CELLS="dp2|2|$D 2
 fsdp2_cp2|4|$D 2 $C 2 $NB
 fsdp2_cp4|8|$D 2 $C 4 $NB" $MX cpdp
 
 # ---- EP: ep2/ep4/ep8 each against the same-world-size pure dp baseline --------
-TITAN=/workspace/tt_ep CFG=kimi_k3_debugmodel_text \
+TITAN=/workspace/tt_ep CFG=kimi_k3_debugmodel \
 BATCH="--training.num-tokens-per-train-step 2048 --training.num-tokens-per-microbatch-per-dp-rank 256" \
 CELLS="dp2|2|$D 2
 ep2_fsdp2|2|$D 2 $E 2

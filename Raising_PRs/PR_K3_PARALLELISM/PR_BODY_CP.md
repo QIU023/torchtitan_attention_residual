@@ -46,7 +46,7 @@ KCP cannot be declarative (the fla kernels take raw pointers and never see a DTe
 To reproduce, from the torchtitan checkout root on this branch, 8 GPUs. Every cell loads the same seed checkpoint; run each cell twice and read the second run (a cold compile cache moves step 1). The runner we used, with the seed-load assertion and a disk gate, is https://github.com/QIU023/torchtitan_attention_residual/blob/611385d4e123d4d0527c6d08b06f8d701bb63e21/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh.
 
 ```sh
-COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_text --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 16384 --training.num-tokens-per-microbatch-per-dp-rank 1024 --training.max-context-length 1024 --checkpoint.enable"
+COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 16384 --training.num-tokens-per-microbatch-per-dp-rank 1024 --training.max-context-length 1024 --checkpoint.enable"
 torchrun --nproc_per_node=1 $COMMON --training.steps 1 --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 10 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
 D="--parallelism.data_parallel_shard_degree"; C="--parallelism.context_parallel_degree"; NB="--parallelism.context_parallel_load_balancer None"
@@ -55,7 +55,7 @@ cell cp2 2 $D 1 $C 2 $NB;  cell cp4 4 $D 1 $C 4 $NB;  cell cp8 8 $D 1 $C 8 $NB
 cell dp2 2 $D 2;  cell dp2_cp2 4 $D 2 $C 2 $NB;  cell dp2_cp4 8 $D 2 $C 4 $NB
 ```
 
-`kimi_k3_debugmodel_text` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does (step 2: cp2/cp4/cp8 at 2.2e-3/2.6e-3/2.7e-3 from dp1, dp2 at 1.2e-2 from dp1; the mesh cells at 9.9e-3 and 4.0e-3 from dp2):
+`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does (step 2: cp2/cp4/cp8 at 2.2e-3/2.6e-3/2.7e-3 from dp1, dp2 at 1.2e-2 from dp1; the mesh cells at 9.9e-3 and 4.0e-3 from dp2):
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|

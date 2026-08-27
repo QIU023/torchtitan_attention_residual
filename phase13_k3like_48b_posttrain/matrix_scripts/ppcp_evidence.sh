@@ -14,7 +14,7 @@ LESS="--parallelism.pipeline_parallel_first_stage_less_layers 0 --parallelism.pi
 C="--parallelism.context_parallel_degree"
 NB="--parallelism.context_parallel_load_balancer None"
 
-TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_text_32l \
+TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_32l \
 BATCH="--training.num-tokens-per-train-step 2048 --training.num-tokens-per-microbatch-per-dp-rank 256" \
 CELLS="dp1|1|$D 1
 pp2|2|$D 1 $P 2 $MB $LESS
@@ -26,20 +26,20 @@ pp4_vp4|4|$D 1 $P 4 $L 2 $IL $LESS
 pp8_vp2|8|$D 1 $P 8 $L 2 $IL $LESS
 pp8_vp4|8|$D 1 $P 8 $L 1 $IL $LESS" $MX gn_ppvp
 
-TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_text \
+TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel \
 BATCH="--training.num-tokens-per-train-step 2048 --training.num-tokens-per-microbatch-per-dp-rank 256" \
 CELLS="dp2|2|$D 2
 fsdp2_pp2|4|$D 2 $P 2 $MB $LESS
 fsdp2_pp4|8|$D 2 $P 4 $MB $LESS" $MX gn_ppdp
 
-TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel_text \
+TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel \
 BATCH="--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 1024 --training.max-context-length 1024" \
 CELLS="dp1|1|$D 1
 cp2|2|$D 1 $C 2 $NB
 cp4|4|$D 1 $C 4 $NB
 cp8|8|$D 1 $C 8 $NB" $MX gn_cpseq
 
-TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel_text \
+TITAN=/workspace/tt_cptext CFG=kimi_k3_debugmodel \
 BATCH="--training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 512 --training.max-context-length 512" \
 CELLS="dp2|2|$D 2
 fsdp2_cp2|4|$D 2 $C 2 $NB

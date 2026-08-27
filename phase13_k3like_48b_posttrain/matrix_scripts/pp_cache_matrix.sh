@@ -15,7 +15,7 @@ LESS="--parallelism.pipeline_parallel_first_stage_less_layers 0 --parallelism.pi
 B="--training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256"
 
 # cache on: the adapter path
-TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_text_32l BATCH="$B" \
+TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_32l BATCH="$B" \
 CELLS="dp1|1|$D 1
 pp2|2|$D 1 $P 2 $MB $LESS
 pp4|4|$D 1 $P 4 $MB $LESS
@@ -28,7 +28,7 @@ pp8_vp2|8|$D 1 $P 8 $L 2 $IL $LESS
 pp8_vp4|8|$D 1 $P 8 $L 1 $IL $LESS" $MX cache_pp
 
 # the fallback, for the side-by-side rows
-TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_text_32l_naive BATCH="$B" \
+TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_32l_naive BATCH="$B" \
 CELLS="dp1|1|$D 1
 pp2|2|$D 1 $P 2 $MB $LESS
 pp2_vp2|2|$D 1 $P 2 $L 8 $IL $LESS

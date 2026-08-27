@@ -54,5 +54,5 @@ cp2_fsdp2_ep2|4|$D 2 $C 2 $NB $E 2
 pp2vp2_cp2_fsdp2|8|$D 2 $C 2 $NB $VP2
 pp2vp2_cp2_fsdp2_ep2|8|$D 2 $C 2 $NB $VP2 $E 2"
 
-TITAN=/workspace/tt_depfix CFG=kimi_k3_debugmodel_text_32l BATCH="$B" CELLS="$CELLS" $MX cross_axis
+TITAN=/workspace/tt_depfix CFG=kimi_k3_debugmodel_32l BATCH="$B" CELLS="$CELLS" $MX cross_axis
 echo "CROSS-AXIS MATRIX DONE"

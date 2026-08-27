@@ -9,7 +9,7 @@ D="--parallelism.data_parallel_shard_degree 1"; P="--parallelism.pipeline_parall
 L="--parallelism.pipeline-parallel-layers-per-stage"
 IL="--parallelism.num-pp-microbatches 8 --parallelism.pipeline_parallel_schedule Interleaved1F1B"
 LESS="--parallelism.pipeline_parallel_first_stage_less_layers 0 --parallelism.pipeline_parallel_last_stage_less_layers 0"
-TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_text_32l_naive \
+TITAN=/workspace/tt_pptext CFG=kimi_k3_debugmodel_32l_naive \
 BATCH="--training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256" \
 CELLS="dp1|1|$D
 pp2_vp2|2|$D $P 2 $L 8 $IL $LESS
