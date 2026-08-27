@@ -1,0 +1,38 @@
+--- /venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py.orig_20260802	2026-08-27 01:55:21.065100877 +0000
++++ /venv/main/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py	2026-08-27 01:56:16.701168370 +0000
+@@ -418,17 +418,26 @@
+                 all_ops.extend(stage._get_init_p2p_neighbors_ops())
+             _wait_batch_p2p(_batch_p2p(all_ops))
+ 
+-        # TODO: STATIC mode group communicator warm-up gap
+-        # The vote protocol above warms up 2-rank sub-communicators
+-        # (used by `_batch_p2p` homogeneous fast-path).  In DYNAMIC mode,
++        # STATIC mode group communicator warm-up.
++        # The vote protocol above warms up 2-rank sub-communicators (used by
++        # `_batch_p2p`'s homogeneous fast-path).  In DYNAMIC mode,
+         # `_send_meta`/`_recv_meta` (called during `_prepare_forward_infra` →
+         # `_forward_metadata_inference`) also warm up the *group* communicator
+-        # (used by `_batch_p2p` mixed-op path).  In STATIC mode, metadata
+-        # inference is skipped, so the group communicator is NOT warmed up —
+-        # it will be lazily created on the first mixed `_batch_p2p` call
+-        # (e.g., 1F1B steady-state with both sends and recvs).
+-        # Fix: run `_get_init_p2p_neighbors_ops` + `_batch_p2p` after the
+-        # vote, gated by `not p2p_done`.
++        # (used by `_batch_p2p`'s mixed-op path) as a side effect, touching the
++        # edges one at a time in dependency order.  In STATIC mode metadata
++        # inference is skipped, so without this the group communicator is
++        # created lazily by the first mixed `_batch_p2p` call -- 1F1B
++        # steady-state, where ranks are already blocked on one another.  Across
++        # nodes each bootstrap is expensive and they serialize behind schedule
++        # dependencies, so late edges can sit in communicator creation past the
++        # collective timeout.  Warming here instead bootstraps every edge at a
++        # single point all ranks reach together, before any rank depends on a
++        # neighbour's progress.
++        if not p2p_done and all(isinstance(stage, PipelineStage) for stage in stages):
++            init_ops: list[dist.P2POp] = []
++            for stage in stages:
++                init_ops.extend(stage._get_init_p2p_neighbors_ops())
++            _wait_batch_p2p(_batch_p2p(init_ops, desc="init_p2p_neighbors"))
+ 
+     def _initialize_pp_stages(
+         self,
