@@ -49,15 +49,12 @@ EP shards experts inside the data axis, so each cell is compared against the pur
       parallelize.py         +14/-2 the efsdp mesh, ep_degree through to
                                    apply_fsdp_to_decoder, and expert parallel off
                                    the unsupported list
-    tests/
-      unit_tests/test_kimi_k3.py  +45  the declaration checks, folded into the
-                                   file the original K3 PR created
-      integration_tests/models.py       the model test gains ep2
-    torchtitan_recipes/tests/models.py  its configuration
+    tests/integration_tests/models.py       the model test gains ep2
+    torchtitan_recipes/tests/models.py    its configuration
 
 ### CI/CD Coverage
 
-Two CPU checks in test_kimi_k3.py (plain DP declares nothing; EP shards the routed experts on the expert axis); the existing kimi_k3 model integration test becomes fsdp2 x ep2 on the same 2 GPUs.
+The existing kimi_k3 model integration test becomes fsdp2 x ep2 on the same 2 GPUs.
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
