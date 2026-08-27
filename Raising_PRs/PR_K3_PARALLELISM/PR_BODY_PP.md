@@ -67,7 +67,7 @@ cell pp8_vp2 8 $P 8 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 | pp8 x vp2 | 16 | 8 | delta | 12.47877 | 7.26481 | 3.42243 |
 | pp8 x vp4 | 32 | 8 | delta | 12.47877 | 7.28763 | 3.46361 |
 
-The same six virtual-stage cells with the transport turned off, against the rows above: same forward, different gradients, the same blocks routed a different way and summed in a different order.
+Three of the virtual-stage cells re-run with the transport turned off, against the rows above: same forward, different gradients, the same blocks routed a different way and summed in a different order.
 
 | cell | step 1 | step 2 |
 |---|---|---|
