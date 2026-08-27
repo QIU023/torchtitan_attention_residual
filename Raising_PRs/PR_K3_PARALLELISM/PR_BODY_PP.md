@@ -75,13 +75,12 @@ Three of the virtual-stage cells re-run with the transport turned off, against t
 | pp4 x vp4 | identical | 4.0e-4 |
 | pp8 x vp4 | identical | 1.6e-3 |
 
-Peak memory per rank, same topology and schedule, transport against fallback; the six ranks that hold little are unchanged, the saving is on the two that would otherwise accumulate the stack (pp8 x vp2 is the same shape, 7.92 down to 6.03):
+Peak memory per rank, same topology and schedule, transport against fallback; the six ranks that hold little are unchanged, the saving is on the two that would otherwise accumulate the stack:
 
-<!-- MEMORY NUMBERS BELOW ARE FROM THE TEXT FLAVOR: re-measure pp8_vp4 delta/naive with mem_profile on kimi_k3_debugmodel_32l before filing -->
 | pp8 x vp4 | per-rank peak (GiB) | max | spread |
 |---|---|---|---|
-| delta | 2.62 x6, 6.57, 6.60 | 6.60 | 3.98 |
-| fallback | 2.66 x6, 7.83, 8.50 | 8.50 | 5.84 |
+| delta | 2.63 x6, 6.61, 7.53 | 7.53 | 4.90 |
+| fallback | 2.67 x6, 8.50, 7.09 | 8.50 | 5.83 |
 
 Not in this PR: the vision tower (its stage assignment and DEP). Without `pipeline_parallel_degree > 1` none of this executes.
 
