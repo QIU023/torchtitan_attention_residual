@@ -128,4 +128,3 @@ The same matrix with the grad-norm reduction carried in float32 (https://github.
 | pp4 x vp4 | 16 | 4 | delta | 12.47877 | 7.24882 | 3.38527 |
 | pp8 x vp2 | 16 | 8 | delta | 12.47877 | 7.27183 | 3.31784 |
 | pp8 x vp4 | 32 | 8 | delta | 12.47877 | 7.26931 | 3.31291 |
-| pp8 x vp4 | 32 | 8 | delta | 12.48548 | 7.91857 | 3.37609 |
