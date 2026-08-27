@@ -162,3 +162,27 @@ direct-Slurm。原文全文见文末附录。本文件是逐项分析:每一项�
 | Image + text QAT | 1 GB200 | ~1,230-1,270 tokens/s | ~0.50-0.51 TFLOP/s | 1.73 GiB | 12.05 -> 9.86 |
 | Image + text context-parallel test | 4 GB200s / 1 node | ~335-346 tokens/s | ~0.14 TFLOP/s | 1.51 GiB | 12.07 -> 9.89 |
 | Image + text TP/PP/EP test | 8 GB200s / 2 nodes | ~104-112 tokens/s | ~0.04-0.05 TFLOP/s | 1.22-1.23 GiB | 12.07 -> 9.74 |
+
+## 五、修复落地(2026-08-27,`gb200_fixes` 分支,已推)
+
+| commit | 修复 | 验证 |
+|---|---|---|
+| `b76f81269` | Muon 注册 + tag 刷新 | `kimi_k3_mini_muon` 1 卡 3 步,loss 7.71->7.53,tagged 57,无 "not added" |
+| `d3f578f1d` | MTP `positions=` + 跨文档 mask | 新测试:两文档打包,mask 改变总 loss;旧签名下 TypeError |
+| `e4d8118e0` | AttnRes 断言改最后一层 | 24 passed |
+| `12a8fd298` | PP-edge eager warmup | 单节点 PP8(report_arch,多模态数据)2 步 rc=0,loss 12.035->11.989 |
+
+**Muon 注册的根因比报告更具体**:core 把 `_resolve_optimizer_cls` 改名为
+`_resolve_optimizer_factory`,子类覆写留在旧名字上变成死代码 —— "override 盯着
+一个已被改名的钩子"。新增测试钉住解析,下次改名会红而不是静默。
+
+**warmup 已同步新树**(`2ef00694c`,main/k3_on_4025):同一 pipelining 栈,跨节点
+第一次跑就会踩同一个坑。TODO 注释在 schedules 模块里把缺口和修法都写明了
+("STATIC mode group communicator warm-up gap"),我们做的是把它从 torchtitan 侧
+落地 —— 训练仓改不了 torch 本体。
+
+**双节点复现待办**:挂起本身需要 2 节点才能复现,本地只有单机 8 卡。单节点已验证
+warmup 无害;是否真的解掉 300 秒挂起,要在出问题的集群上跑确认(或 Elfie 侧已修)。
+
+MTP/Muon 不在新树上(尚未迁移);迁移时按 port-from-old-tree-only 从修复后的
+版本移植。
