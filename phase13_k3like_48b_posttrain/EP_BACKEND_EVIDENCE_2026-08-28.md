@@ -6,6 +6,26 @@ hardcoding"。`ep_review1` 已把 `moe_comm_backend` 做成 spec 参数(`286d139
 判据同 `EVIDENCE_METHOD_2026-08-25.md`:一个 seed checkpoint、每格预热一趟、每格断言
 `Loading the checkpoint from`、报 step 1 / 3 / 10;判差异只看 step-2(HANDOFF_2026-08-26 §七)。
 
+## 先看这里:四个问题的直接回答
+
+**本机为什么跑不了 DeepEP?** 两张 H100 NVL 之间没有 NVLink 桥(`topo -m` = SYS,PCIe+UPI),
+P2P 读写可用但 DeepEP v2 的节点内内核依赖 NVLink 语义:第一次 dispatch 就 `DeepEP NVLink
+barrier timeout` → `CUDA_ERROR_LAUNCH_FAILED (719)`。DeepEP 自带 `test_barrier.py` / `test_ep.py`
+(2 rank)同样失败;README 明写 "NVLink for intranode communication"。要 NVLink 机器(§三)。
+
+**minimal_async_ep 怎么回事?** 能跑(10 步 rc=0)但**丢 routed experts 的 `w1`/`w3` 梯度**:
+逐参数探针里只有它们差(K3 上 1/500,上游 deepseek 普通专家上精确为 0),其余参数全一致;
+给专家 GEMM 输入加一行 `.clone()` 即恢复。根因:专家权重梯度反向要用保存的输入 `x_RD`,
+MinimalAsyncEP 的 dispatch 返回的是两槽接收 buffer 的 view,combine 反向把它盖掉了。
+deepseek 的 CI 靠 `fused_swiglu` 覆盖躲开,K3 的 SiTU-GLU 用不了。上游缺陷,不是 K3 的(§八.1)。
+
+**K3 跑不起来?** 不是。K3 本身没问题;只是要选其它后端得先修两处:core 按 `model.dim`
+给 dispatcher buffer 定宽而 K3 专家吃 latent 流(512 vs 1024)→ 修在 core(`20b48f5`);
+`moe_comm_backend` 必填参数打挂上游单测 → 给默认值(`4f6462c`)(§四)。
+
+**ep2 状态?** `standard` ep2×fsdp2 **step-1 与 dp2 逐位相同**(12.59885),step-2 差 4.3e-3;
+full AC 对照逐位相同。PR head `k3_ep` 已快进到 `4f6462c`,body 新章节在 `PR_BODY_EP.md`(§八)。
+
 ## 〇、一句话结论(15:25,矩阵 5 格全部落地)
 
 | 后端 | 本机状态 | 备注 |
