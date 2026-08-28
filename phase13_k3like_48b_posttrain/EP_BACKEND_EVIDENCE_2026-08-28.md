@@ -30,7 +30,7 @@ deepseek 的 CI 靠 `fused_swiglu` 覆盖躲开,K3 的 SiTU-GLU 用不了。上�
 **ep2 状态?** `standard` ep2×fsdp2 **step-1 与 dp2 逐位相同**(12.59885),step-2 差 4.3e-3;
 full AC 对照逐位相同。**PR head 不动**:换后端在本机一个都没真正验通(用户 2026-08-28 决定),
 `k3_ep` 退回 `c117ce1`(`comm_backend` 仍钉 standard),后端工作留在 `ep_review1` @ `4f6462c`;
-body 新章节按"head 仍钉 standard、其它后端在 ep_review1 上试过"的口径写(§五、§十)。
+两版 body 都备好了(§十),选项由用户定。
 
 ## 〇、一句话结论(15:25,矩阵 5 格全部落地)
 
@@ -272,18 +272,26 @@ multicast 对象不可用。**与 DeepEP 是同一个结论:要一对桥接的�
 * 注意:`moonep` 是从 session 的 scratch 目录 editable 安装的;换机器重装,或把源码放到
   `/workspace` 下再 `pip install -e .`。
 
-## 十、待办
+## 十、状态与待办(2026-08-28 晚,最终)
 
-1. **用户**:把 `k3_ep` 退回 `c117ce1`(§五 的命令);把 `PR_BODY_EP.md` 尾部的
-   `### EP backend verify result` 贴到 4314 描述(本机无 gh/token)。`ep_review1` 保持 `4f6462c`。
-2. 下一台机器必须是 NVLink 对(`topo -m` 两卡间 `NV#`,`topo -p2p n` OK):在 `ep_review1` 上重跑
-   `ep_backend_matrix.sh`(deepep 格应能跑),再决定 `ep_review1` 是否进 PR。
-3. MinimalAsyncEP 修复:独立分支,从 upstream/main 切,`MinimalAsyncEPTokenDispatcher.dispatch`
-   把接收 buffer 的 view 换成自有张量(或 `dispatch_op` 内 clone),带 deepseek 普通专家的探针数字,
-   单独发 PR;修完再补 K3 的 `ep2 x minimal_async_ep` 数值格(预期与 standard 同量级)。
-4. MoonEP 上机:本机不可行(§九);换一对 NVLink 桥接的卡后按 `moonep_onbox/` 顺序跑。
-   `kimi_k3_debugmodel_moonep` flavor 在 `/workspace/tt_k3_on_4025`(分支 `k3_on_4025_local`)本地
-   提交,推不推 `k3_on_4025` 由用户定。
+**PR head 怎么办(用户定)。** 用户不 force push 打开中的 PR 分支,所以 `k3_ep` 现在就是 `4f6462c`
+(= `c117ce1` + `286d139` spec 参数 + `20b48f5` core 宽度 + `4f6462c` flavor/默认值)。两个选项,
+两版 body 都在 `Raising_PRs/PR_K3_PARALLELISM/`:
+
+| 选项 | head | 贴哪版 body |
+|---|---|---|
+| (a) `git revert` 三个提交再推 | 回到 c117ce1 的内容,多一个 revert commit | `PR_BODY_EP_head_c117ce1.md`(正文 = GitHub 现行,尾部只陈述在 ep_review1 上试过的结果) |
+| (b) 就留在 `4f6462c`(推荐:三处代码本身正确,spec 参数正是 reviewer 要的) | 4f6462c | `PR_BODY_EP_head_4f6462c.md`(Summary 说 backend 是 spec 参数,Changed files 含 core 一行,尾部 verify 段) |
+
+**本机还能推进什么。** 只有 `minimal_async_ep`:不需要 NVLink,bug 已定位(§八.1),可在本机修并复验
+K3 ep2。deepep(NVLink)/ hybridep(GB200)/ moonep(NVSwitch multicast)本机无法推进,脚本已备好
+(`ep_backend_matrix.sh`、`moonep_onbox/`),换到 `topo -p2p n` 为 OK 的一对卡上直接跑。
+
+待办:
+1. 用户选 (a)/(b),贴对应 body 到 4314。
+2. MinimalAsyncEP 修复(本机可做):dispatch 交出自有张量 → deepseek 普通专家探针 `w1/w3` 回到 3e-4
+   → K3 `ep2 × minimal_async_ep` 数值格与 standard 同量级 → 单独 PR(带 deepseek 复现数字)。
+3. NVLink 对到手后:`ep_review1` 上重跑 `ep_backend_matrix.sh`,再跑 `moonep_onbox/`。
 
 ## 十一、复现
 
