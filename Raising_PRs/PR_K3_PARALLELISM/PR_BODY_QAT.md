@@ -14,13 +14,21 @@ Adds MXFP4-weight / MXFP8-activation fake-quant QAT for the routed experts, per 
 
 CPU: STE identity gradient, unblockable passthrough, converter swap, forward-window restore (the param object is back for FSDP after forward), gradient flow to the masters.
 
-GPU (this branch's worktree; one seed, warm cache, steps 1/3/10):
+GPU, this branch's worktree (one seed, warm cache, steps 1/3/10; the branch bases on upstream main, where the K3 EP/TP gates are still on, so its cells are data-parallel -- the EP rows below come from the integration tree, where expert parallel is wired):
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| TBD-QAT-MATRIX | | | | |
+| dp1 | 1 | 12.57942 | 8.21028 | 3.91468 |
+| dp2 | 2 | TBD-MAKEUP | | |
 
-Integration-tree smoke, dp2/FSDP: 12.45000 -> 10.05885 over two steps, the full-parameter descent slope (vs LoRA's shallow one) as expected.
+Integration tree, same recipe over its own seed -- QAT composes with expert parallel out of the box (dp2 and dp2 x ep2 print the same step-1 loss):
+
+| cell | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | 1 | 12.42577 | 7.39508 | 3.96145 |
+| dp2 | 2 | 12.50530 | 7.34477 | 3.50247 |
+| dp2 x ep2 | 2 | 12.50530 | 7.30907 | 3.48970 |
+| dp4 x ep4 | 4 | 12.42457 | 6.44649 | 3.54749 |
 
 ### Changed files
 
