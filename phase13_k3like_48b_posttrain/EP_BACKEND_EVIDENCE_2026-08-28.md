@@ -398,3 +398,22 @@ std_r2 s10=3.30036、deepep_r2 s10=3.24408、maep_r3 s1/s3=12.59768/7.56392
 
 `ep_review1` = `k3_ep` = **18d1f182a**(已快进同步,2026-08-28 用户指令)。
 MoonEP 依指令在上述全部落地后开工。
+
+## MoonEP:核心目标在 NVLink 真机闭合(2026-08-28 深夜)
+
+链条:CPU 假世界门(4/4)→ 真库构建(master @ 2bd860b,cutlass-dsl 4.4.2,
+CUDA 13)→ 官方自测 **6/6**(dispatch 12/combine 14/grad_reduce 12/
+prefetch 14/planning/e2e;e2e 需 `torchrun -m tests.test_e2e` 模块方式,
+pytest 收集器会双重 init PG,是测试写法非内核问题)→ titan 集成冒烟
+ep2×fsdp2 **一次通过**(12.47486 → 9.19460,exit 0;盲写 dispatcher/
+experts 与真内核首次接触即成)→ 逐参数梯度探针对照 standard:榜首
+2.1–2.6e-1 相对差、全为 1e-4 量级噪声带参数,**无 routed_experts 族**
+——与"已修 maep vs standard"同噪声轮廓;token 守恒与反向到达成立。
+
+ON-BOX 三疑点判明:Buffer 组绑定/隐藏 dtype/cu_seqlens 布局在冒烟中
+全部按本地 Claude 的真实合同重写版成立,tripwire 零触发。moonep flavor
+已入集成树(`4961dec31`)。钉住的 moonep 提交本身是 "Support MXFP4
+expert weights in remote prefetch"——与 QLoRA 线的未来交点已在上游。
+
+**后端章节全线终态**:standard(双拓扑)/deepep(NVLink 首验)/
+minimal_async_ep(跑通+上游 bug 裁决+PR30)/moonep(核心目标,全链闭合)。
