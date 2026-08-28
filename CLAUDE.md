@@ -71,8 +71,9 @@ Three adoption surfaces, in priority order:
 
 ## Repo map
 
-- Submodule `torchtitan/` (fork QIU023/torchtitan, branch
-  `attention_residual_dev`): the real implementation —
+- Submodule `torchtitan/` (fork QIU023/torchtitan, branch `main` = the
+  integration tree, alias `k3_on_4025`; `attention_residual_dev` is retired):
+  the real implementation —
   `torchtitan/experiments/kimi_k3/` (attn_res.py, model.py,
   pipeline_adapter.py ~1143 lines, kimi_linear/ with parallelize.py ~1077
   lines: FSDP2/HSDP+TP+EP complete, CP blocked on fla-core, PP via adapter).
