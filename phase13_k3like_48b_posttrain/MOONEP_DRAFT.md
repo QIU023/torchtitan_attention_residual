@@ -102,3 +102,46 @@ moonep ep2 对照 standard 数值格。hybridep 不在此机(GB200/NVL72 专属,
 Elfie)。PCIe 本机的 minimal_async_ep 结果已有:死于
 `init_buffer -> symm_mem.rendezvous, CUDA driver error: invalid device
 ordinal`(无 P2P,非 bug)。
+
+---
+
+# 2026-08-28 审核(Windows 侧,对照 `MoonshotAI/MoonEP` master 源码):`d51e27b3` 的合同错位与修正 `b4e104a6`
+
+依据不再只是 README,而是 `moonep/api.py`(`Buffer.__init__` 在 :440 起)、
+`moonep/buffer.py`、`tests/test_e2e.py`。
+
+## 设计层(未解决,已做成显式报错)
+
+MoonEP 的均衡来自**把热点专家动态复制到别的 rank**:训练强制 `B = E/R` 个预取槽,
+每个专家投影要求"one contiguous symmetric-memory `[E+B, H, H']` tensor, identically
+laid out on every rank",group GEMM 按行号寻址,`prefetch_weight` 在 GEMM 前、
+`reduce_grad` 在反向。`RoutedExperts` 的 `w1/w2/w3` 是 EP+FSDP 切片的 DTensor,
+GEMM 只跑本地专家——**"只要一个 dispatcher 子类、MoE 模块不动"的前提不成立**,
+也不存在"不接 prefetch 的纯均衡 a2a 模式"(B 默认即 E/R)。现在 `init_buffer` 在
+EP>1 时 `NotImplementedError` 并说明缺的是哪一层;`allocate_buffer` +
+dispatch/combine 保持可直接调用,供独立对价实验。
+
+## 接口层(已修)
+
+| 项 | 原实现 | 源码事实 | 修正 |
+|---|---|---|---|
+| 包名 | `import moon_ep` | `from moonep import Buffer` | `moonep`;测试同步 |
+| 进程组 | "README 无 group,ON-BOX" | `Buffer(..., B=None, group=None)`,None 走默认组;`num_ep_ranks` 须等于 group 大小 | 传 `group=ep_mesh.get_group()` |
+| S | 上界,默认 8192,`<=` 检查 | 静态形状,输入恒为 `[S,H]` | 由 `update_from_config` 从 `num_tokens_per_microbatch_per_dp_rank // (cp*tp)` 填;`!=` 即报错 |
+| dtype | "ON-BOX 是否只收 bf16" | `assert hidden_nvsh.dtype == torch.bfloat16` | 进出 cast |
+| `cu_seqlens` | 按本地专家数+1 读,tripwire | `[E+B]`,每 VM 组行的 padded end offset | 按 E+B 差分,返回每行 token 数 |
+| 反向 | "内核自带,不叠 wrapper" | README 的 dispatch bwd / combine bwd 是给框架的**配方**;api.py 无 autograd.Function | 两个 `autograd.Function`:dispatch bwd = `combine(plan, grad)`,combine bwd = `dispatch(grad, plan=plan)` |
+| 路由权重 | 交给 MoonEP combine 内乘 | combine 的 `route_weights_nvs` 可选;反向配方不含权重梯度 | 在 torchtitan 侧 autograd 相乘(与 standard 同构),router 梯度路径不变;权重梯度经 `combine(..., route_weights_nvs=grad)` 的 gather 回 `[S,K]` |
+| plan 传递 | 猜 `buffer.last_plan` | 无此属性 | Function 通过调用方传入的 list 带出 |
+
+## 2×H100 能做的事(改变目标)
+
+按现状 `moe_comm_backend="moonep"` 在 EP>1 会按设计报错。租机目标改为:
+1. 跑 MoonEP 自带 `tests/test_dispatch.py` / `test_combine.py` / `test_e2e.py`
+   (写死 8 rank,先看能否 R=2);
+2. torchtitan 之外的独立对价:两卡专家权重整表复制成 `[E+B,H,H']`,
+   `allocate_buffer` → dispatch → 按 `cu_seqlens` 索引的手写 grouped GEMM → combine,
+   对照 `AllToAllTokenDispatcher` + 本地 GEMM 验 token 守恒与数值,再验
+   autograd 配方的梯度到达。
+这两步立住之后,才知道 torchtitan 侧要动的是专家权重存储与 FSDP 的关系,
+那是 MoonEP 后端真正的单元。
