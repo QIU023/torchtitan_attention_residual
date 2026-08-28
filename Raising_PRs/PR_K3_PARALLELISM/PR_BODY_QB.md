@@ -17,7 +17,7 @@ GPU, this branch's worktree (one seed, warm cache, steps 1/3/10; the branch base
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
 | dp1 | 1 | 12.58962 | 8.46094 | 4.01340 |
-| dp2 | 2 | TBD-MAKEUP | | |
+| dp2 | 2 | 12.58743 | 8.19710 | 3.62665 |
 
 Integration tree, same recipe over its own seed -- quantile balancing composes with expert parallel, which is where a bias-balancing method actually earns its keep:
 

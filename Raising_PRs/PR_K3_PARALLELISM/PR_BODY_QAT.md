@@ -19,7 +19,7 @@ GPU, this branch's worktree (one seed, warm cache, steps 1/3/10; the branch base
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
 | dp1 | 1 | 12.57942 | 8.21028 | 3.91468 |
-| dp2 | 2 | TBD-MAKEUP | | |
+| dp2 | 2 | 12.56931 | 8.10061 | 3.44568 |
 
 Integration tree, same recipe over its own seed -- QAT composes with expert parallel out of the box (dp2 and dp2 x ep2 print the same step-1 loss):
 
