@@ -445,3 +445,10 @@ deepep/maep flavor、decoder 调用删除+enable_sp 参数化;与 MoonEP 接线�
 集成树合流——现在四后端 spec 全建:standard/deepep/minimal_async_ep/moonep,
 buffer 一律按 latent_dim 配置)。59+186 测试全绿,ep2 十步 rc=0。
 **新树 EP 后端工作至此全部结束**;H100 盒证据已归档,可释放。
+
+勘误:此前记"prefetch 半场的 titan 接线是新单元"——错。接线已由 CPU 盒
+完成(moon_ep_experts.py:[E+B] 表 + prefetch_weight + reduce_grad,假世界
+强制复制映射下端到端对齐稠密参照;官方 test_prefetch/test_grad_reduce 真
+内核绿;冒烟即跑此路径)。真正余下的是**证据缺口**:live 训练中 plan 装填
+experts_to_copy 取决于实时负载,需一格强制不均衡的真内核观测 + prefetch
+开/关拖尾对比——届时再租 NVLink。
