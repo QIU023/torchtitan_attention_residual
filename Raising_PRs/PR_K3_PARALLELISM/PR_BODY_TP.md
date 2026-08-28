@@ -47,7 +47,7 @@ Not in this PR: sequence parallel, TP inside the vision tower (the tower is repl
       kda.py                +16/-7 kernel call site unwraps and re-wraps
       model.py                 +19 the parallelize call and the splice lift
       parallelize.py          +3/-1 tensor parallel off the unsupported list
-    torchtitan/distributed/utils.py  +43/-3  grad-norm grouped by parameter mesh
+    torchtitan/distributed/utils.py  +42/-4  grad-norm grouped by parameter mesh
     tests/integration_tests/models.py        the multimodal cell runs fsdp2 x tp2
     torchtitan_recipes/tests/models.py       its configuration
 
