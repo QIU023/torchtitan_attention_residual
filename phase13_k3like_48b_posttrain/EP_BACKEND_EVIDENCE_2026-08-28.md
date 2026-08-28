@@ -437,3 +437,11 @@ Reviewer 的直觉正确。
 第 2 腿后结论才成立。教训:同一工作树上不要让脚本编辑与人工编辑并行。
 
 `ep_review1` 现头:be477938d。`k3_ep`(PR 头)保持 18d1f182a,同步待用户。
+
+## 回流:ep_review1 的后端工作全部进集成树(收官)
+
+五笔 cherry-pick 到 `k3_on_4025`(宽度按 latent 配置化、工厂 maep 分支修复、
+deepep/maep flavor、decoder 调用删除+enable_sp 参数化;与 MoonEP 接线在
+集成树合流——现在四后端 spec 全建:standard/deepep/minimal_async_ep/moonep,
+buffer 一律按 latent_dim 配置)。59+186 测试全绿,ep2 十步 rc=0。
+**新树 EP 后端工作至此全部结束**;H100 盒证据已归档,可释放。
