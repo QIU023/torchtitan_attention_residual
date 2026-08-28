@@ -42,7 +42,7 @@ sharding_configs, which are None on upstream today):
 | dp2 | lora | 12.52952 | 12.21486 | 10.67500 |
 | dp2 | qlora_mxfp4 | 12.56775 | 12.20790 | 10.98469 |
 
-QLoRA (packed MXFP4, bases + experts): dp1 12.45288 / 11.96454 / 10.68903, dp2 12.45138 / 11.87566 / 10.37547, dp4 12.47301 / 12.00136 / 10.55821, and TBD-QLORA-EP; the full-flavor TP cells stop at the designed experts guard (expert TP shards the intermediate dim, which the 2-D packed flatten cannot express). QLoRA linears-only x tp2: 12.36750 / 11.87709 / 10.51911. Checkpoint loop: an unquantized-LoRA seed checkpoint repacked by the script (217 weights: 148 linears + 69 expert tables) loads into the packed flavor under dp2/FSDP and trains.
+QLoRA (packed MXFP4, bases + experts): dp1 12.45288 / 11.96454 / 10.68903, dp2 12.45138 / 11.87566 / 10.37547, dp4 12.47301 / 12.00136 / 10.55821, dp2 x ep2 12.45138 / 11.87404 / 10.42552, dp4 x ep4 12.47301 / 11.99923 / 10.50310 -- the ep cells print the same step-1 loss as their dp twins, expert parallel is transparent at the forward; the full-flavor TP cells stop at the designed experts guard (expert TP shards the intermediate dim, which the 2-D packed flatten cannot express). QLoRA linears-only x tp2 (matrix standard, own seed): 12.54449 / 11.97425 / 10.69844. Checkpoint loop: an unquantized-LoRA seed checkpoint repacked by the script (217 weights: 148 linears + 69 expert tables) loads into the packed flavor under dp2/FSDP and trains.
 
 Peak memory, full QLoRA vs LoRA at dp2: 3.20 vs 3.52 GiB -- the debug model is activation-dominated; the parameter-side ~4x cut shows at scale.
 
