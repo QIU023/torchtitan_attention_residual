@@ -1,6 +1,6 @@
 ### Summary
 
-Enables expert parallelism for Kimi K3 on the existing all-to-all token dispatcher. Expert parallel comes off the unsupported list; MoonEP (the report's balanced EP with online redundant-expert planning) is not here, it needs its own dispatcher and backend, and `comm_backend` is pinned to "standard" so no run can silently believe it is on MoonEP.
+Enables expert parallelism for Kimi K3 on the existing all-to-all token dispatcher. Expert parallel comes off the unsupported list; The dispatcher backend is a spec parameter, `moe_comm_backend`, threaded from `model_registry` to `make_token_dispatcher_config` the way deepseek_v3 and gpt_oss do it: `standard` (PyTorch all-to-all) by default, `deepep`, `hybridep` and `minimal_async_ep` selectable as on those models. The tables below are measured on `standard`. MoonEP (the report's balanced EP with online redundant-expert planning) is not here; it needs its own dispatcher and backend.
 
 ### EP Design
 
