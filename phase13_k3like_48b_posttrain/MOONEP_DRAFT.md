@@ -145,3 +145,40 @@ dispatch/combine 保持可直接调用,供独立对价实验。
    autograd 配方的梯度到达。
 这两步立住之后,才知道 torchtitan 侧要动的是专家权重存储与 FSDP 的关系,
 那是 MoonEP 后端真正的单元。
+
+---
+
+# 2026-08-28 实现:专家侧单元落地(`main`/`k3_on_4025` @ `0c30608a`)
+
+上一节的"设计层未解决"到此关闭:`moe_comm_backend="moonep"` 现在选中
+**dispatcher + 专家模块**两件,EP>1 不再报 NotImplementedError,而是走完整路径。
+
+## 结构
+
+| 文件 | 内容 |
+|---|---|
+| `kimi_k3/moon_ep_experts.py`(新) | `MoonEPGroupedExperts`:每个投影一张 bf16 `[E+B, in, out]` 计算表(本地行每步从 fp32 master 参数刷新,与 FSDP 混精同构);`prefetch_weight` → 三个 grouped GEMM(`offs = cu_seqlens`)→ 反向重算(同 AC)得 `[E+B]` 表梯度 → 本地行给参数、槽行进 reduce buffer → `reduce_grad` 拉回 home rank。`check_moonep_mesh`:第一版只支持 `dp_shard == ep`(efsdp=1)且无 dp_replicate,其余 parallelize 时拒绝。`MoonEPTableBackend` 是分配层接口。 |
+| `kimi_k3/moon_ep_dispatcher.py` | `init_buffer` 经 `_buffer_factory` 分配(测试可替换);`current_plan()` 把在飞的 plan/cu_seqlens 交给专家侧。 |
+| `kimi_k3/moe.py` | `KimiLatentMoE.parallelize`:子模块并行化之后把专家模块 attach 到 dispatcher(函数内 import 是因为 moon_ep_experts 反向依赖本模块)。 |
+| `kimi_k3/__init__.py` | `"moonep"` 同时选 `MoonEPGroupedExperts` 作 inner_experts。 |
+| `kimi_k3/tests/moonep_fake.py`(新) | `Buffer` 与分配层的进程内替身:R 个 rank = R 个线程,集合通信 = barrier(按调用代次键控),复制哪些专家由测试的 `dup_map` 指定,被复制专家的 token 在 home 与副本间交替;行内 padding 也模拟。 |
+| `kimi_k3/tests/test_moon_ep_dispatcher.py` | 新增端到端:两 rank 走 dispatch → prefetch → experts → combine → backward,对照全部专家 fp32 权重的逐 token 稠密参考,断言输出、输入梯度、**专家梯度(含别的 rank 在槽里替它算的那部分)**都对上。 |
+
+## 先在 PCIe 盒子上跑(不需要 NVLink,不需要 moonep 包)
+
+    pytest torchtitan/models/kimi_k3/tests/test_moon_ep_dispatcher.py -x -q
+
+Windows 侧只有 torch 1.9,这组 CPU 测试**没有被执行过**;它们是租机前必须过的门。
+盲写的接线错误(dtype、形状、autograd 返回个数、线程死锁)都会在这里而不是 H100 上暴露。
+
+## 租机(2×H100)剩下的唯一分配题
+
+`MoonEPTableBackendNVLink.alloc_*` 目前 raise。MoonEP 合同要求每个投影是**一段**连续
+虚拟地址的 `E+B` 行:前 E 行按 rank 分块映射各自的物理内存(`prefetch_weight` 直接
+`full_weight[:E]` 切片读远端),后 B 行是本地槽页。`moonep.buffer.create_nvl_dist_tensor`
+只映射等长分块、没有槽尾;MoonEP 自己的 e2e 用本地 `torch.empty` 假造了这段(它只测通信)。
+两条路二选一,上机定:
+1. `create_nvl_dist_tensor` 分块取 `E/R(padded) + B` 行,并调整 plan 的行号映射;
+2. 用其 VMM 原语自己 reserve 一段,把 R 个分块和槽页 back-to-back 映射。
+之后的验证顺序不变:token 守恒 → combine 梯度到达 dispatch 输入 → 与 `standard` 的
+ep2 数值格对照。
