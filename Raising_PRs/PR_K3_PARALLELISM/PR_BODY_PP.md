@@ -113,7 +113,7 @@ CPU unit test for the FQN split; a pp2 integration cell, and a pp8 x vp4 one on 
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): the six virtual-stage cells with the transport off collapse pairwise (pp4 x vp4 and pp8 x vp4 land on 7.27054 exactly, step 10 included), and with it on they stay apart, because the delta a hop carries depends on the cut and summing it in a different order is arithmetic that patch does not touch.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): with the transport off, pp4 x vp4 and pp8 x vp4 collapse onto one curve (7.27054 at step 3 and 3.33147 at step 10, exactly), and with the transport on the same two cells stay apart, because the delta a hop carries depends on the cut and summing it in a different order is arithmetic that patch does not touch.
 
 | cell | stages | world | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
