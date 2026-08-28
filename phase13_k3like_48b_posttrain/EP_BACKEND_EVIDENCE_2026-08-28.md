@@ -347,3 +347,54 @@ standard 验完、minimal_async_ep 修好并在 eager/编译两路径验证、de
 
     matrix_scripts/ep_backend_matrix.sh <tag>   # TITAN=<ep_review1 worktree>;5 格清单与每格 env 都在里面
     matrix_scripts/mx3_backend.sh               # mx3.sh 的"按格选 flavor + env 前缀"版本;mx3.sh 本身未动
+
+
+---
+
+# 第二台机器(2×H100 SXM,NV18 真 NVLink)补记 — 2026-08-28 晚
+
+上文四个"本机跑不了/未验"在真拓扑上全部闭合。盒:vast.ai 2×H100 80GB HBM3,
+`topo -m` GPU0↔GPU1 = **NV18**;环境按上文重建命令逐条复刻(torch nightly
+2.15.0.dev20260827+cu130、cuda-toolkit-13-0、DeepEP main @ 01dc3aa;新增一坑:
+无 RDMA 盒需 `apt install libibverbs-dev` 供 `infiniband/mlx5dv.h`,
+legacy internode 内核编译要头文件,运行时仍只走 intranode)。
+
+## 五格矩阵(mx3_h100nvl_0828_183356,树 ep_review1 @ 4f6462c1)
+
+| 格 | s1 | s3 | s10 |
+|---|---|---|---|
+| dp2 | 12.59951 | 7.45599 | 3.26481 |
+| ep2_standard | **12.59951**(=dp2 逐位) | 7.43228 | 3.30036 |
+| ep2_standard_fullac | 12.59951 | 7.43228(=standard 逐位) | 3.30036 |
+| ep2_minimal_async_ep | 12.59768 | **7.56392** | 3.29721 |
+| ep2_deepep | 12.59438 | 7.46660 | 3.24408 |
+
+- **DeepEP v2 首次真验通过**(上台 SYS 拓扑的 719 超时确系拓扑,非代码)。
+- maep 的 s3 偏离(+0.13)即未修 w1/w3 梯度丢失的宏观指纹。
+
+## 逐参数探针裁决(std vs maep,未修/已修,同 seed 3 步)
+
+- 未修:榜首全为 `routed_experts.w1/w3`,相对差 **0.998**
+  (std 梯度 0.70–0.87,maep 0.0015–0.002 —— 近乎全丢),NVLink 真
+  symm-mem 路径复现;
+- 打 PR30 补丁后:榜首降至 2.3–2.5e-1 的微量参数(A_log 5e-5 量级),
+  无参数族系统性归零。
+- **结论:owned-dispatch fix 必要**,双拓扑复现;PR30 独立成立,EP PR
+  默认 standard 不依赖之。
+
+## review 5053724179 三点落码 + 重跑暴露的一笔
+
+`97cb79909`:hidden_dim 配置化(工厂参数,K3 传 latent_dim,core None 守卫
+回退 model dim)、set_moe_sharding TODO、set_decoder_sharding why 注释。
+`18d1f182a`:工厂 maep 分支漏传 hidden_dim(重跑第一击即中,contraction
+mismatch)——config-first 的完备性补全。
+
+## 评审尖透明性重跑
+
+std_r2 s10=3.30036、deepep_r2 s10=3.24408、maep_r3 s1/s3=12.59768/7.56392
+——三格均与矩阵行**逐位同值**,取宽改动数值透明。
+
+## 分支终态
+
+`ep_review1` = `k3_ep` = **18d1f182a**(已快进同步,2026-08-28 用户指令)。
+MoonEP 依指令在上述全部落地后开工。
