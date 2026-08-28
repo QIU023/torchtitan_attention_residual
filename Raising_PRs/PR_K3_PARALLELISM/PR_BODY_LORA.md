@@ -14,9 +14,11 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 
 Integration-tree matrices (multimodal debug flavor, one seed per table, warm cache, steps 1/3/10):
 
-LoRA (every parallelism family the tree carries; PP is the one designed
-limitation -- a pipeline stage holding only frozen modules has no trainable
-params and the optimizer refuses, which is the known all-frozen-stage caveat):
+LoRA, every parallelism family the tree carries. PP required one core fix
+that ships here: a fully frozen model part gets no optimizer (an adapter
+run's vision-tower stage has no LoRA targets -- the MLLM convention keeps
+the tower frozen -- and raising there made every frozen stage a hard
+error). With it, pp2 x vp2 prints dp1's step-1 loss to every digit:
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -30,6 +32,7 @@ params and the optimizer refuses, which is the known all-frozen-stage caveat):
 | fsdp2 x cp2 | 4 | 12.45038 | 11.84340 | 10.46684 |
 | dp2 x ep2 | 2 | 12.46478 | 11.84854 | 10.47317 |
 | dp4 x ep4 | 4 | 12.49350 | 12.07487 | 10.62631 |
+| pp2 x vp2 | 2 | 12.45474 | 11.92275 | 10.68007 |
 
 Branch worktree (the branch bases on upstream main, where the K3 TP/EP gates
 are still on: its cells are data-parallel, and the TP/EP interaction code is
@@ -51,6 +54,7 @@ CPU: 16 lora tests + 2 experts tests (merge key-set exactness, serialization-hoo
 ### Changed files
 
     torchtitan/components/lora.py                 +~600
+    torchtitan/components/optimizer/optimizer.py    +13  frozen parts skip
     scripts/quantize_lora_dcp.py                  +150
     torchtitan/models/kimi_k3/config_registry.py  +100  lora/qlora flavors
     tests/unit_tests/cpu/test_lora.py             +250

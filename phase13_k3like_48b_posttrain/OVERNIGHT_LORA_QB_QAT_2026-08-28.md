@@ -9,8 +9,10 @@
 
 dp1/dp2/dp4/tp2/tp4/fsdp2_tp2/cp2/fsdp2_cp2/dp2_ep2/dp4_ep4 全通,
 数值见 PR_BODY_LORA。**LoRA×CP、LoRA×EP 均为本树首验即过**。
-- lora×pp 双格 = 设计限制:LoRA 冻结下塔段零可训参数,优化器空匹配
-  (recipe docstring 的既有预言);vp 形态亦然(vit 段吃满段预算)。
+- lora×pp:晨间裁定「塔段免建优化器」(MLLM LoRA 不微调 ViT)并实现——
+  全冻结段跳过优化器构建(optimizer.py,core 级 +13 行,随 LoRA 分支)。
+  pp2_vp2 (L6) 重跑通过,s1 与 dp1 逐位同值 12.45474(PP 恒等性在
+  LoRA 下成立)。纯 pp2(2 段)仍是 vit 段预算约束,与优化器无关。
 
 ## 二、QLoRA(mx3_qlora_mm / mx3_qlora_ext / mx3_qlora_lin)
 
