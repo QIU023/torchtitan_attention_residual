@@ -182,3 +182,24 @@ Windows 侧只有 torch 1.9,这组 CPU 测试**没有被执行过**;它们是租
 2. 用其 VMM 原语自己 reserve 一段,把 R 个分块和槽页 back-to-back 映射。
 之后的验证顺序不变:token 守恒 → combine 梯度到达 dispatch 输入 → 与 `standard` 的
 ep2 数值格对照。
+
+## 2026-08-28 补:分配题也盲写完了(`main`/`k3_on_4025` @ `f7c434b9`)
+
+上一节"租机剩下的唯一分配题"关闭。关键发现:`MoonEPCommPlan.experts_to_copy` 是公开
+字段(int32 `[R, B]`,rank r 的槽 b 装的全局专家号,负数为空;`grad_reduce.py` 就靠它
+判 "experts[rank,b] >= 0")。有了它,预取和槽梯度归约不必依赖 MoonEP 融合内核要求的那段
+合成连续 VMM 范围:
+
+- `MoonEPTableBackendNVLink` 用 MoonEP e2e 同款原语 `create_nvl_single_owner_tensor`
+  为每个 rank 建 NVLink 映射的专家块(bf16)和槽梯度块(fp32),并映射其它 rank 的;
+  `prefetch` = 本 rank 先把专家块发布到自己的映射张量 → EP 组 barrier → 按
+  `experts_to_copy[rank]` 从 home 的映射张量 copy 进本地表的槽行;`reduce_grad` =
+  槽梯度写进自己的映射块 → barrier → 每个 home 把各 rank 槽里属于自己的梯度加回本地行
+  → barrier(防下一步覆盖)。代价:每层每步两个 barrier + 一次 `.tolist()` 同步,
+  融合内核可用时再换。
+- `prefetch`/`reduce_grad` 从 `Buffer` 移到分配层接口(`MoonEPTableBackend`),假替身
+  实现同一接口,CPU 端到端测试覆盖路由逻辑不变。
+- `configure(num_experts, num_slots)` 显式告知 E/B,不再从行数推。
+
+现在**没有任何 raise 的桩**。上机剩下的全是"跑一下":PCIe 盒子先过 CPU 测试;H100 上
+`moe_comm_backend="moonep"` ep2 直接起,按序验 token 守恒 → 梯度到达 → 与 standard 对照。
