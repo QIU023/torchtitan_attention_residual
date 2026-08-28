@@ -13,7 +13,7 @@ Adds context parallelism to the Kimi K3 text decoder. The two attention kinds ne
 Ulysses (Jacobs et al., DeepSpeed Ulysses, arXiv:2309.14509). Shapes: $`T`$ tokens, $`L = T/cp`$ local tokens, $`H`$ heads on this rank, $`G = H/cp`$, $`Q/N/V`$ the query, nope-key and value head dims, $`R`$ the rotary width, $`W = Q+N+V`$.
 
 - Before the first all-to-all: sequence-sharded, all heads local
-  - The projections run on this rank's chunk of $`L`$ tokens and give *q* $`[L, H, Q]`$, *kv* $`[L, H, N+V]`$ and the headless rotary key *k_rope* $`[L, R]`$. The layer takes this path when a CP group was set on it (`model.py:131-135` in `KimiMLAAttention.forward`; `apply_cp_kimi_k3` sets it, `parallelize.py:117-133`).
+  - The projections run on this rank's chunk of $`L`$ tokens and give *q* $`[L, H, Q]`$, *kv* $`[L, H, N+V]`$ and the headless rotary key *k_rope* $`[L, R]`$. The layer takes this path when a CP group was set on it (`model.py:132-136` in `KimiMLAAttention.forward`; `apply_cp_kimi_k3` sets it, `parallelize.py:117-133`).
   - *q* and *kv* are packed along the channel dim into one $`[L, H, W]`$ tensor so a single collective moves both (`sharding.py:223` in `mla_ulysses_attention`).
 - All-to-all 1: sequence-sharded to head-sharded
   - $`[L, H, W]`$ is viewed as $`[cp, L, G, W]`$ with dim 0 the destination rank and goes through `all_to_all_single`; it comes back as $`[T, G, W]`$, the full sequence for this rank's $`G`$ heads (`sharding.py:156-165` in `cp_all_to_all_headseq`, called at `sharding.py:224-227`).
@@ -25,7 +25,7 @@ Ulysses (Jacobs et al., DeepSpeed Ulysses, arXiv:2309.14509). Shapes: $`T`$ toke
 - All-to-all 2: head-sharded back to sequence-sharded
   - The output $`[T, G, V]`$ is viewed as $`[cp, L, G, V]`$ with dim 0 the destination sequence chunk, goes through `all_to_all_single`, and returns as $`[L, H, V]`$ (`sharding.py:166-173` in `cp_all_to_all_headseq`, called at `sharding.py:256-259`).
 - After the second all-to-all: sequence-sharded again
-  - $`[L, H, V]`$ is the layer's normal layout; the output projection and the gate run on it exactly as without CP (`model.py:144-145`).
+  - $`[L, H, V]`$ is the layer's normal layout; the output projection and the gate run on it exactly as without CP (`model.py:145-146`).
   - The placement pair `S(seq) <-> S(heads)` is declared once as a contract (`sharding.py:99-109`, `ULYSSES`) and the all-to-all takes its dims from it (`sharding.py:149-153`), so a pair with no implementation raises instead of being ignored. `n_heads % cp == 0` is checked at wiring time (`parallelize.py:128-132` in `apply_cp_kimi_k3`).
 
 #### Design points: KCP on the KDA layers
@@ -37,9 +37,17 @@ KCP is not written here: it is fla-core's context parallel for delta-rule recurr
 - This branch wires it: one `cp_context` per forward (`kda.py:251-256` in `_forward_kcp`), the q/k/v convolutions through the halo op (`kda.py:258-275`), the kernel call with the context (`kda.py:281-290`) and the kernel handing it to `chunk_kda` (`kda.py:61-95` in `KimiKDAKernel.forward`); the import is checked at wiring time so a missing fla-core fails with an actionable message (`parallelize.py:138-150` in `apply_cp_kimi_k3`).
 - Question for the maintainers: torchtitan plans a torch-native KDA. Should that implementation carry KCP as well (the halo conv and the state prefix scan, after fla's), and run under the `spmd_types` backend by default? If so we would take that on ourselves, and the core change below disappears with it.
 
-#### One core change
+#### Design points: the multimodal splice under CP
+
+- Upstream ships one flavor and it is multimodal. `prepare_context_parallel_input` shards tokens, labels and positions along the sequence but leaves `pixel_values` whole, so every rank encodes every image while holding only a slice of the placeholders, and `get_vision_positions` refuses a slice that splits a visual item or holds none.
+- Each rank now scatters the feature slice its own placeholders correspond to (`model.py:379-393`): CP shards are contiguous and equal (the config already rejects a load balancer under CP), so a rank's slice starts after the placeholders the lower ranks hold, which one all-reduce establishes (`model.py:419`).
+- The rows a rank does not consume stay in the graph through `add_zero_valued_dependency` (`torchtitan/distributed/fsdp.py:168-189`), so FSDP2 issues the tower's reduce-scatter on every rank. The encoder still runs redundantly on every CP rank; splitting the tower is the later DEP and dynamic-CP work.
+
+#### Two core changes
 
 KCP cannot be declarative (the fla kernels take raw pointers and never see a DTensor), which is why this model runs on `spmd_backend="partial_dtensor"`, and core's unconditional check rejects `context_parallel_degree > 1` on any backend but `spmd_types` before the model's own wiring runs. So that check moves into a protected method, `Decoder.Config._validate_cp_backend`, whose default body just calls the existing `validate_cp_backend`; a model that does not override it runs today's check verbatim, and this model overrides it with its own preconditions. No new config field. The override is tied to the backend, not to how CP is wired: a torch-native KDA that lets this model run under `spmd_types` deletes it.
+
+The second is `add_zero_valued_dependency` in `torchtitan/distributed/fsdp.py:168-189`: a helper that keeps a partly consumed FSDP module in the autograd graph by adding a zero-scaled sum of its unused output, so the collectives FSDP2 hangs on that output are issued by every rank. It is not K3-specific; any model whose ranks consume different parts of an FSDP module's output needs the same edge.
 
 ### K3 CP runs:
 
@@ -77,15 +85,16 @@ Two boundaries raise instead of running: `Q_LEN` not divisible by `cp * 128`, an
                                    causal-mask rebuild it needs
       kda.py                 +120  KCP on the KDA layers: conv halo exchange and
                                    the prefix scan over the recurrent state
-      model.py              +55/-14 MLA branches to Ulysses when a CP group is set;
-                                   overrides _validate_cp_backend
+      model.py             +116/-14 MLA branches to Ulysses when a CP group is set;
+                                   overrides _validate_cp_backend; the vision
+                                   splice follows the sequence shard under CP
       parallelize.py         +71/-5 apply_cp_kimi_k3: wires the group onto both
                                    layer kinds, checks head divisibility, and fails
                                    at wiring time if fla's CP ops are missing
-      __init__.py              +13  the text flavor's model spec
-      config_registry.py       +13  the text trainer flavor
     torchtitan/models/common/decoder.py  +7/-3  the spmd_types requirement becomes
                                    an overridable method
+    torchtitan/distributed/fsdp.py       +24   add_zero_valued_dependency: keeps a
+                                   partly consumed FSDP module in the graph
     tests/
       unit_tests/cpu/test_kimi_k3_cp_contracts.py  +63  the folded-layout contracts
       integration_tests/features.py                 +7  the cp2 cell
@@ -97,7 +106,7 @@ CPU contract tests for the two things that used to fail silently; a cp2 integrat
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): six of the seven cells print the same step-3 loss to every digit and one, cp4, moves by 9.4e-3. Both cp4 values reproduce to every printed digit on same-seed re-runs, so the deviation is the patch's deterministic effect on that cell rather than run-to-run noise.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): six of the seven cells print the same step-3 loss to every digit and one, cp4, moves (7.37109 to 7.44103 at step 3). Both cp4 values reproduce to every printed digit on same-seed re-runs, so the deviation is the patch's deterministic effect on that cell rather than run-to-run noise.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|

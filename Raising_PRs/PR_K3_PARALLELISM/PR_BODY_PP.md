@@ -75,7 +75,7 @@ Three of the virtual-stage cells re-run with the transport turned off, against t
 | pp4 x vp4 | identical | 4.0e-4 |
 | pp8 x vp4 | identical | 1.6e-3 |
 
-Peak memory per rank, same topology and schedule, transport against fallback; the six ranks that hold little are unchanged, the saving is on the two that would otherwise accumulate the stack:
+Peak memory per rank, same topology and schedule, transport against fallback; the six ranks that hold little are unchanged, the max comes down from 8.50 to 7.53 GiB and the spread from 5.83 to 4.90:
 
 | pp8 x vp4 | per-rank peak (GiB) | max | spread |
 |---|---|---|---|
@@ -92,13 +92,13 @@ Not in this PR: the vision tower (its stage assignment and DEP). Without `pipeli
       layout.py              +293  offline algebra over (pp, vp, num_blocks,
                                    n_layers, layers_per_block): which blocks each
                                    stage commits, which subset its P2P ships
-      __init__.py           +47/-5 registers pipelining_fn and the 32-layer text
+      __init__.py           +33/-5 registers pipelining_fn and the 32-layer
                                    flavor; zero-init on the AttnRes projections
       model.py              +26/-3 returns (hidden, block_residual) off a non-head
                                    stage, takes the pair back on the next, guards
                                    the head-only aggregation; the attn_res_cache
                                    field that selects the transport
-      config_registry.py       +35 the 32-layer trainer flavor, and its _naive
+      config_registry.py       +23 the 32-layer trainer flavor, and its _naive
                                    twin with the transport off
       parallelize.py         +2/-3 pipeline parallel off the unsupported list
     tests/
