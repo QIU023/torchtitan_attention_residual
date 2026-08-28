@@ -7,12 +7,12 @@ Per-parameter gradient norms, one microbatch from the same seed init, `deepseek_
 | | routed experts w1/w3 (max rel. diff vs standard) | every other group |
 |---|---|---|
 | before | 1.00 (all exactly 0) | < 2.5e-3 |
-| after | AFTER_W13_REL | AFTER_OTHER_REL |
+| after | 3.1e-4 | < 2.5e-3 |
 
-Same configuration, 10 steps, seed 42, `--debug.deterministic`:
+Same configuration, 10 steps, seed 42, `--debug.deterministic` (the loss barely moves either way on the debug model, which is why the gradient table is the evidence: at step 2 minimal_async_ep is 2.6e-3 from standard before and 9e-5 after):
 
 | dispatcher | patch | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| standard | - | D10_STD_1 | D10_STD_3 | D10_STD_10 |
-| minimal_async_ep | before | D10_B_1 | D10_B_3 | D10_B_10 |
-| minimal_async_ep | after | D10_A_1 | D10_A_3 | D10_A_10 |
+| standard | - | 8.00752 | 5.07747 | 3.95123 |
+| minimal_async_ep | before | 8.00751 | 5.07892 | 3.95201 |
+| minimal_async_ep | after | 8.00751 | 5.07750 | 3.95003 |

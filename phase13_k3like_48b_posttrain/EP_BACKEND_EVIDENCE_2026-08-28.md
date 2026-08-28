@@ -37,7 +37,7 @@ full AC 对照逐位相同。**PR head 不动**:换后端在本机一个都没�
 | 后端 | 本机状态 | 备注 |
 |---|---|---|
 | `standard`(PyTorch a2a) | ✅ ep2 跑通,**step-1 与 dp2 逐位相同**(12.59885),step-2 差 4.3e-3 | 矩阵主格;full AC 对照逐位相同 |
-| `minimal_async_ep` | ⚠️ ep2 跑通(10 步 rc=0),但 **丢 routed experts 的 `w1`/`w3` 梯度**(step-1 grad_norm 低 17%,step-2 差 3.8e-1) | 需 full AC;需 core 修 buffer 宽度(§四.3);根因是上游 MinimalAsyncEP 接收 buffer 被 combine 反向改写、专家 GEMM 保存的是它的 view(§八.1,deepseek 普通专家上复现,clone 即修) |
+| `minimal_async_ep` | ⚠️→✅ 修前丢 routed experts 的 `w1`/`w3` 梯度(step-1 grad_norm 低 17%,step-2 差 3.8e-1);**修后**(`maep_dispatch_owned`,§八.0)所有参数组回到同一噪声带,grad_norm 差 1.4%,step-2 差 5.2e-2 | 需 full AC;需 core 修 buffer 宽度(§四.3);根因是上游 MinimalAsyncEP 接收 buffer 被 combine 反向改写、专家 GEMM 保存的是它的 view(§八.1,deepseek 普通专家上复现,clone 即修) |
 | `deepep`(v2 ElasticBuffer) | ❌ 第一次 dispatch 即 `CUDA_ERROR_LAUNCH_FAILED`,内核报 `NVLink barrier timeout` | DeepEP 自带测试同样失败:**硬要求 NVLink**,本机两卡 PCIe;需 NVLink 机器 |
 | `hybridep` | 未跑 | DeepEP 另一条不兼容分支,GB200/NVL72 专属,CI 也是分开装分开测 |
 
@@ -210,6 +210,22 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
   / `expand_topk_grad_kernel`(`dtype=grad_out.dtype` 即 bf16)/ `topk_scores_grad_kernel`。
   归因见 §八.1:是 MinimalAsyncEP 与普通 GroupedExperts 组合的上游缺陷。
 * deepep 格 seed 载入成功,第一次 dispatch 即失败,签名与 §三 一致。
+
+### 八.0 修复后的 K3 数值格(`mx3_maepfix_0828_*`,树 `ep_review1_maepfix` @ `c3f54ba`,同一 seed ckpt)
+
+| cell | step 1 | step 2 | step 3 | step 10 | grad_norm s1 | s2 |
+|---|---|---|---|---|---|---|
+| ep2 × fsdp2 standard | 12.59885 | 9.55519 | 7.55794 | 3.32943 | 13.6250 | 13.3125 |
+| ep2 × fsdp2 minimal_async_ep(修前,§八) | 12.59281 | 9.93810 | 7.56969 | 3.22479 | 11.3750 | 12.4375 |
+| ep2 × fsdp2 minimal_async_ep(**修后**) | 12.59281 | 9.50324 | 7.45474 | 3.22755 | 13.4375 | 13.9375 |
+
+修后:step-1 grad_norm 与 standard 差 1.4%(修前 17%),step-2 差 5.2e-2(修前 3.8e-1);逐参数探针
+(`grads_fix_kimi_k3_*.json`)全部分组落在同一噪声带(experts 组 max rel 3.1e-2 / 中位 6.9e-3,attention
+中位 2.0e-2,router 中位 3.7e-2),不再有任何一组梯度丢失。step-1 前向的 6.0e-3 修前修后相同,
+来自 MinimalAsyncEP 自己的 combine 内核与 standard 的 fp32 乘 + scatter_add 之间的累加差异
+(K3 的 combine 之后紧接 `routed_norm`,对这一点比 deepseek 敏感:deepseek 上同一差异只有 1e-5),
+不是本 bug。5.2e-2 仍大于 dp2→ep2(standard)的 4.3e-3,是 K3 debug 模型对这个前向差异的放大,
+判据上应写成"与 standard 在 bf16 归约序层面一致、无梯度丢失",不写"逐位"。
 
 ### 八.1 归因:是 MinimalAsyncEP 的,不是 K3 的(逐参数梯度探针)
 
