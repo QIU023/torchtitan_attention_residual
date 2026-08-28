@@ -1,0 +1,39 @@
+### Summary
+
+Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_state_dict` / `trainable_state_dict` (a trained adapter is otherwise unexportable -- the raw state dict carries keys nothing downstream recognizes), 4-bit frozen bases (NF4 and packed MXFP4, the latter FSDP-shardable), and the packed bases under TP. Model-agnostic in `components/lora.py`; the Kimi K3 flavors exercise all of it.
+
+### Design
+
+- The merge happens IN the modules -- the merged weight goes in as a fresh Parameter object, `state_dict()` is taken, and the original re-binds -- because a base linear's serialization is not necessarily `<fqn>.weight`: the fused attention linear exports split wq/wk/wv keys through a state-dict hook, and composing key names by hand misses every such hook. The object swap also keeps the returned dict from aliasing storage the restore reverts, and never writes THROUGH a quantized tensor (copy_ into an NF4 base would re-quantize the merged value). Wrapper segments (AC/FSDP/compile) differ between `named_modules()` and `state_dict()`; an unknown wrapper raises rather than guessing.
+- `quantize_base='mxfp4'` swaps the base for split storage AT BUILD: qdata uint8 `[out, in/2]` plus e8m0-as-uint8 scale `[out, in/32]` (MXTensor itself cannot be a param -- non-contiguous logical view; the scale stores as uint8 because FSDP2's all-gather has no e8m0 copy kernel). Building packed means FSDP2 shards packed bytes natively -- the pack-then-shard order. From-scratch init draws each rank's rows locally and quantizes them, exact because MX block-32 is row-blockwise and commutes with Shard(0). Meta builds register the layout only; `scripts/quantize_lora_dcp.py` repacks an unquantized-flavor checkpoint into this layout (key map derived from the packed flavor built on meta), so no rank ever materializes the full bf16 model.
+- `quantize_base='nf4'` (torchao) packs post-init and is library-scope: FSDP2's lazy_init cannot take a post-hoc packed param -- both a plain NF4 param (no `_local_tensor`) and NF4 inside the DTensor shell (invalid storage) were tried and refused; the error says so.
+- `quantize_experts='mxfp4'` packs the grouped experts (the MoE parameter bulk) the same way, behind dequant properties so the grouped-GEMM forward is unchanged.
+- Under TP: a TP-invariant base (rank-sized compressions) gets replicated adapters -- the third case next to colwise/rowwise. Packed colwise/rowwise bases run a packed-TP forward: local dequant + local matmul; colwise x and lora_a carry Partial grad placements (a bare to_local silently skips the tp reduction); rowwise reduces base+adapters in one collective and emits Partial with bias/tp, the declared contract. Expert weights TP-sharded on INNER dims refuse: expert TP splits the intermediate dim and the 2-D packed flatten cannot express that.
+
+### Evidence
+
+Integration-tree matrices (multimodal debug flavor, one seed per table, warm cache, steps 1/3/10):
+
+LoRA:
+
+| cell | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | 1 | 12.45474 | 11.94849 | 10.71402 |
+| dp2 | 2 | 12.46697 | 11.82895 | 10.53144 |
+| tp2 | 2 | 12.45324 | 11.93854 | 10.72911 |
+| fsdp2 x tp2 | 4 | 12.46155 | 11.89166 | 10.47442 |
+| TBD-OVERNIGHT-EXPANSION | | | | |
+
+QLoRA (packed MXFP4, bases + experts): dp1 12.45288 / 11.96454 / 10.68903, dp2 12.45138 / 11.87566 / 10.37547; TP cells stop at the designed experts guard. QLoRA linears-only x tp2: 12.36750 / 11.87709 / 10.51911. Checkpoint loop: an unquantized-LoRA seed checkpoint repacked by the script (217 weights: 148 linears + 69 expert tables) loads into the packed flavor under dp2/FSDP and trains.
+
+Peak memory, full QLoRA vs LoRA at dp2: 3.20 vs 3.52 GiB -- the debug model is activation-dominated; the parameter-side ~4x cut shows at scale.
+
+CPU: 16 lora tests + 2 experts tests (merge key-set exactness, serialization-hook keys, wrapper traversal, aliasing restore, NF4 pack/forward/merge, MXFP4 build-pack and merge round-trip).
+
+### Changed files
+
+    torchtitan/components/lora.py                 +~600
+    scripts/quantize_lora_dcp.py                  +150
+    torchtitan/models/kimi_k3/config_registry.py  +100  lora/qlora flavors
+    tests/unit_tests/cpu/test_lora.py             +250
+    torchtitan/models/kimi_k3/tests/test_qlora_experts.py +70
