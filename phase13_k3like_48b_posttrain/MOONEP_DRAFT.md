@@ -203,3 +203,14 @@ ep2 数值格对照。
 
 现在**没有任何 raise 的桩**。上机剩下的全是"跑一下":PCIe 盒子先过 CPU 测试;H100 上
 `moe_comm_backend="moonep"` ep2 直接起,按序验 token 守恒 → 梯度到达 → 与 standard 对照。
+
+---
+
+# 2026-08-28 上机(2×H100 NVL,vast.ai):被 multicast 挡在 Buffer 构造处
+
+构建过、CPU 假替身 4 passed、torchtitan 侧接线走到 `init_buffer`;然后 MoonEP 自测与
+`kimi_k3_debugmodel_moonep` 都在 `nvl_shared_buffer.cuh:403 cuMulticastGetGranularity`
+报 `operation not supported`。这对卡是主机 GPU #0 与 #5,`topo -p2p n` = NS,没有 NVLink
+互连,NVSwitch multicast 不可用;MoonEP 的 dispatch/combine 就是建在 multicast 上的。
+细节与准备好的脚本见 `EP_BACKEND_EVIDENCE_2026-08-28.md` §九。租机验收条件不变:
+`nvidia-smi topo -m` 两卡间须 `NV#`,且最好 `topo -p2p n` 为 OK。

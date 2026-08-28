@@ -234,22 +234,30 @@ dispatch 直接返回全局接收 buffer(`_HIDDEN_RECV_BUFFER_COUNT = 2`,每次 
 EP PR。PR body 如实写这一段;K3 的 flavor 保留(它就是复现路径)。临时 clone 补丁已撤,
 `ep_review1` 工作树干净。独立修复分支见 §十。
 
-## 九、MoonEP 准备(只读 + CPU,未动 venv,未上 GPU)
+## 九、MoonEP 上机:同一个硬件条件把它也挡住了
 
-* `MoonshotAI/MoonEP` master @ `2bd860b` 已克隆;`setup.py` 是一个 `moonep._C` CUDA 扩展
-  (`-std=c++20`,链 `libcuda`),`install_requires` 只有 `nvidia-cutlass-dsl==4.4.2`;构建脚本已写
-  (`build_moonep.sh`,矩阵结束后再跑,因为它往 venv 加包)。
-* `k3_on_4025` worktree @ `04f73f4`:`torchtitan/models/kimi_k3/tests/test_moon_ep_dispatcher.py`
-  **4 passed**(MOONEP_DRAFT 定的上机前门禁,CPU 假替身)。
-* 预备了 flavor `kimi_k3_debugmodel_moonep`(`model_registry("debugmodel", moe_comm_backend="moonep")`,
-  未提交);`check_moonep_mesh` 要求 `dp_shard == ep` 且无 dp_replicate → 2 卡就是
-  `--parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2`。
-* VMM 句柄:`moonep.buffer._use_fabric_for_group` 默认 `auto`,所有 rank 都报
-  `CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED` 时走 fabric;容器里没有 IMEX 的话 fabric
-  import 会失败,备用 `MOONEP_MEM_HANDLE_TYPE=fd`(POSIX fd,单机够用)。远端读走 P2P,本机 P2P OK,
-  但 MoonEP README 的所有带宽数字都是 NVLink 的;PCIe 上只能验对价,不能验吞吐。
-* MoonEP 自带测试写死 `torchrun --nproc_per_node=8`,`dist_env` fixture 从 world size 取 R,
-  先试 2 rank 能否直接过。
+| 步骤 | 结果 |
+|---|---|
+| 构建 | `MoonshotAI/MoonEP` master @ `2bd860b`,`pip install -e .`(CUDA 13.0,`-std=c++20`,加 `nvidia-cutlass-dsl==4.4.2`),49 s,`from moonep import Buffer` OK;torch 未变 |
+| CPU 门禁 | `k3_on_4025` @ `04f73f4`:`test_moon_ep_dispatcher.py` **4 passed**(假替身) |
+| MoonEP 自测 2 rank | `tests/test_planning.py` 第 2 个用例起全部 **`CUDA error nvl_shared_buffer.cuh:403 'operation not supported'`** = `cuMulticastGetGranularity`;`MOONEP_MEM_HANDLE_TYPE=fd` 无区别;其余五组同样在 Buffer 构造处失败 |
+| torchtitan `kimi_k3_debugmodel_moonep` ep2 × fsdp2 | 配置 / spec(`MoonEPTokenDispatcher` + `MoonEPGroupedExperts`,dim 512)/ `check_moonep_mesh`(dp_shard 2 == ep 2)全部通过,trainer 建好、structured logging 起来,**在 MoonEP `Buffer(...)` 构造处报同一个 403** |
+
+原因:MoonEP 的 dispatch/combine 建在 **NVSwitch SHARP multicast** 上(`buffer.py:_create_nvl_multicast_view`,
+`assert nvl_multicast_supported()`),而且连普通 VMM 张量的 padding 粒度都要先 `cuMulticastGetGranularity`
+(`nvl_granularity_max` 取所有句柄类型的最大值);本容器这对卡(主机 GPU #0 与 #5)之间没有 NVLink,
+multicast 对象不可用。**与 DeepEP 是同一个结论:要一对桥接的卡。** 在那之前本机能给 MoonEP 的
+只有 CPU 假替身测试(已过)。
+
+准备好的东西(换到 NVLink 对上直接用):
+
+* flavor `kimi_k3_debugmodel_moonep`(`k3_on_4025_local` 本地提交,未推,见 §十);
+* `matrix_scripts/moonep_onbox/`:`build_moonep.sh`、`run_moonep_selftests.sh`(6 组自测,2 rank)、
+  `run_moonep_smoke.sh`(ep2 3 步)、`run_grad_probe_moonep.sh`(standard vs moonep 逐参数梯度 =
+  反向到达 + 槽内专家梯度);`matrix_scripts/moonep_matrix.sh`(dp2 / ep2 standard / ep2 moonep 数值格)。
+  验证顺序不变:自测 → 烟测 → token 守恒(step-1 loss 对 standard)→ 梯度探针 → 数值格。
+* 注意:`moonep` 是从 session 的 scratch 目录 editable 安装的;换机器重装,或把源码放到
+  `/workspace` 下再 `pip install -e .`。
 
 ## 十、待办
 
@@ -259,8 +267,9 @@ EP PR。PR body 如实写这一段;K3 的 flavor 保留(它就是复现路径)�
 3. MinimalAsyncEP 修复:独立分支,从 upstream/main 切,`MinimalAsyncEPTokenDispatcher.dispatch`
    把接收 buffer 的 view 换成自有张量(或 `dispatch_op` 内 clone),带 deepseek 普通专家的探针数字,
    单独发 PR;修完再补 K3 的 `ep2 x minimal_async_ep` 数值格(预期与 standard 同量级)。
-4. MoonEP 上机:构建 → MoonEP 自测 2 rank → `kimi_k3_debugmodel_moonep` ep2 → token 守恒 /
-   反向到达 / 与 standard ep2 数值对照(顺序不可换,MOONEP_DRAFT §上机调试清单)。
+4. MoonEP 上机:本机不可行(§九);换一对 NVLink 桥接的卡后按 `moonep_onbox/` 顺序跑。
+   `kimi_k3_debugmodel_moonep` flavor 在 `/workspace/tt_k3_on_4025`(分支 `k3_on_4025_local`)本地
+   提交,推不推 `k3_on_4025` 由用户定。
 
 ## 十一、复现
 
