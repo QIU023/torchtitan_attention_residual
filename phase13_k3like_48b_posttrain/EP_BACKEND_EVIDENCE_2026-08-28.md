@@ -8,10 +8,14 @@ hardcoding"。`ep_review1` 已把 `moe_comm_backend` 做成 spec 参数(`286d139
 
 ## 先看这里:四个问题的直接回答
 
-**本机为什么跑不了 DeepEP?** 两张 H100 NVL 之间没有 NVLink 桥(`topo -m` = SYS,PCIe+UPI),
-P2P 读写可用但 DeepEP v2 的节点内内核依赖 NVLink 语义:第一次 dispatch 就 `DeepEP NVLink
-barrier timeout` → `CUDA_ERROR_LAUNCH_FAILED (719)`。DeepEP 自带 `test_barrier.py` / `test_ep.py`
-(2 rank)同样失败;README 明写 "NVLink for intranode communication"。要 NVLink 机器(§三)。
+**本机为什么跑不了 DeepEP?** 机器有 NVLink,但**分给本容器的两张卡之间没有**:容器拿到的是主机的
+GPU #0 与 GPU #5(`/dev/nvidia0`、`/dev/nvidia5`;PCI 61:00.0 / C1:00.0,分属两个 NUMA)。
+`nvidia-smi nvlink --status` 每卡 12 条 26.5 GB/s 的活跃链路 —— 那是各自连到不在容器里的
+桥接邻居(H100 NVL 的桥只连相邻成对的卡);`nvidia-smi topo -p2p n` 在 GPU0↔GPU1 之间是
+**NS(Not Supported)**,`topo -m` 是 SYS。DeepEP v2 的节点内内核依赖 NVLink 语义:第一次 dispatch
+就 `DeepEP NVLink barrier timeout` → `CUDA_ERROR_LAUNCH_FAILED (719)`;DeepEP 自带
+`test_barrier.py` / `test_ep.py`(2 rank)同样失败;README 明写 "NVLink for intranode
+communication"。**要一对桥接的卡(相邻编号)才能验 DeepEP / MoonEP**(§三)。
 
 **minimal_async_ep 怎么回事?** 能跑(10 步 rc=0)但**丢 routed experts 的 `w1`/`w3` 梯度**:
 逐参数探针里只有它们差(K3 上 1/500,上游 deepseek 普通专家上精确为 0),其余参数全一致;
