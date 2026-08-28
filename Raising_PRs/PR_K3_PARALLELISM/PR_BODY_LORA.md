@@ -14,17 +14,35 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 
 Integration-tree matrices (multimodal debug flavor, one seed per table, warm cache, steps 1/3/10):
 
-LoRA:
+LoRA (every parallelism family the tree carries; PP is the one designed
+limitation -- a pipeline stage holding only frozen modules has no trainable
+params and the optimizer refuses, which is the known all-frozen-stage caveat):
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
 | dp1 | 1 | 12.45474 | 11.94849 | 10.71402 |
 | dp2 | 2 | 12.46697 | 11.82895 | 10.53144 |
+| dp4 | 4 | 12.49144 | 12.08583 | 10.70239 |
 | tp2 | 2 | 12.45324 | 11.93854 | 10.72911 |
+| tp4 | 4 | 12.46047 | 11.96414 | 10.76673 |
 | fsdp2 x tp2 | 4 | 12.46155 | 11.89166 | 10.47442 |
-| TBD-OVERNIGHT-EXPANSION | | | | |
+| cp2 | 2 | 12.44350 | 11.94324 | 10.70531 |
+| fsdp2 x cp2 | 4 | 12.45038 | 11.84340 | 10.46684 |
+| dp2 x ep2 | 2 | 12.46478 | 11.84854 | 10.47317 |
+| dp4 x ep4 | 4 | 12.49350 | 12.07487 | 10.62631 |
 
-QLoRA (packed MXFP4, bases + experts): dp1 12.45288 / 11.96454 / 10.68903, dp2 12.45138 / 11.87566 / 10.37547; TP cells stop at the designed experts guard. QLoRA linears-only x tp2: 12.36750 / 11.87709 / 10.51911. Checkpoint loop: an unquantized-LoRA seed checkpoint repacked by the script (217 weights: 148 linears + 69 expert tables) loads into the packed flavor under dp2/FSDP and trains.
+Branch worktree (the branch bases on upstream main, where the K3 TP/EP gates
+are still on: its cells are data-parallel, and the TP/EP interaction code is
+present but inert until those PRs land -- adapter sharding derives from
+sharding_configs, which are None on upstream today):
+
+| cell | flavor | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | lora | 12.61333 | 12.13142 | 10.95973 |
+| dp2 | lora | 12.52952 | 12.21486 | 10.67500 |
+| dp2 | qlora_mxfp4 | 12.56775 | 12.20790 | 10.98469 |
+
+QLoRA (packed MXFP4, bases + experts): dp1 12.45288 / 11.96454 / 10.68903, dp2 12.45138 / 11.87566 / 10.37547, dp4 12.47301 / 12.00136 / 10.55821, and TBD-QLORA-EP; the full-flavor TP cells stop at the designed experts guard (expert TP shards the intermediate dim, which the 2-D packed flatten cannot express). QLoRA linears-only x tp2: 12.36750 / 11.87709 / 10.51911. Checkpoint loop: an unquantized-LoRA seed checkpoint repacked by the script (217 weights: 148 linears + 69 expert tables) loads into the packed flavor under dp2/FSDP and trains.
 
 Peak memory, full QLoRA vs LoRA at dp2: 3.20 vs 3.52 GiB -- the debug model is activation-dominated; the parameter-side ~4x cut shows at scale.
 
