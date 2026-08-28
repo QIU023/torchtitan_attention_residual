@@ -452,3 +452,27 @@ buffer 一律按 latent_dim 配置)。59+186 测试全绿,ep2 十步 rc=0。
 内核绿;冒烟即跑此路径)。真正余下的是**证据缺口**:live 训练中 plan 装填
 experts_to_copy 取决于实时负载,需一格强制不均衡的真内核观测 + prefetch
 开/关拖尾对比——届时再租 NVLink。
+
+## 强制不均衡证据格(盒释放前最后一跑)
+
+方法:临时 hack 置路由 ids 全 0(全 token 压 expert0,rank0 本家)+
+experts 侧一行槽活动打印;moonep强热/standard强热/moonep常态 各 30 步。
+
+| 格 | 末步 tps | 槽活动 |
+|---|---|---|
+| moonep 强热 | 345 | rank0 槽装填 expert **16**,rank1 空 |
+| standard 强热 | 336 | — |
+| moonep 常态 | 347 | — |
+
+**已证**:复制路径(prefetch→槽计算→reduce_grad)在真内核实训中激活且
+稳定(rc=0),复制机械零额外开销(345≈347)。
+
+**发现(open question,给下一次 NVLink 会话)**:退化全热载荷下 planner
+的选择反常——均衡策应为 rank1 复制热专家 0,实际是 rank0 复制冷专家 16、
+热点未分摊(对 standard 仅 +2.7%)。counts 传入已核实正确(hack 在路由
+返回处,计数由强热 ids 重建),plan 由 buffer.dispatch 内部产出——属
+moonep planner 在单专家病态分布下的行为,或其目标函数(VM 组行均衡 vs
+token 负载)与我们预期不同。待办:非退化偏斜(如 ids%4)复测 + 读 planner
+源码定语义。盒在补测前被释放,该格记为 open。
+
+临时 hack 未入任何分支;方法全文如上,可复刻。
