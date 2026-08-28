@@ -417,3 +417,23 @@ expert weights in remote prefetch"——与 QLoRA 线的未来交点已在上游
 
 **后端章节全线终态**:standard(双拓扑)/deepep(NVLink 首验)/
 minimal_async_ep(跑通+上游 bug 裁决+PR30)/moonep(核心目标,全链闭合)。
+
+## review 三条的终局:一个消融推翻了我们自己的注释(be477938d)
+
+第三条("why do you need this?")最初用注释回应——"decoder 级分布使 MoE
+边界激活可被再分布,没有它 EP 无物可作用"。消融证明这句话是**错的**:
+本地 PCIe 盒 ep2×fsdp2、确定性同 seed、十步,删掉
+`set_decoder_sharding_config` 前后 **s10 逐位同值(3.60159)**——MoE 模块
+的 in_src 边界自己就会提升 plain 输入,decoder 级声明在 EP-only 路径是
+no-op。处置:删行 + import/docstring 同步清理;更小的 diff 即最好的回答。
+Reviewer 的直觉正确。
+
+同笔:`enable_sp` 从调用点字面量升为真参数(默认 False,本 PR 唯一取值,
+透传至 set_moe_sharding_config)——第二条"remove the hardcoding"按字面
+兑现;SP 本体保持与 EP PR 零耦合,归 TP PR 之后的独立后续。
+
+方法学备注:消融首轮两腿同值实为**假阳性**——脚本第 2 腿的字符串替换被
+并行进行的穿线编辑扑空,两腿实际都带调用;靠"同值可疑"察觉,手动重做
+第 2 腿后结论才成立。教训:同一工作树上不要让脚本编辑与人工编辑并行。
+
+`ep_review1` 现头:be477938d。`k3_ep`(PR 头)保持 18d1f182a,同步待用户。
