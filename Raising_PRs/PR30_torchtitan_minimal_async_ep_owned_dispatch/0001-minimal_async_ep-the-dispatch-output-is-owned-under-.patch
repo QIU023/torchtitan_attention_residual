@@ -1,0 +1,41 @@
+From 74a89f818596094aa19fa8c7fe392c10a8af3cb0 Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Fri, 28 Aug 2026 16:01:20 +0000
+Subject: [PATCH] minimal_async_ep: the dispatch output is owned under autograd
+
+MinimalAsyncEP's dispatch returns one of its two recycled receive buffers.
+The routed experts' grouped GEMM saves that tensor for its weight
+gradient, and in the layer's backward the combine backward dispatches
+the output gradient into the same slot first (dispatch k, combine k+1,
+combine-backward k+2 == k with two slots), so dW1 and dW3 are computed
+from gradient rows instead of the expert input. deepseek_v3_debugmodel
+with the plain GroupedExperts gets exactly zero w1/w3 gradients on ep2;
+the flavor in the tree does not show it because fused_swiglu is forced
+there. Clone the rows when grad is enabled; inference keeps the view.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018VSpEdqktVJCkFpG217pYh
+---
+ torchtitan/models/common/token_dispatcher.py | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/torchtitan/models/common/token_dispatcher.py b/torchtitan/models/common/token_dispatcher.py
+index b5edd24..320ea1b 100644
+--- a/torchtitan/models/common/token_dispatcher.py
++++ b/torchtitan/models/common/token_dispatcher.py
+@@ -1155,6 +1155,12 @@ class MinimalAsyncEPTokenDispatcher(BaseEPTokenDispatcher):
+         )
+ 
+         metadata = EPDispatchMetadata(state=state)
++        if torch.is_grad_enabled():
++            # The op hands back one of the two recycled receive buffers. The
++            # expert GEMM saves this tensor for its weight gradient, and the
++            # combine backward refills that same buffer before the GEMM's
++            # backward runs, so under autograd the rows must be owned.
++            hidden_states_RD = hidden_states_RD.clone()
+         return hidden_states_RD, num_tokens_per_local_expert_e, metadata
+ 
+     # pyrefly: ignore [bad-override]
+-- 
+2.43.0
+

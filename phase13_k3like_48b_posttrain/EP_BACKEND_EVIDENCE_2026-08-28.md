@@ -261,6 +261,14 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
    保存张量的生命周期。MinimalAsyncEP 2026-06-13 进上游(#3561),当前 dispatcher/experts 兄弟
    节点结构来自 07-16 的重构(#3859)。
 
+5. **编译路径(`experiments/graph_trainer`,aot_fx_trace,`memory_policy full`,`run_grad_probe_graph.sh`)**:
+   修前 `w13` 每层精确 0;修后 0.01149 / 0.00811 / 0.00638,与 eager fused standard 逐位相同。
+   eager 与编译两条路径都中招,修复都生效。
+
+6. **CI 预检**:pyrefly 0.45.1 在 `ep_review1`(含修复)与 `maep_dispatch_owned` 上均 0 errors;
+   `test_integration_test_definitions.py` 11 passed。H100 上 dp2 / ep2 standard / ep2 fullac / ep2 maep
+   的 step-10 显存 7.37 / 8.07 / 7.26 / 7.29 GiB(256-token 微批,tps 无性能意义,不进 body)。
+
 **机制**:专家权重梯度 `dW1 = x_RDᵀ·dgate` 用的是 autograd 保存的 GEMM 输入 `x_RD`;MinimalAsyncEP 的
 dispatch 直接返回全局接收 buffer(`_HIDDEN_RECV_BUFFER_COUNT = 2`,每次 `_copy_rows_to_peers_and_wait_cuda`
 轮换一个槽)的 view。full-AC 下一层的顺序是:重算前向 dispatch(槽 k)→ combine(槽 k+1)→
@@ -321,6 +329,19 @@ K3 ep2。deepep(NVLink)/ hybridep(GB200)/ moonep(NVSwitch multicast)本机无法
 2. MinimalAsyncEP 修复(本机可做):dispatch 交出自有张量 → deepseek 普通专家探针 `w1/w3` 回到 3e-4
    → K3 `ep2 × minimal_async_ep` 数值格与 standard 同量级 → 单独 PR(带 deepseek 复现数字)。
 3. NVLink 对到手后:`ep_review1` 上重跑 `ep_backend_matrix.sh`,再跑 `moonep_onbox/`。
+
+## 释放前清单(2026-08-28 晚,已执行)
+
+本机只在 worktree 里、未推 fork 的三个提交已以补丁形式进 logbook:
+
+| 提交 | 内容 | 补丁位置 |
+|---|---|---|
+| `74a89f8`(分支 `maep_dispatch_owned`,基点 upstream/main `b953a3f`) | MinimalAsyncEP dispatch 输出在 grad 下 clone | `Raising_PRs/PR30_*/0001-minimal_async_ep-*.patch` |
+| `c3f54ba`(`ep_review1_maepfix`) | 同一补丁 cherry-pick 到 `ep_review1` 之上 | 同上,`git am` 到 `ep_review1` 即得 |
+| `12bad1b`(`k3_on_4025_local`) | `kimi_k3_debugmodel_moonep` flavor | `phase13_k3like_48b_posttrain/matrix_scripts/moonep_onbox/0001-kimi_k3-a-moonep-debug-flavor.patch` |
+
+fork 上已推的:`ep_review1` = `k3_ep` = `4f6462c`。logbook 全部推送。本机再无 EP 方向可做的事:
+standard 验完、minimal_async_ep 修好并在 eager/编译两路径验证、deepep/moonep 需 NVLink 对、hybridep 需 GB200。
 
 ## 十一、复现
 
