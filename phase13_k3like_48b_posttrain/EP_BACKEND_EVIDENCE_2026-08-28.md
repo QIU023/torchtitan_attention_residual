@@ -21,7 +21,7 @@ communication"。**要一对桥接的卡(相邻编号)才能验 DeepEP / MoonEP*
 逐参数探针里只有它们差(K3 上 1/500,上游 deepseek 普通专家上精确为 0),其余参数全一致;
 给专家 GEMM 输入加一行 `.clone()` 即恢复。根因:专家权重梯度反向要用保存的输入 `x_RD`,
 MinimalAsyncEP 的 dispatch 返回的是两槽接收 buffer 的 view,combine 反向把它盖掉了。
-deepseek 的 CI 靠 `fused_swiglu` 覆盖躲开,K3 的 SiTU-GLU 用不了。上游缺陷,不是 K3 的(§八.1)。
+**上游自己的 fused_swiglu 路径同样中招**(未修 main 上 `w13` 梯度精确为 0),只是总 grad_norm/loss 上看不出来(专家梯度占总范数的万分之一),CI 又只测能跑。上游缺陷,不是 K3 的(§八.1)。
 
 **K3 跑不起来?** 不是。K3 本身没问题;只是要选其它后端得先修两处:core 按 `model.dim`
 给 dispatcher buffer 定宽而 K3 专家吃 latent 流(512 vs 1024)→ 修在 core(`20b48f5`);
@@ -224,8 +224,9 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
    | standard | 8.00752 / 4.2267 | 6.11044 / 4.0909 |
    | minimal_async_ep(上游 flavor,带 fused_swiglu) | 8.00778 / 4.2259 | 6.11541 / 4.0995 |
 
-   看起来 deepseek 没事 —— 但上游 `deepseek_v3_debugmodel_minimal_async_ep` **强制
-   `enable_fused_swiglu`**(专家换成融合 override),K3 是 SiTU-GLU 用不了它。
+   看起来 deepseek 没事 —— **这个判据看不出这个 bug**(见下:专家梯度只占总范数的万分之一)。
+   上游 `deepseek_v3_debugmodel_minimal_async_ep` 强制 `enable_fused_swiglu`(专家换成融合 override),
+   K3 是 SiTU-GLU 用不了它;我一度据此推断 fused 路径没事,**错了**,见第 4 条。
 3. **逐参数梯度探针**(`grad_probe.py`:同一 seed ckpt、同一个微批、一次前向+反向,dump 每个
    参数的梯度范数;`grad_diff.py` 分组比):
 
@@ -235,17 +236,29 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
    | deepseek `dsv3_std` vs `dsv3_maep_plain`(**普通 GroupedExperts**,无 fused) | 其它组 ≤ 2.5e-3;**`w1_EFD` / `w3_EFD` 精确为 0.00000**(standard 0.0018–0.0092);`w2` 一致 |
    | 同上,但在上游 `GroupedExperts.forward` 临时加 `x_RD = x_RD.bfloat16().clone()` | **全部一致**:experts 组 max rel 3.1e-4,总范数 4.44737 vs 4.44740 |
 
+4. **上游自己的 fused 路径(未修 main,`dsv3_std_fused` vs `dsv3_maep_fused`,`run_grad_probe_fused.sh`)**:
+   融合权重 `w13` 的梯度在每一层**精确为 0.00000**(standard+fused 0.0054–0.0115),其它组 ≤ 6.4e-4;
+   总 grad_norm 4.44490 vs 4.44487,loss 4.005814 vs 4.005869 —— 指标层面不可见。
+   **结论:上游 MinimalAsyncEP 的所有训练配置都在静默地不更新 routed experts 的 gate/up 投影。**
+   没被发现的原因:症状静默(其余参数照常学、loss 照常降)、专家梯度占总范数万分之一、
+   唯一 CI 格(`deepseek_v3_fsdp+cp+tp+minimal_async_ep`)只断言跑完、内核单测测不到 autograd
+   保存张量的生命周期。MinimalAsyncEP 2026-06-13 进上游(#3561),当前 dispatcher/experts 兄弟
+   节点结构来自 07-16 的重构(#3859)。
+
 **机制**:专家权重梯度 `dW1 = x_RDᵀ·dgate` 用的是 autograd 保存的 GEMM 输入 `x_RD`;MinimalAsyncEP 的
 dispatch 直接返回全局接收 buffer(`_HIDDEN_RECV_BUFFER_COUNT = 2`,每次 `_copy_rows_to_peers_and_wait_cuda`
 轮换一个槽)的 view。full-AC 下一层的顺序是:重算前向 dispatch(槽 k)→ combine(槽 k+1)→
 **combine 反向的 `_dispatch_to_experts`(槽 k+2 ≡ k,把 `x_RD` 盖掉)**→ 专家反向读 `x_RD` → 错。
 `w2` 用的是 `_situ_glu`/silu 的输出(独立张量),`dx_RD = dgate·W1 + dup·W3` 不需要 `x_RD`,所以只有
-`w1`/`w3` 中招 —— 与两棵树的探针完全吻合。deepseek 的 K3 之外情况 CI 只跑 fused 路径,所以没暴露。
+`w1`/`w3` 中招 —— 与两棵树、plain 与 fused 的探针全部吻合。
 
 **结论**:`minimal_async_ep` 在 K3 上"能跑"但**丢 `w1/w3` 梯度**,根因在上游 MinimalAsyncEP
 与普通 `GroupedExperts` 的组合;正确的修法是 dispatch 交出自有张量(或专家侧 clone),不属于
-EP PR。PR body 如实写这一段;K3 的 flavor 保留(它就是复现路径)。临时 clone 补丁已撤,
-`ep_review1` 工作树干净。独立修复分支见 §十。
+EP PR。PR body 如实写这一段;K3 的 flavor 保留(它就是复现路径)。临时 clone 补丁已撤。
+**修复已实现并验证**:fork 本地分支 `maep_dispatch_owned`(基点 upstream/main `b953a3f`,commit `74a89f8`,
+`MinimalAsyncEPTokenDispatcher.dispatch` 在 grad 开启时 clone 交出的行),deepseek 普通专家探针 experts 组
+max rel 3.1e-4(修前 1.0);cherry-pick 到 `ep_review1_maepfix`(`c3f54ba`)后 K3 探针 experts 组 max rel
+3.1e-2 / 中位数 6.9e-3(修前 0.998),总范数 23.508 vs 23.245(修前 19.73)。kit:`Raising_PRs/PR30_*`。
 
 ## 九、MoonEP 上机:同一个硬件条件把它也挡住了
 

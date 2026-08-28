@@ -16,3 +16,20 @@ def dsv3_maep_plain() -> Trainer.Config:
     config = dsv3_std()
     config.model_spec = model_registry("debugmodel", moe_comm_backend="minimal_async_ep")
     return config
+
+
+def dsv3_std_fused() -> Trainer.Config:
+    from torchtitan.models.deepseek_v3.config_registry import enable_fused_swiglu
+
+    config = dsv3_std()
+    enable_fused_swiglu(config)
+    return config
+
+
+def dsv3_maep_fused() -> Trainer.Config:
+    from torchtitan.models.deepseek_v3.config_registry import enable_fused_swiglu
+
+    config = dsv3_std()
+    config.model_spec = model_registry("debugmodel", moe_comm_backend="minimal_async_ep")
+    enable_fused_swiglu(config)
+    return config
