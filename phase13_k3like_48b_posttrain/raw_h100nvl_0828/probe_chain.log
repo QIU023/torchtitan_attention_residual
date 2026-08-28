@@ -1,0 +1,25 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+kimi_k3_debugmodel -> grads_std.json rc=0
+kimi_k3_debugmodel_minimal_async_ep -> grads_maep_unfixed.json rc=0
+PATCH-APPLIED
+kimi_k3_debugmodel_minimal_async_ep -> grads_maep_fixed.json rc=0
+PATCH-REVERTED
+### DIFF unfixed:
+ 9.98e-01      0.70356     0.00146  layers.21._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w3_EFD
+ 9.98e-01      0.70951     0.00148  layers.21._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w1_EFD
+ 9.98e-01      0.77706     0.00164  layers.19._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w1_EFD
+ 9.98e-01      0.77965     0.00167  layers.19._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w3_EFD
+ 9.98e-01      0.75778     0.00164  layers.20._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w1_EFD
+ 9.98e-01      0.74534     0.00162  layers.20._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w3_EFD
+ 9.98e-01      0.87260     0.00211  layers.17._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w1_EFD
+ 9.98e-01      0.81486     0.00197  layers.18._checkpoint_wrapped_module.moe.routed_experts.inner_experts.w1_EFD
+### DIFF fixed:
+ 2.48e-01      0.02271     0.01707  layers.14._checkpoint_wrapped_module.attention_res_proj.weight
+ 2.47e-01      0.64332     0.85389  layers.11._checkpoint_wrapped_module.ffn_res_proj.weight
+ 2.44e-01      0.00036     0.00047  layers.12._checkpoint_wrapped_module.attention_res_norm.weight
+ 2.42e-01      0.00023     0.00030  layers.2._checkpoint_wrapped_module.delta_attention.A_log
+ 2.41e-01      0.00005     0.00007  layers.21._checkpoint_wrapped_module.delta_attention.A_log
+ 2.34e-01      0.00044     0.00033  layers.14._checkpoint_wrapped_module.attention_res_norm.weight
+ 2.31e-01      0.00005     0.00006  layers.20._checkpoint_wrapped_module.delta_attention.A_log
+ 2.26e-01      0.01875     0.02421  layers.12._checkpoint_wrapped_module.attention_res_proj.weight
+PROBE_CHAIN_DONE
