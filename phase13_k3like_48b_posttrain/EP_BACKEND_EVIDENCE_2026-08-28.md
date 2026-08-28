@@ -28,7 +28,9 @@ deepseek 的 CI 靠 `fused_swiglu` 覆盖躲开,K3 的 SiTU-GLU 用不了。上�
 `moe_comm_backend` 必填参数打挂上游单测 → 给默认值(`4f6462c`)(§四)。
 
 **ep2 状态?** `standard` ep2×fsdp2 **step-1 与 dp2 逐位相同**(12.59885),step-2 差 4.3e-3;
-full AC 对照逐位相同。PR head `k3_ep` 已快进到 `4f6462c`,body 新章节在 `PR_BODY_EP.md`(§八)。
+full AC 对照逐位相同。**PR head 不动**:换后端在本机一个都没真正验通(用户 2026-08-28 决定),
+`k3_ep` 退回 `c117ce1`(`comm_backend` 仍钉 standard),后端工作留在 `ep_review1` @ `4f6462c`;
+body 新章节按"head 仍钉 standard、其它后端在 ep_review1 上试过"的口径写(§五、§十)。
 
 ## 〇、一句话结论(15:25,矩阵 5 格全部落地)
 
@@ -139,7 +141,7 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
    deepseek_v3 / qwen3 的专家输入宽度就是 model dim,行为不变;K3 变成 latent_dim。真 K3 下这是
    7168 vs 3584。修完 MinimalAsyncEP 初始化日志 `hidden_dim=512`,烟测 3 步通。
 
-## 五、代码改动(fork `ep_review1`,本地 head `4f6462c`,尚未推)
+## 五、代码改动(fork `ep_review1` @ `4f6462c`;**不进 PR head**)
 
 | commit | 文件 | 内容 |
 |---|---|---|
@@ -147,7 +149,18 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
 | `20b48f5` | `models/common/token_dispatcher.py` +7/−3 | dispatcher buffer 宽度取 `routed_experts.inner_experts.dim` |
 | `4f6462c` | `kimi_k3/__init__.py` +1/−1, `kimi_k3/config_registry.py` +18/−1 | `_kimi_k3_config(..., moe_comm_backend="standard")` 默认;新增 `kimi_k3_debugmodel_deepep` / `kimi_k3_debugmodel_minimal_async_ep`(后者 FullAC) |
 
-`k3_ep`(PR head `c117ce1`)→ `ep_review1` 可 fast-forward,推法 `git push origin ep_review1:k3_ep`。
+分支状态(2026-08-28 晚):
+
+* `ep_review1` = `4f6462c`(已推),承载全部后端工作,给下一台 NVLink 机器用。
+* `k3_ep`(PR head):我曾把它快进到 `4f6462c`,用户决定**换后端全部不 work 就不更新 PR head**,
+  退回 `c117ce1`。退回命令(force-with-lease 只在远端确为 4f6462c 时生效;本会话的分类器不让
+  我执行,由用户跑):
+
+      cd /workspace/tt_ep_review1 && git push origin c117ce1:refs/heads/k3_ep --force-with-lease=refs/heads/k3_ep:4f6462c16
+
+* PR body(`PR_K3_PARALLELISM/PR_BODY_EP.md`)已按 head = `c117ce1` 重写:正文仍是 GitHub 上现行
+  那份(`comm_backend` pinned to standard),尾部加 `### EP backend verify result`,只陈述在
+  `ep_review1` 上试过的结果与数字,不把 ep_review1 的改动说成本分支的。
 
 ## 六、门禁
 
@@ -261,9 +274,10 @@ multicast 对象不可用。**与 DeepEP 是同一个结论:要一对桥接的�
 
 ## 十、待办
 
-1. ~~矩阵~~、~~归因~~ 已完成;PR body 新 section 已写入 `PR_K3_PARALLELISM/PR_BODY_EP.md`
-   (`### EP backend verify result` + Changed files 更新),**由用户粘贴到 4314 的描述**(本机无 gh/token)。
-2. 推 `ep_review1` 与 `ep_review1:k3_ep`(fast-forward)。
+1. **用户**:把 `k3_ep` 退回 `c117ce1`(§五 的命令);把 `PR_BODY_EP.md` 尾部的
+   `### EP backend verify result` 贴到 4314 描述(本机无 gh/token)。`ep_review1` 保持 `4f6462c`。
+2. 下一台机器必须是 NVLink 对(`topo -m` 两卡间 `NV#`,`topo -p2p n` OK):在 `ep_review1` 上重跑
+   `ep_backend_matrix.sh`(deepep 格应能跑),再决定 `ep_review1` 是否进 PR。
 3. MinimalAsyncEP 修复:独立分支,从 upstream/main 切,`MinimalAsyncEPTokenDispatcher.dispatch`
    把接收 buffer 的 view 换成自有张量(或 `dispatch_op` 内 clone),带 deepseek 普通专家的探针数字,
    单独发 PR;修完再补 K3 的 `ep2 x minimal_async_ep` 数值格(预期与 standard 同量级)。

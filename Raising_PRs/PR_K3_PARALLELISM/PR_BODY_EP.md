@@ -1,6 +1,6 @@
 ### Summary
 
-Enables expert parallelism for Kimi K3 on the existing all-to-all token dispatcher. Expert parallel comes off the unsupported list; The dispatcher backend is a spec parameter, `moe_comm_backend`, threaded from `model_registry` to `make_token_dispatcher_config` the way deepseek_v3 and gpt_oss do it: `standard` (PyTorch all-to-all) by default, `deepep`, `hybridep` and `minimal_async_ep` selectable as on those models. The tables below are measured on `standard`. MoonEP (the report's balanced EP with online redundant-expert planning) is not here; it needs its own dispatcher and backend.
+Enables expert parallelism for Kimi K3 on the existing all-to-all token dispatcher. Expert parallel comes off the unsupported list; MoonEP (the report's balanced EP with online redundant-expert planning) is not here, it needs its own dispatcher and backend, and `comm_backend` is pinned to "standard" so no run can silently believe it is on MoonEP.
 
 ### EP Design
 
@@ -38,34 +38,26 @@ EP shards experts inside the data axis, so each cell is compared against the pur
 
 ### Changed files
 
-    torchtitan/models/common/
-      token_dispatcher.py    +7/-3  the DeepEP / HybridEP / MinimalAsyncEP
-                                   buffers are sized by
-                                   routed_experts.inner_experts.dim (the
-                                   latent width on K3) instead of the model dim
     torchtitan/models/kimi_k3/
       sharding.py              +46  set_expert_parallel_sharding_config: the
                                    routed-expert layout and the decoder-level
                                    distribution above it (new file, following
                                    qwen3_5/sharding.py)
       model.py                  +4  the one call under the ep>1 gate
-      __init__.py           +21/-6  moe_comm_backend threads from model_registry
-                                   to core's dispatcher factory: standard by
-                                   default, deepep / hybridep / minimal_async_ep
-                                   selectable as on deepseek_v3
-      config_registry.py    +18/-1  kimi_k3_debugmodel_deepep and
-                                   kimi_k3_debugmodel_minimal_async_ep (the
-                                   latter with full activation checkpointing,
-                                   which MinimalAsyncEP requires)
+      __init__.py            +6/-2 core's dispatcher factory, pinned to the
+                                   standard all-to-all
       parallelize.py         +14/-2 the efsdp mesh, ep_degree through to
                                    apply_fsdp_to_decoder, and expert parallel off
                                    the unsupported list
-    tests/integration_tests/models.py       the model test gains ep2
-    torchtitan_recipes/tests/models.py    its configuration
+    tests/
+      unit_tests/test_kimi_k3.py  +45  the declaration checks, folded into the
+                                   file the original K3 PR created
+      integration_tests/models.py       the model test gains ep2
+    torchtitan_recipes/tests/models.py  its configuration
 
 ### CI/CD Coverage
 
-The existing kimi_k3 model integration test becomes fsdp2 x ep2 on the same 2 GPUs.
+Two CPU checks in test_kimi_k3.py (plain DP declares nothing; EP shards the routed experts on the expert axis); the existing kimi_k3 model integration test becomes fsdp2 x ep2 on the same 2 GPUs.
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
@@ -83,18 +75,14 @@ The same matrix with the grad-norm reduction carried in float32 (https://github.
 
 ### EP backend verify result
 
-Review ask: try the other dispatcher backends. `moe_comm_backend` is a spec parameter now (`standard` by default; `deepep`, `hybridep`, `minimal_async_ep` selectable as on deepseek_v3), with `kimi_k3_debugmodel_deepep` and `kimi_k3_debugmodel_minimal_async_ep` flavors. One core change was needed before any of them ran on K3: `update_ep_token_dispatcher_config` sized the DeepEP / HybridEP / MinimalAsyncEP buffers by the model dim, but K3's routed experts consume the latent stream (`routed_down` runs before the dispatch: 512 wide against a model dim of 1024 on the debug flavor, 3584 against 7168 on the released shape), so MinimalAsyncEP's receive buffer came back 1024 wide and the expert grouped GEMM failed on the contraction dim. The width now comes from `routed_experts.inner_experts.dim`, which is the model dim on deepseek_v3 and qwen3, so nothing changes there.
+Review ask: try the other dispatcher backends. This branch keeps `comm_backend` pinned to `standard`; the other three were tried on `ep_review1` (https://github.com/QIU023/torchtitan/tree/ep_review1, this branch plus `moe_comm_backend` as a spec parameter, `deepep` / `minimal_async_ep` debug flavors, and one core line so the dispatcher buffers are sized by the experts' input width: K3's routed experts consume the 512-wide latent stream, not the 1024-wide model dim, and MinimalAsyncEP's receive buffer otherwise fails the expert GEMM on the contraction dim). None of the three is usable yet, so that branch stays off this PR. 2 x H100 NVL, no NVLink between the pair (`nvidia-smi topo -p2p n`: NS), torch 2.15.0.dev20260827+cu130, DeepEP v2 at the commit CI pins (`01dc3aa`), `kimi_k3_debugmodel`, seed 42, `--debug.deterministic`, one seed checkpoint, ep2 x fsdp2 on 2 GPUs against dp2:
 
-2 x H100 NVL, PCIe only (no NVLink between the pair), torch 2.15.0.dev20260827+cu130, DeepEP v2 at the commit CI pins (`01dc3aa`, NCCL 2.30.7). `kimi_k3_debugmodel`, seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell, ep2 x fsdp2 on 2 GPUs against the dp2 row at the same world size. MinimalAsyncEP requires full activation checkpointing, so a standard + full-AC row isolates that; it is bitwise the selective-AC row.
+| backend | step 1 | step 2 | step 3 | step 10 | grad_norm at step 1 | result |
+|---|---|---|---|---|---|---|
+| dp2 (reference) | 12.59885 | 9.55945 | 7.58868 | 3.30412 | 13.6250 | |
+| standard (this PR) | 12.59885 | 9.55519 | 7.55794 | 3.32943 | 13.6250 | bitwise dp2 at step 1; full activation checkpointing is bitwise neutral |
+| minimal_async_ep | 12.59281 | 9.93810 | 7.56969 | 3.22479 | 11.3750 | runs, but the routed experts' `w1_EFD` / `w3_EFD` gradients are lost (1/500 of `standard` in every MoE layer; exactly zero on upstream `deepseek_v3_debugmodel` with the plain `GroupedExperts`); cloning the dispatched rows before the expert GEMM restores them to 3e-4. The expert weight-gradient GEMM saves a view of MinimalAsyncEP's two-slot receive buffer, which the combine backward rewrites first. deepseek_v3's flavor is shielded by the `fused_swiglu` override, which K3's SiTU-GLU cannot use. A MinimalAsyncEP fix, not a K3 one |
+| deepep | - | - | - | - | - | dies in the first dispatch: `DeepEP NVLink barrier timeout`, then `CUDA_ERROR_LAUNCH_FAILED`; DeepEP's own `test_barrier.py` / `test_ep.py` fail the same way at 2 ranks. DeepEP requires NVLink intranode; to be rerun on an NVLink pair |
+| hybridep | - | - | - | - | - | not run: DeepEP's separate `hybrid-ep` branch, GB200 / NVL72 only |
 
-| cell | backend | AC | step 1 | step 2 | step 3 | step 10 | grad_norm at step 1 |
-|---|---|---|---|---|---|---|---|
-| dp2 | - | selective | 12.59885 | 9.55945 | 7.58868 | 3.30412 | 13.6250 |
-| ep2 x fsdp2 | standard | selective | 12.59885 | 9.55519 | 7.55794 | 3.32943 | 13.6250 |
-| ep2 x fsdp2 | standard | full | 12.59885 | 9.55519 | 7.55794 | 3.32943 | 13.6250 |
-| ep2 x fsdp2 | minimal_async_ep | full | 12.59281 | 9.93810 | 7.56969 | 3.22479 | 11.3750 |
-| ep2 x fsdp2 | deepep | selective | fails in the first dispatch (below) | | | | |
-
-`standard` is bitwise dp2 at step 1 and 4.3e-3 from it at step 2, the same shape as the 8-GPU table above. `deepep` loads the seed checkpoint and dies in the first dispatch with `DeepEP NVLink barrier timeout` then `CUDA_ERROR_LAUNCH_FAILED`; DeepEP's own `tests/elastic/test_barrier.py` and `test_ep.py` fail the same way at 2 ranks on this box, and its README lists NVLink as an intranode requirement, so that backend needs an NVLink machine, which this one is not. `hybridep` is not run: it lives on DeepEP's separate `hybrid-ep` branch and targets GB200 / NVL72, the same split CI makes.
-
-`minimal_async_ep` runs to step 10 but is not training the same model: with identical weights the forward is 6.0e-3 off at step 1 while the step-1 gradient norm is 17% lower, and step 2 is 3.8e-1 off. A per-parameter gradient dump on one microbatch from the seed checkpoint (https://github.com/QIU023/torchtitan_attention_residual/tree/main/phase13_k3like_48b_posttrain/matrix_scripts/ep_backend_probe) has every other parameter group within 1e-2 of `standard` and the routed experts' `w1_EFD` / `w3_EFD` gradients at 1/500 of theirs in every MoE layer; `w2_EDF` matches. This is not K3-specific: the same probe on upstream `deepseek_v3_debugmodel` with the plain `GroupedExperts` (the `deepseek_v3_debugmodel_minimal_async_ep` flavor forces the `fused_swiglu` override, which K3's SiTU-GLU cannot use) gives exactly zero `w1_EFD` / `w3_EFD` gradients, and cloning the dispatched rows before the expert GEMM (`x_RD = x_RD.bfloat16().clone()`) brings them to within 3e-4 of `standard`. The expert weight-gradient GEMM reads the dispatch output it saved for backward, and that tensor is a view of MinimalAsyncEP's two-slot receive buffer, which the combine backward has rewritten by then. That fix belongs in MinimalAsyncEP rather than in this PR; the K3 flavor stays selectable and the row above is what it produces today.
+Logs, the per-parameter gradient probe and the environment recipe: https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/EP_BACKEND_EVIDENCE_2026-08-28.md
