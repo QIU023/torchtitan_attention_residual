@@ -6,12 +6,12 @@ hardcoding"。`ep_review1` 已把 `moe_comm_backend` 做成 spec 参数(`286d139
 判据同 `EVIDENCE_METHOD_2026-08-25.md`:一个 seed checkpoint、每格预热一趟、每格断言
 `Loading the checkpoint from`、报 step 1 / 3 / 10;判差异只看 step-2(HANDOFF_2026-08-26 §七)。
 
-## 〇、一句话结论(截至 15:10,矩阵 5 格跑完 2 格)
+## 〇、一句话结论(15:25,矩阵 5 格全部落地)
 
 | 后端 | 本机状态 | 备注 |
 |---|---|---|
-| `standard`(PyTorch a2a) | ✅ ep2 跑通,**step-1 与 dp2 逐位相同**(12.59885) | 矩阵主格 |
-| `minimal_async_ep` | ✅ ep2 烟测 3 步跑通(12.60522 / 10.28942 / 7.66797) | 需 full AC;需 core 修 buffer 宽度(见 §四.3);矩阵格在跑 |
+| `standard`(PyTorch a2a) | ✅ ep2 跑通,**step-1 与 dp2 逐位相同**(12.59885),step-2 差 4.3e-3 | 矩阵主格;full AC 对照逐位相同 |
+| `minimal_async_ep` | ⚠️ ep2 跑通(10 步 rc=0),但 **丢 routed experts 的 `w1`/`w3` 梯度**(step-1 grad_norm 低 17%,step-2 差 3.8e-1) | 需 full AC;需 core 修 buffer 宽度(§四.3);根因是上游 MinimalAsyncEP 接收 buffer 被 combine 反向改写、专家 GEMM 保存的是它的 view(§八.1,deepseek 普通专家上复现,clone 即修) |
 | `deepep`(v2 ElasticBuffer) | ❌ 第一次 dispatch 即 `CUDA_ERROR_LAUNCH_FAILED`,内核报 `NVLink barrier timeout` | DeepEP 自带测试同样失败:**硬要求 NVLink**,本机两卡 PCIe;需 NVLink 机器 |
 | `hybridep` | 未跑 | DeepEP 另一条不兼容分支,GB200/NVL72 专属,CI 也是分开装分开测 |
 
@@ -145,18 +145,70 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
 
 (2.13.0 与 nightly 的 step-1 差 1.4e-2 —— 不同 torch,不可比,只说明各自跑通。)
 
-## 八、矩阵 `mx3_ep_backends_0828_0828_145737`(跑到一半,每格落地即补)
+## 八、矩阵 `mx3_ep_backends_0828_0828_145737`(5 格全部落地,15:25)
 
 树 `ep_review1` @ `4f6462c`,flavor `kimi_k3_debugmodel` 系,全局 batch 8192、微批 256/dp rank,
-一个 seed checkpoint,每格 warm + measure 两趟各 10 步,每格 ≈ 9 分钟。
+一个 seed checkpoint(每格日志 2 处 `Loading the checkpoint from`),每格 warm + measure 两趟各
+10 步,每格 ≈ 9 分钟。判据看 step-2(HANDOFF_2026-08-26 §七),表里同时给 step-1 grad_norm。
 
-| cell | world | backend | AC | step 1 | step 3 | step 10 | 状态 |
-|---|---|---|---|---|---|---|---|
-| dp2 | 2 | - | selective | 12.59885 | 7.58868 | 3.30412 | seed-ok rc=0 |
-| ep2 × fsdp2 | 2 | standard | selective | **12.59885** | 7.55794 | 3.32943 | seed-ok rc=0,**step-1 与 dp2 逐位相同** |
-| ep2 × fsdp2 | 2 | standard | full | | | | 跑中 |
-| ep2 × fsdp2 | 2 | minimal_async_ep | full | | | | 排队 |
-| ep2 × fsdp2 | 2 | deepep | selective | | | | 排队(预期 rc≠0,见 §三) |
+| cell | world | backend | AC | step 1 | step 2 | step 3 | step 10 | grad_norm s1 | 状态 |
+|---|---|---|---|---|---|---|---|---|---|
+| dp2 | 2 | - | selective | 12.59885 | 9.55945 | 7.58868 | 3.30412 | 13.6250 | rc=0 |
+| ep2 × fsdp2 | 2 | standard | selective | **12.59885** | 9.55519 | 7.55794 | 3.32943 | 13.6250 | rc=0 |
+| ep2 × fsdp2 | 2 | standard | full | 12.59885 | 9.55519 | 7.55794 | 3.32943 | 13.6250 | rc=0,**与上一行三步逐位相同** |
+| ep2 × fsdp2 | 2 | minimal_async_ep | full | 12.59281 | **9.93810** | 7.56969 | 3.22479 | **11.3750** | rc=0 |
+| ep2 × fsdp2 | 2 | deepep | selective | - | - | - | - | - | rc=1:`DeepEP NVLink barrier timeout` → 719(§三) |
+
+读法:
+
+* **standard:ep2 对 dp2 step-1 逐位相同(12.59885),step-2 差 4.3e-3**,与 08-27 那张 8 卡表
+  同形(EP 只把同一组 GEMM 换执行位置)。
+* **full AC 数值中性**:`ep2_standard_fullac` 与 `ep2_standard` 十步逐位相同,所以
+  minimal_async_ep 那行可以直接对 `ep2_standard` 比,AC 不是变量。
+* **minimal_async_ep 跑通但数值与 standard 不同,且差在反向**:同一 seed、同一权重,step-1 前向
+  loss 只差 6.0e-3(bf16 combine 累加顺序量级),但 **step-1 grad_norm 11.3750 vs 13.6250(−17%)**,
+  step-2 因此差 3.8e-1 —— 是 dp2→ep2(standard)那 4.3e-3 的 90 倍,不在"换并行度"的带宽内。
+  warm/measure 两趟 step-1 都是 12.59281,可复现,不是偶发。反向数值路径:standard 的 combine
+  是 fp32 乘 score + `deterministic_scatter_add`;MinimalAsyncEP 是 triton `reduce_topk_slots_kernel`
+  / `expand_topk_grad_kernel`(`dtype=grad_out.dtype` 即 bf16)/ `topk_scores_grad_kernel`。
+  归因见 §八.1:是 MinimalAsyncEP 与普通 GroupedExperts 组合的上游缺陷。
+* deepep 格 seed 载入成功,第一次 dispatch 即失败,签名与 §三 一致。
+
+### 八.1 归因:是 MinimalAsyncEP 的,不是 K3 的(逐参数梯度探针)
+
+三步收窄,工具在 `matrix_scripts/ep_backend_probe/`(含四份原始 JSON):
+
+1. **内核自洽**:`tests/unit_tests/gpu/test_minimal_async_ep_kernels.py` 6 passed。
+2. **deepseek_v3 两后端 2 步对照**(ep2×fsdp2,full AC,`--training.disable_cuda_graphs`,
+   seed 42;spmd_types 与 partial_dtensor 各跑一遍,数字完全相同):
+
+   | 后端 | step 1 loss / grad_norm | step 2 loss / grad_norm |
+   |---|---|---|
+   | standard | 8.00752 / 4.2267 | 6.11044 / 4.0909 |
+   | minimal_async_ep(上游 flavor,带 fused_swiglu) | 8.00778 / 4.2259 | 6.11541 / 4.0995 |
+
+   看起来 deepseek 没事 —— 但上游 `deepseek_v3_debugmodel_minimal_async_ep` **强制
+   `enable_fused_swiglu`**(专家换成融合 override),K3 是 SiTU-GLU 用不了它。
+3. **逐参数梯度探针**(`grad_probe.py`:同一 seed ckpt、同一个微批、一次前向+反向,dump 每个
+   参数的梯度范数;`grad_diff.py` 分组比):
+
+   | 树 / 专家实现 | 结果 |
+   |---|---|
+   | K3 `kimi_k3_debugmodel` vs `_minimal_async_ep` | 其它所有组(router、latent 投影、attention、vision、shared)中位数 ≤ 6e-2、多数 1e-2 内;**`routed_experts.inner_experts.w1_EFD` / `w3_EFD` 每层都是 standard 的 1/500**(如 layer 23:0.651 → 0.0012);`w2_EDF` 一致。总范数 23.508 vs 19.732 |
+   | deepseek `dsv3_std` vs `dsv3_maep_plain`(**普通 GroupedExperts**,无 fused) | 其它组 ≤ 2.5e-3;**`w1_EFD` / `w3_EFD` 精确为 0.00000**(standard 0.0018–0.0092);`w2` 一致 |
+   | 同上,但在上游 `GroupedExperts.forward` 临时加 `x_RD = x_RD.bfloat16().clone()` | **全部一致**:experts 组 max rel 3.1e-4,总范数 4.44737 vs 4.44740 |
+
+**机制**:专家权重梯度 `dW1 = x_RDᵀ·dgate` 用的是 autograd 保存的 GEMM 输入 `x_RD`;MinimalAsyncEP 的
+dispatch 直接返回全局接收 buffer(`_HIDDEN_RECV_BUFFER_COUNT = 2`,每次 `_copy_rows_to_peers_and_wait_cuda`
+轮换一个槽)的 view。full-AC 下一层的顺序是:重算前向 dispatch(槽 k)→ combine(槽 k+1)→
+**combine 反向的 `_dispatch_to_experts`(槽 k+2 ≡ k,把 `x_RD` 盖掉)**→ 专家反向读 `x_RD` → 错。
+`w2` 用的是 `_situ_glu`/silu 的输出(独立张量),`dx_RD = dgate·W1 + dup·W3` 不需要 `x_RD`,所以只有
+`w1`/`w3` 中招 —— 与两棵树的探针完全吻合。deepseek 的 K3 之外情况 CI 只跑 fused 路径,所以没暴露。
+
+**结论**:`minimal_async_ep` 在 K3 上"能跑"但**丢 `w1/w3` 梯度**,根因在上游 MinimalAsyncEP
+与普通 `GroupedExperts` 的组合;正确的修法是 dispatch 交出自有张量(或专家侧 clone),不属于
+EP PR。PR body 如实写这一段;K3 的 flavor 保留(它就是复现路径)。临时 clone 补丁已撤,
+`ep_review1` 工作树干净。独立修复分支见 §十。
 
 ## 九、MoonEP 准备(只读 + CPU,未动 venv,未上 GPU)
 
@@ -177,10 +229,13 @@ deepep 格只证明"接线到位、在 PCIe 上按 DeepEP 自己的方式失败"
 
 ## 十、待办
 
-1. 矩阵剩余三格 → 补进 §八 与 PR body 新 section("EP backend verify result",
-   `Raising_PRs/PR_K3_PARALLELISM/PR_BODY_EP.md`;草稿已写好,只差数字)。
-2. 推 `ep_review1` 与 `ep_review1:k3_ep`;PR 描述由用户粘贴(本机无 gh/token)。
-3. MoonEP 上机:构建 → MoonEP 自测 2 rank → `kimi_k3_debugmodel_moonep` ep2 → token 守恒 /
+1. ~~矩阵~~、~~归因~~ 已完成;PR body 新 section 已写入 `PR_K3_PARALLELISM/PR_BODY_EP.md`
+   (`### EP backend verify result` + Changed files 更新),**由用户粘贴到 4314 的描述**(本机无 gh/token)。
+2. 推 `ep_review1` 与 `ep_review1:k3_ep`(fast-forward)。
+3. MinimalAsyncEP 修复:独立分支,从 upstream/main 切,`MinimalAsyncEPTokenDispatcher.dispatch`
+   把接收 buffer 的 view 换成自有张量(或 `dispatch_op` 内 clone),带 deepseek 普通专家的探针数字,
+   单独发 PR;修完再补 K3 的 `ep2 x minimal_async_ep` 数值格(预期与 standard 同量级)。
+4. MoonEP 上机:构建 → MoonEP 自测 2 rank → `kimi_k3_debugmodel_moonep` ep2 → token 守恒 /
    反向到达 / 与 standard ep2 数值对照(顺序不可换,MOONEP_DRAFT §上机调试清单)。
 
 ## 十一、复现
