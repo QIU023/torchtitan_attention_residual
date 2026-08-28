@@ -476,3 +476,11 @@ token 负载)与我们预期不同。待办:非退化偏斜(如 ids%4)复测 + �
 源码定语义。盒在补测前被释放,该格记为 open。
 
 临时 hack 未入任何分支;方法全文如上,可复刻。
+
+**后记(同日晚,盒释放后)**:planner 源码考(MoonEP master @2bd860b,
+planning.py)裁决此 open 格——planner 无状态、逐步由本步 all-gather 直方图
+现算(无任何负载策略旋钮),"与负载无关"假设被否;常态恒 rank0←16 是
+组容量 CAP=S·K 下近均衡路由的真实边际再平衡(平手取最小索引),而强热下
+正解应为 rank1←expert0——实测未现,即强热格里 planner 收到的是均衡直方图,
+反常在实验输入侧而非 planner。复测 oracle 与全文见
+`MOONEP_EVIDENCE_2026-08-28.md` §二。

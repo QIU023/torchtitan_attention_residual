@@ -28,15 +28,35 @@ raw 日志:`raw_h100nvl_0828/`(moonep_st/smoke/probe/hot_evidence/hot_mod4)。
 **已证**:复制路径(prefetch→槽计算→reduce_grad)真内核实训激活且稳定;
 复制机械零额外开销(345≈347)。
 
-**Open(已良好定性,后续不需要 NVLink 盒)**:`experts_to_copy` 在两种截然
-不同的载荷形状下完全相同(恒 [16,-1,...]/空)——**planner 的复制分配与实时
-负载无关**:或需我们未传的显式负载输入,或其默认计划为固定模式。热点未被
-分摊(强热下对 standard 仅 +2.7%,mod4 下反而 -2.3%)。下一步=读 moonep
-planner 源码(公开)定 `experts_to_copy` 生成语义,再决定 titan 侧是否要传
-额外的负载/计划参数。
+**Open 项裁决(2026-08-28 晚,planner 源码考 @2bd860b,无需硬件)**:
+"planner 与实时负载无关"假设**被否**。源码事实(moonep/planning.py):
+
+- 计划**无状态、逐步现算**:`plan=None` 的每次 dispatch 触发一枚 rank0 协作
+  核(planning.py:519,610),从本步 all-gather 的 `tokens_per_expert` 现算,
+  广播全 rank;无 EMA/warmup/更新周期/策略旋钮(仅 Buffer 的 B 与
+  token_padding);传 `plan=` 则整段跳过(api.py:744)。
+- 机制:组负载对容量 `CAP = S·K`(NvS_capacity,api.py:277)盈亏再平衡
+  (planning.py:681-701)→ 盈方**最大**专家的配额挪给亏方(:766)→ 每个
+  dest rank 复制"被分到 token 的远端专家 top-B"(:866-875),平手取最小索引。
+
+两条推论:
+
+1. **常态恒 rank0←[16] 不是 bug**:两组平均负载恰为 CAP,近均匀路由使
+   group1 恒微超容,平手规则每步选中 16。恰反证集成侧每步都传入了新直方图、
+   plan 未被缓存复用。
+2. **强热观测与强热直方图数学不相容**:全 token→expert0 ⇒ group0 超容 S·K
+   ⇒ z[0,1]=S·K ⇒ 正解必为 **rank1←expert0**;实测仍是常态纹样
+   (rank0←16、rank1 空)。⇒ 强热 moonep 格里 planner 看到的是**均衡**
+   直方图——反常在实验输入侧(hack 未触达 planner 输入),非 planner 行为。
+   本会话复 audit 调用点:moon_ep_dispatcher.py 位置参数正对
+   (hidden/route_weights/topk_experts/tokens_per_expert)、`plan=None`、
+   counts 由 common/moe.py:429 从同一 ids 现算——合同无恙;hot 摘要日志
+   未存 loss,无法事后核验该次 hack 在 moonep flavor 里是否真生效(盒已释放)。
 
 ## 三、遗留清单
 
-1. planner 语义源码考(无需硬件);
-2. 语义明确后的负载驱动复制实测(需 NVLink,一格);
+1. ~~planner 语义源码考~~ **完成**(上节);
+2. 负载驱动复制实测(需 NVLink,一格)——**带 oracle 复测**:dispatch 调用点
+   加一行 `tokens_per_expert` 打印确认强制生效;预期 plan:全热 ⇒ rank1 行
+   含 0;mod4 ⇒ rank1 行含 0-3;均衡 ⇒ 全 -1 或边际单复制;
 3. prefetch×QLoRA-MXFP4 交点(上游 2bd860b 已支持 MXFP4 专家权重远程预取)。
