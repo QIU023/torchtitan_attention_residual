@@ -39,17 +39,18 @@ EP shards experts inside the data axis, so each cell is compared against the pur
 ### Changed files
 
     torchtitan/models/common/
-      token_dispatcher.py    +7/-3  the DeepEP / HybridEP / MinimalAsyncEP
+      token_dispatcher.py    +5/-1  the DeepEP / HybridEP / MinimalAsyncEP
                                    buffers are sized by
                                    routed_experts.inner_experts.dim (the
                                    latent width on K3) instead of the model dim
+      config_utils.py           +1  the minimal_async_ep factory branch
+                                   forwards hidden_dim
     torchtitan/models/kimi_k3/
-      sharding.py              +46  set_expert_parallel_sharding_config: the
-                                   routed-expert layout and the decoder-level
-                                   distribution above it (new file, following
+      sharding.py              +49  set_expert_parallel_sharding_config: the
+                                   routed-expert layout (new file, following
                                    qwen3_5/sharding.py)
       model.py                  +4  the one call under the ep>1 gate
-      __init__.py           +21/-6  moe_comm_backend threads from model_registry
+      __init__.py           +24/-6  moe_comm_backend threads from model_registry
                                    to core's dispatcher factory: standard by
                                    default, deepep / hybridep / minimal_async_ep
                                    selectable as on deepseek_v3
