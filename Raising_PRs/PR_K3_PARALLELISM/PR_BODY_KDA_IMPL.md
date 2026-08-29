@@ -12,7 +12,7 @@ After it, `KDAKernel.Config` has `impl` with values `auto`, `fused` and `referen
 
 ### Results
 
-Everything below is on an RTX 5060 Ti (SM120, CUDA capability 12.0), where `auto` resolves to `reference` (the log prints `KDA: CUDA capability (12, 0) has no fused kernel; using Attention Gym's reference implementation`); on SM100/SM103 the resolved path is `fused` and nothing changes. `pre-commit run --all-files` is clean. The two upstream oracles that skipped off SM100 now run and pass, 4 passed: `tests/unit_tests/test_kda_attention.py` (varlen packed sequences against the documents run one at a time, forward and gradient) and `tests/unit_tests/gpu/test_kimi_k3.py::test_kda_matches_recurrent_reference` (kernel against the FP32 sequential recurrence).
+Everything below is on an RTX 5060 Ti (SM120, CUDA capability 12.0), where `auto` resolves to `reference` (the log prints `KDA: CUDA capability (12, 0) has no fused kernel; using Attention Gym's reference implementation`); on SM100/SM103 the resolved path is `fused` and nothing changes. `pre-commit run --all-files` is clean. The two upstream oracles that skipped off SM100 now run and pass: `tests/unit_tests/test_kda_attention.py::TestKDA::test_varlen_matches_independent_documents` (packed sequences against the documents run one at a time, forward and gradient) and `tests/unit_tests/gpu/test_kimi_k3.py::TestKimiK3::test_attention_gym_kda_kernel_matches_recurrent_reference` (kernel against the FP32 sequential recurrence).
 
 To reproduce the training rows, from the torchtitan checkout root on this branch. Every cell loads the same seed checkpoint; run each cell twice and read the second run (a cold compile cache moves step 1):
 
