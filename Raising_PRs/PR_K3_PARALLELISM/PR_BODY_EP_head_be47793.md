@@ -46,11 +46,11 @@ EP shards experts inside the data axis, so each cell is compared against the pur
       config_utils.py           +1  the minimal_async_ep factory branch
                                    forwards hidden_dim
     torchtitan/models/kimi_k3/
-      sharding.py              +49  set_expert_parallel_sharding_config: the
+      sharding.py              +47  set_expert_parallel_sharding_config: the
                                    routed-expert layout (new file, following
                                    qwen3_5/sharding.py)
-      model.py                  +4  the one call under the ep>1 gate
-      __init__.py           +24/-6  moe_comm_backend threads from model_registry
+      model.py                  +3  the one call under the ep>1 gate
+      __init__.py           +23/-6  moe_comm_backend threads from model_registry
                                    to core's dispatcher factory: standard by
                                    default, deepep / hybridep / minimal_async_ep
                                    selectable as on deepseek_v3
