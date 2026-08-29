@@ -18,6 +18,18 @@ consistency. Deliberate cross-links belong ONLY in issue/PR comments we
 intentionally post. Reference forms in FILE CONTENT (docs) are fine — files
 never fire timeline events. Our own repo's issues/PRs are exempt.
 
+## Flavor rule (user, 2026-08-29)
+
+Do NOT add model flavors casually on upstream-bound branches. A text-only
+flavor was already rejected in review, and backend-selection flavors
+(`kimi_k3_debugmodel_deepep` and the like) must not be added: reviewers who
+want another backend change the registry parameter themselves; the debug
+flavor stays on `standard`. Capability notes ("these backends run on this
+model") go in a 1-2 line code comment in parallelize.py, with no
+test-result language. Feature flavors that are the only way to ENABLE a
+technique (qb, mx_qat, lora) are currently tolerated -- flux ships mxfp8
+flavors upstream -- but each one needs that justification, not convenience.
+
 ## PR-text rule (maintainer feedback 2026-08-13, restyled by the user 2026-08-29)
 
 Upstream PR bodies and review replies read as terse human engineering notes,
