@@ -1,3 +1,9 @@
+# PR title: [kimi_k3] add a KDA impl knob so the model runs off SM100/SM103 again
+
+Branch `k3_kda_impl` (`3b34e306`, on upstream/main `13da2d77`). Evidence: `phase13_k3like_48b_posttrain/KDA_IMPL_KNOB_2026-08-29.md`. Paste between the markers into the PR body.
+
+--- PASTE BEGIN ---
+
 ### Summary
 
 Before this change `KDAKernel` hardcodes `impl="fused"` (PR-4351) and raises on any CUDA capability outside SM100/SM103, so Kimi K3, which entered as an eager reference model (PR-4025), runs only on datacenter Blackwell and its KDA tests skip everywhere else.
@@ -18,3 +24,5 @@ Both oracles pass on SM120, and the debug flavor trains there (one seed, warmed 
     torchtitan/models/kimi_k3/kda.py         the impl knob and its resolution
     tests/unit_tests/test_kda_attention.py   capability gate dropped
     tests/unit_tests/gpu/test_kimi_k3.py     capability gate dropped
+
+--- PASTE END ---
