@@ -40,3 +40,14 @@ squash(基对齐 30eb5e50),此前未执行过。冒烟:
 
 pp 格 s1 与本批 dp1 位同(12.58962)——管线切分不动 step-1 损失的预期
 性质,顺带验证 squash 未损内容。
+
+## 附:Ulysses 文档 mask 修复(2026-08-29 晚,cp_review1 @a1a814073)
+
+回应 PR-4313 reviewer 第二条(MLA 半边):CP 路原为 causal-only 重建 +
+上下文窗守卫拒多文档流;修为 all-gather 连续 positions 份、按非 CP 同款
+`causal×document` mod 建全序列 mask,守卫/缓存/死参数整链拆除。验证两层:
+2-rank gloo 边界单测(三文档,一界压切口、一界在 shard 内;causal-only
+必挂的两处拒绝断言)绿;GPU 回归三格(单文档 debug 数据,预期无扰):
+dp1 12.58962/8.12642/3.95057、cp2 12.50615/8.09824/4.02580、
+fsdp2×cp2 12.55773/7.94068/3.55172,同带。KDA 半边(cu_seqlens/状态重
+置)归 lane A rebase 与 PR-4347 合流。raw:`raw_tpsp_0829/cpmask_results.txt`。
