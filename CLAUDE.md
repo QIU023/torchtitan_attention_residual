@@ -18,23 +18,25 @@ consistency. Deliberate cross-links belong ONLY in issue/PR comments we
 intentionally post. Reference forms in FILE CONTENT (docs) are fine — files
 never fire timeline events. Our own repo's issues/PRs are exempt.
 
-## PR-text rule (maintainer feedback on the grad-norm PR, 2026-08-13)
+## PR-text rule (maintainer feedback 2026-08-13, restyled by the user 2026-08-29)
 
-Upstream PR descriptions and review replies must read as terse human
-engineering notes. Concretely: no section headers, no bold-heavy structure
--- plain sentences, with the exact op-level before/after stated FIRST, and
-English only (no Chinese, not even an editorial preamble). Evidence goes IN
-the body as one table with a one-line caption and no prose around it, one
-row per configuration, reporting steps 1 / 3 / 10 (user, 2026-08-25;
-supersedes the earlier "no evidence tables in the body" -- a single step-1
-column was not enough for a reviewer to judge). Everything else -- design
-history, alternatives, pre-empted objections -- goes to a linked logbook doc
-or a follow-up comment when asked. A body must describe only what its own
-branch carries. Code comments 1-2 lines (existing rule).
+Upstream PR bodies and review replies read as terse human engineering notes,
+English only (no Chinese, not even a preamble). Structure is the user's
+sectioned format, the same across every body in `Raising_PRs/PR_K3_PARALLELISM/`:
+`### Summary` (exact op-level before/after stated FIRST), `### Design`
+(only when there is a design; two-level bullets), `### Results` (one table
+per run, one-line caption, no prose around it, rows per configuration,
+steps 1 / 3 / 10; a `torchrun` reproduction block before the main table),
+`### Changed files` (an indented block, `file  +a/-b  one clause`), then
+`### CI/CD Coverage` and review-round sections as needed. Every paragraph is
+ONE line -- never hard-wrap prose, the rendering breaks. Code, identifiers
+and `file.py:a-b` in backticks; math as `$...$`; tensor names in italics.
+Everything else -- design history, alternatives, pre-empted objections --
+goes to a linked logbook doc or a follow-up comment when asked. A body
+describes only what its own branch carries. Code comments 1-2 lines.
 When a maintainer asks a question, the first sentence of the reply answers
 it. Verbatim trigger: "sorry I couldn't really understand the PR summary
-which seems to be written by AI." The kit PASTE bodies predating this rule
-are all too structured -- rewrite before filing, do not paste as-is.
+which seems to be written by AI."
 
 ## What this project is
 
