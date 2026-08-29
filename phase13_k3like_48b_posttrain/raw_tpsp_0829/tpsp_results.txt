@@ -1,0 +1,10 @@
+tree=/tmp/wt_tpsp cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 512 --training.max-context-length 512 --comm.init-timeout-seconds 3600
+seed rc=0
+seed files=2
+dp1          seed-ok            s1=12.58962  s3=8.12642   s10=3.95057  
+tp2_sp       seed-ok            s1=12.58262  s3=8.20421   s10=3.97382  
+tp2_nosp     seed-ok            s1=12.61339  s3=8.64604   s10=3.88164  
+fsdp2_tp2    seed-ok            s1=12.58591  s3=7.79146   s10=3.51720  
+tp4          seed-ok            s1=12.59771  s3=8.56692   s10=3.98220  
+fsdp2_tp4    seed-ok            s1=12.61042  s3=8.04123   s10=3.57420  
+DONE /workspace/mx3_tpsp_0829_072639

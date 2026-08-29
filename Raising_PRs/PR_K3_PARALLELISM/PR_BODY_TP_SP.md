@@ -15,7 +15,7 @@ Enables tensor parallelism for Kimi K3, with SequenceParallel on the same mesh. 
 
 ### Results
 
-TBD: TP-only and TP x DP tables exist for the pre-SP head; the SP-on/SP-off matrix on this head is queued.
+Measured on this head (`ea021264`), 8x consumer GPUs, one seed checkpoint loaded by every cell; run each cell twice and read the second run (a cold compile cache moves step 1).
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
@@ -25,12 +25,16 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 
 Training loss on `kimi_k3_debugmodel`, one seed, warmed compile cache:
 
-| config | step 1 | step 3 | step 10 |
-|---|---|---|---|
-| dp1 | TBD | TBD | TBD |
-| tp2 (SP on) | TBD | TBD | TBD |
-| tp2 (SP off) | TBD | TBD | TBD |
-| fsdp2 x tp2 | TBD | TBD | TBD |
+| config | world | step 1 | step 3 | step 10 | peak mem | tps |
+|---|---|---|---|---|---|---|
+| dp1 | 1 | 12.58962 | 8.12642 | 3.95057 | 11.94GiB | 540 |
+| tp2 (SP on) | 2 | 12.58262 | 8.20421 | 3.97382 | 7.09GiB | 147 |
+| tp2 (SP off) | 2 | 12.61339 | 8.64604 | 3.88164 | 7.11GiB | 167 |
+| fsdp2 x tp2 | 4 | 12.58591 | 7.79146 | 3.51720 | 4.25GiB | 104 |
+| tp4 | 4 | 12.59771 | 8.56692 | 3.98220 | 4.27GiB | 74 |
+| fsdp2 x tp4 | 8 | 12.61042 | 8.04123 | 3.57420 | 2.72GiB | 61 |
+
+At this debug scale SP shows no memory win and a small speed cost (7.09 vs 7.11 GiB, 147 vs 167 tps): the norm/activation share it saves is negligible at seq 512 while the boundary redistributes are real. The table is a correctness and composition claim, not a benefit claim; the benefit case is long-sequence.
 
 ### Changed files
 
