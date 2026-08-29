@@ -18,6 +18,17 @@ consistency. Deliberate cross-links belong ONLY in issue/PR comments we
 intentionally post. Reference forms in FILE CONTENT (docs) are fine — files
 never fire timeline events. Our own repo's issues/PRs are exempt.
 
+## Push rule for published PR branches (user, 2026-08-29)
+
+Never push directly to a branch that backs a published PR (`k3_ep`, `k3_cp`,
+`k3_pp`, ...). The flow is: push to the fork's REVIEW branch
+(`ep_review1`/`cp_review1`/`pp_review1`), the user verifies locally and
+approves, and only then does the PR branch get synced. No exceptions for
+"trivial" fixes. Related trap, twice triggered: `pre-commit`'s pyrefly hook
+edits files REPO-WIDE (deletes "unused" suppressions with newer pyrefly), so
+never `git add -A` after running hooks -- stage only the intended files and
+`git checkout` the hook's collateral away.
+
 ## Flavor rule (user, 2026-08-29)
 
 Do NOT add model flavors casually on upstream-bound branches. A text-only
