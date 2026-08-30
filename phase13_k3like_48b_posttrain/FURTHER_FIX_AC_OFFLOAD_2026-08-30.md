@@ -63,3 +63,46 @@ k3_cache_offload),logs:/workspace/tip_revalidate/。真尖 loader 只认
 可导入模块路径,scratch 目录模块不再可用;另 scratchpad 根部的
 sitecustomize.py 旧探针会污染带该目录进 PYTHONPATH 的进程,勿再把
 scratchpad 根加进 PYTHONPATH。
+
+## 三、用户校正后的重做(报告原文到手,2026-08-30 深夜)
+
+### 3.1 报告条目 1 的正确语义:AttnRes 计算包 checkpoint(显存中性),已实现
+
+早间的 `ac_reuse_attention` 是"多存换算力"的性能旋钮,不是报告条目;报告
+要的是反向:**residual 数学整体包 checkpointing,每层保存集与标准残差架构
+一致**(block 表示边界层生成一次、栈内共享)。已实现为 `c67f5b2e1`:
+`_apply_attention_residual` 变 checkpoint 入口(use_reentrant=False),
+fp32 全栈上抛的中间量((N+1)×T×D ×2 处/层)反向重算。
+
+no-AC 配置(wrap 收益可见的路径)HEAD~ vs HEAD,debugmodel dp1:
+
+| 臂 | step 1 | 结局 |
+|---|---|---|
+| 无 wrap | loss 12.55234,11.84 GiB | **step 2 CUDA OOM**(16GiB 卡) |
+| 有 wrap | loss **逐位相同**,11.01 GiB(-0.83) | 10 步全程,稳态 14.24 GiB |
+
+同一配置无 wrap 直接 OOM、有 wrap 跑完——判定封顶。selective AC 下两者
+数值也逐位(中间量本就不存,wrap 是嵌套 no-op 语义)。
+
+**PR 结构(用户定)**:此 wrap 为独立 PR;`ac_reuse_attention` 旋钮不属于
+报告条目,是否随行由用户在切分支时定夺。
+
+### 3.2 报告条目 2 的正确语义:PP rank 间激活均衡(Mooncake 卸到 peer 显存)
+
+判据 = 各 rank 峰值趋平、最大 rank 下降。干净的四 rank 基线
+(debugmodel_32l,pp4×vp2,10 步):
+
+| rank | 峰值 reserved |
+|---|---|
+| 0 | 6.51 GiB |
+| 1 | 2.55 GiB |
+| 2 | 4.09 GiB |
+| **3** | **9.02 GiB** |
+
+3.5 倍散布确认,但 debug 尺度下最重的是**末段 rank3**(vocab 163840 的
+logits/loss 主导),而非报告暖机故事里的 rank0——暖机不均衡要在激活主导的
+大形状下才是主项。v2 设计(stacked on PP PR):stage 输出暂存级跨 rank
+卸载,本机无 Mooncake 用 NCCL P2P/host 反弹作 reference;卸载策略按实测
+per-rank 峰值(而非固定"early→late")选源与宿。v1 的 host 通道保留为基建。
+探针:torchtitan_recipes/k3_further_fix.py 的 atexit [PEAK](metrics 只打
+rank0,曾因此漏看分布)。
