@@ -63,13 +63,13 @@ cell cp2 2 $D 1 $C 2 $NB;  cell cp4 4 $D 1 $C 4 $NB;  cell cp8 8 $D 1 $C 8 $NB
 cell dp2 2 $D 2;  cell dp2_cp2 4 $D 2 $C 2 $NB;  cell dp2_cp4 8 $D 2 $C 4 $NB
 ```
 
-`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does. Measured after the packed-document mask fix from review (below): this dataset packs two documents per 1024-token stream, so the earlier causal-only CP rebuild let the second document attend the first. Relative to the pre-fix table the non-CP rows (dp1, dp2) are bitwise unchanged and every CP row moves -- the fixed cells now compute the same masking dp1 does; cp2 reproduces to every printed digit on a same-seed re-run:
+`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does. Measured on this branch head, i.e. after the packed-document mask fix from review (below) and with the KCP machinery imported from attention-gym: this dataset packs two documents per 1024-token stream, so the earlier causal-only CP rebuild let the second document attend the first; the non-CP rows are bitwise invariant across all of these changes, and every cell except cp4 reproduces to every printed digit across launches (cp4 is launch-nondeterministic, see the review round below):
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
 | dp1 | 1 | 12.60544 | 7.30226 | 3.22742 |
 | cp2 | 2 | 12.53996 | 7.04577 | 3.50511 |
-| cp4 | 4 | 12.52432 | 6.89080 | 3.49263 |
+| cp4 | 4 | 12.53406 | 7.24227 | 3.35766 |
 | cp8 | 8 | 12.53711 | 7.52113 | 3.49416 |
 | dp2 | 2 | 12.58193 | 7.44923 | 3.32128 |
 | dp2 x cp2 | 4 | 12.57299 | 7.50029 | 3.35914 |
@@ -110,7 +110,7 @@ CPU contract tests for the two things that used to fail silently, a two-rank doc
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): dp2 x cp2 is bitwise the bf16-grad-norm run, cp2 and cp4 move at step 3 (7.04577 to 7.10562, 6.89080 to 7.29175), and the remaining cells move only at step 10 -- the same grouping-sensitivity shape the pre-fix companion showed.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch), measured on this head like the main table: step 1 is bitwise the main table everywhere, dp2 x cp2 is bitwise the bf16 run outright, cp2 and cp4 move at step 3, and the remaining cells move only at step 10 -- grad-norm precision touches nothing before the first update.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -126,7 +126,7 @@ The same matrix with the grad-norm reduction carried in float32 (https://github.
 
 Following the dispatch-to-FLA direction from review, the two CP-specific imports (`build_cp_context`, `causal_conv1d_cp`) now come from `attn_gym.linear.kda.fla_cp` -- the attention-gym port of fla's CP machinery (prefix-scan context, conv halo, fragment entry; https://github.com/meta-pytorch/attention-gym/pull/421) -- instead of reaching into fla-core's module layout directly; fla remains the underlying kernel provider, and the wiring-time availability check names the attention-gym module.
 
-The full matrix re-run on this dependency reproduces six of the seven cells bitwise at steps 1/3/10 (dp1, cp2, cp8, dp2, dp2 x cp2, dp2 x cp4), confirming the wrappers are pass-throughs. The seventh, cp4, is launch-nondeterministic independently of this change: its step-1 forward flips between exactly the two values the two tables above already print (12.52432 and 12.53406 -- a difference grad-norm precision cannot produce), and one re-run invocation reproduced both, one per pass, on the same seed and checkpoint.
+Re-measuring the matrix across this dependency change reproduced six of the seven cells bitwise at steps 1/3/10, confirming the wrappers are pass-throughs; the seventh, cp4, is launch-nondeterministic independently of it: its step-1 forward flips between two values (12.52432 and 12.53406 -- step 1 precedes any optimizer step, so no grad-norm or update-path setting can produce this), and one invocation reproduced both on the same seed and checkpoint, one per pass, back to back.
 
 ### Review round: packed-document boundaries
 

@@ -45,3 +45,10 @@ parallelize 的 wiring 检查同步改名。fla 仍是底层内核;wrapper 预�
 - PR_BODY_CP.md 已加两段 review round(attention-gym 依赖 + 逐位结论句)。
 - attention-gym 侧:PR 421(用户已发,head a8c4423 = 819370f + 上游 main 合并,
   我们四个文件逐字节同)。
+
+## 附:4135(fp32 grad-norm)矩阵在新依赖下 7/7 逐位复现
+
+`mx3_attngym_kcp_4135_0830_134302`,树 = 837a66235 + cherry-pick 578aee746。
+七格与依赖变更前的旧 4135 表**逐位相同**(cp4 本次恰落同吸引子 12.53406,
+使 s3/s10 也可比且相同)。body 的两张旧表已按用户指示删除,新表
+(bf16 主表 + fp32 表,均测于本头)已写入 PR_BODY_CP.md。
