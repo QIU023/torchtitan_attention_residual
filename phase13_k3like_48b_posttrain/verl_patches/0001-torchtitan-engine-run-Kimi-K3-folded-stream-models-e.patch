@@ -1,0 +1,184 @@
+From 38744f3dd49503a73abcceac0891025b447c4ac8 Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Sun, 30 Aug 2026 04:59:37 +0000
+Subject: [PATCH] torchtitan engine: run Kimi K3 (folded-stream models) end to
+ end
+
+kimi_k3 in the HF-type map; the flavor matcher reads nested
+text_config; CP prep hands positions to torchtitan and takes the shard
+back; the CP load balancer is bypassed under NO_PADDING; three import
+paths follow torchtitan's module moves; partial_dtensor joins the
+spmd_backend whitelist; CUDA graphs are disabled for dispatchers that
+synchronize with the CPU; a folded-stream shim squeezes [1,T] to [T]
+for models declaring folded_token_stream; the SFT runner grows
+trust_remote_code, spmd_backend and expert-parallel knobs.
+---
+ tests/special_e2e/sft/run_sft_engine.sh       | 10 ++++--
+ verl/workers/config/engine.py                 |  2 +-
+ .../engine/torchtitan/transformer_impl.py     | 31 ++++++++++++++++---
+ verl/workers/engine/torchtitan/utils.py       | 11 ++++---
+ 4 files changed, 43 insertions(+), 11 deletions(-)
+
+diff --git a/tests/special_e2e/sft/run_sft_engine.sh b/tests/special_e2e/sft/run_sft_engine.sh
+index 7b65692..e9d338d 100644
+--- a/tests/special_e2e/sft/run_sft_engine.sh
++++ b/tests/special_e2e/sft/run_sft_engine.sh
+@@ -100,6 +100,7 @@ TORCHTITAN_ENGINE_CONFIG="\
+     engine=${backend} \
+     model=hf_model \
+     model.path=${MODEL_PATH} \
++    model.trust_remote_code=True \
+     optim=${backend} \
+     optim.lr=1e-5 \
+     optim.lr_warmup_steps_ratio=0.2 \
+@@ -113,12 +114,15 @@ TORCHTITAN_ENGINE_CONFIG="\
+     engine.pipeline_parallel_size=${PP_SIZE} \
+     engine.context_parallel_size=${CP_SIZE} \
+     engine.data_parallel_shard_size=${FSDP_SIZE} \
+-    engine.use_torch_compile=False"
++    engine.use_torch_compile=False \
++    engine.spmd_backend=partial_dtensor \
++    engine.expert_parallel_size=${EP_SIZE:-1}"
+ 
+ AUTOMODEL_ENGINE_CONFIG="\
+     engine=${backend} \
+     model=hf_model \
+     model.path=${MODEL_PATH} \
++    model.trust_remote_code=True \
+     optim=${backend} \
+     optim.lr=1e-5 \
+     optim.lr_warmup_steps_ratio=0.2 \
+@@ -129,7 +133,9 @@ AUTOMODEL_ENGINE_CONFIG="\
+     optim.lr_scheduler_type=cosine \
+     engine.tp_size=${TP_SIZE} \
+     engine.cp_size=${CP_SIZE} \
+-    engine.use_torch_compile=False"
++    engine.use_torch_compile=False \
++    engine.spmd_backend=partial_dtensor \
++    engine.expert_parallel_size=${EP_SIZE:-1}"
+ 
+ 
+ if [ "$backend" = "fsdp" ]; then
+diff --git a/verl/workers/config/engine.py b/verl/workers/config/engine.py
+index 5272bc6..6a67ebc 100644
+--- a/verl/workers/config/engine.py
++++ b/verl/workers/config/engine.py
+@@ -529,7 +529,7 @@ class TorchtitanEngineConfig(EngineConfig):
+         assert self.attn_type in ["flex", "flex_flash", "varlen"], (
+             f"attn_type {self.attn_type} not supported (sdpa is not a valid language-model backend)"
+         )
+-        assert self.spmd_backend in ["default", "full_dtensor", "spmd_types"], (
++        assert self.spmd_backend in ["default", "full_dtensor", "spmd_types", "partial_dtensor"], (
+             f"spmd_backend {self.spmd_backend} not supported"
+         )
+         assert self.activation_checkpoint in ["selective", "full", "none"], (
+diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
+index d3feab7..11b9687 100644
+--- a/verl/workers/engine/torchtitan/transformer_impl.py
++++ b/verl/workers/engine/torchtitan/transformer_impl.py
+@@ -27,9 +27,9 @@ import torch
+ import torch.distributed
+ from tensordict import TensorDict
+ from torch.distributed.tensor import DTensor
+-from torchtitan.components.checkpoint import CheckpointManager
++from torchtitan.components.checkpointer import CheckpointManager
+ from torchtitan.components.loss import CrossEntropyLoss
+-from torchtitan.components.lr_scheduler import LRSchedulersContainer
++from torchtitan.components.optimizer import LRSchedulersContainer
+ from torchtitan.components.optimizer import OptimizersContainer, ParamGroupConfig
+ from torchtitan.config import CompileConfig, ParallelismConfig, TrainingConfig
+ from torchtitan.distributed import utils as dist_utils
+@@ -177,6 +177,9 @@ class TorchTitanEngine(BaseEngine):
+         )
+         compile_config = CompileConfig(enable=self.engine_config.use_torch_compile)
+         training_kwargs = {}
++        # The kimi_k3 standard token dispatcher synchronizes with the CPU,
++        # which CUDA graphs cannot capture; run eager under expert parallel.
++        training_kwargs["disable_cuda_graphs"] = True
+         if self.engine_config.max_seq_len is not None:
+             training_kwargs["seq_len"] = self.engine_config.max_seq_len
+         if self.engine_config.offload_policy or self.engine_config.forward_only:
+@@ -414,7 +417,20 @@ class TorchTitanEngine(BaseEngine):
+         else:
+             # Non-PP forward. train_context (SPMD mesh) is set by the caller.
+             assert len(model_parts) == 1
+-            pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
++            folded = getattr(model_parts[0], "folded_token_stream", False)
++            if folded and inputs.dim() == 2 and inputs.shape[0] == 1:
++                # Folded-stream models (kimi_k3) take [T] token streams; the
++                # rmpad path packs to [1, T]. Fold in, unfold the logits out.
++                squeezed_inputs = inputs.squeeze(0)
++                squeezed_extra = {
++                    k: (v.squeeze(0) if torch.is_tensor(v) and v.dim() >= 1 and v.shape[0] == 1 else v)
++                    for k, v in (extra_inputs or {}).items()
++                }
++                pred = model_parts[0](squeezed_inputs, **squeezed_extra, **extra_kwargs)
++                if pred.dim() == 2:
++                    pred = pred.unsqueeze(0)
++            else:
++                pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
+ 
+         if isinstance(pred, DTensor):
+             pred = pred.full_tensor()
+@@ -776,14 +792,21 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+         # extra_kwargs are.
+         extra_kwargs: dict[str, Any] = {"attention_masks": attention_mask}
+         if self.parallel_dims.cp_enabled:
++            # torchtitan's CP prep shards 'positions' and requires it in
++            # extra_kwargs; hand it over and take the shard back afterwards.
++            extra_kwargs["positions"] = extra_inputs["positions"]
+             input_ids, labels, extra_kwargs = prepare_context_parallel_input(
+                 input_ids,
+                 labels,
+                 extra_kwargs,
+                 self.parallel_dims.get_mesh("cp"),
+                 self.trainer.device,
+-                self.trainer.config.parallelism.context_parallel_load_balancer,
++                # NO_PADDING packs variable-length sequences, so the
++                # head-tail balancer's seq % (2*cp) == 0 precondition cannot
++                # hold; shard contiguously.
++                None,
+             )
++            extra_inputs["positions"] = extra_kwargs.pop("positions")
+ 
+         # TODO(jessicazhong): multimodal is not yet supported for Torchtitan engine
+         extra_inputs.update(multi_modal_inputs)
+diff --git a/verl/workers/engine/torchtitan/utils.py b/verl/workers/engine/torchtitan/utils.py
+index f6c9cc1..57982f5 100644
+--- a/verl/workers/engine/torchtitan/utils.py
++++ b/verl/workers/engine/torchtitan/utils.py
+@@ -25,7 +25,7 @@ import torch.nn as nn
+ from torch.distributed._composable.fsdp import FSDPModule
+ from torch.distributed.tensor import DTensor
+ from torch.nn.attention.flex_attention import _mask_mod_signature, and_masks
+-from torchtitan.components.dataloader import BaseDataLoader
++from torchtitan.components.data.loader import BaseDataLoader
+ from torchtitan.models.common.attention import (
+     AttentionMasksType,
+     VarlenMetadata,
+@@ -74,6 +74,7 @@ _HF_MODEL_TYPE_TO_TORCHTITAN_NAME = {
+     "llama4": "llama4",
+     "deepseek_v3": "deepseek_v3",
+     "gpt_oss": "gpt_oss",
++    "kimi_k3": "kimi_k3",
+ }
+ 
+ 
+@@ -123,9 +124,11 @@ def derive_torchtitan_name_and_flavor(hf_config) -> tuple[str, str]:
+             f"Expected a dict attribute ending with '_configs'."
+         )
+ 
+-    hidden_size = hf_config.hidden_size
+-    num_layers = hf_config.num_hidden_layers
+-    vocab_size = hf_config.vocab_size
++    # Multimodal configs (e.g. kimi_k3) nest the decoder under text_config.
++    text_config = getattr(hf_config, "text_config", None) or hf_config
++    hidden_size = text_config.hidden_size
++    num_layers = text_config.num_hidden_layers
++    vocab_size = text_config.vocab_size
+ 
+     for flavor_name in flavor_names:
+         cfg = model_registry(flavor_name).model
+-- 
+2.43.0
+
