@@ -63,17 +63,17 @@ cell cp2 2 $D 1 $C 2 $NB;  cell cp4 4 $D 1 $C 4 $NB;  cell cp8 8 $D 1 $C 8 $NB
 cell dp2 2 $D 2;  cell dp2_cp2 4 $D 2 $C 2 $NB;  cell dp2_cp4 8 $D 2 $C 4 $NB
 ```
 
-`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does (step 2: cp2/cp4/cp8 at 1.30e-2/1.24e-2/8.78e-3 from dp1, dp2 at 2.47e-2 from dp1; the mesh cells at 1.35e-2 and 7.14e-3 from dp2):
+`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does. Measured after the packed-document mask fix from review (below): this dataset packs two documents per 1024-token stream, so the earlier causal-only CP rebuild let the second document attend the first. Relative to the pre-fix table the non-CP rows (dp1, dp2) are bitwise unchanged and every CP row moves -- the fixed cells now compute the same masking dp1 does; cp2 reproduces to every printed digit on a same-seed re-run:
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
 | dp1 | 1 | 12.60544 | 7.30226 | 3.22742 |
-| cp2 | 2 | 12.61167 | 7.22870 | 3.29899 |
-| cp4 | 4 | 12.60373 | 7.37109 | 3.32085 |
-| cp8 | 8 | 12.61195 | 7.29104 | 3.35507 |
+| cp2 | 2 | 12.53996 | 7.04577 | 3.50511 |
+| cp4 | 4 | 12.52432 | 6.89080 | 3.49263 |
+| cp8 | 8 | 12.53711 | 7.52113 | 3.49416 |
 | dp2 | 2 | 12.58193 | 7.44923 | 3.32128 |
-| dp2 x cp2 | 4 | 12.58133 | 7.66567 | 3.54059 |
-| dp2 x cp4 | 8 | 12.57584 | 7.48673 | 3.39561 |
+| dp2 x cp2 | 4 | 12.57299 | 7.50029 | 3.35914 |
+| dp2 x cp4 | 8 | 12.53546 | 7.32970 | 3.38800 |
 
 Two boundaries raise instead of running: `Q_LEN` not divisible by `cp * 128`, and a folded microbatch wider than the context window. Not in this PR: CP inside the vision tower and the report's dynamic CP for large images. Without `context_parallel_degree > 1` none of this executes.
 
@@ -106,14 +106,18 @@ CPU contract tests for the two things that used to fail silently; a cp2 integrat
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): six of the seven cells print the same step-3 loss to every digit and one, cp4, moves (7.37109 to 7.44103 at step 3). Both cp4 values reproduce to every printed digit on same-seed re-runs, so the deviation is the patch's deterministic effect on that cell rather than run-to-run noise.
+The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): dp2 x cp2 is bitwise the bf16-grad-norm run, cp2 and cp4 move at step 3 (7.04577 to 7.10562, 6.89080 to 7.29175), and the remaining cells move only at step 10 -- the same grouping-sensitivity shape the pre-fix companion showed.
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
 | dp1 | 1 | 12.60544 | 7.30226 | 3.23705 |
-| cp2 | 2 | 12.61167 | 7.22870 | 3.32182 |
-| cp4 | 4 | 12.60373 | 7.44103 | 3.32613 |
-| cp8 | 8 | 12.61195 | 7.29104 | 3.35434 |
+| cp2 | 2 | 12.53996 | 7.10562 | 3.38411 |
+| cp4 | 4 | 12.53406 | 7.29175 | 3.36449 |
+| cp8 | 8 | 12.53711 | 7.52113 | 3.49337 |
 | dp2 | 2 | 12.58193 | 7.44923 | 3.32140 |
-| dp2 x cp2 | 4 | 12.58133 | 7.66567 | 3.51558 |
-| dp2 x cp4 | 8 | 12.57584 | 7.48673 | 3.39561 |
+| dp2 x cp2 | 4 | 12.57299 | 7.50029 | 3.35914 |
+| dp2 x cp4 | 8 | 12.53546 | 7.32970 | 3.39451 |
+
+### Review round: packed-document boundaries
+
+Review ask: how are document boundaries preserved under CP? The MLA path was rebuilding a causal-only mask for the sequence Ulysses reassembles and used the context window to reject streams it could not mask; that guard never fired here because this dataset packs two documents into exactly one context window. Fixed: after the all-to-all every rank holds the full sequence, so the CP path now gathers the contiguous positions shards and builds the same causal x document mask the non-CP path uses; the guard, its config plumbing and the shape-keyed mask cache are gone. A two-rank gloo test packs three documents with one boundary on the shard cut and one inside a shard: the gathered mask equals the mask built from the global positions, and both boundary attentions are refused where a causal-only mask lets them through. The tables above are re-measured on the fixed head. KCP keeps `cu_seqlens = [0, total]` deliberately: the non-CP KDA path passes no boundaries either (KDA sample packing lands with PR-4347), so the CP path matches the single-rank recurrence semantics rather than diverging from them.
