@@ -80,29 +80,33 @@ Two boundaries raise instead of running: `Q_LEN` not divisible by `cp * 128`, an
 ### Changed files
 
     torchtitan/models/kimi_k3/
-      sharding.py            +259  the two CP contracts, the head/sequence
+      sharding.py            +265  the two CP contracts, the head/sequence
                                    all-to-all, MLA's Ulysses body and the
-                                   causal-mask rebuild it needs
-      kda.py                 +120  KCP on the KDA layers: conv halo exchange and
-                                   the prefix scan over the recurrent state
-      model.py             +116/-14 MLA branches to Ulysses when a CP group is set;
+                                   packed-document mask rebuild it needs
+      kda.py                 +119  KCP on the KDA layers: conv halo exchange and
+                                   the prefix scan over the recurrent state, via
+                                   attention-gym's fla CP wrappers
+      model.py             +115/-15 MLA branches to Ulysses when a CP group is set;
                                    overrides _validate_cp_backend; the vision
                                    splice follows the sequence shard under CP
-      parallelize.py         +71/-5 apply_cp_kimi_k3: wires the group onto both
+      parallelize.py         +68/-5 apply_cp_kimi_k3: wires the group onto both
                                    layer kinds, checks head divisibility, and fails
-                                   at wiring time if fla's CP ops are missing
+                                   at wiring time if attention-gym's fla CP
+                                   wrappers are missing
     torchtitan/models/common/decoder.py  +7/-3  the spmd_types requirement becomes
                                    an overridable method
     torchtitan/distributed/fsdp.py       +24   add_zero_valued_dependency: keeps a
                                    partly consumed FSDP module in the graph
     tests/
-      unit_tests/cpu/test_kimi_k3_cp_contracts.py  +63  the folded-layout contracts
-      integration_tests/features.py                 +7  the cp2 cell
-    torchtitan_recipes/tests/features.py           +13  its configuration
+      unit_tests/cpu/test_kimi_k3_cp_contracts.py     +63  the folded-layout contracts
+      unit_tests/cpu/test_kimi_k3_cp_document_mask.py +89  two-rank gloo: the gathered
+                                   mask refuses both boundary attentions
+      integration_tests/features.py                    +8  the cp2 cell
+    torchtitan_recipes/tests/features.py              +13  its configuration
 
 ### CI/CD Coverage
 
-CPU contract tests for the two things that used to fail silently; a cp2 integration cell.
+CPU contract tests for the two things that used to fail silently, a two-rank document-mask test, and a cp2 integration cell.
 
 ### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
 
@@ -117,6 +121,10 @@ The same matrix with the grad-norm reduction carried in float32 (https://github.
 | dp2 | 2 | 12.58193 | 7.44923 | 3.32140 |
 | dp2 x cp2 | 4 | 12.57299 | 7.50029 | 3.35914 |
 | dp2 x cp4 | 8 | 12.53546 | 7.32970 | 3.39451 |
+
+### Review round: the KCP machinery is imported from attention-gym
+
+Following the dispatch-to-FLA direction from review, the two CP-specific imports (`build_cp_context`, `causal_conv1d_cp`) now come from `attn_gym.linear.kda.fla_cp` -- the attention-gym port of fla's CP machinery (prefix-scan context, conv halo, fragment entry; https://github.com/meta-pytorch/attention-gym/pull/421) -- instead of reaching into fla-core's module layout directly; fla remains the underlying kernel provider, and the wiring-time availability check names the attention-gym module.
 
 ### Review round: packed-document boundaries
 
