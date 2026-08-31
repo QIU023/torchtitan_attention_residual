@@ -80,7 +80,32 @@ The same matrix with the grad-norm reduction carried in float32 (https://github.
 
 ### EP backend verify result
 
-2 x H100 SXM (NVLink), torch 2.15.0.dev20260827+cu130, DeepEP v2 at the commit CI pins (`01dc3aa`). `kimi_k3_debugmodel`, seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; the backend is chosen through `model_registry(..., moe_comm_backend=...)`, the debug flavor itself stays on `standard`. MinimalAsyncEP requires full activation checkpointing, so a `standard` full-AC row isolates that. `hybridep` is not run: it lives on DeepEP's `hybrid-ep` branch and targets GB200 / NVL72.
+2 x H100 SXM (NVLink), torch 2.15.0.dev20260827+cu130, DeepEP v2 at the commit CI pins (`01dc3aa`). `kimi_k3_debugmodel`, seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell. MinimalAsyncEP requires full activation checkpointing, so a `standard` full-AC row isolates that. `hybridep` is not run: it lives on DeepEP's `hybrid-ep` branch and targets GB200 / NVL72.
+
+The backend is a `model_registry` parameter rather than a flavor, so the cells select it in a configuration function rather than on the command line:
+
+```python
+# torchtitan_recipes/k3_ep_backends.py
+from torchtitan.models.kimi_k3 import model_registry
+from torchtitan.models.kimi_k3.config_registry import kimi_k3_debugmodel
+
+def _backend(name: str) -> Trainer.Config:
+    config = kimi_k3_debugmodel()
+    config.model_spec = model_registry("debugmodel", moe_comm_backend=name)
+    return config
+
+def k3_deepep() -> Trainer.Config: return _backend("deepep")
+def k3_minimal_async_ep() -> Trainer.Config: return _backend("minimal_async_ep")
+```
+
+```sh
+BACKEND_COMMON="-m torchtitan.train --module torchtitan_recipes.k3_ep_backends --debug.seed 42 --debug.deterministic --training.steps 10 --metrics.log_freq 1 --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2"
+torchrun --nproc_per_node=2 $BACKEND_COMMON --config k3_minimal_async_ep
+# DeepEP v2 on a host with no RDMA NIC needs its own environment:
+CUDA_HOME=/usr/local/cuda-13.0 NCCL_NVLS_ENABLE=0 EP_DISABLE_GIN=1 EP_REUSE_NCCL_COMM=0 \
+  NVSHMEM_REMOTE_TRANSPORT=none NVSHMEM_DISABLE_MNNVL=1 \
+  torchrun --nproc_per_node=2 $BACKEND_COMMON --config k3_deepep
+```
 
 | cell | backend | AC | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
@@ -89,5 +114,7 @@ The same matrix with the grad-norm reduction carried in float32 (https://github.
 | ep2 x fsdp2 | standard | full | 12.59951 | 7.43228 | 3.30036 |
 | ep2 x fsdp2 | minimal_async_ep | full | 12.59768 | 7.56392 | 3.29721 |
 | ep2 x fsdp2 | deepep | selective | 12.59438 | 7.46660 | 3.24408 |
+
+Re-measured on the review-round head (`hidden_dim` set at construction): dp2, `standard` and `standard` full-AC reproduce the rows above to every printed digit, so the dispatcher-config change is numerically inert.
 
 `standard` prints dp2's step-1 loss to every digit and its full-AC twin matches it through step 10; `deepep` differs by ordinary backend arithmetic. `minimal_async_ep`'s step-3 gap is an upstream MinimalAsyncEP bug, not K3's: the expert GEMM saves a view of the recycled receive buffer that the combine backward overwrites, so the routed `w1_EFD` / `w3_EFD` gradients are lost; the one-line owned-dispatch fix goes in a separate PR, and with it the same cell is back in the noise band.
