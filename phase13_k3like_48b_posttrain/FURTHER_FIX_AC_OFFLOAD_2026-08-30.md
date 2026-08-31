@@ -106,3 +106,38 @@ logits/loss 主导),而非报告暖机故事里的 rank0——暖机不均衡要
 per-rank 峰值(而非固定"early→late")选源与宿。v1 的 host 通道保留为基建。
 探针:torchtitan_recipes/k3_further_fix.py 的 atexit [PEAK](metrics 只打
 rank0,曾因此漏看分布)。
+
+## 四、v2:PP rank 间激活均衡,Mooncake 本尊接入(2026-08-31,c111126b8)
+
+不造轮子:`mooncake-transfer-engine` pip 包直接可用(cu12 runtime 由守卫
+ctypes 预载,零环境变量);`get_local_topology()` 判 HCA——集群 RDMA 直达
+peer GPU(报告语义),本机无 HCA 自动落 TCP + pinned host 缓冲。两个引擎
+坑:RPC 端口无视请求自选(段名必须回读 `get_rpc_port()`);TCP 传输只吃
+host 内存。机制:`saved_tensors_hooks` 包 stage forward,pack 停放+释放、
+unpack 取回;first-fit 合并空闲表管池;旋钮 `pp_balance_source_ranks/
+dest_rank/pool_gib/staging_mib/min_tensor_mib`。
+
+### 数值判定链(五组实验,机制终审通过)
+
+| 臂 | s1/s3/s10 | 结论 |
+|---|---|---|
+| 基线 ×2 | 12.36597/6.15894/3.34661 | 自逐位 |
+| ppbal ×2 | 12.36597/6.15438/3.35641 | 自逐位、对基线 s3 起分叉 |
+| only2d / only3d 二分 | s3=6.13528 / 6.16063 | 任何停放子集都分叉 → 非类别问题 |
+| 哑分配控制 | 与基线三步逐位 | 单次预分配不动 → 泛分配敏感排除 |
+| **park-and-keep** | **与基线三步逐位** | 全量传输、不提前释放 → **传输机件数值惰性** |
+
+**定性(独立发现)**:分叉唯一来源是"提前释放"改变步内分配器布局,而
+KDA triton 反向用原子累加、按地址序归约——**任何改变激活生命周期的显存
+优化在 KDA 模型上都不可能对基线逐位**(与 cp4 双吸引子、32l 启动抖动同
+族)。验收因此改为:自复现逐位(ppbal 具备)+ 曲线在模型自身包络内
+(s3 偏差 ~2e-3,与 grad-norm 精度实验同量级)+ 峰值目标。
+`K3_PPBAL_KEEP_LOCAL=1` 保留为数值隔离开关,一条命令向 reviewer 重演
+"传输精确、释放才移位"。
+
+### 显存现状与 v3 方向
+
+debug 形状下源 rank 峰值仅 −0.08 GiB(rank3 9.60→9.60@mb8):被停放的
+保存张量与 PP send/输出暂存别名,叠加末段瞬态 logits 主导峰值。真收益
+需要激活主导的形状(48B/长序列)或叠加暂存级释放;传输层与数值判定已
+就位,形状扩展属 #27 rebase 后的验证项。
