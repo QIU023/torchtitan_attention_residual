@@ -63,7 +63,7 @@ cell cp2 2 $D 1 $C 2 $NB;  cell cp4 4 $D 1 $C 4 $NB;  cell cp8 8 $D 1 $C 8 $NB
 cell dp2 2 $D 2;  cell dp2_cp2 4 $D 2 $C 2 $NB;  cell dp2_cp4 8 $D 2 $C 4 $NB
 ```
 
-`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does. Measured on this branch head, i.e. after the packed-document mask fix from review (below) and with the KCP machinery imported from attention-gym: this dataset packs two documents per 1024-token stream, so the earlier causal-only CP rebuild let the second document attend the first; the non-CP rows are bitwise invariant across all of these changes, and every cell except cp4 reproduces to every printed digit across launches (cp4 is launch-nondeterministic, see the review round below):
+`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does. Measured on this branch head, i.e. after the packed-document mask fix from review (below): this dataset packs two documents per 1024-token stream, so the earlier causal-only CP rebuild let the second document attend the first; the non-CP rows are bitwise invariant across all of these changes, and every cell except cp4 reproduces to every printed digit across launches (cp4 is launch-nondeterministic, see the review round below):
 
 | cell | world | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -84,15 +84,13 @@ Two boundaries raise instead of running: `Q_LEN` not divisible by `cp * 128`, an
                                    all-to-all, MLA's Ulysses body and the
                                    packed-document mask rebuild it needs
       kda.py                 +119  KCP on the KDA layers: conv halo exchange and
-                                   the prefix scan over the recurrent state, via
-                                   attention-gym's fla CP wrappers
+                                   the prefix scan over the recurrent state
       model.py             +115/-15 MLA branches to Ulysses when a CP group is set;
                                    overrides _validate_cp_backend; the vision
                                    splice follows the sequence shard under CP
       parallelize.py         +68/-5 apply_cp_kimi_k3: wires the group onto both
                                    layer kinds, checks head divisibility, and fails
-                                   at wiring time if attention-gym's fla CP
-                                   wrappers are missing
+                                   at wiring time if fla's CP ops are missing
     torchtitan/models/common/decoder.py  +7/-3  the spmd_types requirement becomes
                                    an overridable method
     torchtitan/distributed/fsdp.py       +24   add_zero_valued_dependency: keeps a
@@ -121,12 +119,6 @@ The same matrix with the grad-norm reduction carried in float32 (https://github.
 | dp2 | 2 | 12.58193 | 7.44923 | 3.32140 |
 | dp2 x cp2 | 4 | 12.57299 | 7.50029 | 3.35914 |
 | dp2 x cp4 | 8 | 12.53546 | 7.32970 | 3.39451 |
-
-### Review round: the KCP machinery is imported from attention-gym
-
-Following the dispatch-to-FLA direction from review, the two CP-specific imports (`build_cp_context`, `causal_conv1d_cp`) now come from `attn_gym.linear.kda.fla_cp` -- the attention-gym port of fla's CP machinery (prefix-scan context, conv halo, fragment entry; https://github.com/meta-pytorch/attention-gym/pull/421) -- instead of reaching into fla-core's module layout directly; fla remains the underlying kernel provider, and the wiring-time availability check names the attention-gym module.
-
-Re-measuring the matrix across this dependency change reproduced six of the seven cells bitwise at steps 1/3/10, confirming the wrappers are pass-throughs; the seventh, cp4, is launch-nondeterministic independently of it: its step-1 forward flips between two values (12.52432 and 12.53406 -- step 1 precedes any optimizer step, so no grad-norm or update-path setting can produce this), and one invocation reproduced both on the same seed and checkpoint, one per pass, back to back.
 
 ### Review round: packed-document boundaries
 
