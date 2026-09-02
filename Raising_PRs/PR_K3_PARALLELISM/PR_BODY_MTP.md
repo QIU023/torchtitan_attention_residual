@@ -1,6 +1,6 @@
-# PR title: [kimi_k3] multi-token prediction: one KDA-typed mirror layer and the composite loss
+# PR title: [Draft] [Kimi K3] multi-token prediction: one KDA-typed mirror layer and the composite loss
 
-Branch `k3_mtp` (`405c605a`, on `30eb5e50` like the EP/CP/PP branches). Evidence: `phase13_k3like_48b_posttrain/MTP_2026-08-29.md`. Paste between the markers into the PR body.
+Branch `k3_mtp` (`5ce30dbe1`: the two MTP commits plus a merge of upstream/main `1dcb14a0c`, one import resolution -- the flops helpers split upstream). 2 CPU tests pass on the merged tree. Evidence: `phase13_k3like_48b_posttrain/MTP_2026-08-29.md`. Paste between the markers into the PR body.
 
 --- PASTE BEGIN ---
 
