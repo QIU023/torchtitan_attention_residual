@@ -75,7 +75,9 @@ The parallelism ladder on the same model and vLLM, 2 GPUs unless stated, `rollou
 | fsdp2 (above) | 6.41e-4 | 5.79e-4 | 6.71e-4 | |
 | fsdp2 x ep2 | 7.09e-4 | 5.60e-4 | 5.30e-4 | EP carved from the dp axis |
 | fsdp2 x cp2 (4 GPUs) | 4.28e-4 | 5.25e-4 | 5.32e-4 | first attempt was misconfigured (dp2 x cp2 on 2 ranks); a dataloader worker was OOM-killed at teardown after step 3, as in the fsdp2 cell -- host memory, not the run |
-| pp2 (`rl_vit1`, engine PP, token budget 2048, micro-batch 2, offload off) | 2.57e-4 | 2.41e-4 | 1.83e-4 | five attempts to get here: DEP's two vision stages need a 3-stage pipeline (`rl_vit1`); torch's 1F1B needs one microbatch per stage (chunked driver); no `fsdp` mesh at dp1 (tolerant lookup); the HF adapter's layer-0 placeholders assumed a whole-model state dict (stage-aware); stages size their P2P buffers once, so micro-batches are padded to a fixed token budget; `offload_fsdp_model_to_cpu` still trips on a stage parameter that is not an FSDP DTensor, so offload stays off under PP for now |
+| pp2 (`rl_vit1`, engine PP, token budget 2048, micro-batch 2, offload off) | 2.57e-4 | 2.41e-4 | 1.83e-4 | five attempts to get here: DEP's two vision stages need a 3-stage pipeline (`rl_vit1`); torch's 1F1B needs one microbatch per stage (chunked driver); no `fsdp` mesh at dp1 (tolerant lookup); the HF adapter's layer-0 placeholders assumed a whole-model state dict (stage-aware); stages size their P2P buffers once, so micro-batches are padded to a fixed token budget; the offload failure that kept offload off here was a masked OOM, see the offload row |
+| pp2 + param/optimizer offload (`rl_vit1`, token budget 1024, micro-batch 2) | 2.57e-4 | 2.40e-4 | 1.77e-4 | the `reset_sharded_param` AttributeError was never the bug: the last stage's lm_head ran out of memory at the 2048 budget (640 MiB for the padded logits, 14.3 GiB already resident), and the train-context exit then offloaded a half-finished iteration, whose FSDP2 root group sits in FORWARD state where reshard() is a no-op, so the offload's error replaced the OOM. verl `261594b7`: the context exits reshard every FSDP module on a normal exit and call FSDP2's `reset_iter_state` on an exception, so the real error surfaces. Offload-on cells carry a one-time peak growth after the first offload/reload cycle (ep2 11.2 -> 14.0 GiB, cp2 10.0 -> 11.3 GiB, then flat); pp2's last stage sits at 12.6 GiB at the 2048 budget without offload and 13.6-13.7 GiB at the 1024 budget with it, so on 16 GB cards offload under PP needs the smaller budget |
+| tp2 (`tp_review1` tree, micro-batch 2) | 3.66e-4 | 4.44e-4 | 5.34e-4 | at micro-batch 4 the entropy pass over the TP-gathered `[T, V]` logits ran out of the 16 GB (2 GiB per micro-batch); micro-batch 2 completes all three steps |
 | QAT (`kimi_k3_debugmodel_rl_mx_qat`, fsdp2, micro-batch 2) | 7.12e-4 | 5.75e-4 | 5.21e-4 | MXFP4/MXFP8 fake-quant on the routed experts, bf16 rollout; at micro-batch 4 the step-3 log-prob pass ran out of the 16 GB (the STE keeps dequantized expert copies alive), so the row is the micro-batch-2 rerun |
 
 QAT under each parallelism (micro-batch 2; PP cells with the 2048-token budget, offload off):
@@ -139,3 +141,18 @@ pp4, 8 layers per rank, sources 0 and 1 parking on 3, tok/mb 4096, with the allo
 | 3 (dest) | 4.11 | 4.11 | 11.42 | 11.42 | -- (TCP: the pool is host memory here) |
 
 The mechanism runs -- about a gigabyte a step leaves each source rank and comes back, the loss is the baseline's to the digit at step 1 -- and the peak does not move, because at this shape the tensors autograd saves per microbatch are ~120 MiB (720 parks over 6 steps of 8 microbatches, 8 MiB each) against a 3.8 GiB allocated peak that is parameters, optimizer state, grads, the embedding/logits and the AttnRes block stack. The headroom is per-microbatch saved bytes times in-flight depth; at K3's width and depth that is gigabytes per microbatch, at the debug width it is 3% of the peak. The reserved numbers cannot show it at all: freed blocks stay reserved. What this box can show is the transport and the numerics, not a peak.
+
+## CP ported onto Attention Gym's delta-rule recipe (`cp_review2` = `785cf2072`, on `tp_review1`)
+
+attention-gym PR 453 (`7c83f6c`, unmerged, checked out in the editable submodule) adds `context_parallel_kda` and `context_parallel_conv_history`: per-fragment affine state summaries exchanged by all-gather, the ordinary local kernel run from the true entry state, backward as the mirror image. The old `cp_review1` branch (fla `build_cp_context` / `causal_conv1d_cp`) was ported onto main's KDA: `InnerKDA` builds a `ContextParallelPlan` for equal contiguous shards, takes the conv history from the plan, and `KDAKernel` calls `context_parallel_kda` in place of `chunk_kda`; MLA keeps Ulysses; the contracts moved to `context_parallel.py` on `SpmdType` (main removed `SpmdLayout`). One document per batch under CP, packed boundaries raise. The SM100 guard is lifted locally as before, not committed.
+
+`kimi_k3_debugmodel`, 8192 tokens per step, 256 per micro-batch, seed 42, deterministic, same seed checkpoint as the TP matrix:
+
+| cell | world | step 1 | step 3 | step 10 | tps |
+|---|---|---|---|---|---|
+| dp1 (same tree) | 1 | 12.52977 | 7.27107 | 2.98077 | |
+| cp2, warm pass | 2 | 12.53972 | 7.18344 | 2.93330 | 34 |
+| cp2, measure pass | 2 | <pending> | <pending> | <pending> | |
+
+The step-1 gap to dp1 (0.010) is the size the old branch showed at seq 1024 (12.53996 vs 12.60544). Throughput is 34 tps against tp2's 79 on the same two GPUs: the Ulysses path rebuilds the full-sequence flex mask every call and every KDA layer runs two all-gathers per direction over PCIe; not profiled further. CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
+
