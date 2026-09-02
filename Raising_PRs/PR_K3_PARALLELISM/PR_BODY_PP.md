@@ -99,6 +99,13 @@ Value-identical is the claim and the pp2 x vp2 cell prints it to every digit; at
       model.py                 +6/-0   the attn_res_cache_offload field
       pipeline_adapter.py      +43/-3  RankLocalCache parks own commits on pinned host memory
 
+### HF import under pipeline parallelism (review branch, 2026-09-02)
+
+`KimiK3StateDictAdapter.to_hf` synthesizes the released checkpoint's unused layer-0 attention-residual placeholders from layer 1's tensors; a pipeline stage's state dict holds its own layers only, so the synthesis now runs where layer 0 lives and the layer-1 templates are present, and is skipped elsewhere. Found by loading the HF debug checkpoint into a two-stage pipeline: the second stage raised `KeyError: 'language_model.model.layers.1.self_attention_res_norm.weight'`.
+
+    torchtitan/models/kimi_k3/
+      state_dict_adapter.py    +12/-6  stage-aware placeholder synthesis
+
 ### Changed files
 
     torchtitan/models/kimi_k3/
