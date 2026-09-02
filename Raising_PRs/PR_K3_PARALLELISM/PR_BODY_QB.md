@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] quantile balancing for the MoE router bias
 
-Branch `k3_qb` (`3c9cef31a`, base `30eb5e502`). Merges clean onto upstream/main `1dcb14a0c`; the 14 CPU tests pass on the merged tree. Results are a placeholder: the draft goes up without numbers, the measured rows get pasted in later. Paste between the markers into the PR body.
+Branch `k3_qb` (`3c9cef31a`, base `30eb5e502`). Merges clean onto upstream/main `1dcb14a0c`; the 14 CPU tests pass on the merged tree. Paste between the markers into the PR body.
 
 --- PASTE BEGIN ---
 
@@ -20,7 +20,14 @@ Adds quantile balancing for the MoE router bias. Before this change the bias upd
 
 ### Results
 
-<placeholder: dp1 / dp2 rows on the branch merged with current main, steps 1 / 3 / 10, one seed, warmed compile cache>
+Training loss on the branch merged with current main, one seed, warmed compile cache; the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on.
+
+| config | hook | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | sign-step (main) | 12.52977 | 7.27107 | 2.98077 |
+| dp1 | quantile balancing | 12.52977 | 7.30620 | 3.11376 |
+| dp2 | sign-step (main) | 12.53137 | 7.31248 | 3.15823 |
+| dp2 | quantile balancing | 12.53137 | 7.19897 | 3.24552 |
 
 The rows are re-measured once the expert parallel PR merges, adding the ep cells where the balancing is exercised.
 
