@@ -78,6 +78,15 @@ The parallelism ladder on the same model and vLLM, 2 GPUs unless stated, `rollou
 | pp2 (`rl_vit1`, engine PP, token budget 2048, micro-batch 2, offload off) | 2.57e-4 | 2.41e-4 | 1.83e-4 | five attempts to get here: DEP's two vision stages need a 3-stage pipeline (`rl_vit1`); torch's 1F1B needs one microbatch per stage (chunked driver); no `fsdp` mesh at dp1 (tolerant lookup); the HF adapter's layer-0 placeholders assumed a whole-model state dict (stage-aware); stages size their P2P buffers once, so micro-batches are padded to a fixed token budget; `offload_fsdp_model_to_cpu` still trips on a stage parameter that is not an FSDP DTensor, so offload stays off under PP for now |
 | QAT (`kimi_k3_debugmodel_rl_mx_qat`, fsdp2, micro-batch 2) | 7.12e-4 | 5.75e-4 | 5.21e-4 | MXFP4/MXFP8 fake-quant on the routed experts, bf16 rollout; at micro-batch 4 the step-3 log-prob pass ran out of the 16 GB (the STE keeps dequantized expert copies alive), so the row is the micro-batch-2 rerun |
 
+QAT under each parallelism (micro-batch 2; PP cells with the 2048-token budget, offload off):
+
+| cell | step 1 | step 2 | step 3 |
+|---|---|---|---|
+| QAT x ep2 | 7.17e-4 | 5.87e-4 | 6.06e-4 |
+| QAT x cp2 (4 GPUs) | 5.30e-4 | 4.88e-4 | 5.27e-4 |
+| QAT x pp2 (`rl_mx_qat_vit1`) | 3.31e-4 | 1.72e-4 | 1.56e-4 |
+| QAT x ep2 x cp2 x pp2 (8 GPUs) | <pending> | | first attempt: the PP token-budget padding was applied to the CP shard instead of the full stream, so the gathered logits outran the labels; padding moves ahead of the CP split |
+
 QAT GRPO runs: the fake-quantized actor trains against a bf16 rollout of the same weights, and the log-prob gap stays at the bf16 level -- the STE forward consumes dequant(quant(w)) while the rollout serves the bf16 masters, so this gap is also the quantization error the deployment path will see.
 
 ep2 / cp2 / pp2 / QAT ladder: see table; PP in the engine was implemented tonight (verl `6ad61b56`: one verl micro-batch per schedule step, a loss bridge on the last stage) -- the ladder's pp2 cell is its first run.
