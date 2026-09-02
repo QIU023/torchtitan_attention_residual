@@ -33,7 +33,7 @@ PR merges.
 | dp1 | 12.45603 | 11.93088 | 10.42394 |
 | dp2 | 12.48369 | 11.89999 | 10.51706 |
 
-QLoRA-MXFP4 (`kimi_k3_debugmodel_qlora_mxfp4`): dp1 12.48328 / 12.00891 / 10.42474; dp2 <pending>
+QLoRA-MXFP4 (`kimi_k3_debugmodel_qlora_mxfp4`): dp1 12.48328 / 12.00891 / 10.42474; dp2 <pending, rerunning after the pruner sweep>
 
 ## AC (ac_review1)
 
@@ -60,7 +60,15 @@ tp2 / dp1: <pending>; tp2 + SP: <pending>
 
 ## veRL
 
-MoE GRPO (bf16, vLLM 6dc76a9ad): <pending>; ep2 / cp2 / pp2 / QAT ladder: <pending>
+MoE GRPO (bf16 rollout on vLLM 6dc76a9ad, fsdp2, 3 steps, `kimi-k3-debug` with its 32 routed experts): ran to completion. The rollout-vs-actor log-prob gap is the evidence that the two MoE implementations agree; entropy is ln(vocab) because the weights are a seeded init, and pg_loss is 0 because a random model earns no reward.
+
+| step | rollout_probs_diff_max | rollout_probs_diff_mean | entropy |
+|---|---|---|---|
+| 1 | 6.41e-4 | 1.05e-5 | 11.520 |
+| 2 | 5.79e-4 | -- | 11.520 |
+| 3 | 6.71e-4 | -- | 11.520 |
+
+ep2 / cp2 / pp2 / QAT ladder: <pending>; PP in the engine was implemented tonight (verl `6ad61b56`: one verl micro-batch per schedule step, a loss bridge on the last stage) -- the ladder's pp2 cell is its first run.
 
 ## Environment notes that cost time today
 
