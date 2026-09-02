@@ -56,7 +56,7 @@ Bitwise; the parked blocks are ~1 MB each at this scale, so memory does not move
 
 ## TP rewrite (tp_review1)
 
-tp2 / dp1: <pending>; tp2 + SP: <pending>
+tp2 12.55057 / 7.52677 / 3.00361 against dp1 12.52977 / 7.27107 / 2.98077 (same tree); tp2 + SP: <pending>
 
 ## veRL
 

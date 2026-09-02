@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] tensor parallelism: head-parallel MLA and KDA
 
-Branch `tp_review1` (`c455fed0f`, one commit on `k3_ep` `69f84292d`, which is upstream/main `1dcb14a0c` plus the expert parallel PR). Stacked on the EP PR: it adds to the `sharding.py` EP creates. Rewritten on 2026-09-02 for main's attn-gym KDA (`InnerKDA` behind a `local_map`) -- the earlier branch unwrapped DTensors at an fla kernel call that no longer exists. Results are a placeholder. Paste between the markers.
+Branch `tp_review1` (four commits on `k3_ep` `69f84292d`: TP, SP, the grad-norm mesh grouping, the latent-MoE norm under SP, which is upstream/main `1dcb14a0c` plus the expert parallel PR). Stacked on the EP PR: it adds to the `sharding.py` EP creates. Rewritten on 2026-09-02 for main's attn-gym KDA (`InnerKDA` behind a `local_map`) -- the earlier branch unwrapped DTensors at an fla kernel call that no longer exists. Paste between the markers.
 
 --- PASTE BEGIN ---
 
@@ -20,7 +20,13 @@ Adds tensor parallelism to Kimi K3. Before this change `parallelize_kimi_k3` rai
 
 ### Results
 
-<placeholder: tp2 against dp1 on `kimi_k3_debugmodel`, steps 1 / 3 / 10, one seed, warmed compile cache; TP changes the reduction order, so the bar is agreement to the printed digits rather than bitwise>
+Training loss on `kimi_k3_debugmodel`, one seed, warmed compile cache. TP splits heads across ranks and reduces the rowwise outputs, so the bar is agreement rather than bitwise; the tp2 row tracks dp1 the way the earlier fla-based branch's tp2/tp4/tp8 rows tracked theirs (0.01 at step 1).
+
+| cell | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | 1 | 12.52977 | 7.27107 | 2.98077 |
+| tp2 | 2 | 12.55057 | 7.52677 | 3.00361 |
+| tp2 + SP | 2 | <pending> | | |
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
