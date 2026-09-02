@@ -1,3 +1,5 @@
+Status 2026-09-02: the Ulysses half (MLA sequence split, the packed-document mask kept causal on the full sequence, CPU-tested) is reviewable on its own; the KDA half (KCP) still calls fla-core directly for cp > 1, because attention-gym keeps its CP orchestration in `examples/kda_context_parallel.py` behind private cute seams. attention-gym #445 made those seams run on Hopper and SM120 (its example passes on two 5060 Ti), so the blocker is now API promotion, not kernels. The branch also predates main's attn-gym KDA (`InnerKDA`), so its `kda.py` cannot merge with main until the KCP side is re-expressed on the promoted API; `cp_review1` stays on its base until then.
+
 ### Summary
 
 Adds context parallelism to the Kimi K3 text decoder. The two attention kinds need different mechanisms, so both are here on disjoint layer kinds: Ulysses on the Gated MLA layers, and the report's KCP on the KDA layers. As far as I can tell this is the first Ulysses in torchtitan; if you would rather it live under `distributed/` as a model-agnostic piece, say so and I will move it.
