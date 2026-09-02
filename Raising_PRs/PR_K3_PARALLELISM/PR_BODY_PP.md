@@ -84,6 +84,21 @@ Peak memory per rank, same topology and schedule, transport against fallback; th
 
 Not in this PR: the vision tower (its stage assignment and DEP). Without `pipeline_parallel_degree > 1` none of this executes.
 
+### Cache offload (review branch, 2026-09-02)
+
+`attn_res_cache_offload`, off by default: own-rank cached commits park on pinned host memory between the producing stage's forward and their same-rank consumers' forwards. Only own commits move -- their consumer linkage routes through the Capture/Augment slot bridge, never through shared storage, so the host round-trip is value-identical; relayed blocks stay attached on device for SEND_B. The D2H copy is async on the current stream and the H2D in `get_blocks` runs on the same stream, so stream order serializes them.
+
+Value-identical is the claim and the pp2 x vp2 cell prints it to every digit; at debug scale the parked blocks are about a megabyte each, so peak memory does not move here -- the saving scales with microbatch tokens x hidden x blocks in flight.
+
+| cell | offload | step 1 | step 3 | step 10 | peak memory |
+|---|---|---|---|---|---|
+| pp2 x vp2 | off | 12.49999 | 6.89362 | 3.28050 | 10.43 GiB |
+| pp2 x vp2 | on | 12.49999 | 6.89362 | 3.28050 | 10.42 GiB |
+
+    torchtitan/models/kimi_k3/
+      model.py                 +6/-0   the attn_res_cache_offload field
+      pipeline_adapter.py      +43/-3  RankLocalCache parks own commits on pinned host memory
+
 ### Changed files
 
     torchtitan/models/kimi_k3/
