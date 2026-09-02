@@ -152,7 +152,7 @@ attention-gym PR 453 (`7c83f6c`, unmerged, checked out in the editable submodule
 |---|---|---|---|---|---|
 | dp1 (same tree) | 1 | 12.52977 | 7.27107 | 2.98077 | |
 | cp2, warm pass | 2 | 12.53972 | 7.18344 | 2.93330 | 34 |
-| cp2, measure pass | 2 | <pending> | <pending> | <pending> | |
+| cp2, measure pass | 2 | 12.53972 | 7.18344 | 2.93330 | 34 |
 
-The step-1 gap to dp1 (0.010) is the size the old branch showed at seq 1024 (12.53996 vs 12.60544). Throughput is 34 tps against tp2's 79 on the same two GPUs: the Ulysses path rebuilds the full-sequence flex mask every call and every KDA layer runs two all-gathers per direction over PCIe; not profiled further. CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
+Warm and measure passes are bitwise equal, and dp1 on this tree is bitwise equal to tp_review1's dp1. The step-1 gap to dp1 (0.010) is the size the old branch showed at seq 1024 (12.53996 vs 12.60544). Throughput is 34 tps against tp2's 79 on the same two GPUs: the Ulysses path rebuilds the full-sequence flex mask every call and every KDA layer runs two all-gathers per direction over PCIe; not profiled further. CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
 
