@@ -104,3 +104,15 @@ ep2 / cp2 / pp2 / QAT ladder: see table; PP in the engine was implemented tonigh
 - The disk watchdog's pruner sweeps every directory named `checkpoint` and the seed caches were not on its protected list: at 09:25 it emptied all seven caches at once (three SEED-COPY-FAIL aborts followed). The cache now stores `seed_ckpt`, the pruner excludes `.mx3_seeds*`, and an empty cache rebuilds instead of being trusted.
 - mx3's seed cache is keyed on flavor + batch, not tree; a cross-tree hit fails
   loudly on DCP shape (`dt_bias [16,64] vs [16,128]`); use `SEED_ROOT` per tree.
+
+## pp_balance under memory pressure (pp_review1 `1c0c1416c`, pp8 x vp4, 32-layer flavor, 8 GPUs)
+
+Per-GPU peak from nvidia-smi sampled every second, six steps, tokens per microbatch raised; sources are the two heaviest ranks, dest the lightest.
+
+| arm | tok/mb | rank 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|---|---|
+| baseline | 512 | 8.2 | 4.1 | 4.1 | 3.4 | 4.1 | 4.0 | 4.0 | 7.7 |
+| baseline | 1024 | 8.9 | 4.8 | 4.8 | 4.1 | 4.8 | 4.7 | 4.7 | 8.1 |
+| balanced (0,7 -> 3) | 1024 | 9.2 | 4.6 | 4.6 | 4.1 | 4.6 | 4.5 | 4.7 | 8.1 |
+
+Not the case that shows the feature: at one layer per stage the activations a stage saves are small (doubling tokens per microbatch adds 0.7 GiB per rank), and the imbalance is the 163840-vocab embedding and head on ranks 0 and 7, which balancing activations cannot touch. The Transfer Engine came up (TCP on this box) and the run stayed at the baseline's loss to the digit at step 1. Next: pp2 with 16 layers per rank, where the saved activations are 16 layers deep, tokens per microbatch up to 8192.
