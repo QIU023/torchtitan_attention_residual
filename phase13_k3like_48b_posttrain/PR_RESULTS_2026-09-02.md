@@ -75,7 +75,7 @@ The parallelism ladder on the same model and vLLM, 2 GPUs unless stated, `rollou
 | fsdp2 (above) | 6.41e-4 | 5.79e-4 | 6.71e-4 | |
 | fsdp2 x ep2 | 7.09e-4 | 5.60e-4 | 5.30e-4 | EP carved from the dp axis |
 | fsdp2 x cp2 (4 GPUs) | 4.28e-4 | 5.25e-4 | 5.32e-4 | first attempt was misconfigured (dp2 x cp2 on 2 ranks); a dataloader worker was OOM-killed at teardown after step 3, as in the fsdp2 cell -- host memory, not the run |
-| pp2 (`rl_vit1`) | <pending> | | | first attempt: DEP's two vision stages need a 3-stage pipeline; rerun with the tower whole on one stage |
+| pp2 (`rl_vit1`) | <pending> | | | attempts: DEP's two vision stages need a 3-stage pipeline (`rl_vit1`); torch's 1F1B needs one microbatch per stage (chunked driver); no `fsdp` mesh at dp1 (tolerant lookup); the HF adapter's layer-0 placeholders assumed a whole-model state dict (stage-aware now); `offload_fsdp_model_to_cpu` after the log-prob pass hits a stage parameter that is not an FSDP DTensor -- the run in flight has param/optimizer offload off |
 | QAT (`kimi_k3_debugmodel_rl_mx_qat`, fsdp2, micro-batch 2) | 7.12e-4 | 5.75e-4 | 5.21e-4 | MXFP4/MXFP8 fake-quant on the routed experts, bf16 rollout; at micro-batch 4 the step-3 log-prob pass ran out of the 16 GB (the STE keeps dequantized expert copies alive), so the row is the micro-batch-2 rerun |
 
 QAT GRPO runs: the fake-quantized actor trains against a bf16 rollout of the same weights, and the log-prob gap stays at the bf16 level -- the STE forward consumes dequant(quant(w)) while the rollout serves the bf16 masters, so this gap is also the quantization error the deployment path will see.
