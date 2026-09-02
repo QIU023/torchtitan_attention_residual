@@ -116,3 +116,26 @@ Per-GPU peak from nvidia-smi sampled every second, six steps, tokens per microba
 | balanced (0,7 -> 3) | 1024 | 9.2 | 4.6 | 4.6 | 4.1 | 4.6 | 4.5 | 4.7 | 8.1 |
 
 Not the case that shows the feature: at one layer per stage the activations a stage saves are small (doubling tokens per microbatch adds 0.7 GiB per rank), and the imbalance is the 163840-vocab embedding and head on ranks 0 and 7, which balancing activations cannot touch. The Transfer Engine came up (TCP on this box) and the run stayed at the baseline's loss to the digit at step 1. Next: pp2 with 16 layers per rank, where the saved activations are 16 layers deep, tokens per microbatch up to 8192.
+
+### pp_balance, second and third shapes (pp2 with 16 layers per rank; pp4 with 8), reserved and allocated peaks
+
+pp2, 32-layer flavor, 1F1B, mb 8 (nvidia-smi reserved peak, GiB):
+
+| arm | tok/mb | rank 0 | rank 1 | note |
+|---|---|---|---|---|
+| baseline | 2048 | 13.66 | 14.13 | |
+| baseline | 4096 | 14.95 | 15.32 | |
+| baseline | 8192 | OOM | 15.43 | |
+| balanced, 1 -> 0 | 4096 | 15.38 | 15.22 | rank 1 parked 27.6 GB over 6 steps, all fetched |
+| balanced, 0 -> 1 | 4096 | 15.12 | 15.12 | rank 0 parked 11.9 GB, all fetched; loss to the digit at s1 and s6 |
+
+pp4, 8 layers per rank, sources 0 and 1 parking on 3, tok/mb 4096, with the allocator's own peaks per rank:
+
+| rank | baseline max_allocated | balanced max_allocated | baseline reserved | balanced reserved | parked per step |
+|---|---|---|---|---|---|
+| 0 | 3.84 | 3.84 | 11.18 | 11.60 | 0.96 GB |
+| 1 | 2.62 | 2.62 | 7.40 | 7.25 | 1.0 GB |
+| 2 | 2.72 | 2.72 | 6.95 | 6.95 | -- |
+| 3 (dest) | 4.11 | 4.11 | 11.42 | 11.42 | -- (TCP: the pool is host memory here) |
+
+The mechanism runs -- about a gigabyte a step leaves each source rank and comes back, the loss is the baseline's to the digit at step 1 -- and the peak does not move, because at this shape the tensors autograd saves per microbatch are ~120 MiB (720 parks over 6 steps of 8 microbatches, 8 MiB each) against a 3.8 GiB allocated peak that is parameters, optimizer state, grads, the embedding/logits and the AttnRes block stack. The headroom is per-microbatch saved bytes times in-flight depth; at K3's width and depth that is gigabytes per microbatch, at the debug width it is 3% of the peak. The reserved numbers cannot show it at all: freed blocks stay reserved. What this box can show is the transport and the numerics, not a peak.
