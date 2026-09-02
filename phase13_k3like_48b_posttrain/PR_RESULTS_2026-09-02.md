@@ -76,7 +76,7 @@ The parallelism ladder on the same model and vLLM, 2 GPUs unless stated, `rollou
 | fsdp2 x ep2 | 7.09e-4 | 5.60e-4 | 5.30e-4 | EP carved from the dp axis |
 | fsdp2 x cp2 (4 GPUs) | 4.28e-4 | 5.25e-4 | 5.32e-4 | first attempt was misconfigured (dp2 x cp2 on 2 ranks); a dataloader worker was OOM-killed at teardown after step 3, as in the fsdp2 cell -- host memory, not the run |
 | pp2 (`rl_vit1`) | <pending> | | | first attempt: DEP's two vision stages need a 3-stage pipeline; rerun with the tower whole on one stage |
-| QAT (`kimi_k3_debugmodel_rl_mx_qat`, fsdp2) | 7.34e-4 | 5.52e-4 | OOM | MXFP4/MXFP8 fake-quant on the routed experts, bf16 rollout; step 3's log-prob pass ran out of the 16 GB (the STE keeps dequantized copies of the expert weights alive), rerun queued with micro-batch 2 |
+| QAT (`kimi_k3_debugmodel_rl_mx_qat`, fsdp2, micro-batch 2) | 7.12e-4 | 5.75e-4 | 5.21e-4 | MXFP4/MXFP8 fake-quant on the routed experts, bf16 rollout; at micro-batch 4 the step-3 log-prob pass ran out of the 16 GB (the STE keeps dequantized expert copies alive), so the row is the micro-batch-2 rerun |
 
 QAT GRPO runs: the fake-quantized actor trains against a bf16 rollout of the same weights, and the log-prob gap stays at the bf16 level -- the STE forward consumes dequant(quant(w)) while the rollout serves the bf16 masters, so this gap is also the quantization error the deployment path will see.
 
