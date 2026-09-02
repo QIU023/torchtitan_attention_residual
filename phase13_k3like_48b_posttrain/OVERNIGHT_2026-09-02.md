@@ -37,6 +37,14 @@ metric; every cell holds it at the bf16 level:
 | fsdp2 x cp2 (4 GPUs) | 3 | 5.3e-4 |
 | QAT (rl_mx_qat, micro-batch 2) | 3 | 7.1e-4 |
 | pp2 (rl_vit1, engine PP) | 3 | 2.6e-4 |
+| QAT x ep2 | 3 | 7.2e-4 |
+| QAT x cp2 (4 GPUs) | 3 | 5.3e-4 |
+| QAT x pp2 | 3 | 3.3e-4 |
+| QAT x ep2 x cp2 x pp2 (8 GPUs) | 3 | 3.3e-4 |
+
+The goal's veRL line -- QAT GRPO with EP, DP, CP and PP on -- runs on the
+debug model. PP in the engine is new tonight (verl `dbc08fd7`); the
+attempt trail for pp2 and for the eight-card cell is in the ledger.
 
 The "GRPO with MoE is blocked on SITU kernel coverage" note is withdrawn
 (`VERL_MOE_ROLLOUT_2026-09-02.md`).

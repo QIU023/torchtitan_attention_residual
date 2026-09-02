@@ -85,7 +85,7 @@ QAT under each parallelism (micro-batch 2; PP cells with the 2048-token budget, 
 | QAT x ep2 | 7.17e-4 | 5.87e-4 | 6.06e-4 |
 | QAT x cp2 (4 GPUs) | 5.30e-4 | 4.88e-4 | 5.27e-4 |
 | QAT x pp2 (`rl_mx_qat_vit1`) | 3.31e-4 | 1.72e-4 | 1.56e-4 |
-| QAT x ep2 x cp2 x pp2 (8 GPUs) | <pending> | | first attempt: the PP token-budget padding was applied to the CP shard instead of the full stream, so the gathered logits outran the labels; padding moves ahead of the CP split |
+| QAT x ep2 x cp2 x pp2 (8 GPUs, fsdp2) | 1.81e-4 | 3.31e-4 | 2.06e-4 | three attempts: the token-budget padding had to run on the whole packed stream before the CP split, and the pipeline bridge had to unfold the stage's [T, V] output before the CP gather (gathering [T, V] on dim 1 concatenates vocabularies) |
 
 QAT GRPO runs: the fake-quantized actor trains against a bf16 rollout of the same weights, and the log-prob gap stays at the bf16 level -- the STE forward consumes dequant(quant(w)) while the rollout serves the bf16 masters, so this gap is also the quantization error the deployment path will see.
 

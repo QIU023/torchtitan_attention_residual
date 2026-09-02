@@ -50,5 +50,5 @@ No GPU cell is added on this branch; the K3 integration lane is B200-only after 
 
 Notes for us, not for the body:
 
-- The earlier design (fla kernel, TP-invariant KDA, `dtensor_ops.py`, the grad-norm mesh grouping in `distributed/utils.py`) is retired with the kernel it wrapped. If the tp2 run trips `get_total_norm` on two meshes, the grouping comes back as its own commit with that evidence.
-- SP (`k3_tp_sp`) is rewritten on top of this once tp2 is green.
+- The earlier design (fla kernel, TP-invariant KDA, `dtensor_ops.py`) is retired with the kernel it wrapped. The grad-norm mesh grouping in `distributed/utils.py` came back as its own commit: the first tp2 run tripped `get_total_norm` on two meshes exactly as before (the undeclared vision tower's grads live on the fsdp-only mesh).
+- SP is the second commit on this branch; its tp2 + SP row is in Results. Under SP without EP the MoE boundary gathers the sequence shard, the experts hand it back sequence-sharded, and the latent-MoE norm after them runs on the shard (the fourth commit).
