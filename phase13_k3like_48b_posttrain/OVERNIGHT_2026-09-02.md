@@ -68,5 +68,5 @@ The "GRPO with MoE is blocked on SITU kernel coverage" note is withdrawn
 - KCP: attention-gym keeps the CP orchestration in an example behind private
   seams; #445 made it run on Hopper/SM120. The CP PR's KDA half waits on the
   promoted API; the Ulysses half is reviewable now.
-- `pp_balance` (Mooncake) held for a dependency decision.
+- `pp_balance` (Mooncake) is in the PP PR by decision, on `pp_review1` only (`1c0c1416c`) until the user syncs `k3_pp`.
 - QAT filing route: fold into PR-3889, or draft with the relation section.

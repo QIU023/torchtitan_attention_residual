@@ -106,6 +106,21 @@ Value-identical is the claim and the pp2 x vp2 cell prints it to every digit; at
     torchtitan/models/kimi_k3/
       state_dict_adapter.py    +12/-6  stage-aware placeholder synthesis
 
+### Activation balancing across pipeline ranks (review branch, 2026-09-02)
+
+The report's second PP item: the listed pipeline ranks park the tensors autograd saves for backward in a pool on `pp_balance_dest_rank`'s GPU, through the Mooncake Transfer Engine -- RDMA where an HCA exists, TCP with pinned host staging where one does not (`get_local_topology()` decides). Mechanism: `saved_tensors_hooks` around the stage forward, pack parks and releases, unpack fetches back; a first-fit pool with a merging free list; knobs `pp_balance_source_ranks / dest_rank / pool_gib / staging_mib / min_tensor_mib`, empty source list means off. `mooncake-transfer-engine` is an optional import, loaded only when the feature is on; its cu12 runtime is preloaded through ctypes so no environment variable is needed, and the RPC port is read back after registration because the engine picks its own.
+
+Numerics, five arms on the 32-layer flavor (`s1 / s3 / s10`): baseline twice 12.36597 / 6.15894 / 3.34661, self-bitwise; balanced twice 12.36597 / 6.15438 / 3.35641, self-bitwise, parting from the baseline at step 3; parking only 2-D or only 3-D tensors parts too, so it is not a tensor class; a dummy pre-allocation control stays bitwise with the baseline; and park-and-keep -- the full transfer with no early release -- stays bitwise with the baseline. The transport is exact; what moves the digits is releasing parked tensors early, which changes the step's allocator layout, and KDA's triton backward accumulates atomically in address order. No memory optimization that changes activation lifetimes can be bitwise on this model; the bar for it is self-reproducibility (met) and a curve inside the model's own envelope (the step-3 deviation is ~2e-3, the same order as the grad-norm precision experiment). `K3_PPBAL_KEEP_LOCAL=1` is kept as the isolation switch that replays "exact transport, release moves the digits" in one command.
+
+At debug scale the source rank's peak moves by 0.08 GiB (rank 3, 9.60 GiB, mb8): the parked tensors are small; the saving scales with what autograd saves per rank.
+
+    torchtitan/models/kimi_k3/
+      pp_balance.py            +345/-0  the engine, the pool, the hooks (new)
+      model.py                 +9/-0   the pp_balance_* fields
+      pipeline_adapter.py      +43/-1   the knobs and the install after the split
+    tests/unit_tests/cpu/
+      test_kimi_k3_pp_balance_pool.py  +64/-0  the pool allocator (new)
+
 ### Changed files
 
     torchtitan/models/kimi_k3/
