@@ -1,0 +1,96 @@
+From e9824619f30dd1412b7aa3f1afa20f698983b7d6 Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Wed, 2 Sep 2026 16:54:47 +0000
+Subject: [PATCH 3/3] Test the dtype argument of get_total_norm and DTensor's
+ _foreach_norm(..., dtype=)
+
+get_total_norm with dtype=torch.float32 must give the same total for bf16
+gradients whether they are reduced in one call or as a norm of per-group
+norms; without dtype the total stays in bf16. _foreach_norm.Scalar's schema
+is (self, ord, *, dtype), so a DTensor call with dtype must not read
+position 2 as a reduction dim.
+---
+ test/distributed/tensor/test_math_ops.py | 21 +++++++++++++++
+ test/test_nn.py                          | 34 ++++++++++++++++++++++++
+ 2 files changed, 55 insertions(+)
+
+diff --git a/test/distributed/tensor/test_math_ops.py b/test/distributed/tensor/test_math_ops.py
+index 97cfa234b1..81e20fb738 100644
+--- a/test/distributed/tensor/test_math_ops.py
++++ b/test/distributed/tensor/test_math_ops.py
+@@ -818,6 +818,27 @@ class DistMathOpsTest(DTensorTestBase):
+ 
+         self.assertEqual(sharded_out.full_tensor(), out)
+ 
++    @with_comms
++    def test_foreach_norm_dtype(self):
++        # _foreach_norm.Scalar's schema is (self, ord, *, dtype): position 2 is dtype, not dim.
++        # The sharding strategy must not read it as a reduction dim.
++        device_mesh = self.build_device_mesh()
++
++        grads = [torch.randn(12, 8, dtype=torch.bfloat16) * scale for scale in (1.0, 1e-2, 3.0)]
++        sharded_grads = [distribute_tensor(grad, device_mesh, [Shard(0)]) for grad in grads]
++
++        out = torch._foreach_norm(grads, 2, dtype=torch.float32)
++        sharded_out = torch._foreach_norm(sharded_grads, 2, dtype=torch.float32)
++        for expected, got in zip(out, sharded_out):
++            self.assertEqual(got.dtype, torch.float32)
++            self.assertEqual(got.full_tensor(), expected)
++
++        out_bf16 = torch._foreach_norm(grads, 2)
++        sharded_out_bf16 = torch._foreach_norm(sharded_grads, 2)
++        for expected, got in zip(out_bf16, sharded_out_bf16):
++            self.assertEqual(got.dtype, torch.bfloat16)
++            self.assertEqual(got.full_tensor(), expected)
++
+     @with_comms
+     def test_vector_norm_partial(self):
+         device_mesh = self.build_device_mesh()
+diff --git a/test/test_nn.py b/test/test_nn.py
+index a9b79ccb09..413bf02cd0 100644
+--- a/test/test_nn.py
++++ b/test/test_nn.py
+@@ -13484,6 +13484,40 @@ if __name__ == '__main__':
+         clip_grad_value_([p2], clip_value, foreach=foreach)
+         self.assertEqual(p1.grad, p2.grad)
+ 
++    @parametrize_test('foreach', (False, True))
++    @parametrize_test('norm_type', (1.0, 2.0))
++    def test_get_total_norm_dtype(self, norm_type, foreach, device):
++        # With dtype=torch.float32 the total norm of bf16 gradients does not depend on how the
++        # tensors are grouped: the norm over all of them equals the norm of per-group norms.
++        # Without it each norm accumulates in bf16 and the total is returned in bf16.
++        if torch.device(device).type == 'xla' and foreach:
++            raise SkipTest('foreach not supported on XLA')
++        if torch.device(device).type == 'mps' and foreach:
++            raise SkipTest('foreach not supported on MPS')
++        torch.manual_seed(0)
++        grads = [
++            (torch.randn(4096, device=device) * scale).to(torch.bfloat16)
++            for scale in (1.0, 1e-2, 1e-2, 1e-2, 3.0, 1e-3)
++        ]
++        kwargs = dict(norm_type=norm_type, foreach=foreach, dtype=torch.float32)
++
++        total = get_total_norm(grads, **kwargs)
++        self.assertEqual(total.dtype, torch.float32)
++
++        group_norms = [get_total_norm(grads[:2], **kwargs), get_total_norm(grads[2:5], **kwargs),
++                       get_total_norm(grads[5:], **kwargs)]
++        grouped = get_total_norm(group_norms, **kwargs)
++        self.assertEqual(grouped.dtype, torch.float32)
++        self.assertEqual(total, grouped, atol=1e-5, rtol=1e-5)
++
++        reference = torch.linalg.vector_norm(torch.cat([g.float().flatten() for g in grads]), norm_type)
++        # The reference sums in one pass; the total is a norm of per-tensor norms. Both are
++        # fp32, so they agree to fp32 rounding, not to the last ulp.
++        self.assertEqual(total, reference, atol=1e-4, rtol=1e-4)
++
++        self.assertEqual(get_total_norm(grads, norm_type=norm_type, foreach=foreach).dtype, torch.bfloat16)
++        self.assertEqual(get_total_norm([], norm_type=norm_type, dtype=torch.float32).dtype, torch.float32)
++
+     @skipIfMPS  # TypeError: the MPS framework doesn't support float64
+     @parametrize_test('foreach', (False, True))
+     @parametrize_test('norm_type', (0.5, 1.5, 2, 4, 'inf'))
+-- 
+2.43.0
+

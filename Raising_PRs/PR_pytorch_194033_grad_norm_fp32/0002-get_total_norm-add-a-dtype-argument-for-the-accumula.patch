@@ -1,0 +1,84 @@
+From 7ed0d56e4be2d882a98787d919cd9dce474007e8 Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Tue, 18 Aug 2026 06:55:34 +0000
+Subject: [PATCH 2/3] get_total_norm: add a dtype argument for the accumulation
+
+get_total_norm returns the norm in the input tensors' dtype and accumulates in it too, so
+for bfloat16 gradients the total depends on how the tensors are grouped: two runs with
+bit-identical gradients but different pipeline or expert-parallel splits report different
+norms and, under gradient clipping, take different-sized steps. Measured at world 1/2/4/8,
+the pipeline split moves 256.000 -> 255.505 (relative spread 1.9e-3) against a float64
+truth of 255.682.
+
+The dtype argument accumulates the per-tensor norms and the norm-of-norms in that dtype and
+returns in it, so passing torch.float32 makes the result grouping-independent -- the same
+split then reads 255.682 at every world size. Default None is byte-for-byte the previous
+behaviour: vector_norm and _foreach_norm both treat dtype=None as a no-op, and the empty
+case returns torch.tensor(0.0, dtype=dtype).
+
+Threads dtype straight into the three norm ops with no special-casing. DTensor gradients
+(the FSDP case) go through this unchanged now that _foreach_norm.Scalar's sharding strategy
+no longer misreads dtype as a dim.
+---
+ torch/nn/utils/clip_grad.py | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/torch/nn/utils/clip_grad.py b/torch/nn/utils/clip_grad.py
+index c7b2d6fcdd..d0103a277b 100644
+--- a/torch/nn/utils/clip_grad.py
++++ b/torch/nn/utils/clip_grad.py
+@@ -51,6 +51,7 @@ def _get_total_norm(
+     norm_type: float = 2.0,
+     error_if_nonfinite: bool = False,
+     foreach: bool | None = None,
++    dtype: torch.dtype | None = None,
+ ) -> torch.Tensor:
+     r"""Compute the norm of an iterable of tensors.
+ 
+@@ -69,6 +70,12 @@ def _get_total_norm(
+             If ``None``, use the foreach implementation for CUDA and CPU native tensors and silently
+             fall back to the slow implementation for other device types.
+             Default: ``None``
++        dtype (torch.dtype, optional): if set, the per-tensor norms and the norm-of-norms are
++            accumulated in this dtype and the result is returned in it. Low-precision inputs
++            (e.g. ``bfloat16``) accumulate in their own dtype by default, so the total depends
++            on how the tensors are grouped -- under pipeline or expert parallelism, on where
++            the model was split rather than only on the gradients. Passing ``torch.float32``
++            makes the reduction grouping-independent. Default: ``None`` (unchanged behaviour).
+ 
+     Returns:
+         Total norm of the tensors (viewed as a single vector).
+@@ -79,7 +86,7 @@ def _get_total_norm(
+         tensors = list(tensors)
+     norm_type = float(norm_type)
+     if len(tensors) == 0:
+-        return torch.tensor(0.0)
++        return torch.tensor(0.0, dtype=dtype)
+     first_device = tensors[0].device
+     grouped_tensors: dict[
+         tuple[torch.device, torch.dtype], tuple[list[list[Tensor]], list[int]]
+@@ -92,18 +99,18 @@ def _get_total_norm(
+         if (foreach is None and _has_foreach_support(device_tensors, device)) or (
+             foreach and _device_has_foreach_support(device)
+         ):
+-            norms.extend(torch._foreach_norm(device_tensors, norm_type))
++            norms.extend(torch._foreach_norm(device_tensors, norm_type, dtype=dtype))
+         elif foreach:
+             raise RuntimeError(
+                 f"foreach=True was passed, but can't use the foreach API on {device.type} tensors"
+             )
+         else:
+             norms.extend(
+-                [torch.linalg.vector_norm(g, norm_type) for g in device_tensors]
++                [torch.linalg.vector_norm(g, norm_type, dtype=dtype) for g in device_tensors]
+             )
+ 
+     total_norm = torch.linalg.vector_norm(
+-        torch.stack([norm.to(first_device) for norm in norms]), norm_type
++        torch.stack([norm.to(first_device) for norm in norms]), norm_type, dtype=dtype
+     )
+ 
+     if error_if_nonfinite and torch.logical_or(total_norm.isnan(), total_norm.isinf()):
+-- 
+2.43.0
+
