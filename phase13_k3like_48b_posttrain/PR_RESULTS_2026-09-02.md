@@ -154,5 +154,13 @@ attention-gym PR 453 (`7c83f6c`, unmerged, checked out in the editable submodule
 | cp2, warm pass | 2 | 12.53972 | 7.18344 | 2.93330 | 34 |
 | cp2, measure pass | 2 | 12.53972 | 7.18344 | 2.93330 | 34 |
 
-Warm and measure passes are bitwise equal, and dp1 on this tree is bitwise equal to tp_review1's dp1. The step-1 gap to dp1 (0.010) is the size the old branch showed at seq 1024 (12.53996 vs 12.60544). Throughput is 34 tps against tp2's 79 on the same two GPUs: the Ulysses path rebuilds the full-sequence flex mask every call and every KDA layer runs two all-gathers per direction over PCIe; not profiled further. CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
+Warm and measure passes are bitwise equal, and dp1 on this tree is bitwise equal to tp_review1's dp1. The step-1 gap to dp1 (0.010) is the size the old branch showed at seq 1024 (12.53996 vs 12.60544). Throughput, profiled (step-4 trace, cp2 rank 0, 139.7 s per step): NCCL kernels 99.8 s of wall, of which ReduceScatter_Sum_f32 47.3 s (928 launches, all FSDP2 gradient reduce-scatters) and AllGather 52.1 s (5440 launches, mostly FSDP2 parameter all-gathers); the recipe's own ranges (`_ContextParallelChunk` fwd 4.05 s + bwd 2.19 s, conv halo 0.68 s, Ulysses k_rope gather 0.34 s) total ~7 s, and KDA, conv and flex kernels under 1 s. titan folds cp into the FSDP mesh (fsdp = dp_shard x cp = 2), so at 256-token micro-batches cp2 pays a parameter all-gather and an fp32 reduce-scatter per layer per micro-batch on PCIe for 32 micro-batches per rank (plain dp2 pays it for 16 and lands at 80-87 tps), and the LL kernels spin while the two ranks wait on each other. The recipe's cost is visible only at equal per-rank work:
+
+| cell | tokens per micro-batch (global) | tokens per rank | FSDP rounds per rank per step | tps per device | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|---|
+| dp2 | 2048 | 2048 | 2 | 601 | 12.46307 | 8.54511 | 3.72989 |
+| cp2 | 2048 | 1024 | 4 | 264 | 12.62527 | 7.63562 | 3.40683 |
+| cp2 | 4096 | 2048 | 2 | 509 | 12.60312 | 9.05076 | 3.90039 |
+
+At 2048 tokens per rank cp2 is 15% below dp2, which is the KCP state exchange, conv halo and Ulysses all-to-alls; the rest of the gap at short micro-batches is FSDP rounds and rank skew, not CP. (dp2 rows change the data order, so their losses are not comparable to cp2's.) CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
 
