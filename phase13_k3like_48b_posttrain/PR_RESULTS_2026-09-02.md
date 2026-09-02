@@ -74,7 +74,7 @@ The parallelism ladder on the same model and vLLM, 2 GPUs unless stated, `rollou
 |---|---|---|---|---|
 | fsdp2 (above) | 6.41e-4 | 5.79e-4 | 6.71e-4 | |
 | fsdp2 x ep2 | 7.09e-4 | 5.60e-4 | 5.30e-4 | EP carved from the dp axis |
-| fsdp2 x cp2 (4 GPUs) | <pending> | | | first attempt misconfigured (dp2 x cp2 on 2 ranks); rerun queued |
+| fsdp2 x cp2 (4 GPUs) | 4.28e-4 | 5.25e-4 | 5.32e-4 | first attempt was misconfigured (dp2 x cp2 on 2 ranks); a dataloader worker was OOM-killed at teardown after step 3, as in the fsdp2 cell -- host memory, not the run |
 | pp2 (`rl_vit1`) | <pending> | | | first attempt: DEP's two vision stages need a 3-stage pipeline; rerun with the tower whole on one stage |
 | QAT (`kimi_k3_debugmodel_rl_mx_qat`, fsdp2) | 7.34e-4 | 5.52e-4 | OOM | MXFP4/MXFP8 fake-quant on the routed experts, bf16 rollout; step 3's log-prob pass ran out of the 16 GB (the STE keeps dequantized copies of the expert weights alive), rerun queued with micro-batch 2 |
 
