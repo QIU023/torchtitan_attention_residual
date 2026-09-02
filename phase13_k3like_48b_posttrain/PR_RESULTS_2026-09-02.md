@@ -68,7 +68,19 @@ MoE GRPO (bf16 rollout on vLLM 6dc76a9ad, fsdp2, 3 steps, `kimi-k3-debug` with i
 | 2 | 5.79e-4 | -- | 11.520 |
 | 3 | 6.71e-4 | -- | 11.520 |
 
-ep2 / cp2 / pp2 / QAT ladder: <pending>; PP in the engine was implemented tonight (verl `6ad61b56`: one verl micro-batch per schedule step, a loss bridge on the last stage) -- the ladder's pp2 cell is its first run.
+The parallelism ladder on the same model and vLLM, 2 GPUs unless stated, `rollout_probs_diff_max` per step:
+
+| cell | step 1 | step 2 | step 3 | note |
+|---|---|---|---|---|
+| fsdp2 (above) | 6.41e-4 | 5.79e-4 | 6.71e-4 | |
+| fsdp2 x ep2 | 7.09e-4 | 5.60e-4 | 5.30e-4 | EP carved from the dp axis |
+| fsdp2 x cp2 (4 GPUs) | <pending> | | | first attempt misconfigured (dp2 x cp2 on 2 ranks); rerun queued |
+| pp2 (`rl_vit1`) | <pending> | | | first attempt: DEP's two vision stages need a 3-stage pipeline; rerun with the tower whole on one stage |
+| QAT (`kimi_k3_debugmodel_rl_mx_qat`, fsdp2) | 7.34e-4 | 5.52e-4 | <see log> | MXFP4/MXFP8 fake-quant on the routed experts, bf16 rollout |
+
+QAT GRPO runs: the fake-quantized actor trains against a bf16 rollout of the same weights, and the log-prob gap stays at the bf16 level -- the STE forward consumes dequant(quant(w)) while the rollout serves the bf16 masters, so this gap is also the quantization error the deployment path will see.
+
+ep2 / cp2 / pp2 / QAT ladder: see table; PP in the engine was implemented tonight (verl `6ad61b56`: one verl micro-batch per schedule step, a loss bridge on the last stage) -- the ladder's pp2 cell is its first run.
 
 ## Environment notes that cost time today
 
