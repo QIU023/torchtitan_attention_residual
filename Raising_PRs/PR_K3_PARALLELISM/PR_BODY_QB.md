@@ -22,6 +22,8 @@ Adds quantile balancing for the MoE router bias. Before this change the bias upd
 
 <placeholder: dp1 / dp2 rows on the branch merged with current main, steps 1 / 3 / 10, one seed, warmed compile cache>
 
+The rows are re-measured once the expert parallel PR merges, adding the ep cells where the balancing is exercised.
+
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_qb \
   --debug.seed 42 --debug.deterministic --training.steps 10 \
