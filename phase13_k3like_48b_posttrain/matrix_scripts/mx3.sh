@@ -18,9 +18,13 @@ SEED_ROOT=${SEED_ROOT:-/workspace/.mx3_seeds}
 SEED_KEY=$(printf '%s|%s' "$CFG" "$BATCH" | sha1sum | cut -c1-12)
 S=$SEED_ROOT/${CFG}_${SEED_KEY}
 if [ "${SEED_CACHE:-1}" = "0" ]; then rm -rf "$S"; fi
-if [ -s "$S/.built" ]; then
+# The cache keeps its files under seed_ckpt, not checkpoint: a name that no
+# "find -name checkpoint" cleanup sweep matches (one emptied every cache on
+# 2026-09-02). A cache whose files are gone is rebuilt, not trusted.
+if [ -s "$S/.built" ] && [ "$(find "$S/seed_ckpt" -type f 2>/dev/null | wc -l)" -gt 0 ]; then
   echo "seed cached=$S" >> $R
 else
+  rm -rf "$S"
   T=$S.tmp.$$; rm -rf "$T"; mkdir -p "$T"
   ( source /venv/main/bin/activate && cd "$TITAN" && PYTHONPATH=$TITAN timeout 900 torchrun \
     --nproc_per_node=1 --master_port=$((30000+RANDOM%20000)) -m torchtitan.train \
@@ -28,6 +32,7 @@ else
     --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint \
     --checkpoint.enable --dump-folder "$T" > "$OUT/seed.log" 2>&1 ); echo "seed rc=$?" >> $R
   if [ "$(find "$T/checkpoint" -type f 2>/dev/null | wc -l)" -gt 0 ]; then
+    mv "$T/checkpoint" "$T/seed_ckpt"
     printf 'cfg=%s\nbatch=%s\ntree=%s\nbuilt=%s\n' \
       "$CFG" "$BATCH" "$TITAN" "$(date -Iseconds)" > "$T/.built"
     mkdir -p "$SEED_ROOT"
@@ -38,7 +43,7 @@ else
   fi
   echo "seed built=$S" >> $R
 fi
-SEED_FILES=$(find "$S/checkpoint" -type f 2>/dev/null | wc -l)
+SEED_FILES=$(find "$S/seed_ckpt" -type f 2>/dev/null | wc -l)
 echo "seed files=$SEED_FILES" >> $R
 
 loss_at(){ grep -oE "step: *$2 .*loss: *[0-9.]+" "$1" | head -1 | grep -oE 'loss: *[0-9.]+' | grep -oE '[0-9.]+'; }
@@ -47,7 +52,7 @@ loss_at(){ grep -oE "step: *$2 .*loss: *[0-9.]+" "$1" | head -1 | grep -oE 'loss
 # like an ordinary result. Copy, then count the files back before running.
 stage_seed(){ local d=$1
   rm -rf "$d"; mkdir -p "$d"
-  cp -r --reflink=auto "$S/checkpoint" "$d/checkpoint" 2>/dev/null
+  cp -r --reflink=auto "$S/seed_ckpt" "$d/checkpoint" 2>/dev/null
   local n; n=$(find "$d/checkpoint" -type f 2>/dev/null | wc -l)
   [ "$n" -eq "$SEED_FILES" ] && [ "$n" -gt 0 ]
 }

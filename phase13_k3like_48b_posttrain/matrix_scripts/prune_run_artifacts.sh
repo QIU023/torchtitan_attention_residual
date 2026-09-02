@@ -83,7 +83,7 @@ for root in "${ROOTS[@]}"; do
       printf "deleting      %10s  %s\n" "$(human "$sz")" "$ckpt"
       rm -rf "$ckpt"
     fi
-  done < <(find "$root" -mindepth 2 -maxdepth 7 -name checkpoint -type d \
+  done < <(find "$root" -mindepth 2 -maxdepth 7 -not -path "*/.mx3_seeds*" -name checkpoint -type d \
              2>/dev/null | sort -u)
 
   # JIT caches: pure rebuild cost, no evidence value.

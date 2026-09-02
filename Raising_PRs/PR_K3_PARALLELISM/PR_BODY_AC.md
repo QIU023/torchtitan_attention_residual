@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] the attention residual under activation checkpointing: recompute the residual math, keep attention outside the wrap
 
-Branch `ac_review1` (`ca9e497f8`, two commits on upstream/main `1dcb14a0c`). CPU test passes. Results are placeholders until the measured rows are pasted in. Paste between the markers into the PR body.
+Branch `ac_review1` (`ca9e497f8`, two commits on upstream/main `1dcb14a0c`). CPU test passes. Paste between the markers into the PR body.
 
 --- PASTE BEGIN ---
 
@@ -20,7 +20,13 @@ Two changes to how Kimi K3's attention residual meets activation checkpointing, 
 
 Both changes are non-computation, so the bar is bitwise-identical loss against main with the same seed.
 
-<placeholder: dp1 rows on `kimi_k3_debugmodel`, steps 1 / 3 / 10 -- main, this branch with the field off, this branch with the field on; peak memory for the three>
+Training loss on `kimi_k3_debugmodel`, dp1, one seed, warmed compile cache; peak memory from the measure pass. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it, and the second trades 0.13 GiB for not re-running the KDA kernel in backward on this 24-block debug model.
+
+| tree | step 1 | step 3 | step 10 | peak memory |
+|---|---|---|---|---|
+| main | 12.52977 | 7.27107 | 2.98077 | -- |
+| residual checkpoint wrap | 12.52977 | 7.27107 | 2.98077 | 12.68 GiB |
+| wrap + `ac_reuse_attention` | 12.52977 | 7.27107 | 2.98077 | 12.81 GiB |
 
 ```
 torchrun --nproc_per_node=1 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \

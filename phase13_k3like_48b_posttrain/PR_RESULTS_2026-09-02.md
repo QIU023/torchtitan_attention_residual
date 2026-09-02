@@ -33,7 +33,7 @@ PR merges.
 | dp1 | 12.45603 | 11.93088 | 10.42394 |
 | dp2 | 12.48369 | 11.89999 | 10.51706 |
 
-QLoRA-MXFP4 (`kimi_k3_debugmodel_qlora_mxfp4`): <pending>
+QLoRA-MXFP4 (`kimi_k3_debugmodel_qlora_mxfp4`): dp1 12.48328 / 12.00891 / 10.42474; dp2 <pending>
 
 ## AC (ac_review1)
 
@@ -41,7 +41,7 @@ QLoRA-MXFP4 (`kimi_k3_debugmodel_qlora_mxfp4`): <pending>
 |---|---|---|---|---|---|
 | dp1 | main | 12.52977 | 7.27107 | 2.98077 | -- |
 | dp1 | residual checkpoint wrap | 12.52977 | 7.27107 | 2.98077 | 12.68 GiB |
-| dp1 | wrap + ac_reuse_attention | <pending> | | | |
+| dp1 | wrap + ac_reuse_attention | 12.52977 | 7.27107 | 2.98077 | 12.81 GiB |
 
 The wrap is bitwise against main: the residual math is recomputed, not changed.
 
@@ -72,5 +72,6 @@ MoE GRPO (bf16, vLLM 6dc76a9ad): <pending>; ep2 / cp2 / pp2 / QAT ladder: <pendi
   (`torch==2.14.0.dev20260801+cu130` from the nightly index, `ray==2.58.0`).
 - verl gates vLLM on `>= 0.7.0` by package version; the source build reports
   `0.1.dev1+g<sha>`. `VERL_VLLM_VERSION=0.11.0` is verl's own override.
+- The disk watchdog's pruner sweeps every directory named `checkpoint` and the seed caches were not on its protected list: at 09:25 it emptied all seven caches at once (three SEED-COPY-FAIL aborts followed). The cache now stores `seed_ckpt`, the pruner excludes `.mx3_seeds*`, and an empty cache rebuilds instead of being trusted.
 - mx3's seed cache is keyed on flavor + batch, not tree; a cross-tree hit fails
   loudly on DCP shape (`dt_bias [16,64] vs [16,128]`); use `SEED_ROOT` per tree.
