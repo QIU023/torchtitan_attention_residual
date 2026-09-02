@@ -1,6 +1,14 @@
+# PR title: [Draft] [Kimi K3] LoRA adapter export and QLoRA (NF4 and packed MXFP4)
+
+Branch `k3_lora_extras` (`2344c1f9e`, base `30eb5e502`). Merges clean onto upstream/main `1dcb14a0c`; the 18 CPU tests pass on the merged tree. Results are a placeholder: the draft goes up without numbers, the measured rows get pasted in later. Paste between the markers into the PR body.
+
+Upstream's only LoRA precedent is llama3's `float8_emulate_lora` flavor: one `LoRAConverter.Config(rank=8, alpha=16.0, target_modules=[...])` line, a CI cell in the features suite, and `components/lora.py` at 235 lines with no export and no quantization. Everything below the flavor is new core surface with no upstream counterpart; expect the reviewers to ask for the split noted after the markers.
+
+--- PASTE BEGIN ---
+
 ### Summary
 
-Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_state_dict` / `trainable_state_dict` (a trained adapter is otherwise unexportable -- the raw state dict carries keys nothing downstream recognizes), 4-bit frozen bases (NF4 and packed MXFP4, the latter FSDP-shardable), and the packed bases under TP. Model-agnostic in `components/lora.py`; the Kimi K3 flavors exercise all of it.
+Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_state_dict` / `trainable_state_dict` (a trained adapter is otherwise unexportable -- the raw state dict carries keys nothing downstream recognizes), 4-bit frozen bases (NF4 and packed MXFP4, the latter FSDP-shardable), and the packed bases under TP. Model-agnostic in `components/lora.py`; the Kimi K3 flavors exercise all of it, following the llama3 `float8_emulate_lora` flavor's shape.
 
 ### Design
 
@@ -8,54 +16,44 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 - `quantize_base='mxfp4'` swaps the base for split storage AT BUILD: qdata uint8 `[out, in/2]` plus e8m0-as-uint8 scale `[out, in/32]` (MXTensor itself cannot be a param -- non-contiguous logical view; the scale stores as uint8 because FSDP2's all-gather has no e8m0 copy kernel). Building packed means FSDP2 shards packed bytes natively -- the pack-then-shard order. From-scratch init draws each rank's rows locally and quantizes them, exact because MX block-32 is row-blockwise and commutes with Shard(0). Meta builds register the layout only; `scripts/quantize_lora_dcp.py` repacks an unquantized-flavor checkpoint into this layout (key map derived from the packed flavor built on meta), so no rank ever materializes the full bf16 model.
 - `quantize_base='nf4'` (torchao) packs post-init and is library-scope: FSDP2's lazy_init cannot take a post-hoc packed param -- both a plain NF4 param (no `_local_tensor`) and NF4 inside the DTensor shell (invalid storage) were tried and refused; the error says so.
 - `quantize_experts='mxfp4'` packs the grouped experts (the MoE parameter bulk) the same way, behind dequant properties so the grouped-GEMM forward is unchanged.
-- Under TP: a TP-invariant base (rank-sized compressions) gets replicated adapters -- the third case next to colwise/rowwise. Packed colwise/rowwise bases run a packed-TP forward: local dequant + local matmul; colwise x and lora_a carry Partial grad placements (a bare to_local silently skips the tp reduction); rowwise reduces base+adapters in one collective and emits Partial with bias/tp, the declared contract. Expert weights TP-sharded on INNER dims refuse: expert TP splits the intermediate dim and the 2-D packed flatten cannot express that.
+- Under TP: a TP-invariant base (rank-sized compressions) gets replicated adapters -- the third case next to colwise/rowwise. Packed colwise/rowwise bases run a packed-TP forward: local dequant + local matmul; colwise x and lora_a carry Partial grad placements (a bare to_local silently skips the tp reduction); rowwise reduces base+adapters in one collective and emits Partial with bias/tp, the declared contract. Expert weights TP-sharded on INNER dims refuse: expert TP splits the intermediate dim and the 2-D packed flatten cannot express that. On this branch the TP path is present but inert: adapter sharding derives from the model's sharding declarations, which the K3 TP PR supplies.
+- One core fix ships here: a fully frozen model part gets no optimizer. An adapter run's vision-tower stage has no LoRA targets (the MLLM convention keeps the tower frozen), and raising there made every frozen pipeline stage a hard error.
 
-### Evidence
+### Results
 
-Integration-tree matrices (multimodal debug flavor, one seed per table, warm cache, steps 1/3/10):
+<placeholder: dp1 lora / dp2 lora / dp2 qlora_mxfp4 rows on the branch merged with current main, steps 1 / 3 / 10, one seed, warmed compile cache>
 
-LoRA, every parallelism family the tree carries. PP required one core fix
-that ships here: a fully frozen model part gets no optimizer (an adapter
-run's vision-tower stage has no LoRA targets -- the MLLM convention keeps
-the tower frozen -- and raising there made every frozen stage a hard
-error). With it, pp2 x vp2 prints dp1's step-1 loss to every digit:
+```
+torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_lora \
+  --debug.seed 42 --debug.deterministic --training.steps 10 \
+  --parallelism.data_parallel_shard_degree 2
+# the packed-MXFP4 flavor: --config kimi_k3_debugmodel_qlora_mxfp4
+```
 
-| cell | world | step 1 | step 3 | step 10 |
-|---|---|---|---|---|
-| dp1 | 1 | 12.45474 | 11.94849 | 10.71402 |
-| dp2 | 2 | 12.46697 | 11.82895 | 10.53144 |
-| dp4 | 4 | 12.49144 | 12.08583 | 10.70239 |
-| tp2 | 2 | 12.45324 | 11.93854 | 10.72911 |
-| tp4 | 4 | 12.46047 | 11.96414 | 10.76673 |
-| fsdp2 x tp2 | 4 | 12.46155 | 11.89166 | 10.47442 |
-| cp2 | 2 | 12.44350 | 11.94324 | 10.70531 |
-| fsdp2 x cp2 | 4 | 12.45038 | 11.84340 | 10.46684 |
-| dp2 x ep2 | 2 | 12.46478 | 11.84854 | 10.47317 |
-| dp4 x ep4 | 4 | 12.49350 | 12.07487 | 10.62631 |
-| pp2 x vp2 | 2 | 12.45474 | 11.92275 | 10.68007 |
-
-Branch worktree (the branch bases on upstream main, where the K3 TP/EP gates
-are still on: its cells are data-parallel, and the TP/EP interaction code is
-present but inert until those PRs land -- adapter sharding derives from
-sharding_configs, which are None on upstream today):
-
-| cell | flavor | step 1 | step 3 | step 10 |
-|---|---|---|---|---|
-| dp1 | lora | 12.61333 | 12.13142 | 10.95973 |
-| dp2 | lora | 12.52952 | 12.21486 | 10.67500 |
-| dp2 | qlora_mxfp4 | 12.56775 | 12.20790 | 10.98469 |
-
-QLoRA (packed MXFP4, bases + experts): dp1 12.45288 / 11.96454 / 10.68903, dp2 12.45138 / 11.87566 / 10.37547, dp4 12.47301 / 12.00136 / 10.55821, dp2 x ep2 12.45138 / 11.87404 / 10.42552, dp4 x ep4 12.47301 / 11.99923 / 10.50310 -- the ep cells print the same step-1 loss as their dp twins, expert parallel is transparent at the forward; the full-flavor TP cells stop at the designed experts guard (expert TP shards the intermediate dim, which the 2-D packed flatten cannot express). QLoRA linears-only x tp2 (matrix standard, own seed): 12.54449 / 11.97425 / 10.69844. Checkpoint loop: an unquantized-LoRA seed checkpoint repacked by the script (217 weights: 148 linears + 69 expert tables) loads into the packed flavor under dp2/FSDP and trains.
-
-Peak memory, full QLoRA vs LoRA at dp2: 3.20 vs 3.52 GiB -- the debug model is activation-dominated; the parameter-side ~4x cut shows at scale.
-
-CPU: 16 lora tests + 2 experts tests (merge key-set exactness, serialization-hook keys, wrapper traversal, aliasing restore, NF4 pack/forward/merge, MXFP4 build-pack and merge round-trip).
+<placeholder: peak memory, qlora_mxfp4 vs lora at dp2>
 
 ### Changed files
 
-    torchtitan/components/lora.py                 +~600
-    torchtitan/components/optimizer/optimizer.py    +13  frozen parts skip
-    scripts/quantize_lora_dcp.py                  +150
-    torchtitan/models/kimi_k3/config_registry.py  +100  lora/qlora flavors
-    tests/unit_tests/cpu/test_lora.py             +250
-    torchtitan/models/kimi_k3/tests/test_qlora_experts.py +70
+    torchtitan/components/
+      lora.py                        +730/-2  export, NF4 and packed-MXFP4 bases, packed experts, packed TP
+      optimizer/optimizer.py         +13/-0  a fully frozen model part gets no optimizer
+    scripts/
+      quantize_lora_dcp.py           +158/-0  repack an unquantized checkpoint into the packed layout (new)
+    torchtitan/models/kimi_k3/
+      config_registry.py             +102/-0  lora, qlora_mxfp4, qlora_mxfp4_linear flavors
+    tests/unit_tests/cpu/
+      test_lora.py                   +230/-0  merge key sets, hook keys, wrapper traversal, NF4 and MXFP4 round trips
+    torchtitan/models/kimi_k3/tests/
+      test_qlora_experts.py          +66/-0  packed experts build and merge (new)
+
+### CI/CD Coverage
+
+16 lora tests and 2 experts tests are CPU and run in the default suite. No GPU cell is added on this branch.
+
+--- PASTE END ---
+
+Notes for us, not for the body:
+
+- Likely split if asked: (1) the K3 lora flavor plus `trainable_state_dict` / `merge_lora_state_dict`, which mirrors the llama3 flavor and closes a real gap; (2) QLoRA (NF4, packed MXFP4) with the repack script, a design the maintainers have to accept on its own; (3) the packed-TP forward, which belongs with the TP PR.
+- A CI cell should sit on llama3 in the features suite (the core pieces are model-agnostic), not on K3, whose lane is B200-only after the CI reorg.
+- The eleven-cell table across every parallelism family was measured on the integration tree where TP and EP are live; on this branch they are inert, so that table stays in the logbook (`LORA_QLORA_QAT_EVIDENCE`) rather than in the body.
