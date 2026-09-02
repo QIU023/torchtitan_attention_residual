@@ -161,6 +161,8 @@ Warm and measure passes are bitwise equal, and dp1 on this tree is bitwise equal
 | dp2 | 2048 | 2048 | 2 | 601 | 12.46307 | 8.54511 | 3.72989 |
 | cp2 | 2048 | 1024 | 4 | 264 | 12.62527 | 7.63562 | 3.40683 |
 | cp2 | 4096 | 2048 | 2 | 509 | 12.60312 | 9.05076 | 3.90039 |
+| dp2, old fla tree `cp_review1` | 2048 | 2048 | 2 | 657 | 12.60264 | 8.69954 | 3.99567 |
+| cp2, old fla tree `cp_review1` (fla `build_cp_context` KCP) | 4096 | 2048 | 2 | 550 | 12.55015 | 9.29933 | 4.08062 |
 
-At 2048 tokens per rank cp2 is 15% below dp2, which is the KCP state exchange, conv halo and Ulysses all-to-alls; the rest of the gap at short micro-batches is FSDP rounds and rank skew, not CP. (dp2 rows change the data order, so their losses are not comparable to cp2's.) CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
+At 2048 tokens per rank cp2 is 15% below dp2 on the attn-gym tree and 16% below on the old fla tree (whose KDA kernels are fla's, so both of its cells run ~9% faster in absolute terms), which is the KCP state exchange, conv halo and Ulysses all-to-alls and is the same for both recipes; the rest of the gap at short micro-batches is FSDP rounds and rank skew, not CP. (dp2 rows change the data order, so their losses are not comparable to cp2's.) CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
 
