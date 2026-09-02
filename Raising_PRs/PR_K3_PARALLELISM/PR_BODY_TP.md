@@ -26,7 +26,7 @@ Training loss on `kimi_k3_debugmodel`, one seed, warmed compile cache. TP splits
 |---|---|---|---|---|
 | dp1 | 1 | 12.52977 | 7.27107 | 2.98077 |
 | tp2 | 2 | 12.55057 | 7.52677 | 3.00361 |
-| tp2 + SP | 2 | <pending> | | |
+| tp2 + SP | 2 | 12.54164 | 7.44412 | 3.08160 |
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
