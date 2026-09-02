@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] LoRA adapter export and QLoRA (NF4 and packed MXFP4)
 
-Branch `k3_lora_extras` (`2344c1f9e`, base `30eb5e502`). Merges clean onto upstream/main `1dcb14a0c`; the 18 CPU tests pass on the merged tree. Results are a placeholder: the draft goes up without numbers, the measured rows get pasted in later. Paste between the markers into the PR body.
+Branch `k3_lora_extras` (`2344c1f9e`, base `30eb5e502`). Merges clean onto upstream/main `1dcb14a0c`; the 18 CPU tests pass on the merged tree. Paste between the markers into the PR body.
 
 Upstream's only LoRA precedent is llama3's `float8_emulate_lora` flavor: one `LoRAConverter.Config(rank=8, alpha=16.0, target_modules=[...])` line, a CI cell in the features suite, and `components/lora.py` at 235 lines with no export and no quantization. Everything below the flavor is new core surface with no upstream counterpart; expect the reviewers to ask for the split noted after the markers.
 
@@ -21,7 +21,14 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 
 ### Results
 
-<placeholder: dp1 lora / dp2 lora / dp2 qlora_mxfp4 rows on the branch merged with current main, steps 1 / 3 / 10, one seed, warmed compile cache>
+Training loss on the branch merged with current main, one seed, warmed compile cache. The adapters train (loss moves) while the bases stay frozen; the packed-MXFP4 flavor starts from a different step-1 value because its bases are quantized at build.
+
+| cell | flavor | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | lora | 12.45603 | 11.93088 | 10.42394 |
+| dp2 | lora | 12.48369 | 11.89999 | 10.51706 |
+| dp1 | qlora_mxfp4 | 12.48328 | 12.00891 | 10.42474 |
+| dp2 | qlora_mxfp4 | 12.50176 | 12.00203 | 10.45663 |
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_lora \

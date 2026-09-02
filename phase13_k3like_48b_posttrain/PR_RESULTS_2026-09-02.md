@@ -33,7 +33,7 @@ PR merges.
 | dp1 | 12.45603 | 11.93088 | 10.42394 |
 | dp2 | 12.48369 | 11.89999 | 10.51706 |
 
-QLoRA-MXFP4 (`kimi_k3_debugmodel_qlora_mxfp4`): dp1 12.48328 / 12.00891 / 10.42474; dp2 <pending, rerunning after the pruner sweep>
+QLoRA-MXFP4 (`kimi_k3_debugmodel_qlora_mxfp4`): dp1 12.48328 / 12.00891 / 10.42474; dp2 12.50176 / 12.00203 / 10.45663
 
 ## AC (ac_review1)
 
