@@ -8,7 +8,7 @@ Upstream's only LoRA precedent is llama3's `float8_emulate_lora` flavor: one `Lo
 
 ### Summary
 
-Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_state_dict` / `trainable_state_dict` (a trained adapter is otherwise unexportable -- the raw state dict carries keys nothing downstream recognizes), 4-bit frozen bases (NF4 and packed MXFP4, the latter FSDP-shardable), and the packed bases under TP. Model-agnostic in `components/lora.py`; the Kimi K3 flavors exercise all of it, following the llama3 `float8_emulate_lora` flavor's shape.
+Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_state_dict` / `trainable_state_dict` (a trained adapter is otherwise unexportable -- the raw state dict carries keys nothing downstream recognizes), 4-bit frozen bases (NF4 and packed MXFP4, the latter FSDP-shardable), and the packed bases under TP. Model-agnostic in `components/lora.py`; the Kimi K3 flavors exercise all of it, following the llama3 `float8_emulate_lora` flavor's shape. Unrelated to the QAT PR: that one fake-quantizes trainable masters through an STE; here MXFP4 is the real packed storage of frozen bases.
 
 ### Design
 
@@ -16,7 +16,7 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 - `quantize_base='mxfp4'` swaps the base for split storage AT BUILD: qdata uint8 `[out, in/2]` plus e8m0-as-uint8 scale `[out, in/32]` (MXTensor itself cannot be a param -- non-contiguous logical view; the scale stores as uint8 because FSDP2's all-gather has no e8m0 copy kernel). Building packed means FSDP2 shards packed bytes natively -- the pack-then-shard order. From-scratch init draws each rank's rows locally and quantizes them, exact because MX block-32 is row-blockwise and commutes with Shard(0). Meta builds register the layout only; `scripts/quantize_lora_dcp.py` repacks an unquantized-flavor checkpoint into this layout (key map derived from the packed flavor built on meta), so no rank ever materializes the full bf16 model.
 - `quantize_base='nf4'` (torchao) packs post-init and is library-scope: FSDP2's lazy_init cannot take a post-hoc packed param -- both a plain NF4 param (no `_local_tensor`) and NF4 inside the DTensor shell (invalid storage) were tried and refused; the error says so.
 - `quantize_experts='mxfp4'` packs the grouped experts (the MoE parameter bulk) the same way, behind dequant properties so the grouped-GEMM forward is unchanged.
-- Under TP: a TP-invariant base (rank-sized compressions) gets replicated adapters -- the third case next to colwise/rowwise. Packed colwise/rowwise bases run a packed-TP forward: local dequant + local matmul; colwise x and lora_a carry Partial grad placements (a bare to_local silently skips the tp reduction); rowwise reduces base+adapters in one collective and emits Partial with bias/tp, the declared contract. Expert weights TP-sharded on INNER dims refuse: expert TP splits the intermediate dim and the 2-D packed flatten cannot express that. On this branch the TP path is present but inert: adapter sharding derives from the model's sharding declarations, which the K3 TP PR supplies.
+- Under TP: a TP-invariant base (rank-sized compressions) gets replicated adapters -- the third case next to colwise/rowwise. Packed colwise/rowwise bases run a packed-TP forward: local dequant + local matmul; colwise x and lora_a carry Partial grad placements (a bare to_local silently skips the tp reduction); rowwise reduces base+adapters in one collective and emits Partial with bias/tp, the declared contract. Expert weights TP-sharded on INNER dims refuse: expert TP splits the intermediate dim and the 2-D packed flatten cannot express that. Nothing here depends on an unmerged PR: adapter and packed-pair sharding derive from each linear's `sharding_config`, which core never sets today, so on current main the TP paths are constructed inert and only the CPU tests exercise them; they activate when the tensor-parallel PR lands.
 - One core fix ships here: a fully frozen model part gets no optimizer. An adapter run's vision-tower stage has no LoRA targets (the MLLM convention keeps the tower frozen), and raising there made every frozen pipeline stage a hard error.
 
 ### Results
@@ -40,7 +40,7 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
     scripts/
       quantize_lora_dcp.py           +158/-0  repack an unquantized checkpoint into the packed layout (new)
     torchtitan/models/kimi_k3/
-      config_registry.py             +102/-0  lora, qlora_mxfp4, qlora_mxfp4_linear flavors
+      config_registry.py             +87/-0  lora, qlora_mxfp4, qlora_mxfp4_linear flavors
     tests/unit_tests/cpu/
       test_lora.py                   +230/-0  merge key sets, hook keys, wrapper traversal, NF4 and MXFP4 round trips
     torchtitan/models/kimi_k3/tests/
