@@ -16,7 +16,7 @@ Everything below is written for the reviewers, in English.
 | branch | head | on top of the PR head | pushed to the PR? |
 |---|---|---|---|
 | `cp_review2` (fork) | `adc012ce4` | `f66b5de3a` CP kernels own their collectives; `3970bcd1c` SP guard in the plain-tensor splice; `adc012ce4` all-gather KV kernel; plus `84fd3ee22` cp2 flavor on spmd_types and the spmd declarations (`4b88ada6b`) merged earlier | no |
-| `pp_review2` (fork) | `395fc6b30` | `e326c70a2` the one-line review fixes; `0c0e48908` ufmt on `pipeline_adapter.py`; `7dda3b847` the transport switch leaves the model config for the pipelining entry, the split becomes a pure function of the config, the stale naive-mode probe goes; `ca5f34ea8` the block layout follows the split the trainer applied (uneven stages allowed, the even-split gate gone); `eef340d25` the block's first layer joins the stack before its sub-layers attend (the cat-at-the-start refactor); `d72faf339` the rank cache releases a micro-batch's blocks when the rank is done with them; `395fc6b30` one irregular debug model (30 layers, block 12, MLA layers deduced); `c3df74847` a pipeline stage hands its inputs' gradients back dense (the torch P2P buffer finding, 3.3); `8e9dbeff3` the pipeline stage owns the block routing: `AttnResPipelineStage`, a `PipelineStage` subclass reached through `pipeline_llm(stage_class=...)`, replaces the adapter and every wrapper it carried (3.1) | no |
+| `pp_review2` (fork) | `395fc6b30` | `e326c70a2` the one-line review fixes; `0c0e48908` ufmt on `pipeline_adapter.py`; `7dda3b847` the transport switch leaves the model config for the pipelining entry, the split becomes a pure function of the config, the stale naive-mode probe goes; `ca5f34ea8` the block layout follows the split the trainer applied (uneven stages allowed, the even-split gate gone); `eef340d25` the block's first layer joins the stack before its sub-layers attend (the cat-at-the-start refactor); `d72faf339` the rank cache releases a micro-batch's blocks when the rank is done with them; `395fc6b30` one irregular debug model (30 layers, block 12, MLA layers deduced); `c3df74847` a pipeline stage hands its inputs' gradients back dense (the torch P2P buffer finding, 3.3); `3af70c9ee` the pipeline stage owns the block routing: `AttnResPipelineStage`, a `PipelineStage` subclass reached through `pipeline_llm(stage_class=...)`, replaces the adapter and every wrapper it carried (3.1) | no |
 
 The PR branches `k3_cp_text` (`b85c2a078`) and `k3_pp_text` (`087c4d177`) are untouched.
 
@@ -97,7 +97,7 @@ The inventory, what each does, and what would replace it in first-principles inf
 
 None of these is speculative unblocking in the sense of "we did not know how to do it properly"; each is the narrowest way to reach schedule state that `torch.distributed.pipelining` does not expose. The honest summary is: the adapter implements a **non-linear stage graph** (stage `S` produces a tensor that stages `S+1 ... S+P-1` receive through the chain and stages `S+P, S+2P, ...` read from local memory) on top of a library whose stages only know their two neighbours. Every wrapper is the seam between those two models.
 
-**What replaced them (`8e9dbeff3` on the review branch).** The table above is now history: the adapter is gone, and the stage protocol is implemented once, as a `PipelineStage` subclass, `AttnResPipelineStage` (`pipeline_stage.py`, about 380 lines, against the adapter's 1228), reached through one generic hook, `pipeline_llm(..., stage_class=...)`.
+**What replaced them (`3af70c9ee` on the review branch).** The table above is now history: the adapter is gone, and the stage protocol is implemented once, as a `PipelineStage` subclass, `AttnResPipelineStage` (`pipeline_stage.py`, about 380 lines, against the adapter's 1228), reached through one generic hook, `pipeline_llm(..., stage_class=...)`.
 
 - The hop still carries `(hidden, delta)`. `forward_one_chunk` assembles the full stack the model expects from the rank's store and the received delta, runs the model, and routes the payload; the model takes and returns the full stack and knows nothing of the transport. The chunk id comes with the call: no patch, no thread-local.
 - `backward_one_chunk` reads the gradient of the assembled stack, hands the received columns back as the delta's gradient (dense, in wire order), and deposits the stored columns in the rank store. `_retrieve_recv_grads` collects the deposits for the blocks the stage committed, and the stage that received a block collects them for that block, before their own backward, which every schedule orders after the later stages' backward on the rank. No tensor hook, no autograd Function, no detach trick: the assembled stack is an autograd leaf and the stage owns its gradient. The routing tables say how many deposits each block must have, so a lost gradient raises.
@@ -154,6 +154,24 @@ What torch has today for reuse (the "PP already has caching" remark, 3.5) is not
 | pp8 x vp2 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | 12.44394 | 7.38036 | 3.38767 |
 | pp8 x vp4 (after `c3df74847`) | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.44394 | 7.29935 | 3.29156 |
 | pp8 x vp4 (after `c3df74847`) | 32 | 8 | 0 / 1 ... 1 / 0 | off | 12.44394 | 7.45038 | (3 steps, on the delta cell's compile cache) |
+
+**Design B, the `PipelineStage` subclass (`3af70c9ee`), on the same model and seed.** Its block gradients are summed by the stage where the adapter let autograd accumulate them, so it is not bitwise against the adapter; it is as close to it as either is to a single GPU:
+
+| comparison (step 1, per-parameter fp32 norm, 918 parameters) | loss / grad_norm | median / p90 / max relative difference |
+|---|---|---|
+| subclass vs hook adapter, pp2 x vp2 delta, one shared compile cache | identical, 12.44394 / 15.5625 | 3.5e-5 / 5.3e-4 / 9.2e-3 |
+| subclass delta vs dp1 | identical | 1.5e-4 / 1.2e-3 / 1.6e-2 |
+| hook adapter delta vs dp1 (the reference) | identical | 1.2e-4 / 1.2e-3 / 1.6e-2 |
+| subclass, transport off vs dp1 | identical | 1.3e-4 / 1.1e-3 / 2.1e-2 |
+| subclass delta vs transport off | identical | 0 / 6.7e-4 / 1.0e-2 (404 of 918 differ) |
+| subclass, 32 stages on 2 GPUs (pp2 x vp16, embedding-only and head-only stages, no model-side boundary) vs dp1 | identical | 2.0e-4 / 1.7e-3 / 1.5e-2 |
+
+| cell on the subclass | step 1 | step 3 | step 10 |
+|---|---|---|---|
+| pp2 x vp4 | 12.44394 | 7.37798 | 3.58093 |
+| pp4 x vp4 | 12.44394 | 7.42872 | 3.52641 |
+| pp8 x vp4 (32 stages) | 12.44394 | 7.36221 | 3.50686 |
+| pp8 x vp4, transport off | 12.44394 | 7.45038 | 3.40014 |
 
 The transport-off 32-stage cell is the one row that needed a second look: its matrix run, whose eight ranks autotuned their FlexAttention kernels at the same time, came out at 12.45856 at step 1; rerun on the delta cell's warm caches it is 12.44394 like every other cell. That is the compile lottery of 4.2 acting on step 1 itself (a cold compile under load can pick a kernel with different rounding), and it is why the matrix protocol reads the second run of a cell, and why no step-1 mismatch should be read as a code difference before a same-cache rerun.
 
