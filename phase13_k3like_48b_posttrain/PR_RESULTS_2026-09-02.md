@@ -283,3 +283,13 @@ The rest is design or numerics, not one-liners:
 | cat at the start of the layer, then `_apply_attention_residual` with `prefix_sum` None | equivalent (same V stacking order); readability refactor, needs a dp1 bitwise check |
 | `attn_res_cache` on the model config is a PP-infra flag; "inject"; only-incremental transfer and release; block tensor lifecycle; how 93 layers divide | the design notes he asked for ("how you got there") |
 | step-10 spread far above reduction order | fallback transport pp2/pp4/pp8 at step 10: 3.42 / 3.50 / 3.63, monotone in the pp degree; looks systematic, needs its own investigation |
+
+
+## 2026-09-03/04 overnight: CP kernel restructure, PP review fixes, the review answers
+
+Everything is in `REVIEW_ANSWERS_PP_CP_2026-09-04.md` (same folder): the adapter's design history reconstructed from the April phase3 logs, the answer to every comment on PR 4312 and the CP comments on PR 4313, the torch PP cache question, and the numerics evidence. Summary of what changed and what was measured:
+
+- `cp_review2` = `adc012ce4`: Ulysses and KCP as `ContextParallelKernel`s that own their collectives (`f66b5de3a`), the plain-tensor splice rejecting CP with SP (`3970bcd1c`), the all-gather KV kernel copied from PR 4322 as the second MLA choice (`adc012ce4`). With one shared warm inductor cache, all 750 parameter gradients are sha1-identical between the kernel tree and the declarative tree at steps 1 and 2; the step-2 spread seen earlier (9.53739 / 9.53178 / 9.54240) is inductor autotune picking different FlexAttention kernels at cold compile, not a code difference.
+- `pp_review2` = `ca5f34ea8`: the one-line fixes, the transport switch off the model config, the split as a pure function, the stale naive-mode warning removed, and uneven pipeline splits supported (layer-to-stage map gathered over the PP group).
+- PP step-1 gradients, K3 24-layer debug flavor, seed checkpoint, 32 micro-batches of 256 tokens in every cell: dp1 vs pp2 fallback median 1.3e-4 / max 8.6e-3 relative per-parameter norm difference; transport off vs on at pp2 x vp2 median 1.6e-4 / max 1.2e-2; dp1 vs pp2 x vp2 delta median 1.2e-4 / max 1.3e-2; step-1 loss identical (12.59997) in all of them. The delta transport is as far from the fallback as the fallback is from a single GPU.
+- Two probe-design traps recorded: a dp1 run with 1024-token micro-batches packs the data differently and is not comparable with PP cells that use 8 pipeline micro-batches of 256 in 4 accumulation rounds; and a PP cell that compiled while another job shared its GPUs came out with a different step-1 loss (12.60011).
