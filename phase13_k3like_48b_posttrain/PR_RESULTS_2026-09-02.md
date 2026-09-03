@@ -256,3 +256,15 @@ The CP review branch's CPU sweep: 718 passed, 0 failed, the three known collecti
 
 The CP review branch (worktree `cp_review1_new`, to be pushed over `cp_review1` once verified) now carries: the attn-gym port of CP (`785cf2072`, `22b89b46a`), the spmd_types support, and Ulysses as the MLA inner attention's declaration (`a6d26f19f`): cp axis S(0) -> S(1) on q/k/v in and the reverse out with TP's head split kept inside, the full-sequence masks held out of the CP input sharding in `preprocess_inputs`, the hand-written all-to-all, mask rebuild and contract classes removed with their tests, a CPU test asserting the declaration; KDA unchanged (recipe in the `inner_kda` body). CP therefore requires spmd_types, which is what upstream's `validate_cp_backend` demands; the `_validate_cp_backend` override is gone; the `kimi_k3_cp2` test flavor selects spmd_types (`84fd3ee22`). Seeded 10-step cp2 on the merged branch (same seed and batch as the CP port table): 12.53972 / 7.18619 / 3.00631 against the imperative CP under partial_dtensor 12.53972 / 7.18344 / 2.93330 and dp1 12.52977 / 7.27107 / 2.98077: bitwise at step 1, the declared all-to-all against the packed one after.
 
+## EP PR re-merge (2026-09-03, `k3_ep` = `cd8856107`)
+
+The PR had gone dirty against main (21 commits, two of them on the MoE path: the grouped-mm seam takes the expert weight untransposed, and the attention shape suffixes) and tianyu-l asked for `set_kimi_k3_sharding_config`. One merge commit resolves the only conflict, `kimi_k3/__init__.py`, where upstream's `refactor max_context_length` made `model_registry` take `seq_len` and the registry hold `(builder, max_context_len)`; the resolution keeps `moe_comm_backend` and passes it to the builder, nothing else. The rename is a 3-line commit. Before/after from one seed (`.mx3_seeds_upmain`, 8192 tokens per step, 256 per micro-batch), 69f84292d against the merge, with the SM120 guard lifted locally on both:
+
+| cell | before | after |
+|---|---|---|
+| dp1 | 12.52977 / 7.27107 / 2.98077 | same |
+| dp2 | 12.53137 / 7.31248 / 3.15823 | same |
+| ep2 x fsdp2 | 12.53146 / 7.20212 / 3.10296 | same |
+
+Bitwise on all three, so the two upstream MoE commits do not change K3's EP numerics. CPU: 37 passed on the merged tree. Pushed to `k3_ep` as a fast-forward on the user's word; GitHub reports mergeable with CI running.
+
