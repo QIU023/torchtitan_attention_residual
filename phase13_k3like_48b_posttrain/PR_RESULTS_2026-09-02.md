@@ -181,3 +181,32 @@ tp2 x cp2 needed three port-time fixes (`22b89b46a`): the CP vision splice runs 
 
 Where this stands against upstream's CP design, checked on main 2026-09-03: upstream CP is ShardingConfig-driven and gated on `spmd_backend='spmd_types'` (`validate_cp_backend`); full attention gets CP from `set_gqa_inner_attention_local_map`, whose local_map keeps q token-sharded on the cp axis and all-gathers k/v to Replicate (grads Partial), i.e. all-gather-KV, not Ulysses; tp_review1 already installs that declaration on K3's MLA inner attention, but all-gather-KV keeps the full-length K/V resident on every rank (no K/V memory saving from cp, and ~cp/2 more bytes per layer than Ulysses), so for MLA at long context Ulysses stays the algorithm; under spmd_types it is a declared redistribution on the inner attention (cp axis S(0) -> S(1) in, the reverse out), which is exactly the ULYSSES pair in CP_DECLARATIVE.md, replacing the all-gather declaration rather than being replaced by it. Upstream's hybrid precedent qwen3_5 rejects CP outright ("GatedDeltaNet requires full-sequence allgather"), so there is no upstream shape for linear-attention CP; KCP would be K3's own local_map body with the cp axis Shard(0) on both sides and the attn-gym recipe inside. K3 has no spmd_types path at all: the config registry pins `partial_dtensor`, and with that pin lifted the tree fails in `parallelize_kimi_k3` at `get_mesh(["fsdp"])` (spmd_types names the axis `dp_shard` and upstream models branch through `resolve_fsdp_mesh`). So a CP PR that passes `validate_cp_backend` without the `_validate_cp_backend` override needs the K3 spmd_types migration first (parallelize, FSDP mesh resolution, and the sharding declarations becoming load-bearing); the old `k3_cp_declarative` branch got EP running under spmd_types and TP running but not matching numerically, on a much older base.
 
+## K3 under spmd_types, probed (`spmd_probe` = `b151fcf06` on the fork, on top of `cp_review2`)
+
+Why it matters: upstream removed the partial_dtensor CP path on 2026-08-19 (PR-4218, "too much to maintain different CP paths; only config-based CP is preserved"), the default backend is now `spmd_types`, every model except K3 has both branches, and three TODOs say partial_dtensor itself goes next. K3 pins `partial_dtensor` and refuses anything else. EP and TP were never imperative: they are ShardingConfig declarations consumed through the partial_dtensor driver, which is why the EP PR needed nothing.
+
+What the probe changed (2 steps, 512 tokens per step, no seed checkpoint, losses only comparable within this table):
+
+| step | change | lines |
+|---|---|---|
+| parallelize | `spmd_types` branch: `resolve_fsdp_mesh` / `resolve_sparse_fsdp_mesh`, `dp_mesh_dims` / `edp_mesh_dims` through to the decoder and the vision encoder, `model.parallelize` under spmd_types, pin check removed (the deepseek_v3 shape) | +26 / -18 |
+| model config | the TP declarations issued whenever the backend is spmd_types, not only at tp > 1 | +4 |
+| `preprocess_inputs` | override giving `pixel_values` / `grid_thw` SPMD layouts (`multimodal_input_sharding`, the qwen3_5 shape) | +35 |
+| sharding | MoonViT tower declared (the kimi_k2_7 plan, K3's projector norms after its second linear) | +30 |
+| kda | head views use -1: under spmd_types the projections hand back the TP-local head slice | +4 |
+| vision helpers (shared) | cp axis added to every SpmdType, a mechanical sed for the probe: upstream's VLMs never carry cp because none supports CP | probe only |
+
+| cell | spmd_types | partial_dtensor, same flags |
+|---|---|---|
+| dp1 | 12.53529 / 11.44489 | 12.53529 / 11.44489 (bitwise) |
+| dp2 (3 steps) | 12.50788 / 11.20827 / 9.87694 | 12.50788 / 11.20827 / 9.87694 (bitwise) |
+| ep2 | 12.50788 / 11.18843 | 12.50788 / 11.18843 (bitwise) |
+| tp2 (no SP) | 12.51636 / 11.50026 | not run: the probe's unconditional tower declaration breaks partial_dtensor TP (`pos_embed` becomes a DTensor and MoonViT's position lookup indexes it with a plain tensor); the declaration has to be gated on the backend |
+| cp2 | reaches the MLA kernel: `block_mask was created for a smaller length` | n/a |
+
+An earlier spmd_types dp2 run (before the cp entries were added to the vision helpers) read 11.19137 at step 2; the rerun above matched partial_dtensor bitwise and the difference was not reproduced, cause not established.
+
+The cp2 failure is the collision predicted in the CP note: the imperative Ulysses has already all-to-all'ed q/k/v to the full sequence and rebuilt the full mask when the inner attention's declaration (`set_gqa_inner_attention_local_map`, all-gather-KV on the cp axis) gathers k/v a second time. The KDA layers before it (layers 0-2) passed: `inner_kda`'s local_map declares the cp axis S(0) on both sides and the attn-gym recipe's collectives inside the body are invisible to the type system, so KCP's "identity pair with the recipe in the body" already holds. MLA is the one piece that has to change shape: Ulysses becomes the inner attention's declaration (cp S(0) -> S(1) in, the reverse out, replacing the all-gather-KV entry), and the full-sequence mask has to be supplied to those layers instead of the Q-sharded one.
+
+Size of the migration from here: the five rows above (about 100 lines, of which the probe's shared-helper sed needs a real form, likely a `cp=` argument on the vision helpers), the backend gate on the tower declaration, the Ulysses declaration plus mask handling, then 10-step seeded matrices for dp/ep/tp/cp under spmd_types against the partial_dtensor rows. EP PR delta: the parallelize rows only; the EP declarations and dispatcher ran unchanged under spmd_types.
+
