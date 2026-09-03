@@ -95,6 +95,8 @@ ep2 / cp2 / pp2 / QAT ladder: see table; PP in the engine was implemented tonigh
 
 ## Environment notes that cost time today
 
+- 2026-09-03 00:14: the disk watchdog's pruner (`prune_run_artifacts.sh`, `find /workspace -name checkpoint -type d`) deleted `torch/distributed/checkpoint` in `venv_verl` and `venv_ptnightly`, `ray/data/checkpoint`, and the checkpoint a running matrix cell (dp2 x cp2) had just copied in, which then trained from a fresh init and was caught only by the seed assertion. The same sweep ran on 2026-09-02 09:25, which is when torch DCP first went missing from `venv_verl`; the note below that blamed the old vLLM package's RECORD was wrong. Pruner narrowed: skips site-packages and any venv, requires `step-*` inside the folder, and leaves folders touched in the last 20 minutes alone. Both venvs reinstalled (`--reinstall --no-deps`, same versions).
+
 - `venv_verl`'s old vLLM (`1.0.0.dev20260801+cu130`, a source build) lists
   `torch/distributed/checkpoint/*` and `ray/data/checkpoint/*` in its RECORD;
   uninstalling it deletes both. That, not a matrix cleanup, is what emptied

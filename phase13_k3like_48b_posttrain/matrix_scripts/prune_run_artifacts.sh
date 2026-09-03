@@ -37,6 +37,10 @@ KEEP_PATTERNS=(
   "/vllm_k3"                       # a source build, not a run artifact
   "k3mini_hf"                      # exported HF bundles
   "k3_official_code"               # release files copied in
+  "site-packages"                  # torch.distributed.checkpoint, ray.data.checkpoint: deleted twice (2026-09-02 09:25, 2026-09-03 00:14)
+  "/venv"                          # any virtualenv, including /workspace/venv_*
+  "/.venv"
+  "node_modules"
 )
 
 is_protected() {
@@ -83,8 +87,14 @@ for root in "${ROOTS[@]}"; do
       printf "deleting      %10s  %s\n" "$(human "$sz")" "$ckpt"
       rm -rf "$ckpt"
     fi
-  done < <(find "$root" -mindepth 2 -maxdepth 7 -not -path "*/.mx3_seeds*" -name checkpoint -type d \
-             2>/dev/null | sort -u)
+  # A torchtitan checkpoint folder holds step-* subfolders; a Python package's
+  # "checkpoint" module does not. Require one, and leave folders touched in the
+  # last 20 minutes alone: a running matrix cell copies its seed in and loads it
+  # within a minute, and a sweep in that window silently trains from scratch
+  # (dp2_cp2 on 2026-09-03 did exactly that).
+  done < <(find "$root" -mindepth 2 -maxdepth 7 -not -path "*/.mx3_seeds*" -not -path "*/site-packages/*" \
+             -not -path "*/venv*" -name checkpoint -type d -mmin +20 2>/dev/null \
+           | while IFS= read -r c; do ls -d "$c"/step-* >/dev/null 2>&1 && echo "$c"; done | sort -u)
 
   # JIT caches: pure rebuild cost, no evidence value.
   for cache in "$root"/torchinductor_* "$root"/tilelang* "$root"/.tilelang* \
