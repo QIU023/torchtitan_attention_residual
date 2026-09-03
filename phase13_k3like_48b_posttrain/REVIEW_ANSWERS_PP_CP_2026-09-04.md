@@ -29,6 +29,8 @@ The PR branches `k3_cp_text` (`b85c2a078`) and `k3_pp_text` (`087c4d177`) are un
 | `cp_review3` | `9fbebfed3` | `spmd_review2` + the CP content of `cp_review2` as one commit (Ulysses / all-gather KV / KCP kernels owning their collectives, the SP guard, the cp2 flavors on spmd_types) |
 | `pp_review3` | `d6b1ffe47` | the PR head `087c4d177` squashed onto main (`a4d68655c`) + the nine review-round commits replayed, ending in the `PipelineStage` subclass |
 | `qb_release` | `0902c7a24` | `k3_qb` on main, clean |
+| `cp_base_stack` | `a8a6f331f` | scratch: fegin's CP stack (4322 / 4449 / 4450 at `860d5aa64d`) applied onto main; never filed |
+| `cp_review4` | `624dd6408` | `cp_base_stack` + TP + spmd + the CP content of `cp_review3` + the move onto the stack (packed MLA kernels on 4450's interface, the KDA transform in the recipe, every copy from 4322 deleted) |
 
 ---
 
@@ -278,4 +280,13 @@ Not carried: the local SM120 guard lift in `kda.py` (Attention Gym's KDA guard a
 GPU sanity on the rebased trees (this section is completed from the matrices `mx3_main30_pp*`, `mx3_cpmain_*`, `mx3_qbrel_*` when they finish):
 
 <!-- TBD: main30 PP table, CP cells, QB cells -->
+
+### 5.1 The CP branch moves onto fegin's stack (`cp_review4`, 2026-09-04)
+
+fegin answered on 4313 (2026-09-03): 4450 adds the generic Ulysses interface; the PR head's packed Ulysses is faster for MLA, so "keep yours but use the new interface", option (a) being to keep the `(q, k, v)` inner-attention interface and split inside the kernel before packing; and all-gather KV for MLA is native after 4322 but unoptimised, so an "extend version" is welcome. Two consequences for the tree:
+
+- `cp_review2` / `cp_review3` had lost the packed exchange when they took 4322's shape (their Ulysses kernel all-to-alls the expanded q, k, v). `cp_review4` restores it as `MLAUlyssesCPFlexAttention(UlyssesCPFlexAttention)` and adds `MLAAllGatherCPFlexAttention(AllGatherCPFlexAttention)`; both take `rope_head_dim` and split the expanded key on it. The kernels' unit test runs them with pass-through collectives and checks that FlexAttention receives exactly what MLA produced, i.e. split, pack and expansion are each other's inverse; the GPU cells compare each packed kernel against its generic counterpart (`matrix_scripts/rebase_main_cp4.sh`).
+- Everything copied from 4322 is deleted: the kernel mixin, the all-gather kernel, the field-preserving swap (`retype_node` upstream), the identity boundary (`set_gqa_inner_attention_local_map` is one on the stack), the mask special-casing (`shard_attention_mask` on the kernel config; the decoder reads it), the load-balancer and head-count checks (`validate_context_parallel`). Kernel selection is a transform applied by the recipe (`torchtitan_recipes/kimi_k3.py`): the transforms README forbids model packages importing `torchtitan.transforms`, and KDA is not a `BaseAttention`, so the KDA layers get their own small transform and the model keeps a config-time check that every KDA layer has the KCP kernel.
+
+The stack's merge base is 17 commits behind post-EP main, so `cp_base_stack` is the stack's net diff applied onto main (one conflict, the RoPE context-length check main had already moved to the trainer). When the stack lands, `cp_review4` rebases onto main and the scratch commit disappears; the PR branch is not synced before that. The PR body is rewritten in `Raising_PRs/PR_K3_PARALLELISM/PR_BODY_CP.md` and the replies to fegin and tianyu-l are drafted in `REPLY_4313_2026-09-04.md`.
 

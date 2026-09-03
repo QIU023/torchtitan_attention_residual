@@ -1,127 +1,74 @@
-Status 2026-09-02: the Ulysses half (MLA sequence split, the packed-document mask kept causal on the full sequence, CPU-tested) is reviewable on its own; the KDA half (KCP) still calls fla-core directly for cp > 1, because attention-gym keeps its CP orchestration in `examples/kda_context_parallel.py` behind private cute seams. attention-gym #445 made those seams run on Hopper and SM120 (its example passes on two 5060 Ti), so the blocker is now API promotion, not kernels. The branch also predates main's attn-gym KDA (`InnerKDA`), so its `kda.py` cannot merge with main until the KCP side is re-expressed on the promoted API; `cp_review1` stays on its base until then.
+# PR title: [Kimi K3] Context parallelism for the text decoder: packed MLA kernels on the CP kernel stack, KCP on KDA
+
+PR 4313. Branch `cp_review4` on the fork (`624dd6408`). It sits on `cp_base_stack` (`a8a6f331f`), a scratch commit that is fegin's CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) applied onto upstream/main `9b5f60c40`; above it the TP/SP commits (`tp_review2`), the spmd declarations (`spmd_review2`), the CP content of `cp_review3` (`a4322344d`) and the commit that moves it onto the stack (`624dd6408`). The PR branch is synced only on the user's approval, and only once the stack has landed (the scratch commit is never filed). Paste between the markers; the header of the PR should say it stacks on the TP/SP and declaration commits and on fegin's CP stack.
+
+--- PASTE BEGIN ---
 
 ### Summary
 
-Adds context parallelism to the Kimi K3 text decoder. The two attention kinds need different mechanisms, so both are here on disjoint layer kinds: Ulysses on the Gated MLA layers, and the report's KCP on the KDA layers. As far as I can tell this is the first Ulysses in torchtitan; if you would rather it live under `distributed/` as a model-agnostic piece, say so and I will move it.
+Adds context parallelism to the Kimi K3 text decoder on the CP kernel stack (PR 4322 / 4449 / 4450): every attention layer runs a `ContextParallelKernel` installed by a transform, and each kernel owns its collectives behind the identity boundary. Before this change `parallelize.py` rejects `context_parallel_degree > 1`. After it the MLA layers run `MLAUlyssesCPFlexAttention` (the default) or `MLAAllGatherCPFlexAttention`, the generic Ulysses and all-gather kernels specialised to MLA's expanded key: MLA expands one rotary vector per token onto every head before the kernel, so the kernels split the key back, move the nope part packed with q and v (one all-to-all) or with v (one gather), move the rotary slice once as the headless vector it is, and expand it after the exchange -- the packed exchange of the first version of this PR, on the new interface. The KDA layers run Attention Gym's context-parallel delta rule (`ContextParallelInnerKDA`, KCP: the sequence stays sharded end to end and the recurrence hands its state from rank to rank). `torchtitan_recipes.kimi_k3` applies the generic `ContextParallelTransform` to the MLA layers and a K3 transform to the KDA layers, which the generic transform and validation do not see because KDA is not an attention config.
 
-### CP Design: Ulysses on MLA, KCP on KDA
+### Design
 
-#### Diagram
+- The MLA kernels (`context_parallel.py`)
+  - `MLAUlyssesCPFlexAttention(UlyssesCPFlexAttention)`: `_split_rope` takes the nope part `[T, H, N]` and head 0's rope slice `[T, R]` off the expanded key; `(q | k_nope | v)` is one `_reshard` from `S(0)` to `S(1)`; the rope slice is one `spmd.redistribute` from `S(0)` to `R` (its backward a reduce-scatter in the activation dtype); the key is rebuilt on the local heads and `FlexAttention.forward` runs with the global mask (`shard_attention_mask = False` inherited); the output reshards back. Against the generic kernel this saves the rope slice's $H - 1$ copies per token and folds three exchanges into one.
+  - `MLAAllGatherCPFlexAttention(AllGatherCPFlexAttention)`: `(k_nope | v)` and the rope slice are gathered from `S(0)` to `R` with the inherited `reduce_dtype`; q and the mask stay token-sharded. Against the generic kernel this gathers $H \cdot R - R$ fewer values per token.
+  - Both carry `rope_head_dim` in their config; the recipe fills it from the attention config's `qk_rope_head_dim` through `kernel_config_overrides`, and a generic kernel takes the expanded key as is. The split is the cost fegin's review accepted for the unified `(q, k, v)` interface: one copy of the packed tensor per layer, and the expanded key already exists on the way in.
+- The KDA kernel (`context_parallel.py`, `kda.py`): `ContextParallelInnerKDA` builds the routing plan (`kcp_plan`: one document, equal contiguous shards, the sharding the trainer applied), takes the previous rank's conv tail as history (`context_parallel_conv_history`), and runs `context_parallel_kda`, which exchanges per-fragment affine state summaries so each rank scans from its true entry state; `InnerKDA` is split into `_pack_inputs` and `_conv_and_scan(..., conv_state, cp_plan, cp_group)` so the CP kernel adds only the history and the plan. Packed-document boundaries under KCP raise `NotImplementedError` for now.
+- The transforms (`torchtitan_recipes/kimi_k3.py`): `KimiK3DeltaContextParallelTransform` retypes every `inner_kda` to the KCP kernel; `kimi_k3_context_parallel(config, cp_degree=..., mla_kernel=...)` sets the degree, turns the load balancer off (both kernels read the sequence as rank-ordered contiguous chunks), selects `spmd_types`, and applies the generic transform for MLA and the K3 one for KDA; the cp2 flavors are that call. The model checks at config time that every KDA layer got its kernel, since upstream validation covers the attention layers only.
+- The boundary and the model: `set_gqa_inner_attention_local_map` (the stack's identity boundary) on the MLA inner attention; the head count is derived from the projection width so TP and CP compose without a branch; `apply_cp_kimi_k3` hands the model its cp group for the vision splice, whose plain-tensor branch rejects sequence parallel like the DTensor branch.
 
-<img width="1080" height="440" alt="cp_mla_ulysses_flow" src="https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/26bf162c61caa4946f9ef251a47304a2e6ceabb6/Raising_PRs/PR_K3_PARALLELISM/cp_mla_ulysses_flow.svg" />
+### Results
 
-#### Design points: Ulysses on the MLA layers
+`kimi_k3_debugmodel`, `--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, 8192 tokens per step in micro-batches of 256; every cell runs twice and the second run is read (FlexAttention's autotune moves this model's later steps between compile-cache states; step 1 does not move). The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook. Measured on an RTX 5060 Ti (SM120) with Attention Gym's SM100/SM103 guard on the KDA kernel lifted locally, which routes it through Attention Gym's portable kernels; that patch is not on the branch. The generic rows run the upstream kernels through the same recipe, so the packed kernels are read against them on the same seed and batch.
 
-Ulysses (Jacobs et al., DeepSpeed Ulysses, arXiv:2309.14509). Shapes: $`T`$ tokens, $`L = T/cp`$ local tokens, $`H`$ heads on this rank, $`G = H/cp`$, $`Q/N/V`$ the query, nope-key and value head dims, $`R`$ the rotary width, $`W = Q+N+V`$.
-
-- Before the first all-to-all: sequence-sharded, all heads local
-  - The projections run on this rank's chunk of $`L`$ tokens and give *q* $`[L, H, Q]`$, *kv* $`[L, H, N+V]`$ and the headless rotary key *k_rope* $`[L, R]`$. The layer takes this path when a CP group was set on it (`model.py:132-136` in `KimiMLAAttention.forward`; `apply_cp_kimi_k3` sets it, `parallelize.py:117-133`).
-  - *q* and *kv* are packed along the channel dim into one $`[L, H, W]`$ tensor so a single collective moves both (`sharding.py:223` in `mla_ulysses_attention`).
-- All-to-all 1: sequence-sharded to head-sharded
-  - $`[L, H, W]`$ is viewed as $`[cp, L, G, W]`$ with dim 0 the destination rank and goes through `all_to_all_single`; it comes back as $`[T, G, W]`$, the full sequence for this rank's $`G`$ heads (`sharding.py:156-165` in `cp_all_to_all_headseq`, called at `sharding.py:224-227`).
-  - `torch.distributed.nn.functional` makes it differentiable: the backward is the transposed all-to-all.
-- Inside the rank: head-sharded, full-sequence MLA
-  - The packed tensor splits back into *q* $`[T, G, Q]`$, *k_nope* $`[T, G, N]`$, *v* $`[T, G, V]`$ (`sharding.py:228-232`).
-  - The rotary key stays out of the all-to-all: it is one vector per token shared by every head, so it is all-gathered along the sequence to $`[T, R]`$ and expanded onto the $`G`$ local heads to form *k* $`[T, G, N+R]`$ (`sharding.py:234-247`). Packing the already-expanded key would send the same values once per head and reassemble them against the wrong head subset.
-  - The attention backend runs unchanged on the full sequence, with a causal mask rebuilt for length $`T`$ (`sharding.py:249-255`; `full_sequence_causal_mask`, `sharding.py:176-196`, rejects a folded stream wider than the context window, since a causal-only mask cannot see a document boundary).
-- All-to-all 2: head-sharded back to sequence-sharded
-  - The output $`[T, G, V]`$ is viewed as $`[cp, L, G, V]`$ with dim 0 the destination sequence chunk, goes through `all_to_all_single`, and returns as $`[L, H, V]`$ (`sharding.py:166-173` in `cp_all_to_all_headseq`, called at `sharding.py:256-259`).
-- After the second all-to-all: sequence-sharded again
-  - $`[L, H, V]`$ is the layer's normal layout; the output projection and the gate run on it exactly as without CP (`model.py:145-146`).
-  - The placement pair `S(seq) <-> S(heads)` is declared once as a contract (`sharding.py:99-109`, `ULYSSES`) and the all-to-all takes its dims from it (`sharding.py:149-153`), so a pair with no implementation raises instead of being ignored. `n_heads % cp == 0` is checked at wiring time (`parallelize.py:128-132` in `apply_cp_kimi_k3`).
-
-#### Design points: KCP on the KDA layers
-
-KCP is not written here: it is fla-core's context parallel for delta-rule recurrences (`fla/ops/cp`, >= 0.5.1; the README names it KCP after Moonshot's alias). The sequence stays sharded end to end and no rank ever holds it whole.
-
-- Causal conv: a rank needs only the previous rank's last $`W-1`$ tokens. `causal_conv1d_cp` receives them by a point-to-point send/recv and uses them as the conv's initial state; the backward sends the gradient of those tokens back the other way.
-- Recurrence: every rank runs the chunk scan from a zero state and emits its end state plus its cumulative decay; one all-gather of these per-head fragments lets each rank compose its true incoming state as a prefix product, and the chunk kernel then runs from it. The backward mirrors it with one all-gather of the state gradients. Per layer that is one all-gather each way and nothing else.
-- This branch wires it: one `cp_context` per forward (`kda.py:251-256` in `_forward_kcp`), the q/k/v convolutions through the halo op (`kda.py:258-275`), the kernel call with the context (`kda.py:281-290`) and the kernel handing it to `chunk_kda` (`kda.py:61-95` in `KimiKDAKernel.forward`); the import is checked at wiring time so a missing fla-core fails with an actionable message (`parallelize.py:138-150` in `apply_cp_kimi_k3`).
-- Question for the maintainers: torchtitan plans a torch-native KDA. Should that implementation carry KCP as well (the halo conv and the state prefix scan, after fla's), and run under the `spmd_types` backend by default? If so we would take that on ourselves, and the core change below disappears with it.
-
-#### Design points: the multimodal splice under CP
-
-- Upstream ships one flavor and it is multimodal. `prepare_context_parallel_input` shards tokens, labels and positions along the sequence but leaves `pixel_values` whole, so every rank encodes every image while holding only a slice of the placeholders, and `get_vision_positions` refuses a slice that splits a visual item or holds none.
-- Each rank now scatters the feature slice its own placeholders correspond to (`model.py:379-393`): CP shards are contiguous and equal (the config already rejects a load balancer under CP), so a rank's slice starts after the placeholders the lower ranks hold, which one all-reduce establishes (`model.py:419`).
-- The rows a rank does not consume stay in the graph through `add_zero_valued_dependency` (`torchtitan/distributed/fsdp.py:168-189`), so FSDP2 issues the tower's reduce-scatter on every rank. The encoder still runs redundantly on every CP rank; splitting the tower is the later DEP and dynamic-CP work.
-
-#### Two core changes
-
-KCP cannot be declarative (the fla kernels take raw pointers and never see a DTensor), which is why this model runs on `spmd_backend="partial_dtensor"`, and core's unconditional check rejects `context_parallel_degree > 1` on any backend but `spmd_types` before the model's own wiring runs. So that check moves into a protected method, `Decoder.Config._validate_cp_backend`, whose default body just calls the existing `validate_cp_backend`; a model that does not override it runs today's check verbatim, and this model overrides it with its own preconditions. No new config field. The override is tied to the backend, not to how CP is wired: a torch-native KDA that lets this model run under `spmd_types` deletes it.
-
-The second is `add_zero_valued_dependency` in `torchtitan/distributed/fsdp.py:168-189`: a helper that keeps a partly consumed FSDP module in the autograd graph by adding a zero-scaled sum of its unused output, so the collectives FSDP2 hangs on that output are issued by every rank. It is not K3-specific; any model whose ranks consume different parts of an FSDP module's output needs the same edge.
-
-### K3 CP runs:
-
-To reproduce, from the torchtitan checkout root on this branch, 8 GPUs. Every cell loads the same seed checkpoint; run each cell twice and read the second run (a cold compile cache moves step 1). The runner we used, with the seed-load assertion and a disk gate, is https://github.com/QIU023/torchtitan_attention_residual/blob/611385d4e123d4d0527c6d08b06f8d701bb63e21/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh.
-
-```sh
-COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 16384 --training.num-tokens-per-microbatch-per-dp-rank 1024 --training.max-context-length 1024 --checkpoint.enable"
-torchrun --nproc_per_node=1 $COMMON --training.steps 1 --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint --dump-folder seed
+```
+COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 10 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
-D="--parallelism.data_parallel_shard_degree"; C="--parallelism.context_parallel_degree"; NB="--parallelism.context_parallel_load_balancer None"
-cell dp1 1 $D 1
-cell cp2 2 $D 1 $C 2 $NB;  cell cp4 4 $D 1 $C 4 $NB;  cell cp8 8 $D 1 $C 8 $NB
-cell dp2 2 $D 2;  cell dp2_cp2 4 $D 2 $C 2 $NB;  cell dp2_cp4 8 $D 2 $C 4 $NB
+S="--parallelism.spmd_backend spmd_types"; T="--parallelism.tensor_parallel_degree 2"
+cell dp1 1 --config kimi_k3_debugmodel $S;  cell tp2 2 --config kimi_k3_debugmodel $T $S
+cell cp2 2 --config kimi_k3_debugmodel_cp2;  cell cp2_ag 2 --config kimi_k3_debugmodel_cp2_allgather
+cell tp2cp2 4 --config kimi_k3_debugmodel_cp2 $T --parallelism.no-enable-sequence-parallel
 ```
 
-`kimi_k3_debugmodel` at seq 1024 (`FlexAttention`'s `BlockMask` needs `Q_LEN % (cp * 128) == 0`), seed 42, `--debug.deterministic`, one seed checkpoint loaded by every cell; dp2 rows are in because changing the data-parallel degree alone moves the loss more than the sequence split does. Measured on this branch head, i.e. after the packed-document mask fix from review (below): this dataset packs two documents per 1024-token stream, so the earlier causal-only CP rebuild let the second document attend the first; the non-CP rows are bitwise invariant across all of these changes, and every cell except cp4 reproduces to every printed digit across launches (cp4 is launch-nondeterministic, see the review round below):
-
-| cell | world | step 1 | step 3 | step 10 |
-|---|---|---|---|---|
-| dp1 | 1 | 12.60544 | 7.30226 | 3.22742 |
-| cp2 | 2 | 12.53996 | 7.04577 | 3.50511 |
-| cp4 | 4 | 12.53406 | 7.24227 | 3.35766 |
-| cp8 | 8 | 12.53711 | 7.52113 | 3.49416 |
-| dp2 | 2 | 12.58193 | 7.44923 | 3.32128 |
-| dp2 x cp2 | 4 | 12.57299 | 7.50029 | 3.35914 |
-| dp2 x cp4 | 8 | 12.53546 | 7.32970 | 3.38800 |
-
-Two boundaries raise instead of running: `Q_LEN` not divisible by `cp * 128`, and a folded microbatch wider than the context window. Not in this PR: CP inside the vision tower and the report's dynamic CP for large images. Without `context_parallel_degree > 1` none of this executes.
+<!-- TBD: fill from /workspace/mx3_cp4_* -->
+| cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|
+| dp1 | 1 | - | - | | | |
+| tp2 | 2 | - | - | | | |
+| cp2 | 2 | packed Ulysses (this PR) | KCP | | | |
+| cp2 | 2 | generic Ulysses (4450) | KCP | | | |
+| cp2 | 2 | packed all-gather KV (this PR) | KCP | | | |
+| cp2 | 2 | generic all-gather KV (4322) | KCP | | | |
+| tp2 x cp2 (no SP) | 4 | packed Ulysses | KCP | | | |
 
 ### Changed files
 
     torchtitan/models/kimi_k3/
-      sharding.py            +265  the two CP contracts, the head/sequence
-                                   all-to-all, MLA's Ulysses body and the
-                                   packed-document mask rebuild it needs
-      kda.py                 +119  KCP on the KDA layers: conv halo exchange and
-                                   the prefix scan over the recurrent state
-      model.py             +115/-15 MLA branches to Ulysses when a CP group is set;
-                                   overrides _validate_cp_backend; the vision
-                                   splice follows the sequence shard under CP
-      parallelize.py         +68/-5 apply_cp_kimi_k3: wires the group onto both
-                                   layer kinds, checks head divisibility, and fails
-                                   at wiring time if fla's CP ops are missing
-    torchtitan/models/common/decoder.py  +7/-3  the spmd_types requirement becomes
-                                   an overridable method
-    torchtitan/distributed/fsdp.py       +24   add_zero_valued_dependency: keeps a
-                                   partly consumed FSDP module in the graph
-    tests/
-      unit_tests/cpu/test_kimi_k3_cp_contracts.py     +63  the folded-layout contracts
-      unit_tests/cpu/test_kimi_k3_cp_document_mask.py +89  two-rank gloo: the gathered
-                                   mask refuses both boundary attentions
-      integration_tests/features.py                    +8  the cp2 cell
-    torchtitan_recipes/tests/features.py              +13  its configuration
+      context_parallel.py                   +246/-0  the packed MLA kernels, the KCP kernel, the plan (new)
+      kda.py                                +69/-5   InnerKDA split into pack / conv-and-scan; the KCP branch in the kernel
+      model.py                              +115/-3  the KDA-kernel check, the cp group for the vision splice, the head count from the projection width
+      sharding.py                           +8/-4    the identity boundary on the MLA inner attention
+      parallelize.py                        +22/-5   context parallel off the unsupported list; apply_cp_kimi_k3
+    torchtitan_recipes/
+      kimi_k3.py                            +85/-0   the KDA transform and the recipe helper (new)
+      tests/features.py                     +24/-0   the cp2 and cp2 all-gather flavors
+    tests/unit_tests/cpu/
+      test_kimi_k3_cp_kernels.py            +208/-0  the packed kernels' exchanges and their round trip, the transforms, the KDA check (new)
+    tests/integration_tests/features.py     +8/-0    the cp2 cell
 
 ### CI/CD Coverage
 
-CPU contract tests for the two things that used to fail silently, a two-rank document-mask test, and a cp2 integration cell.
+Seven CPU unit tests in the default suite (the packed kernels move exactly the packed tensor and the rope slice and hand FlexAttention what MLA produced; the transforms install a kernel on every layer and keep non-default fields; the KDA check); a cp2 integration cell on two GPUs (skipped on ROCm). The all-gather flavor is in the recipes for the run above and is not a CI cell.
 
-### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
+### Review round 1
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch), measured on this head like the main table: step 1 is bitwise the main table everywhere, dp2 x cp2 is bitwise the bf16 run outright, cp2 and cp4 move at step 3, and the remaining cells move only at step 10 -- grad-norm precision touches nothing before the first update.
+- Ulysses in the shape of 3978 / 4322 (tianyu-l), and "keep yours but use the new interface" (fegin): done as option (a) of fegin's comment. The packed exchange lives inside `MLAUlyssesCPFlexAttention`, a subclass of 4450's kernel; the inner attention keeps the `(q, k, v)` interface and the kernel splits the expanded key before packing. If the copy ever shows in a profile, the `MLAAttention` interface that hands `k_nope` and `k_rope` over separately is the next step.
+- All-gather KV for MLA (tianyu-l, fegin): the generic kernel from 4322 works on this model as is; `MLAAllGatherCPFlexAttention` is the extend version that gathers the packed nope key and v and the rope slice once. Both are in the table above against their generic counterparts.
+- The Attention Gym version of KCP (tianyu-l): the KDA layers run `attn_gym.linear.kda.context_parallel_kda` with `attn_gym.linear.context_parallel.context_parallel_conv_history`; fla is gone from this path.
+- Document boundaries under CP (drisspg): the Ulysses kernels keep the mask global (`shard_attention_mask = False`), so every rank attends with the same causal x document mask as the non-CP path after the exchange; the all-gather kernels take the mask sharded along q like every other model; KCP runs one document per batch and refuses packed boundaries explicitly instead of scanning across them.
+- The text-only variant question on the vision splice (tianyu-l): open for the maintainers to decide; the splice today keeps one model, inlines its zero-valued dependency on the tower's output so every rank issues the tower's collectives, and its plain-tensor branch rejects sequence parallel like the DTensor branch.
+- ROCm: the cp2 cell is skipped there.
 
-| cell | world | step 1 | step 3 | step 10 |
-|---|---|---|---|---|
-| dp1 | 1 | 12.60544 | 7.30226 | 3.23705 |
-| cp2 | 2 | 12.53996 | 7.10562 | 3.38411 |
-| cp4 | 4 | 12.53406 | 7.29175 | 3.36449 |
-| cp8 | 8 | 12.53711 | 7.52113 | 3.49337 |
-| dp2 | 2 | 12.58193 | 7.44923 | 3.32140 |
-| dp2 x cp2 | 4 | 12.57299 | 7.50029 | 3.35914 |
-| dp2 x cp4 | 8 | 12.53546 | 7.32970 | 3.39451 |
-
-### Review round: packed-document boundaries
-
-Review ask: how are document boundaries preserved under CP? The MLA path was rebuilding a causal-only mask for the sequence Ulysses reassembles and used the context window to reject streams it could not mask; that guard never fired here because this dataset packs two documents into exactly one context window. Fixed: after the all-to-all every rank holds the full sequence, so the CP path now gathers the contiguous positions shards and builds the same causal x document mask the non-CP path uses; the guard, its config plumbing and the shape-keyed mask cache are gone. A two-rank gloo test packs three documents with one boundary on the shard cut and one inside a shard: the gathered mask equals the mask built from the global positions, and both boundary attentions are refused where a causal-only mask lets them through. The tables above are re-measured on the fixed head. KCP keeps `cu_seqlens = [0, total]` deliberately: the non-CP KDA path passes no boundaries either (KDA sample packing lands with PR-4347), so the CP path matches the single-rank recurrence semantics rather than diverging from them.
+--- PASTE END ---
