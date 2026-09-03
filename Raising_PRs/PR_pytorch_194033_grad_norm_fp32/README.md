@@ -3,8 +3,12 @@
 Branch `get-total-norm-dtype` on the fork, rebased 2026-09-03 onto pytorch main
 `6b2b0ddbdd` (first rebased 09-02 onto `a6fc3c2959`, 710 commits, no conflicts; re-rebased
 09-03 over 34 more, no conflicts, the combined diff is byte-identical before and after).
-Force-pushed 2026-09-03 08:27 UTC: PR head `31559d860f`, commits `d03377a101` (DTensor
-strategy), `d0678b09d2` (dtype argument), `31559d860f` (tests). The three patches here are
+Force-pushed 2026-09-03: PR head `64ec4af36b`, commits `d03377a101` (DTensor strategy),
+`f502519356` (dtype argument), `64ec4af36b` (tests). The first push of the day (`31559d860f`) was
+re-pushed after `tools/linter/adapters/pyfmt_linter.py` flagged two over-long list comprehensions
+(clip_grad.py, test_math_ops.py; the old head's lint job had failed on the clip_grad.py one). AST
+identical before and after; RUFF clean. CI on a fork PR waits for a maintainer's approval
+(check-suites show `action_required`), so nothing runs until someone clicks approve. The three patches here are
 the branch as it was before the 09-03 rebase; the content is the same.
 
 1. `0001-*` DTensor: `_foreach_norm.Scalar` shares vector_norm's strategy but has no dim
