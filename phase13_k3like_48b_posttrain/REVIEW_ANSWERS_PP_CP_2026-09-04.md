@@ -281,7 +281,9 @@ GPU sanity on the rebased trees (this section is completed from the matrices `mx
 
 **QB (`qb_release`, 8192 tokens per step, the two hooks on the same seed checkpoint):** dp1 12.52977 / 7.27107 / 2.98077 (sign-step) vs 12.52977 / 7.30620 / 3.11376 (quantile balancing); dp2 12.53137 / 7.31248 / 3.15823 vs 12.53137 / 7.19897 / 3.24552; dp2 x ep2 12.53146 / 7.20212 / 3.10296 vs 12.53146 / 7.67547 / 3.17317. The dp1 and dp2 rows are the pre-rebase numbers to the digit (`PR_RESULTS_2026-09-02.md`), the ep2 rows are new; step 1 is identical per topology since the bias is rewritten only at the optimizer step.
 
-<!-- TBD: main30 PP table (the less-layers-default rerun), cp_review4 packed-vs-generic cells -->
+**PP (`pp_review3`, the 30-layer flavor, 4096 tokens per step, default less-layers so the embedding and the head are units):** dp1 12.51030 / 7.39629 / 3.49625; pp2 x vp4 12.51030 / 7.45319 / 3.38121; pp4 x vp4 12.51030 / 7.44880 / 3.57213; pp8 x vp4 12.51030 / 7.40443 / 3.47327; pp8 x vp4 with the whole stack on every hop 12.51030 / 7.45462 / 3.45668; and the even split pp2 x vp4 (`less_layers=0`, 8 stages of 4) 12.51030 / 7.51238 / 3.52185. Step 1 is bit-identical to dp1 in every cell, as on the old base (there 12.44394); the first pass with `less_layers=0` on all cells failed the divisibility check for pp4 and pp8 (15 and 30 units), which is the 32-layer flavor's habit and is not a code change.
+
+<!-- TBD: cp_review4 packed-vs-generic cells -->
 
 ### 5.1 The CP branch moves onto fegin's stack (`cp_review4`, 2026-09-04)
 

@@ -38,15 +38,16 @@ cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-Training loss on this branch (rebased onto main after the expert-parallel merge), 32 units (30 layers plus the embedding and the head) over the pipeline: <!-- TBD main30: fill from /workspace/mx3_main30_pp* -->
+Training loss on this branch (rebased onto main after the expert-parallel merge), 32 units (30 layers plus the embedding and the head) over the pipeline; step 1 is bit-identical to dp1 in every cell:
 
-| cell | stages | ranks | units per stage | transport | step 1 | step 3 | step 10 |
+| cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | | | |
-| pp2 x vp4 | 8 | 2 | 4 | delta | | | |
-| pp4 x vp4 | 16 | 4 | 2 | delta | | | |
-| pp8 x vp4 | 32 | 8 | 1 (embedding-only and head-only stages) | delta | | | |
-| pp8 x vp4 | 32 | 8 | 1 | whole stack every hop | | | |
+| dp1 | - | 1 | - | - | 12.51030 | 7.39629 | 3.49625 |
+| pp2 x vp4 | 8 | 2 | 3 / 4 ... 4 / 3 | delta | 12.51030 | 7.45319 | 3.38121 |
+| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.51030 | 7.44880 | 3.57213 |
+| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.51030 | 7.40443 | 3.47327 |
+| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | 12.51030 | 7.45462 | 3.45668 |
+| pp2 x vp4, even split (`first/last_stage_less_layers=0`, 8 stages of 4 layers) | 8 | 2 | 4 | delta | 12.51030 | 7.51238 | 3.52185 |
 
 Step-1 per-parameter gradients, the evidence for "equal up to rounding" before anything is amplified: fp32 norm of every parameter's gradient, hashed and compared, on one shared warm compile cache (the same model and seed, measured on the review branch before the rebase). The distribution is the one bf16 summation order produces -- a median of 1e-4 with the tail on 16-element parameters whose norm is 1e-4 -- and no parameter group stands out; a systematic error in the gradient routing would show as a group orders of magnitude above the rest.
 
