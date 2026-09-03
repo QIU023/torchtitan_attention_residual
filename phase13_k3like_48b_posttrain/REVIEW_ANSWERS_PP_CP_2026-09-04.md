@@ -279,7 +279,9 @@ Not carried: the local SM120 guard lift in `kda.py` (Attention Gym's KDA guard a
 
 GPU sanity on the rebased trees (this section is completed from the matrices `mx3_main30_pp*`, `mx3_cpmain_*`, `mx3_qbrel_*` when they finish):
 
-<!-- TBD: main30 PP table, CP cells, QB cells -->
+**QB (`qb_release`, 8192 tokens per step, the two hooks on the same seed checkpoint):** dp1 12.52977 / 7.27107 / 2.98077 (sign-step) vs 12.52977 / 7.30620 / 3.11376 (quantile balancing); dp2 12.53137 / 7.31248 / 3.15823 vs 12.53137 / 7.19897 / 3.24552; dp2 x ep2 12.53146 / 7.20212 / 3.10296 vs 12.53146 / 7.67547 / 3.17317. The dp1 and dp2 rows are the pre-rebase numbers to the digit (`PR_RESULTS_2026-09-02.md`), the ep2 rows are new; step 1 is identical per topology since the bias is rewritten only at the optimizer step.
+
+<!-- TBD: main30 PP table (the less-layers-default rerun), cp_review4 packed-vs-generic cells -->
 
 ### 5.1 The CP branch moves onto fegin's stack (`cp_review4`, 2026-09-04)
 

@@ -29,15 +29,16 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
   --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2
 ```
 
-<!-- TBD: filled from /workspace/mx3_qbrel_* when the QB matrix on qb_release finishes -->
 | config | hook | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| dp1 | sign-step (main) | | | |
-| dp1 | quantile balancing | | | |
-| dp2 | sign-step (main) | | | |
-| dp2 | quantile balancing | | | |
-| dp2 x ep2 | sign-step (main) | | | |
-| dp2 x ep2 | quantile balancing | | | |
+| dp1 | sign-step (main) | 12.52977 | 7.27107 | 2.98077 |
+| dp1 | quantile balancing | 12.52977 | 7.30620 | 3.11376 |
+| dp2 | sign-step (main) | 12.53137 | 7.31248 | 3.15823 |
+| dp2 | quantile balancing | 12.53137 | 7.19897 | 3.24552 |
+| dp2 x ep2 | sign-step (main) | 12.53146 | 7.20212 | 3.10296 |
+| dp2 x ep2 | quantile balancing | 12.53146 | 7.67547 | 3.17317 |
+
+The dp1 and dp2 rows reproduce the pre-rebase measurement to the digit; the ep2 rows are new. Step 1 differs from dp2 by 9e-5 under EP because the expert kernels round differently, on both hooks alike.
 
 ### Changed files
 
