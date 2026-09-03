@@ -168,3 +168,16 @@ Warm and measure passes are bitwise equal, and dp1 on this tree is bitwise equal
 
 At 2048 tokens per rank cp2 is 15% below dp2 on the attn-gym tree and 16% below on the old fla tree (whose KDA kernels are fla's, so both of its cells run ~9% faster in absolute terms), which is the KCP state exchange, conv halo and Ulysses all-to-alls and is the same for both recipes; the rest of the gap at short micro-batches is FSDP rounds and rank skew, not CP. (dp2 rows change the data order, so their losses are not comparable to cp2's.) CPU: the two ported CP tests pass (6), the K3 CPU sweep passes (19; `test_torch_checkpointing.py` fails to collect on this box regardless of branch). Not run: cp2 x tp2, dp2 x cp2, the multimodal splice under CP, the CI cell (`kimi_k3_cp2`, ported).
 
+Combinations, same tree and seed (`cp_review2` = `22b89b46a`, 256-token micro-batches, 8192 per step):
+
+| cell | world | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp2 | 2 | 12.53137 | 7.31248 | 3.15823 |
+| dp2 x cp2 | 4 | 12.52908 | 7.21769 | 3.16754 |
+| tp2 (no SP, from the TP matrix) | 2 | 12.55057 | 7.52677 | 3.00361 |
+| tp2 x cp2 (no SP) | 4 | 12.55340 | 7.15046 | 3.05836 |
+
+tp2 x cp2 needed three port-time fixes (`22b89b46a`): the CP vision splice runs `masked_scatter` on the local shard (DTensor has no sharding strategy for it) and re-wraps with the stream's placements, whose cp axis is already Shard(0); the Ulysses exchange strips the DTensor shell on entry and again after the attention module, whose TP sharding config re-wraps its output. CP with sequence parallel is rejected (the splice needs the whole sequence). The first dp2 x cp2 attempt was silently trained from a fresh init because the disk watchdog deleted its seed mid-copy (environment notes); the rows above are the rerun with the seed asserted.
+
+Where this stands against upstream's CP design, checked on main 2026-09-03: upstream CP is ShardingConfig-driven and gated on `spmd_backend='spmd_types'` (`validate_cp_backend`); full attention gets CP from `set_gqa_inner_attention_local_map`, whose local_map keeps q token-sharded on the cp axis and all-gathers k/v to Replicate (grads Partial), i.e. all-gather-KV, not Ulysses; tp_review1 already installs that declaration on K3's MLA inner attention. Upstream's hybrid precedent qwen3_5 rejects CP outright ("GatedDeltaNet requires full-sequence allgather"), so there is no upstream shape for linear-attention CP; KCP would be K3's own local_map body with the cp axis Shard(0) on both sides and the attn-gym recipe inside. K3 has no spmd_types path at all: the config registry pins `partial_dtensor`, and with that pin lifted the tree fails in `parallelize_kimi_k3` at `get_mesh(["fsdp"])` (spmd_types names the axis `dp_shard` and upstream models branch through `resolve_fsdp_mesh`). So a CP PR that passes `validate_cp_backend` without the `_validate_cp_backend` override needs the K3 spmd_types migration first (parallelize, FSDP mesh resolution, and the sharding declarations becoming load-bearing); the old `k3_cp_declarative` branch got EP running under spmd_types and TP running but not matching numerically, on a much older base.
+
