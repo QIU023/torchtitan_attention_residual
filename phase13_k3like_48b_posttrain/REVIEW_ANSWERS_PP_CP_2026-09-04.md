@@ -124,6 +124,28 @@ What torch has today for reuse (the "PP already has caching" remark, 3.5) is not
 | the same uneven split, transport off vs dp1 | identical | 748 | 1.2e-4 / 8.8e-4 / 1.4e-2 | `delta_attention.A_log` |
 | dp1, `d72faf339` (cat-at-the-start refactor + per-micro-batch release) vs `ca5f34ea8`, same warm cache | identical | 0 | 0 / 0 / 0 | the refactor is bit-exact |
 | pp2 x vp2 delta transport, `d72faf339` vs `ca5f34ea8`, same warm cache | identical | 0 | 0 / 0 / 0 | the per-micro-batch release changes no gradient |
+| pp2 x vp4 delta transport (8 stages of 3 layers), `d72faf339` vs the PR head `087c4d177`, same warm cache | identical | 0 | 0 / 0 / 0 | the whole review branch against the PR head, bit-exact; the same pair from two cold caches while other jobs ran differed in 694 parameters, the autotune effect of 4.2 |
+
+**The pp x vp matrix on the irregular debug model** (`395fc6b30`: 30 layers, block size 12, MLA at every fourth layer and the last; `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches; `first/last_stage_less_layers` at their default 1, so every split is uneven; each cell run twice on an otherwise idle box and the second run read):
+
+| cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|---|
+| dp1 | - | 1 | - | - | 12.44394 | 7.32431 | 3.44458 |
+| pp2 | 2 | 2 | 15 / 15 | fallback (`1F1B`) | 12.44394 | 7.54290 | 3.40260 |
+| pp4 | 4 | 4 | 7 / 8 / 8 / 7 | fallback | 12.44394 | 7.52203 | 3.37749 |
+| pp8 | 8 | 8 | 3 / 4 ... 4 / 3 | fallback | 12.44394 | 7.47274 | 3.43359 |
+| pp2 x vp2 | 4 | 2 | 7 / 8 / 8 / 7 | delta | 12.44394 | 7.38716 | 3.72131 |
+| pp2 x vp2 | 4 | 2 | 7 / 8 / 8 / 7 | off (whole carrier) | 12.44394 | 7.47149 | 3.68055 |
+| pp2 x vp4 | 8 | 2 | 3 / 4 ... 4 / 3 | delta | 12.44394 | 7.40650 | 3.46752 |
+| pp4 x vp2 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | 12.44394 | 7.49078 | 3.47512 |
+| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.44394 | 7.42482 | 3.40743 |
+| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | off | 12.44394 | 7.45038 | 3.39832 |
+| pp8 x vp2 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | 12.44394 | 7.38036 | 3.38767 |
+| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta and off | PP8VP4_PLACEHOLDER |
+
+Step 1 is bit-identical to dp1 in every cell that ran, uneven stages and the delta transport included; the later steps spread as 3.3 explains (bf16 total-norm grouping and the compile lottery), in both directions.
+
+**What the 32-stage cell found: a `torch.distributed.pipelining` bug, and a K3-side boundary for it (`c3df74847`).** With one layer per stage the first stage holds only the embedding and the last only the head, and both transports died at the first backward receive with "Tensors for P2P must be non-overlapping and dense" (reproduced on 2 GPUs as pp2 x vp16, transport off). The mechanism: `PipelineStage._create_grad_recv_info` allocates a stage's gradient receive buffer with `torch.empty_strided` from the *strides* of the next stage's input gradients, which `_backward_metadata_inference` computes once with `torch.autograd.grad`. A stage whose first use of an input is a concatenation gets, as that input's gradient, a view of the concatenation's gradient (the recorded metas for the head-only stage were `(256, 1024)` with stride `(4096, 1)` and `(256, 3, 1024)` with stride `(4096, 1024, 1)`: two slices of one `[T, 4, D]` buffer), and c10d refuses a buffer built with those strides. It surfaces only when nothing else in the stage consumes the input (a later layer's use makes autograd accumulate a dense gradient), which is why every other cell in the matrix, and the 24-layer probes, passed. The fix on the review branch is model-side and forward-inert: a stage passes its inputs through an identity whose backward returns a contiguous gradient (`_DenseGradient`), so the metas and the buffers are dense; values are unchanged (same-cache gradient hashes in the table above). The torch-side fix is to allocate the receive buffer dense (`torch.empty(shape)`) and to send `.contiguous()` gradients, which is worth an upstream issue: any model whose stage begins with `cat`, `stack` or a slice of its input hits it.
 
 Memory at this scale does not move with the per-micro-batch release: pp2 x vp2 reports 7.37 GiB reserved after step 1 and 9.00 after step 2 before and after, pp2 x vp4 7.51 and 9.14 on both codes. A cached block of the debug model is 256 tokens x 1024 x 2 bytes = 0.5 MB, so the whole rank cache is a few MB against activations of GiB; the saving the release buys is `blocks x T x D x 2 bytes` per micro-batch no longer resident, which is the 04-21 envelope's `M` term at production shapes (several GB at 48B, T = 8192), and it will need a measurement at that shape, not this one.
 
