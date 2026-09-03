@@ -1,6 +1,6 @@
-# PR title: [Draft] [Kimi K3] quantile balancing for the MoE router bias
+# PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-Branch `k3_qb` (`3c9cef31a`, base `30eb5e502`). Merges clean onto upstream/main `1dcb14a0c`; the 14 CPU tests pass on the merged tree. Paste between the markers into the PR body.
+PR 4412. Branch `qb_release` on the fork (`0902c7a24`, the `k3_qb` content rebased onto upstream/main `9b5f60c40`, the first commit after the expert-parallel merge); clean rebase, no conflicts. The PR branch `k3_qb` is synced to it only on the user's approval. Paste between the markers into the PR body; drop the old "[DO NOT review, pending EP PR merging]" prefix from the title.
 
 --- PASTE BEGIN ---
 
@@ -20,29 +20,31 @@ Adds quantile balancing for the MoE router bias. Before this change the bias upd
 
 ### Results
 
-Training loss on the branch merged with current main, one seed, warmed compile cache; the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on.
-
-| config | hook | step 1 | step 3 | step 10 |
-|---|---|---|---|---|
-| dp1 | sign-step (main) | 12.52977 | 7.27107 | 2.98077 |
-| dp1 | quantile balancing | 12.52977 | 7.30620 | 3.11376 |
-| dp2 | sign-step (main) | 12.53137 | 7.31248 | 3.15823 |
-| dp2 | quantile balancing | 12.53137 | 7.19897 | 3.24552 |
-
-The rows are re-measured once the expert parallel PR merges, adding the ep cells where the balancing is exercised.
+Training loss on the branch rebased onto main after the expert-parallel merge, one seed (`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, each cell run twice on an idle box and the second run read); the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on. The `dp2 x ep2` rows are where the balancing is exercised across expert shards.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_qb \
-  --debug.seed 42 --debug.deterministic --training.steps 10 \
-  --parallelism.data_parallel_shard_degree 2
+  --debug.seed 42 --debug.deterministic --training.steps 10 --metrics.log_freq 1 \
+  --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 \
+  --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2
 ```
+
+<!-- TBD: filled from /workspace/mx3_qbrel_* when the QB matrix on qb_release finishes -->
+| config | hook | step 1 | step 3 | step 10 |
+|---|---|---|---|---|
+| dp1 | sign-step (main) | | | |
+| dp1 | quantile balancing | | | |
+| dp2 | sign-step (main) | | | |
+| dp2 | quantile balancing | | | |
+| dp2 x ep2 | sign-step (main) | | | |
+| dp2 x ep2 | quantile balancing | | | |
 
 ### Changed files
 
     torchtitan/components/
       quantile_balance.py           +393/-0  the histogram hook and the solver (new)
     torchtitan/models/kimi_k3/
-      config_registry.py            +15/-0  the qb flavor
+      config_registry.py            +15/-0   the qb flavor
     tests/unit_tests/cpu/
       test_quantile_balance.py      +273/-0  (new)
 

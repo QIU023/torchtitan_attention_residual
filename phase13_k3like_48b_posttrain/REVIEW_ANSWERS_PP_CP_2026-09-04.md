@@ -20,6 +20,16 @@ Everything below is written for the reviewers, in English.
 
 The PR branches `k3_cp_text` (`b85c2a078`) and `k3_pp_text` (`087c4d177`) are untouched.
 
+**Update 2026-09-03, after the expert-parallel PR (4314) merged.** The whole stack was rebased onto upstream/main `9b5f60c40` (the merge commit), spmd declarations first, as new fork branches; the old review branches above stay as the review history. See section 5.
+
+| branch (fork) | head | contents |
+|---|---|---|
+| `tp_review2` | `4caf424ee` | the four TP/SP commits of `tp_review1` on main |
+| `spmd_review2` | `7dcdd6a3c` | `tp_review2` + the two spmd_types declaration commits |
+| `cp_review3` | `60f63d0e0` | `spmd_review2` + the CP content of `cp_review2` as one commit (Ulysses / all-gather KV / KCP kernels owning their collectives, the SP guard, the cp2 flavors on spmd_types) |
+| `pp_review3` | `d6b1ffe47` | the PR head `087c4d177` squashed onto main (`a4d68655c`) + the nine review-round commits replayed, ending in the `PipelineStage` subclass |
+| `qb_release` | `0902c7a24` | `k3_qb` on main, clean |
+
 ---
 
 ## 2. How the pipeline adapter got to where it is
@@ -248,3 +258,23 @@ Validation on cp2 (same seed checkpoint and batch as above): step-1 loss 12.5397
 - The plain-tensor vision splice now rejects CP with sequence parallel like the DTensor branch does (`3970bcd1c`); found because `enable_sequence_parallel` defaults to True and a tp2 x cp2 cell without `--parallelism.no-enable-sequence-parallel` silently runs SP.
 - `--debug.spmd_typechecking` under CP hits two pre-existing problems unrelated to the kernels: the residual-stack seed's `R -> I` redistribute over a size-1 tp group trips an `UnboundLocalError` inside spmd_types' checker, and at tp2 x cp2 the checker has no strategy for the block-residual `cat` on the cp axis. Both need attention before the CP branch can claim a typecheck-clean run; neither is touched by this PR's change.
 - The declarative spmd changes (`4b88ada6b`, the K3 declarations spmd_types reads that partial_dtensor never did) are already merged into `cp_review2`; the CP PR will carry them once the stack is rebased after EP merges.
+
+---
+
+## 5. The rebase onto post-EP main (2026-09-03)
+
+The expert-parallel PR merged at 19:11 UTC on 2026-09-03 as `9b5f60c40`. Every K3 branch on the old base conflicted with it in `kimi_k3/__init__.py` (the registry became `(config_fn, max_context_length)` tuples and the flavors gained a `moe_comm_backend` argument), and the attention-gym-based branches also in `kda.py` (main renamed the batch-1 tensors to `_1THV` suffixes), `model.py`, `sharding.py`, `parallelize.py` and `vision_encoder_sharding.py`. The order was TP, then the spmd declarations, then CP, so that CP sits on the declarations it needs; PP and QB are independent of that chain.
+
+- **TP (`tp_review2`).** Four commits replayed one by one. Conflicts: the KDA parameter names (`A_log_H`, `dt_bias_HK` on main), the sharding-config entry point (`set_kimi_k3_sharding_config(config, *, enable_ep, enable_sp=False)` is now main's), and the SP flag threading through `update_from_config`.
+- **spmd declarations (`spmd_review2`).** `da99d66b2` conflicted only on the KDA reshape (kept main's names with the `-1` head count); `4b88ada6b` conflicted on `vision_encoder_sharding.py`, where main now carries `include_cp_axis` helpers that supersede the hard-coded cp axis, so main's file is kept whole.
+- **CP (`cp_review3`).** Replaying the seven commits of `cp_review2` one at a time re-resolved the same `kda.py` regions at every step, so the branch's net change against the spmd tip (`git diff 4b88ada6b adc012ce4`, 10 files) was applied as one commit with a body listing what it carries. Two files conflicted: `decoder.py`, where the branch's overridable `_validate_cp_backend` hook and `max_context_length` property are obsolete (main validates the CP backend directly and carries the context length in the registry; nothing in K3 overrode the hook), so main's file is kept; and `kda.py`, where `InnerKDA` is split into `_pack_inputs` and `_conv_and_scan(..., conv_state, cp_plan, cp_group)` in main's `_1THV` naming and the kernel gains the KCP branch. The unused `add_zero_valued_dependency` helper in `fsdp.py` (the branch inlines `+ unused * 0.0` in the vision splice) was dropped. The CP kernel test reads the registry tuple.
+- **PP (`pp_review3`).** The reviewed PR head was squashed onto main as one commit (the conflicts were the flavor signatures and the shape-suffix legend, resolved to main's), then `e326c70a2 .. 3af70c9ee` replayed; `395fc6b30` (the irregular debug model) conflicted on the same registry lines and now reads `"debugmodel": (partial(_debugmodel, num_layers=30), 16384)` with `_debugmodel(attn_backend, moe_comm_backend, *, num_layers)`. The 12 K3 CPU tests pass.
+- **What the rebase surfaced.** Main names the attention forward arguments `q_THK`, `k_THK`, `v_THV`; the spmd declaration for the vision tower's inner attention and the CP kernels' local_map boundary were keyed `q_TNH`, `k_TNH`, `v_TNH` (the names of the old base). A `ShardingConfig` is keyed by `forward()` parameter names, so the old keys would have matched nothing on main. Renamed in the spmd layer (folded into `7dcdd6a3c`) and the CP commit (`60f63d0e0`), the kernels' own parameters included; the recipe flavor and the tests narrow the optionals main's types now declare, and pyrefly reports 0 errors on the changed files of both branches (`d6b1ffe47` on the PP side). ufmt is clean on both.
+- **QB (`qb_release`).** Clean rebase; 14 CPU tests pass. The PR title's "[DO NOT review, pending EP PR merging]" prefix can go; the body is `Raising_PRs/PR_K3_PARALLELISM/PR_BODY_QB.md`.
+
+Not carried: the local SM120 guard lift in `kda.py` (Attention Gym's KDA guard admits SM100/SM103 only; this box is an RTX 5060 Ti, SM120) stays an uncommitted patch on the run worktrees; every GPU number below was produced with it, on the same kernels the guard protects on Blackwell datacenter parts.
+
+GPU sanity on the rebased trees (this section is completed from the matrices `mx3_main30_pp*`, `mx3_cpmain_*`, `mx3_qbrel_*` when they finish):
+
+<!-- TBD: main30 PP table, CP cells, QB cells -->
+

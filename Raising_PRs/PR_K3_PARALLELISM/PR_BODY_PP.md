@@ -1,166 +1,100 @@
+# PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
+
+PR 4312. Branch `pp_review3` on the fork (`d6b1ffe47`): the reviewed PR head `087c4d177` squashed onto upstream/main `9b5f60c40` (post expert-parallel merge) as `a4d68655c`, then the nine review-round commits replayed on top. The PR branch `k3_pp_text` is synced to it only on the user's approval. Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
+
+--- PASTE BEGIN ---
+
 ### Summary
 
-Adds pipeline parallelism to the Kimi K3 text decoder. Everything except Block Attention Residuals is mechanical; the residual is not. A block residual is defined over the whole layer stack, so under PP it must travel between stages as a second payload alongside the hidden states, and the final aggregation (`output_res_proj`, then `output_res_norm`) must run only on the stage that owns `lm_head`.
+Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `parallelize.py` rejects `pipeline_parallel_degree > 1`; core's `pipeline_llm` would split the model at layer boundaries and carry one hidden-state tensor per hop, which cannot express Block Attention Residuals: a block residual is defined over the whole layer stack, so every later stage needs every earlier block's residual, and the final aggregation (`output_res_proj`, then `output_res_norm`) must run only on the stage that owns `lm_head`. After it `pipeline_kimi_k3` splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes. Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular debug model, two to thirty-two stages, with the delta transport and with the whole stack on every hop.
 
+### Design
 
-### PP Virtual Stage Cache Adapter Design for Attention Residual
+- The stage protocol, in the subclass (`pipeline_stage.py`)
+  - `forward_one_chunk` assembles the full block stack the model expects from the rank's store plus the received *delta*, runs the stage, keeps the blocks the stage committed, and sends on only what the next rank lacks. The model takes and returns the whole stack and knows nothing of the transport; the chunk id comes with the call.
+  - `backward_one_chunk` reads the gradient of the assembled stack, which is an autograd leaf the stage owns: the received columns go back as the *delta*'s gradient, dense and in wire order; the stored columns are deposited in the rank store, and the stage that committed or received a block collects those deposits into its own incoming gradient (`_retrieve_recv_grads`) before its backward, which every schedule orders after the later stages' backward on the rank. No tensor hook, no autograd Function, no detach trick.
+  - A micro-batch's blocks are released after the rank's last stage forward for it, so the store holds only the in-flight micro-batches.
+  - Metadata inference runs the same assembly (`_compute_outputs`); `_compute_input_grads` returns dense gradients, which is where the P2P buffer finding below is handled.
+- The routing tables (`layout.py`)
+  - `BlockLayoutTables` simulates one micro-batch's forward in stage order over the split the trainer actually applied -- every rank learns the layer-to-stage map with one all-gather over the pipeline group, and the stage-to-rank map is the schedule's own `stage_index_to_group_rank` -- and tabulates, per stage, the blocks it commits, the blocks its rank already holds, and the blocks its P2P must carry. Sender and receiver compute the same tables, so nothing but the delta travels. Uneven stages are allowed; a block boundary inside a stage is a partial block on the wire.
+  - Why the delta is bounded: with $P$ ranks a block committed at stage $S$ is fresh on the wire for $P-1$ hops; from $S+P$ on every receiving rank already holds it, because its previous virtual stage was $S-P$. The per-hop payload is bounded by the commits of the last $P-1$ stages, independent of depth.
+  - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop; the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the whole-stack transport by construction.
+- The split (`pipeline.py`): `kimi_k3_module_fqns_per_model_part` is a pure function of the config -- core's layer distribution, `lm_head` where core says `output`, the AttnRes aggregation modules with the head, the vision tower with the embedding.
+- The core hook: `pipeline_llm(..., stage_class=...)` (`pipeline_parallel.py`), the one generic change, so a model can run its stages on a `PipelineStage` subclass.
+- The model (`model.py`): the first layer of a block joins the stack before its sub-layers attend, so a stage boundary at a block start needs nothing special and the stack a stage receives is exactly the stack the layers read; the head-owning stage alone runs the aggregation.
+- What this replaced: the reviewed version carried the same protocol in a 1228-line adapter that wrapped `forward_one_chunk`, `backward_one_chunk` and `step`, kept a thread-local micro-batch id, and bridged the same-rank gradient path with a tensor grad hook and an autograd Function. The subclass implements it once, on the stage's own methods, in 388 lines; the adapter's numerics are reproduced to within one bf16 rounding (table below).
 
-#### Diagram
+### Results
 
-<img width="1080" height="540" alt="pp_dual_gradient_bridge" src="https://github.com/user-attachments/assets/8a5674a0-575f-4ab0-80ab-b22ace2a67b4" />
+`kimi_k3_debugmodel` is 30 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: the last block is partial and the stack ends on a lone MLA layer. `--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches; every cell runs twice and the second run is read, because a cold FlexAttention autotune under load moves this model's step-1 loss. The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook.
 
-#### Design points
-
-with $`P`$ the pipeline degree, $`V`$ the virtual stages per rank, $`T = P \cdot V`$ stages, and stage $`S`$ running on rank $`S \bmod P`$ under `Interleaved1F1B`.
-
-- The carrier
-  - A non-head stage returns (*hidden*, *block_residual*) with *block_residual* $`[\mathrm{tokens}, N, D]`$ and the next stage takes the pair back (`model.py:358-404`); the head-owning stage alone runs the aggregation (`model.py:403-407`).
-  - Without the adapter the whole carrier travels on every hop: that is the fallback transport, and it is what plain `1F1B` ($`V = 1`$) runs.
-  - The transport is a config field, `attn_res_cache`, on by default under PP; a launcher exporting an environment variable non-uniformly would give ranks different topologies and hang in a collective with nothing pointing at the cause.
-- The static layout
-  - `layout.py:149-211` (`BlockLayoutTables._build`) simulates one micro-batch's forward in schedule order and tabulates, per stage, the blocks it commits, the blocks its rank's cache already holds, and the delta its P2P must carry (delta = accumulated minus the receiver's cache, `layout.py:187-194`). Sender and receiver compute the same tables, so nothing travels on the wire but the delta.
-  - Why the delta is bounded: a block committed by stage $`S_p`$ is fresh on the wire for $`P-1`$ hops ($`S_p+1, \ldots, S_p+P-1`$); from $`S_p+P`$ on, every receiving rank already holds it, because its previous virtual stage was $`S-P`$. The per-hop payload is bounded by the commits of the last $`P-1`$ stages, independent of depth.
-- The rank-shared cache
-  - One `RankLocalCache` per rank (`pipeline_adapter.py:140-290`), shared by its $`V`$ virtual stages, keyed (micro-batch, producer stage, commit index).
-  - Blocks that arrived by recv are cached attached. Blocks the rank committed itself are cached as a DETACHED copy (`pipeline_adapter.py:778-782` in `_finish_forward`): a later virtual stage's backward walking into the producer's graph would free it, and the producer's own backward then fails with "backward through the graph a second time".
-- The two gradient channels, chosen by whether the producer sits on the consumer's rank
-  - Channel A, PP's own backward P2P: blocks that arrived by recv, and relayed copies of them cached on other ranks, stay autograd-attached to the recv tensor (`pipeline_adapter.py:744-754` in `_finish_forward`, `pipeline_adapter.py:685-686` in `_forward_delta`), so `SEND_B` carries their gradient hop by hop back to the producing rank, every consumer's contribution merging on that chain.
-  - Channel B, the rank-local slot bridge: at read time the consumer re-wraps the detached copy with `requires_grad` and `_LocalCacheCapture` (`pipeline_adapter.py:672-684` in `_forward_delta`; the Function at `pipeline_adapter.py:365-390`), whose backward deposits the gradient in a slot and stops; the grad hook on the producer's attached block (`_install_augment_hook`, `pipeline_adapter.py:327-362`; installed at `pipeline_adapter.py:761-772` in `_finish_forward`) pops the slot and adds it to the incoming gradient during the producer's own backward. No collectives on this path.
-  - Both channels sum at the producer, so every stage's forward graph is traversed exactly once.
-- The self-check
-  - The channel-B count is static: for a block from stage $`S_p`$ with $`v_p = \lfloor S_p / P \rfloor`$ it is $`V-1-v_p`$ (`layout.py:120-145`, `expected_same_rank_captures`); the hook compares the observed deposits to it and refuses the step on a mismatch (`pipeline_adapter.py:344-356` in `_install_augment_hook`), since a missing capture is a lost gradient no loss curve shows.
-  - The rank's earliest virtual stage asserts every slot drained at micro-batch end (`pipeline_adapter.py:868-890`, `on_microbatch_end`).
-
-### K3 PP with VP runs:
-
-Splitting the model in two by hand and running the halves in sequence -- no schedule, no loss, no microbatches -- reproduces the unsplit forward at max_abs 0.000e+00.
-
-To reproduce, from the torchtitan checkout root on this branch, 8 GPUs. Every cell loads the same seed checkpoint; run each cell twice and read the second run (a cold compile cache moves step 1). The runner we used, with the seed-load assertion and a disk gate, is https://github.com/QIU023/torchtitan_attention_residual/blob/611385d4e123d4d0527c6d08b06f8d701bb63e21/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh.
-
-```sh
-COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_32l --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
-torchrun --nproc_per_node=1 $COMMON --training.steps 1 --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint --dump-folder seed
+```
+COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+torchrun --nproc_per_node=1 $COMMON --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 10 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
 P="--parallelism.pipeline_parallel_degree"; L="--parallelism.pipeline-parallel-layers-per-stage"
-MB="--parallelism.num-pp-microbatches 8 --parallelism.pipeline_parallel_first_stage_less_layers 0 --parallelism.pipeline_parallel_last_stage_less_layers 0"
-IL="$MB --parallelism.pipeline_parallel_schedule Interleaved1F1B"
+IL="--parallelism.num-pp-microbatches 8 --parallelism.pipeline_parallel_schedule Interleaved1F1B --parallelism.pipeline_parallel_first_stage_less_layers 0 --parallelism.pipeline_parallel_last_stage_less_layers 0"
 cell dp1 1
-cell pp2 2 $P 2 $MB;  cell pp4 4 $P 4 $MB;  cell pp8 8 $P 8 $MB
-cell pp2_vp2 2 $P 2 $L 8 $IL;  cell pp2_vp4 2 $P 2 $L 4 $IL
-cell pp4_vp2 4 $P 4 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL
-cell pp8_vp2 8 $P 8 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
-# the transport-off rows: the same cells with --config kimi_k3_debugmodel_32l_naive
+cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-`kimi_k3_debugmodel_32l`, seed 42, `--debug.deterministic`, every cell loading the same seed checkpoint; each cell runs twice and the first run is discarded, because a cold compile cache moves this model's step-1 loss. Step 1 is bit-identical to dp1 in all nine cells, two to thirty-two stages, two to eight ranks; the transport is the delta one wherever the schedule can carry it and falls back on plain `1F1B`, where a rank holds one stage:
+Training loss on this branch (rebased onto main after the expert-parallel merge), 32 units (30 layers plus the embedding and the head) over the pipeline: <!-- TBD main30: fill from /workspace/mx3_main30_pp* -->
 
-| cell | stages | world | transport | step 1 | step 3 | step 10 |
-|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | 12.47877 | 7.37540 | 3.41780 |
-| pp2 | 2 | 2 | fallback | 12.47877 | 7.31716 | 3.42172 |
-| pp4 | 4 | 4 | fallback | 12.47877 | 7.31098 | 3.50222 |
-| pp8 | 8 | 8 | fallback | 12.47877 | 7.27499 | 3.63363 |
-| pp2 x vp2 | 4 | 2 | delta | 12.47877 | 7.28330 | 3.49022 |
-| pp2 x vp4 | 8 | 2 | delta | 12.47877 | 7.20360 | 3.58730 |
-| pp4 x vp2 | 8 | 4 | delta | 12.47877 | 7.25567 | 3.43437 |
-| pp4 x vp4 | 16 | 4 | delta | 12.47877 | 7.29147 | 3.52714 |
-| pp8 x vp2 | 16 | 8 | delta | 12.47877 | 7.26481 | 3.42243 |
-| pp8 x vp4 | 32 | 8 | delta | 12.47877 | 7.28763 | 3.46361 |
+| cell | stages | ranks | units per stage | transport | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|---|
+| dp1 | - | 1 | - | - | | | |
+| pp2 x vp4 | 8 | 2 | 4 | delta | | | |
+| pp4 x vp4 | 16 | 4 | 2 | delta | | | |
+| pp8 x vp4 | 32 | 8 | 1 (embedding-only and head-only stages) | delta | | | |
+| pp8 x vp4 | 32 | 8 | 1 | whole stack every hop | | | |
 
-Three of the virtual-stage cells re-run with the transport turned off, against the rows above: same forward, different gradients, the same blocks routed a different way and summed in a different order.
+Step-1 per-parameter gradients, the evidence for "equal up to rounding" before anything is amplified: fp32 norm of every parameter's gradient, hashed and compared, on one shared warm compile cache (the same model and seed, measured on the review branch before the rebase). The distribution is the one bf16 summation order produces -- a median of 1e-4 with the tail on 16-element parameters whose norm is 1e-4 -- and no parameter group stands out; a systematic error in the gradient routing would show as a group orders of magnitude above the rest.
 
-| cell | step 1 | step 2 |
+| comparison (step 1, 918 parameters) | loss / grad_norm | median / p90 / max relative difference of the per-parameter norm |
 |---|---|---|
-| pp2 x vp2 | identical | 1.0e-3 |
-| pp4 x vp4 | identical | 4.0e-4 |
-| pp8 x vp4 | identical | 1.6e-3 |
+| subclass, pp2 x vp2 delta transport vs dp1 | identical, 12.44394 / 15.5625 | 1.5e-4 / 1.2e-3 / 1.6e-2 |
+| subclass, pp2 x vp2 whole-stack transport vs dp1 | identical | 1.3e-4 / 1.1e-3 / 2.1e-2 |
+| subclass, delta vs whole-stack transport, same topology | identical | 0 / 6.7e-4 / 1.0e-2 (404 of 918 differ) |
+| subclass vs the reviewed hook adapter, pp2 x vp2 delta | identical | 3.5e-5 / 5.3e-4 / 9.2e-3 |
+| subclass, 32 stages on 2 GPUs (pp2 x vp16, embedding-only and head-only stages) vs dp1 | identical | 2.0e-4 / 1.7e-3 / 1.5e-2 |
 
-Peak memory per rank, same topology and schedule, transport against fallback; the six ranks that hold little are unchanged, the max comes down from 8.50 to 7.53 GiB and the spread from 5.83 to 4.90:
+The later steps spread in both directions for two reasons that are not this PR: `torch.nn.utils.get_total_norm` reduces the per-tensor norms in the gradients' dtype and PP groups the parameters differently per topology (pytorch PR 194033 carries the reduction in fp32; with that patch the whole-stack cells collapse pairwise), and FlexAttention's autotune picks kernels by benchmark timing, which `--debug.deterministic` does not control.
 
-| pp8 x vp4 | per-rank peak (GiB) | max | spread |
-|---|---|---|---|
-| delta | 2.63 x6, 6.61, 7.53 | 7.53 | 4.90 |
-| fallback | 2.67 x6, 8.50, 7.09 | 8.50 | 5.83 |
+Memory at this scale does not move: a cached block of the debug model is 256 tokens x 1024 x 2 bytes, so a rank's store is a few MB against activations of GiB. The saving the per-micro-batch release buys is blocks x T x D x 2 bytes no longer resident per micro-batch, which is GB at K3's width and needs a measurement at that shape.
 
-Not in this PR: the vision tower (its stage assignment and DEP). Without `pipeline_parallel_degree > 1` none of this executes.
+### A `torch.distributed.pipelining` finding
 
-### Cache offload (review branch, 2026-09-02)
-
-`attn_res_cache_offload`, off by default: own-rank cached commits park on pinned host memory between the producing stage's forward and their same-rank consumers' forwards. Only own commits move -- their consumer linkage routes through the Capture/Augment slot bridge, never through shared storage, so the host round-trip is value-identical; relayed blocks stay attached on device for SEND_B. The D2H copy is async on the current stream and the H2D in `get_blocks` runs on the same stream, so stream order serializes them.
-
-Value-identical is the claim and the pp2 x vp2 cell prints it to every digit; at debug scale the parked blocks are about a megabyte each, so peak memory does not move here -- the saving scales with microbatch tokens x hidden x blocks in flight.
-
-| cell | offload | step 1 | step 3 | step 10 | peak memory |
-|---|---|---|---|---|---|
-| pp2 x vp2 | off | 12.49999 | 6.89362 | 3.28050 | 10.43 GiB |
-| pp2 x vp2 | on | 12.49999 | 6.89362 | 3.28050 | 10.42 GiB |
-
-    torchtitan/models/kimi_k3/
-      model.py                 +6/-0   the attn_res_cache_offload field
-      pipeline_adapter.py      +43/-3  RankLocalCache parks own commits on pinned host memory
-
-### HF import under pipeline parallelism (review branch, 2026-09-02)
-
-`KimiK3StateDictAdapter.to_hf` synthesizes the released checkpoint's unused layer-0 attention-residual placeholders from layer 1's tensors; a pipeline stage's state dict holds its own layers only, so the synthesis now runs where layer 0 lives and the layer-1 templates are present, and is skipped elsewhere. Found by loading the HF debug checkpoint into a two-stage pipeline: the second stage raised `KeyError: 'language_model.model.layers.1.self_attention_res_norm.weight'`.
-
-    torchtitan/models/kimi_k3/
-      state_dict_adapter.py    +12/-6  stage-aware placeholder synthesis
-
-### Activation balancing across pipeline ranks (review branch, 2026-09-02)
-
-The report's second PP item: the listed pipeline ranks park the tensors autograd saves for backward in a pool on `pp_balance_dest_rank`'s GPU, through the Mooncake Transfer Engine -- RDMA where an HCA exists, TCP with pinned host staging where one does not (`get_local_topology()` decides). Mechanism: `saved_tensors_hooks` around the stage forward, pack parks and releases, unpack fetches back; a first-fit pool with a merging free list; knobs `pp_balance_source_ranks / dest_rank / pool_gib / staging_mib / min_tensor_mib`, empty source list means off. `mooncake-transfer-engine` is an optional import, loaded only when the feature is on; its cu12 runtime is preloaded through ctypes so no environment variable is needed, and the RPC port is read back after registration because the engine picks its own.
-
-Numerics, five arms on the 32-layer flavor (`s1 / s3 / s10`): baseline twice 12.36597 / 6.15894 / 3.34661, self-bitwise; balanced twice 12.36597 / 6.15438 / 3.35641, self-bitwise, parting from the baseline at step 3; parking only 2-D or only 3-D tensors parts too, so it is not a tensor class; a dummy pre-allocation control stays bitwise with the baseline; and park-and-keep -- the full transfer with no early release -- stays bitwise with the baseline. The transport is exact; what moves the digits is releasing parked tensors early, which changes the step's allocator layout, and KDA's triton backward accumulates atomically in address order. No memory optimization that changes activation lifetimes can be bitwise on this model; the bar for it is self-reproducibility (met) and a curve inside the model's own envelope (the step-3 deviation is ~2e-3, the same order as the grad-norm precision experiment). `K3_PPBAL_KEEP_LOCAL=1` is kept as the isolation switch that replays "exact transport, release moves the digits" in one command.
-
-At debug scale the peak does not move: on pp4 with 8 layers per rank and 4096 tokens per microbatch, each source rank parks about a gigabyte per step and fetches it all back, while `max_memory_allocated` stays at 3.84 / 2.62 GiB on the two sources with or without balancing -- what autograd saves per microbatch is ~120 MiB here against a peak made of parameters, optimizer state, grads, the embedding/logits and the block stack. The headroom is per-microbatch saved bytes times in-flight depth, gigabytes per microbatch at K3's width; this box shows the transport and the numerics, not a peak (`PR_RESULTS_2026-09-02.md`).
-
-    torchtitan/models/kimi_k3/
-      pp_balance.py            +345/-0  the engine, the pool, the hooks (new)
-      model.py                 +9/-0   the pp_balance_* fields
-      pipeline_adapter.py      +43/-1   the knobs and the install after the split
-    tests/unit_tests/cpu/
-      test_kimi_k3_pp_balance_pool.py  +64/-0  the pool allocator (new)
+With one layer per stage the last stage holds only the head, whose first op on the block stack is a `cat`, so autograd hands the stage's input gradients back as views; `PipelineStage._backward_metadata_inference` records those strides and `_create_grad_recv_info` allocates the receive buffer with `torch.empty_strided`, which c10d rejects at the first `RECV_B` with "Tensors for P2P must be non-overlapping and dense". Every other split passed because a later op in the stage consumed the input and autograd accumulated a dense gradient. The subclass returns dense gradients from `_compute_input_grads`; the library-side fix would be a dense `torch.empty` receive buffer, and `.contiguous()` before the send.
 
 ### Changed files
 
+    torchtitan/distributed/
+      pipeline_parallel.py                  +10/-2   pipeline_llm(stage_class=...)
     torchtitan/models/kimi_k3/
-      pipeline_adapter.py   +1228  the pipelining_fn: FQN split, the block-residual
-                                   carry across stages, and the rank-shared stack
-      layout.py              +293  offline algebra over (pp, vp, num_blocks,
-                                   n_layers, layers_per_block): which blocks each
-                                   stage commits, which subset its P2P ships
-      __init__.py           +33/-5 registers pipelining_fn and the 32-layer
-                                   flavor; zero-init on the AttnRes projections
-      model.py              +26/-3 returns (hidden, block_residual) off a non-head
-                                   stage, takes the pair back on the next, guards
-                                   the head-only aggregation; the attn_res_cache
-                                   field that selects the transport
-      config_registry.py       +23 the 32-layer trainer flavor, and its _naive
-                                   twin with the transport off
-      parallelize.py         +2/-3 pipeline parallel off the unsupported list
-    tests/
-      unit_tests/cpu/test_kimi_k3_pp_fqn_injection.py  +105  the FQN split, on CPU
-      integration_tests/features.py                     +14  pp2 and pp8 x vp4 cells
-    torchtitan_recipes/tests/features.py                +33  their configurations
+      pipeline_stage.py                     +388/-0  AttnResPipelineStage and the rank store (new)
+      pipeline.py                           +166/-0  the pipelining_fn: the split, the tables, the transport switch (new)
+      layout.py                             +241/-0  BlockLayoutTables from the split the trainer applied (new)
+      model.py                              +49/-21  the block stack in and out of a stage; the block's first layer joins the stack before attending
+      __init__.py                           +27/-6   registers the pipelining_fn; the debug model at 30 layers, irregular like the 93-layer model
+      parallelize.py                        +2/-3    pipeline parallel off the unsupported list
+    tests/unit_tests/cpu/
+      test_kimi_k3_pp_fqn_injection.py      +95/-0   the split (new)
+      test_kimi_k3_pp_layout.py             +122/-0  the tables: uneven split, cache on and off, the local map (new)
+      test_kimi_k3_pp_stage.py              +78/-0   assembly, routing, the gradient split, the store (new)
+    tests/integration_tests/features.py     +8/-0    the pp2 cell
+    torchtitan_recipes/tests/features.py    +32/-0   the pp2 and pp8 x vp4 configurations
 
 ### CI/CD Coverage
 
-CPU unit test for the FQN split; a pp2 integration cell, and a pp8 x vp4 one on the 32-layer flavor -- one layer per stage over 32 stages, so the residual crosses every boundary the schedule has.
+Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; a pp2 integration cell on two GPUs. The pp8 x vp4 configuration (32 stages, one unit per stage, so the residual crosses every boundary the schedule has) is in the recipes for the 8-GPU run above and is not a CI cell.
 
+### Review round 1
 
-### Numerical Correction run with unmerged upstream grad-norm precision forced to FP32
+- The one-line comments are applied as asked (comment revert, `first_layer_in_block`, the split function public, the pp8 x vp4 CI cell dropped).
+- The even-split precondition is gone: the tables follow whatever split the trainer applied, learned by one all-gather; a 5/7/6/6 split is a unit test.
+- The transport switch left the model config for the pipelining entry; the split became a pure function of the config; the stale naive-mode probe was deleted.
+- The block's first layer joins the stack before its sub-layers attend ("cat at the start"); the rank store releases a micro-batch's blocks when the rank is done with them, not at step end.
+- The 32-layer flavor is replaced by making the one debug model irregular (30 layers, partial last block, lone MLA at the end) and the whole pp x vp matrix rerun on it, which is what surfaced the P2P buffer finding.
+- The adapter and its wrappers were replaced by the `PipelineStage` subclass above; the reconstruction of how the adapter got there, the rejected designs, and why torch's per-stage `fwd_cache` cannot serve a non-adjacent consumer are in the logbook document linked from the top.
 
-The same matrix with the grad-norm reduction carried in float32 (https://github.com/pytorch/torchtitan/pull/4135, a separate change not on this branch): with the transport off, pp4 x vp4 and pp8 x vp4 collapse onto one curve (7.27054 at step 3 and 3.33147 at step 10, exactly), and with the transport on the same two cells stay apart, because the delta a hop carries depends on the cut and summing it in a different order is arithmetic that patch does not touch.
-
-| cell | stages | world | transport | step 1 | step 3 | step 10 |
-|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | 12.47877 | 7.22437 | 3.62374 |
-| pp2 | 2 | 2 | fallback | 12.47877 | 7.32454 | 3.61987 |
-| pp4 | 4 | 4 | fallback | 12.47877 | 7.35269 | 3.42883 |
-| pp8 | 8 | 8 | fallback | 12.47877 | 7.22659 | 3.42034 |
-| pp2 x vp2 | 4 | 2 | delta | 12.47877 | 7.28511 | 3.44289 |
-| pp2 x vp4 | 8 | 2 | delta | 12.47877 | 7.28217 | 3.35374 |
-| pp4 x vp2 | 8 | 4 | delta | 12.47877 | 7.27053 | 3.42265 |
-| pp4 x vp4 | 16 | 4 | delta | 12.47877 | 7.24882 | 3.38527 |
-| pp8 x vp2 | 16 | 8 | delta | 12.47877 | 7.27183 | 3.31784 |
-| pp8 x vp4 | 32 | 8 | delta | 12.47877 | 7.26931 | 3.31291 |
+--- PASTE END ---
