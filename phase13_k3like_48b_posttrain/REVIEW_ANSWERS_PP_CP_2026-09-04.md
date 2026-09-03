@@ -141,7 +141,10 @@ What torch has today for reuse (the "PP already has caching" remark, 3.5) is not
 | pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.44394 | 7.42482 | 3.40743 |
 | pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | off | 12.44394 | 7.45038 | 3.39832 |
 | pp8 x vp2 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | 12.44394 | 7.38036 | 3.38767 |
-| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta and off | PP8VP4_PLACEHOLDER |
+| pp8 x vp4 (after `c3df74847`) | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.44394 | 7.29935 | 3.29156 |
+| pp8 x vp4 (after `c3df74847`) | 32 | 8 | 0 / 1 ... 1 / 0 | off | 12.44394 | 7.45038 | (3 steps, on the delta cell's compile cache) |
+
+The transport-off 32-stage cell is the one row that needed a second look: its matrix run, whose eight ranks autotuned their FlexAttention kernels at the same time, came out at 12.45856 at step 1; rerun on the delta cell's warm caches it is 12.44394 like every other cell. That is the compile lottery of 4.2 acting on step 1 itself (a cold compile under load can pick a kernel with different rounding), and it is why the matrix protocol reads the second run of a cell, and why no step-1 mismatch should be read as a code difference before a same-cache rerun.
 
 Step 1 is bit-identical to dp1 in every cell that ran, uneven stages and the delta transport included; the later steps spread as 3.3 explains (bf16 total-norm grouping and the compile lottery), in both directions.
 
