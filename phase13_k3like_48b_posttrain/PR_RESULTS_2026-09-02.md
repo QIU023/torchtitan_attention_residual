@@ -268,3 +268,18 @@ The PR had gone dirty against main (21 commits, two of them on the MoE path: the
 
 Bitwise on all three, so the two upstream MoE commits do not change K3's EP numerics. CPU: 37 passed on the merged tree. Pushed to `k3_ep` as a fast-forward on the user's word; GitHub reports mergeable with CI running.
 
+
+
+## PP PR 4312: first review (Tianyu, 2026-09-03) and the one-line fixes
+
+Review is CHANGES_REQUESTED with 18 inline comments. The one-line ones are on fork branch `pp_review2` (`0c0e48908`, two commits on the PR head `087c4d177`; `pp_review1` is the integration branch with offload and Mooncake, so it was left alone): the shape-suffix legend restored (the reflow was churn), `opens_block` renamed `first_layer_in_block` (his suggestion), `_infer_block_layout_tables_from_stages` made public (private call across files), the pp8 x vp4 integration cell dropped in favour of pp2 alone, and `pipeline_adapter.py` reformatted with the current ufmt (the PR head's file already failed the local hook). `test_kimi_k3_pp_fqn_injection` 4/4. Not pushed to the PR branch.
+
+The rest is design or numerics, not one-liners:
+
+| comment | nature |
+|---|---|
+| debugmodel shape (no defaults, irregular like 93 layers, block size always 12, `full_attention_layers` deducible) | conflicts with the adapter's even-split precondition; changing the flavor reruns the pp x vp matrix |
+| why no `// 2` as in the paper | the paper's pseudo-code counts sub-layers (`layer_number % (block_size // 2)`, "each transformer layer has 2"); ours counts layers, 12 layers = the paper's 24, so no `// 2` -- answer in thread |
+| cat at the start of the layer, then `_apply_attention_residual` with `prefix_sum` None | equivalent (same V stacking order); readability refactor, needs a dp1 bitwise check |
+| `attn_res_cache` on the model config is a PP-infra flag; "inject"; only-incremental transfer and release; block tensor lifecycle; how 93 layers divide | the design notes he asked for ("how you got there") |
+| step-10 spread far above reduction order | fallback transport pp2/pp4/pp8 at step 10: 3.42 / 3.50 / 3.63, monotone in the pp degree; looks systematic, needs its own investigation |
