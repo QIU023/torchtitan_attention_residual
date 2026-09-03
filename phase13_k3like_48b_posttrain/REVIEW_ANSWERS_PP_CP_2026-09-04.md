@@ -118,6 +118,10 @@ What torch has today for reuse (the "PP already has caching" remark, 3.5) is not
 | dp1 vs pp2, fallback transport (`1F1B`, 12+12 layers) | identical, 12.59997 / 13.7500 vs 13.6875 (bf16 print of the total norm) | 748 | 1.3e-4 / 9.0e-4 / 8.6e-3 | `delta_attention.A_log` (16 values, norm 1e-4) |
 | pp2 x vp2 transport off vs on (same topology, `Interleaved1F1B`, 4 stages of 6) | identical, 12.59997 / 13.6875 | 748 | 1.6e-4 / 1.3e-3 / 1.2e-2 | `delta_attention.A_log` |
 | dp1 vs pp2 x vp2 delta transport | identical, 12.59997 / 13.6875 | 729 | 1.2e-4 / 1.0e-3 / 1.3e-2 | `delta_attention.A_log` |
+| pp2 x vp2 even, review branch `ca5f34ea8` vs the PR head, same warm cache | identical | 0 | 0 / 0 / 0 | the four review fixes are numerically inert |
+| uneven split (7 layers per stage, first/last stage one less: stages of 6 / 7 / 6 / 5 layers, block boundary inside stage 1), delta transport vs dp1 | identical, 12.59997 / 13.7500 | 729 | 9.7e-5 / 9.3e-4 / 2.3e-2 | `delta_attention.A_log` |
+| the same uneven split, transport off vs on | identical | 748 | 1.3e-4 / 1.1e-3 / 2.0e-2 | `delta_attention.A_log` |
+| the same uneven split, transport off vs dp1 | identical | 748 | 1.2e-4 / 8.8e-4 / 1.4e-2 | `delta_attention.A_log` |
 
 Reading: the delta transport is as far from the fallback as the fallback is from a single GPU, the step-1 loss is bit-identical in every cell, and the distribution of per-parameter differences is the one bf16 summation order produces (a median of 1e-4 with a tail on 16-element parameters whose norm is 1e-4). No module kind stands out: the block-residual projections and norms, which are the tensors the transport touches, sit at 4e-3 to 8e-3 in every comparison including the one with no transport at all. A systematic error in the gradient routing would show as a parameter group whose difference is orders of magnitude above the rest; there is none.
 
