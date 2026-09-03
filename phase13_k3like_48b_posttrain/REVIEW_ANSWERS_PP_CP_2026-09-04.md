@@ -122,6 +122,10 @@ What torch has today for reuse (the "PP already has caching" remark, 3.5) is not
 | uneven split (7 layers per stage, first/last stage one less: stages of 6 / 7 / 6 / 5 layers, block boundary inside stage 1), delta transport vs dp1 | identical, 12.59997 / 13.7500 | 729 | 9.7e-5 / 9.3e-4 / 2.3e-2 | `delta_attention.A_log` |
 | the same uneven split, transport off vs on | identical | 748 | 1.3e-4 / 1.1e-3 / 2.0e-2 | `delta_attention.A_log` |
 | the same uneven split, transport off vs dp1 | identical | 748 | 1.2e-4 / 8.8e-4 / 1.4e-2 | `delta_attention.A_log` |
+| dp1, `d72faf339` (cat-at-the-start refactor + per-micro-batch release) vs `ca5f34ea8`, same warm cache | identical | 0 | 0 / 0 / 0 | the refactor is bit-exact |
+| pp2 x vp2 delta transport, `d72faf339` vs `ca5f34ea8`, same warm cache | identical | 0 | 0 / 0 / 0 | the per-micro-batch release changes no gradient |
+
+Memory at this scale does not move with the per-micro-batch release: pp2 x vp2 reports 7.37 GiB reserved after step 1 and 9.00 after step 2 before and after, pp2 x vp4 7.51 and 9.14 on both codes. A cached block of the debug model is 256 tokens x 1024 x 2 bytes = 0.5 MB, so the whole rank cache is a few MB against activations of GiB; the saving the release buys is `blocks x T x D x 2 bytes` per micro-batch no longer resident, which is the 04-21 envelope's `M` term at production shapes (several GB at 48B, T = 8192), and it will need a measurement at that shape, not this one.
 
 Reading: the delta transport is as far from the fallback as the fallback is from a single GPU, the step-1 loss is bit-identical in every cell, and the distribution of per-parameter differences is the one bf16 summation order produces (a median of 1e-4 with a tail on 16-element parameters whose norm is 1e-4). No module kind stands out: the block-residual projections and norms, which are the tensors the transport touches, sit at 4e-3 to 8e-3 in every comparison including the one with no transport at all. A systematic error in the gradient routing would show as a parameter group whose difference is orders of magnitude above the rest; there is none.
 
