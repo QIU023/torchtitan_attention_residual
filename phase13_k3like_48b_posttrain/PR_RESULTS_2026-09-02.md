@@ -210,3 +210,25 @@ The cp2 failure is the collision predicted in the CP note: the imperative Ulysse
 
 Size of the migration from here: the five rows above (about 100 lines, of which the probe's shared-helper sed needs a real form, likely a `cp=` argument on the vision helpers), the backend gate on the tower declaration, the Ulysses declaration plus mask handling, then 10-step seeded matrices for dp/ep/tp/cp under spmd_types against the partial_dtensor rows. EP PR delta: the parallelize rows only; the EP declarations and dispatcher ran unchanged under spmd_types.
 
+## K3 under spmd_types on `k3_on_4025` (2026-09-03, in progress)
+
+Branch map first, since the earlier notes misnamed trees: `old_tree_full_impl` and the `attention_residual_dev` family are the old tree; everything based on 30eb5e502 or later is the new tree, including `k3_on_4025` (the integration branch with every parallelism ported in), `cp_review1` / `k3_cp` (fla KDA), `tp_review1` / `cp_review2` / `spmd_review1` (attn-gym KDA, on `k3_ep`).
+
+Done on `/workspace/tt_4025/torchtitan` (k3_on_4025, fla KDA), all under `--parallelism.spmd_backend spmd_types`:
+
+| change | why |
+|---|---|
+| parallelize: spmd_types branch (`resolve_fsdp_mesh` / `resolve_sparse_fsdp_mesh`, `dp_mesh_dims` to decoder and tower, `model.parallelize` under spmd_types, pin check gone) | the deepseek_v3 shape |
+| `_set_sharding_config(declare_all=...)`: dense declarations issued under spmd_types at any TP degree; the ep+tp special cases stay on the real TP flag | spmd_types needs a layout for every parameter |
+| MoonViT tower declared (kimi_k2_7 plan) but invariant at TP and rank-local over cp, with a cp axis on every layout; `pos_embed` / `inv_freq` R | the shared helpers shard the tower over TP and all-gather its k/v over cp; here it runs whole on every rank, as under partial_dtensor |
+| KDA projections, convs, forget/beta/gate, attn-res and output-res projections, `routed_up`: `tp=I`; `routed_down`, `wq_a`, `wkv_a`: `tp=R` | R sums the gradient across TP, right only when the consumer is TP-sharded and each rank's gradient is a partial sum; on identical replicas it doubles (KDA family was 2.15x, `ffn_res_proj` 2.56x) |
+| `A_log` / `dt_bias` carry a cp entry | cp2 could not place them |
+| empty residual stack converted R -> I at the model entry | a fresh tensor reads R; the stream is I; the stack concatenates both |
+| `routed_norm` boundary P -> I keyed `"x"` | the experts' rowwise output is Partial and nothing reduced it before the norm under spmd_types (DTensor did implicitly); `norm_config`'s `"input"` key never binds because `nn.RMSNorm.forward` names its argument `x` |
+| `routed_up` output I -> P, MoE module exit R -> I, MLA module entry I -> R, `q_norm` / `kv_norm` R state-only, KDA `output_norm` state-only | each a type mismatch `--debug.spmd_typechecking` reported in turn |
+| MLA head unflatten and rope join in `spmd.local()` regions re-typed head-sharded | the checker cannot propagate a feature shard through the split, core's `local_qkv_head_split` pattern |
+| KDA head views use -1 | spmd_types hands the projections' TP-local slice back |
+| `pixel_values` / `grid_thw` asserted `{DP: V, CP: V, TP: I}` in the model | the trainer types only tokens/labels/positions on this base |
+
+`--debug.spmd_typechecking` (needs `activation-checkpoint:none`; SAC with Flex is refused, and the tower had to be skipped behind a typed boundary because kimi_k2_7's own declarations are not typecheck-clean) now passes end to end for tp2. Seeded 10-step rows so far (same tree, `.mx3_seeds`, 8192 tokens per step, 256 per micro-batch): dp2 spmd_types 12.45679 / 6.92636 / 3.26972 equals dp2 partial_dtensor bitwise; dp1 spmd_types 12.46442 / 7.27823 / 3.07888 equals the clean tree's dp1 partial_dtensor bitwise; ep2 spmd_types 12.45810 / 6.93768 / 3.28616 (run before the TP-type fixes; dp/ep paths do not exercise them). The clean-tree partial_dtensor references: cp2 12.44640 / 7.39556 / 3.09412. tp2 at 2 steps (512 tokens per step, no seed, same flags) after the declarations above: spmd_types 12.55577 / 10.92986 with grad norms 21.625 / 15.5 against partial_dtensor 12.52067 / 10.80010 with 21.5 / 15.375; per-parameter gradient norms agree within 5% for every family except `output_res_proj` (15% high), so the remaining difference is small and localized but not explained. Committed as k3_on_4025 `9f87e0891`. Seeded 10-step tp2 (both backends) and cp2 (spmd_types) rows: pending.
+
