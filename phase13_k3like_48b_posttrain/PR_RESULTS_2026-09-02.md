@@ -243,7 +243,16 @@ tp2 under either backend sits within 0.06 of dp1 at every step and the two backe
 
 Decided with the user: validation continues on `k3_on_4025` (every parallelism is there to cross-check), landing happens on the attn-gym base (`tp_review1` lineage), no more work on the fla base. The declaration fixes port with one difference: this tree's KDA is head-parallel (colwise projections behind a `local_map` on `inner_kda`), so the KDA-side R/I changes do not apply; `forget_a` and the KDA output norm stay R because their consumers are TP-sharded. Everything else carries over: residual and output-residual projections and `routed_up` invariant, the R -> I stack seed, the MLA entry I -> R, replicated state-only q/kv norms, the `routed_norm` P -> I boundary keyed `x`, `routed_up` back to Partial and the MoE exit to I, the tower invariant at TP and rank-local over cp with its own attention entry, and the head unflatten / rope join in local regions.
 
-tp2 at 2 steps on this base (no seed, 512 tokens per step): spmd_types 12.37781 / 10.92669 with grad norms 24.375 / 19.125 against partial_dtensor 12.36441 / 10.92794 with 25.125 / 20.0.
+tp2 at 2 steps on this base (no seed, 512 tokens per step): spmd_types 12.37781 / 10.92669 with grad norms 24.375 / 19.125 against partial_dtensor 12.36441 / 10.92794 with 25.125 / 20.0. Seeded 10 steps (`.mx3_seeds_upmain`, 8192 tokens per step, 256 per micro-batch):
+
+| cell | spmd_types | partial_dtensor |
+|---|---|---|
+| dp1 | 12.52977 / 7.27107 / 2.98077 | same (bitwise, the tp_review1 dp1) |
+| dp2 | 12.53137 / 7.31248 / 3.15823 | same (bitwise) |
+| ep2 | 12.53146 / 7.20212 / 3.10296 | |
+| tp2 (no SP) | 12.55332 / 7.38015 / 3.00522 | 12.55057 / 7.52677 / 3.00361 |
+
+The CP review branch's CPU sweep: 718 passed, 0 failed, the three known collection errors of this box.
 
 The CP review branch (worktree `cp_review1_new`, to be pushed over `cp_review1` once verified) now carries: the attn-gym port of CP (`785cf2072`, `22b89b46a`), the spmd_types support, and Ulysses as the MLA inner attention's declaration (`a6d26f19f`): cp axis S(0) -> S(1) on q/k/v in and the reverse out with TP's head split kept inside, the full-sequence masks held out of the CP input sharding in `preprocess_inputs`, the hand-written all-to-all, mask rebuild and contract classes removed with their tests, a CPU test asserting the declaration; KDA unchanged (recipe in the `inner_kda` body). CP therefore requires spmd_types, which is what upstream's `validate_cp_backend` demands; the `_validate_cp_backend` override is gone; the `kimi_k3_cp2` test flavor selects spmd_types (`84fd3ee22`). Seeded 10-step cp2 on the merged branch (same seed and batch as the CP port table): 12.53972 / 7.18619 / 3.00631 against the imperative CP under partial_dtensor 12.53972 / 7.18344 / 2.93330 and dp1 12.52977 / 7.27107 / 2.98077: bitwise at step 1, the declared all-to-all against the packed one after.
 
