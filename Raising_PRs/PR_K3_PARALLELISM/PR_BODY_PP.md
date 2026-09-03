@@ -26,14 +26,14 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
 
 ### Results
 
-`kimi_k3_debugmodel` is 30 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: the last block is partial and the stack ends on a lone MLA layer. `--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches; every cell runs twice and the second run is read, because a cold FlexAttention autotune under load moves this model's step-1 loss. The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook.
+`kimi_k3_debugmodel` is 30 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: the last block is partial and the stack ends on a lone MLA layer. `--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches, `first/last_stage_less_layers` at their default 1 so the embedding and the head count as units (32 units) and every split is uneven; every cell runs twice and the second run is read, because a cold FlexAttention autotune under load moves this model's step-1 loss. The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook.
 
 ```
 COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
 torchrun --nproc_per_node=1 $COMMON --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 10 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
 P="--parallelism.pipeline_parallel_degree"; L="--parallelism.pipeline-parallel-layers-per-stage"
-IL="--parallelism.num-pp-microbatches 8 --parallelism.pipeline_parallel_schedule Interleaved1F1B --parallelism.pipeline_parallel_first_stage_less_layers 0 --parallelism.pipeline_parallel_last_stage_less_layers 0"
+IL="--parallelism.num-pp-microbatches 8 --parallelism.pipeline_parallel_schedule Interleaved1F1B"
 cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
