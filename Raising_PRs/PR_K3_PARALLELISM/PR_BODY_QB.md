@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-PR 4412. Branch `qb_release` on the fork (`0902c7a24`, the `k3_qb` content rebased onto upstream/main `9b5f60c40`, the first commit after the expert-parallel merge); clean rebase, no conflicts. The PR branch `k3_qb` is synced to it only on the user's approval. Paste between the markers into the PR body; drop the old "[DO NOT review, pending EP PR merging]" prefix from the title.
+PR 4412. Branch `qb_release` on the fork (`47ec648b4`: the `k3_qb` content rebased onto upstream/main `6e2ac3dcd` on 2026-09-04, plus a typing commit for pyrefly; `0902c7a24` on post-expert-parallel main was the previous head); clean rebase, no conflicts. The PR branch `k3_qb` is synced to it only on the user's approval. Paste between the markers into the PR body; drop the old "[DO NOT review, pending EP PR merging]" prefix from the title.
 
 --- PASTE BEGIN ---
 
@@ -20,7 +20,7 @@ Adds quantile balancing for the MoE router bias. Before this change the bias upd
 
 ### Results
 
-Training loss on the branch rebased onto main after the expert-parallel merge, one seed (`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, each cell run twice on an idle box and the second run read); the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on. The `dp2 x ep2` rows are where the balancing is exercised across expert shards.
+Training loss on `0902c7a24` (the rerun on `47ec648b4` is running locally and replaces these rows), one seed (`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, each cell run twice on an idle box and the second run read); the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on. The `dp2 x ep2` rows are where the balancing is exercised across expert shards.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_qb \

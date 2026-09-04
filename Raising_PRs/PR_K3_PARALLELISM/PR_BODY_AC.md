@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] the attention residual under activation checkpointing: recompute the residual math, keep attention outside the wrap
 
-Branch `ac_review1` (`ca9e497f8`, two commits on upstream/main `1dcb14a0c`). CPU test passes. Paste between the markers into the PR body.
+Branch `ac_review2` (`24aa8c08d`: the two commits rebased onto upstream/main `6e2ac3dcd` on 2026-09-04, plus a typing commit for pyrefly; `ac_review1` `ca9e497f8` was the pre-rebase head). 15 CPU tests pass; pyrefly count equal to main's. Paste between the markers into the PR body.
 
 --- PASTE BEGIN ---
 
@@ -20,7 +20,7 @@ Two changes to how Kimi K3's attention residual meets activation checkpointing, 
 
 Both changes are non-computation, so the bar is bitwise-identical loss against main with the same seed.
 
-Training loss on `kimi_k3_debugmodel`, dp1, one seed, warmed compile cache; peak memory from the measure pass. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it, and the second trades 0.13 GiB for not re-running the KDA kernel in backward on this 24-block debug model.
+Training loss on `kimi_k3_debugmodel`, dp1, one seed, warmed compile cache; peak memory from the measure pass. The rerun on the rebased branch (dp1, dp2 and dp2 x ep2, flag off and on) is running locally and replaces these rows, which come from the previous base. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it, and the second trades 0.13 GiB for not re-running the KDA kernel in backward on this 24-block debug model.
 
 | tree | step 1 | step 3 | step 10 | peak memory |
 |---|---|---|---|---|
