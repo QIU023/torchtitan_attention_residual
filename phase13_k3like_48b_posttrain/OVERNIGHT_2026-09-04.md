@@ -6,7 +6,7 @@ Goal (user, evening of 09-04): the matrices the two live PR heads need, with dat
 
 | # | job | tree | cells | state |
 |---|---|---|---|---|
-| 1 | CP cp8 | `wt_cprun5` (323cf86fa) | cp8 | running at 22:xx |
+| 1 | CP cp8 | `wt_cprun5` (323cf86fa) | cp8 | done: 12.54963 / 7.28587 / 2.95883 (step 1 is 1e-2 above cp2/cp4; the check is queued at the chain's end) |
 | 2 | PP step-1 sign census | `wt_ppprobe8` (0e7cc5ea1 + dump hack) | dp1 x2 fresh caches, pp2 x vp4, pp8 x vp4 | queued |
 | 3 | PP matrices on the rebased head | `wt_pprun3` / `wt_pprun3gn` (0e7cc5ea1) | bf16: dp1, pp2/pp4/pp8 x vp4, pp8 naive, even split, dp2, dp2 x ep2, dp2 x pp2, dp2 x ep2 x pp2, dp2 x pp4, dp2 x ep2 x pp4; fp32 norm: the five original cells | queued |
 | 4 | PP 100-step curves | `wt_pprun3` | dp1, pp2 x vp4, pp8 x vp4, pp8 naive | queued |
@@ -35,3 +35,5 @@ Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_
 ## Results as they land
 
 (filled by the session as rows arrive; the PR bodies get the tables)
+
+- CP cp8: 12.54963 / 7.28587 / 2.95883 -> `PR_BODY_CP.md`; the CP table is complete, the cp8 check (generic kernel at cp8, step-1 gradients vs dp1/cp2) runs last in the chain.

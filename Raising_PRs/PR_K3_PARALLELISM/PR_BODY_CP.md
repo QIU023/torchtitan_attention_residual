@@ -52,7 +52,7 @@ cell cp2 2 --config kimi_k3_debugmodel_cp2 $D 1;  cell cp2_ag 2 --config kimi_k3
 cell cp4 4 --config kimi_k3_debugmodel_cp2 $D 1 $C 4;  cell cp8 8 --config kimi_k3_debugmodel_cp2 $D 1 $C 8;  cell dp2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2;  cell dp2_ep2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2 $E 2
 ```
 
-Running locally, the rows follow:
+Every cell ran twice on the same seed checkpoint and the second run is read. cp8 starts 1e-2 above cp2 and cp4 at step 1 (12.54963 against 12.53972 and 12.53932, reproduced on both of its runs); the same cell on upstream's generic Ulysses kernel and the step-1 per-parameter gradient comparison against dp1 and cp2 are running locally and follow.
 
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
@@ -63,7 +63,7 @@ Running locally, the rows follow:
 | cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.22178 | 3.09487 |
 | cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.21651 | 3.08671 |
 | cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.15253 | 3.14352 |
-| cp8 | 8 | packed Ulysses | KCP | | | |
+| cp8 | 8 | packed Ulysses | KCP | 12.54963 | 7.28587 | 2.95883 |
 | dp2 x cp2 | 4 | packed Ulysses | KCP | 12.52908 | 7.21769 | 3.16754 |
 | dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | 12.52759 | 7.31647 | 3.11588 |
 
