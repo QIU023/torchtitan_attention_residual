@@ -70,7 +70,7 @@ The bf16 grad-norm matrix (this branch as it is):
 | dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
 
-The float32 grad-norm matrix (the fix applied to the run tree), running locally, the rows follow:
+The float32 grad-norm matrix (the fix applied to the run tree); the whole-stack twins of the remaining vp cells in both tables are running locally and follow:
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
@@ -78,13 +78,13 @@ The float32 grad-norm matrix (the fix applied to the run tree), running locally,
 | pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.41967 | 7.49055 | 3.33238 |
 | pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.41967 | 7.57446 | 3.43256 |
 | pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | delta | 12.41967 | 7.49769 | 3.49425 |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | whole stack every hop | | | |
-| dp2 | - | 2 | - | - | | | |
-| dp2 x ep2 | - | 2 | - | - | | | |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | | | |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | | | |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
+| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | whole stack every hop | 12.41967 | 7.51799 | 3.30288 |
+| dp2 | - | 2 | - | - | 12.40417 | 7.37116 | 3.30122 |
+| dp2 x ep2 | - | 2 | - | - | 12.40257 | 7.45076 | 3.37020 |
+| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40417 | 7.29014 | 3.42404 |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40257 | 7.49486 | 3.24388 |
+| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40417 | 7.49642 | 3.31773 |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.40208 | 3.31594 |
 | pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
 | pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
 | dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
