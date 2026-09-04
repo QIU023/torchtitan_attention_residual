@@ -46,9 +46,7 @@ cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-Two matrices on the same cells, seed and batch: the first carries the total gradient norm in float32 (the `clip_grad_norm_` reduction of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch), the second is this branch as it is, bf16 reduction with the pipeline's per-topology parameter grouping. Step 1 is bit-identical to dp1 in every cell of both; with the grouping taken out of the norm, cells that compute the same gradients land on the same curve.
-
-The float32 grad-norm matrix (the fix applied to the run tree), running locally, the rows follow:
+Running locally on the rebased head, the rows follow. Every cell starts from the same seed checkpoint; the last six rows put data parallel and expert parallel around the pipeline.
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
@@ -57,17 +55,32 @@ The float32 grad-norm matrix (the fix applied to the run tree), running locally,
 | pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | | | |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | | | |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | | | |
+| pp2 x vp4, even split (`first/last_stage_less_layers=0`, 8 stages of 4 layers) | 8 | 2 | 4 | delta | | | |
+| dp2 | - | 2 | - | - | | | |
+| dp2 x ep2 | - | 2 | - | - | | | |
+| dp2 x pp2 x vp4 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | | | |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | | | |
+| dp2 x pp4 x vp4 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | | | |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | | | |
 
-The bf16 grad-norm matrix (this branch as it is; these rows were measured on `d6b1ffe47`, the rerun on the rebased head is running locally):
+Step 1 is the same number in every cell, and it is the number that can be compared: under a float32 total norm the cells agree to 2e-4 (dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646 on the previous head), which is bf16 summation-order rounding of the gradients. The later steps spread by a few percent in either direction, and that spread is not a property of the pipeline: the same dp1 cell moves by 3.4% at step 10 when only the grad-norm reduction precision and the compile cache change, and dp1 against dp2 moves by 6% in the same debug setup. The mechanism is Adam's first step, $lr \cdot \mathrm{sign}(g)$ per element: the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order, each flipped element moves by $2 \cdot lr$ the other way, and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.5 to 3.4 in ten steps) does not average that out.
 
-| cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
-|---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | 12.51030 | 7.39629 | 3.49625 |
-| pp2 x vp4 | 8 | 2 | 3 / 4 ... 4 / 3 | delta | 12.51030 | 7.45319 | 3.38121 |
-| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.51030 | 7.44880 | 3.57213 |
-| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.51030 | 7.40443 | 3.47327 |
-| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | 12.51030 | 7.45462 | 3.45668 |
-| pp2 x vp4, even split (`first/last_stage_less_layers=0`, 8 stages of 4 layers) | 8 | 2 | 4 | delta | 12.51030 | 7.51238 | 3.52185 |
+The step-1 sign census, running locally: the fraction of gradient elements whose sign differs between two runs, and the first-update difference it implies ($2\sqrt{f}$ of the update norm).
+
+| pair (step 1) | sign flips | implied first-update difference | group with the most flips |
+|---|---|---|---|
+| dp1 vs dp1 on a fresh compile cache (the control) | | | |
+| dp1 vs pp2 x vp4 | | | |
+| dp1 vs pp8 x vp4 | | | |
+
+100 steps at the same seed, running locally: the mean loss over steps 51 to 100 and the widest gap between any two curves in that window.
+
+| cell | mean loss, steps 51 to 100 | loss at step 100 |
+|---|---|---|
+| dp1 | | |
+| pp2 x vp4 | | |
+| pp8 x vp4 | | |
+| pp8 x vp4, whole stack every hop | | |
 
 Step-1 per-parameter gradients, the evidence for "equal up to rounding" before anything is amplified: the fp32 norm of every parameter's gradient, hashed and compared on one shared warm compile cache (same model and seed, measured on the review branch before the rebase).
 

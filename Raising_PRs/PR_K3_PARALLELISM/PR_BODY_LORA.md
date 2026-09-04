@@ -29,6 +29,8 @@ Training loss, one seed, warmed compile cache; the rerun on the rebased branch i
 | dp2 | lora | 12.48369 | 11.89999 | 10.51706 |
 | dp1 | qlora_mxfp4 | 12.48328 | 12.00891 | 10.42474 |
 | dp2 | qlora_mxfp4 | 12.50176 | 12.00203 | 10.45663 |
+| dp2 x ep2 | lora | | | |
+| dp2 x ep2 | qlora_mxfp4 | | | |
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_lora \
