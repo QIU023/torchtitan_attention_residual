@@ -34,7 +34,7 @@ Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular d
 
 `kimi_k3_debugmodel` is 33 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: two blocks of 12 and a partial block of 9 (93 = 7 x 12 + 9), the stack ending on two adjacent MLA layers, and 35 units with the embedding and the head, which no pipeline shape divides. Every split in the table is uneven; the stage count is the multiple of `pipeline_parallel_degree` nearest to units / `layers_per_stage`, and core sees the split rather than the knob (its ceiling would refuse 35 units at 4 per stage).
 
-`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches, `first/last_stage_less_layers` at their default 1 so the embedding and the head count as units (32 units) and every split is uneven; every cell runs twice and the second run is read (a cold FlexAttention autotune under load moves this model's step-1 loss). The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook.
+`--debug.seed 42 --debug.deterministic`, one seed checkpoint per model shape, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches, `first/last_stage_less_layers` at their default 1 so the embedding and the head count as units; every cell runs twice and the second run is read. The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook.
 
 ```
 COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
@@ -46,108 +46,36 @@ cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-Two matrices on the same cells, seed and batch, every virtual-pipeline cell twice, with the delta transport and naive (every hop carries the whole stack): the first is the branch as it is (bf16 total gradient norm), the second carries the total gradient norm in float32 (the `clip_grad_norm_` reduction of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch). Every cell starts from the same seed checkpoint, runs twice, and the second run is read; the last six rows put data parallel and expert parallel around the pipeline. The dp2 rows read a different batch (the loader shards the dataset by data-parallel rank), so step 1 is compared within a data-parallel group: 12.41967 in all five dp1 rows, 12.40417 in dp2 and dp2 x pp2 / pp4, 12.40257 in dp2 x ep2 and dp2 x ep2 x pp2 / pp4. Every step-1 value with the pipeline on is bit-identical to the same mesh without it, on splits of 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3, 2 / 3 / 3 / 2 ... 2 / 1 and 1 / 2 / 2 / 1 ... 1 / 0 layers per stage, the last one with a head-only stage (the rows of the earlier 30-layer model, whose 32 units every shape divided, are in the logbook).
+Every virtual-pipeline cell twice, with the delta transport and naive (every hop carries the whole stack), and the last six rows with data and expert parallel around the pipeline. The bf16 columns are the branch as it is; the float32 columns carry the total gradient norm in float32 (the `clip_grad_norm_` reduction of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch). The dp2 rows read a different batch (the loader shards the dataset by data-parallel rank), so step 1 is compared within a data-parallel group.
 
-The bf16 grad-norm matrix (this branch as it is):
-
-| cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
+| cell | stages | ranks | layers per stage | transport | step 1 | step 3, step 10 (bf16 norm) | step 3, step 10 (float32 norm) |
 |---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | 12.41967 | 7.56783 | 3.45908 |
-| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 (embedding on the first, head on the last) | delta | 12.41967 | 7.47862 | 3.42131 |
-| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.41967 | 7.66420 | 3.32480 |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.41967 | 7.57579 | 3.36337 |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.41967 | 7.64929 | 3.49334 |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 (a head-only last stage) | delta | 12.41967 | 7.51825 | 3.37366 |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | naive | 12.41967 | 7.60614 | 3.42516 |
-| dp2 | - | 2 | - | - | 12.40417 | 7.37116 | 3.30135 |
-| dp2 x ep2 | - | 2 | - | - | 12.40257 | 7.45076 | 3.38303 |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40417 | 7.28299 | 3.40680 |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40417 | 7.32403 | 3.36641 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40257 | 7.49486 | 3.24775 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40257 | 7.39084 | 3.34226 |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40417 | 7.48020 | 3.33841 |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40417 | 7.60047 | 3.25333 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910 | 3.24169 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40257 | 7.30184 | 3.25535 |
+| dp1 | - | 1 | - | - | 12.41967 | 7.56783, 3.45908 | 7.57490, 3.34752 |
+| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 (embedding on the first, head on the last) | delta | 12.41967 | 7.47862, 3.42131 | 7.49055, 3.33238 |
+| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.41967 | 7.66420, 3.32480 | 7.61479, 3.35875 |
+| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.41967 | 7.57579, 3.36337 | 7.57446, 3.43256 |
+| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.41967 | 7.64929, 3.49334 | 7.68891, 3.43122 |
+| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 (a head-only last stage) | delta | 12.41967 | 7.51825, 3.37366 | 7.49769, 3.49425 |
+| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | naive | 12.41967 | 7.60614, 3.42516 | 7.51799, 3.30288 |
+| dp2 | - | 2 | - | - | 12.40417 | 7.37116, 3.30135 | 7.37116, 3.30122 |
+| dp2 x ep2 | - | 2 | - | - | 12.40257 | 7.45076, 3.38303 | 7.45076, 3.37020 |
+| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40417 | 7.28299, 3.40680 | 7.29014, 3.42404 |
+| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40417 | 7.32403, 3.36641 | 7.32403, 3.36488 |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40257 | 7.49486, 3.24775 | 7.49486, 3.24388 |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40257 | 7.39084, 3.34226 | 7.39084, 3.34489 |
+| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40417 | 7.48020, 3.33841 | 7.49642, 3.31773 |
+| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40417 | 7.60047, 3.25333 | 7.61220, 3.25558 |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910, 3.24169 | 7.40208, 3.31594 |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40257 | 7.30184, 3.25535 | 7.30184, 3.26341 |
 
-The float32 grad-norm matrix (the fix applied to the run tree):
+Step 1 is the number that can be compared, and it is the same number in every cell of a data-parallel group with the pipeline on or off: 12.41967 in the dp1 rows, 12.40417 in dp2 and dp2 x pp2 / pp4, 12.40257 in dp2 x ep2 and its pipeline rows, on all three splits, both transports, and both grad-norm precisions (under the float32 norm the totals agree to 2e-4: dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656). Step-1 gradients, all 1,399,095,936 elements: the per-parameter norms of pp2 x vp4 and pp8 x vp4 sit within bf16 rounding of dp1's (median relative difference 2.0e-4 and 2.2e-4, no parameter group off: element-wise every group differs by 1.3 to 1.5 percent alike, the head 0.5 percent), and 0.27 percent of the elements flip sign, pp8 with 32 stages no more than pp2 with 8, 80 percent of them below a hundredth of their tensor's rms; two dp1 runs on fresh compile caches are bitwise.
 
-| cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
-|---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | 12.41967 | 7.57490 | 3.34752 |
-| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.41967 | 7.49055 | 3.33238 |
-| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.41967 | 7.61479 | 3.35875 |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.41967 | 7.57446 | 3.43256 |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.41967 | 7.68891 | 3.43122 |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | delta | 12.41967 | 7.49769 | 3.49425 |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | naive | 12.41967 | 7.51799 | 3.30288 |
-| dp2 | - | 2 | - | - | 12.40417 | 7.37116 | 3.30122 |
-| dp2 x ep2 | - | 2 | - | - | 12.40257 | 7.45076 | 3.37020 |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40417 | 7.29014 | 3.42404 |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40417 | 7.32403 | 3.36488 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40257 | 7.49486 | 3.24388 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40257 | 7.39084 | 3.34489 |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40417 | 7.49642 | 3.31773 |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40417 | 7.61220 | 3.25558 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.40208 | 3.31594 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40257 | 7.30184 | 3.26341 |
-
-Step 1 is the same number in every cell, and it is the number that can be compared: under a float32 total norm the cells agree to 2e-4 (dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656, naive pp8 16.1649), which is bf16 summation-order rounding of the gradients; on the 30-layer model, carrying the norm in float32 for the whole run left the step-10 spread where it was (6.2% across five cells against 5.6% in bf16), and the second matrix above shows it for this model. The later steps spread by a few percent in either direction, and that spread is not a property of the pipeline: the same dp1 cell moves by 3.4% at step 10 when only the grad-norm reduction precision changes (a fresh compile cache changes nothing: two dp1 runs on fresh caches are bitwise, and every PP row of the previous head reproduces bitwise on the rebased one), and dp1 against dp2, which also changes the batch composition, moves by 6% in the same debug setup. The mechanism is Adam's first step, $lr \cdot \mathrm{sign}(g)$ per element: the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order, each flipped element moves by $2 \cdot lr$ the other way, and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.5 to 3.4 in ten steps) does not average that out.
-
-The same spread with no pipeline in it, on the float32 grad-norm tree: pure data parallel and data x expert parallel at 1 / 2 / 4 / 8, same seed and batch size (the loader shards the dataset by rank, so the pure-dp rows also change the batch composition; expert parallel is read against the same-dp row, which sees the same data).
-
-| cell | step 1 | step 3 | step 10 | step 10 vs the same-dp row |
+| pair (step 1) | sha1-identical parameters | per-parameter norm, relative difference median / p90 / max | sign flips | implied first-update difference |
 |---|---|---|---|---|
-| dp1 | 12.41967 | 7.57490 | 3.34752 | - |
-| dp2 | 12.40417 | 7.37116 | 3.30122 | - |
-| dp4 | 12.41166 | 8.23808 | 3.26421 | - |
-| dp8 | 12.39794 | 8.13134 | 3.28591 | - |
-| dp2 x ep2 | 12.40257 | 7.45076 | 3.37020 | +2.1% |
-| dp4 x ep2 | 12.41024 | 8.09069 | 3.32926 | +2.0% |
-| dp4 x ep4 | 12.41024 | 8.04373 | 3.20992 | -1.7% |
-| dp8 x ep2 | 12.39792 | 7.95019 | 3.25586 | -0.9% |
-| dp8 x ep4 | 12.39792 | 7.80701 | 3.22198 | -1.9% |
-| dp8 x ep8 | 12.39792 | 7.94250 | 3.15705 | -3.9% |
+| dp1 vs pp2 x vp4 | 2 of 1002 | 2.0e-4 / 1.7e-3 / 1.2e-2 | 0.267% | 10.3% |
+| dp1 vs pp8 x vp4 | 2 of 1002 | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% | 10.5% |
 
-The step-1 sign census over all 1,399,095,936 gradient elements: the fraction whose sign differs between two runs, and the first-update difference it implies ($2\sqrt{f}$ of the update norm). Element-wise the gradients differ by about 1.3% in relative L2 in every parameter group alike (embedding 1.48%, experts 1.27%, attention 1.42%, norms 1.28%, router 1.25%, head 0.54%) while the per-parameter norms agree to 2e-4, which is bf16's signature; 80% of the flipped elements sit below a hundredth of their tensor's rms, and pp8 with 32 stages flips no more than pp2 with 8. Two dp1 runs on fresh compile caches were bitwise on the 30-layer model (918 of 918 parameters sha1-identical); the no-pipeline controls (dp1 against FSDP dp2, and against 512-token micro-batches) are running locally and follow.
-
-| pair (step 1) | sign flips | implied first-update difference | group with the most flips |
-|---|---|---|---|
-| dp1 vs dp1 on a fresh compile cache (30-layer model) | 0 | 0 | none |
-| dp1 vs pp2 x vp4 | 0.267% | 10.3% | head 0.44%, attention 0.43% (embedding 0: its zero rows are exact) |
-| dp1 vs pp8 x vp4 | 0.277% | 10.5% | head 0.46%, attention 0.44% |
-| dp1 vs dp2 (FSDP, no pipeline) | | | |
-| dp1 vs dp1 with 512-token micro-batches (accumulation order, no pipeline) | | | |
-
-100 steps at the same seed on the debug flavor's data, which is 32 samples that 4096 tokens per step cycle through every other step: every curve memorizes it (loss 0.04 to 0.05 at step 100), and what differs is how fast, with the 32-stage delta transport the slowest to cross 1.0 and the same 32 stages naive as fast as dp1. A memorization race amplifies any perturbation, so the same four cells on streamed cc12m (no sample repeats) and dp1 / pp2 / pp8 at a second seed are running locally and follow.
-
-| cell | first step below 1.0 | loss at step 50 | mean loss, steps 51 to 100 | loss at step 100 |
-|---|---|---|---|---|
-| dp1 | 31 | 0.234 | 0.090 | 0.04273 |
-| pp2 x vp4 | 26 | 0.157 | 0.075 | 0.04380 |
-| pp8 x vp4 | 41 | 0.525 | 0.114 | 0.04678 |
-| pp8 x vp4, naive | 30 | 0.192 | 0.082 | 0.04558 |
-| dp1, seed 43 | | | | |
-| pp2 x vp4, seed 43 | | | | |
-| pp8 x vp4, seed 43 | | | | |
-| dp1, streamed cc12m | | | | |
-| pp2 x vp4, streamed cc12m | | | | |
-| pp8 x vp4, streamed cc12m | | | | |
-| pp8 x vp4, naive, streamed cc12m | | | | |
-
-Step-1 per-parameter gradients, the evidence for "equal up to rounding" before anything is amplified: the fp32 norm of every parameter's gradient, hashed and compared on one shared warm compile cache (same model and seed, measured on the review branch before the rebase).
-
-The distribution is the one bf16 summation order produces -- a median of 1e-4 with the tail on 16-element parameters -- and no parameter group stands out; a systematic routing error would show as one group orders of magnitude above the rest.
-
-| comparison (step 1, 918 parameters) | loss / grad_norm | median / p90 / max relative difference of the per-parameter norm |
-|---|---|---|
-| subclass, pp2 x vp2 delta transport vs dp1 | identical, 12.44394 / 15.5625 | 1.5e-4 / 1.2e-3 / 1.6e-2 |
-| subclass, pp2 x vp2 naive transport vs dp1 | identical | 1.3e-4 / 1.1e-3 / 2.1e-2 |
-| subclass, delta vs naive transport, same topology | identical | 0 / 6.7e-4 / 1.0e-2 (404 of 918 differ) |
-| subclass vs the reviewed hook adapter, pp2 x vp2 delta | identical | 3.5e-5 / 5.3e-4 / 9.2e-3 |
-| subclass, 32 stages on 2 GPUs (pp2 x vp16, embedding-only and head-only stages) vs dp1 | identical | 2.0e-4 / 1.7e-3 / 1.5e-2 |
-
-What remains between the cells under the float32 norm is the transport's summation order (delta against naive) and FlexAttention's autotune, which picks kernels by benchmark timing that `--debug.deterministic` does not control; the bf16 matrix adds the per-topology grouping of the norm on top, which is why it spreads more.
+The later steps spread by a few percent in either direction, and the spread is not a property of the pipeline: Adam's first update is $lr \cdot \mathrm{sign}(g)$ per element, so the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order and each moves by $2 \cdot lr$ the other way (a 0.27 percent flip fraction is a 10 percent change of the first update), and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.4 to 3.3 in ten steps) does not average that out. The same few percent appear with no pipeline in the run: the dp1 cell moves 3.2 percent at step 10 when only the grad-norm precision changes, pure data parallel at 1 / 2 / 4 / 8 spreads 2.5 percent (with the batch composition changing), and expert parallel moves the same-data row by -3.9 to +2.1 percent (dp2 x ep2, dp4 x ep2 / ep4, dp8 x ep2 / ep4 / ep8; the logbook's `PP_STEP10_SPREAD_2026-09-04.md` has the per-step data, the per-group census and the ladder). On the previous head the same step-1 comparison also covered delta against naive on one topology, the subclass against the reviewed adapter, and 32 stages on 2 GPUs, all at a 1e-4 median (logbook, `REVIEW_ANSWERS_PP_CP_2026-09-04.md` 3.3). A hundred steps on the debug flavor's 32-sample data is a memorization curve (every cell at 0.04 to 0.05 by step 100, the crossings of 1.0 spread over 15 steps); the same cells on streamed cc12m and at a second seed are running locally and follow.
 
 Memory at this scale does not move: a cached block of the debug model is 256 tokens x 1024 x 2 bytes, so a rank's store is a few MB against activations of GiB. The saving the per-micro-batch release buys is blocks x T x D x 2 bytes no longer resident per micro-batch, which is GB at K3's width and needs a measurement at that shape.
 
@@ -164,11 +92,11 @@ Every other split passed because a later op consumed the input and autograd accu
     torchtitan/models/kimi_k3/
       pipeline_stage.py                     +395/-0  AttnResPipelineStage and the rank store (new)
       layout.py                             +233/-0  BlockLayoutTables from the split the trainer applied (new)
-      parallelize.py                        +162/-3  the pipelining entry: the split, the tables, the transport switch; pipeline parallel off the unsupported list
+      parallelize.py                        +169/-3  the pipelining entry: the split (any layer count), the tables, the transport switch; pipeline parallel off the unsupported list
       model.py                              +39/-22  the block stack in and out of a stage; the block's first layer joins the stack before attending
-      __init__.py                           +15/-7   registers the pipelining_fn; the debug model at 30 layers, irregular like the 93-layer model
+      __init__.py                           +17/-7   registers the pipelining_fn; the debug model at 33 layers, the 93-layer model's partial block
     tests/unit_tests/cpu/
-      test_kimi_k3_pp_fqn_injection.py      +100/-0  the split (new)
+      test_kimi_k3_pp_fqn_injection.py      +131/-0  the split, including a layer count no shape divides (new)
       test_kimi_k3_pp_layout.py             +122/-0  the tables: uneven split, cache on and off, the local map (new)
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
     tests/integration_tests/features.py     +8/-0    the pp2 cell
@@ -184,7 +112,7 @@ Three CPU unit tests (the split, the layout tables, the stage's carrier handling
 - The even-split precondition is gone: the tables follow whatever split the trainer applied, learned by one all-gather; a 5/7/6/6 split is a unit test.
 - The transport switch left the model config for the pipelining entry; the split became a pure function of the config; the stale naive-mode probe was deleted.
 - The block's first layer joins the stack before its sub-layers attend ("cat at the start"); the rank store releases a micro-batch's blocks when the rank is done with them, not at step end.
-- The 32-layer flavor is replaced by making the one debug model irregular (30 layers, partial last block, lone MLA at the end) and the whole pp x vp matrix rerun on it, which is what surfaced the P2P buffer finding.
+- The 32-layer flavor is replaced by making the one debug model irregular (now 33 layers, the 93-layer model's partial block of 9, 35 units no pipeline shape divides) and the whole pp x vp matrix rerun on it, which is what surfaced the P2P buffer finding.
 - The adapter and its wrappers were replaced by the `PipelineStage` subclass above; the reconstruction of how the adapter got there, the rejected designs, and why torch's per-stage `fwd_cache` cannot serve a non-adjacent consumer are in the logbook document linked from the top.
 
 ### Review round 2
