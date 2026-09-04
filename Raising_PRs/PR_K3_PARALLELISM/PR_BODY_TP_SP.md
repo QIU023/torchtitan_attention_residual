@@ -37,7 +37,7 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 | tp4 (SP on) | 4 | | | |
 | dp2 x tp2 (SP on) | 4 | | | |
 
-Step 1 under TP sits about 1e-2 from dp1 in either direction (the earlier measurement on the pre-rebase tree was 12.55057 for tp2 and 12.54164 for tp2 with SP against 12.52977): the head-sharded matmuls and the boundary collectives round differently, and this model's step-1 loss is sensitive to it. The table is a correctness and composition claim; the SP benefit case is long-sequence, and at this scale it shows neither a memory win nor a speed cost worth reporting.
+Step 1 under TP sits about 1e-2 from dp1 in either direction: the head-sharded matmuls and the boundary collectives round differently, and this model's step-1 loss is sensitive to it. With the sequence-parallel splice fixed, tp2 with SP on the rebased tree reads 12.54164 / 7.35554 / 3.16327 and reproduces the pre-rebase step 1 to the digit (12.54164 against the old 12.54164 / 7.44412 / 3.08160); the 12.52013 an earlier pass read was the broken splice silently corrupting the image rows, which tp2's shards did not reveal and tp4's did. The table is a correctness and composition claim; the SP benefit case is long-sequence, and at this scale it shows neither a memory win nor a speed cost worth reporting.
 
 ### Changed files
 

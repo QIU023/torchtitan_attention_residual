@@ -35,7 +35,7 @@ cell tp2cp2 4 --config kimi_k3_debugmodel_cp2 $T --parallelism.no-enable-sequenc
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
 | dp1 | 1 | - | - | 12.52977 | 7.27107 | 2.98077 |
-| tp2 | 2 | - | - | 12.52013 | 7.79992 | 3.12152 |
+| tp2 (SP on) | 2 | - | - | to re-measure: the row taken before the sequence-parallel splice fix read 12.52013 / 7.79992 / 3.12152 | | |
 | cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.18344 | 2.93330 |
 | cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.18619 | 3.00631 |
 | cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.22178 | 3.09487 |
@@ -59,7 +59,7 @@ Against a single GPU the reference is not bitwise on this model: gradients are k
 | comparison (step 1, cp-reduced full gradient, 750 parameters) | loss | relative difference of the per-parameter norm: median / p90 / max |
 |---|---|---|
 | dp1 vs dp2 (data parallel, the control) | 12.52977 vs 12.53137 | 2.5e-2 / 7.9e-2 / 5.2e-1 |
-| dp1 vs tp2 (tensor parallel, the control) | 12.52977 vs 12.52013 | 1.1e-1 / 2.3e-1 / 6.4e-1 |
+| dp1 vs tp2 (tensor parallel, the control; taken before the sequence-parallel splice fix, to re-measure) | 12.52977 vs 12.52013 | 1.1e-1 / 2.3e-1 / 6.4e-1 |
 | dp1 vs cp2, packed Ulysses | 12.52977 vs 12.53972 | 1.1e-2 / 6.1e-2 / 4.6e-1 |
 | dp1 vs cp2, generic Ulysses / packed all-gather / generic all-gather | same | 1.1e-2 / 6.1e-2 / 4.6e-1 each |
 
