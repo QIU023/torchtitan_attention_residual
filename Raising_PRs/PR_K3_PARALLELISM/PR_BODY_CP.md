@@ -44,6 +44,16 @@ cell tp2cp2 4 --config kimi_k3_debugmodel_cp2 $T --parallelism.no-enable-sequenc
 
 The four MLA kernels agree at step 1 to the digit and part afterwards: a packed kernel moves the same values as its generic counterpart but sums the rope slice's gradient in a different order (over the local heads first, then the reduce-scatter across cp), one bf16 rounding of a sum, the same class of difference as the two transports in the pipeline PR. The step-1 losses of cp2 (12.53972) and tp2 x cp2 (12.55243) are the pre-rebase branch's numbers to the digit; dp1 is bit-identical to the same flavor under `partial_dtensor` through step 10.
 
+Step-1 per-parameter gradients on this branch (fp32 norm of every parameter's gradient, hashed; rank 0's local gradient, 750 parameters, one shared seed, each kernel on its own warm compile cache) are the evidence for what a packed kernel changes against its generic counterpart:
+
+| comparison (step 1, cp2) | loss | sha1-identical parameters | relative difference of the per-parameter norm: median / p90 / max |
+|---|---|---|---|
+| packed Ulysses vs generic Ulysses (4450) | identical, 12.53972 | 25 of 750 | 2.0e-4 / 1.7e-3 / 1.5e-2 |
+| packed all-gather vs generic all-gather (4322) | identical | 25 of 750 | 1.2e-4 / 1.4e-3 / 1.9e-2 |
+| packed Ulysses vs packed all-gather | identical | 22 of 750 | 1.9e-4 / 1.6e-3 / 1.5e-2 |
+
+The maxima sit on 16-element `A_log` vectors and residual norms whose gradient norm is 1e-4: the distribution bf16 summation order produces, with no parameter group standing out.
+
 ### Changed files
 
     torchtitan/models/kimi_k3/
