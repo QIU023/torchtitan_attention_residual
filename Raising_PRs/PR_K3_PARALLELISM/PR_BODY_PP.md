@@ -68,10 +68,10 @@ The float32 grad-norm matrix (the fix applied to the run tree), running locally,
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | | | |
-| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | | | |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | delta | | | |
+| dp1 | - | 1 | - | - | 12.41967 | 7.57490 | 3.34752 |
+| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.41967 | 7.49055 | 3.33238 |
+| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.41967 | 7.57446 | 3.43256 |
+| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | delta | 12.41967 | 7.49769 | 3.49425 |
 | pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | whole stack every hop | | | |
 | dp2 | - | 2 | - | - | | | |
 | dp2 x ep2 | - | 2 | - | - | | | |
