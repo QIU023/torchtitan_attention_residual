@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] An FSDP2 x EP2 integration cell
 
-Branch `k3_ep_cell` on the fork (`e85dbe186`, one commit on upstream/main `9b5f60c40`). Paste between the markers.
+Branch `k3_ep_cell` on the fork (`b20138da5`, one commit on upstream/main `9b5f60c40`). Paste between the markers.
 
 --- PASTE BEGIN ---
 
@@ -19,8 +19,9 @@ The multimodal debug model, `--debug.seed 42 --debug.deterministic`, one seed ch
 
 ### Changed files
 
-    torchtitan_recipes/tests/b200.py       +7/-0   kimi_k3_debugmodel_mm_fsdp2_ep2
-    tests/integration_tests/b200.py         +6/-0   the kimi_k3_mm_fsdp2_ep2 cell
+    torchtitan_recipes/tests/b200.py                        +7/-0   kimi_k3_debugmodel_mm_fsdp2_ep2
+    tests/integration_tests/b200.py                          +6/-0   the kimi_k3_mm_fsdp2_ep2 cell
+    tests/unit_tests/cpu/test_integration_test_definitions.py +4/-1   the B200 suite's expected cell names
 
 ### CI/CD Coverage
 
