@@ -20,13 +20,16 @@ Two changes to how Kimi K3's attention residual meets activation checkpointing, 
 
 Both changes are non-computation, so the bar is bitwise-identical loss against main with the same seed.
 
-Training loss on `kimi_k3_debugmodel`, dp1, one seed, warmed compile cache; peak memory from the measure pass. The rerun on the rebased branch (dp1, dp2 and dp2 x ep2, flag off and on) is running locally and replaces these rows, which come from the previous base. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it, and the second trades 0.13 GiB for not re-running the KDA kernel in backward on this 24-block debug model.
+Training loss on `kimi_k3_debugmodel`, one seed, every cell run twice and the second read; peak memory from the measure pass. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it (dp1 12.52977 / 7.27107 / 2.98077, dp2 12.53137 / 7.31248 / 3.15823, dp2 x ep2 12.53146 / 7.20212 / 3.10296 are main's numbers), and the flag trades a little memory for the recompute it saves. The log line "attention and the residual math stay outside (ac_reuse_attention)" is in every flag-on run.
 
-| tree | step 1 | step 3 | step 10 | peak memory |
-|---|---|---|---|---|
-| main | 12.52977 | 7.27107 | 2.98077 | -- |
-| residual checkpoint wrap | 12.52977 | 7.27107 | 2.98077 | 12.68 GiB |
-| wrap + `ac_reuse_attention` | 12.52977 | 7.27107 | 2.98077 | 12.81 GiB |
+| cell | `ac_reuse_attention` | step 1 | step 3 | step 10 | peak memory |
+|---|---|---|---|---|---|
+| dp1 | off | 12.52977 | 7.27107 | 2.98077 | 12.68 GiB |
+| dp1 | on | 12.52977 | 7.27107 | 2.98077 | 12.81 GiB |
+| dp2 | off | 12.53137 | 7.31248 | 3.15823 | 7.48 GiB |
+| dp2 | on | 12.53137 | 7.31248 | 3.15823 | 8.17 GiB |
+| dp2 x ep2 | off | 12.53146 | 7.20212 | 3.10296 | 7.59 GiB |
+| dp2 x ep2 | on | 12.53146 | 7.20212 | 3.10296 | 8.28 GiB |
 
 ```
 torchrun --nproc_per_node=1 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
