@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-PR 4312. Branch `pp_review3` on the fork (`d6b1ffe47`): the reviewed PR head `087c4d177` squashed onto upstream/main `9b5f60c40` (post expert-parallel merge) as `a4d68655c`, then the nine review-round commits replayed on top. The PR branch `k3_pp_text` is synced to it only on the user's approval. Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
+PR 4312. Branch `pp_review3` on the fork (`af8bd2cf5`): the reviewed PR head `087c4d177` squashed onto upstream/main `9b5f60c40` (post expert-parallel merge) as `a4d68655c`, then the nine review-round commits replayed on top. The PR branch `k3_pp_text` is synced to it only on the user's approval. Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
 
 --- PASTE BEGIN ---
 
@@ -38,7 +38,20 @@ cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-Training loss on this branch (rebased onto main after the expert-parallel merge), 32 units (30 layers plus the embedding and the head) over the pipeline; step 1 is bit-identical to dp1 in every cell:
+Two matrices on the same cells, seed and batch. The first carries the total gradient norm in float32 (the reduction in `clip_grad_norm_` of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch): with the per-topology grouping of bf16 partial sums taken out of the norm, the cells that compute the same gradients land on the same curve. The second is this branch as it is, where `get_total_norm` reduces in bf16 and the pipeline's parameter grouping moves the clip coefficient per topology. Step 1 is bit-identical to dp1 in every cell of both.
+
+<!-- TBD: fp32 rows from /workspace/mx3_main30gn_* -->
+The float32 grad-norm matrix (the fix applied to the run tree):
+
+| cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|---|
+| dp1 | - | 1 | - | - | | | |
+| pp2 x vp4 | 8 | 2 | 3 / 4 ... 4 / 3 | delta | | | |
+| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | | | |
+| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | | | |
+| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | | | |
+
+The bf16 grad-norm matrix (this branch as it is):
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
@@ -59,7 +72,7 @@ Step-1 per-parameter gradients, the evidence for "equal up to rounding" before a
 | subclass vs the reviewed hook adapter, pp2 x vp2 delta | identical | 3.5e-5 / 5.3e-4 / 9.2e-3 |
 | subclass, 32 stages on 2 GPUs (pp2 x vp16, embedding-only and head-only stages) vs dp1 | identical | 2.0e-4 / 1.7e-3 / 1.5e-2 |
 
-The later steps spread in both directions for two reasons that are not this PR: `torch.nn.utils.get_total_norm` reduces the per-tensor norms in the gradients' dtype and PP groups the parameters differently per topology (pytorch PR 194033 carries the reduction in fp32; with that patch the whole-stack cells collapse pairwise), and FlexAttention's autotune picks kernels by benchmark timing, which `--debug.deterministic` does not control.
+What remains between the cells under the float32 norm is the transport's summation order (delta against whole stack) and FlexAttention's autotune, which picks kernels by benchmark timing that `--debug.deterministic` does not control; the bf16 matrix adds the per-topology grouping of the norm on top, which is why it spreads more.
 
 Memory at this scale does not move: a cached block of the debug model is 256 tokens x 1024 x 2 bytes, so a rank's store is a few MB against activations of GiB. The saving the per-micro-batch release buys is blocks x T x D x 2 bytes no longer resident per micro-batch, which is GB at K3's width and needs a measurement at that shape.
 
@@ -72,16 +85,16 @@ With one layer per stage the last stage holds only the head, whose first op on t
     torchtitan/distributed/
       pipeline_parallel.py                  +10/-2   pipeline_llm(stage_class=...)
     torchtitan/models/kimi_k3/
-      pipeline_stage.py                     +388/-0  AttnResPipelineStage and the rank store (new)
-      pipeline.py                           +166/-0  the pipelining_fn: the split, the tables, the transport switch (new)
-      layout.py                             +241/-0  BlockLayoutTables from the split the trainer applied (new)
-      model.py                              +49/-21  the block stack in and out of a stage; the block's first layer joins the stack before attending
+      pipeline_stage.py                     +393/-0  AttnResPipelineStage and the rank store (new)
+      pipeline.py                           +173/-0  the pipelining_fn: the split, the tables, the transport switch (new)
+      layout.py                             +233/-0  BlockLayoutTables from the split the trainer applied (new)
+      model.py                              +44/-22  the block stack in and out of a stage; the block's first layer joins the stack before attending
       __init__.py                           +27/-6   registers the pipelining_fn; the debug model at 30 layers, irregular like the 93-layer model
       parallelize.py                        +2/-3    pipeline parallel off the unsupported list
     tests/unit_tests/cpu/
-      test_kimi_k3_pp_fqn_injection.py      +95/-0   the split (new)
+      test_kimi_k3_pp_fqn_injection.py      +100/-0   the split (new)
       test_kimi_k3_pp_layout.py             +122/-0  the tables: uneven split, cache on and off, the local map (new)
-      test_kimi_k3_pp_stage.py              +78/-0   assembly, routing, the gradient split, the store (new)
+      test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
     tests/integration_tests/features.py     +8/-0    the pp2 cell
     torchtitan_recipes/tests/features.py    +32/-0   the pp2 and pp8 x vp4 configurations
 
