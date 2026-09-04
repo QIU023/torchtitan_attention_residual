@@ -24,7 +24,7 @@ Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular d
   - `BlockLayoutTables` simulates one micro-batch's forward in stage order over the split the trainer actually applied and tabulates, per stage, the blocks it commits, the blocks its rank already holds, and the blocks its P2P must carry; sender and receiver compute the same tables, so nothing but the delta travels.
   - The layer-to-stage map is one all-gather over the pipeline group; the stage-to-rank map is the schedule's own `stage_index_to_group_rank`. Uneven stages are allowed; a block boundary inside a stage is a partial block on the wire.
   - Why the delta is bounded: with $P$ ranks a block committed at stage $S$ is fresh on the wire for $P-1$ hops; from $S+P$ on every receiving rank already holds it, because its previous virtual stage was $S-P$. The per-hop payload is bounded by the commits of the last $P-1$ stages, independent of depth.
-  - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop (naive); the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the whole-stack transport by construction.
+  - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop (naive); the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the naive transport by construction.
 - The split and the entry (`parallelize.py`, where every model keeps its parallelism entry points): `kimi_k3_module_fqns_per_model_part` is a pure function of the config -- core's layer distribution, `lm_head` where core says `output`, the AttnRes aggregation modules with the head, the vision tower with the embedding.
 - The core hook: `pipeline_llm(..., stage_class=...)` (`pipeline_parallel.py`), the one generic change, so a model can run its stages on a `PipelineStage` subclass.
 - The model (`model.py`): the first layer of a block joins the stack before its sub-layers attend, so a stage boundary at a block start needs nothing special and the stack a stage receives is exactly the stack the layers read; the head-owning stage alone runs the aggregation.
@@ -127,8 +127,8 @@ The distribution is the one bf16 summation order produces -- a median of 1e-4 wi
 | comparison (step 1, 918 parameters) | loss / grad_norm | median / p90 / max relative difference of the per-parameter norm |
 |---|---|---|
 | subclass, pp2 x vp2 delta transport vs dp1 | identical, 12.44394 / 15.5625 | 1.5e-4 / 1.2e-3 / 1.6e-2 |
-| subclass, pp2 x vp2 whole-stack transport vs dp1 | identical | 1.3e-4 / 1.1e-3 / 2.1e-2 |
-| subclass, delta vs whole-stack transport, same topology | identical | 0 / 6.7e-4 / 1.0e-2 (404 of 918 differ) |
+| subclass, pp2 x vp2 naive transport vs dp1 | identical | 1.3e-4 / 1.1e-3 / 2.1e-2 |
+| subclass, delta vs naive transport, same topology | identical | 0 / 6.7e-4 / 1.0e-2 (404 of 918 differ) |
 | subclass vs the reviewed hook adapter, pp2 x vp2 delta | identical | 3.5e-5 / 5.3e-4 / 9.2e-3 |
 | subclass, 32 stages on 2 GPUs (pp2 x vp16, embedding-only and head-only stages) vs dp1 | identical | 2.0e-4 / 1.7e-3 / 1.5e-2 |
 
