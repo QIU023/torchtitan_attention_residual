@@ -20,7 +20,7 @@ Goal (user, evening of 09-04): the matrices the two live PR heads need, with dat
 | 12 | census set 2 | `wt_ppprobe8` | dp1 vs FSDP dp2, dp1 vs 512-token micro-batches | queued |
 | 13 | 100-step curves on streamed cc12m | `wt_pprun3` (+ cc12m alias) | dp1, pp2 x vp4, pp8 x vp4, pp8 naive | queued |
 | 14 | 100-step curves at seed 43 | `wt_pprun3` | dp1, pp2 x vp4, pp8 x vp4 (mx3 got a SEED knob) | queued |
-| 15 | QLoRA rerun | `wt_lora` (fixed head) | dp1, dp2, dp2 x ep2 on qlora_mxfp4 | queued |
+| 15 | QLoRA rerun | `wt_lora` (93f78b5ab) | dp1, dp2, dp2 x ep2 on qlora_mxfp4 | queued |
 
 Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_pp3_curves100.sh`, `rebase_main_lora.sh`, `rebase_main_tpsp.sh`, `rebase_main_ac2.sh`, `rebase_main_qb2.sh`; the chain lives in the session scratchpad (`bridge_pp_all.sh`, `bridge_after_lora.sh`).
 
@@ -30,7 +30,7 @@ Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_
 |---|---|---|---|---|
 | `pp_review3` = `k3_pp_text` | `0e7cc5ea1` | PP, review round 2 | pyrefly 0 on the PP files; 29 passed / 2 skipped | yes (PR branch synced 09-04) |
 | `cp_pr_candidate` = `k3_cp_text` | `223e97a23` (on `af9b6b195`) | marked stack copy + declarations + CP layer | 63 tests; pyrefly 0 on our files | yes (PR branch synced 09-04) |
-| `lora_review1` | `cdedd17c9` (on `af9b6b195`) | LoRA export, QLoRA, packed TP; typed bases; mx_qat flavor out | 30 passed; pyrefly = main | yes |
+| `lora_review1` | `93f78b5ab` (on `af9b6b195`) | LoRA export, QLoRA, packed TP; typed bases; mx_qat flavor out; packed experts carry main's SpmdType entry through | 19 LoRA tests + definitions; pyrefly = main | yes |
 | `tpsp_spmd_review1` | `8e7d4998d` | tp_review2 + spmd_review2 (6 commits), clean rebase | 16 passed; pyrefly = main | yes |
 | `ac_review2` | `24aa8c08d` | ac_review1 rebased (2 commits), typing fixes | 15 passed; pyrefly = main | yes |
 | `qb_release` | `47ec648b4` | k3_qb content rebased, typing fixes | 26 passed; pyrefly = main | yes (force, lease on 0902c7a24) |
