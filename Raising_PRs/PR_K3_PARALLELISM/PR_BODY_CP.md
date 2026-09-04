@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Context parallelism for the text decoder: packed MLA kernels on the CP kernel stack, KCP on KDA
 
-PR 4313. Branch `cp_review4` on the fork (`0ba0f76d5`). It sits on `cp_base_stack` (`a8a6f331f`), a scratch commit that is fegin's CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) applied onto upstream/main `9b5f60c40`; above it the TP/SP commits (`tp_review2`), the spmd declarations (`spmd_review2`), the CP content of `cp_review3` (`a4322344d`) and the commit that moves it onto the stack (`0ba0f76d5`). The PR branch is synced only on the user's approval, and only once the stack has landed (the scratch commit is never filed). Paste between the markers; the header of the PR should say it stacks on the TP/SP and declaration commits and on fegin's CP stack.
+PR 4313. Branch `cp_review4` on the fork (`609827058`). It sits on `cp_base_stack` (`a8a6f331f`), a scratch commit that is fegin's CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) applied onto upstream/main `9b5f60c40`; above it the TP/SP commits (`tp_review2`), the spmd declarations (`spmd_review2`), the CP content of `cp_review3` (`a4322344d`) and the commit that moves it onto the stack (`609827058`). The PR branch is synced only on the user's approval, and only once the stack has landed (the scratch commit is never filed). Paste between the markers; the header of the PR should say it stacks on the TP/SP and declaration commits and on fegin's CP stack.
 
 --- PASTE BEGIN ---
 
