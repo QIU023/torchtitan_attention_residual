@@ -56,11 +56,11 @@ Running locally, the rows follow:
 
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
-| dp1 | 1 | - | - | | | |
-| dp2 | 2 | - | - | | | |
-| cp2 | 2 | packed Ulysses (this PR) | KCP | | | |
-| cp2 | 2 | generic Ulysses (4450) | KCP | | | |
-| cp2 | 2 | packed all-gather KV (this PR) | KCP | | | |
+| dp1 | 1 | - | - | 12.52977 | 7.27107 | 2.98077 |
+| dp2 | 2 | - | - | 12.53137 | 7.31248 | 3.15823 |
+| cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.18344 | 2.93330 |
+| cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.18619 | 3.00631 |
+| cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.22178 | 3.09487 |
 | cp2 | 2 | generic all-gather KV (4322) | KCP | | | |
 | cp4 | 4 | packed Ulysses | KCP | | | |
 | cp8 | 8 | packed Ulysses | KCP | | | |

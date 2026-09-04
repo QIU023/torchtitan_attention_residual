@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] LoRA adapter export and QLoRA (NF4 and packed MXFP4)
 
-Branch `k3_lora_extras` (`2344c1f9e`, base `30eb5e502`). Merges clean onto upstream/main `1dcb14a0c`; the 18 CPU tests pass on the merged tree. Paste between the markers into the PR body.
+Branch `lora_review1` (`cdedd17c9`, rebased onto upstream/main `af9b6b195`; `k3_lora_extras` `2344c1f9e` was the pre-rebase head). The rebase was clean; two commits on top type the LoRA marker bases for pyrefly (repo count equal to main's) and drop the `mx_qat` flavor, whose converter belongs to the QAT change. 30 CPU tests pass on the branch (test_lora, the kimi_k3 tests, the suite definitions). Paste between the markers into the PR body.
 
 Upstream's only LoRA precedent is llama3's `float8_emulate_lora` flavor: one `LoRAConverter.Config(rank=8, alpha=16.0, target_modules=[...])` line, a CI cell in the features suite, and `components/lora.py` at 235 lines with no export and no quantization. Everything below the flavor is new core surface with no upstream counterpart; expect the reviewers to ask for the split noted after the markers.
 
@@ -21,7 +21,7 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 
 ### Results
 
-Training loss on the branch merged with current main, one seed, warmed compile cache. The adapters train (loss moves) while the bases stay frozen; the packed-MXFP4 flavor starts from a different step-1 value because its bases are quantized at build.
+Training loss, one seed, warmed compile cache; the rerun on the rebased branch is running locally and replaces these rows, which come from the previous base. The adapters train (loss moves) while the bases stay frozen; the packed-MXFP4 flavor starts from a different step-1 value because its bases are quantized at build.
 
 | cell | flavor | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -42,12 +42,12 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 ### Changed files
 
     torchtitan/components/
-      lora.py                        +730/-2  export, NF4 and packed-MXFP4 bases, packed experts, packed TP
+      lora.py                        +759/-2  export, NF4 and packed-MXFP4 bases, packed experts, packed TP
       optimizer/optimizer.py         +13/-0  a fully frozen model part gets no optimizer
     scripts/
       quantize_lora_dcp.py           +158/-0  repack an unquantized checkpoint into the packed layout (new)
     torchtitan/models/kimi_k3/
-      config_registry.py             +87/-0  lora, qlora_mxfp4, qlora_mxfp4_linear flavors
+      config_registry.py             +86/-0  lora, qlora_mxfp4, qlora_mxfp4_linear flavors
     tests/unit_tests/cpu/
       test_lora.py                   +230/-0  merge key sets, hook keys, wrapper traversal, NF4 and MXFP4 round trips
     torchtitan/models/kimi_k3/tests/
