@@ -66,7 +66,11 @@ cell(){ local nm=$1 np=$2; shift 2
   if [ "${avail:-0}" -lt 20 ]; then
     printf "%-12s %-18s DISK-LOW(%sG)\n" "$nm" "ABORT" "$avail" >> $R; tail -1 $R; return
   fi
+  # The warm pass only has to populate the compile cache (autotune runs at the
+  # first step's forward and backward), so it takes WARM_STEPS (default 1);
+  # the measure pass runs the full 10 steps on that cache.
   for pass in warm measure; do
+    local steps=10; [ "$pass" = warm ] && steps=${WARM_STEPS:-1}
     local d="$OUT/${nm}_$pass"
     if ! stage_seed "$d"; then
       printf "%-12s %-18s SEED-COPY-FAIL(%s)\n" "$nm" "ABORT" "$pass" >> $R; tail -1 $R; return
@@ -74,7 +78,7 @@ cell(){ local nm=$1 np=$2; shift 2
     ( source /venv/main/bin/activate && cd "$TITAN" && PYTHONPATH=$TITAN timeout 2400 torchrun \
       --nproc_per_node=$np --master_port=$((30000+RANDOM%20000)) -m torchtitan.train \
       --module kimi_k3 --config $CFG --debug.seed 42 --debug.deterministic \
-      --metrics.log_freq 1 --training.steps 10 $BATCH --checkpoint.enable \
+      --metrics.log_freq 1 --training.steps $steps $BATCH --checkpoint.enable \
       --checkpoint.interval 100000 "$@" --dump-folder "$d" > "$OUT/${nm}_$pass.log" 2>&1 )
     rm -rf "$d/checkpoint"
   done
