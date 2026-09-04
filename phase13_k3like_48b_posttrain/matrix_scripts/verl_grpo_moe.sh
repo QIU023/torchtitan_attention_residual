@@ -11,7 +11,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export VERL_VLLM_VERSION=${VERL_VLLM_VERSION:-0.11.0}
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5,6,7}
 cd /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/verl_src
-NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} CP_SIZE=${CP_SIZE:-1} SPMD_BACKEND=partial_dtensor MODEL_ID=kimi-k3-debug MODEL_PATH=/root/models/kimi-k3-debug TP_SIZE=1 EP_SIZE=${EP_SIZE:-1} TOTAL_TRAIN_STEPS=${TOTAL_TRAIN_STEPS:-3} VERL_EXP_NAME=${VERL_EXP_NAME:-grpo-k3-moe} \
+NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} CP_SIZE=${CP_SIZE:-1} SPMD_BACKEND=partial_dtensor MODEL_ID=kimi-k3-debug MODEL_PATH=/root/models/kimi-k3-debug TP_SIZE=${TP_SIZE:-1} EP_SIZE=${EP_SIZE:-1} TOTAL_TRAIN_STEPS=${TOTAL_TRAIN_STEPS:-3} VERL_EXP_NAME=${VERL_EXP_NAME:-grpo-k3-moe} \
 timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   data.train_batch_size=32 \
   actor_rollout_ref.actor.ppo_mini_batch_size=16 \

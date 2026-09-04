@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] An FSDP2 x EP2 integration cell
 
-Branch `k3_ep_cell` on the fork (`5d53688b8`, one commit on upstream/main `9b5f60c40`). Paste between the markers.
+Branch `k3_ep_cell` on the fork (`e85dbe186`, one commit on upstream/main `9b5f60c40`). Paste between the markers.
 
 --- PASTE BEGIN ---
 
