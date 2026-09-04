@@ -6,9 +6,9 @@ export SEED_ROOT=/workspace/.mx3_seeds_main
 D="--parallelism.data_parallel_shard_degree"; T="--parallelism.tensor_parallel_degree"
 S="--parallelism.spmd_backend spmd_types"
 B="--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256"
-cd /tmp/wt_spmdrun && git checkout -q --detach 86f46dee3 && git status --short | tr '\n' ' '; echo
+cd /tmp/wt_spmdrun && git checkout -q --detach 8955c077834cecac60ea5961e772c20529e03f1a && git status --short | tr '\n' ' '; echo
 TITAN=/tmp/wt_spmdrun CFG=kimi_k3_debugmodel BATCH="$B" \
 CELLS="tp2|2|$D 1 $T 2 $S
 tp4|4|$D 1 $T 4 $S
-dp2_tp2|4|$D 2 $T 2 $S" $MX spmdtp_fix
-echo "SPMDTP FIX DONE"
+dp2_tp2|4|$D 2 $T 2 $S" $MX spmdtp_fix2
+echo "SPMDTP FIX2 DONE"
