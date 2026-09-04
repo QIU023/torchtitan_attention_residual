@@ -46,7 +46,7 @@ cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-Two matrices on the same cells, seed and batch: the first is the branch as it is (bf16 total gradient norm), the second carries the total gradient norm in float32 (the `clip_grad_norm_` reduction of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch). Every cell starts from the same seed checkpoint, runs twice, and the second run is read; the last six rows put data parallel and expert parallel around the pipeline. The dp2 rows read a different batch (the loader shards the dataset by data-parallel rank), so step 1 is compared within a data-parallel group: 12.41967 in all five dp1 rows, 12.40417 in dp2 and dp2 x pp2 / pp4, 12.40257 in dp2 x ep2 and dp2 x ep2 x pp2 / pp4. Every step-1 value with the pipeline on is bit-identical to the same mesh without it, on splits of 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3, 2 / 3 / 3 / 2 ... 2 / 1 and 1 / 2 / 2 / 1 ... 1 / 0 layers per stage, the last one with a head-only stage (the rows of the earlier 30-layer model, whose 32 units every shape divided, are in the logbook).
+Two matrices on the same cells, seed and batch, every virtual-pipeline cell twice, with the delta transport and with the whole stack every hop: the first is the branch as it is (bf16 total gradient norm), the second carries the total gradient norm in float32 (the `clip_grad_norm_` reduction of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch). Every cell starts from the same seed checkpoint, runs twice, and the second run is read; the last six rows put data parallel and expert parallel around the pipeline. The dp2 rows read a different batch (the loader shards the dataset by data-parallel rank), so step 1 is compared within a data-parallel group: 12.41967 in all five dp1 rows, 12.40417 in dp2 and dp2 x pp2 / pp4, 12.40257 in dp2 x ep2 and dp2 x ep2 x pp2 / pp4. Every step-1 value with the pipeline on is bit-identical to the same mesh without it, on splits of 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3, 2 / 3 / 3 / 2 ... 2 / 1 and 1 / 2 / 2 / 1 ... 1 / 0 layers per stage, the last one with a head-only stage (the rows of the earlier 30-layer model, whose 32 units every shape divided, are in the logbook).
 
 The bf16 grad-norm matrix (this branch as it is):
 
@@ -63,6 +63,12 @@ The bf16 grad-norm matrix (this branch as it is):
 | dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40257 | 7.49486 | 3.24775 |
 | dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40417 | 7.48020 | 3.33841 |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910 | 3.24169 |
+| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
+| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
 
 The float32 grad-norm matrix (the fix applied to the run tree), running locally, the rows follow:
 
@@ -79,6 +85,12 @@ The float32 grad-norm matrix (the fix applied to the run tree), running locally,
 | dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | | | |
 | dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
+| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
+| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
 
 Step 1 is the same number in every cell, and it is the number that can be compared: under a float32 total norm the cells agree to 2e-4 (dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656, whole-stack pp8 16.1649), which is bf16 summation-order rounding of the gradients; on the 30-layer model, carrying the norm in float32 for the whole run left the step-10 spread where it was (6.2% across five cells against 5.6% in bf16), and the second matrix above shows it for this model. The later steps spread by a few percent in either direction, and that spread is not a property of the pipeline: the same dp1 cell moves by 3.4% at step 10 when only the grad-norm reduction precision changes (a fresh compile cache changes nothing: two dp1 runs on fresh caches are bitwise, and every PP row of the previous head reproduces bitwise on the rebased one), and dp1 against dp2, which also changes the batch composition, moves by 6% in the same debug setup. The mechanism is Adam's first step, $lr \cdot \mathrm{sign}(g)$ per element: the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order, each flipped element moves by $2 \cdot lr$ the other way, and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.5 to 3.4 in ten steps) does not average that out.
 
