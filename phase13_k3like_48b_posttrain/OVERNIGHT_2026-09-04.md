@@ -38,3 +38,4 @@ Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_
 
 - CP cp8: 12.54963 / 7.28587 / 2.95883 -> `PR_BODY_CP.md`; the CP table is complete, the cp8 check (generic kernel at cp8, step-1 gradients vs dp1/cp2) runs last in the chain.
 - PP census: dp1 vs dp1 (fresh caches) bitwise; dp1 vs pp2 x vp4 0.223% sign flips, 9.45% first-update difference; dp1 vs pp8 x vp4 0.227%, 9.53%; every group ~1.1% element-wise, norms 2e-4 -> `PR_BODY_PP.md`, `PP_STEP10_SPREAD` sec 6, `REPLY_4312`.
+- PP fp32-norm matrix on the rebased head complete: dp1 3.37903, pp2 3.47015, pp4 3.46001, pp8 3.44950, pp8 naive 3.58862 at step 10 (spread 6.2%; bf16 5.6%) -> `PP_STEP10_SPREAD` sec 2. bf16 rows dp1/pp2/pp4/pp8/pp8n reproduce the previous head bitwise -> `PR_BODY_PP.md`.
