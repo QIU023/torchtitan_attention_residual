@@ -33,19 +33,19 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 # sequence parallel off: add --parallelism.no-enable-sequence-parallel; expert parallel: --parallelism.expert_parallel_degree 2
 ```
 
-Running locally on the rebased branch, the rows follow:
+Every cell ran twice on the same seed checkpoint and the second run is read. dp1, dp2 and dp2 x ep2 under `spmd_types` are bit-identical to `partial_dtensor` through step 10; the tensor-parallel cells sit within 2.4e-2 of dp1 at step 1 and every TP mesh composes with data and expert parallel.
 
 | cell | world | backend | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
 | dp1 | 1 | partial_dtensor | 12.52977 | 7.27107 | 2.98077 |
-| dp1 | 1 | spmd_types | | | |
-| dp2 | 2 | spmd_types | | | |
-| dp2 x ep2 | 2 | spmd_types | | | |
-| tp2 (SP on) | 2 | spmd_types | | | |
-| tp2 (SP off) | 2 | spmd_types | | | |
-| tp4 (SP on) | 4 | spmd_types | | | |
-| dp2 x tp2 (SP on) | 4 | spmd_types | | | |
-| dp2 x ep2 x tp2 (SP on) | 4 | spmd_types | | | |
+| dp1 | 1 | spmd_types | 12.52977 | 7.27107 | 2.98077 |
+| dp2 | 2 | spmd_types | 12.53137 | 7.31248 | 3.15823 |
+| dp2 x ep2 | 2 | spmd_types | 12.53146 | 7.20212 | 3.10296 |
+| tp2 (SP on) | 2 | spmd_types | 12.54164 | 7.35554 | 3.16327 |
+| tp2 (SP off) | 2 | spmd_types | 12.55332 | 7.38015 | 3.00522 |
+| tp4 (SP on) | 4 | spmd_types | 12.52816 | 7.03474 | 3.09639 |
+| dp2 x tp2 (SP on) | 4 | spmd_types | 12.53383 | 7.26831 | 3.16722 |
+| dp2 x ep2 x tp2 (SP on) | 4 | spmd_types | 12.53826 | 7.30627 | 3.10813 |
 
 Step 1 under TP sits about 1e-2 from dp1 in either direction: the head-sharded matmuls and the boundary collectives round differently, and this model's step-1 loss is sensitive to it. The table is a correctness and composition claim; the SP benefit case is long-sequence, and at this scale it shows neither a memory win nor a speed cost worth reporting.
 
