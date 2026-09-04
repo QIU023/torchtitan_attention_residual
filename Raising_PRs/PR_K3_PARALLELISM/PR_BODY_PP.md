@@ -1,12 +1,12 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-PR 4312. Branch `pp_review3` on the fork (`af8bd2cf5`): the reviewed PR head `087c4d177` squashed onto upstream/main `9b5f60c40` (post expert-parallel merge) as `a4d68655c`, then the nine review-round commits replayed on top. The PR branch `k3_pp_text` is synced to it only on the user's approval. Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
+PR 4312. Branch `pp_review3` on the fork (`bdcffe59f`): the reviewed PR head `087c4d177` squashed onto upstream/main `9b5f60c40` (post expert-parallel merge) as `a4d68655c`, then the nine review-round commits replayed on top. The PR branch `k3_pp_text` is synced to it only on the user's approval. Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
 
 --- PASTE BEGIN ---
 
 ### Summary
 
-Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `parallelize.py` rejects `pipeline_parallel_degree > 1`; core's `pipeline_llm` would split the model at layer boundaries and carry one hidden-state tensor per hop, which cannot express Block Attention Residuals: a block residual is defined over the whole layer stack, so every later stage needs every earlier block's residual, and the final aggregation (`output_res_proj`, then `output_res_norm`) must run only on the stage that owns `lm_head`. After it `pipeline_kimi_k3` splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes. Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular debug model, two to thirty-two stages, with the delta transport and with the whole stack on every hop.
+Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `parallelize.py` rejects `pipeline_parallel_degree > 1`; core's `pipeline_llm` would split the model at layer boundaries and carry one hidden-state tensor per hop, which cannot express Block Attention Residuals: a block residual is defined over the whole layer stack, so every later stage needs every earlier block's residual, and the final aggregation (`output_res_proj`, then `output_res_norm`) must run only on the stage that owns `lm_head`. After it `pipeline_kimi_k3` splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass (`pipeline_kimi_k3` in `parallelize.py`): a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes. Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular debug model, two to thirty-two stages, with the delta transport and with the whole stack on every hop.
 
 ### Design
 
@@ -19,7 +19,7 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
   - `BlockLayoutTables` simulates one micro-batch's forward in stage order over the split the trainer actually applied -- every rank learns the layer-to-stage map with one all-gather over the pipeline group, and the stage-to-rank map is the schedule's own `stage_index_to_group_rank` -- and tabulates, per stage, the blocks it commits, the blocks its rank already holds, and the blocks its P2P must carry. Sender and receiver compute the same tables, so nothing but the delta travels. Uneven stages are allowed; a block boundary inside a stage is a partial block on the wire.
   - Why the delta is bounded: with $P$ ranks a block committed at stage $S$ is fresh on the wire for $P-1$ hops; from $S+P$ on every receiving rank already holds it, because its previous virtual stage was $S-P$. The per-hop payload is bounded by the commits of the last $P-1$ stages, independent of depth.
   - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop; the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the whole-stack transport by construction.
-- The split (`pipeline.py`): `kimi_k3_module_fqns_per_model_part` is a pure function of the config -- core's layer distribution, `lm_head` where core says `output`, the AttnRes aggregation modules with the head, the vision tower with the embedding.
+- The split and the entry (`parallelize.py`, where every model keeps its parallelism entry points): `kimi_k3_module_fqns_per_model_part` is a pure function of the config -- core's layer distribution, `lm_head` where core says `output`, the AttnRes aggregation modules with the head, the vision tower with the embedding.
 - The core hook: `pipeline_llm(..., stage_class=...)` (`pipeline_parallel.py`), the one generic change, so a model can run its stages on a `PipelineStage` subclass.
 - The model (`model.py`): the first layer of a block joins the stack before its sub-layers attend, so a stage boundary at a block start needs nothing special and the stack a stage receives is exactly the stack the layers read; the head-owning stage alone runs the aggregation.
 - What this replaced: the reviewed version carried the same protocol in a 1228-line adapter that wrapped `forward_one_chunk`, `backward_one_chunk` and `step`, kept a thread-local micro-batch id, and bridged the same-rank gradient path with a tensor grad hook and an autograd Function. The subclass implements it once, on the stage's own methods, in 388 lines; the adapter's numerics are reproduced to within one bf16 rounding (table below).
@@ -83,16 +83,15 @@ With one layer per stage the last stage holds only the head, whose first op on t
 ### Changed files
 
     torchtitan/distributed/
-      pipeline_parallel.py                  +10/-2   pipeline_llm(stage_class=...)
+      pipeline_parallel.py                  +4/-1    pipeline_llm(stage_class=...)
     torchtitan/models/kimi_k3/
       pipeline_stage.py                     +393/-0  AttnResPipelineStage and the rank store (new)
-      pipeline.py                           +173/-0  the pipelining_fn: the split, the tables, the transport switch (new)
       layout.py                             +233/-0  BlockLayoutTables from the split the trainer applied (new)
-      model.py                              +44/-22  the block stack in and out of a stage; the block's first layer joins the stack before attending
-      __init__.py                           +27/-6   registers the pipelining_fn; the debug model at 30 layers, irregular like the 93-layer model
-      parallelize.py                        +2/-3    pipeline parallel off the unsupported list
+      parallelize.py                        +162/-3  the pipelining entry: the split, the tables, the transport switch; pipeline parallel off the unsupported list
+      model.py                              +39/-22  the block stack in and out of a stage; the block's first layer joins the stack before attending
+      __init__.py                           +15/-7   registers the pipelining_fn; the debug model at 30 layers, irregular like the 93-layer model
     tests/unit_tests/cpu/
-      test_kimi_k3_pp_fqn_injection.py      +100/-0   the split (new)
+      test_kimi_k3_pp_fqn_injection.py      +100/-0  the split (new)
       test_kimi_k3_pp_layout.py             +122/-0  the tables: uneven split, cache on and off, the local map (new)
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
     tests/integration_tests/features.py     +8/-0    the pp2 cell
@@ -110,5 +109,11 @@ Three CPU unit tests (the split, the layout tables, the stage's carrier handling
 - The block's first layer joins the stack before its sub-layers attend ("cat at the start"); the rank store releases a micro-batch's blocks when the rank is done with them, not at step end.
 - The 32-layer flavor is replaced by making the one debug model irregular (30 layers, partial last block, lone MLA at the end) and the whole pp x vp matrix rerun on it, which is what surfaced the P2P buffer finding.
 - The adapter and its wrappers were replaced by the `PipelineStage` subclass above; the reconstruction of how the adapter got there, the rejected designs, and why torch's per-stage `fwd_cache` cannot serve a non-adjacent consumer are in the logbook document linked from the top.
+
+### Review round 2
+
+- `pipeline_llm` keeps only the `stage_class` parameter, no docstring (the file has none) and the pyrefly suppression the hook had dropped is back; the core diff is the seam and nothing else.
+- The pipelining entry, the split and the stage lookup moved from a `pipeline.py` into `parallelize.py`, where every model keeps its parallelism entry points; `layout.py` and `pipeline_stage.py` stay as files.
+- The full-attention helper's docstring, the debug registry comment and the residual docstring are one line or upstream's own; the helper is the deduction asked for ("(3 KDA + 1 MLA) * k + remainder"), shared by the 30-layer and the 93-layer model.
 
 --- PASTE END ---
