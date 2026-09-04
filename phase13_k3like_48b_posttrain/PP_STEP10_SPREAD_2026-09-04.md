@@ -101,3 +101,16 @@ Same seed and 4096 tokens per step. The loader shards the dataset by data-parall
 | dp8 x ep8 | 12.39792 | 7.94250 | 3.15705 | -3.9% |
 
 Reading: with the float32 norm in place, the pure-dp ladder spreads 2.5% at step 10 (3.264 to 3.348) with the data composition changing underneath it, and expert parallel moves the same-data row by -3.9% to +2.1%, in either direction, growing loosely with the EP degree. At a fixed dp degree the EP rows share step 1 to the digit across EP degrees (dp4 x ep2 = dp4 x ep4 = 12.41024, dp8 x ep2 = ep4 = ep8 = 12.39792) and sit 2e-5 to 1.6e-3 from the no-EP row: the expert dispatch changes the grouped GEMM's summation order once, whatever the degree. These are the same few percent the PP cells show on the same tree (the dp1 group 3.30 to 3.49), with no pipeline in them.
+
+## 10. What a real gradient difference looks like (census set 2, `ppprobe33b`, 33-layer model)
+
+The two "no-pipeline controls" queued earlier are not controls: FSDP dp2 reads another batch (the dataset is sharded by rank), and 512-token micro-batches change the sequences the collator builds (step 1 12.34637 against 12.41967), so both compare gradients of different data. That makes them the calibration for what a genuine difference looks like next to rounding:
+
+| pair (step 1) | per-parameter norm rel diff median / p90 / max | sign flips | flipped elements below 1e-2 of rms | $2\sqrt{f}$ |
+|---|---|---|---|---|
+| dp1 vs pp2 x vp4 (rounding) | 2.0e-4 / 1.7e-3 / 1.2e-2 | 0.267% | 80% | 10.3% |
+| dp1 vs pp8 x vp4 (rounding) | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% | 80% | 10.5% |
+| dp1 vs dp2 (another batch) | 3.2e-2 / 1.1e-1 / 3.5e-1 | 22.99% | 6.3% | 96% |
+| dp1 vs dp1 with 512-token micro-batches (other sequences) | 1.3e-1 / 2.0e-1 / 4.8e-1 | 23.75% | 5.9% | 97% |
+
+A gradient that is actually different flips a quarter of the signs, mostly of elements that are not small, and moves the per-parameter norms by percent; the pipeline's flips are a hundred times fewer and sit in the near-zero elements. The clean same-data controls for the step-10 spread are the grad-norm precision alone (3.2% on dp1), expert parallel at fixed dp (-3.9% to +2.1%), and delta against naive on the same split (seven pairs, -2.8% to +3.9%).
