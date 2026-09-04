@@ -32,7 +32,7 @@ Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular d
 
 ### Results
 
-`kimi_k3_debugmodel` is 30 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: the last block is partial and the stack ends on a lone MLA layer.
+`kimi_k3_debugmodel` is 33 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: two blocks of 12 and a partial block of 9 (93 = 7 x 12 + 9), the stack ending on two adjacent MLA layers, and 35 units with the embedding and the head, which no pipeline shape divides. Every split in the table is uneven; the stage count is the multiple of `pipeline_parallel_degree` nearest to units / `layers_per_stage`, and core sees the split rather than the knob (its ceiling would refuse 35 units at 4 per stage).
 
 `--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches, `first/last_stage_less_layers` at their default 1 so the embedding and the head count as units (32 units) and every split is uneven; every cell runs twice and the second run is read (a cold FlexAttention autotune under load moves this model's step-1 loss). The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook.
 
@@ -46,32 +46,31 @@ cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-Every cell starts from the same seed checkpoint, runs twice, and the second run is read; the last six rows put data parallel and expert parallel around the pipeline. The dp2 rows read a different batch (the loader shards the dataset by data-parallel rank), so step 1 is compared within a data-parallel group: 12.51030 in all six dp1 rows, 12.49684 in dp2 and dp2 x pp2 / pp4, 12.49422 in dp2 x ep2 and dp2 x ep2 x pp2 / pp4. Every step-1 value with the pipeline on is bit-identical to the same mesh without it.
+Running locally on the 33-layer model (the rows of the 30-layer model, which every shape divided, are in the logbook), the rows follow. Every cell starts from the same seed checkpoint, runs twice, and the second run is read; the last six rows put data parallel and expert parallel around the pipeline. The dp2 rows read a different batch (the loader shards the dataset by data-parallel rank), so step 1 is compared within a data-parallel group.
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | 12.51030 | 7.39629 | 3.49625 |
-| pp2 x vp4 | 8 | 2 | 3 / 4 ... 4 / 3 | delta | 12.51030 | 7.45319 | 3.38121 |
-| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.51030 | 7.44880 | 3.57213 |
-| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.51030 | 7.40443 | 3.47327 |
-| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | 12.51030 | 7.45462 | 3.45668 |
-| pp2 x vp4, `first/last_stage_less_layers=0` (the embedding and the head not counted as units) | 8 | 2 | 4 x 6, then 3 / 3 | delta | 12.51030 | 7.51238 | 3.52185 |
-| dp2 | - | 2 | - | - | 12.49684 | 7.75700 | 3.44594 |
-| dp2 x ep2 | - | 2 | - | - | 12.49422 | 7.70749 | 3.55892 |
-| dp2 x pp2 x vp4 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | 12.49684 | 7.69817 | 3.46918 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | 12.49422 | 7.70147 | 3.63188 |
-| dp2 x pp4 x vp4 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | 12.49684 | 7.75872 | 3.42694 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | 12.49422 | 7.71806 | 3.52509 |
+| dp1 | - | 1 | - | - | | | |
+| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 (embedding on the first, head on the last) | delta | | | |
+| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
+| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 (a head-only last stage) | delta | | | |
+| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | whole stack every hop | | | |
+| dp2 | - | 2 | - | - | | | |
+| dp2 x ep2 | - | 2 | - | - | | | |
+| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | | | |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | | | |
+| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | | | |
 
 Step 1 is the same number in every cell, and it is the number that can be compared: under a float32 total norm the cells agree to 2e-4 (dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656, whole-stack pp8 16.1649), which is bf16 summation-order rounding of the gradients; carrying the norm in float32 for the whole run leaves the step-10 spread where it is (6.2% across the five cells against 5.6% in bf16). The later steps spread by a few percent in either direction, and that spread is not a property of the pipeline: the same dp1 cell moves by 3.4% at step 10 when only the grad-norm reduction precision changes (a fresh compile cache changes nothing: two dp1 runs on fresh caches are bitwise, and every PP row of the previous head reproduces bitwise on the rebased one), and dp1 against dp2, which also changes the batch composition, moves by 6% in the same debug setup. The mechanism is Adam's first step, $lr \cdot \mathrm{sign}(g)$ per element: the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order, each flipped element moves by $2 \cdot lr$ the other way, and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.5 to 3.4 in ten steps) does not average that out.
 
-The step-1 sign census over all 1,306,058,848 gradient elements: the fraction whose sign differs between two runs, and the first-update difference it implies ($2\sqrt{f}$ of the update norm). Element-wise the gradients differ by about 1.1% in relative L2 in every parameter group alike (embedding 1.26%, experts 1.07%, attention 1.19%, norms 1.08%, router 1.07%, head 0.55%) while the per-parameter norms agree to 2e-4, which is bf16's signature; 84% of the flipped elements sit below a hundredth of their tensor's rms, and pp8 with 32 stages flips no more than pp2 with 8. The no-pipeline controls (dp1 against FSDP dp2, and against 512-token micro-batches) are running locally and follow.
+The step-1 sign census over every gradient element, running locally on the 33-layer model: the fraction whose sign differs between two runs, and the first-update difference it implies ($2\sqrt{f}$ of the update norm). On the 30-layer model the flips were 0.22% for pp2 and pp8 alike (9.5% of the first update), spread over every parameter group at the same ~1.1% element-wise relative difference while the per-parameter norms agreed to 2e-4, which is bf16's signature.
 
 | pair (step 1) | sign flips | implied first-update difference | group with the most flips |
 |---|---|---|---|
-| dp1 vs dp1 on a fresh compile cache | 0 | 0 | none (918 of 918 parameters sha1-identical) |
-| dp1 vs pp2 x vp4 | 0.223% | 9.45% | head 0.40%, attention 0.39% (embedding 0: its zero rows are exact) |
-| dp1 vs pp8 x vp4 | 0.227% | 9.53% | head 0.41%, attention 0.39% |
+| dp1 vs dp1 on a fresh compile cache | | | |
+| dp1 vs pp2 x vp4 | | | |
+| dp1 vs pp8 x vp4 | | | |
 | dp1 vs dp2 (FSDP, no pipeline) | | | |
 | dp1 vs dp1 with 512-token micro-batches (accumulation order, no pipeline) | | | |
 
