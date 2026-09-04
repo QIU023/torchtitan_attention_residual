@@ -65,7 +65,7 @@ Running locally, the rows follow:
 | cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.15253 | 3.14352 |
 | cp8 | 8 | packed Ulysses | KCP | | | |
 | dp2 x cp2 | 4 | packed Ulysses | KCP | 12.52908 | 7.21769 | 3.16754 |
-| dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | | | |
+| dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | 12.52759 | 7.31647 | 3.11588 |
 
 The four MLA kernels agree at step 1 to the digit and part afterwards: a packed kernel moves the same values as its generic counterpart but sums the rope slice's gradient in a different order (over the local heads first, then the reduce-scatter across cp), one bf16 rounding of a sum, the same class of difference as the two transports in the pipeline PR.
 
