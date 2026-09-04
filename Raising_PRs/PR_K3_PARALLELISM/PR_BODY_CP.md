@@ -52,7 +52,7 @@ cell cp2 2 --config kimi_k3_debugmodel_cp2 $D 1;  cell cp2_ag 2 --config kimi_k3
 cell cp4 4 --config kimi_k3_debugmodel_cp2 $D 1 $C 4;  cell cp8 8 --config kimi_k3_debugmodel_cp2 $D 1 $C 8;  cell dp2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2;  cell dp2_ep2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2 $E 2
 ```
 
-Every cell ran twice on the same seed checkpoint and the second run is read. cp8 starts 1e-2 above cp2 and cp4 at step 1 (12.54963 against 12.53972 and 12.53932, reproduced on both of its runs); the same cell on upstream's generic Ulysses kernel and the step-1 per-parameter gradient comparison against dp1 and cp2 are running locally and follow.
+Every cell ran twice on the same seed checkpoint and the second run is read. cp8 starts 1e-2 above cp2 and cp4 at step 1 (12.54963 against 12.53972 and 12.53932, reproduced on both of its runs); the same cell on upstream's generic Ulysses kernel reads the same 12.54963, and at step 1 the packed kernel's per-parameter gradients at cp8 sit at the same distance from dp1 as cp2's (median 1.2e-2 against 1.1e-2, max 3.3e-1 against 4.6e-1, the tail on 16-element norm weights and `A_log`) and within bf16 rounding of the generic kernel at cp8 (median 1.8e-4, 24 of 750 parameters identical), so the offset belongs to the CP degree, not to the packing.
 
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
@@ -64,6 +64,7 @@ Every cell ran twice on the same seed checkpoint and the second run is read. cp8
 | cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.21651 | 3.08671 |
 | cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.15253 | 3.14352 |
 | cp8 | 8 | packed Ulysses | KCP | 12.54963 | 7.28587 | 2.95883 |
+| cp8 | 8 | generic Ulysses (4450) | KCP | 12.54963 | 7.30435 | 3.01451 |
 | dp2 x cp2 | 4 | packed Ulysses | KCP | 12.52908 | 7.21769 | 3.16754 |
 | dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | 12.52759 | 7.31647 | 3.11588 |
 
@@ -76,6 +77,7 @@ Step-1 per-parameter gradients (fp32 norm of every parameter's gradient, hashed;
 | packed Ulysses vs generic Ulysses (4450) | identical, 12.53972 | 24 of 750 | 1.6e-4 / 1.5e-3 / 2.1e-2 |
 | packed all-gather vs generic all-gather (4322) | identical | 24 of 750 | 1.1e-4 / 1.0e-3 / 8.8e-3 |
 | packed Ulysses vs packed all-gather | identical | 22 of 750 | 1.8e-4 / 1.5e-3 / 1.5e-2 |
+| packed Ulysses vs generic Ulysses (4450) at cp8 | identical, 12.54963 | 24 of 750 | 1.8e-4 / 1.3e-3 / 3.1e-2 |
 
 The maxima sit on 16-element `A_log` vectors and residual norms whose gradient norm is 1e-4: the distribution bf16 summation order produces, with no parameter group standing out.
 
@@ -86,6 +88,9 @@ Against a single GPU the reference is not bitwise on this model: gradients are k
 | dp1 vs dp2 (data parallel; the loader shards documents by rank, so the batch composition changes too: an upper bound) | 12.52977 vs 12.53137 | 2.5e-2 / 7.9e-2 / 5.2e-1 |
 | dp1 vs cp2, packed Ulysses | 12.52977 vs 12.53972 | 1.1e-2 / 6.1e-2 / 4.6e-1 |
 | dp1 vs cp2, generic Ulysses / packed all-gather / generic all-gather | same | 1.1e-2 / 6.1e-2 / 4.6e-1 each |
+| dp1 vs cp8, packed Ulysses | 12.52977 vs 12.54963 | 1.2e-2 / 6.3e-2 / 3.3e-1 |
+| dp1 vs cp8, generic Ulysses (4450) | same | 1.2e-2 / 6.1e-2 / 3.3e-1 |
+| cp2 vs cp8, packed Ulysses | 12.53972 vs 12.54963 | 9.5e-3 / 6.4e-2 / 3.7e-1 |
 
 The maxima are again the 16-element `A_log` vectors with gradient norms below 1e-4; within a cell the two cp ranks hold identical reduced gradients (750 of 750 sha1-equal).
 
