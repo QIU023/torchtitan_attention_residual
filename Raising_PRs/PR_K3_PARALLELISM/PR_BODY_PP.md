@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-PR 4312. Branch `pp_review3` on the fork (`bdcffe59f`): the reviewed PR head `087c4d177` squashed onto upstream/main `9b5f60c40` (post expert-parallel merge) as `a4d68655c`, then the nine review-round commits replayed on top. The PR branch `k3_pp_text` is synced to it only on the user's approval. Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
+PR 4312. Branch `pp_review3` on the fork (`0e7cc5ea1`): the reviewed PR head `087c4d177` squashed onto post-expert-parallel main as `a4d68655c`, the review-round commits replayed on top, the whole line rebased onto upstream/main `6e2ac3dcd` on 2026-09-04 (clean; main touched nothing under the model). The PR branch `k3_pp_text` is synced to it only on the user's approval. Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
 
 --- PASTE BEGIN ---
 
@@ -58,7 +58,7 @@ The float32 grad-norm matrix (the fix applied to the run tree), running locally,
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | | | |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | | | |
 
-The bf16 grad-norm matrix (this branch as it is):
+The bf16 grad-norm matrix (this branch as it is; these rows were measured on `d6b1ffe47`, the rerun on the rebased head is running locally):
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
