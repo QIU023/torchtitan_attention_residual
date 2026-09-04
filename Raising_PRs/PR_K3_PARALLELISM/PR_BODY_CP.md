@@ -54,6 +54,17 @@ Step-1 per-parameter gradients on this branch (fp32 norm of every parameter's gr
 
 The maxima sit on 16-element `A_log` vectors and residual norms whose gradient norm is 1e-4: the distribution bf16 summation order produces, with no parameter group standing out.
 
+Against a single GPU the reference is not bitwise on this model: gradients are kept in bf16, so any re-partitioning of the arithmetic moves every parameter by about one bf16 rounding. The cp-reduced full gradient of each CP cell is compared with dp1 below, next to plain data parallelism and tensor parallelism on the same tree, seed and batch; the four CP kernels give the same numbers to two digits, and CP sits below both controls.
+
+| comparison (step 1, cp-reduced full gradient, 750 parameters) | loss | relative difference of the per-parameter norm: median / p90 / max |
+|---|---|---|
+| dp1 vs dp2 (data parallel, the control) | 12.52977 vs 12.53137 | 2.5e-2 / 7.9e-2 / 5.2e-1 |
+| dp1 vs tp2 (tensor parallel, the control) | 12.52977 vs 12.52013 | 1.1e-1 / 2.3e-1 / 6.4e-1 |
+| dp1 vs cp2, packed Ulysses | 12.52977 vs 12.53972 | 1.1e-2 / 6.1e-2 / 4.6e-1 |
+| dp1 vs cp2, generic Ulysses / packed all-gather / generic all-gather | same | 1.1e-2 / 6.1e-2 / 4.6e-1 each |
+
+The maxima are again the 16-element `A_log` vectors with gradient norms below 1e-4; within a cell the two cp ranks hold identical reduced gradients (750 of 750 sha1-equal).
+
 ### Changed files
 
     torchtitan/models/kimi_k3/
