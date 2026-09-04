@@ -24,7 +24,7 @@ run dp1_A 1 A
 run pp2_vp4 2 C $P 2 $L 4 $IL
 run pp8_vp4 8 E $P 8 $L 1 $IL
 source /venv/main/bin/activate
-echo "
+echo "### dp1 vs dp1 on fresh caches: bitwise on the 30-layer model, not rerun"
 python $MS/pp_step10_census.py "dp1 vs pp2 x vp4" $DUMP/dp1_A $DUMP/pp2_vp4
 python $MS/pp_step10_census.py "dp1 vs pp8 x vp4" $DUMP/dp1_A $DUMP/pp8_vp4
 rm -rf $DUMP $OUT/ind_* $OUT/tri_*

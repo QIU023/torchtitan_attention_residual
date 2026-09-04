@@ -73,3 +73,12 @@ The debug flavor's data is one webdataset shard of 32 samples (`tests/assets/cc1
 | pp8 x vp4, whole stack every hop | 3.30103 | 30 | 0.192 | 0.082 | 0.028 | 0.161 | 0.04558 |
 
 Reading: all four memorize the set to the same floor. The order of descent differs by up to 15 steps at the loss-1.0 crossing, and the 32-stage delta transport is the slowest while the same 32 stages with the whole-stack transport are as fast as dp1; that is one seed of a memorization race, which amplifies any perturbation (the step-1 census shows the delta pp8 gradients are equal to dp1's up to the same bf16 rounding as pp2's, no group off). Two runs queued to read it properly: the same four cells on streamed cc12m (`pixparse/cc12m-wds`, no repeats), and dp1 / pp2 / pp8 at seed 43 on the debug set, which gives the seed-to-seed spread of one configuration to compare the pp8 lag against.
+
+## 8. The census on the 33-layer model (`ppprobe33_0904`, `fe34932ee`)
+
+| pair (step 1, 1,399,095,936 elements, 1002 parameters) | sha1-identical | per-parameter norm rel diff median / p90 / max | sign flips | below 1e-2 of rms | $2\sqrt{f}$ |
+|---|---|---|---|---|---|
+| dp1 vs pp2 x vp4 (4/5/5/4/4/4/4/3) | 2 | 2.0e-4 / 1.7e-3 / 1.2e-2 | 0.267% (3,737,997) | 80.4% | 10.34% |
+| dp1 vs pp8 x vp4 (1/2/2/1...1/0) | 2 | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% (3,879,046) | 79.5% | 10.53% |
+
+Per group (pp2 / pp8; flips, element-wise rel L2): attention 0.426% / 0.441%, 1.42% / 1.45%; embedding 0 / 0, 1.48% / 1.53%; experts 0.303% / 0.316%, 1.27% / 1.30%; head 0.443% / 0.460%, 0.54% / 0.55%; norms 0.335% / 0.340%, 1.28% / 1.34%; other 0.152% / 0.154%, 1.31% / 1.36%; router 0.291% / 0.303%, 1.25% / 1.31%. Same picture as the 30-layer model on splits nothing divides: bf16 rounding of the whole gradient, no group off, 32 uneven stages no worse than 8. The census script's last line had a shell quoting slip (a `#` in a sed replacement), so the comparisons were run by hand on the dumps the script left; the trajectories of the three probe runs match the matrix rows bitwise.
