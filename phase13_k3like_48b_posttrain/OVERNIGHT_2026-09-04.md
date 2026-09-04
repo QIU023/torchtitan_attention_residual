@@ -28,14 +28,14 @@ Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_
 
 | branch | head | content | CPU checks | pushed |
 |---|---|---|---|---|
-| `pp_review3` = `k3_pp_text` | `0e7cc5ea1` | PP, review round 2 | pyrefly 0 on the PP files; 29 passed / 2 skipped | yes (PR branch synced 09-04) |
+| `pp_review3` | `fe34932ee` | PP, review round 2, the any-layer-count split, the 33-layer debug model | pyrefly 0; 28 PP tests | yes (`k3_pp_text` still at `0e7cc5ea1`, sync pending approval) |
 | `cp_pr_candidate` = `k3_cp_text` | `223e97a23` (on `af9b6b195`) | marked stack copy + declarations + CP layer | 63 tests; pyrefly 0 on our files | yes (PR branch synced 09-04) |
 | `lora_review1` | `93f78b5ab` (on `af9b6b195`) | LoRA export, QLoRA, packed TP; typed bases; mx_qat flavor out; packed experts carry main's SpmdType entry through | 19 LoRA tests + definitions; pyrefly = main | yes |
 | `tpsp_spmd_review1` | `8e7d4998d` | tp_review2 + spmd_review2 (6 commits), clean rebase | 16 passed; pyrefly = main | yes |
 | `ac_review2` | `24aa8c08d` | ac_review1 rebased (2 commits), typing fixes | 15 passed; pyrefly = main | yes |
 | `qb_release` | `47ec648b4` | k3_qb content rebased, typing fixes | 26 passed; pyrefly = main | yes (force, lease on 0902c7a24) |
-| `pp_offload_review1` | `eb665b1b1` | `attn_res_cache_offload` ported onto `pp_review3`'s `RankStore` (old `e8897274d`) | 25 passed; pyrefly 0 on the files | yes |
-| `pp_balance_review1` | `54a9e81ee` | `pp_balance.py` and its pool test copied from `1c0c1416c`, knobs as a record on `pipeline_kimi_k3`; mooncake imports with the cu12 runtime wheel | 21 passed; pyrefly 0 on the files | yes |
+| `pp_offload_review1` | `20d83a8cb` (on fe34932ee) | `attn_res_cache_offload` ported onto `pp_review3`'s `RankStore` (old `e8897274d`) | 25 passed; pyrefly 0 on the files | yes |
+| `pp_balance_review1` | `fd97aba9b` (on fe34932ee) | `pp_balance.py` and its pool test copied from `1c0c1416c`, knobs as a record on `pipeline_kimi_k3`; mooncake imports with the cu12 runtime wheel | 21 passed; pyrefly 0 on the files | yes |
 
 ## Results as they land
 
@@ -54,3 +54,5 @@ Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_
 ## Correction, evening of 09-04: the debug model is 33 layers, and the PP matrix reruns
 
 The user's design: the debug model is 33 layers (12 x 2 + 9, the 93-layer model's partial block; 35 units with the embedding and the head), which no pipeline shape divides. The 30-layer model of `72a2b5344` was chosen because its 32 units divide every shape up to 32 stages, which is the opposite of what the pipeline has to handle, so every PP row above was measured on splits that never exercised the uneven case. Two commits on `pp_review3`: the split rule (the multiple of pp nearest to units / layers_per_stage, core given the split and not the knob, since its ceiling refuses 35 units at 4 per stage) and the 33-layer flavor. `pp_offload_review1` and `pp_balance_review1` rebased on top. The PP matrix (13 cells), the census, the offload and balance cells, and the curves rerun on the 33-layer model; the 30-layer rows stay in this log's results section as history.
+
+Queue after QB (re-chained 09-04 evening): cp8 check -> PP33 matrix (11 cells) -> PP33 census -> offload33 -> balance33 -> qlora rerun -> census set 2 (33) -> cc12m curves (33) -> seed-43 curves (33). Run trees: `wt_pprun33`, `wt_ppprobe33`, `wt_ppoffrun33`, `wt_ppbalrun33`; seeds under `.mx3_seeds_main33`.
