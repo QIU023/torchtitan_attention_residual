@@ -32,16 +32,17 @@ cell cp2 2 --config kimi_k3_debugmodel_cp2;  cell cp2_ag 2 --config kimi_k3_debu
 cell tp2cp2 4 --config kimi_k3_debugmodel_cp2 $T --parallelism.no-enable-sequence-parallel
 ```
 
-<!-- TBD: fill from /workspace/mx3_cp4_* -->
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
-| dp1 | 1 | - | - | | | |
-| tp2 | 2 | - | - | | | |
-| cp2 | 2 | packed Ulysses (this PR) | KCP | | | |
-| cp2 | 2 | generic Ulysses (4450) | KCP | | | |
-| cp2 | 2 | packed all-gather KV (this PR) | KCP | | | |
-| cp2 | 2 | generic all-gather KV (4322) | KCP | | | |
-| tp2 x cp2 (no SP) | 4 | packed Ulysses | KCP | | | |
+| dp1 | 1 | - | - | 12.52977 | 7.27107 | 2.98077 |
+| tp2 | 2 | - | - | 12.52013 | 7.79992 | 3.12152 |
+| cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.18344 | 2.93330 |
+| cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.18619 | 3.00631 |
+| cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.22178 | 3.09487 |
+| cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.21651 | 3.08671 |
+| tp2 x cp2 (no SP) | 4 | packed Ulysses | KCP | 12.55243 | 7.19853 | 3.06006 |
+
+The four MLA kernels agree at step 1 to the digit and part afterwards: a packed kernel moves the same values as its generic counterpart but sums the rope slice's gradient in a different order (over the local heads first, then the reduce-scatter across cp), one bf16 rounding of a sum, the same class of difference as the two transports in the pipeline PR. The step-1 losses of cp2 (12.53972) and tp2 x cp2 (12.55243) are the pre-rebase branch's numbers to the digit; dp1 is bit-identical to the same flavor under `partial_dtensor` through step 10.
 
 ### Changed files
 
