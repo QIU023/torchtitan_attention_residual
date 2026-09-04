@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] spmd_types: the declarations the backend reads
 
-Branch `spmd_review2` on the fork (`00f97b417`, two commits on `tp_review2` `80d7e0951`, on upstream/main `9b5f60c40`). Draft, stacked on the TP/SP draft. Upstream draft 4446 (pianpwk, "[spmd_types] Enable Kimi K3 backend") runs K3 under `spmd_types` by annotating every parameter replicated; this branch is the declaration-based version that TP, SP and CP need. Once 4446 lands this rebases onto it: the backend selection in `parallelize.py` and the flavor pin removal are taken from 4446, `annotate_replicated_parameters` is not applied to modules that carry a `ShardingConfig`, and the declarations stay. Paste between the markers.
+Branch `spmd_review2` on the fork (`637b19715`, two commits on `tp_review2` `80d7e0951`, on upstream/main `9b5f60c40`). Draft, stacked on the TP/SP draft. Upstream draft 4446 (pianpwk, "[spmd_types] Enable Kimi K3 backend") runs K3 under `spmd_types` by annotating every parameter replicated; this branch is the declaration-based version that TP, SP and CP need. Once 4446 lands this rebases onto it: the backend selection in `parallelize.py` and the flavor pin removal are taken from 4446, `annotate_replicated_parameters` is not applied to modules that carry a `ShardingConfig`, and the declarations stay. Paste between the markers.
 
 --- PASTE BEGIN ---
 
@@ -14,6 +14,7 @@ Runs Kimi K3 under the `spmd_types` backend with the declarations the backend co
 - Stream conversions: the empty residual stack is converted `R -> I` at the model entry; the MLA module converts its input `I -> R`; `q_norm` / `kv_norm` are replicated state only; `routed_norm` reduces the experts' Partial output at its boundary (keyed `x`, the argument `nn.RMSNorm.forward` takes); `routed_up` re-enters Partial so core's MoE exit reduces once; the MoE exit returns invariant.
 - The MoonViT tower is declared invariant at TP and rank-local over cp, with the cp axis on every vision layout (main's `include_cp_axis=True` helpers, as muse_glimmer passes them) and its own attention entry, because the shared plan shards the tower over TP and all-gathers its k/v over cp. `preprocess_inputs` gives `pixel_values` and `grid_thw` the DP-local, TP-invariant layout every VLM decoder shares.
 - Local regions: the MLA head unflatten and the rope join run in `spmd.local()` regions re-typed head-sharded on TP, with the head count derived from the projection width; KDA's head views use `-1`, since the projections hand back the TP-local head slice.
+- The multimodal splice under sequence parallel: the stream and the tokens are plain shards, and a placeholder run can cross the shard boundary, so `parallelize_kimi_k3` hands the model its tp group and `_splice_under_sequence_parallel` gathers both (`spmd.redistribute` `S(0) -> R`, reduce-scatter backward), splices on the whole sequence and hands back the shard (`R -> S(0)`, all-gather backward); a one-rank gloo test checks it against the whole-sequence splice and the gradient routing.
 - Every declaration is keyed by the `forward()` parameter names main uses (`q_THK`, `k_THK`, `v_THV`; `raw_gate_THK`, `raw_beta_TH`, `cu_seqlens` on `InnerKDA`): a `local_map` requires an entry for every positional parameter, and a key that matches nothing declares nothing.
 
 ### Results
@@ -41,12 +42,14 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 
     torchtitan/models/kimi_k3/
       sharding.py           +160/-9   weight types, stream conversions, the tower's plan, the local-map keys
-      model.py              +114/-13  backend-driven declaration, the local regions, the multimodal input layout
-      parallelize.py        +27/-17   the spmd_types backend branch (meshes, model.parallelize)
+      model.py              +168/-13  backend-driven declaration, the local regions, the multimodal input layout, the splice under sequence parallel
+      parallelize.py        +36/-17   the spmd_types backend branch (meshes, model.parallelize, the tp group for the splice)
       kda.py                +4/-2     head views with -1
+    tests/unit_tests/cpu/
+      test_kimi_k3_sp_splice.py  +76/-0  the sequence-parallel splice on a one-rank group (new)
 
 ### CI/CD Coverage
 
-None added here; the cells follow the backend CI runs K3 under once 4446 lands.
+One CPU test (the sequence-parallel splice through the real collectives on a one-rank group); GPU cells follow the backend CI runs K3 under once 4446 lands.
 
 --- PASTE END ---
