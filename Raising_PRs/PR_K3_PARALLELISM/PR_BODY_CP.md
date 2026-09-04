@@ -1,10 +1,10 @@
 # PR title: [Kimi K3] Context parallelism for the text decoder: packed MLA kernels on the CP kernel stack, KCP on KDA
 
-PR 4313. Branch `cp_review5` on the fork (`2c41f8914`): two commits on `cp_base_stack` (`a8a6f331f`, a scratch base that is fegin's CP stack, PR 4322 / 4449 / 4450 at `860d5aa64d`, applied onto upstream/main `9b5f60c40`).
+PR 4313. Branch `cp_pr_candidate` on the fork (`223e97a23`): three commits on upstream/main `af9b6b195`. The first is the open upstream CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) copied to unblock running, every copied file and class marked "copied from upstream open PR 4322/4449/4450 to unblock running; pending rebase and reconcile", the whole commit to be dropped at the rebase once the stack merges.
 
-The first commit (`f441dc8fe`) is the model's own spmd_types declarations, issued at tp = 1: every parameter a DTensor on the full mesh, the tower over cp, the MoE seams, the backend branch in `parallelize_kimi_k3`; it is the CP-scoped cut of the declaration work the TP/SP line carries, without tensor parallelism, which stays on the unsupported list here. The second commit is the CP layer.
+The second (`8c8d9436f`) is the model's own spmd_types declarations, issued at tp = 1: every parameter a DTensor on the full mesh, the tower over cp, the MoE seams, the backend branch in `parallelize_kimi_k3`; the CP-scoped cut of the declaration work the TP/SP line carries, without tensor parallelism, which stays on the unsupported list here. The third (`223e97a23`) is the CP layer.
 
-The PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. The PR branch is synced only on the user's approval and only once the stack has landed (the scratch base is never filed); the PR header should say it stacks on fegin's CP stack. Paste between the markers.
+The PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. This is the candidate for the PR branch `k3_cp_text`, force-pushed only on the user's approval. Paste between the markers.
 
 --- PASTE BEGIN ---
 
@@ -15,6 +15,10 @@ Adds context parallelism to the Kimi K3 decoder on the CP kernel stack (PR 4322 
 After it the MLA layers run `MLAUlyssesCPFlexAttention` (the default) or `MLAAllGatherCPFlexAttention`, the generic Ulysses and all-gather kernels specialised to MLA's expanded key: MLA expands one rotary vector per token onto every head before the kernel, so the kernels split the key back, move the nope part packed with q and v (one all-to-all) or with v (one gather), move the rotary slice once as the headless vector it is, and expand it after the exchange -- the packed exchange of the first version of this PR, on the new interface.
 
 The KDA layers run Attention Gym's context-parallel delta rule (`ContextParallelInnerKDA`, KCP: the sequence stays sharded end to end and the recurrence hands its state from rank to rank); `torchtitan_recipes.kimi_k3` applies the generic `ContextParallelTransform` to the MLA layers and a K3 transform to the KDA layers, which the generic transform and validation do not see because KDA is not an attention config.
+
+### Copied from upstream, pending rebase
+
+The first commit is the net diff of the open CP stack (4322 / 4449 / 4450, fegin) at `860d5aa64d`, so the kernels here can run on its interface before it lands: `models/common/cp_attention.py`, the `transforms` package, `distributed/context_parallel/validation.py`, the decoder's mask flag and the identity boundary in `decoder_sharding.py`, the trainer's validation call, and the stack's own moves of flux, qwen3, gpt_oss, muse_glimmer and the qwen3_5 recipes onto the transform, with its tests. Every copied file and class carries the note; the commit is dropped at the rebase once the stack merges, and the rest of this PR is the two commits below.
 
 ### Design
 
