@@ -56,19 +56,19 @@ The bf16 grad-norm matrix (this branch as it is):
 | pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 (embedding on the first, head on the last) | delta | 12.41967 | 7.47862 | 3.42131 |
 | pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | 12.41967 | 7.66420 | 3.32480 |
 | pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.41967 | 7.57579 | 3.36337 |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
+| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | 12.41967 | 7.64929 | 3.49334 |
 | pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 (a head-only last stage) | delta | 12.41967 | 7.51825 | 3.37366 |
 | pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | whole stack every hop | 12.41967 | 7.60614 | 3.42516 |
 | dp2 | - | 2 | - | - | 12.40417 | 7.37116 | 3.30135 |
 | dp2 x ep2 | - | 2 | - | - | 12.40257 | 7.45076 | 3.38303 |
 | dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40417 | 7.28299 | 3.40680 |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | 12.40417 | 7.32403 | 3.36641 |
 | dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40257 | 7.49486 | 3.24775 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | | | |
+| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | whole stack every hop | 12.40257 | 7.39084 | 3.34226 |
 | dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40417 | 7.48020 | 3.33841 |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
+| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | 12.40417 | 7.60047 | 3.25333 |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910 | 3.24169 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | | | |
+| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | whole stack every hop | 12.40257 | 7.30184 | 3.25535 |
 
 The float32 grad-norm matrix (the fix applied to the run tree); the whole-stack twins of the remaining vp cells in both tables are running locally and follow:
 
