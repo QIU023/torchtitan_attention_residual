@@ -21,7 +21,7 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 
 ### Results
 
-Training loss, one seed, warmed compile cache; the rerun on the rebased branch is running locally and replaces these rows, which come from the previous base. The adapters train (loss moves) while the bases stay frozen; the packed-MXFP4 flavor starts from a different step-1 value because its bases are quantized at build.
+Training loss on the rebased branch, one seed, every cell run twice and the second read (the dp1 and dp2 rows reproduce the previous base to the digit). The adapters train (loss moves) while the bases stay frozen; the packed-MXFP4 flavor starts from a different step-1 value because its bases are quantized at build.
 
 | cell | flavor | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
@@ -30,7 +30,7 @@ Training loss, one seed, warmed compile cache; the rerun on the rebased branch i
 | dp1 | qlora_mxfp4 | 12.48328 | 12.00891 | 10.42474 |
 | dp2 | qlora_mxfp4 | 12.50176 | 12.00203 | 10.45663 |
 | dp2 x ep2 | lora | 12.48346 | 11.90808 | 10.50562 |
-| dp2 x ep2 | qlora_mxfp4 | | | |
+| dp2 x ep2 | qlora_mxfp4 | 12.50176 | 11.99613 | 10.51754 |
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_lora \

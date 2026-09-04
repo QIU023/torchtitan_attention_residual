@@ -20,7 +20,7 @@ Goal (user, evening of 09-04): the matrices the two live PR heads need, with dat
 | 12 | census set 2 | `wt_ppprobe8` | dp1 vs FSDP dp2, dp1 vs 512-token micro-batches | queued |
 | 13 | 100-step curves on streamed cc12m | `wt_pprun3` (+ cc12m alias) | dp1, pp2 x vp4, pp8 x vp4, pp8 naive | queued |
 | 14 | 100-step curves at seed 43 | `wt_pprun3` | dp1, pp2 x vp4, pp8 x vp4 (mx3 got a SEED knob) | queued |
-| 15 | QLoRA rerun | `wt_lora` (93f78b5ab) | dp1, dp2, dp2 x ep2 on qlora_mxfp4 | queued |
+| 15 | QLoRA rerun | `wt_lora` (93f78b5ab) | dp1, dp2, dp2 x ep2 on qlora_mxfp4 | done: dp1 / dp2 bitwise the old base; dp2 x ep2 12.50176 / 11.99613 / 10.51754 |
 
 Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_pp3_curves100.sh`, `rebase_main_lora.sh`, `rebase_main_tpsp.sh`, `rebase_main_ac2.sh`, `rebase_main_qb2.sh`; the chain lives in the session scratchpad (`bridge_pp_all.sh`, `bridge_after_lora.sh`).
 
@@ -66,3 +66,4 @@ Queue after QB (re-chained 09-04 evening): cp8 check -> PP33 matrix (11 cells) -
 - PP33 fp32-norm whole-stack twins: pp2 12.41967 / 7.61479 / 3.35875; pp4 12.41967 / 7.68891 / 3.43122; dp2 x pp2 12.40417 / 7.32403 / 3.36488; dp2 x ep2 x pp2 12.40257 / 7.39084 / 3.34489; dp2 x pp4 12.40417 / 7.61220 / 3.25558; dp2 x ep2 x pp4 12.40257 / 7.30184 / 3.26341 -> `PR_BODY_PP.md` (both 17-row tables complete).
 - PP balance (33 layers, fd97aba9b, Mooncake TE over TCP): pp2 x vp4 as designed and with KEEP_LOCAL both bitwise the unbalanced row (12.41967 / 7.47862 / 3.42131); 1,440 tensors / 1,760 MiB parked over the run; rank 0 peak 13.98 GiB unchanged -> `PR_BODY_PP_BALANCE.md`.
 - cp8 check: generic Ulysses at cp8 reads the same step 1 (12.54963; 7.30435 / 3.01451); gradients dp1 vs cp8 1.18e-2 / 6.25e-2 / 3.31e-1, dp1 vs cp8 generic 1.17e-2 / 6.1e-2 / 3.27e-1, cp2 vs cp8 9.5e-3 / 6.4e-2 / 3.7e-1, cp8 packed vs generic 1.76e-4 / 1.31e-3 / 3.1e-2 (24 of 750 identical) -> `PR_BODY_CP.md`. The offset is the CP degree's, not the packing's.
+- QLoRA (packed MXFP4) after the fix: dp1 12.48328 / 12.00891 / 10.42474 and dp2 12.50176 / 12.00203 / 10.45663 bitwise the old base; dp2 x ep2 12.50176 / 11.99613 / 10.51754 (packed experts under EP: step 1 equal to dp2) -> `PR_BODY_LORA.md` (table complete).
