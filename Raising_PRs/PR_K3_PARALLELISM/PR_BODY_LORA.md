@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] LoRA adapter export and QLoRA (NF4 and packed MXFP4)
 
-Branch `lora_review1` (`cdedd17c9`, rebased onto upstream/main `af9b6b195`; `k3_lora_extras` `2344c1f9e` was the pre-rebase head). The rebase was clean; two commits on top type the LoRA marker bases for pyrefly (repo count equal to main's) and drop the `mx_qat` flavor, whose converter belongs to the QAT change. 30 CPU tests pass on the branch (test_lora, the kimi_k3 tests, the suite definitions). Paste between the markers into the PR body.
+Branch `lora_review1` (`cdedd17c9`, rebased onto upstream/main `af9b6b195`; `k3_lora_extras` `2344c1f9e` was the pre-rebase head). The rebase was clean; three commits on top type the LoRA marker bases for pyrefly (repo count equal to main's), drop the `mx_qat` flavor, whose converter belongs to the QAT change, and let the packed experts carry main's `SpmdType` entry through (the seed build of the packed-MXFP4 flavor raised on the rebased tree; a trainer-path test covers it now). 30 CPU tests pass on the branch (test_lora, the kimi_k3 tests, the suite definitions). Paste between the markers into the PR body.
 
 Upstream's only LoRA precedent is llama3's `float8_emulate_lora` flavor: one `LoRAConverter.Config(rank=8, alpha=16.0, target_modules=[...])` line, a CI cell in the features suite, and `components/lora.py` at 235 lines with no export and no quantization. Everything below the flavor is new core surface with no upstream counterpart; expect the reviewers to ask for the split noted after the markers.
 
@@ -29,7 +29,7 @@ Training loss, one seed, warmed compile cache; the rerun on the rebased branch i
 | dp2 | lora | 12.48369 | 11.89999 | 10.51706 |
 | dp1 | qlora_mxfp4 | 12.48328 | 12.00891 | 10.42474 |
 | dp2 | qlora_mxfp4 | 12.50176 | 12.00203 | 10.45663 |
-| dp2 x ep2 | lora | | | |
+| dp2 x ep2 | lora | 12.48346 | 11.90808 | 10.50562 |
 | dp2 x ep2 | qlora_mxfp4 | | | |
 
 ```
