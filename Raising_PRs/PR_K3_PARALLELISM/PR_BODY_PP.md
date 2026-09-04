@@ -55,7 +55,7 @@ Every cell starts from the same seed checkpoint, runs twice, and the second run 
 | pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.51030 | 7.44880 | 3.57213 |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.51030 | 7.40443 | 3.47327 |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | 12.51030 | 7.45462 | 3.45668 |
-| pp2 x vp4, even split (`first/last_stage_less_layers=0`, 8 stages of 4 layers) | 8 | 2 | 4 | delta | 12.51030 | 7.51238 | 3.52185 |
+| pp2 x vp4, `first/last_stage_less_layers=0` (the embedding and the head not counted as units) | 8 | 2 | 4 x 6, then 3 / 3 | delta | 12.51030 | 7.51238 | 3.52185 |
 | dp2 | - | 2 | - | - | 12.49684 | 7.75700 | 3.44594 |
 | dp2 x ep2 | - | 2 | - | - | 12.49422 | 7.70749 | 3.55892 |
 | dp2 x pp2 x vp4 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | 12.49684 | 7.69817 | 3.46918 |
