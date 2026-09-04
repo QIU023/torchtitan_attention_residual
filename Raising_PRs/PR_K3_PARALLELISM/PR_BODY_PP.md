@@ -94,6 +94,21 @@ The float32 grad-norm matrix (the fix applied to the run tree):
 
 Step 1 is the same number in every cell, and it is the number that can be compared: under a float32 total norm the cells agree to 2e-4 (dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656, naive pp8 16.1649), which is bf16 summation-order rounding of the gradients; on the 30-layer model, carrying the norm in float32 for the whole run left the step-10 spread where it was (6.2% across five cells against 5.6% in bf16), and the second matrix above shows it for this model. The later steps spread by a few percent in either direction, and that spread is not a property of the pipeline: the same dp1 cell moves by 3.4% at step 10 when only the grad-norm reduction precision changes (a fresh compile cache changes nothing: two dp1 runs on fresh caches are bitwise, and every PP row of the previous head reproduces bitwise on the rebased one), and dp1 against dp2, which also changes the batch composition, moves by 6% in the same debug setup. The mechanism is Adam's first step, $lr \cdot \mathrm{sign}(g)$ per element: the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order, each flipped element moves by $2 \cdot lr$ the other way, and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.5 to 3.4 in ten steps) does not average that out.
 
+The same spread with no pipeline in it, on the float32 grad-norm tree: pure data parallel and data x expert parallel at 1 / 2 / 4 / 8, same seed and batch size (the loader shards the dataset by rank, so the pure-dp rows also change the batch composition; expert parallel is read against the same-dp row, which sees the same data).
+
+| cell | step 1 | step 3 | step 10 | step 10 vs the same-dp row |
+|---|---|---|---|---|
+| dp1 | 12.41967 | 7.57490 | 3.34752 | - |
+| dp2 | 12.40417 | 7.37116 | 3.30122 | - |
+| dp4 | 12.41166 | 8.23808 | 3.26421 | - |
+| dp8 | 12.39794 | 8.13134 | 3.28591 | - |
+| dp2 x ep2 | 12.40257 | 7.45076 | 3.37020 | +2.1% |
+| dp4 x ep2 | 12.41024 | 8.09069 | 3.32926 | +2.0% |
+| dp4 x ep4 | 12.41024 | 8.04373 | 3.20992 | -1.7% |
+| dp8 x ep2 | 12.39792 | 7.95019 | 3.25586 | -0.9% |
+| dp8 x ep4 | 12.39792 | 7.80701 | 3.22198 | -1.9% |
+| dp8 x ep8 | 12.39792 | 7.94250 | 3.15705 | -3.9% |
+
 The step-1 sign census over all 1,399,095,936 gradient elements: the fraction whose sign differs between two runs, and the first-update difference it implies ($2\sqrt{f}$ of the update norm). Element-wise the gradients differ by about 1.3% in relative L2 in every parameter group alike (embedding 1.48%, experts 1.27%, attention 1.42%, norms 1.28%, router 1.25%, head 0.54%) while the per-parameter norms agree to 2e-4, which is bf16's signature; 80% of the flipped elements sit below a hundredth of their tensor's rms, and pp8 with 32 stages flips no more than pp2 with 8. Two dp1 runs on fresh compile caches were bitwise on the 30-layer model (918 of 918 parameters sha1-identical); the no-pipeline controls (dp1 against FSDP dp2, and against 512-token micro-batches) are running locally and follow.
 
 | pair (step 1) | sign flips | implied first-update difference | group with the most flips |

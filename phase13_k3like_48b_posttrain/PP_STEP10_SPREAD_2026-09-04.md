@@ -82,3 +82,22 @@ Reading: all four memorize the set to the same floor. The order of descent diffe
 | dp1 vs pp8 x vp4 (1/2/2/1...1/0) | 2 | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% (3,879,046) | 79.5% | 10.53% |
 
 Per group (pp2 / pp8; flips, element-wise rel L2): attention 0.426% / 0.441%, 1.42% / 1.45%; embedding 0 / 0, 1.48% / 1.53%; experts 0.303% / 0.316%, 1.27% / 1.30%; head 0.443% / 0.460%, 0.54% / 0.55%; norms 0.335% / 0.340%, 1.28% / 1.34%; other 0.152% / 0.154%, 1.31% / 1.36%; router 0.291% / 0.303%, 1.25% / 1.31%. Same picture as the 30-layer model on splits nothing divides: bf16 rounding of the whole gradient, no group off, 32 uneven stages no worse than 8. The census script's last line had a shell quoting slip (a `#` in a sed replacement), so the comparisons were run by hand on the dumps the script left; the trajectories of the three probe runs match the matrix rows bitwise.
+
+## 9. Pure data parallel and data x expert parallel at 1 / 2 / 4 / 8 (float32 grad norm, 33-layer model, `ladder_gn`, 2026-09-04 late evening)
+
+Same seed and 4096 tokens per step. The loader shards the dataset by data-parallel rank, so the pure-dp rows change the batch composition with the degree (their step 1 differs); expert parallel is read against the same-dp row, which sees the same data.
+
+| cell | step 1 | step 3 | step 10 | step 10 vs the same-dp row |
+|---|---|---|---|---|
+| dp1 | 12.41967 | 7.57490 | 3.34752 | - |
+| dp2 | 12.40417 | 7.37116 | 3.30122 | - |
+| dp4 | 12.41166 | 8.23808 | 3.26421 | - |
+| dp8 | 12.39794 | 8.13134 | 3.28591 | - |
+| dp2 x ep2 | 12.40257 | 7.45076 | 3.37020 | +2.1% |
+| dp4 x ep2 | 12.41024 | 8.09069 | 3.32926 | +2.0% |
+| dp4 x ep4 | 12.41024 | 8.04373 | 3.20992 | -1.7% |
+| dp8 x ep2 | 12.39792 | 7.95019 | 3.25586 | -0.9% |
+| dp8 x ep4 | 12.39792 | 7.80701 | 3.22198 | -1.9% |
+| dp8 x ep8 | 12.39792 | 7.94250 | 3.15705 | -3.9% |
+
+Reading: with the float32 norm in place, the pure-dp ladder spreads 2.5% at step 10 (3.264 to 3.348) with the data composition changing underneath it, and expert parallel moves the same-data row by -3.9% to +2.1%, in either direction, growing loosely with the EP degree. At a fixed dp degree the EP rows share step 1 to the digit across EP degrees (dp4 x ep2 = dp4 x ep4 = 12.41024, dp8 x ep2 = ep4 = ep8 = 12.39792) and sit 2e-5 to 1.6e-3 from the no-EP row: the expert dispatch changes the grouped GEMM's summation order once, whatever the degree. These are the same few percent the PP cells show on the same tree (the dp1 group 3.30 to 3.49), with no pipeline in them.
