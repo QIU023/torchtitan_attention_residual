@@ -40,8 +40,7 @@ cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 
 
 Two matrices on the same cells, seed and batch. The first carries the total gradient norm in float32 (the reduction in `clip_grad_norm_` of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch): with the per-topology grouping of bf16 partial sums taken out of the norm, the cells that compute the same gradients land on the same curve. The second is this branch as it is, where `get_total_norm` reduces in bf16 and the pipeline's parameter grouping moves the clip coefficient per topology. Step 1 is bit-identical to dp1 in every cell of both.
 
-<!-- TBD: fp32 rows from /workspace/mx3_main30gn_* -->
-The float32 grad-norm matrix (the fix applied to the run tree):
+The float32 grad-norm matrix (the fix applied to the run tree), running locally, the rows follow:
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
