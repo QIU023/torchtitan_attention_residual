@@ -19,7 +19,9 @@ SEED_ROOT=${SEED_ROOT:-/workspace/.mx3_seeds}
 # seed on one GPU; SEED_CFG names the same-shape flavor that can, and keys the
 # cache, so every flavor of one shape starts from one init.
 SEED_CFG=${SEED_CFG:-$CFG}
-SEED_KEY=$(printf '%s|%s' "$SEED_CFG" "$BATCH" | sha1sum | cut -c1-12)
+# SEED (default 42) is the model seed; a non-default seed keys its own checkpoint.
+SEED=${SEED:-42}; KEYSEED=""; [ "$SEED" != 42 ] && KEYSEED="|seed$SEED"
+SEED_KEY=$(printf '%s|%s%s' "$SEED_CFG" "$BATCH" "$KEYSEED" | sha1sum | cut -c1-12)
 S=$SEED_ROOT/${SEED_CFG}_${SEED_KEY}
 if [ "${SEED_CACHE:-1}" = "0" ]; then rm -rf "$S"; fi
 # The cache keeps its files under seed_ckpt, not checkpoint: a name that no
@@ -32,7 +34,7 @@ else
   T=$S.tmp.$$; rm -rf "$T"; mkdir -p "$T"
   ( source /venv/main/bin/activate && cd "$TITAN" && PYTHONPATH=$TITAN timeout 900 torchrun \
     --nproc_per_node=1 --master_port=$((30000+RANDOM%20000)) -m torchtitan.train \
-    --module kimi_k3 --config $SEED_CFG --debug.seed 42 --debug.deterministic --training.steps 1 $BATCH \
+    --module kimi_k3 --config $SEED_CFG --debug.seed $SEED --debug.deterministic --training.steps 1 $BATCH \
     --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint \
     --checkpoint.enable --dump-folder "$T" > "$OUT/seed.log" 2>&1 ); echo "seed rc=$?" >> $R
   if [ "$(find "$T/checkpoint" -type f 2>/dev/null | wc -l)" -gt 0 ]; then
@@ -77,7 +79,7 @@ cell(){ local nm=$1 np=$2; shift 2
     fi
     ( source /venv/main/bin/activate && cd "$TITAN" && PYTHONPATH=$TITAN timeout 2400 torchrun \
       --nproc_per_node=$np --master_port=$((30000+RANDOM%20000)) -m torchtitan.train \
-      --module kimi_k3 --config $CFG --debug.seed 42 --debug.deterministic \
+      --module kimi_k3 --config $CFG --debug.seed $SEED --debug.deterministic \
       --metrics.log_freq 1 --training.steps $steps $BATCH --checkpoint.enable \
       --checkpoint.interval 100000 "$@" --dump-folder "$d" > "$OUT/${nm}_$pass.log" 2>&1 )
     rm -rf "$d/checkpoint"

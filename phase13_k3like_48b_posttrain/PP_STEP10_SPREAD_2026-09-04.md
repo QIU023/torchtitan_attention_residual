@@ -60,3 +60,16 @@ The body's Results section drops the "two matrices, the float32 one removes the 
 | dp1 vs pp8 x vp4 | 2 of 918 | 2.0e-4 / 1.6e-3 / 1.3e-2 | 0.227% (2,965,397) | 84.2% | 9.53% |
 
 Per group (dp1 vs pp2 / dp1 vs pp8; sign flips, element-wise relative L2 difference of the gradient): attention 0.387% / 0.391%, 1.19% / 1.22%; embedding 0 / 0 (its zero rows are exact), 1.26% / 1.26%; experts 0.251% / 0.256%, 1.07% / 1.09%; head 0.400% / 0.406%, 0.55% / 0.55%; norms 0.281% / 0.303%, 1.08% / 1.10%; other 0.119% / 0.122%, 1.10% / 1.11%; router 0.245% / 0.245%, 1.07% / 1.01%. The element-wise difference is the same ~1.1% in every group while the norms agree to 2e-4: bf16 rounding of the whole gradient, no group off, and 32 stages flip no more than 8. The ten-step trajectories of all four probe runs reproduce the 2026-09-03 rows bitwise.
+
+## 7. 100-step curves on the debug set (2026-09-04, `pp3c100`, rebased head)
+
+The debug flavor's data is one webdataset shard of 32 samples (`tests/assets/cc12m_test`), which 4096 tokens per step cycle through every other step: the run is a memorization curve, not a training curve. The schedule stretches with `training.steps` (warm-up 2, linear decay over the last 80%), so the ten-step values differ from the matrix.
+
+| cell | step 10 | first step below 1.0 | step 50 | mean 51-100 | sd 51-100 | max 51-100 | step 100 |
+|---|---|---|---|---|---|---|---|
+| dp1 | 3.30192 | 31 | 0.234 | 0.090 | 0.052 | 0.250 | 0.04273 |
+| pp2 x vp4 | 3.30048 | 26 | 0.157 | 0.075 | 0.025 | 0.137 | 0.04380 |
+| pp8 x vp4 | 3.62183 | 41 | 0.525 | 0.114 | 0.085 | 0.439 | 0.04678 |
+| pp8 x vp4, whole stack every hop | 3.30103 | 30 | 0.192 | 0.082 | 0.028 | 0.161 | 0.04558 |
+
+Reading: all four memorize the set to the same floor. The order of descent differs by up to 15 steps at the loss-1.0 crossing, and the 32-stage delta transport is the slowest while the same 32 stages with the whole-stack transport are as fast as dp1; that is one seed of a memorization race, which amplifies any perturbation (the step-1 census shows the delta pp8 gradients are equal to dp1's up to the same bf16 rounding as pp2's, no group off). Two runs queued to read it properly: the same four cells on streamed cc12m (`pixparse/cc12m-wds`, no repeats), and dp1 / pp2 / pp8 at seed 43 on the debug set, which gives the seed-to-seed spread of one configuration to compare the pp8 lag against.

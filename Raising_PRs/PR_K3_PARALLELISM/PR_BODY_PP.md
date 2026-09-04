@@ -75,14 +75,21 @@ The step-1 sign census over all 1,306,058,848 gradient elements: the fraction wh
 | dp1 vs dp2 (FSDP, no pipeline) | | | |
 | dp1 vs dp1 with 512-token micro-batches (accumulation order, no pipeline) | | | |
 
-100 steps at the same seed, running locally: the mean loss over steps 51 to 100 and the widest gap between any two curves in that window.
+100 steps at the same seed on the debug flavor's data, which is 32 samples that 4096 tokens per step cycle through every other step: every curve memorizes it (loss 0.04 to 0.05 at step 100), and what differs is how fast, with the 32-stage delta transport the slowest to cross 1.0 and the same 32 stages with the whole stack every hop as fast as dp1. A memorization race amplifies any perturbation, so the same four cells on streamed cc12m (no sample repeats) and dp1 / pp2 / pp8 at a second seed are running locally and follow.
 
-| cell | mean loss, steps 51 to 100 | loss at step 100 |
-|---|---|---|
-| dp1 | | |
-| pp2 x vp4 | | |
-| pp8 x vp4 | | |
-| pp8 x vp4, whole stack every hop | | |
+| cell | first step below 1.0 | loss at step 50 | mean loss, steps 51 to 100 | loss at step 100 |
+|---|---|---|---|---|
+| dp1 | 31 | 0.234 | 0.090 | 0.04273 |
+| pp2 x vp4 | 26 | 0.157 | 0.075 | 0.04380 |
+| pp8 x vp4 | 41 | 0.525 | 0.114 | 0.04678 |
+| pp8 x vp4, whole stack every hop | 30 | 0.192 | 0.082 | 0.04558 |
+| dp1, seed 43 | | | | |
+| pp2 x vp4, seed 43 | | | | |
+| pp8 x vp4, seed 43 | | | | |
+| dp1, streamed cc12m | | | | |
+| pp2 x vp4, streamed cc12m | | | | |
+| pp8 x vp4, streamed cc12m | | | | |
+| pp8 x vp4, whole stack every hop, streamed cc12m | | | | |
 
 Step-1 per-parameter gradients, the evidence for "equal up to rounding" before anything is amplified: the fp32 norm of every parameter's gradient, hashed and compared on one shared warm compile cache (same model and seed, measured on the review branch before the rebase).
 

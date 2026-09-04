@@ -9,13 +9,17 @@ Goal (user, evening of 09-04): the matrices the two live PR heads need, with dat
 | 1 | CP cp8 | `wt_cprun5` (323cf86fa) | cp8 | done: 12.54963 / 7.28587 / 2.95883 (step 1 is 1e-2 above cp2/cp4; the check is queued at the chain's end) |
 | 2 | PP step-1 sign census | `wt_ppprobe8` (0e7cc5ea1 + dump hack) | dp1 x2 fresh caches, pp2 x vp4, pp8 x vp4 | done: dp1 x2 bitwise; pp2 0.223% / pp8 0.227% flips = 9.5% of the first update; all four reproduce the 09-03 rows bitwise |
 | 3 | PP matrices on the rebased head | `wt_pprun3` / `wt_pprun3gn` (0e7cc5ea1) | bf16: dp1, pp2/pp4/pp8 x vp4, pp8 naive, even split, dp2, dp2 x ep2, dp2 x pp2, dp2 x ep2 x pp2, dp2 x pp4, dp2 x ep2 x pp4; fp32 norm: the five original cells | done: every PP row bit-identical at step 1 to its mesh without PP; dp1-based rows reproduce the previous head bitwise |
-| 4 | PP 100-step curves | `wt_pprun3` | dp1, pp2 x vp4, pp8 x vp4, pp8 naive | queued |
+| 4 | PP 100-step curves | `wt_pprun3` | dp1, pp2 x vp4, pp8 x vp4, pp8 naive | done: the 32-sample set is memorized by all four (0.04-0.05 at step 100); delta pp8 crosses 1.0 at step 41 vs 26-31 |
 | 5 | LoRA | `wt_lora` (cdedd17c9) | dp1, dp2, dp2 x ep2, for lora and qlora_mxfp4 | queued |
 | 6 | TP/SP + spmd | `wt_tpsprun` (8e7d4998d) | dp1 (partial_dtensor), dp1/dp2/dp2 x ep2 (spmd_types), tp2, tp2 no-SP, tp4, dp2 x tp2, dp2 x ep2 x tp2 | queued |
 | 7 | AC reuse | `wt_acrun` (24aa8c08d + alias) | dp1, dp2, dp2 x ep2, flag off and on | queued |
 | 8 | QB | `wt_qbrun2` (47ec648b4) | dp1, dp2, dp2 x ep2, sign-step and quantile balancing | queued |
 | 9 | PP cache offload | `wt_ppoffrun` (eb665b1b1 + alias) | pp2 x vp4, pp8 x vp4 with the store on pinned host memory | queued |
 | 10 | PP balance | `wt_ppbalrun` (54a9e81ee + alias) | pp2 x vp4, rank 0 parks on rank 1 (Mooncake TE over TCP), as designed and with K3_PPBAL_KEEP_LOCAL=1 | queued |
+| 11 | cp8 check | `wt_cprun5` | cp8 on the generic kernel; step-1 gradients cp8 vs dp1 / cp2 / generic | queued |
+| 12 | census set 2 | `wt_ppprobe8` | dp1 vs FSDP dp2, dp1 vs 512-token micro-batches | queued |
+| 13 | 100-step curves on streamed cc12m | `wt_pprun3` (+ cc12m alias) | dp1, pp2 x vp4, pp8 x vp4, pp8 naive | queued |
+| 14 | 100-step curves at seed 43 | `wt_pprun3` | dp1, pp2 x vp4, pp8 x vp4 (mx3 got a SEED knob) | queued |
 
 Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_pp3_curves100.sh`, `rebase_main_lora.sh`, `rebase_main_tpsp.sh`, `rebase_main_ac2.sh`, `rebase_main_qb2.sh`; the chain lives in the session scratchpad (`bridge_pp_all.sh`, `bridge_after_lora.sh`).
 
@@ -40,3 +44,4 @@ Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_
 - PP census: dp1 vs dp1 (fresh caches) bitwise; dp1 vs pp2 x vp4 0.223% sign flips, 9.45% first-update difference; dp1 vs pp8 x vp4 0.227%, 9.53%; every group ~1.1% element-wise, norms 2e-4 -> `PR_BODY_PP.md`, `PP_STEP10_SPREAD` sec 6, `REPLY_4312`.
 - PP fp32-norm matrix on the rebased head complete: dp1 3.37903, pp2 3.47015, pp4 3.46001, pp8 3.44950, pp8 naive 3.58862 at step 10 (spread 6.2%; bf16 5.6%) -> `PP_STEP10_SPREAD` sec 2. bf16 rows dp1/pp2/pp4/pp8/pp8n reproduce the previous head bitwise -> `PR_BODY_PP.md`.
 - PP mesh rows: dp2 12.49684 / 7.75700 / 3.44594; dp2 x ep2 12.49422 / 7.70749 / 3.55892; dp2 x pp2 12.49684 / 7.69817 / 3.46918; dp2 x ep2 x pp2 12.49422 / 7.70147 / 3.63188; dp2 x pp4 12.49684 / 7.75872 / 3.42694; dp2 x ep2 x pp4 12.49422 / 7.71806 / 3.52509 -> `PR_BODY_PP.md` (table complete). dp2 reads a different batch (dataset sharded by dp rank), so step 1 compares within a dp group.
+- PP 100-step curves (debug set, seed 42): dp1 / pp2 / pp8 / pp8 naive cross 1.0 at steps 31 / 26 / 41 / 30, end at 0.043 / 0.044 / 0.047 / 0.046 -> `PR_BODY_PP.md`, `PP_STEP10_SPREAD` sec 7; cc12m and seed-43 runs queued.
