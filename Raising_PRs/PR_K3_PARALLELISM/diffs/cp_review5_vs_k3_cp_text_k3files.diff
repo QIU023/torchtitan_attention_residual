@@ -1,0 +1,2333 @@
+diff --git a/tests/unit_tests/cpu/test_kimi_k3_cp_contracts.py b/tests/unit_tests/cpu/test_kimi_k3_cp_contracts.py
+deleted file mode 100644
+index cae2c13d9..000000000
+--- a/tests/unit_tests/cpu/test_kimi_k3_cp_contracts.py
++++ /dev/null
+@@ -1,63 +0,0 @@
+-# Copyright (c) Meta Platforms, Inc. and affiliates.
+-# All rights reserved.
+-#
+-# This source code is licensed under the BSD-style license found in the
+-# LICENSE file in the root directory of this source tree.
+-
+-"""The CP contracts, on CPU.
+-
+-These pin the folded token layout. This model carries no batch axis, so the
+-Ulysses pair moves the shard between tensor dims 0 and 1; the batched spelling
+-of the same contract used dims 1 and 2, and nothing in a shape check would
+-catch that swap -- both dims exist and the all-to-all would produce a
+-plausible tensor with the heads and the sequence exchanged.
+-"""
+-
+-from __future__ import annotations
+-
+-import unittest
+-
+-import torch
+-
+-from torchtitan.models.kimi_k3.sharding import (
+-    contract_for_mode,
+-    cp_all_to_all_headseq,
+-    HEAD_DIM,
+-    KCP,
+-    SEQ_DIM,
+-    ULYSSES,
+-)
+-
+-
+-class TestCPContracts(unittest.TestCase):
+-    def test_dims_are_the_folded_ones(self):
+-        self.assertEqual((SEQ_DIM, HEAD_DIM), (0, 1))
+-
+-    def test_ulysses_swaps_the_sharded_axis(self):
+-        self.assertEqual(ULYSSES.in_dims(), (SEQ_DIM, HEAD_DIM))
+-        self.assertEqual(ULYSSES.out_dims(), (HEAD_DIM, SEQ_DIM))
+-        self.assertTrue(ULYSSES.redistributes())
+-        self.assertTrue(ULYSSES.head_sharded)
+-
+-    def test_kcp_is_an_identity_pair(self):
+-        """The recurrence passes state rank to rank, which is a sequential
+-        dependency rather than a redistribution, so no placement pair
+-        describes it and the contract is declared as an identity."""
+-        self.assertEqual(KCP.in_dims(), (SEQ_DIM, SEQ_DIM))
+-        self.assertFalse(KCP.redistributes())
+-        self.assertFalse(KCP.head_sharded)
+-
+-    def test_unknown_mode_is_rejected(self):
+-        with self.assertRaises(ValueError):
+-            contract_for_mode("ring")
+-
+-    def test_unimplemented_dim_pair_raises(self):
+-        """A contract naming a pair with no implementation must raise here
+-        rather than being quietly ignored."""
+-        x = torch.zeros(4, 2, 3)
+-        with self.assertRaises(ValueError):
+-            cp_all_to_all_headseq(x, None, src_dim=SEQ_DIM, dst_dim=2)
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
+diff --git a/tests/unit_tests/cpu/test_kimi_k3_cp_kernels.py b/tests/unit_tests/cpu/test_kimi_k3_cp_kernels.py
+new file mode 100644
+index 000000000..4dc2fe2f4
+--- /dev/null
++++ b/tests/unit_tests/cpu/test_kimi_k3_cp_kernels.py
+@@ -0,0 +1,208 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Kimi K3's context-parallel kernels and the recipe transforms, on CPU."""
++
++import unittest
++from dataclasses import replace
++from types import SimpleNamespace
++from unittest import mock
++
++import spmd_types as spmd
++
++import torch
++
++from torchtitan.distributed.context_parallel import validate_context_parallel
++from torchtitan.models.common.attention import FlexAttention
++from torchtitan.models.kimi_k3.config_registry import kimi_k3_debugmodel
++from torchtitan.models.kimi_k3.context_parallel import (
++    ContextParallelInnerKDA,
++    MLAAllGatherCPFlexAttention,
++    MLAUlyssesCPFlexAttention,
++)
++from torchtitan.models.kimi_k3.kda import InnerKDA
++from torchtitan.models.kimi_k3.model import KimiK3Model
++from torchtitan_recipes.kimi_k3 import kimi_k3_context_parallel
++
++T, H, NOPE, ROPE, V = 8, 4, 8, 4, 6
++
++
++class _FakeMesh:
++    mesh_dim_names = ("dp", "cp", "tp")
++
++    def __init__(self, cp_size: int):
++        self._cp_size = cp_size
++
++    def get_group(self, axis):
++        assert axis == "cp"
++        return SimpleNamespace(size=lambda: self._cp_size)
++
++
++def _in_mesh(cp_size: int):
++    return mock.patch(
++        "torchtitan.models.common.cp_attention.current_spmd_mesh",
++        return_value=_FakeMesh(cp_size),
++    )
++
++
++def _mla_qkv(dtype=torch.float32):
++    """q, k, v the way MLA hands them over: one rope vector expanded onto every head."""
++    q_THK = torch.randn(T, H, NOPE + ROPE, dtype=dtype)
++    k_nope_THN = torch.randn(T, H, NOPE, dtype=dtype)
++    k_rope_TR = torch.randn(T, ROPE, dtype=dtype)
++    k_THK = torch.cat((k_nope_THN, k_rope_TR.unsqueeze(1).expand(-1, H, -1)), dim=-1)
++    v_THV = torch.randn(T, H, V, dtype=dtype)
++    return q_THK, k_THK, v_THV
++
++
++def _run(kernel, q, k, v):
++    """Run ``kernel`` with pass-through collectives; return the calls and what
++    reached FlexAttention."""
++    calls, seen = [], {}
++
++    def record(x, group, *, src, dst, backward_options=None):
++        calls.append((x, group, src, dst, backward_options))
++        return x
++
++    def capture(self, q, k, v, **kwargs):
++        seen.update(q=q, k=k, v=v)
++        return q
++
++    with _in_mesh(2), mock.patch.object(
++        spmd, "redistribute", record
++    ), mock.patch.object(FlexAttention, "forward", capture):
++        out = kernel.forward(q, k, v)
++    return calls, seen, out
++
++
++class TestPackedMLAKernels(unittest.TestCase):
++    def test_ulysses_moves_one_packed_tensor_and_the_rope_slice_once(self):
++        q, k, v = _mla_qkv()
++        kernel = MLAUlyssesCPFlexAttention(
++            MLAUlyssesCPFlexAttention.Config(rope_head_dim=ROPE)
++        )
++        calls, seen, out = _run(kernel, q, k, v)
++
++        self.assertEqual(3, len(calls))
++        packed, _, src, dst, _ = calls[0]
++        self.assertEqual((T, H, (NOPE + ROPE) + NOPE + V), tuple(packed.shape))
++        self.assertEqual((spmd.S(0), spmd.S(1)), (src, dst))
++        rope, _, src, dst, backward_options = calls[1]
++        self.assertEqual((T, ROPE), tuple(rope.shape))
++        self.assertEqual((spmd.S(0), spmd.R), (src, dst))
++        self.assertEqual({"op_dtype": torch.float32}, backward_options)
++        _, _, src, dst, _ = calls[2]
++        self.assertEqual((spmd.S(1), spmd.S(0)), (src, dst))
++        # With pass-through collectives the kernel must hand FlexAttention
++        # exactly what MLA produced: the split, the pack and the expansion
++        # are each other's inverse.
++        for name, original in (("q", q), ("k", k), ("v", v)):
++            self.assertTrue(torch.equal(seen[name], original), name)
++        self.assertTrue(torch.equal(out, q))
++
++    def test_all_gather_moves_the_packed_kv_and_the_rope_slice(self):
++        q, k, v = _mla_qkv(torch.bfloat16)
++        kernel = MLAAllGatherCPFlexAttention(
++            MLAAllGatherCPFlexAttention.Config(rope_head_dim=ROPE)
++        )
++        calls, seen, _ = _run(kernel, q, k, v)
++
++        self.assertEqual(2, len(calls))
++        packed, _, src, dst, backward_options = calls[0]
++        self.assertEqual((T, H, NOPE + V), tuple(packed.shape))
++        self.assertEqual((spmd.S(0), spmd.R), (src, dst))
++        self.assertEqual({"op_dtype": torch.bfloat16}, backward_options)
++        rope, _, _, _, _ = calls[1]
++        self.assertEqual((T, ROPE), tuple(rope.shape))
++        for name, original in (("q", q), ("k", k), ("v", v)):
++            self.assertTrue(torch.equal(seen[name], original), name)
++
++    def test_all_gather_reduce_dtype_reaches_both_gathers(self):
++        q, k, v = _mla_qkv(torch.bfloat16)
++        kernel = MLAAllGatherCPFlexAttention(
++            MLAAllGatherCPFlexAttention.Config(
++                rope_head_dim=ROPE, reduce_dtype="float32"
++            )
++        )
++        calls, _, _ = _run(kernel, q, k, v)
++        self.assertEqual(
++            [torch.float32, torch.float32], [c[4]["op_dtype"] for c in calls]
++        )
++
++    def test_kernels_keep_the_generic_kernels_flags(self):
++        self.assertFalse(MLAUlyssesCPFlexAttention.Config.shard_attention_mask)
++        self.assertTrue(MLAUlyssesCPFlexAttention.Config.shard_attention_heads)
++        self.assertTrue(
++            getattr(MLAAllGatherCPFlexAttention.Config, "shard_attention_mask", True)
++        )
++        self.assertFalse(
++            getattr(MLAAllGatherCPFlexAttention.Config, "shard_attention_heads", False)
++        )
++
++
++class TestRecipeTransforms(unittest.TestCase):
++    @staticmethod
++    def _layers(config):
++        model = config.model_spec.model
++        assert isinstance(model, KimiK3Model.Config)
++        mla = [l.attention for l in model.layers if l.attention is not None]
++        kda = [l.delta_attention for l in model.layers if l.delta_attention is not None]
++        return model, mla, kda
++
++    def test_every_layer_gets_its_kernel(self):
++        config = kimi_k3_debugmodel()
++        _, mla, kda = self._layers(config)
++        self.assertTrue(mla and kda)
++        # A non-default field must ride through the retype.
++        flex = mla[0].inner_attention
++        assert isinstance(flex, FlexAttention.Config)
++        mla[0].inner_attention = replace(flex, block_size=64)
++
++        config = kimi_k3_context_parallel(config, cp_degree=2)
++
++        model, mla, kda = self._layers(config)
++        for attention in mla:
++            inner = attention.inner_attention
++            self.assertIsInstance(inner, MLAUlyssesCPFlexAttention.Config)
++            assert isinstance(inner, MLAUlyssesCPFlexAttention.Config)
++            self.assertEqual(attention.qk_rope_head_dim, inner.rope_head_dim)
++        first = mla[0].inner_attention
++        assert isinstance(first, MLAUlyssesCPFlexAttention.Config)
++        self.assertEqual(64, first.block_size)
++        for delta_attention in kda:
++            self.assertIsInstance(
++                delta_attention.inner_kda, ContextParallelInnerKDA.Config
++            )
++        self.assertEqual(2, config.parallelism.context_parallel_degree)
++        self.assertIsNone(config.parallelism.context_parallel_load_balancer)
++        validate_context_parallel(model, config.parallelism)
++
++    def test_all_gather_is_a_choice(self):
++        config = kimi_k3_context_parallel(
++            kimi_k3_debugmodel(), cp_degree=2, mla_kernel=MLAAllGatherCPFlexAttention
++        )
++        _, mla, kda = self._layers(config)
++        for attention in mla:
++            self.assertIsInstance(
++                attention.inner_attention, MLAAllGatherCPFlexAttention.Config
++            )
++        for delta_attention in kda:
++            self.assertIsInstance(
++                delta_attention.inner_kda, ContextParallelInnerKDA.Config
++            )
++
++    def test_kda_without_its_kernel_is_rejected(self):
++        config = kimi_k3_context_parallel(kimi_k3_debugmodel(), cp_degree=2)
++        model, _, kda = self._layers(config)
++        inner = kda[0].inner_kda
++        assert isinstance(inner, InnerKDA.Config)
++        kda[0].inner_kda = InnerKDA.Config(head_dim=inner.head_dim, kernel=inner.kernel)
++        with self.assertRaisesRegex(ValueError, "KCP kernel on every KDA layer"):
++            model.update_from_config(config=config)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/torchtitan/models/kimi_k3/README.md b/torchtitan/models/kimi_k3/README.md
+index 2a0f09205..b2304552a 100644
+--- a/torchtitan/models/kimi_k3/README.md
++++ b/torchtitan/models/kimi_k3/README.md
+@@ -8,7 +8,7 @@ Attention (MLA) decoder with LatentMoE and a MoonViT-V2 vision encoder.
+ Install the additional dependencies:
+ 
+ ```bash
+-pip install av einops pillow torchvision flash-linear-attention
++pip install -r .ci/docker/requirements-vlm.txt
+ ```
+ 
+ ## Architecture
+diff --git a/torchtitan/models/kimi_k3/__init__.py b/torchtitan/models/kimi_k3/__init__.py
+index 932fc728e..8d2f609c9 100644
+--- a/torchtitan/models/kimi_k3/__init__.py
++++ b/torchtitan/models/kimi_k3/__init__.py
+@@ -12,10 +12,12 @@ import torch.nn as nn
+ 
+ from torchtitan.components.optimizer import register_moe_load_balancing_hook
+ from torchtitan.models.common import Conv1d, Embedding, Linear
+-from torchtitan.models.common.config_utils import get_attention_config
++from torchtitan.models.common.config_utils import (
++    get_attention_config,
++    make_token_dispatcher_config,
++)
+ from torchtitan.models.common.moe import RoutedExperts, TokenChoiceTopKRouter
+ from torchtitan.models.common.nn_modules import GELU, RMSNorm
+-from torchtitan.models.common.token_dispatcher import LocalTokenDispatcher
+ from torchtitan.models.common.vision_encoder import (
+     VisionAttention,
+     VisionMLP,
+@@ -26,7 +28,7 @@ from torchtitan.models.utils import validate_converter_order
+ from torchtitan.protocols.model import ModelConfigConverter
+ from torchtitan.protocols.model_spec import ModelSpec
+ 
+-from .kda import KimiDeltaAttention, KimiKDAKernel, KimiRMSNormGated
++from .kda import InnerKDA, KDA, KDAKernel, KimiRMSNormGated
+ from .model import KimiK3Model, KimiK3TransformerBlock, KimiMLAAttention
+ from .moe import KimiFeedForward, KimiGroupedExperts, KimiLatentMoE
+ from .parallelize import parallelize_kimi_k3
+@@ -170,7 +172,7 @@ def _kda_config(
+     num_heads: int,
+     head_dim: int,
+     conv_kernel_size: int,
+-) -> KimiDeltaAttention.Config:
++) -> KDA.Config:
+     projection_dim = num_heads * head_dim
+ 
+     def conv() -> Conv1d.Config:
+@@ -183,8 +185,7 @@ def _kda_config(
+             param_init=_CONV_INIT,
+         )
+ 
+-    return KimiDeltaAttention.Config(
+-        dim=dim,
++    return KDA.Config(
+         num_heads=num_heads,
+         head_dim=head_dim,
+         conv_kernel_size=conv_kernel_size,
+@@ -198,7 +199,10 @@ def _kda_config(
+         forget_b=_linear(head_dim, projection_dim),
+         beta=_linear(dim, num_heads),
+         output_gate=_linear(dim, projection_dim),
+-        kernel=KimiKDAKernel.Config(lower_bound=-5.0),
++        inner_kda=InnerKDA.Config(
++            head_dim=head_dim,
++            kernel=KDAKernel.Config(),
++        ),
+         output_norm=KimiRMSNormGated.Config(
+             dim=head_dim,
+             eps=1e-5,
+@@ -220,6 +224,7 @@ def _latent_moe_config(
+     num_experts: int,
+     top_k: int,
+     num_shared_experts: int,
++    moe_comm_backend: str,
+ ) -> KimiLatentMoE.Config:
+     return KimiLatentMoE.Config(
+         num_experts=num_experts,
+@@ -245,9 +250,16 @@ def _latent_moe_config(
+                     "w3_EFD": partial(nn.init.trunc_normal_, std=0.02),
+                 },
+             ),
+-            token_dispatcher=LocalTokenDispatcher.Config(
++            # core's dispatcher factory: standard / deepep / hybridep /
++            # minimal_async_ep per spec, as deepseek_v3; falls back to local
++            # dispatch when the ep mesh is None.
++            token_dispatcher=make_token_dispatcher_config(
+                 num_experts=num_experts,
+                 top_k=top_k,
++                comm_backend=moe_comm_backend,
++                # The routed experts consume the LATENT stream, so the
++                # dispatcher buffers size by latent_dim, not model dim.
++                hidden_dim=latent_dim,
+             ),
+         ),
+         routed_norm=_norm(latent_dim),
+@@ -365,8 +377,9 @@ def _kimi_k3_config(
+     num_experts: int,
+     top_k: int,
+     num_shared_experts: int,
+-    vision_encoder: KimiK3VisionEncoder.Config,
++    vision_encoder: KimiK3VisionEncoder.Config | None,
+     attn_backend: str,
++    moe_comm_backend: str = "standard",
+ ) -> KimiK3Model.Config:
+     """Assemble a Kimi K3 config from the released topology's free parameters.
+ 
+@@ -420,6 +433,7 @@ def _kimi_k3_config(
+                         num_experts=num_experts,
+                         top_k=top_k,
+                         num_shared_experts=num_shared_experts,
++                        moe_comm_backend=moe_comm_backend,
+                     )
+                 ),
+                 attention_norm=_norm(dim),
+@@ -452,10 +466,13 @@ def _kimi_k3_config(
+     )
+ 
+ 
+-def _debugmodel(attn_backend: str) -> KimiK3Model.Config:
++def _debugmodel(
++    attn_backend: str, moe_comm_backend: str, *, with_vision: bool = False
++) -> KimiK3Model.Config:
+     dim = 1024
+     return _kimi_k3_config(
+         dim=dim,
++        moe_comm_backend=moe_comm_backend,
+         vocab_size=163840,
+         num_layers=24,
+         full_attention_layers={3, 7, 11, 15, 19, 23},
+@@ -466,7 +483,7 @@ def _debugmodel(attn_backend: str) -> KimiK3Model.Config:
+         qk_nope_head_dim=64,
+         qk_rope_head_dim=32,
+         v_head_dim=64,
+-        kda_head_dim=64,
++        kda_head_dim=128,
+         conv_kernel_size=4,
+         dense_hidden_dim=4096,
+         latent_dim=512,
+@@ -474,36 +491,31 @@ def _debugmodel(attn_backend: str) -> KimiK3Model.Config:
+         num_experts=32,
+         top_k=4,
+         num_shared_experts=2,
+-        vision_encoder=_vision_encoder_config(
+-            text_dim=dim,
+-            dim=512,
+-            qkv_dim=768,
+-            hidden_dim=2048,
+-            num_layers=8,
+-            num_heads=6,
+-            init_pos_emb_height=32,
+-            init_pos_emb_width=32,
++        vision_encoder=(
++            _vision_encoder_config(
++                text_dim=dim,
++                dim=512,
++                qkv_dim=768,
++                hidden_dim=2048,
++                num_layers=8,
++                num_heads=6,
++                init_pos_emb_height=32,
++                init_pos_emb_width=32,
++            )
++            if with_vision
++            else None
+         ),
+         attn_backend=attn_backend,
+     )
+ 
+ 
+-def _debugmodel_text(attn_backend: str) -> KimiK3Model.Config:
+-    """The debug decoder with no vision tower.
+-
+-    The text arm of the context-parallel matrix needs a flavor with no vision
+-    path, so that a failure there is attributable to the decoder's CP rather
+-    than to the tower or to the image/text token interleaving.
+-    """
+-    config = _debugmodel(attn_backend)
+-    config.vision_encoder = None
+-    return config
+-
+-
+-def _kimi_k3(attn_backend: str) -> KimiK3Model.Config:
++def _kimi_k3(
++    attn_backend: str, moe_comm_backend: str, *, with_vision: bool = False
++) -> KimiK3Model.Config:
+     dim = 7168
+     return _kimi_k3_config(
+         dim=dim,
++        moe_comm_backend=moe_comm_backend,
+         vocab_size=163840,
+         num_layers=93,
+         full_attention_layers=set(range(3, 92, 4)) | {92},
+@@ -522,24 +534,31 @@ def _kimi_k3(attn_backend: str) -> KimiK3Model.Config:
+         num_experts=896,
+         top_k=16,
+         num_shared_experts=2,
+-        vision_encoder=_vision_encoder_config(
+-            text_dim=dim,
+-            dim=1024,
+-            qkv_dim=1536,
+-            hidden_dim=4096,
+-            num_layers=27,
+-            num_heads=12,
+-            init_pos_emb_height=64,
+-            init_pos_emb_width=64,
++        vision_encoder=(
++            _vision_encoder_config(
++                text_dim=dim,
++                dim=1024,
++                qkv_dim=1536,
++                hidden_dim=4096,
++                num_layers=27,
++                num_heads=12,
++                init_pos_emb_height=64,
++                init_pos_emb_width=64,
++            )
++            if with_vision
++            else None
+         ),
+         attn_backend=attn_backend,
+     )
+ 
+ 
++# The text decoder and, as ``_mm``, the decoder with the MoonViT tower: the
++# muse_glimmer split, so a text run never carries an unused tower.
+ kimi_k3_configs = {
+-    "debugmodel": _debugmodel,
+-    "debugmodel_text": _debugmodel_text,
+-    "Kimi-K3": _kimi_k3,
++    "debugmodel": (_debugmodel, 16384),
++    "debugmodel_mm": (partial(_debugmodel, with_vision=True), 16384),
++    "Kimi-K3": (_kimi_k3, 262144),
++    "Kimi-K3_mm": (partial(_kimi_k3, with_vision=True), 262144),
+ }
+ 
+ 
+@@ -547,8 +566,20 @@ def model_registry(
+     flavor: str,
+     attn_backend: str = "flex",
+     converters: list[ModelConfigConverter.Config] | None = None,
++    moe_comm_backend: str = "standard",
++    *,
++    seq_len: int | None = None,
+ ) -> ModelSpec:
+-    config = kimi_k3_configs[flavor](attn_backend=attn_backend)
++    # The KDA / MLA layers build their own RoPE, so seq_len is not a builder
++    # argument here -- it only reports the context length on the ModelSpec.
++    get_config, max_context_len = kimi_k3_configs[flavor]
++    context_len = seq_len or max_context_len
++    if context_len > max_context_len:
++        raise ValueError(
++            f"Requested seq_len {context_len} exceeds max context length "
++            f"{max_context_len} for flavor {flavor}"
++        )
++    config = get_config(attn_backend=attn_backend, moe_comm_backend=moe_comm_backend)
+     if converters is not None:
+         validate_converter_order(converters)
+         for converter in converters:
+@@ -557,6 +588,7 @@ def model_registry(
+         name="kimi_k3",
+         flavor=flavor,
+         model=config,
++        max_context_length=context_len,
+         parallelize_fn=parallelize_kimi_k3,
+         pipelining_fn=None,
+         post_optimizer_build_fn=register_moe_load_balancing_hook,
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index d014ceacf..3900734ee 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -7,21 +7,24 @@
+ from dataclasses import replace
+ 
+ from torchtitan.components.checkpointer import CheckpointManager
+-from torchtitan.components.data import GrainDataLoader, SingleDatasetConfig
+-from torchtitan.components.data.packing import ConcatThenSplitPackingConfig
++from torchtitan.components.data import (
++    ConcatThenSplitPackingConfig,
++    GrainDataLoader,
++    SingleDatasetConfig,
++)
+ from torchtitan.components.loss import ChunkedLossWrapper, CrossEntropyLoss
+ from torchtitan.components.metrics import MetricsProcessor
+ from torchtitan.components.optimizer import default_adamw, LRSchedulersContainer
+ from torchtitan.components.tokenizer import MultiModalTokenizer
+-from torchtitan.config import ParallelismConfig, TrainingConfig
++from torchtitan.config import TrainingConfig
+ from torchtitan.distributed.activation_checkpoint import SelectiveAC
+ from torchtitan.hf_datasets.multimodal.mm_collator import MultiModalCollator
+ from torchtitan.hf_datasets.multimodal.mm_datasets import (
+     MM_DATASETS,
+     MultiModalProcessor,
+ )
+-from torchtitan.hf_datasets.multimodal.utils.image import resize_to_patch_budget
+-from torchtitan.hf_datasets.text_datasets import DATASETS as TEXT_DATASETS
++from torchtitan.hf_datasets.multimodal.utils.image import resize_to_navit_patch_grid
++from torchtitan.hf_datasets.text_datasets import DATASETS
+ from torchtitan.models.common.config_utils import decoder_vocab_size
+ from torchtitan.trainer import Trainer
+ 
+@@ -40,7 +43,7 @@ def _kimi_k3_multimodal_dataloader(
+         patch_size=14,
+         temporal_patch_size=1,
+         spatial_merge_size=2,
+-        resize_fn=resize_to_patch_budget,
++        resize_fn=resize_to_navit_patch_grid,
+         min_pixels=56 * 56,
+         max_pixels=224 * 224,
+         max_patches=256,
+@@ -62,7 +65,18 @@ def _kimi_k3_multimodal_dataloader(
+ 
+ 
+ def kimi_k3_debugmodel() -> Trainer.Config:
+-    model_spec = model_registry("debugmodel")
++    """The text decoder on the text debug dataset."""
++    config = kimi_k3_debugmodel_mm()
++    config.model_spec = model_registry("debugmodel")
++    config.dataloader = GrainDataLoader.Config(
++        dataset=ConcatThenSplitPackingConfig(dataset=DATASETS["c4_test"])
++    )
++    return config
++
++
++def kimi_k3_debugmodel_mm() -> Trainer.Config:
++    """The decoder with the MoonViT tower on the multimodal debug dataset."""
++    model_spec = model_registry("debugmodel_mm")
+     return Trainer.Config(
+         loss=ChunkedLossWrapper.Config(
+             loss_fn=CrossEntropyLoss.Config(
+@@ -81,8 +95,6 @@ def kimi_k3_debugmodel() -> Trainer.Config:
+             decay_type="linear",
+             min_lr_factor=0.0,
+         ),
+-        # TODO: Kimi K3 has no spmd_types annotations yet.
+-        parallelism=ParallelismConfig(spmd_backend="partial_dtensor"),
+         training=TrainingConfig(
+             num_tokens_per_microbatch_per_dp_rank=256,
+             max_context_length=256,
+@@ -96,14 +108,3 @@ def kimi_k3_debugmodel() -> Trainer.Config:
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
+-
+-
+-def kimi_k3_debugmodel_text() -> Trainer.Config:
+-    """The debug model with no vision tower, trained on the packed text dataset."""
+-    config = kimi_k3_debugmodel()
+-    config.model_spec = model_registry("debugmodel_text")
+-    config.loss.loss_fn.global_vocab_size = decoder_vocab_size(config.model_spec)
+-    config.dataloader = GrainDataLoader.Config(
+-        dataset=ConcatThenSplitPackingConfig(dataset=TEXT_DATASETS["c4_test"]),
+-    )
+-    return config
+diff --git a/torchtitan/models/kimi_k3/context_parallel.py b/torchtitan/models/kimi_k3/context_parallel.py
+new file mode 100644
+index 000000000..0f0a42b53
+--- /dev/null
++++ b/torchtitan/models/kimi_k3/context_parallel.py
+@@ -0,0 +1,246 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Context-parallel kernels for the Kimi K3 attention layers.
++
++Each kernel owns its CP collectives, the shape of
++``torchtitan.models.common.cp_attention``: the inner-attention boundary keeps
++the cp axis token-sharded on both sides and the kernel's ``forward`` issues the
++exchange its algorithm needs.
++
++  - MLA: the generic Ulysses and all-gather kernels specialised to MLA's key.
++    MLA expands one rotary vector per token onto every head before the kernel,
++    so the expanded key carries ``H`` copies of it; these kernels split the key
++    back, move the nope part packed with q and v (Ulysses) or with v (all-gather),
++    move the rotary slice once, and expand after the exchange.
++  - KDA: Attention Gym's context-parallel delta rule (KCP). The sequence stays
++    sharded end to end and the recurrence hands its state from rank to rank.
++
++Tensor suffixes: ``T`` tokens, ``H`` heads, ``K = N + R`` the qk head dim (nope
++and rope), ``V`` the v head dim, ``W`` a packed width.
++"""
++
++from dataclasses import dataclass
++
++import spmd_types as spmd
++
++import torch
++import torch.distributed as dist
++from attn_gym.linear.context_parallel import ContextParallelPlan
++
++from torchtitan.models.common.attention import FlexAttention
++from torchtitan.models.common.cp_attention import (
++    AllGatherCPFlexAttention,
++    ContextParallelKernel,
++    UlyssesCPFlexAttention,
++)
++
++from .kda import InnerKDA
++
++__all__ = [
++    "ContextParallelInnerKDA",
++    "MLAAllGatherCPFlexAttention",
++    "MLAUlyssesCPFlexAttention",
++    "kcp_plan",
++]
++
++_SEQ_DIM = 0
++_HEAD_DIM = 1
++
++
++def _split_rope(
++    k_THK: torch.Tensor, rope_head_dim: int
++) -> tuple[torch.Tensor, torch.Tensor]:
++    """The nope part ``[T, H, N]`` and the headless rope slice ``[T, R]``."""
++    nope_head_dim = k_THK.shape[-1] - rope_head_dim
++    k_nope_THN, k_rope_THR = k_THK.split([nope_head_dim, rope_head_dim], dim=-1)
++    # MLA expands one rope vector per token onto every head; head 0 carries it.
++    return k_nope_THN, k_rope_THR[:, 0]
++
++
++def _expand_rope(k_nope_THN: torch.Tensor, k_rope_TR: torch.Tensor) -> torch.Tensor:
++    """Rebuild the expanded key from its nope part and the rope slice."""
++    k_rope_THR = k_rope_TR.unsqueeze(1).expand(-1, k_nope_THN.shape[1], -1)
++    return torch.cat((k_nope_THN, k_rope_THR), dim=-1)
++
++
++class MLAUlyssesCPFlexAttention(UlyssesCPFlexAttention):
++    """Ulysses for MLA: one all-to-all for q, the nope key and v; the rope
++    slice is all-gathered along the sequence and expanded on the local heads."""
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(UlyssesCPFlexAttention.Config):
++        rope_head_dim: int
++        """Width of the rope slice at the end of the qk head dim."""
++
++    def __init__(self, config: Config) -> None:
++        super().__init__(config)
++        self.rope_head_dim = config.rope_head_dim
++
++    def forward(
++        self,
++        q_THK: torch.Tensor,
++        k_THK: torch.Tensor,
++        v_THV: torch.Tensor,
++        **kwargs,
++    ) -> torch.Tensor:
++        cp_group = self.cp_group
++        k_nope_THN, k_rope_TR = _split_rope(k_THK, self.rope_head_dim)
++        widths = (q_THK.shape[-1], k_nope_THN.shape[-1], v_THV.shape[-1])
++        # (T/cp, H, W) -> (T, H/cp, W) in one exchange.
++        packed_THW = torch.cat((q_THK, k_nope_THN, v_THV), dim=-1)
++        packed_THW = self._reshard(packed_THW, cp_group, src=_SEQ_DIM, dst=_HEAD_DIM)
++        q_THK, k_nope_THN, v_THV = packed_THW.split(widths, dim=-1)
++        # (T/cp, R) -> (T, R): the same vector on every head, so it never
++        # travels expanded. Its backward is a reduce-scatter.
++        k_rope_TR = spmd.redistribute(
++            k_rope_TR.contiguous(),
++            cp_group,
++            src=spmd.S(_SEQ_DIM),
++            dst=spmd.R,
++            backward_options={"op_dtype": k_rope_TR.dtype},
++        )
++        out_THV = FlexAttention.forward(
++            self, q_THK, _expand_rope(k_nope_THN, k_rope_TR), v_THV, **kwargs
++        )
++        # (T, H/cp, V) -> (T/cp, H, V).
++        return self._reshard(out_THV, cp_group, src=_HEAD_DIM, dst=_SEQ_DIM)
++
++
++class MLAAllGatherCPFlexAttention(AllGatherCPFlexAttention):
++    """All-gather KV for MLA: the nope key and v travel packed, the rope slice
++    travels once; q and the mask stay token-sharded."""
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(AllGatherCPFlexAttention.Config):
++        rope_head_dim: int
++        """Width of the rope slice at the end of the qk head dim."""
++
++    def __init__(self, config: Config) -> None:
++        super().__init__(config)
++        self.rope_head_dim = config.rope_head_dim
++
++    def _gather(self, x: torch.Tensor, cp_group: dist.ProcessGroup) -> torch.Tensor:
++        return spmd.redistribute(
++            x,
++            cp_group,
++            src=spmd.S(_SEQ_DIM),
++            dst=spmd.R,
++            backward_options={"op_dtype": self.reduce_dtype or x.dtype},
++        )
++
++    def forward(
++        self,
++        q_THK: torch.Tensor,
++        k_THK: torch.Tensor,
++        v_THV: torch.Tensor,
++        **kwargs,
++    ) -> torch.Tensor:
++        cp_group = self.cp_group
++        k_nope_THN, k_rope_TR = _split_rope(k_THK, self.rope_head_dim)
++        widths = (k_nope_THN.shape[-1], v_THV.shape[-1])
++        packed_THW = self._gather(torch.cat((k_nope_THN, v_THV), dim=-1), cp_group)
++        k_rope_TR = self._gather(k_rope_TR.contiguous(), cp_group)
++        k_nope_THN, v_THV = packed_THW.split(widths, dim=-1)
++        return FlexAttention.forward(
++            self, q_THK, _expand_rope(k_nope_THN, k_rope_TR), v_THV, **kwargs
++        )
++
++
++def kcp_plan(seq_len_local: int, group: dist.ProcessGroup) -> ContextParallelPlan:
++    """attn-gym routing plan for one sequence split into equal contiguous shards.
++
++    Every rank owns ``[rank * L, (rank + 1) * L)`` of one document; CP rejects a
++    load balancer so this table is the sharding the trainer actually applied.
++    Host-only, so it costs nothing to rebuild per call.
++    """
++    world = dist.get_world_size(group)
++    ranges = [[(r * seq_len_local, (r + 1) * seq_len_local)] for r in range(world)]
++    return ContextParallelPlan.from_token_ranges(
++        [0, seq_len_local * world], ranges, dist.get_rank(group)
++    )
++
++
++class ContextParallelInnerKDA(ContextParallelKernel, InnerKDA):
++    """Short convolution and KDA over one sequence shard per rank.
++
++    The causal conv takes the previous rank's tail as history and the delta
++    rule runs Attention Gym's context-parallel recipe, which exchanges
++    per-fragment affine state summaries so each rank scans from its true
++    entry state. The sequence stays sharded on both sides.
++    """
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(InnerKDA.Config):
++        pass
++
++    def __init__(self, config: Config):
++        super().__init__(config)
++        # Checked at build time so the message is actionable, rather than an
++        # ImportError from inside a layer's first forward.
++        try:
++            from attn_gym.linear.context_parallel import (  # noqa: F401
++                context_parallel_conv_history,
++            )
++            from attn_gym.linear.kda import context_parallel_kda  # noqa: F401
++        except ImportError as err:
++            raise ValueError(
++                "KDA context parallelism needs attn-gym's context-parallel "
++                "recipe (attn_gym.linear.kda.context_parallel_kda and "
++                "attn_gym.linear.context_parallel.context_parallel_conv_history); "
++                f"import failed with: {err}."
++            ) from err
++
++    def forward(
++        self,
++        query_TC: torch.Tensor,
++        key_TC: torch.Tensor,
++        value_TC: torch.Tensor,
++        raw_gate_THK: torch.Tensor,
++        raw_beta_TH: torch.Tensor,
++        conv_q_weight_C1W: torch.Tensor,
++        conv_k_weight_C1W: torch.Tensor,
++        conv_v_weight_C1W: torch.Tensor,
++        A_log_H: torch.Tensor,
++        dt_bias_HK: torch.Tensor,
++        cu_seqlens: torch.Tensor | None,
++    ) -> torch.Tensor:
++        from attn_gym.linear.context_parallel import context_parallel_conv_history
++
++        if cu_seqlens is not None:
++            raise NotImplementedError(
++                "Kimi K3 KDA context parallel runs one document per batch; "
++                "packed-document boundaries under CP are not supported yet."
++            )
++        group = self.cp_group
++        mixed_qkv_1TC, conv_weight_C1W = self._pack_inputs(
++            query_TC,
++            key_TC,
++            value_TC,
++            conv_q_weight_C1W,
++            conv_k_weight_C1W,
++            conv_v_weight_C1W,
++        )
++        cp_plan = kcp_plan(mixed_qkv_1TC.shape[1], group)
++        cu_seqlens = torch.tensor(
++            cp_plan.cu_seqlens, dtype=torch.int32, device=mixed_qkv_1TC.device
++        )
++        # The causal conv needs the previous rank's tail as history.
++        conv_state = context_parallel_conv_history(
++            mixed_qkv_1TC, cp_plan, group, conv_weight_C1W.shape[-1] - 1
++        )
++        return self._conv_and_scan(
++            mixed_qkv_1TC,
++            conv_weight_C1W,
++            raw_gate_THK,
++            raw_beta_TH,
++            A_log_H,
++            dt_bias_HK,
++            cu_seqlens=cu_seqlens,
++            conv_state=conv_state,
++            cp_plan=cp_plan,
++            cp_group=group,
++        )
+diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
+index ab4789a31..89866b749 100644
+--- a/torchtitan/models/kimi_k3/kda.py
++++ b/torchtitan/models/kimi_k3/kda.py
+@@ -4,23 +4,28 @@
+ # This source code is licensed under the BSD-style license found in the
+ # LICENSE file in the root directory of this source tree.
+ 
+-"""Kimi Delta Attention modules for Kimi K3."""
++"""Kimi Delta Attention using Attention Gym kernels."""
+ 
+ from dataclasses import dataclass
+ 
+ import torch
+ import torch.distributed as dist
+ import torch.nn.functional as F
+-from fla.ops.kda import chunk_kda
++from attn_gym.linear.context_parallel import ContextParallelPlan
++from attn_gym.linear.kda import bound_gate, chunk_kda
++from attn_gym.linear.kda.fwd.triton.l2norm_fwd import l2norm
++from attn_gym.linear.short_conv import causal_conv1d
+ from torch import nn
+ 
+-from torchtitan.models.common import Conv1d, Linear
+-from torchtitan.models.common.attention import AttentionMasksType
++from torchtitan.models.common.attention import AttentionMasksType, VarlenMetadata
++from torchtitan.models.common.linear import Linear
++from torchtitan.models.common.nn_modules import Conv1d
+ from torchtitan.protocols.module import Module
+ 
+ # Shape suffixes:
+-# T = packed tokens, D = model dimension, H = heads,
+-# K = key head dimension, V = value head dimension, C = projection channels.
++# T = packed tokens, D = model dimension, C = projection channels,
++# H = attention heads, K = query/key head dimension, V = value head dimension,
++# W = convolution kernel width.
+ 
+ 
+ class KimiRMSNormGated(Module):
+@@ -36,109 +41,215 @@ class KimiRMSNormGated(Module):
+         self.eps = config.eps
+         self.weight = nn.Parameter(torch.empty(config.dim))
+ 
+-    def forward(self, x: torch.Tensor, gate: torch.Tensor) -> torch.Tensor:
+-        input_dtype = x.dtype
+-        x_float = x.float()
+-        variance = x_float.pow(2).mean(dim=-1, keepdim=True)
+-        x_float = x_float * torch.rsqrt(variance + self.eps)
+-        x_float = self.weight.float() * x_float
+-        return (x_float * torch.sigmoid(gate.float())).to(input_dtype)
++    def forward(self, x_THV: torch.Tensor, gate_THV: torch.Tensor) -> torch.Tensor:
++        input_dtype = x_THV.dtype
++        normalized_THV = F.rms_norm(
++            x_THV.float(),
++            (x_THV.shape[-1],),
++            self.weight.float(),
++            self.eps,
++        )
++        return (normalized_THV * gate_THV.float().sigmoid()).to(input_dtype)
+ 
+ 
+-class KimiKDAKernel(Module):
+-    """Stateless dispatch to FLA's chunked KDA kernel."""
++class KDAKernel(Module):
++    """Apply KDA preprocessing and the Attention Gym kernel."""
+ 
+     @dataclass(kw_only=True, slots=True)
+     class Config(Module.Config):
+-        lower_bound: float | None = -5.0
++        lower_bound: float = -5.0
++
++        def __post_init__(self):
++            if not -5.0 <= self.lower_bound < 0.0:
++                raise ValueError(
++                    "KDA lower_bound must be in the safe range [-5, 0), "
++                    f"got {self.lower_bound}."
++                )
+ 
+     def __init__(self, config: Config):
+         super().__init__()
+         self.lower_bound = config.lower_bound
+-        if self.lower_bound is not None and not (-5.0 <= self.lower_bound < 0.0):
+-            raise ValueError("KDA lower_bound must be in the safe range [-5, 0).")
+ 
+     def forward(
+         self,
+-        q_BLHK: torch.Tensor,
+-        k_BLHK: torch.Tensor,
+-        v_BLHV: torch.Tensor,
+-        gate_BLHK: torch.Tensor,
+-        beta_BLH: torch.Tensor,
++        q_1THK: torch.Tensor,
++        k_1THK: torch.Tensor,
++        v_1THV: torch.Tensor,
++        raw_gate_1THK: torch.Tensor,
++        raw_beta_1TH: torch.Tensor,
+         A_log_H: torch.Tensor,
+         dt_bias_HK: torch.Tensor,
+-        cp_context=None,
++        *,
++        cu_seqlens: torch.Tensor | None = None,
++        cp_plan: ContextParallelPlan | None = None,
++        cp_group: dist.ProcessGroup | None = None,
+     ) -> torch.Tensor:
+-        # cp_context turns the scan into fla's prefix-scan over rank-local
+-        # fragments. output_final_state is unsupported there, and unneeded in
+-        # training: the final state only matters for decoding.
+-        out_BLHV, _ = chunk_kda(
+-            q_BLHK,
+-            k_BLHK,
+-            v_BLHV,
+-            gate_BLHK,
+-            beta_BLH,
+-            A_log=A_log_H,
+-            dt_bias=dt_bias_HK.reshape(-1),
+-            use_qk_l2norm_in_kernel=True,
+-            use_gate_in_kernel=True,
+-            use_beta_sigmoid_in_kernel=True,
+-            safe_gate=self.lower_bound is not None,
++        if not q_1THK.is_cuda:
++            raise RuntimeError("Attention Gym KDA requires CUDA tensors.")
++        capability = torch.cuda.get_device_capability(q_1THK.device)
++        if capability not in {(10, 0), (10, 3)}:
++            raise RuntimeError(
++                "Attention Gym KDA requires Blackwell SM100/SM103; "
++                f"got CUDA capability {capability}."
++            )
++
++        gate_1THK = bound_gate(
++            raw_gate_1THK,
++            # TODO: The long-term solution is to specify mixed precision per FQN
++            # instead of per layer. https://github.com/pytorch/pytorch/issues/156784
++            A_log_H.float(),
++            dt_bias_HK.float(),
+             lower_bound=self.lower_bound,
+-            **(
+-                {"cp_context": cp_context, "cu_seqlens": cp_context.cu_seqlens}
+-                if cp_context is not None
+-                else {}
+-            ),
++            impl="fused",
+         )
+-        return out_BLHV
+-
+-
+-def conv_with_halo(conv, x_local, cp_context, activation: str | None = None):
+-    """Depthwise causal conv on a sequence-sharded input, exactly: fla's
+-    ``causal_conv1d_cp`` exchanges the previous rank's tail as a fixed-size
+-    halo. ``activation`` defaults to ``conv.activation`` (fla's
+-    ``ShortConvolution`` carries one; a plain ``nn.Conv1d`` does not)."""
+-    from einops import rearrange
+-    from fla.modules.conv.cp.ops import causal_conv1d_cp
+-
+-    return causal_conv1d_cp(
+-        x=x_local,
+-        weight=rearrange(conv.weight, "d 1 w -> d w"),
+-        bias=conv.bias,
+-        activation=getattr(conv, "activation", None)
+-        if activation is None
+-        else activation,
+-        cp_context=cp_context,
+-    )
+-
+-
+-def build_kcp_context(
+-    seq_len_local: int,
+-    group,
+-    device,
+-    conv1d_kernel_size: int | None = None,
+-    cu_seqlens=None,
+-):
+-    """fla CP context for one evenly split sequence. ``cu_seqlens`` must be
+-    GLOBAL boundaries of the packed sequence; the default is one document
+-    spanning the whole sequence, matching the non-CP call sites, which also
+-    pass no boundaries."""
+-    from fla.ops.cp.context import build_cp_context
+-
+-    if cu_seqlens is None:
+-        world = dist.get_world_size(group)
+-        total = seq_len_local * world
+-        cu_seqlens = torch.tensor([0, total], dtype=torch.int32, device=device)
+-    return build_cp_context(
+-        cu_seqlens, group=group, conv1d_kernel_size=conv1d_kernel_size
+-    )
+-
+-
+-class KimiDeltaAttention(Module):
++        if cp_plan is not None:
++            # KCP: the sequence stays sharded; attn-gym exchanges per-fragment
++            # affine state summaries so each rank scans from its true entry state.
++            from attn_gym.linear.kda import context_parallel_kda
++
++            assert cu_seqlens is not None
++            output_1THV, _ = context_parallel_kda(
++                l2norm(q_1THK),
++                l2norm(k_1THK),
++                v_1THV,
++                gate_1THK,
++                raw_beta_1TH.float().sigmoid(),
++                cu_seqlens=cu_seqlens,
++                plan=cp_plan,
++                group=cp_group,
++            )
++            return output_1THV
++        output_1THV, _ = chunk_kda(
++            l2norm(q_1THK),
++            l2norm(k_1THK),
++            v_1THV,
++            gate_1THK,
++            raw_beta_1TH.float().sigmoid(),
++            cu_seqlens=cu_seqlens,
++        )
++        return output_1THV
++
++
++class InnerKDA(Module):
++    """Run short convolution and KDA behind the vLLM replacement boundary."""
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(Module.Config):
++        head_dim: int
++        kernel: KDAKernel.Config
++
++        def __post_init__(self):
++            if self.head_dim != 128:
++                raise ValueError(
++                    "Attention Gym KDA requires head_dim=128, " f"got {self.head_dim}."
++                )
++
++    def __init__(self, config: Config):
++        super().__init__()
++        self.head_dim = config.head_dim
++        self.kernel = config.kernel.build()
++
++    def forward(
++        self,
++        query_TC: torch.Tensor,
++        key_TC: torch.Tensor,
++        value_TC: torch.Tensor,
++        raw_gate_THK: torch.Tensor,
++        raw_beta_TH: torch.Tensor,
++        conv_q_weight_C1W: torch.Tensor,
++        conv_k_weight_C1W: torch.Tensor,
++        conv_v_weight_C1W: torch.Tensor,
++        A_log_H: torch.Tensor,
++        dt_bias_HK: torch.Tensor,
++        cu_seqlens: torch.Tensor | None,
++    ) -> torch.Tensor:
++        mixed_qkv_1TC, conv_weight_C1W = self._pack_inputs(
++            query_TC,
++            key_TC,
++            value_TC,
++            conv_q_weight_C1W,
++            conv_k_weight_C1W,
++            conv_v_weight_C1W,
++        )
++        return self._conv_and_scan(
++            mixed_qkv_1TC,
++            conv_weight_C1W,
++            raw_gate_THK,
++            raw_beta_TH,
++            A_log_H,
++            dt_bias_HK,
++            cu_seqlens=cu_seqlens,
++        )
++
++    @staticmethod
++    def _pack_inputs(
++        query_TC: torch.Tensor,
++        key_TC: torch.Tensor,
++        value_TC: torch.Tensor,
++        conv_q_weight_C1W: torch.Tensor,
++        conv_k_weight_C1W: torch.Tensor,
++        conv_v_weight_C1W: torch.Tensor,
++    ) -> tuple[torch.Tensor, torch.Tensor]:
++        """Fuse q/k/v and their conv weights so one convolution serves all three."""
++        mixed_qkv_1TC = torch.cat(
++            (query_TC, key_TC, value_TC),
++            dim=-1,
++        ).unsqueeze(0)
++        conv_weight_C1W = torch.cat(
++            (conv_q_weight_C1W, conv_k_weight_C1W, conv_v_weight_C1W),
++            dim=0,
++        )
++        return mixed_qkv_1TC, conv_weight_C1W
++
++    def _conv_and_scan(
++        self,
++        mixed_qkv_1TC: torch.Tensor,
++        conv_weight_C1W: torch.Tensor,
++        raw_gate_THK: torch.Tensor,
++        raw_beta_TH: torch.Tensor,
++        A_log_H: torch.Tensor,
++        dt_bias_HK: torch.Tensor,
++        *,
++        cu_seqlens: torch.Tensor | None,
++        conv_state: torch.Tensor | None = None,
++        cp_plan: ContextParallelPlan | None = None,
++        cp_group: dist.ProcessGroup | None = None,
++    ) -> torch.Tensor:
++        """Causal conv then the delta-rule scan; the CP kernel passes its plan."""
++        conv_output_1TC = causal_conv1d(
++            mixed_qkv_1TC,
++            conv_weight_C1W[:, 0],
++            activation="silu",
++            cu_seqlens=cu_seqlens,
++            initial_state=conv_state,
++        )
++        assert isinstance(conv_output_1TC, torch.Tensor)
++
++        q_1TC, k_1TC, v_1TC = conv_output_1TC.chunk(3, dim=-1)
++        q_1THK, k_1THK, v_1THV = (
++            tensor.unflatten(-1, (-1, self.head_dim))
++            for tensor in (q_1TC, k_1TC, v_1TC)
++        )
++        output_1THV = self.kernel(
++            q_1THK,
++            k_1THK,
++            v_1THV,
++            raw_gate_THK.unsqueeze(0),
++            raw_beta_TH.unsqueeze(0),
++            A_log_H,
++            dt_bias_HK,
++            cu_seqlens=cu_seqlens,
++            cp_plan=cp_plan,
++            cp_group=cp_group,
++        )
++        return output_1THV.squeeze(0)
++
++
++class KDA(Module):
++    """Kimi Delta Attention with checkpoint-compatible Kimi K3 parameters."""
++
+     @dataclass(kw_only=True, slots=True)
+     class Config(Module.Config):
+-        dim: int
+         num_heads: int
+         head_dim: int
+         conv_kernel_size: int
+@@ -152,18 +263,26 @@ class KimiDeltaAttention(Module):
+         forget_b: Linear.Config
+         beta: Linear.Config
+         output_gate: Linear.Config
+-        kernel: Module.Config
++        inner_kda: Module.Config
+         output_norm: KimiRMSNormGated.Config
+         output_proj: Linear.Config
+ 
+-    # Set by apply_cp_kimi_k3; None means the layer runs without CP.
+-    _cp_group = None
++        def __post_init__(self):
++            if self.num_heads < 1:
++                raise ValueError(f"num_heads must be positive, got {self.num_heads}")
++            if self.head_dim != 128:
++                raise ValueError(
++                    "Attention Gym KDA requires head_dim=128, " f"got {self.head_dim}."
++                )
++            if self.conv_kernel_size < 1:
++                raise ValueError(
++                    f"conv_kernel_size must be positive, got {self.conv_kernel_size}"
++                )
+ 
+     def __init__(self, config: Config):
+         super().__init__()
+         self.num_heads = config.num_heads
+         self.head_dim = config.head_dim
+-        self.conv_kernel_size = config.conv_kernel_size
+ 
+         self.q_proj = config.q_proj.build()
+         self.k_proj = config.k_proj.build()
+@@ -175,17 +294,13 @@ class KimiDeltaAttention(Module):
+         self.forget_b = config.forget_b.build()
+         self.beta = config.beta.build()
+         self.output_gate = config.output_gate.build()
+-        self.kernel = config.kernel.build()
++        self.inner_kda = config.inner_kda.build()
+         self.output_norm = config.output_norm.build()
+         self.output_proj = config.output_proj.build()
+ 
+         self.A_log = nn.Parameter(torch.empty(config.num_heads))
+         self.dt_bias = nn.Parameter(torch.empty(config.num_heads, config.head_dim))
+ 
+-    def _causal_conv(self, x_TC: torch.Tensor, conv: Conv1d) -> torch.Tensor:
+-        x_1CT = F.pad(x_TC.T.unsqueeze(0), (self.conv_kernel_size - 1, 0))
+-        return F.silu(conv(x_1CT)).squeeze(0).T
+-
+     def forward(
+         self,
+         x_TD: torch.Tensor,
+@@ -193,103 +308,38 @@ class KimiDeltaAttention(Module):
+         positions: torch.Tensor | None = None,
+     ) -> torch.Tensor:
+         del positions
+-        if attention_masks is not None:
+-            raise NotImplementedError(
+-                "Kimi K3 reference KDA does not support packed-document masks."
++        if x_TD.ndim != 2:
++            raise ValueError(
++                f"KDA input must have shape [T, D], got {tuple(x_TD.shape)}."
+             )
+ 
+-        cp_group = self._cp_group
+-        if cp_group is not None and dist.get_world_size(cp_group) > 1:
+-            return self._forward_kcp(x_TD, cp_group)
+-
++        if attention_masks is None:
++            cu_seqlens = None
++        elif isinstance(attention_masks, VarlenMetadata):
++            cu_seqlens = attention_masks.cu_seq_q
++        else:
++            raise ValueError(
++                "KDA attention_masks must be VarlenMetadata or None, "
++                f"got {type(attention_masks).__name__}."
++            )
+         num_tokens = x_TD.shape[0]
+-        q_THK = self._causal_conv(self.q_proj(x_TD), self.q_conv).view(
+-            num_tokens, self.num_heads, self.head_dim
+-        )
+-        k_THK = self._causal_conv(self.k_proj(x_TD), self.k_conv).view(
++        raw_gate_THK = self.forget_b(self.forget_a(x_TD)).reshape(
+             num_tokens, self.num_heads, self.head_dim
+         )
+-        v_THV = self._causal_conv(self.v_proj(x_TD), self.v_conv).view(
+-            num_tokens, self.num_heads, self.head_dim
+-        )
+-        forget_THK = self.forget_b(self.forget_a(x_TD)).view(
+-            num_tokens, self.num_heads, self.head_dim
+-        )
+-        beta_TH = self.beta(x_TD).float()
+-
+-        out_THV = self.kernel(
+-            q_THK.unsqueeze(0),
+-            k_THK.unsqueeze(0),
+-            v_THV.unsqueeze(0),
+-            forget_THK.unsqueeze(0),
+-            beta_TH.unsqueeze(0),
++        raw_beta_TH = self.beta(x_TD).reshape(num_tokens, self.num_heads)
++        out_THV = self.inner_kda(
++            self.q_proj(x_TD),
++            self.k_proj(x_TD),
++            self.v_proj(x_TD),
++            raw_gate_THK,
++            raw_beta_TH,
++            self.q_conv.weight,
++            self.k_conv.weight,
++            self.v_conv.weight,
+             self.A_log,
+             self.dt_bias,
+-        ).squeeze(0)
+-        output_gate_THV = self.output_gate(x_TD).view(
+-            num_tokens, self.num_heads, self.head_dim
+-        )
+-        out_THV = self.output_norm(out_THV, output_gate_THV)
+-        return self.output_proj(out_THV.reshape(num_tokens, -1))
+-
+-    def _forward_kcp(self, x_TD: torch.Tensor, cp_group) -> torch.Tensor:
+-        """KCP forward: the sequence stays sharded (report sec 5.1.2).
+-
+-        No rank holds the full sequence. The two cross-rank dependencies have
+-        different structure and are handled separately: the causal convolutions
+-        need only the previous rank's tail, one fixed-size halo; the delta-rule
+-        recurrence needs the true incoming state, which does not decompose by
+-        summation, so fla's cp_context prefix-scans over (cumulative transition,
+-        zero-started state) fragments.
+-
+-        The folded token stream is already one packed sequence, which is exactly
+-        what fla's CP ops assume, so this path has no batch loop.
+-        """
+-        t_loc = x_TD.shape[0]
+-        # One context serves both the conv halo and the recurrence; the conv
+-        # needs the kernel width, the recurrence ignores it.
+-        ctx = build_kcp_context(
+-            t_loc,
+-            cp_group,
+-            x_TD.device,
+-            conv1d_kernel_size=self.conv_kernel_size,
++            cu_seqlens,
+         )
+ 
+-        def conv(proj, conv_module) -> torch.Tensor:
+-            # fla's CP conv wants [1, T, C] and applies the activation itself;
+-            # the reference model applies SiLU outside its Conv1d, so the name
+-            # is passed explicitly.
+-            y_1TC = conv_with_halo(
+-                conv_module, proj(x_TD).unsqueeze(0), ctx, activation="silu"
+-            )
+-            return y_1TC.squeeze(0)
+-
+-        q_THK = conv(self.q_proj, self.q_conv).view(
+-            t_loc, self.num_heads, self.head_dim
+-        )
+-        k_THK = conv(self.k_proj, self.k_conv).view(
+-            t_loc, self.num_heads, self.head_dim
+-        )
+-        v_THV = conv(self.v_proj, self.v_conv).view(
+-            t_loc, self.num_heads, self.head_dim
+-        )
+-        forget_THK = self.forget_b(self.forget_a(x_TD)).view(
+-            t_loc, self.num_heads, self.head_dim
+-        )
+-        beta_TH = self.beta(x_TD).float()
+-
+-        out_THV = self.kernel(
+-            q_THK.unsqueeze(0),
+-            k_THK.unsqueeze(0),
+-            v_THV.unsqueeze(0),
+-            forget_THK.unsqueeze(0),
+-            beta_TH.unsqueeze(0),
+-            self.A_log,
+-            self.dt_bias,
+-            cp_context=ctx,
+-        ).squeeze(0)
+-        output_gate_THV = self.output_gate(x_TD).view(
+-            t_loc, self.num_heads, self.head_dim
+-        )
+-        out_THV = self.output_norm(out_THV, output_gate_THV)
+-        return self.output_proj(out_THV.reshape(t_loc, -1))
++        output_gate_THV = self.output_gate(x_TD).view_as(out_THV)
++        return self.output_proj(self.output_norm(out_THV, output_gate_THV).flatten(-2))
+diff --git a/torchtitan/models/kimi_k3/model.py b/torchtitan/models/kimi_k3/model.py
+index 2cbeea075..09e49f684 100644
+--- a/torchtitan/models/kimi_k3/model.py
++++ b/torchtitan/models/kimi_k3/model.py
+@@ -5,13 +5,14 @@
+ # LICENSE file in the root directory of this source tree.
+ 
+ from dataclasses import dataclass, field
++from typing import cast
+ 
+ import torch
+ import torch.distributed as dist
+ from torch import nn
++from torch.distributed.tensor import DTensor
+ 
+ from torchtitan.hf_datasets.multimodal.mm_datasets import MMSamplePackingConfig
+-
+ from torchtitan.models.common import Linear
+ from torchtitan.models.common.attention import (
+     AttentionMasksType,
+@@ -24,17 +25,21 @@ from torchtitan.models.common.multimodal import (
+     scatter_vision_embeds,
+ )
+ from torchtitan.models.common.nn_modules import RMSNorm
+-from torchtitan.models.utils import get_moe_model_nparams_and_flops
++from torchtitan.models.kimi_k3.sharding import set_kimi_k3_sharding_config
++from torchtitan.models.utils import (
++    delta_rule_flops_per_token,
++    get_nparams_and_active_nparams,
++    quadratic_attention_flops_per_token,
++)
+ from torchtitan.protocols.module import Module
+ 
+-from .kda import KimiDeltaAttention
++from .kda import KDA
+ from .moe import KimiFeedForward, KimiLatentMoE
+-from .sharding import mla_ulysses_attention
+ from .vision_encoder import KimiK3VisionEncoder
+ 
+ # Shape suffixes:
+-# T = packed tokens, D = model dimension, H = heads,
+-# K = key head dimension, V = value head dimension,
++# T = packed tokens, D = model dimension, C = projection channels, H = heads,
++# K = query/key head dimension, V = value head dimension,
+ # N = attention-residual entries.
+ 
+ 
+@@ -64,12 +69,6 @@ class KimiMLAAttention(BaseAttention):
+         wo: Linear.Config
+         inner_attention: Module.Config = field(default_factory=FlexAttention.Config)
+ 
+-    # Set by apply_cp_kimi_k3; None means the layer runs without CP. MLA is
+-    # Ulysses under either KDA CP mode -- KCP describes a recurrence that MLA
+-    # does not have.
+-    _cp_group = None
+-    _cp_mask = None
+-
+     def __init__(self, config: Config):
+         super().__init__()
+         self.n_heads = config.n_heads
+@@ -99,13 +98,9 @@ class KimiMLAAttention(BaseAttention):
+         del positions
+ 
+         num_tokens = x_TD.shape[0]
+-        # The head count is DERIVED from the projection width, not read off
+-        # self.n_heads. Ulysses splits whatever head count this rank actually
+-        # holds, and the two differ once another parallelism has already split
+-        # the head axis; deriving works either way and needs no branch.
+-        q_proj_TE = self.wq_b(self.q_norm(self.wq_a(x_TD)))
+-        h_local = q_proj_TE.shape[-1] // self.q_head_dim
+-        q_THK = q_proj_TE.view(num_tokens, h_local, self.q_head_dim)
++        q_THK = self.wq_b(self.q_norm(self.wq_a(x_TD))).view(
++            num_tokens, self.n_heads, self.q_head_dim
++        )
+ 
+         compressed_kv_TC = self.wkv_a(x_TD)
+         kv_latent_TC, k_rope_TK = torch.split(
+@@ -115,7 +110,7 @@ class KimiMLAAttention(BaseAttention):
+         )
+         kv_THC = self.wkv_b(self.kv_norm(kv_latent_TC)).view(
+             num_tokens,
+-            h_local,
++            self.n_heads,
+             self.qk_nope_head_dim + self.v_head_dim,
+         )
+         k_nope_THK, v_THV = torch.split(
+@@ -124,27 +119,23 @@ class KimiMLAAttention(BaseAttention):
+             dim=-1,
+         )
+         k_rope_THK = k_rope_TK.view(num_tokens, 1, self.qk_rope_head_dim).expand(
+-            -1, h_local, -1
++            -1, self.n_heads, -1
+         )
+         k_THK = torch.cat((k_nope_THK, k_rope_THK), dim=-1)
+ 
+-        cp_group = self._cp_group
+-        if cp_group is not None and dist.get_world_size(cp_group) > 1:
+-            out_THV = mla_ulysses_attention(
+-                self, q_THK, kv_THC, k_rope_TK, cp_group
+-            )
+-        else:
+-            out_THV = self.inner_attention(
+-                q_THK,
+-                k_THK,
+-                v_THV,
+-                attention_masks=attention_masks,
+-                scale=self.scale,
+-            )
+-        out_TD = out_THV.reshape(num_tokens, h_local * self.v_head_dim)
++        # Under CP the inner attention is a kernel that owns its exchange.
++        out_THV = self.inner_attention(
++            q_THK,
++            k_THK,
++            v_THV,
++            attention_masks=attention_masks,
++            scale=self.scale,
++        )
++        out_TD = out_THV.reshape(num_tokens, self.n_heads * self.v_head_dim)
+         out_TD = out_TD * torch.sigmoid(self.gate(x_TD))
+         return self.wo(out_TD)
+ 
++
+ def _apply_attention_residual(
+     prefix_sum_TD: torch.Tensor,
+     block_residual_TND: torch.Tensor,
+@@ -176,7 +167,7 @@ class KimiK3TransformerBlock(Module):
+         layer_id: int
+         attn_res_block_size: int
+         attention: KimiMLAAttention.Config | None
+-        delta_attention: KimiDeltaAttention.Config | None
++        delta_attention: KDA.Config | None
+         feed_forward: KimiFeedForward.Config | None
+         moe: KimiLatentMoE.Config | None
+         attention_norm: RMSNorm.Config
+@@ -284,12 +275,6 @@ class KimiK3Model(Decoder):
+         output_res_proj: Linear.Config
+         vision_encoder: KimiK3VisionEncoder.Config | None = None
+ 
+-        def _validate_cp_backend(self, parallelism) -> None:
+-            """This model's CP is not ShardingConfig-driven -- the KDA kernels
+-            are fla triton and never see a DTensor -- so the spmd_types
+-            requirement does not apply; apply_cp_kimi_k3 checks its own
+-            preconditions at wiring time."""
+-
+         def update_from_config(self, *, config, **kwargs) -> None:
+             dataset = config.dataloader.dataset
+             # TODO: Support sample packing by resetting the Q/K/V causal-convolution
+@@ -297,45 +282,58 @@ class KimiK3Model(Decoder):
+             if isinstance(dataset, MMSamplePackingConfig):
+                 raise ValueError("Kimi K3 does not yet support sample packing.")
+             parallelism = config.parallelism
+-            if (
+-                parallelism.context_parallel_degree > 1
+-                and parallelism.context_parallel_load_balancer is not None
+-            ):
+-                # Both CP algorithms here read the sequence as rank-ordered
+-                # contiguous chunks: the Ulysses all-to-all reassembles it in
+-                # rank order, and KDA's recurrence passes state from rank r to
+-                # rank r+1. A load balancer permutes tokens across ranks, which
+-                # silently breaks both -- the shapes still line up.
+-                raise ValueError(
+-                    "Kimi K3 context parallel requires "
+-                    "parallelism.context_parallel_load_balancer=None; "
+-                    f"got {parallelism.context_parallel_load_balancer!r}."
+-                )
++            set_kimi_k3_sharding_config(
++                self, enable_ep=config.parallelism.expert_parallel_degree > 1
++            )
++            if parallelism.context_parallel_degree > 1:
++                from .context_parallel import ContextParallelInnerKDA
++
++                # The MLA kernels are validated upstream (validate_context_parallel);
++                # the KDA layers are not attention configs, so their kernel is
++                # checked here. Both are installed by the recipe's transforms.
++                for layer in self.layers:
++                    kda = layer.delta_attention
++                    if kda is not None and not isinstance(
++                        kda.inner_kda, ContextParallelInnerKDA.Config
++                    ):
++                        raise ValueError(
++                            "Kimi K3 context parallel needs the KCP kernel on every "
++                            "KDA layer; apply torchtitan_recipes.kimi_k3."
++                            "KimiK3DeltaContextParallelTransform."
++                        )
+             Decoder.Config.update_from_config(self, config=config, **kwargs)
+ 
+         def get_nparams_and_flops(
+             self, model: nn.Module, seq_len: int
+         ) -> tuple[int, int]:
+-            attention_config = self.first_attention
+-            if not isinstance(attention_config, KimiMLAAttention.Config):
+-                raise ValueError(
+-                    "Kimi K3 requires at least one MLA layer for FLOP accounting."
+-                )
+-            # KDA and the vision encoder have no dedicated term here, so their
+-            # parameters only contribute the dense 6*N estimate; reported MFU is
+-            # approximate.
+-            return get_moe_model_nparams_and_flops(
+-                self,
++            kimi_model = cast("KimiK3Model", model)
++            nparams, active_nparams = get_nparams_and_active_nparams(
+                 model,
+-                attention_config.n_heads,
+-                attention_config.qk_nope_head_dim
+-                + attention_config.qk_rope_head_dim
+-                + attention_config.v_head_dim,
+-                seq_len,
++                modules_excluded_from_active_params=(kimi_model.vision_encoder,),
+             )
++            attention_op_flops = 0
++            for layer in self.layers:
++                if isinstance(layer.attention, KimiMLAAttention.Config):
++                    attention = layer.attention
++                    attention_op_flops += quadratic_attention_flops_per_token(
++                        num_heads=attention.n_heads,
++                        qk_head_dim=(
++                            attention.qk_nope_head_dim + attention.qk_rope_head_dim
++                        ),
++                        v_head_dim=attention.v_head_dim,
++                        seq_len=seq_len,
++                    )
++                elif isinstance(layer.delta_attention, KDA.Config):
++                    delta_attention = layer.delta_attention
++                    attention_op_flops += delta_rule_flops_per_token(
++                        num_heads=delta_attention.num_heads,
++                        key_head_dim=delta_attention.head_dim,
++                        v_head_dim=delta_attention.head_dim,
++                    )
++            return nparams, 6 * active_nparams + attention_op_flops
+ 
+     # Set by apply_cp_kimi_k3 to this model's context-parallel process group.
+-    _cp_group = None
++    _cp_group: dist.ProcessGroup | None = None
+ 
+     def __init__(self, config: Config):
+         super().__init__(config)
+@@ -375,6 +373,44 @@ class KimiK3Model(Decoder):
+         num_tokens_per_item = (grid_thw[:, 1] // kernel_h) * (
+             grid_thw[:, 2] // kernel_w
+         )
++        if self._cp_group is not None and dist.get_world_size(self._cp_group) > 1:
++            # This rank holds a sequence shard but encoded every image: take the
++            # feature slice its placeholders correspond to and scatter that.
++            # get_vision_positions needs whole visual items, which a shard does
++            # not have -- it raises "found N contiguous run(s) ... but received M
++            # visual item(s)" as soon as a shard splits or omits an item.
++            local_mask = tokens == special_tokens["image_id"]
++            counts = self._exchange_sentinel_counts(
++                int(local_mask.sum().item()), vision_embeds
++            )
++            mine = self._select_cp_shard(vision_embeds, counts).to(embeddings_TD.dtype)
++            # Rows this rank did not consume still have to reach the graph, or
++            # the tower's reduce-scatter is issued by a subset of the group.
++            unused = vision_embeds.sum().to(embeddings_TD.dtype)
++            mask_T1 = local_mask.unsqueeze(-1)
++            if isinstance(embeddings_TD, DTensor):
++                # Under TP the embedding output is a DTensor whose cp axis is
++                # already Shard(0): the local rows are this rank's shard, the
++                # same rows the tower slice and the mask describe, so wrap them
++                # with the stream's own placements. A shard on the tp axis is
++                # sequence parallel, where the splice would need the whole
++                # sequence.
++                mesh = embeddings_TD.device_mesh
++                placements = embeddings_TD.placements
++                names = mesh.mesh_dim_names or ()
++                if "tp" in names and placements[names.index("tp")].is_shard():
++                    raise NotImplementedError(
++                        "Kimi K3 context parallel with sequence parallel is not "
++                        "supported: the vision splice needs the whole sequence."
++                    )
++                # masked_scatter has no DTensor sharding strategy: run it on
++                # the local shard and re-wrap with the same placements.
++                local_TD = embeddings_TD.to_local(grad_placements=placements)
++                local_TD = local_TD.masked_scatter(mask_T1, mine) + unused * 0.0
++                return DTensor.from_local(local_TD, mesh, placements)
++            embeddings_TD = embeddings_TD.masked_scatter(mask_T1, mine)
++            return embeddings_TD + unused * 0.0
++
+         vision_positions = get_vision_positions(
+             tokens,
+             num_tokens_per_item,
+@@ -386,6 +422,50 @@ class KimiK3Model(Decoder):
+             vision_positions=vision_positions,
+         )
+ 
++    def _exchange_sentinel_counts(
++        self, local: int, vision_embeds: torch.Tensor
++    ) -> torch.Tensor:
++        """Per-rank vision-placeholder counts across the CP group.
++
++        Called whenever CP is on, including on ranks holding no placeholders:
++        the collective's participants are decided by the mesh, never by the data.
++        """
++        group = self._cp_group
++        counts = torch.zeros(
++            dist.get_world_size(group), dtype=torch.long, device=vision_embeds.device
++        )
++        counts[dist.get_rank(group)] = local
++        dist.all_reduce(counts, group=group)
++        return counts
++
++    def _select_cp_shard(
++        self, vision_embeds: torch.Tensor, counts: torch.Tensor
++    ) -> torch.Tensor:
++        """Keep only the visual features belonging to this CP rank's shard.
++
++        ``prepare_context_parallel_input`` shards inputs, labels and positions
++        along the sequence but leaves ``pixel_values`` whole, so every rank
++        encodes every image while holding only a slice of the placeholders. The
++        features are ordered by sequence position and the shards are contiguous
++        and equal -- the config rejects a load balancer under CP precisely
++        because a permuting one would break that -- so this rank's slice starts
++        after however many placeholders the lower ranks hold.
++
++        This is correctness, not an optimization: the encoder still runs
++        redundantly on every CP rank.
++        """
++        num_rows = vision_embeds.shape[0]
++        if int(counts.sum().item()) != num_rows:
++            raise ValueError(
++                f"CP ranks hold {int(counts.sum().item())} vision "
++                f"placeholder(s) in total but {num_rows} visual token(s) were "
++                "encoded; the sequence shard and the image batch disagree"
++            )
++        rank = dist.get_rank(self._cp_group)
++        start = int(counts[:rank].sum().item())
++        local = int(counts[rank].item())
++        return vision_embeds[start : start + local]
++
+     def forward(  # pyrefly: ignore [bad-override]
+         self,
+         tokens: torch.Tensor,
+diff --git a/torchtitan/models/kimi_k3/moe.py b/torchtitan/models/kimi_k3/moe.py
+index 990104a9d..224bcc65b 100644
+--- a/torchtitan/models/kimi_k3/moe.py
++++ b/torchtitan/models/kimi_k3/moe.py
+@@ -89,12 +89,12 @@ class KimiGroupedExperts(GroupedExperts):
+ 
+         gate_RF = self._grouped_mm(
+             A=x_RD.bfloat16(),
+-            B_t=w1_EFD.bfloat16().transpose(-2, -1),
++            weight_EOI=w1_EFD,
+             offs=offsets_E,
+         )
+         up_RF = self._grouped_mm(
+             A=x_RD.bfloat16(),
+-            B_t=w3_EFD.bfloat16().transpose(-2, -1),
++            weight_EOI=w3_EFD,
+             offs=offsets_E,
+         )
+ 
+@@ -102,7 +102,7 @@ class KimiGroupedExperts(GroupedExperts):
+ 
+         return self._grouped_mm(
+             A=h_RF,
+-            B_t=w2_EDF.bfloat16().transpose(-2, -1),
++            weight_EOI=w2_EDF,
+             offs=offsets_E,
+         ).type_as(x_RD)
+ 
+@@ -122,8 +122,10 @@ class KimiLatentMoE(MoE):
+         self.routed_norm = config.routed_norm.build()
+         self.routed_up = config.routed_up.build()
+ 
+-    def forward(self, x_TD: torch.Tensor) -> torch.Tensor:
+-        weights_TK, expert_ids_TK, scores_TE = self.router(x_TD, self.expert_bias_E)
++    def forward(self, x_TD: torch.Tensor, **router_kwargs) -> torch.Tensor:
++        weights_TK, expert_ids_TK, scores_TE = self.router(
++            x_TD, self.expert_bias_E, **router_kwargs
++        )
+         routing_map_TE = torch.zeros_like(scores_TE, dtype=torch.bool).scatter_(
+             -1, expert_ids_TK, True
+         )
+diff --git a/torchtitan/models/kimi_k3/parallelize.py b/torchtitan/models/kimi_k3/parallelize.py
+index 613823c39..a3f2f1cdb 100644
+--- a/torchtitan/models/kimi_k3/parallelize.py
++++ b/torchtitan/models/kimi_k3/parallelize.py
+@@ -17,11 +17,13 @@ from torchtitan.distributed.activation_checkpoint import ActivationCheckpointing
+ from torchtitan.distributed.fsdp import (
+     apply_fsdp_to_decoder,
+     apply_fsdp_to_vision_encoder,
++    resolve_fsdp_mesh,
++    resolve_sparse_fsdp_mesh,
+ )
++from torchtitan.distributed.spmd_types import annotate_replicated_parameters
+ from torchtitan.tools.logging import logger
+ 
+-from .kda import KimiDeltaAttention
+-from .model import KimiK3Model, KimiMLAAttention
++from .model import KimiK3Model
+ 
+ 
+ def parallelize_kimi_k3(
+@@ -41,31 +43,46 @@ def parallelize_kimi_k3(
+         for name, enabled in (
+             ("tensor parallel", parallel_dims.tp_enabled),
+             ("pipeline parallel", parallel_dims.pp_enabled),
+-            ("expert parallel", parallel_dims.ep_enabled),
+         )
+         if enabled
+     ]
+     if unsupported_parallelisms:
+         raise NotImplementedError(
+-            "Kimi K3 currently supports FSDP2 data parallelism and context "
+-            f"parallelism only; disable {', '.join(unsupported_parallelisms)}."
+-        )
+-    if parallelism.spmd_backend != "partial_dtensor":
+-        raise NotImplementedError(
+-            "Kimi K3 FSDP2 currently supports the partial_dtensor SPMD backend "
+-            "only; the config registry pins it."
++            "Kimi K3 currently supports FSDP2 data parallelism "
++            f"only; disable {', '.join(unsupported_parallelisms)}."
+         )
+     if compile_config.enable and "model" in compile_config.components:
+         raise NotImplementedError("Kimi K3 does not support model compilation yet.")
+ 
+-    dp_mesh_names = (
+-        ["dp_replicate", "fsdp"] if parallel_dims.dp_replicate_enabled else ["fsdp"]
+-    )
+-    dp_mesh = parallel_dims.get_mesh(dp_mesh_names)
++    dp_mesh_dims = None
++    edp_mesh_dims = None
++    edp_mesh = None
++    if parallelism.spmd_backend == "spmd_types":
++        annotate_replicated_parameters(model, parallel_dims)
++        dp_mesh, dp_mesh_dims = resolve_fsdp_mesh(parallel_dims)
++        edp_mesh, edp_mesh_dims = resolve_sparse_fsdp_mesh(parallel_dims)
++    else:
++        dp_mesh_names = (
++            ["dp_replicate", "fsdp"] if parallel_dims.dp_replicate_enabled else ["fsdp"]
++        )
++        dp_mesh = parallel_dims.get_mesh(dp_mesh_names)
++        # The routed experts shard on their own data-parallel mesh, which excludes
++        # the expert axis; the same shape deepseek_v3 resolves.
++        if parallel_dims.ep_enabled:
++            edp_mesh = parallel_dims.get_optional_mesh(
++                ["dp_replicate", "efsdp"]
++                if parallel_dims.dp_replicate_enabled
++                else ["efsdp"]
++            )
+ 
+     assert isinstance(model, KimiK3Model)
+     if parallel_dims.cp_enabled:
+-        apply_cp_kimi_k3(model, parallel_dims, training.max_context_length)
++        apply_cp_kimi_k3(model, parallel_dims)
++    if parallel_dims.ep_enabled:
++        # model_registry's moe_comm_backend picks the dispatcher: standard
++        # (default), deepep and minimal_async_ep run on this model; hybridep
++        # needs GB200-class hardware.
++        model.parallelize(parallel_dims)
+ 
+     if ac_config is not None:
+         ac_policy = ac_config.build(dump_folder=dump_folder)
+@@ -85,6 +102,7 @@ def parallelize_kimi_k3(
+             reduce_dtype=TORCH_DTYPE_MAP[training.mixed_precision_reduce],
+             reshard_after_forward_policy=parallelism.fsdp_reshard_after_forward,
+             pp_enabled=False,
++            dp_mesh_dims=dp_mesh_dims,
+         )
+ 
+     apply_fsdp_to_decoder(
+@@ -95,7 +113,10 @@ def parallelize_kimi_k3(
+         pp_enabled=False,
+         cpu_offload=training.enable_cpu_offload,
+         reshard_after_forward_policy=parallelism.fsdp_reshard_after_forward,
+-        ep_degree=1,
++        ep_degree=parallel_dims.ep,
++        edp_mesh=edp_mesh,
++        dp_mesh_dims=dp_mesh_dims,
++        edp_mesh_dims=edp_mesh_dims,
+         enable_symm_mem=parallelism.enable_fsdp_symm_mem,
+     )
+ 
+@@ -105,59 +126,14 @@ def parallelize_kimi_k3(
+ def apply_cp_kimi_k3(
+     model: nn.Module,
+     parallel_dims: ParallelDims,
+-    max_context_length: int | None = None,
+ ) -> None:
+-    """Wire context parallelism: KCP on the KDA layers, Ulysses on the MLA layers.
++    """Hand the vision splice the context-parallel group.
+ 
+-    Both at once, on disjoint layer kinds. Imperative rather than declared:
+-    KDA's kernels are fla triton and never see a DTensor, so no ShardingConfig
+-    can drive them (the model config overrides ``_validate_cp_backend`` for the
+-    same reason).
++    The attention layers need nothing here: under CP their inner kernels are
++    ``ContextParallelKernel`` instances (Ulysses for MLA, KCP for KDA) that
++    take the group from the active SPMD mesh. The vision splice runs in the
++    model body, outside any kernel, so it is wired explicitly.
+     """
+-    cp_group = parallel_dims.get_mesh("cp").get_group()
+-    cp_degree = parallel_dims.cp
+-    model._cp_group = cp_group
+-
+-    num_mla = 0
+-    kda_modules = []
+-    for module in model.modules():
+-        if isinstance(module, KimiMLAAttention):
+-            # The CP mask rebuild is causal-only; the layer uses the context
+-            # window to reject a folded stream holding several documents.
+-            module._cp_max_context_length = max_context_length
+-            if module.n_heads % cp_degree != 0:
+-                raise ValueError(
+-                    f"MLA n_heads={module.n_heads} must be divisible by "
+-                    f"cp={cp_degree} for Ulysses head sharding"
+-                )
+-            module._cp_group = cp_group
+-            num_mla += 1
+-        elif isinstance(module, KimiDeltaAttention):
+-            kda_modules.append(module)
+-
+-    if kda_modules:
+-        # Checked at wiring time so the message is actionable, rather than an
+-        # ImportError from inside a layer's first forward.
+-        try:
+-            from fla.modules.conv.cp.ops import causal_conv1d_cp  # noqa: F401
+-            from fla.ops.cp.context import build_cp_context  # noqa: F401
+-        except ImportError as err:
+-            raise ValueError(
+-                "KDA context parallelism needs fla-core's CP ops "
+-                "(fla.ops.cp.context.build_cp_context and "
+-                "fla.modules.conv.cp.ops.causal_conv1d_cp), which ship in "
+-                f"fla-core >= 0.5.1; import failed with: {err}."
+-            ) from err
+-
+-    for module in kda_modules:
+-        module._cp_group = cp_group
+-    if num_mla + len(kda_modules) == 0:
+-        raise ValueError(
+-            "context parallel is enabled but no attention layer was found to "
+-            "wire it onto."
+-        )
+-    logger.info(
+-        "Applied context parallel to %d MLA and %d KDA layer(s).",
+-        num_mla,
+-        len(kda_modules),
+-    )
++    assert isinstance(model, KimiK3Model)
++    model._cp_group = parallel_dims.get_mesh("cp").get_group()
++    logger.info("Applied context parallel to the Kimi K3 vision splice.")
+diff --git a/torchtitan/models/kimi_k3/sharding.py b/torchtitan/models/kimi_k3/sharding.py
+index 5d1acd4fa..fcafe7209 100644
+--- a/torchtitan/models/kimi_k3/sharding.py
++++ b/torchtitan/models/kimi_k3/sharding.py
+@@ -4,256 +4,44 @@
+ # This source code is licensed under the BSD-style license found in the
+ # LICENSE file in the root directory of this source tree.
+ 
+-"""Declarative CP contracts for the K3 attention layers.
++"""Sharding configs for Kimi K3. Same pattern as ``qwen3_5/sharding.py``.
+ 
+-Two CP algorithms run at once on disjoint layer kinds: Ulysses on the MLA
+-layers, KCP on the KDA layers. Each is stated here as a placement pair on the
+-CP mesh axis plus the preconditions that pair implies, so ``apply_cp_kimi_k3``
+-resolves a contract per module instead of branching per algorithm.
+-
+-Only the CP axis is declared. The CP collectives run on plain local tensors
+-after the TP-wrapped projections, at the same gap the TP plan already strips
+-DTensor, so TP's own head sharding is not this contract's to describe -- and
+-declaring both here would be two mesh axes on tensor dim 2, which SpmdLayout
+-rejects without an explicit partition_spec.
++Declarations only: functions here set ``ShardingConfig`` on sub-configs of an
++already-built config tree, and ``model.parallelize()`` applies them through the
++Module protocol. Nothing here touches a mesh or a device.
+ """
+ 
+-from dataclasses import dataclass
++from typing import TYPE_CHECKING
+ 
+ import spmd_types as spmd
+ 
+-import torch
+-import torch.distributed as dist
+-import torch.distributed.nn.functional as dist_nn
+-
+-from torchtitan.distributed.parallel_dims import MeshAxisName, SpmdLayout
+-from torchtitan.models.common.attention import (
+-    create_attention_mask,
+-    get_causal_mask_mod,
+-)
+-
+-
+-__all__ = [
+-    "CPContract",
+-    "KCP",
+-    "ULYSSES",
+-    "contract_for_mode",
+-    "cp_all_to_all_headseq",
+-]
+-
+-CP = MeshAxisName.CP
++from torchtitan.models.common.moe_sharding import set_moe_sharding_config
+ 
+-# Tensor dims of the [T, H, K] activations the contracts talk about. This model
+-# carries a folded token stream with no batch axis, so the sequence is dim 0.
+-SEQ_DIM = 0
+-HEAD_DIM = 1
++if TYPE_CHECKING:
++    from torchtitan.models.kimi_k3.model import KimiK3Model
+ 
+ 
+-def _cp(axis_type: spmd.PerMeshAxisSpmdType) -> SpmdLayout:
+-    return SpmdLayout(axis_types={CP: axis_type})
++def set_kimi_k3_sharding_config(
++    config: "KimiK3Model.Config", *, enable_ep: bool, enable_sp: bool = False
++) -> None:
++    """Declare the sharding expert parallel acts on.
+ 
+-
+-@dataclass(frozen=True, slots=True)
+-class CPContract:
+-    """What one CP algorithm does to the [B, T, H, K] activations.
+-
+-    Attributes:
+-        name: the mode spelling, and what the wiring log reports.
+-        in_src: Placement entering the attention body.
+-        in_dst: Placement the body computes at.
+-        out_src: Placement leaving the body.
+-        out_dst: Placement at the module boundary.
+-        head_sharded: Whether the body splits heads across CP, i.e. whether
+-            the head-divisibility precondition applies.
++    The routed experts shard on the expert axis; ``set_moe_sharding_config``
++    declares that layout, and its input boundary lifts the plain incoming
++    activations itself, so no decoder-level declaration is needed.
+     """
+-
+-    name: str
+-    in_src: SpmdLayout
+-    in_dst: SpmdLayout
+-    out_src: SpmdLayout
+-    out_dst: SpmdLayout
+-    head_sharded: bool
+-
+-    def redistributes(self) -> bool:
+-        """False when in_dst == in_src, i.e. the boundary moves no data."""
+-        return self.in_src.axis_types != self.in_dst.axis_types
+-
+-    def in_dims(self) -> tuple[int, int]:
+-        """(src, dst) tensor dims the CP axis shards on the way in."""
+-        return _shard_dim(self.in_src), _shard_dim(self.in_dst)
+-
+-    def out_dims(self) -> tuple[int, int]:
+-        """(src, dst) tensor dims the CP axis shards on the way out."""
+-        return _shard_dim(self.out_src), _shard_dim(self.out_dst)
+-
+-
+-def _shard_dim(layout: SpmdLayout) -> int:
+-    axis_type = layout.axis_types[CP]
+-    if not isinstance(axis_type, spmd.Shard):
+-        raise ValueError(
+-            f"CP contract expects a Shard on the CP axis, got {axis_type!r}"
+-        )
+-    return axis_type.dim
+-
+-
+-# Ulysses: projections run seq-local, then one all-to-all trades the sharded
+-# axis -- sequence for heads -- so the body sees the full sequence for its head
+-# subset. The output pair is the same swap reversed.
+-ULYSSES = CPContract(
+-    name="ulysses",
+-    in_src=_cp(spmd.S(SEQ_DIM)),
+-    in_dst=_cp(spmd.S(HEAD_DIM)),
+-    out_src=_cp(spmd.S(HEAD_DIM)),
+-    out_dst=_cp(spmd.S(SEQ_DIM)),
+-    head_sharded=True,
+-)
+-
+-# KCP: the sequence stays sharded end to end (report sec 5.1.2). The delta-rule
+-# recurrence carries state rank to rank -- a sequential dependency no placement
+-# pair describes -- so the contract is an identity, declared to keep one shape.
+-KCP = CPContract(
+-    name="kcp",
+-    in_src=_cp(spmd.S(SEQ_DIM)),
+-    in_dst=_cp(spmd.S(SEQ_DIM)),
+-    out_src=_cp(spmd.S(SEQ_DIM)),
+-    out_dst=_cp(spmd.S(SEQ_DIM)),
+-    head_sharded=False,
+-)
+-
+-_BY_MODE = {c.name: c for c in (ULYSSES, KCP)}
+-
+-
+-def contract_for_mode(mode: str) -> CPContract:
+-    if mode not in _BY_MODE:
+-        raise ValueError(f"cp mode must be one of {sorted(_BY_MODE)}, got {mode!r}")
+-    return _BY_MODE[mode]
+-
+-
+-def cp_all_to_all_headseq(
+-    x: torch.Tensor, cp_group, *, src_dim: int, dst_dim: int
+-) -> torch.Tensor:
+-    """Differentiable Ulysses all-to-all moving the CP shard between tensor dims.
+-
+-    ``(0, 1)``: ``[T/cp, H, K]`` (seq-sharded) -> ``[T, H/cp, K]``.
+-    ``(1, 0)``: ``[T, H/cp, K]`` -> ``[T/cp, H, K]``.
+-
+-    The dims come from the CP contract's placement pair rather than a flag, so a
+-    contract that names a pair with no implementation raises here instead of being
+-    quietly ignored.
+-
+-    Numerics (round-trip and per-head chunk_kda parity) validated
+-    bit-exact against a single-rank reference; backward is the
+-    transposed all-to-all via torch.distributed.nn.functional.
+-    """
+-
+-    if (src_dim, dst_dim) not in ((SEQ_DIM, HEAD_DIM), (HEAD_DIM, SEQ_DIM)):
+-        raise ValueError(
+-            f"no Ulysses all-to-all for CP shard dims {src_dim} -> {dst_dim}; "
+-            f"implemented pairs are {SEQ_DIM} <-> {HEAD_DIM}"
+-        )
+-    cp = dist.get_world_size(cp_group)
+-    d0, d1, K = x.shape
+-    if (src_dim, dst_dim) == (SEQ_DIM, HEAD_DIM):
+-        t_loc, num_heads = d0, d1
+-        # [T/cp, H, K] -> [cp, T/cp, H/cp, K] (split heads by destination rank)
+-        x_split = x.reshape(t_loc, cp, num_heads // cp, K).permute(1, 0, 2, 3)
+-        out = dist_nn.all_to_all_single(
+-            torch.empty_like(x_split.contiguous()), x_split.contiguous(), group=cp_group
+-        )
+-        # recv[s] holds source s's T/cp for THIS rank's head subset, and s is
+-        # already the sequence-chunk order, so the reshape stacks the sequence.
+-        return out.reshape(cp * t_loc, num_heads // cp, K).contiguous()
+-    t_full, h_loc = d0, d1
+-    t_loc = t_full // cp
+-    # dim 0 is the destination rank: which sequence chunk each rank receives.
+-    x_split = x.reshape(cp, t_loc, h_loc, K).contiguous()
+-    out = dist_nn.all_to_all_single(torch.empty_like(x_split), x_split, group=cp_group)
+-    # out[s] = source s's head subset for THIS rank's sequence chunk; put T/cp
+-    # first so the reshape stacks heads in ascending source order.
+-    return out.permute(1, 0, 2, 3).reshape(t_loc, cp * h_loc, K).contiguous()
+-
+-
+-def full_sequence_causal_mask(attn, num_tokens: int, device):
+-    """Causal-only mask for the sequence Ulysses reassembles, cached on
+-    ``attn`` per (length, device). Correct only while the folded stream holds
+-    ONE document, so a stream wider than the context window is rejected -- a
+-    causal-only rebuild cannot see document boundaries."""
+-    limit = getattr(attn, "_cp_max_context_length", None)
+-    if limit is not None and num_tokens > limit:
+-        raise NotImplementedError(
+-            f"context parallel folds {num_tokens} tokens into one stream "
+-            f"but the context window is {limit}, so the "
+-            "stream holds more than one document. The CP path rebuilds a "
+-            "causal-only mask and cannot see document boundaries; use a "
+-            "microbatch no wider than the context window."
+-        )
+-    key = (num_tokens, device)
+-    if attn._cp_mask is None or attn._cp_mask[0] != key:
+-        mask = create_attention_mask(
+-            get_causal_mask_mod(), None, None, num_tokens, num_tokens, device=device
+-        )
+-        attn._cp_mask = (key, mask)
+-    return attn._cp_mask[1]
+-
+-
+-def mla_ulysses_attention(
+-    attn,
+-    q_LHQ: torch.Tensor,
+-    kv_LHC: torch.Tensor,
+-    k_rope_LR: torch.Tensor,
+-    cp_group,
+-) -> torch.Tensor:
+-    """MLA attention over the full sequence for this rank's head subset.
+-
+-    * One fused all-to-all trades the sharded axis, sequence for heads; the
+-      attention backend runs unchanged; a second all-to-all trades back.
+-    * The rotary slice stays OUT of the exchange: it is headless (one vector
+-      per token), so it is all-gathered along the sequence and expanded onto
+-      local heads. Packing the expanded key instead reassembles it against the
+-      wrong head subset.
+-    * Shape suffixes beyond the legend: L local sequence (T/cp), G this rank's
+-      head count, W packed channel width, R rotary width.
+-    """
+-    cp_size = dist.get_world_size(cp_group)
+-    t_loc = q_LHQ.shape[0]
+-    t_full = t_loc * cp_size
+-    # q_LHQ already carries this rank's TP-local heads, so cp splits those.
+-    h_cp = q_LHQ.shape[1] // cp_size
+-
+-    packed_LHW = torch.cat([q_LHQ, kv_LHC], dim=-1)
+-    src_dim, dst_dim = ULYSSES.in_dims()
+-    packed_TGW = cp_all_to_all_headseq(
+-        packed_LHW, cp_group, src_dim=src_dim, dst_dim=dst_dim
+-    )
+-    q_TGQ, k_nope_TGN, v_TGV = torch.split(
+-        packed_TGW,
+-        [attn.q_head_dim, attn.qk_nope_head_dim, attn.v_head_dim],
+-        dim=-1,
+-    )
+-
+-    # Differentiable all-gather: backward is the reduce-scatter a value every
+-    # rank consumed needs.
+-    k_rope_TR = torch.cat(
+-        dist_nn.all_gather(k_rope_LR.contiguous(), group=cp_group), dim=0
+-    )
+-    k_TGQ = torch.cat(
+-        [
+-            k_nope_TGN,
+-            k_rope_TR.view(t_full, 1, attn.qk_rope_head_dim).expand(
+-                t_full, h_cp, attn.qk_rope_head_dim
+-            ),
+-        ],
+-        dim=-1,
+-    )
+-
+-    out_TGV = attn.inner_attention(
+-        q_TGQ,
+-        k_TGQ,
+-        v_TGV,
+-        attention_masks=full_sequence_causal_mask(attn, t_full, q_TGQ.device),
+-        scale=attn.scale,
+-    )
+-    out_src_dim, out_dst_dim = ULYSSES.out_dims()
+-    return cp_all_to_all_headseq(
+-        out_TGV.contiguous(), cp_group, src_dim=out_src_dim, dst_dim=out_dst_dim
+-    )
++    for layer in config.layers:
++        if layer.moe is not None:
++            set_moe_sharding_config(
++                layer.moe,
++                enable_ep=enable_ep,
++                # TODO: flip to True from the caller once the
++                # tensor-parallel PR lands; with EP alone the internals run
++                # without sequence parallel.
++                enable_sp=enable_sp,
++                expert_param_layout={
++                    "w1_EFD": spmd.S(1),
++                    "w2_EDF": spmd.S(2),
++                    "w3_EFD": spmd.S(1),
++                },
++            )
+diff --git a/torchtitan_recipes/kimi_k3.py b/torchtitan_recipes/kimi_k3.py
+new file mode 100644
+index 000000000..d85bf7b6f
+--- /dev/null
++++ b/torchtitan_recipes/kimi_k3.py
+@@ -0,0 +1,85 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Context-parallel Kimi K3 recipes.
++
++The MLA layers take a ``ContextParallelKernel`` through the generic transform
++and the KDA layers take Attention Gym's context-parallel delta rule (KCP)
++through :class:`KimiK3DeltaContextParallelTransform`; KDA is not an attention
++config, so the generic transform and validation do not see it.
++"""
++
++from dataclasses import dataclass, fields
++from typing import cast
++
++from torchtitan.models.kimi_k3.context_parallel import (
++    ContextParallelInnerKDA,
++    MLAUlyssesCPFlexAttention,
++)
++from torchtitan.models.kimi_k3.kda import KDA
++from torchtitan.models.kimi_k3.model import KimiK3Model
++from torchtitan.protocols.module import Module
++from torchtitan.trainer import Trainer
++from torchtitan.transforms import (
++    apply_transforms,
++    ContextParallelTransform,
++    ModelTransform,
++    retype_node,
++)
++
++__all__ = ["KimiK3DeltaContextParallelTransform", "kimi_k3_context_parallel"]
++
++
++class KimiK3DeltaContextParallelTransform(ModelTransform):
++    """Run every KDA layer on the context-parallel delta rule."""
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(ModelTransform.Config):
++        pass
++
++    def transform(self, model: Module.Config) -> Module.Config:
++        for _, traversed, _, _ in model.traverse(KDA.Config):
++            kda = cast(KDA.Config, traversed)
++            kda.inner_kda = retype_node(kda.inner_kda, ContextParallelInnerKDA)
++        return model
++
++
++def kimi_k3_context_parallel(
++    config: Trainer.Config,
++    *,
++    cp_degree: int,
++    mla_kernel: type[Module] = MLAUlyssesCPFlexAttention,
++) -> Trainer.Config:
++    """Kimi K3 under context parallelism: ``mla_kernel`` on the MLA layers,
++    KCP on the KDA layers.
++
++    Both read the sequence as rank-ordered contiguous chunks (Ulysses keeps the
++    mask global and KCP hands its state from rank to rank), so the load balancer
++    is off; the kernels take their group from the SPMD mesh, which only the
++    ``spmd_types`` backend sets up.
++    """
++    config.parallelism.context_parallel_degree = cp_degree
++    config.parallelism.context_parallel_load_balancer = None
++    config.parallelism.spmd_backend = "spmd_types"
++    assert config.model_spec is not None
++    model = config.model_spec.model
++    assert isinstance(model, KimiK3Model.Config)
++    attention = model.first_attention
++    assert attention is not None, "Kimi K3 has full-attention layers."
++    # The packed MLA kernels split the key on its rope slice; a generic kernel
++    # (the upstream Ulysses or all-gather one) takes the expanded key as is.
++    overrides: dict[str, object] = {}
++    if "rope_head_dim" in {f.name for f in fields(mla_kernel.Config)}:
++        overrides["rope_head_dim"] = getattr(attention, "qk_rope_head_dim")
++    return apply_transforms(
++        config,
++        [
++            ContextParallelTransform.Config(
++                kernel=mla_kernel, kernel_config_overrides=overrides
++            ),
++            KimiK3DeltaContextParallelTransform.Config(),
++        ],
++    )

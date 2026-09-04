@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Context parallelism for the text decoder: packed MLA kernels on the CP kernel stack, KCP on KDA
 
-PR 4313. Branch `cp_review4` on the fork (`f6ca064be`). It sits on `cp_base_stack` (`a8a6f331f`), a scratch commit that is fegin's CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) applied onto upstream/main `9b5f60c40`; above it the TP/SP commits (`tp_review2`), the spmd declarations (`spmd_review2`), the CP content of `cp_review3` (`a4322344d`) and the commit that moves it onto the stack (`f6ca064be`). The PR branch is synced only on the user's approval, and only once the stack has landed (the scratch commit is never filed). Paste between the markers; the header of the PR should say it stacks on the TP/SP and declaration commits and on fegin's CP stack.
+PR 4313. Branch `cp_review5` on the fork (`af9496b2a`), one commit on `cp_base_stack2` (`11b380dec`): a scratch base that is fegin's CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) and pianpwk's draft 4446 (Kimi K3 under `spmd_types`) applied onto upstream/main `9b5f60c40`. No tensor parallelism on this branch: the CP PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. The PR branch is synced only on the user's approval and only once the stack and 4446 have landed (the scratch base is never filed). Paste between the markers; the PR header should say it stacks on fegin's CP stack and on 4446.
 
 --- PASTE BEGIN ---
 
@@ -21,31 +21,34 @@ Adds context parallelism to the Kimi K3 text decoder on the CP kernel stack (PR 
 
 ### Results
 
-`kimi_k3_debugmodel_mm` (the multimodal flavor; it was `kimi_k3_debugmodel` when these cells ran, before the variant split), `--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, 8192 tokens per step in micro-batches of 256; every cell runs twice and the second run is read (FlexAttention's autotune moves this model's later steps between compile-cache states; step 1 does not move). The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook. Measured on an RTX 5060 Ti (SM120) with Attention Gym's SM100/SM103 guard on the KDA kernel lifted locally, which routes it through Attention Gym's portable kernels; that patch is not on the branch. The generic rows run the upstream kernels through the same recipe, so the packed kernels are read against them on the same seed and batch.
+`kimi_k3_debugmodel_mm` (the multimodal flavor, since the vision splice under CP is what the tower exercises), `--debug.seed 42 --debug.deterministic`, one seed checkpoint shared by every flavor, 8192 tokens per step in micro-batches of 256; every cell runs twice and the second run is read (FlexAttention's autotune moves this model's later steps between compile-cache states; step 1 does not move). The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook. Measured on an RTX 5060 Ti (SM120) with Attention Gym's SM100/SM103 guard on the KDA kernel lifted locally, which routes it through Attention Gym's portable kernels; that patch is not on the branch. The generic rows run the upstream kernels through the same recipe, so the packed kernels are read against them on the same seed and batch.
 
 ```
-COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
-torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel_mm --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
+COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable"
+torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel_mm --training.steps 1 --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 10 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
-S="--parallelism.spmd_backend spmd_types"; T="--parallelism.tensor_parallel_degree 2"
-cell dp1 1 --config kimi_k3_debugmodel_mm $S;  cell tp2 2 --config kimi_k3_debugmodel_mm $T $S
-cell cp2 2 --config kimi_k3_debugmodel_cp2;  cell cp2_ag 2 --config kimi_k3_debugmodel_cp2_allgather
-cell tp2cp2 4 --config kimi_k3_debugmodel_cp2 $T --parallelism.no-enable-sequence-parallel
+D="--parallelism.data_parallel_shard_degree"; C="--parallelism.context_parallel_degree"; E="--parallelism.expert_parallel_degree"
+cell dp1 1 --config kimi_k3_debugmodel_mm $D 1;  cell dp2 2 --config kimi_k3_debugmodel_mm $D 2
+cell cp2 2 --config kimi_k3_debugmodel_cp2 $D 1;  cell cp2_ag 2 --config kimi_k3_debugmodel_cp2_allgather $D 1
+cell cp4 4 --config kimi_k3_debugmodel_cp2 $D 1 $C 4;  cell dp2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2;  cell dp2_ep2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2 $E 2
 ```
 
+<!-- TBD: fill from /workspace/mx3_cp5_* -->
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
-| dp1 | 1 | - | - | 12.52977 | 7.27107 | 2.98077 |
-| tp2 (SP on) | 2 | - | - | to re-measure: the row taken before the sequence-parallel splice fix read 12.52013 / 7.79992 / 3.12152 | | |
-| cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.18344 | 2.93330 |
-| cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.18619 | 3.00631 |
-| cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.22178 | 3.09487 |
-| cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.21651 | 3.08671 |
-| tp2 x cp2 (no SP) | 4 | packed Ulysses | KCP | 12.55243 | 7.19853 | 3.06006 |
+| dp1 | 1 | - | - | | | |
+| dp2 | 2 | - | - | | | |
+| cp2 | 2 | packed Ulysses (this PR) | KCP | | | |
+| cp2 | 2 | generic Ulysses (4450) | KCP | | | |
+| cp2 | 2 | packed all-gather KV (this PR) | KCP | | | |
+| cp2 | 2 | generic all-gather KV (4322) | KCP | | | |
+| cp4 | 4 | packed Ulysses | KCP | | | |
+| dp2 x cp2 | 4 | packed Ulysses | KCP | | | |
+| dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | | | |
 
-The four MLA kernels agree at step 1 to the digit and part afterwards: a packed kernel moves the same values as its generic counterpart but sums the rope slice's gradient in a different order (over the local heads first, then the reduce-scatter across cp), one bf16 rounding of a sum, the same class of difference as the two transports in the pipeline PR. The step-1 losses of cp2 (12.53972) and tp2 x cp2 (12.55243) are the pre-rebase branch's numbers to the digit; dp1 is bit-identical to the same flavor under `partial_dtensor` through step 10.
+The four MLA kernels agree at step 1 to the digit and part afterwards: a packed kernel moves the same values as its generic counterpart but sums the rope slice's gradient in a different order (over the local heads first, then the reduce-scatter across cp), one bf16 rounding of a sum, the same class of difference as the two transports in the pipeline PR.
 
-Step-1 per-parameter gradients on this branch (fp32 norm of every parameter's gradient, hashed; rank 0's local gradient, 750 parameters, one shared seed, each kernel on its own warm compile cache) are the evidence for what a packed kernel changes against its generic counterpart:
+Step-1 per-parameter gradients (fp32 norm of every parameter's gradient, hashed; rank 0's local gradient, 750 parameters, one shared seed, each kernel on its own warm compile cache; measured with the same kernels on the earlier cut of this branch) are the evidence for what a packed kernel changes against its generic counterpart:
 
 | comparison (step 1, cp2) | loss | sha1-identical parameters | relative difference of the per-parameter norm: median / p90 / max |
 |---|---|---|---|
@@ -55,12 +58,11 @@ Step-1 per-parameter gradients on this branch (fp32 norm of every parameter's gr
 
 The maxima sit on 16-element `A_log` vectors and residual norms whose gradient norm is 1e-4: the distribution bf16 summation order produces, with no parameter group standing out.
 
-Against a single GPU the reference is not bitwise on this model: gradients are kept in bf16, so any re-partitioning of the arithmetic moves every parameter by about one bf16 rounding. The cp-reduced full gradient of each CP cell is compared with dp1 below, next to plain data parallelism and tensor parallelism on the same tree, seed and batch; the four CP kernels give the same numbers to two digits, and CP sits below both controls.
+Against a single GPU the reference is not bitwise on this model: gradients are kept in bf16, so any re-partitioning of the arithmetic moves every parameter by about one bf16 rounding. The cp-reduced full gradient of each CP cell is compared with dp1 below, next to plain data parallelism on the same tree, seed and batch; the four CP kernels give the same numbers to two digits, and CP sits below the control.
 
 | comparison (step 1, cp-reduced full gradient, 750 parameters) | loss | relative difference of the per-parameter norm: median / p90 / max |
 |---|---|---|
 | dp1 vs dp2 (data parallel, the control) | 12.52977 vs 12.53137 | 2.5e-2 / 7.9e-2 / 5.2e-1 |
-| dp1 vs tp2 (tensor parallel, the control; taken before the sequence-parallel splice fix, to re-measure) | 12.52977 vs 12.52013 | 1.1e-1 / 2.3e-1 / 6.4e-1 |
 | dp1 vs cp2, packed Ulysses | 12.52977 vs 12.53972 | 1.1e-2 / 6.1e-2 / 4.6e-1 |
 | dp1 vs cp2, generic Ulysses / packed all-gather / generic all-gather | same | 1.1e-2 / 6.1e-2 / 4.6e-1 each |
 
@@ -70,12 +72,11 @@ The maxima are again the 16-element `A_log` vectors with gradient norms below 1e
 
     torchtitan/models/kimi_k3/
       context_parallel.py                   +246/-0  the packed MLA kernels, the KCP kernel, the plan (new)
-      kda.py                                +71/-5   InnerKDA split into pack / conv-and-scan; the KCP branch in the kernel
-      model.py                              +111/-1  the KDA-kernel check, the cp group for the vision splice, the head count from the projection width
+      kda.py                                +71/-4   InnerKDA split into pack / conv-and-scan; the KCP branch in the kernel
+      model.py                              +105/-0  the KDA-kernel check, the cp group and the vision splice under CP
       __init__.py                           +37/-21  the text and multimodal variants
       config_registry.py                    +18/-2   the text debug flavor next to the multimodal one
-      sharding.py                           +1/-2    the identity boundary on the MLA inner attention
-      parallelize.py                        +22/-5   context parallel off the unsupported list; apply_cp_kimi_k3
+      parallelize.py                        +21/-2   context parallel off the unsupported list; apply_cp_kimi_k3
     torchtitan_recipes/
       kimi_k3.py                            +85/-0   the KDA transform and the recipe helper (new)
       tests/features.py                     +26/-0   the cp2 and cp2 all-gather flavors
