@@ -83,7 +83,7 @@ Against a single GPU the reference is not bitwise on this model: gradients are k
 
 | comparison (step 1, cp-reduced full gradient, 750 parameters) | loss | relative difference of the per-parameter norm: median / p90 / max |
 |---|---|---|
-| dp1 vs dp2 (data parallel, the control) | 12.52977 vs 12.53137 | 2.5e-2 / 7.9e-2 / 5.2e-1 |
+| dp1 vs dp2 (data parallel; the loader shards documents by rank, so the batch composition changes too: an upper bound) | 12.52977 vs 12.53137 | 2.5e-2 / 7.9e-2 / 5.2e-1 |
 | dp1 vs cp2, packed Ulysses | 12.52977 vs 12.53972 | 1.1e-2 / 6.1e-2 / 4.6e-1 |
 | dp1 vs cp2, generic Ulysses / packed all-gather / generic all-gather | same | 1.1e-2 / 6.1e-2 / 4.6e-1 each |
 

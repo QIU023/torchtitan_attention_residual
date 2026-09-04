@@ -46,7 +46,7 @@ cell dp1 1
 cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
 ```
 
-Running locally on the rebased head, the rows follow. Every cell starts from the same seed checkpoint; the last six rows put data parallel and expert parallel around the pipeline.
+Running locally on the rebased head, the rows follow. Every cell starts from the same seed checkpoint; the last six rows put data parallel and expert parallel around the pipeline. The dp2 rows read a different batch (the loader shards documents by data-parallel rank), so their step 1 is compared within the dp2 rows, not with dp1.
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
@@ -55,15 +55,15 @@ Running locally on the rebased head, the rows follow. Every cell starts from the
 | pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.51030 | 7.44880 | 3.57213 |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.51030 | 7.40443 | 3.47327 |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | 12.51030 | 7.45462 | 3.45668 |
-| pp2 x vp4, even split (`first/last_stage_less_layers=0`, 8 stages of 4 layers) | 8 | 2 | 4 | delta | | | |
-| dp2 | - | 2 | - | - | | | |
+| pp2 x vp4, even split (`first/last_stage_less_layers=0`, 8 stages of 4 layers) | 8 | 2 | 4 | delta | 12.51030 | 7.51238 | 3.52185 |
+| dp2 | - | 2 | - | - | 12.49684 | 7.75700 | 3.44594 |
 | dp2 x ep2 | - | 2 | - | - | | | |
 | dp2 x pp2 x vp4 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | | | |
 | dp2 x ep2 x pp2 x vp4 | 8 | 4 | 3 / 4 ... 4 / 3 | delta | | | |
 | dp2 x pp4 x vp4 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | | | |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 1 / 2 ... 2 / 1 | delta | | | |
 
-Step 1 is the same number in every cell, and it is the number that can be compared: under a float32 total norm the cells agree to 2e-4 (dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656, whole-stack pp8 16.1649), which is bf16 summation-order rounding of the gradients; carrying the norm in float32 for the whole run leaves the step-10 spread where it is (6.2% across the five cells against 5.6% in bf16). The later steps spread by a few percent in either direction, and that spread is not a property of the pipeline: the same dp1 cell moves by 3.4% at step 10 when only the grad-norm reduction precision changes (a fresh compile cache changes nothing: two dp1 runs on fresh caches are bitwise, and every PP row of the previous head reproduces bitwise on the rebased one), and dp1 against dp2 moves by 6% in the same debug setup. The mechanism is Adam's first step, $lr \cdot \mathrm{sign}(g)$ per element: the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order, each flipped element moves by $2 \cdot lr$ the other way, and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.5 to 3.4 in ten steps) does not average that out.
+Step 1 is the same number in every cell, and it is the number that can be compared: under a float32 total norm the cells agree to 2e-4 (dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656, whole-stack pp8 16.1649), which is bf16 summation-order rounding of the gradients; carrying the norm in float32 for the whole run leaves the step-10 spread where it is (6.2% across the five cells against 5.6% in bf16). The later steps spread by a few percent in either direction, and that spread is not a property of the pipeline: the same dp1 cell moves by 3.4% at step 10 when only the grad-norm reduction precision changes (a fresh compile cache changes nothing: two dp1 runs on fresh caches are bitwise, and every PP row of the previous head reproduces bitwise on the rebased one), and dp1 against dp2, which also changes the batch composition, moves by 6% in the same debug setup. The mechanism is Adam's first step, $lr \cdot \mathrm{sign}(g)$ per element: the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order, each flipped element moves by $2 \cdot lr$ the other way, and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.5 to 3.4 in ten steps) does not average that out.
 
 The step-1 sign census over all 1,306,058,848 gradient elements: the fraction whose sign differs between two runs, and the first-update difference it implies ($2\sqrt{f}$ of the update norm). Element-wise the gradients differ by about 1.1% in relative L2 in every parameter group alike (embedding 1.26%, experts 1.07%, attention 1.19%, norms 1.08%, router 1.07%, head 0.55%) while the per-parameter norms agree to 2e-4, which is bf16's signature; 84% of the flipped elements sit below a hundredth of their tensor's rms, and pp8 with 32 stages flips no more than pp2 with 8. The no-pipeline controls (dp1 against FSDP dp2, and against 512-token micro-batches) are running locally and follow.
 
