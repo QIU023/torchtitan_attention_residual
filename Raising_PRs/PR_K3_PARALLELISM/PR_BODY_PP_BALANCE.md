@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism: PP ranks park saved activations on a peer through the Mooncake Transfer Engine
 
-Follow-up to PR 4312 (it stacks on `pp_review3`). Branch `pp_balance_review1` on the fork (see the logbook for the head; one commit on `pp_review3` `0e7cc5ea1`, upstream/main `6e2ac3dcd`); the old `pp_balance` commit `1c0c1416c` of the pre-review adapter, ported: `pp_balance.py` and its allocator test are the old files, the knobs became a record on `pipeline_kimi_k3`. Needs `mooncake-transfer-engine` (optional dependency, fla's standing) and, with a CUDA 13 torch, the `nvidia-cuda-runtime-cu12` wheel the engine's wheel links against, which the module preloads. Paste between the markers.
+Follow-up to PR 4312 (it stacks on `pp_review3`). Branch `pp_balance_review1` on the fork (`54a9e81ee`, one commit on `pp_review3` `0e7cc5ea1`, upstream/main `6e2ac3dcd`); the old `pp_balance` commit `1c0c1416c` of the pre-review adapter, ported: `pp_balance.py` and its allocator test are the old files, the knobs became a record on `pipeline_kimi_k3`. Needs `mooncake-transfer-engine` (optional dependency, fla's standing) and, with a CUDA 13 torch, the `nvidia-cuda-runtime-cu12` wheel the engine's wheel links against, which the module preloads. Paste between the markers.
 
 --- PASTE BEGIN ---
 

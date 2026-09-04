@@ -14,8 +14,8 @@ Goal (user, evening of 09-04): the matrices the two live PR heads need, with dat
 | 6 | TP/SP + spmd | `wt_tpsprun` (8e7d4998d) | dp1 (partial_dtensor), dp1/dp2/dp2 x ep2 (spmd_types), tp2, tp2 no-SP, tp4, dp2 x tp2, dp2 x ep2 x tp2 | queued |
 | 7 | AC reuse | `wt_acrun` (24aa8c08d + alias) | dp1, dp2, dp2 x ep2, flag off and on | queued |
 | 8 | QB | `wt_qbrun2` (47ec648b4) | dp1, dp2, dp2 x ep2, sign-step and quantile balancing | queued |
-| 9 | PP cache offload | `wt_ppoffrun` | pp2 x vp4, pp8 x vp4 with the store on pinned host memory | queued |
-| 10 | PP balance | `wt_ppbalrun` | pp2 x vp4, rank 0 parks on rank 1 (Mooncake TE over TCP) | pending the port |
+| 9 | PP cache offload | `wt_ppoffrun` (eb665b1b1 + alias) | pp2 x vp4, pp8 x vp4 with the store on pinned host memory | queued |
+| 10 | PP balance | `wt_ppbalrun` (54a9e81ee + alias) | pp2 x vp4, rank 0 parks on rank 1 (Mooncake TE over TCP), as designed and with K3_PPBAL_KEEP_LOCAL=1 | queued |
 
 Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_pp3_curves100.sh`, `rebase_main_lora.sh`, `rebase_main_tpsp.sh`, `rebase_main_ac2.sh`, `rebase_main_qb2.sh`; the chain lives in the session scratchpad (`bridge_pp_all.sh`, `bridge_after_lora.sh`).
 
@@ -29,8 +29,8 @@ Scripts: `matrix_scripts/rebase_main_pp3.sh`, `pp_probe_signs.sh`, `rebase_main_
 | `tpsp_spmd_review1` | `8e7d4998d` | tp_review2 + spmd_review2 (6 commits), clean rebase | 16 passed; pyrefly = main | yes |
 | `ac_review2` | `24aa8c08d` | ac_review1 rebased (2 commits), typing fixes | 15 passed; pyrefly = main | yes |
 | `qb_release` | `47ec648b4` | k3_qb content rebased, typing fixes | 26 passed; pyrefly = main | yes (force, lease on 0902c7a24) |
-| `pp_offload_review1` | see log | `attn_res_cache_offload` ported onto `pp_review3`'s `RankStore` (old `e8897274d`) | PP tests + a store test | yes |
-| `pp_balance_review1` | see log | `pp_balance.py` and its pool test copied from `1c0c1416c`, knobs as a record on `pipeline_kimi_k3` | in progress | |
+| `pp_offload_review1` | `eb665b1b1` | `attn_res_cache_offload` ported onto `pp_review3`'s `RankStore` (old `e8897274d`) | 25 passed; pyrefly 0 on the files | yes |
+| `pp_balance_review1` | `54a9e81ee` | `pp_balance.py` and its pool test copied from `1c0c1416c`, knobs as a record on `pipeline_kimi_k3`; mooncake imports with the cu12 runtime wheel | 21 passed; pyrefly 0 on the files | yes |
 
 ## Results as they land
 
