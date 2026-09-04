@@ -114,3 +114,22 @@ The two "no-pipeline controls" queued earlier are not controls: FSDP dp2 reads a
 | dp1 vs dp1 with 512-token micro-batches (other sequences) | 1.3e-1 / 2.0e-1 / 4.8e-1 | 23.75% | 5.9% | 97% |
 
 A gradient that is actually different flips a quarter of the signs, mostly of elements that are not small, and moves the per-parameter norms by percent; the pipeline's flips are a hundred times fewer and sit in the near-zero elements. The clean same-data controls for the step-10 spread are the grad-norm precision alone (3.2% on dp1), expert parallel at fixed dp (-3.9% to +2.1%), and delta against naive on the same split (seven pairs, -2.8% to +3.9%).
+
+## 11. The exact test, and what it found (2026-09-04 night, 33-layer model, `--training.dtype float32`)
+
+Every run below loads the same seed checkpoint, dumps every parameter's step-1 gradient in float32 before the optimizer step, and is compared in float64 (relative L2 difference per parameter; "identical" = bitwise). Scripts: `pp33_probe_fp32.sh`, `pp33_probe_router.sh`, `pp33_probe_fp32x.sh` (float32 experts), `pp33_probe_alloc.sh`, `pp33_probe_bisect.sh`, `pp33_probe_amp.sh`, `pp33_probe_amp2.sh`; hacks in `local_hacks/` (`grad_tensor_dump_fp32_exit_hack.py`, `router_dump_hack.py`, `experts_fp32_hack.py`).
+
+| comparison | median / p90 / max rel L2 diff | identical params | note |
+|---|---|---|---|
+| float32 model (bf16 grouped GEMM kept): dp1 vs pp2 x vp4 | 1.03e-2 / 1.80e-2 / 8.43e-2 | 8 | the same as bf16 |
+| float32 model: dp1 vs pp8 x vp4 | 1.06e-2 / 1.85e-2 / 8.25e-2 | 8 | |
+| expert routing, dp1 vs pp2 x vp4 (top-k ids per router and micro-batch, matched by content) | 0 of 448 routings differ, 0 of 114,688 tokens | | the forward is the same function |
+| float32 model + float32 experts (per-expert matmul loop): dp1 vs pp2 x vp4 | 1.01e-2 / 1.75e-2 / 7.32e-2 | 7 | head 0, `output_res_*` 1e-11 |
+| dp1 vs dp1 with another allocator layout (`expandable_segments`), float32 + float32 experts | 0 / 0 / 0 | 1002 | one GPU is bitwise reproducible |
+| dp1 vs pp2 one stage per rank, 1F1B (one boundary, no store) | 6.61e-3 / 1.28e-2 / 4.58e-2 | 7 | by layer: 32: 3e-6, 31: 2e-4, 30: 1e-3, ..., 0: 1e-2, no step at the boundary (16/17) |
+| dp1 vs pp2 x vp2 interleaved (store and deposits in play) | 6.84e-3 / 1.49e-2 / 7.13e-2 | 7 | same profile |
+| dp1 vs pp2 x vp4 naive (no delta, no store) | 6.28e-3 / 1.24e-2 / 4.23e-2 | 7 | same profile |
+| dp1 vs dp1 with the expert products rounded from float64 (a float32-rounding change of the FORWARD) | 6.53e-1 / 8.91e-1 / 1.44 | 0 | every layer ~0.6: the random-init router flips experts for a large share of tokens on a 1e-7 change of its input |
+| dp1 vs dp1 with the expert BACKWARD rounded from float64, forward untouched (a float32-rounding change of the backward only) | 1.08e-2 / 1.85e-2 / 7.45e-2 | 10 | by layer: 32: 2e-4, 31: 2e-3, ..., 0: 2e-2, the pipeline's profile |
+
+Reading. The pipeline's forward is exact (the head's gradient and the routing are bitwise the single GPU's). Its backward differs from the single GPU's by a float32-rounding-sized amount at the top (3e-6 at the last layer: the block stack the stage assembles is laid out and summed in another order) and that amount grows a hundredfold through the backward Jacobians of 33 layers, to 1e-2 at layer 0. The proof that this is amplification and not a transport error is the last row: a single GPU whose only change is the rounding of the expert backward shows the same magnitude and the same layer profile, while two single-GPU runs that differ in nothing arithmetic are bitwise. The bisection agrees: one boundary without a store, the interleaved schedule with the store, and the naive transport all give the same profile, and there is no step at the stage boundary. The forward-side control (second-to-last row) is a separate fact about this debug setup: at step 1 the router's scores are near-uniform, so a 1e-7 change of the forward reroutes a large share of tokens and changes the gradient by 60 percent; every cross-configuration comparison whose step-1 loss differs (CP, TP) carries that, and it is why step-1 identity, not closeness, is the bar the pipeline is held to.
