@@ -4,7 +4,7 @@ PR 4313. Branch `cp_pr_candidate` on the fork (`223e97a23`): three commits on up
 
 The second (`8c8d9436f`) is the model's own spmd_types declarations, issued at tp = 1: every parameter a DTensor on the full mesh, the tower over cp, the MoE seams, the backend branch in `parallelize_kimi_k3`; the CP-scoped cut of the declaration work the TP/SP line carries, without tensor parallelism, which stays on the unsupported list here. The third (`223e97a23`) is the CP layer.
 
-The PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. This is the candidate for the PR branch `k3_cp_text`, force-pushed only on the user's approval. Paste between the markers.
+The PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. It was force-pushed to the PR branch `k3_cp_text` on 2026-09-04 (over `b85c2a078`, lease-protected). Paste between the markers.
 
 --- PASTE BEGIN ---
 
@@ -61,7 +61,7 @@ Running locally, the rows follow:
 | cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.18344 | 2.93330 |
 | cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.18619 | 3.00631 |
 | cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.22178 | 3.09487 |
-| cp2 | 2 | generic all-gather KV (4322) | KCP | | | |
+| cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.21651 | 3.08671 |
 | cp4 | 4 | packed Ulysses | KCP | | | |
 | cp8 | 8 | packed Ulysses | KCP | | | |
 | dp2 x cp2 | 4 | packed Ulysses | KCP | | | |
