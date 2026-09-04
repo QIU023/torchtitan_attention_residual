@@ -12,18 +12,18 @@ Adds `pp_balance` to `pipeline_kimi_k3`: the PP ranks named in `PPBalanceKnobs.p
 
 - Every PP rank constructs the engine (the address-book exchange is a collective): the destination allocates and registers the pool, the sources register a staging buffer they funnel transfers through, so per-tensor register/unregister churn stays off the hot path. Tensors below `pp_balance_min_tensor_mib` stay local.
 - The pool's allocator coalesces its free list: parked tensors are freed in whatever order backward reaches them, not in allocation order, and a bump pointer would run a long step out of pool while most of it is free (the CPU test).
-- `K3_PPBAL_KEEP_LOCAL=1` runs every transfer but keeps the local storage alive: bitwise against the unbalanced run, which proves the transfer machinery value-exact. The balanced run itself moves in the last digits because freeing storage early changes the intra-step allocator layout, and the KDA backward's atomic reductions sum in address order.
+- `K3_PPBAL_KEEP_LOCAL=1` runs every transfer but keeps the local storage alive, which isolates the transfer machinery from the allocator effects of freeing storage early (the KDA backward's atomic reductions sum in address order); on this branch the balanced run itself came out bitwise the unbalanced one.
 - The knobs are a frozen record (`PPBalanceKnobs`) a recipe passes through `functools.partial(pipeline_kimi_k3, pp_balance=...)`, like the transport switch; the engine hangs off the schedule for the schedule's lifetime because it owns the registered buffers and sessions.
 
 ### Results
 
-Running locally: pp2 x vp4 on the 30-layer debug flavor, rank 0 parking on rank 1 over TCP (no HCA on the box), once as designed and once with `K3_PPBAL_KEEP_LOCAL=1`, against the PR 4312 row; the rows follow with peak memory per rank.
+pp2 x vp4 on the 33-layer debug flavor, rank 0 parking on rank 1 over TCP (no HCA on the box), once as designed and once with `K3_PPBAL_KEEP_LOCAL=1`, against the PR 4312 row (same seed and batch). All three are bitwise. The engine's own counters: 1,440 tensors parked and fetched back over the ten steps, 1,760 MiB in all, and 11,840 tensors below the 1 MiB floor kept local; at this scale that is about 176 MiB a step against a 14 GiB peak, so the peak does not move. Peak memory is rank 0's (the rank that parks).
 
 | cell | balance | step 1 | step 3 | step 10 | peak memory rank 0 / rank 1 |
 |---|---|---|---|---|---|
-| pp2 x vp4 | off | | | | |
-| pp2 x vp4 | rank 0 parks on rank 1 | | | | |
-| pp2 x vp4 | same, `K3_PPBAL_KEEP_LOCAL=1` | | | | |
+| pp2 x vp4 | off | 12.41967 | 7.47862 | 3.42131 | 13.98 GiB (rank 0) |
+| pp2 x vp4 | rank 0 parks on rank 1 | 12.41967 | 7.47862 | 3.42131 | 13.98 GiB (rank 0); 1,440 tensors, 1,760 MiB parked and fetched back over the run, 11,840 below the 1 MiB floor kept local |
+| pp2 x vp4 | same, `K3_PPBAL_KEEP_LOCAL=1` | 12.41967 | 7.47862 | 3.42131 | 13.98 GiB (rank 0) |
 
 ### Changed files
 
