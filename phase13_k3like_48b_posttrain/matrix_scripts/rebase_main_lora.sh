@@ -4,10 +4,11 @@
 set -uo pipefail
 MX=/workspace/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh
 export SEED_ROOT=/workspace/.mx3_seeds_main
-D="--parallelism.data_parallel_shard_degree"
+D="--parallelism.data_parallel_shard_degree"; E="--parallelism.expert_parallel_degree"
 B="--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256"
 for cfg in kimi_k3_debugmodel_lora kimi_k3_debugmodel_qlora_mxfp4; do
 TITAN=/tmp/wt_lora CFG=$cfg BATCH="$B" CELLS="dp1|1|$D 1
-dp2|2|$D 2" $MX lora_$cfg
+dp2|2|$D 2
+dp2_ep2|2|$D 2 $E 2" $MX lora_$cfg
 done
 echo "LORA MATRICES DONE"

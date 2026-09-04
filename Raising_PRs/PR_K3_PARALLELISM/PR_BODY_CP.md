@@ -73,9 +73,9 @@ Step-1 per-parameter gradients (fp32 norm of every parameter's gradient, hashed;
 
 | comparison (step 1, cp2) | loss | sha1-identical parameters | relative difference of the per-parameter norm: median / p90 / max |
 |---|---|---|---|
-| packed Ulysses vs generic Ulysses (4450) | identical, 12.53972 | 25 of 750 | 2.0e-4 / 1.7e-3 / 1.5e-2 |
-| packed all-gather vs generic all-gather (4322) | identical | 25 of 750 | 1.2e-4 / 1.4e-3 / 1.9e-2 |
-| packed Ulysses vs packed all-gather | identical | 22 of 750 | 1.9e-4 / 1.6e-3 / 1.5e-2 |
+| packed Ulysses vs generic Ulysses (4450) | identical, 12.53972 | 24 of 750 | 1.6e-4 / 1.5e-3 / 2.1e-2 |
+| packed all-gather vs generic all-gather (4322) | identical | 24 of 750 | 1.1e-4 / 1.0e-3 / 8.8e-3 |
+| packed Ulysses vs packed all-gather | identical | 22 of 750 | 1.8e-4 / 1.5e-3 / 1.5e-2 |
 
 The maxima sit on 16-element `A_log` vectors and residual norms whose gradient norm is 1e-4: the distribution bf16 summation order produces, with no parameter group standing out.
 

@@ -20,7 +20,14 @@ pp8_vp4|8|$D 1 $P 8 $L 1 $IL" $MX ${2}_pp
 TITAN=/tmp/$1 CFG=kimi_k3_debugmodel_pp_naive BATCH="$B" \
 CELLS="pp8_vp4n|8|$D 1 $P 8 $L 1 $IL" $MX ${2}_ppn
 done
-# the even split row (bf16 only, as in the body)
+# the even split row and the data-parallel / expert-parallel meshes around PP (bf16 only)
+E="--parallelism.expert_parallel_degree"
 TITAN=/tmp/wt_pprun3 CFG=kimi_k3_debugmodel BATCH="$B" \
-CELLS="pp2_vp4_even|2|$D 1 $P 2 $L 4 $IL $LESS" $MX pp3_pp_even
+CELLS="pp2_vp4_even|2|$D 1 $P 2 $L 4 $IL $LESS
+dp2|2|$D 2
+dp2_ep2|2|$D 2 $E 2
+dp2_pp2_vp4|4|$D 2 $P 2 $L 4 $IL
+dp2_ep2_pp2_vp4|4|$D 2 $E 2 $P 2 $L 4 $IL
+dp2_pp4_vp4|8|$D 2 $P 4 $L 2 $IL
+dp2_ep2_pp4_vp4|8|$D 2 $E 2 $P 4 $L 2 $IL" $MX pp3_pp_mesh
 echo "PP3 MATRICES DONE"
