@@ -70,7 +70,7 @@ cell(){ local nm=$1 np=$2; shift 2
   # first step's forward and backward), so it takes WARM_STEPS (default 1);
   # the measure pass runs the full 10 steps on that cache.
   for pass in warm measure; do
-    local steps=10; [ "$pass" = warm ] && steps=${WARM_STEPS:-1}
+    local steps=${MEASURE_STEPS:-10}; [ "$pass" = warm ] && steps=${WARM_STEPS:-1}
     local d="$OUT/${nm}_$pass"
     if ! stage_seed "$d"; then
       printf "%-12s %-18s SEED-COPY-FAIL(%s)\n" "$nm" "ABORT" "$pass" >> $R; tail -1 $R; return
