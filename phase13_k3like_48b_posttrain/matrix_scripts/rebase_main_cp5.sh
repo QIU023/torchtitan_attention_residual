@@ -16,3 +16,12 @@ TITAN=/tmp/wt_cprun5 CFG=kimi_k3_debugmodel_cp2 BATCH="$B" CELLS="cp4|4|$D 1 $C 
 dp2_cp2|4|$D 2
 dp2_ep2_cp2|4|$D 2 $E 2" $MX cp5_mix
 echo "CP5 MATRICES DONE"
+#!/bin/bash
+# cp8 on cp_review5: the packed Ulysses default (kimi_k3_debugmodel_cp2 with the degree overridden), 8 GPUs.
+set -uo pipefail
+MX=/workspace/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh
+export SEED_ROOT=/workspace/.mx3_seeds_main SEED_CFG=kimi_k3_debugmodel_mm
+D="--parallelism.data_parallel_shard_degree"; C="--parallelism.context_parallel_degree"
+B="--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256"
+TITAN=/tmp/wt_cprun5 CFG=kimi_k3_debugmodel_cp2 BATCH="$B" CELLS="cp8|8|$D 1 $C 8" $MX cp5_cp8
+echo "CP8 DONE"

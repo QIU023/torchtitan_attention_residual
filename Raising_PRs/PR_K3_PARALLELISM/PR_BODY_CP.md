@@ -31,7 +31,7 @@ cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/;
 S="--parallelism.spmd_backend spmd_types"; D="--parallelism.data_parallel_shard_degree"; C="--parallelism.context_parallel_degree"; E="--parallelism.expert_parallel_degree"
 cell dp1 1 --config kimi_k3_debugmodel_mm $D 1 $S;  cell dp2 2 --config kimi_k3_debugmodel_mm $D 2 $S
 cell cp2 2 --config kimi_k3_debugmodel_cp2 $D 1;  cell cp2_ag 2 --config kimi_k3_debugmodel_cp2_allgather $D 1
-cell cp4 4 --config kimi_k3_debugmodel_cp2 $D 1 $C 4;  cell dp2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2;  cell dp2_ep2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2 $E 2
+cell cp4 4 --config kimi_k3_debugmodel_cp2 $D 1 $C 4;  cell cp8 8 --config kimi_k3_debugmodel_cp2 $D 1 $C 8;  cell dp2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2;  cell dp2_ep2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2 $E 2
 ```
 
 <!-- TBD: fill from /workspace/mx3_cp5_* -->
@@ -44,6 +44,7 @@ cell cp4 4 --config kimi_k3_debugmodel_cp2 $D 1 $C 4;  cell dp2_cp2 4 --config k
 | cp2 | 2 | packed all-gather KV (this PR) | KCP | | | |
 | cp2 | 2 | generic all-gather KV (4322) | KCP | | | |
 | cp4 | 4 | packed Ulysses | KCP | | | |
+| cp8 | 8 | packed Ulysses | KCP | | | |
 | dp2 x cp2 | 4 | packed Ulysses | KCP | | | |
 | dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | | | |
 
