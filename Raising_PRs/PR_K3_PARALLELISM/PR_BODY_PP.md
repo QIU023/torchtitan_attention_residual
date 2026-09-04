@@ -50,10 +50,10 @@ Running locally on the rebased head, the rows follow. Every cell starts from the
 
 | cell | stages | ranks | layers per stage | transport | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | | | |
-| pp2 x vp4 | 8 | 2 | 3 / 4 ... 4 / 3 | delta | | | |
-| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | | | |
-| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | | | |
+| dp1 | - | 1 | - | - | 12.51030 | 7.39629 | 3.49625 |
+| pp2 x vp4 | 8 | 2 | 3 / 4 ... 4 / 3 | delta | 12.51030 | 7.45319 | 3.38121 |
+| pp4 x vp4 | 16 | 4 | 1 / 2 ... 2 / 1 | delta | 12.51030 | 7.44880 | 3.57213 |
+| pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 (embedding-only and head-only stages) | delta | 12.51030 | 7.40443 | 3.47327 |
 | pp8 x vp4 | 32 | 8 | 0 / 1 ... 1 / 0 | whole stack every hop | | | |
 | pp2 x vp4, even split (`first/last_stage_less_layers=0`, 8 stages of 4 layers) | 8 | 2 | 4 | delta | | | |
 | dp2 | - | 2 | - | - | | | |
