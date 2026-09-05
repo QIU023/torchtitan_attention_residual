@@ -34,7 +34,7 @@ else
   T=$S.tmp.$$; rm -rf "$T"; mkdir -p "$T"
   ( source /venv/main/bin/activate && cd "$TITAN" && PYTHONPATH=$TITAN timeout 900 torchrun \
     --nproc_per_node=1 --master_port=$((30000+RANDOM%20000)) -m torchtitan.train \
-    --module kimi_k3 --config $SEED_CFG --debug.seed $SEED --debug.deterministic --training.steps 1 $BATCH \
+    --module ${MODULE:-kimi_k3} --config $SEED_CFG --debug.seed $SEED --debug.deterministic --training.steps 1 $BATCH ${SEED_EXTRA:-} \
     --parallelism.data_parallel_shard_degree 1 --checkpoint.create_seed_checkpoint \
     --checkpoint.enable --dump-folder "$T" > "$OUT/seed.log" 2>&1 ); echo "seed rc=$?" >> $R
   if [ "$(find "$T/checkpoint" -type f 2>/dev/null | wc -l)" -gt 0 ]; then
@@ -79,7 +79,7 @@ cell(){ local nm=$1 np=$2; shift 2
     fi
     ( source /venv/main/bin/activate && cd "$TITAN" && PYTHONPATH=$TITAN timeout 2400 torchrun \
       --nproc_per_node=$np --master_port=$((30000+RANDOM%20000)) -m torchtitan.train \
-      --module kimi_k3 --config $CFG --debug.seed $SEED --debug.deterministic \
+      --module ${MODULE:-kimi_k3} --config $CFG --debug.seed $SEED --debug.deterministic \
       --metrics.log_freq 1 --training.steps $steps $BATCH --checkpoint.enable \
       --checkpoint.interval 100000 "$@" --dump-folder "$d" > "$OUT/${nm}_$pass.log" 2>&1 )
     rm -rf "$d/checkpoint"
