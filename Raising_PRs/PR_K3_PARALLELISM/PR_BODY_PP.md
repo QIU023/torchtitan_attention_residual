@@ -72,16 +72,17 @@ Every virtual-pipeline cell twice, with the delta transport and naive (every hop
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910, 3.24169 | 7.40208, 3.31594 |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40257 | 7.30184, 3.25535 | 7.30184, 3.26341 |
 
-The two transports sum a block's gradients in a different order, so they agree at step 1 and separate after it. Step 1 is the number that can be compared, and it is the same number in every cell of a data-parallel group with the pipeline on or off: 12.41967 in the dp1 rows, 12.40417 in dp2 and dp2 x pp2 / pp4, 12.40257 in dp2 x ep2 and its pipeline rows, on all three splits, both transports, and both grad-norm precisions (under the float32 norm the totals agree to 2e-4: dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656).
+The two transports sum a block's gradients in a different order, so they agree at step 1 and separate after it. Step 1 is the comparable number: every cell of a data-parallel group prints it with the pipeline on or off (the three values in the table), on all three splits, both transports and both grad-norm precisions.
 
-Step-1 gradients, all 1,399,095,936 elements: the per-parameter norms of pp2 x vp4 and pp8 x vp4 sit within bf16 rounding of dp1's (median relative difference 2.0e-4 and 2.2e-4, no parameter group off: element-wise every group differs by 1.3 to 1.5 percent alike, the head 0.5 percent), and 0.27 percent of the elements flip sign, pp8 with 32 stages no more than pp2 with 8, 80 percent of them below a hundredth of their tensor's rms; two dp1 runs on fresh compile caches are bitwise.
+Its gradients agree to bf16 rounding, and the pipeline's deviation is two orders below what a genuinely different gradient does -- the control reads another batch:
 
-For scale, a gradient that is actually different (dp2, which reads another batch) flips 23 percent of the elements, few of them near zero, and moves the per-parameter norms by percent.
-
-| pair (step 1) | sha1-identical parameters | per-parameter norm, relative difference median / p90 / max | sign flips | implied first-update difference |
+| pair (step 1) | per-parameter norm, relative difference median / p90 / max | sign flips | flipped, below 1e-2 of the tensor's rms | implied first-update difference |
 |---|---|---|---|---|
-| dp1 vs pp2 x vp4 | 2 of 1002 | 2.0e-4 / 1.7e-3 / 1.2e-2 | 0.267% | 10.3% |
-| dp1 vs pp8 x vp4 | 2 of 1002 | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% | 10.5% |
+| dp1 vs pp2 x vp4 | 2.0e-4 / 1.7e-3 / 1.2e-2 | 0.267% | 80% | 10.3% |
+| dp1 vs pp8 x vp4 | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% | 80% | 10.5% |
+| dp1 vs dp2 (another batch) | 3.2e-2 / 1.1e-1 / 3.5e-1 | 22.99% | 6.3% | 96% |
+
+No parameter group stands out, and two dp1 runs on fresh compile caches are bitwise.
 
 The later steps spread by a few percent in either direction, and the spread is not the pipeline's: the same few percent appear with no pipeline in the run (the dp1 cell moves 3.2 percent when only the grad-norm precision changes, pure data parallel at 1 / 2 / 4 / 8 spreads 2.5 percent), a float32 end-to-end run places the pipeline's difference in the summation order of the assembled block stack with no step at any stage boundary, and on streamed cc12m the pipeline cells track dp1 inside the curves' own movement over a hundred steps.
 
