@@ -20,7 +20,7 @@ Adds quantile balancing for the MoE router bias. Before this change the bias upd
 
 ### Results
 
-Training loss on `0902c7a24` (on `47ec648b4` the control rows and the dp1 / dp2 quantile rows reproduced to the digit; the rerun on `a4658eefe`, under `spmd_types`, is running locally and replaces these rows), one seed (`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, each cell run twice on an idle box and the second run read); the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on. The `dp2 x ep2` rows are where the balancing is exercised across expert shards.
+Training loss on `0902c7a24` (on `47ec648b4` the control rows and the dp1 / dp2 quantile rows reproduced to the digit; the rerun on `a4658eefe` on 2026-09-05 reproduced all six rows to the digit, under `partial_dtensor`: on main the multimodal debug flavor has no input layout for `spmd_types`, which the declarations PR supplies), one seed (`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, each cell run twice on an idle box and the second run read); the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on. The `dp2 x ep2` rows are where the balancing is exercised across expert shards.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_qb \
