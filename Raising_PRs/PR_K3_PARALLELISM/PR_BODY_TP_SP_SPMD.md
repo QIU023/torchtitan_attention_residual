@@ -18,7 +18,7 @@ Enables tensor parallelism for Kimi K3, with sequence parallel on the same mesh,
 
 ### Results
 
-`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256; every cell runs twice and the second run is read; on an RTX 5060 Ti with Attention Gym's SM100/SM103 guard lifted locally. The first row names `partial_dtensor` (since 4446 the default backend is `spmd_types`), every other row runs under `spmd_types`; the last three run the flavor the way 4446's B200 cell does (type checking on, activation checkpointing off).
+`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256; every cell runs twice and the second run is read; on an RTX 5060 Ti with Attention Gym's SM100/SM103 guard lifted locally. The first row names `partial_dtensor` (since 4446 the default backend is `spmd_types`), every other row runs under `spmd_types`; the last three run the flavor the way 4446's B200 cell does (type checking on, activation checkpointing off): dp1 and tp2 are bitwise their checked-off rows, the dp2 x ep2 x tp2 row moves from step 3 on with activation checkpointing off, as the declarations PR's dp2 rows do.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
@@ -28,7 +28,7 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 # sequence parallel off: add --parallelism.no-enable-sequence-parallel; expert parallel: --parallelism.expert_parallel_degree 2
 ```
 
-The rows (the last three run as the matrix finishes):
+The rows:
 
 | cell | world | backend | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
@@ -41,9 +41,9 @@ The rows (the last three run as the matrix finishes):
 | tp4 (SP on) | 4 | spmd_types | 12.52816 | 7.12313 | 2.91429 |
 | dp2 x tp2 (SP on) | 4 | spmd_types | 12.53383 | 7.25942 | 3.23869 |
 | dp2 x ep2 x tp2 (SP on) | 4 | spmd_types | 12.53826 | 7.41038 | 3.29505 |
-| dp1 | 1 | spmd_types, type checking, AC off | | | |
-| tp2 (SP on) | 2 | spmd_types, type checking, AC off | | | |
-| dp2 x ep2 x tp2 (SP on) | 4 | spmd_types, type checking, AC off | | | |
+| dp1 | 1 | spmd_types, type checking, AC off | 12.52977 | 7.27107 | 2.98077 |
+| tp2 (SP on) | 2 | spmd_types, type checking, AC off | 12.54164 | 7.39052 | 3.07310 |
+| dp2 x ep2 x tp2 (SP on) | 4 | spmd_types, type checking, AC off | 12.53826 | 7.34445 | 3.37616 |
 
 The correctness claim is the gradient, not the step-10 loss: at tp2, with and without sequence parallel, float32 end-to-end step-1 gradient dumps (a per-expert float32 loop for the experts) against dp1 show every replicated parameter bitwise identical across the two TP ranks and within noise of dp1 (744 and 742 of 750 parameters; the rest are `A_log` entries whose gradients are 1e-4-scale noise in bf16). The step-1 loss sits 0.1 to 0.2 percent from dp1 (the head-sharded matmuls and the boundary collectives round differently, and the MoE router is sensitive to it), and the later steps move by the few percent any re-partition of this flavor shows. The SP benefit case is long-sequence; at this scale it shows neither a memory win nor a speed cost worth reporting.
 
