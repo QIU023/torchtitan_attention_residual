@@ -72,9 +72,7 @@ Every virtual-pipeline cell twice, with the delta transport and naive (every hop
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910, 3.24169 | 7.40208, 3.31594 |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40257 | 7.30184, 3.25535 | 7.30184, 3.26341 |
 
-The two transports sum a block's gradients in a different order, so they agree at step 1 and separate after it; the spread between them is the spread one configuration shows across seeds and data-parallel degrees, which a dp / dp x ep ladder with no pipeline in it reproduces (`phase13_k3like_48b_posttrain/PP_STEP10_SPREAD_2026-09-04.md`).
-
-Step 1 is the number that can be compared, and it is the same number in every cell of a data-parallel group with the pipeline on or off: 12.41967 in the dp1 rows, 12.40417 in dp2 and dp2 x pp2 / pp4, 12.40257 in dp2 x ep2 and its pipeline rows, on all three splits, both transports, and both grad-norm precisions (under the float32 norm the totals agree to 2e-4: dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656).
+The two transports sum a block's gradients in a different order, so they agree at step 1 and separate after it. Step 1 is the number that can be compared, and it is the same number in every cell of a data-parallel group with the pipeline on or off: 12.41967 in the dp1 rows, 12.40417 in dp2 and dp2 x pp2 / pp4, 12.40257 in dp2 x ep2 and its pipeline rows, on all three splits, both transports, and both grad-norm precisions (under the float32 norm the totals agree to 2e-4: dp1 16.1631, pp2 x vp4 16.1661, pp4 x vp4 16.1646, pp8 x vp4 16.1656).
 
 Step-1 gradients, all 1,399,095,936 elements: the per-parameter norms of pp2 x vp4 and pp8 x vp4 sit within bf16 rounding of dp1's (median relative difference 2.0e-4 and 2.2e-4, no parameter group off: element-wise every group differs by 1.3 to 1.5 percent alike, the head 0.5 percent), and 0.27 percent of the elements flip sign, pp8 with 32 stages no more than pp2 with 8, 80 percent of them below a hundredth of their tensor's rms; two dp1 runs on fresh compile caches are bitwise.
 
@@ -85,26 +83,9 @@ For scale, a gradient that is actually different (dp2, which reads another batch
 | dp1 vs pp2 x vp4 | 2 of 1002 | 2.0e-4 / 1.7e-3 / 1.2e-2 | 0.267% | 10.3% |
 | dp1 vs pp8 x vp4 | 2 of 1002 | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% | 10.5% |
 
-In float32 end to end (parameters, activations, the expert GEMM as a per-expert float32 loop), the pipeline's step-1 gradients differ from one GPU's by 1e-2 median, growing from 3e-6 at the last layer to 1e-2 at the first with no step at any stage boundary, on one boundary without a store, on the interleaved schedule with it, and on the naive transport alike; a single GPU whose only change is the rounding of the expert backward (forward and routing untouched) shows the same magnitude and the same layer profile, and two single-GPU runs that differ in nothing arithmetic are bitwise.
+The later steps spread by a few percent in either direction, and the spread is not the pipeline's: the same few percent appear with no pipeline in the run (the dp1 cell moves 3.2 percent when only the grad-norm precision changes, pure data parallel at 1 / 2 / 4 / 8 spreads 2.5 percent), a float32 end-to-end run places the pipeline's difference in the summation order of the assembled block stack with no step at any stage boundary, and on streamed cc12m the pipeline cells track dp1 inside the curves' own movement over a hundred steps.
 
-The pipeline's backward differs from autograd's by the summation order of the assembled block stack, a float32-rounding difference at the top that this network's backward amplifies a hundredfold (logbook, `PP_STEP10_SPREAD_2026-09-04.md` section 11).
-
-The later steps spread by a few percent in either direction, and the spread is not a property of the pipeline: Adam's first update is $lr \cdot \mathrm{sign}(g)$ per element, so the elements whose gradient sits below bf16 rounding noise flip sign between any two runs that sum in a different order and each moves by $2 \cdot lr$ the other way (a 0.27 percent flip fraction is a 10 percent change of the first update), and this flavor (bf16 parameters and optimizer states, lr 8e-4 with 2 warm-up steps, the loss falling from 12.4 to 3.3 in ten steps) does not average that out.
-
-The same few percent appear with no pipeline in the run: the dp1 cell moves 3.2 percent at step 10 when only the grad-norm precision changes, pure data parallel at 1 / 2 / 4 / 8 spreads 2.5 percent (with the batch composition changing), and expert parallel moves the same-data row by -3.9 to +2.1 percent (dp2 x ep2, dp4 x ep2 / ep4, dp8 x ep2 / ep4 / ep8; the logbook's `PP_STEP10_SPREAD_2026-09-04.md` has the per-step data, the per-group census and the ladder).
-
-On the previous head the same step-1 comparison also covered delta against naive on one topology, the subclass against the reviewed adapter, and 32 stages on 2 GPUs, all at a 1e-4 median (logbook, `REVIEW_ANSWERS_PP_CP_2026-09-04.md` 3.3).
-
-A hundred steps on the debug flavor's 32-sample data is a memorization curve (every cell at 0.04 to 0.05 by step 100, the crossings of 1.0 spread over 15 steps; at a second seed the 32-stage delta cell is again the last to cross, 38 against 31, next to the 0 to 5 steps one configuration moves between the seeds).
-
-On streamed cc12m (no sample repeats, same seed and batch; step 1 reads 12.35295 on dp1 and 12.35294 on the pipeline cells, the summation order of sixteen float32 micro-batch losses, with the routing and the head's gradient bitwise the same), the four curves track each other: the gap between any pipeline cell and dp1 over steps 51 to 100 (mean absolute 0.017 to 0.049) sits under the curves' own step-to-step movement (0.12) and their spread (sd 0.10), and the 32-stage delta transport is the lowest of the four rather than the slowest.
-
-| cell (streamed cc12m, 100 steps) | step 10 | step 50 | mean of steps 51 to 100 (sd) | step 100 |
-|---|---|---|---|---|
-| dp1 | 3.672 | 2.653 | 2.540 (0.105) | 2.539 |
-| pp2 x vp4 | 3.836 | 2.621 | 2.525 (0.109) | 2.509 |
-| pp8 x vp4 | 3.617 | 2.588 | 2.490 (0.110) | 2.504 |
-| pp8 x vp4, naive | 3.776 | 2.628 | 2.524 (0.106) | 2.534 |
+The per-step data, the census, the float32 probe and the curves are in the logbook: `phase13_k3like_48b_posttrain/PP_NUMERICS_FOR_4312_2026-09-05.md`.
 
 Memory at this scale does not move: a cached block of the debug model is 256 tokens x 1024 x 2 bytes, so a rank's store is a few MB against activations of GiB. The saving the per-micro-batch release buys is blocks x T x D x 2 bytes no longer resident per micro-batch, which is GB at K3's width and needs a measurement at that shape.
 
