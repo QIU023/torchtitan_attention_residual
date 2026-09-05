@@ -63,7 +63,7 @@ Every cell ran twice on the same seed checkpoint and the second run is read. cp8
 | cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.33010 | 2.92453 |
 | cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.11244 | 3.09557 |
 | cp8 | 8 | packed Ulysses | KCP | 12.54963 | 7.26635 | 3.00692 |
-| cp8 | 8 | generic Ulysses (4450) | KCP | 12.54963 | 7.30435 | 3.01451 (pre-merge recipe; rerun queued) |
+| cp8 | 8 | generic Ulysses (4450) | KCP | 12.54963 | 7.33906 | 3.08600 |
 | dp2 x cp2 | 4 | packed Ulysses | KCP | 12.52908 | 7.27039 | 3.15622 |
 | dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | 12.52759 | 7.23991 | 3.11484 |
 | dp2 x cp4 | 8 | packed Ulysses | KCP | 12.53067 | 7.12889 | 3.16472 |
@@ -76,7 +76,7 @@ The four MLA kernels agree at step 1 to the digit and part afterwards: a packed 
 
 Step-1 per-parameter gradients (fp32 norm of every parameter's gradient, hashed; rank 0's local gradient, 750 parameters, one shared seed, each kernel on its own warm compile cache; measured with the same kernels on the earlier cut of this branch) are the evidence for what a packed kernel changes against its generic counterpart:
 
-| comparison (step 1, cp2) | loss | sha1-identical parameters | relative difference of the per-parameter norm: median / p90 / max |
+| comparison (step 1, cp2; measured on the pre-merge recipe, whose forward is the same function, as the step-1 losses above show) | loss | sha1-identical parameters | relative difference of the per-parameter norm: median / p90 / max |
 |---|---|---|---|
 | packed Ulysses vs generic Ulysses (4450) | identical, 12.53972 | 24 of 750 | 1.6e-4 / 1.5e-3 / 2.1e-2 |
 | packed all-gather vs generic all-gather (4322) | identical | 24 of 750 | 1.1e-4 / 1.0e-3 / 8.8e-3 |
