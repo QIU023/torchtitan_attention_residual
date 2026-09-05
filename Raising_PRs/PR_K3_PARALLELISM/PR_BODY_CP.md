@@ -2,7 +2,7 @@
 
 PR 4313. Branch `cp_review5` on the fork (`edc4cd71b`): stacked on the declarations PR (`k3_spmd_decl` `dbc60701d`, on upstream/main `390e2985b` with 4446 merged), then three commits. The first is the open upstream CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) copied to unblock running, every copied file and class marked "copied from upstream open PR 4322/4449/4450 to unblock running; pending rebase and reconcile", the whole commit to be dropped at the rebase once the stack merges. The second (`4c2cd4d4c`) is this PR: the CP layer, re-stacked on 2026-09-05 with one conflict in `parallelize.py` against 4446 (the CP hook sits after the model assertion, before 4446's replicated annotation and mesh resolution). The third (`edc4cd71b`) moves the KDA kernel to Attention Gym's merged context-parallel recipe (attention-gym `b19162e`, 2026-09-04, or later) and drops the SM100/SM103 guard main's `kda.py` carried, since Attention Gym dispatches by capability itself now. The declarations the CP layer needs are the base PR's now; the previous head of this branch, `223e97a23`, carried its own copy of them, which is what the PR branch `k3_cp_text` holds until the sync is approved.
 
-The PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. The matrix below is being rerun on `edc4cd71b` with attention-gym `b19162e`; the rows shown are from `223e97a23` on the pre-merge recipe and are replaced as the cells land.
+The PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. The matrix below ran on `edc4cd71b` with attention-gym `b19162e` on 2026-09-05; every step-1 loss is bitwise the pre-merge recipe's, the later steps carry the merged kernels' rounding. The dp rows come with their expert-parallel twins and dp x cp at world 8.
 
 --- PASTE BEGIN ---
 
@@ -61,11 +61,16 @@ Every cell ran twice on the same seed checkpoint and the second run is read. cp8
 | cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.27002 | 3.01910 |
 | cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.31401 | 3.04420 |
 | cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.33010 | 2.92453 |
-| cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.15253 | 3.14352 |
-| cp8 | 8 | packed Ulysses | KCP | 12.54963 | 7.28587 | 2.95883 |
-| cp8 | 8 | generic Ulysses (4450) | KCP | 12.54963 | 7.30435 | 3.01451 |
-| dp2 x cp2 | 4 | packed Ulysses | KCP | 12.52908 | 7.21769 | 3.16754 |
-| dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | 12.52759 | 7.31647 | 3.11588 |
+| cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.11244 | 3.09557 |
+| cp8 | 8 | packed Ulysses | KCP | 12.54963 | 7.26635 | 3.00692 |
+| cp8 | 8 | generic Ulysses (4450) | KCP | 12.54963 | 7.30435 | 3.01451 (pre-merge recipe; rerun queued) |
+| dp2 x cp2 | 4 | packed Ulysses | KCP | 12.52908 | 7.27039 | 3.15622 |
+| dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | 12.52759 | 7.23991 | 3.11484 |
+| dp2 x cp4 | 8 | packed Ulysses | KCP | 12.53067 | 7.12889 | 3.16472 |
+| dp2 x ep2 x cp4 | 8 | packed Ulysses | KCP | 12.52663 | 7.12298 | 3.10091 |
+| dp4 x cp2 | 8 | packed Ulysses | KCP | 12.54269 | 6.95012 | 3.10984 |
+| dp4 x ep2 x cp2 | 8 | packed Ulysses | KCP | 12.53850 | 6.93310 | 2.97357 |
+| dp4 x ep4 x cp2 | 8 | packed Ulysses | KCP | 12.53869 | 6.94088 | 3.09810 |
 
 The four MLA kernels agree at step 1 to the digit and part afterwards: a packed kernel moves the same values as its generic counterpart but sums the rope slice's gradient in a different order (over the local heads first, then the reduce-scatter across cp), one bf16 rounding of a sum, the same class of difference as the two transports in the pipeline PR.
 
