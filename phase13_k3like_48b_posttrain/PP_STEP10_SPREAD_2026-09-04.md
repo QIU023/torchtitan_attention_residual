@@ -133,3 +133,14 @@ Every run below loads the same seed checkpoint, dumps every parameter's step-1 g
 | dp1 vs dp1 with the expert BACKWARD rounded from float64, forward untouched (a float32-rounding change of the backward only) | 1.08e-2 / 1.85e-2 / 7.45e-2 | 10 | by layer: 32: 2e-4, 31: 2e-3, ..., 0: 2e-2, the pipeline's profile |
 
 Reading. The pipeline's forward is exact (the head's gradient and the routing are bitwise the single GPU's). Its backward differs from the single GPU's by a float32-rounding-sized amount at the top (3e-6 at the last layer: the block stack the stage assembles is laid out and summed in another order) and that amount grows a hundredfold through the backward Jacobians of 33 layers, to 1e-2 at layer 0. The proof that this is amplification and not a transport error is the last row: a single GPU whose only change is the rounding of the expert backward shows the same magnitude and the same layer profile, while two single-GPU runs that differ in nothing arithmetic are bitwise. The bisection agrees: one boundary without a store, the interleaved schedule with the store, and the naive transport all give the same profile, and there is no step at the stage boundary. The forward-side control (second-to-last row) is a separate fact about this debug setup: at step 1 the router's scores are near-uniform, so a 1e-7 change of the forward reroutes a large share of tokens and changes the gradient by 60 percent; every cross-configuration comparison whose step-1 loss differs (CP, TP) carries that, and it is why step-1 identity, not closeness, is the bar the pipeline is held to.
+
+## 12. 100-step curves on streamed cc12m (no repeats), 33-layer model, `pp3c100cc`, 2026-09-05
+
+| cell | step 1 | step 10 | step 50 | mean 51-100 | sd 51-100 | min / max 51-100 | step 100 |
+|---|---|---|---|---|---|---|---|
+| dp1 | 12.35295 | 3.67192 | 2.6528 | 2.5395 | 0.1045 | 2.3105 / 2.7361 | 2.5387 |
+| pp2 x vp4 | 12.35294 | 3.83600 | 2.6208 | 2.5248 | 0.1088 | 2.2831 / 2.7332 | 2.5089 |
+| pp8 x vp4 | 12.35294 | 3.61745 | 2.5882 | 2.4901 | 0.1098 | 2.2406 / 2.6911 | 2.5043 |
+| pp8 x vp4, naive | 12.35294 | 3.77567 | 2.6276 | 2.5237 | 0.1063 | 2.2708 / 2.7155 | 2.5343 |
+
+Pairwise over steps 51-100: dp1 vs pp2 mean diff +0.015, mean |gap| 0.017, max 0.050; dp1 vs pp8 +0.049 / 0.049 / 0.090; dp1 vs naive pp8 +0.016 / 0.018 / 0.068; pp2 vs naive pp8 +0.001 / 0.012 / 0.031. The mean step-to-step change of one curve in that window is 0.12 to 0.13. Reading: on data that does not repeat, the curves are indistinguishable within their own movement; the delta pp8 lag of the memorization set does not recur (it is the lowest here). Step 1 is 12.35295 on dp1 and 12.35294 on all three pipeline cells: not bitwise on this data, the lead of section 13.
