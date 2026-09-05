@@ -20,7 +20,7 @@ Adds quantile balancing for the MoE router bias. Before this change the bias upd
 
 ### Results
 
-Training loss on `0902c7a24` (on `47ec648b4` the control rows and the dp1 / dp2 quantile rows reproduced to the digit; the rerun on `a4658eefe` on 2026-09-05 reproduced all six rows to the digit, under `partial_dtensor`: on main the multimodal debug flavor has no input layout for `spmd_types`, which the declarations PR supplies), one seed (`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, each cell run twice on an idle box and the second run read); the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on. The `dp2 x ep2` rows are where the balancing is exercised across expert shards.
+Training loss on `0902c7a24` (on `47ec648b4` the control rows and the dp1 / dp2 quantile rows reproduced to the digit; the rows are the rerun on `a4658eefe` on 2026-09-05 with Attention Gym at upstream/main `b19162e`, under `partial_dtensor`: on main the multimodal debug flavor has no input layout for `spmd_types`, which the declarations PR supplies; the control rows are bitwise the declarations PR's dp rows on the same gym), one seed (`--debug.seed 42 --debug.deterministic`, one seed checkpoint per flavor, each cell run twice on an idle box and the second run read); the control rows are the same tree and seed with core's sign-step hook (`kimi_k3_debugmodel`). Step 1 is identical to the digit: the bias is only rewritten at the optimizer step, so the first forward cannot differ; the runs separate from step 2 on. The `dp2 x ep2` rows are where the balancing is exercised across expert shards.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_qb \
@@ -31,12 +31,12 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 
 | config | hook | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
-| dp1 | sign-step (main) | 12.52977 | 7.27107 | 2.98077 |
-| dp1 | quantile balancing | 12.52977 | 7.30620 | 3.11376 |
-| dp2 | sign-step (main) | 12.53137 | 7.31248 | 3.15823 |
-| dp2 | quantile balancing | 12.53137 | 7.19897 | 3.24552 |
-| dp2 x ep2 | sign-step (main) | 12.53146 | 7.20212 | 3.10296 |
-| dp2 x ep2 | quantile balancing | 12.53146 | 7.67547 | 3.17317 |
+| dp1 | sign-step (main) | 12.52977 | 7.36833 | 2.91045 |
+| dp1 | quantile balancing | 12.52977 | 7.38270 | 3.00769 |
+| dp2 | sign-step (main) | 12.53137 | 7.25082 | 3.15411 |
+| dp2 | quantile balancing | 12.53137 | 7.30862 | 3.20259 |
+| dp2 x ep2 | sign-step (main) | 12.53146 | 7.13441 | 3.09174 |
+| dp2 x ep2 | quantile balancing | 12.53146 | 7.57599 | 3.16632 |
 
 The dp1 and dp2 rows reproduce the pre-rebase measurement to the digit; the ep2 rows are new. Step 1 differs from dp2 by 9e-5 under EP because the expert kernels round differently, on both hooks alike.
 
