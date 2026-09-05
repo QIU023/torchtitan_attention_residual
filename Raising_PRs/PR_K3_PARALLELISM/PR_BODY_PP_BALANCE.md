@@ -17,7 +17,7 @@ Adds `pp_balance` to `pipeline_kimi_k3`: the PP ranks named in `PPBalanceKnobs.p
 
 ### Results
 
-pp2 x vp4 on the 33-layer debug flavor, rank 0 parking on rank 1 over TCP (no HCA on the box), once as designed and once with `K3_PPBAL_KEEP_LOCAL=1`, against the PR 4312 row (same seed and batch). All three are bitwise. The engine's own counters: 1,440 tensors parked and fetched back over the ten steps, 1,760 MiB in all, and 11,840 tensors below the 1 MiB floor kept local; at this scale that is about 176 MiB a step against a 14 GiB peak, so the peak does not move. Peak memory is rank 0's (the rank that parks).
+pp2 x vp4 on the 33-layer debug flavor, rank 0 parking on rank 1 over TCP (no HCA on the box), once as designed and once with `K3_PPBAL_KEEP_LOCAL=1`, against the PR 4312 row (same seed and batch, the same Attention Gym checkout `7c83f6c`). All three are bitwise. The engine's own counters: 1,440 tensors parked and fetched back over the ten steps, 1,760 MiB in all, and 11,840 tensors below the 1 MiB floor kept local; at this scale that is about 176 MiB a step against a 14 GiB peak, so the peak does not move. Peak memory is rank 0's (the rank that parks).
 
 | cell | balance | step 1 | step 3 | step 10 | peak memory rank 0 / rank 1 |
 |---|---|---|---|---|---|

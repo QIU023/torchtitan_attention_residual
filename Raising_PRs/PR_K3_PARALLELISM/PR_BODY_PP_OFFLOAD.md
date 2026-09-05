@@ -16,7 +16,7 @@ Adds `attn_res_cache_offload` to `pipeline_kimi_k3`. Before this change the bloc
 
 ### Results
 
-pp2 x vp4 and pp8 x vp4 on the 33-layer debug flavor with the switch on, against the same cells with it off (the PR 4312 matrix, same seed and batch); both are bitwise, and the log line "block transport delta with rank store on pinned host memory" is in every switched-on run. Peak memory is rank 0's; at this scale a block is 256 tokens x 1024 x 2 bytes, so the store is a few MB against activations of GiB and the saving does not show.
+pp2 x vp4 and pp8 x vp4 on the 33-layer debug flavor with the switch on, against the same cells with it off (the PR 4312 matrix, same seed and batch, the same Attention Gym checkout `7c83f6c`); both are bitwise, and the log line "block transport delta with rank store on pinned host memory" is in every switched-on run. Peak memory is rank 0's; at this scale a block is 256 tokens x 1024 x 2 bytes, so the store is a few MB against activations of GiB and the saving does not show.
 
 | cell | store | step 1 | step 3 | step 10 | peak memory |
 |---|---|---|---|---|---|

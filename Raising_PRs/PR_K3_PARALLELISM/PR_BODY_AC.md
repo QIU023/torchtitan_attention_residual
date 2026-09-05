@@ -18,7 +18,7 @@ Two changes to how Kimi K3's attention residual meets activation checkpointing, 
 
 ### Results
 
-Both changes are non-computation, so the bar is bitwise-identical loss against main with the same seed.
+Both changes are non-computation, so the bar is bitwise-identical loss against main with the same seed. The KDA kernels are Attention Gym's at the pre-merge recipe checkout `7c83f6c`, on an RTX 5060 Ti with the SM100/SM103 guard in `kda.py` lifted locally (a patch not on the branch).
 
 Training loss on `kimi_k3_debugmodel`, one seed, every cell run twice and the second read; peak memory from the measure pass. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it (dp1 12.52977 / 7.27107 / 2.98077, dp2 12.53137 / 7.31248 / 3.15823, dp2 x ep2 12.53146 / 7.20212 / 3.10296 are main's numbers), and the flag trades a little memory for the recompute it saves: at dp1 the saved recompute reads as 272 to 326 tokens per second on this box, while the two-GPU cells are bound elsewhere at this size and show no throughput change. The log line "attention and the residual math stay outside (ac_reuse_attention)" is in every flag-on run.
 

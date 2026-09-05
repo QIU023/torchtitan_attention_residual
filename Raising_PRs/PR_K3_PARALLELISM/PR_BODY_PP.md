@@ -34,7 +34,7 @@ Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular d
 
 ### Results
 
-`kimi_k3_debugmodel` is 33 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: two blocks of 12 and a partial block of 9 (33 = 2 x 12 + 9, the same tail block as 93 = 7 x 12 + 9), the stack ending on two adjacent MLA layers, and 35 units with the embedding and the head, which no pipeline shape divides.
+`kimi_k3_debugmodel` is 33 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: two blocks of 12 and a partial block of 9 (33 = 2 x 12 + 9, the same tail block as 93 = 7 x 12 + 9), the stack ending on two adjacent MLA layers, and 35 units with the embedding and the head, which no pipeline shape divides. The KDA kernels are Attention Gym's at the pre-merge recipe checkout `7c83f6c`; on the RTX 5060 Ti (SM120) they run with the SM100/SM103 guard in `kda.py` lifted locally, a patch not on the branch.
 
 Every split in the table is uneven; the stage count is the multiple of `pipeline_parallel_degree` nearest to units / `layers_per_stage`, and core sees the split rather than the knob (its ceiling would refuse 35 units at 4 per stage).
 
