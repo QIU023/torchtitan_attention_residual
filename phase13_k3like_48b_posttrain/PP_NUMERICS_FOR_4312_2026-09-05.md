@@ -46,6 +46,7 @@ On streamed cc12m (no sample repeats, same seed and batch; step 1 reads 12.35295
 | llama3 pp2 (Interleaved1F1B, the flavor's default) | 4 | 8.02759 | 7.10430 | 4.11385 |
 | llama3 pp2 x vp4 | 8 | 8.02759 | 7.10431 | 4.11399 |
 | llama3 pp4 x vp2 | 8 | 8.02759 | 7.10431 | 4.11391 |
+| llama3 pp8 (1F1B, one unit per stage) | 8 | 8.02759 | 7.10430 | 4.11383 |
 | deepseek_v3 dp1 | - | 8.15954 | 4.87367 | 3.88273 |
 | deepseek_v3 pp2 (Interleaved1F1B) | 4 | 8.15954 | 4.87379 | 3.88192 |
 | deepseek_v3 pp2 x vp4 | 8 | 8.15954 | 4.87379 | 3.88172 |
