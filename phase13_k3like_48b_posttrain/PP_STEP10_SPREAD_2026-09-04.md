@@ -161,3 +161,7 @@ Result (seed 43, memorised debug set):
 | pp8 x vp4 | 43 | 3.5358 | 38 | 60 | 0.277 | 0.0866 | 0.0452 |
 
 One configuration moves 0 (dp1), 5 (pp2) and 3 (pp8) steps in the crossing of 1.0 between the two seeds; the 32-stage delta cell crosses 7 to 10 steps after dp1 at both seeds, so on the memorised set its later descent is consistent across the two seeds and a little wider than the seed-to-seed movement, while on cc12m (section 12) it is the lowest of the four curves and its step-1 gradients equal dp1's up to the rounding of section 11. Two seeds of a memorisation race do not settle it either way; it stays an observation, not a claim.
+
+## 14. The cc12m step-1 lead, closed (`pp33_probe_cc12m.sh`, 2026-09-05)
+
+On streamed cc12m the printed step-1 loss is 12.35295 on dp1 and 12.35294 on every pipeline cell. The exact probe on that data (float32 model and experts, routing recorded): the expert routing is bitwise the same (0 of 512 routings, 0 of 131,072 tokens differ), the head's and `output_res_*`'s gradients are bitwise the same (so the per-micro-batch losses and their gradients are identical), and the layer profile is the one of section 11 (2e-6 at layer 32 growing to 2e-2 at layer 0, median 9.7e-3). The printed difference is the order in which sixteen float32 micro-batch losses are summed: the pipeline schedule returns `sum(stack(losses))`, the accumulation path adds them one at a time; on the debug set the sums happen to round the same way, on cc12m they differ in the fifth decimal. Nothing of it reaches the gradients.
