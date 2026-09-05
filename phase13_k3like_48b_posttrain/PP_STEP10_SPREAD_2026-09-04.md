@@ -148,3 +148,16 @@ Pairwise over steps 51-100: dp1 vs pp2 mean diff +0.015, mean |gap| 0.017, max 0
 ## 13. Why a second seed (queued as `pp3c100s43`)
 
 Section 7's memorization curves at seed 42 put the 32-stage delta transport last to cross 1.0 (step 41 against 26 to 31). One seed cannot say whether that is the transport or the race: the yardstick is how far ONE configuration moves between two seeds on the same data. dp1, pp2 x vp4 and pp8 x vp4 at seed 43 (a different initialisation and data order, everything else equal) give that spread; if it is as wide as the seed-42 gaps, the ordering at seed 42 carries no information. The cc12m curves of section 12 already answer the question on data that does not repeat (the pipeline cells sit within the curves' own movement, pp8 the lowest), so the seed-43 set is the secondary check. dp1 at seed 43: 12.52292 / 7.49396 / 3.58784 at steps 1 / 3 / 10.
+
+Result (seed 43, memorised debug set):
+
+| cell | seed | step 10 | first step below 1.0 | first step below 0.1 | step 50 | mean 51-100 | step 100 |
+|---|---|---|---|---|---|---|---|
+| dp1 | 42 | 3.3019 | 31 | 65 | 0.234 | 0.0903 | 0.0427 |
+| dp1 | 43 | 3.5878 | 31 | 59 | 0.159 | 0.0747 | 0.0434 |
+| pp2 x vp4 | 42 | 3.3005 | 26 | 59 | 0.157 | 0.0748 | 0.0438 |
+| pp2 x vp4 | 43 | 3.5548 | 31 | 59 | 0.162 | 0.0799 | 0.0444 |
+| pp8 x vp4 | 42 | 3.6218 | 41 | 68 | 0.525 | 0.1139 | 0.0468 |
+| pp8 x vp4 | 43 | 3.5358 | 38 | 60 | 0.277 | 0.0866 | 0.0452 |
+
+One configuration moves 0 (dp1), 5 (pp2) and 3 (pp8) steps in the crossing of 1.0 between the two seeds; the 32-stage delta cell crosses 7 to 10 steps after dp1 at both seeds, so on the memorised set its later descent is consistent across the two seeds and a little wider than the seed-to-seed movement, while on cc12m (section 12) it is the lowest of the four curves and its step-1 gradients equal dp1's up to the rounding of section 11. Two seeds of a memorisation race do not settle it either way; it stays an observation, not a claim.
