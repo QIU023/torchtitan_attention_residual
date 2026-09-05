@@ -54,12 +54,13 @@ Every cell ran twice on the same seed checkpoint and the second run is read. cp8
 
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
-| dp1 | 1 | - | - | 12.52977 | 7.27107 | 2.98077 |
-| dp2 | 2 | - | - | 12.53137 | 7.31248 | 3.15823 |
-| cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.18344 | 2.93330 |
-| cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.18619 | 3.00631 |
-| cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.22178 | 3.09487 |
-| cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.21651 | 3.08671 |
+| dp1 | 1 | - | - | 12.52977 | 7.36833 | 2.91045 |
+| dp2 | 2 | - | - | 12.53137 | 7.25082 | 3.15411 |
+| dp2 x ep2 | 2 | - | - | 12.53146 | 7.13441 | 3.09174 |
+| cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.20787 | 2.98935 |
+| cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.27002 | 3.01910 |
+| cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.31401 | 3.04420 |
+| cp2 | 2 | generic all-gather KV (4322) | KCP | 12.53972 | 7.33010 | 2.92453 |
 | cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.15253 | 3.14352 |
 | cp8 | 8 | packed Ulysses | KCP | 12.54963 | 7.28587 | 2.95883 |
 | cp8 | 8 | generic Ulysses (4450) | KCP | 12.54963 | 7.30435 | 3.01451 |
