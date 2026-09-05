@@ -32,8 +32,8 @@ Running locally, the rows follow:
 
 | cell | world | backend | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
-| dp1 | 1 | partial_dtensor | | | |
-| dp1 | 1 | spmd_types | | | |
+| dp1 | 1 | partial_dtensor | 12.52977 | 7.27107 | 2.98077 |
+| dp1 | 1 | spmd_types | 12.52977 | 7.27107 | 2.98077 |
 | dp2 | 2 | spmd_types | | | |
 | dp2 x ep2 | 2 | spmd_types | | | |
 | dp1 | 1 | spmd_types, type checking, AC off | | | |
