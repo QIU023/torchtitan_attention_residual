@@ -144,3 +144,7 @@ Reading. The pipeline's forward is exact (the head's gradient and the routing ar
 | pp8 x vp4, naive | 12.35294 | 3.77567 | 2.6276 | 2.5237 | 0.1063 | 2.2708 / 2.7155 | 2.5343 |
 
 Pairwise over steps 51-100: dp1 vs pp2 mean diff +0.015, mean |gap| 0.017, max 0.050; dp1 vs pp8 +0.049 / 0.049 / 0.090; dp1 vs naive pp8 +0.016 / 0.018 / 0.068; pp2 vs naive pp8 +0.001 / 0.012 / 0.031. The mean step-to-step change of one curve in that window is 0.12 to 0.13. Reading: on data that does not repeat, the curves are indistinguishable within their own movement; the delta pp8 lag of the memorization set does not recur (it is the lowest here). Step 1 is 12.35295 on dp1 and 12.35294 on all three pipeline cells: not bitwise on this data, the lead of section 13.
+
+## 13. Why a second seed (queued as `pp3c100s43`)
+
+Section 7's memorization curves at seed 42 put the 32-stage delta transport last to cross 1.0 (step 41 against 26 to 31). One seed cannot say whether that is the transport or the race: the yardstick is how far ONE configuration moves between two seeds on the same data. dp1, pp2 x vp4 and pp8 x vp4 at seed 43 (a different initialisation and data order, everything else equal) give that spread; if it is as wide as the seed-42 gaps, the ordering at seed 42 carries no information. The cc12m curves of section 12 already answer the question on data that does not repeat (the pipeline cells sit within the curves' own movement, pp8 the lowest), so the seed-43 set is the secondary check. dp1 at seed 43: 12.52292 / 7.49396 / 3.58784 at steps 1 / 3 / 10.
