@@ -25,7 +25,7 @@ PR branch `k3_spmd_decl` on the fork (`dbc60701d`, same commit as `spmd_decl_rev
 
 ### Results
 
-`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256, every cell run twice and the second run read, on an RTX 5060 Ti with Attention Gym's SM100/SM103 guard lifted locally; the last three rows run the flavor as 4446's B200 cell does (type checking on, activation checkpointing off): dp1 is bitwise the checked-off row, the dp2 rows move from step 3 on, the few percent any bf16 re-ordering of this flavor shows.
+`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256, every cell run twice and the second run read, on an RTX 5060 Ti with Attention Gym at upstream/main `b19162e` (2026-09-04) and its SM100/SM103 guard in `kda.py` lifted locally, which routes KDA through Attention Gym's portable kernels; the last three rows run the flavor as 4446's B200 cell does (type checking on, activation checkpointing off): dp1 is bitwise the checked-off row, the dp2 rows move from step 3 on, the few percent any bf16 re-ordering of this flavor shows.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
@@ -36,13 +36,13 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 
 | cell | world | backend | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
-| dp1 | 1 | partial_dtensor | 12.52977 | 7.27107 | 2.98077 |
-| dp1 | 1 | spmd_types | 12.52977 | 7.27107 | 2.98077 |
-| dp2 | 2 | spmd_types | 12.53137 | 7.31248 | 3.15823 |
-| dp2 x ep2 | 2 | spmd_types | 12.53146 | 7.20212 | 3.10296 |
-| dp1 | 1 | spmd_types, type checking, AC off | 12.52977 | 7.27107 | 2.98077 |
-| dp2 | 2 | spmd_types, type checking, AC off | 12.53137 | 7.31579 | 3.13055 |
-| dp2 x ep2 | 2 | spmd_types, type checking, AC off | 12.53146 | 7.17051 | 3.32389 |
+| dp1 | 1 | partial_dtensor | 12.52977 | 7.36833 | 2.91045 |
+| dp1 | 1 | spmd_types | 12.52977 | 7.36833 | 2.91045 |
+| dp2 | 2 | spmd_types | 12.53137 | 7.25082 | 3.15411 |
+| dp2 x ep2 | 2 | spmd_types | 12.53146 | 7.13441 | 3.09174 |
+| dp1 | 1 | spmd_types, type checking, AC off | 12.52977 | 7.36833 | 2.91045 |
+| dp2 | 2 | spmd_types, type checking, AC off | 12.53137 | 7.22561 | 3.20438 |
+| dp2 x ep2 | 2 | spmd_types, type checking, AC off | 12.53146 | 7.15088 | 3.14271 |
 
 ### Changed files
 
