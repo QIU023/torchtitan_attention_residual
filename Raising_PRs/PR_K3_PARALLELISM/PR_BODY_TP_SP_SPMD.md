@@ -52,14 +52,14 @@ Step 1 under TP sits about 1e-2 from dp1 in either direction: the head-sharded m
 ### Changed files
 
     torchtitan/models/kimi_k3/
-      sharding.py           ++313/-0   the TP/SP declarations (MLA, KDA, the block stream, the latent MoE seams), the weight types, the stream conversions, the tower's plan, the local-map keys
-      model.py              ++210/-14  enable_sp from the parallelism config; the local regions; the multimodal input layout; the splice under sequence parallel
-      parallelize.py        ++14/-2   model.parallelize under tensor parallel; the tp group for the splice; tensor parallel off the unsupported list
-      kda.py                ++6/-3     cu_seqlens keyword-only on InnerKDA.forward; head views with -1
+      sharding.py           +313/-0   the TP/SP declarations (MLA, KDA, the block stream, the latent MoE seams), the weight types, the stream conversions, the tower's plan, the local-map keys
+      model.py              +210/-14  enable_sp from the parallelism config; the local regions; the multimodal input layout; the splice under sequence parallel
+      parallelize.py        +14/-2   model.parallelize under tensor parallel; the tp group for the splice; tensor parallel off the unsupported list
+      kda.py                +6/-3     cu_seqlens keyword-only on InnerKDA.forward; head views with -1
     torchtitan/distributed/
-      utils.py              ++42/-4    clip_grad_norm_ grouped by parameter mesh
+      utils.py              +42/-4    clip_grad_norm_ grouped by parameter mesh
     tests/unit_tests/cpu/
-      test_kimi_k3_sp_splice.py  ++76/-0  the sequence-parallel splice on a one-rank group (new)
+      test_kimi_k3_sp_splice.py  +76/-0  the sequence-parallel splice on a one-rank group (new)
 
 ### CI/CD Coverage
 
