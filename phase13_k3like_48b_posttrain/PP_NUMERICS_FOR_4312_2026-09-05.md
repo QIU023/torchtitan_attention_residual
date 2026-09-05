@@ -46,11 +46,13 @@ On streamed cc12m (no sample repeats, same seed and batch; step 1 reads 12.35295
 | llama3 pp2 (Interleaved1F1B, the flavor's default) | 4 | 8.02759 | 7.10430 | 4.11385 |
 | llama3 pp2 x vp4 | 8 | 8.02759 | 7.10431 | 4.11399 |
 | llama3 pp4 x vp2 | 8 | 8.02759 | 7.10431 | 4.11391 |
+| llama3 pp2 (1F1B) | 2 | 8.02759 | 7.10431 | 4.11391 |
 | llama3 pp8 (1F1B, one unit per stage) | 8 | 8.02759 | 7.10430 | 4.11383 |
 | deepseek_v3 dp1 | - | 8.15954 | 4.87367 | 3.88273 |
 | deepseek_v3 pp2 (Interleaved1F1B) | 4 | 8.15954 | 4.87379 | 3.88192 |
 | deepseek_v3 pp2 x vp4 | 8 | 8.15954 | 4.87379 | 3.88172 |
 | deepseek_v3 pp4 x vp2 | 8 | 8.15954 | 4.87379 | 3.88171 |
+| deepseek_v3 pp2 (1F1B) | 2 | 8.15954 | 4.87379 | 3.88192 |
 | deepseek_v3 pp8 (1F1B, one unit per stage) | 8 | 8.15954 | 4.87379 | 3.88189 |
 
 Reading. A plain pipeline changes no arithmetic: every layer's forward and backward is the same computation wherever it runs, and the block gradients accumulate in autograd's order on every rank, so the runs track dp1 to 1e-5 (dense) and 3e-4 relative (MoE; the pipeline's 8 micro-batches of 512 tokens against dp1's 16 of 256 regroup the router's batches). Carrying the block stack across stages does change an order: under the delta transport a block's gradient contributions are summed per rank before the hop, under the naive transport per hop, where autograd sums them once on one graph; that is the float32-rounding-level difference the exact test measures at the top of the network (3e-6 at the last layer), and this network amplifies it a hundredfold through its backward, the router turns it into other gradients, and Adam's first step into the few-percent step-10 spread. The same is noted publicly of cross-stage caching in general (the accumulation order follows the pipeline configuration, so loss and norm cannot be made identical across it); the K3 runs with no pipeline but another rounding-level change (the grad-norm precision, expert parallel) spread by the same few percent because the amplification is the model's, not the pipeline's. The pure-dp ladder is not a clean control for this (the loader shards documents by rank, so dp2 reads another batch); the tables above are.
