@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism: the rank store parks its blocks on pinned host memory
 
-Follow-up to PR 4312 (it stacks on `pp_review3`). Branch `pp_offload_review1` on the fork (`20d83a8cb`, one commit on `pp_review3` `fe34932ee`, the 33-layer debug model, upstream/main `6e2ac3dcd`); the old `attn_res_cache_offload` commit `e8897274d` of the pre-review adapter, ported onto the stage class. 25 PP CPU tests pass (one added), pyrefly 0 on the touched files. Paste between the markers.
+Follow-up to PR 4312 (it stacks on `pp_review3`). Branch `pp_offload_review1` on the fork (`240c3205b`, one commit on `pp_review3` `a3be242bf`, the 33-layer debug model and the pp8 x vp4 recipe, upstream/main `6e2ac3dcd`; `20d83a8cb` was the head on `fe34932ee`); the old `attn_res_cache_offload` commit `e8897274d` of the pre-review adapter, ported onto the stage class. 25 PP CPU tests pass (one added), pyrefly 0 on the touched files. Paste between the markers.
 
 --- PASTE BEGIN ---
 

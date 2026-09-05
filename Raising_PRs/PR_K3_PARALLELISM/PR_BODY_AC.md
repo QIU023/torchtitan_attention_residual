@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] the attention residual under activation checkpointing: recompute the residual math, keep attention outside the wrap
 
-Branch `ac_review2` (`24aa8c08d`: the two commits rebased onto upstream/main `6e2ac3dcd` on 2026-09-04, plus a typing commit for pyrefly; `ac_review1` `ca9e497f8` was the pre-rebase head). 15 CPU tests pass; pyrefly count equal to main's. Paste between the markers into the PR body.
+Branch `ac_review2` (`a02b5e195`: the three commits rebased onto upstream/main `390e2985b`, main with 4446, on 2026-09-05; `24aa8c08d` was the head on `6e2ac3dcd`). The cells name `partial_dtensor`: on main the default backend is `spmd_types` and the multimodal debug flavor has no input layout for it until the declarations PR lands. 9 CPU tests pass; pyrefly count equal to main's. The matrix below is being rerun on this head. Paste between the markers into the PR body.
 
 --- PASTE BEGIN ---
 
