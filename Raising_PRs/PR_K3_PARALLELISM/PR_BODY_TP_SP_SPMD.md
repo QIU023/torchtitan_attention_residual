@@ -1,12 +1,12 @@
 # PR title: [Draft] [Kimi K3] Tensor and sequence parallelism under spmd_types: the declarations the backend reads
 
-Branch `tpsp_spmd_review1` on the fork (`8e7d4998d`, six commits on upstream/main `6e2ac3dcd`: the four TP/SP commits of `tp_review2` and the two spmd_types commits of `spmd_review2`, rebased clean on 2026-09-04). One PR, as decided on 09-04: the declarations are what TP, SP and CP consume, so they ship with the parallelism that first needs them. Upstream draft 4446 (pianpwk) runs K3 under `spmd_types` by annotating every parameter replicated; this is the declaration-based version. CPU: 16 tests pass, pyrefly count equal to main's. Paste between the markers.
+Branch `tpsp_spmd_review1` on the fork (`2e2230cbb`, six commits on upstream/main `390e2985b`, which carries the merged 4446 "[spmd_types] Enable Kimi K3 backend"; rebased on 2026-09-05 with two conflicts in `parallelize.py`, both resolved in 4446's favour: its `annotate_replicated_parameters` seeding and its FSDP mesh resolution stay, the branch's own mesh block went, and `model.parallelize` now also runs when tensor parallel is on). One PR, as decided on 09-04: the declarations are what TP, SP and CP consume, so they ship with the parallelism that first needs them. 4446 runs K3 under `spmd_types` by annotating every parameter replicated and declaring only the MoE; this branch adds the declarations for the dense path, the tower and the TP/SP seams on top of it. CPU: 16 tests pass, pyrefly count equal to main's. Paste between the markers.
 
 --- PASTE BEGIN ---
 
 ### Summary
 
-Runs Kimi K3 under the `spmd_types` backend and enables tensor parallelism with sequence parallel on the same mesh. Before this change the K3 flavors pin `partial_dtensor`, `parallelize_kimi_k3` rejects any other backend and `tensor_parallel_degree > 1`, and the model declares no sharding; after it the config tree carries the declarations in `kimi_k3/sharding.py` (declarations only, applied through the Module protocol, the qwen3_5 shape), the FSDP meshes come from `resolve_fsdp_mesh` / `resolve_sparse_fsdp_mesh` with the `DataParallelMeshDims` handed to the decoder and the vision encoder, `model.parallelize` runs whenever `spmd_types` drives the model, TP comes off the unsupported list, and `parallelism.enable_sequence_parallel` (core default: on) decides whether the token stream between modules is Replicate or the TP-axis Shard(0). Both attention kinds are head-parallel: MLA on its head projections, KDA on its per-head state with Attention Gym's kernel running on the local heads behind a `local_map` on `inner_kda`. dp1 and dp2 under `spmd_types` are bit-identical to `partial_dtensor` through ten seeded steps.
+Enables tensor parallelism with sequence parallel on the same mesh for Kimi K3 under the `spmd_types` backend that 4446 turned on. Before this change the model declares sharding for its MoE only, every other parameter is annotated replicated (`annotate_replicated_parameters`), and `parallelize_kimi_k3` rejects `tensor_parallel_degree > 1`; after it the config tree carries the declarations for the dense path, the tower and the TP/SP seams in `kimi_k3/sharding.py` (declarations only, applied through the Module protocol, the qwen3_5 shape), `model.parallelize` also runs when tensor parallel is on, TP comes off the unsupported list, and `parallelism.enable_sequence_parallel` (core default: on) decides whether the token stream between modules is Replicate or the TP-axis Shard(0). Both attention kinds are head-parallel: MLA on its head projections, KDA on its per-head state with Attention Gym's kernel running on the local heads behind a `local_map` on `inner_kda`. dp1 and dp2 under `spmd_types` are bit-identical to `partial_dtensor` through ten seeded steps.
 
 ### Design
 
@@ -23,7 +23,7 @@ Runs Kimi K3 under the `spmd_types` backend and enables tensor parallelism with 
 
 ### Results
 
-`kimi_k3_debugmodel`, `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256; every cell runs twice and the second run is read; on an RTX 5060 Ti with Attention Gym's SM100/SM103 guard lifted locally. The first row is the flavor's default backend, every other row runs under `spmd_types`.
+`kimi_k3_debugmodel`, `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256; every cell runs twice and the second run is read; on an RTX 5060 Ti with Attention Gym's SM100/SM103 guard lifted locally. The first row names `partial_dtensor` (since 4446 the default backend is `spmd_types`), every other row runs under `spmd_types`.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
@@ -33,7 +33,7 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 # sequence parallel off: add --parallelism.no-enable-sequence-parallel; expert parallel: --parallelism.expert_parallel_degree 2
 ```
 
-Every cell ran twice on the same seed checkpoint and the second run is read. dp1, dp2 and dp2 x ep2 under `spmd_types` are bit-identical to `partial_dtensor` through step 10; the tensor-parallel cells sit within 2.4e-2 of dp1 at step 1 and every TP mesh composes with data and expert parallel.
+Running locally on the rebased head (the rows below are from `8e7d4998d`, before 4446; every cell ran twice on the same seed checkpoint and the second run is read). On that head dp1, dp2 and dp2 x ep2 under `spmd_types` were bit-identical to `partial_dtensor` through step 10, the tensor-parallel cells sat within 2.4e-2 of dp1 at step 1, and every TP mesh composed with data and expert parallel.
 
 | cell | world | backend | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
@@ -52,14 +52,14 @@ Step 1 under TP sits about 1e-2 from dp1 in either direction: the head-sharded m
 ### Changed files
 
     torchtitan/models/kimi_k3/
-      sharding.py           +313/-0   the TP/SP declarations (MLA, KDA, the block stream, the latent MoE seams), the weight types, the stream conversions, the tower's plan, the local-map keys
-      model.py              +210/-14  enable_sp from the parallelism config; backend-driven declaration; the local regions; the multimodal input layout; the splice under sequence parallel
-      parallelize.py        +36/-18   the spmd_types backend branch (meshes, model.parallelize, the tp group for the splice); tensor parallel off the unsupported list
-      kda.py                +6/-3     cu_seqlens keyword-only on InnerKDA.forward; head views with -1
+      sharding.py           ++313/-0   the TP/SP declarations (MLA, KDA, the block stream, the latent MoE seams), the weight types, the stream conversions, the tower's plan, the local-map keys
+      model.py              ++210/-14  enable_sp from the parallelism config; the local regions; the multimodal input layout; the splice under sequence parallel
+      parallelize.py        ++14/-2   model.parallelize under tensor parallel; the tp group for the splice; tensor parallel off the unsupported list
+      kda.py                ++6/-3     cu_seqlens keyword-only on InnerKDA.forward; head views with -1
     torchtitan/distributed/
-      utils.py              +42/-4    clip_grad_norm_ grouped by parameter mesh
+      utils.py              ++42/-4    clip_grad_norm_ grouped by parameter mesh
     tests/unit_tests/cpu/
-      test_kimi_k3_sp_splice.py  +76/-0  the sequence-parallel splice on a one-rank group (new)
+      test_kimi_k3_sp_splice.py  ++76/-0  the sequence-parallel splice on a one-rank group (new)
 
 ### CI/CD Coverage
 
