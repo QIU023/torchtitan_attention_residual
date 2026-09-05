@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] the attention residual under activation checkpointing: recompute the residual math, keep attention outside the wrap
 
-Branch `ac_review2` (`a02b5e195`: the three commits rebased onto upstream/main `390e2985b`, main with 4446, on 2026-09-05; `24aa8c08d` was the head on `6e2ac3dcd`). The cells name `partial_dtensor`: on main the default backend is `spmd_types` and the multimodal debug flavor has no input layout for it until the declarations PR lands. 9 CPU tests pass; pyrefly count equal to main's. The matrix below is being rerun on this head. Paste between the markers into the PR body.
+Branch `ac_review2` (`a02b5e195`: the three commits rebased onto upstream/main `390e2985b`, main with 4446, on 2026-09-05; `24aa8c08d` was the head on `6e2ac3dcd`). The cells name `partial_dtensor`: on main the default backend is `spmd_types` and the multimodal debug flavor has no input layout for it until the declarations PR lands. 9 CPU tests pass; pyrefly count equal to main's. The matrix below ran on this head on 2026-09-05 and every digit, peak and throughput reproduced the previous head's. Paste between the markers into the PR body.
 
 --- PASTE BEGIN ---
 
@@ -20,7 +20,7 @@ Two changes to how Kimi K3's attention residual meets activation checkpointing, 
 
 Both changes are non-computation, so the bar is bitwise-identical loss against main with the same seed.
 
-Training loss on `kimi_k3_debugmodel`, one seed, every cell run twice and the second read; peak memory from the measure pass. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it (dp1 12.52977 / 7.27107 / 2.98077, dp2 12.53137 / 7.31248 / 3.15823, dp2 x ep2 12.53146 / 7.20212 / 3.10296 are main's numbers), and the flag trades a little memory for the recompute it saves. The log line "attention and the residual math stay outside (ac_reuse_attention)" is in every flag-on run.
+Training loss on `kimi_k3_debugmodel`, one seed, every cell run twice and the second read; peak memory from the measure pass. The residual wrap recomputes instead of saving, and `ac_reuse_attention` keeps attention's activations: both leave every digit of the loss where main has it (dp1 12.52977 / 7.27107 / 2.98077, dp2 12.53137 / 7.31248 / 3.15823, dp2 x ep2 12.53146 / 7.20212 / 3.10296 are main's numbers), and the flag trades a little memory for the recompute it saves: at dp1 the saved recompute reads as 272 to 326 tokens per second on this box, while the two-GPU cells are bound elsewhere at this size and show no throughput change. The log line "attention and the residual math stay outside (ac_reuse_attention)" is in every flag-on run.
 
 | cell | `ac_reuse_attention` | step 1 | step 3 | step 10 | peak memory |
 |---|---|---|---|---|---|
