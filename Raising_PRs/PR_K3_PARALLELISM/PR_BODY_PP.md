@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-PR 4312. Branch `pp_review3` on the fork (`799b54b65`): the reviewed PR head `087c4d177` squashed onto post-expert-parallel main as `a4d68655c`, the review-round commits replayed on top, the whole line rebased onto upstream/main `6e2ac3dcd` on 2026-09-04 (clean; main touched nothing under the model), then three commits: the split takes any layer count, the debug model is 33 layers, and the integration cell runs pp8 x vp4. The PR branch `k3_pp_text` was synced to `0e7cc5ea1` on 2026-09-04 (forced update over `087c4d177`, lease-protected) and sits there until the next sync is approved.
+PR 4312. Branch `pp_review3` on the fork (`a3be242bf`): the reviewed PR head `087c4d177` squashed onto post-expert-parallel main as `a4d68655c`, the review-round commits replayed on top, the whole line rebased onto upstream/main `6e2ac3dcd` on 2026-09-04 (clean; main touched nothing under the model), then three commits: the split takes any layer count, the debug model is 33 layers, and the integration cell runs pp8 x vp4. The PR branch `k3_pp_text` was synced to `0e7cc5ea1` on 2026-09-04 (forced update over `087c4d177`, lease-protected) and sits there until the next sync is approved.
 
 Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
 
@@ -111,11 +111,11 @@ Every other split passed because a later op consumed the input and autograd accu
       test_kimi_k3_pp_layout.py             +122/-0  the tables: uneven split, cache on and off, the local map (new)
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
     tests/integration_tests/features.py     +8/-0    the pp8 x vp4 cell
-    torchtitan_recipes/tests/features.py    +23/-0   the pp2 x vp2 and pp8 x vp4 configurations
+    torchtitan_recipes/tests/features.py    +13/-0   the pp8 x vp4 configuration
 
 ### CI/CD Coverage
 
-Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; one integration cell, pp8 x vp4 on eight GPUs, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path. `kimi_k3_debugmodel_pp2_vp2` is in the recipes if a two-GPU cell is wanted instead.
+Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; one integration cell, pp8 x vp4 on eight GPUs, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path.
 
 ### Review round 1
 
