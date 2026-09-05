@@ -28,19 +28,19 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 # sequence parallel off: add --parallelism.no-enable-sequence-parallel; expert parallel: --parallelism.expert_parallel_degree 2
 ```
 
-Running locally, the rows follow:
+The rows (the last three run as the matrix finishes):
 
 | cell | world | backend | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
-| dp1 | 1 | partial_dtensor | | | |
-| dp1 | 1 | spmd_types | | | |
-| dp2 | 2 | spmd_types | | | |
-| dp2 x ep2 | 2 | spmd_types | | | |
-| tp2 (SP on) | 2 | spmd_types | | | |
-| tp2 (SP off) | 2 | spmd_types | | | |
-| tp4 (SP on) | 4 | spmd_types | | | |
-| dp2 x tp2 (SP on) | 4 | spmd_types | | | |
-| dp2 x ep2 x tp2 (SP on) | 4 | spmd_types | | | |
+| dp1 | 1 | partial_dtensor | 12.52977 | 7.27107 | 2.98077 |
+| dp1 | 1 | spmd_types | 12.52977 | 7.27107 | 2.98077 |
+| dp2 | 2 | spmd_types | 12.53137 | 7.31248 | 3.15823 |
+| dp2 x ep2 | 2 | spmd_types | 12.53146 | 7.20212 | 3.10296 |
+| tp2 (SP on) | 2 | spmd_types | 12.54164 | 7.39052 | 3.07310 |
+| tp2 (SP off) | 2 | spmd_types | 12.55332 | 7.27805 | 3.05026 |
+| tp4 (SP on) | 4 | spmd_types | 12.52816 | 7.12313 | 2.91429 |
+| dp2 x tp2 (SP on) | 4 | spmd_types | 12.53383 | 7.25942 | 3.23869 |
+| dp2 x ep2 x tp2 (SP on) | 4 | spmd_types | 12.53826 | 7.41038 | 3.29505 |
 | dp1 | 1 | spmd_types, type checking, AC off | | | |
 | tp2 (SP on) | 2 | spmd_types, type checking, AC off | | | |
 | dp2 x ep2 x tp2 (SP on) | 4 | spmd_types, type checking, AC off | | | |
