@@ -49,7 +49,7 @@ Running locally, the rows follow:
 
 ### CI/CD Coverage
 
-4446's B200 cell `kimi_k3_debugmodel_mm_fsdp2` (the multimodal flavor under `spmd_types` with type checking) runs this path; no new cell.
+4446's B200 cell `kimi_k3_debugmodel_mm_fsdp2` (the multimodal flavor under `spmd_types` with type checking, dp2) is this path; no new cell. As merged, that cell raises at the first step on this flavor's inputs (`ValueError: spmd_types backend requires an SPMD layout for every tensor input, but these have no entry in input_sharding: ['grid_thw', 'pixel_values']`, from `annotate_input_spmd_types` under `Decoder.preprocess_inputs`; reproduced on `390e2985b` with the cell's own recipe): the `preprocess_inputs` override here declares the two layouts, and the dp2 row with type checking above is that cell.
 
 Under type checking the entry conversion of the residual stack is issued only at tp > 1: the checker of spmd_types 0.2.5 raises `UnboundLocalError` (`input_type`) on `redistribute` over a size-1 global axis, which stores no type; a two-line repro is in the logbook and the conversion is an identity there anyway.
 
