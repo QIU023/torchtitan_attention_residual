@@ -17,4 +17,9 @@ tp2_nosp|2|$D 1 $T 2 $S $NOSP
 tp4|4|$D 1 $T 4 $S
 dp2_tp2|4|$D 2 $T 2 $S
 dp2_ep2_tp2|4|$D 2 $E 2 $T 2 $S" $MX tpsp2
+# the way 4446's B200 cell runs the flavor: spmd_types with typechecking, AC off (the CI cell candidates)
+TITAN=/tmp/wt_tpsprun2 CFG=kimi_k3_debugmodel_tc SEED_CFG=kimi_k3_debugmodel BATCH="$B" \
+CELLS="dp1_tc|1|$D 1
+tp2_tc|2|$D 1 $T 2
+dp2_ep2_tp2_tc|4|$D 2 $E 2 $T 2" $MX tpsp2_tc
 echo "TPSP2 MATRIX DONE"
