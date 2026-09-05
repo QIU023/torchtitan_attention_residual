@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] The declarations spmd_types reads: the dense path, the tower over cp, the MoE seams, the multimodal inputs
 
-Branch `spmd_decl_review1` on the fork (`010c96e45`, one commit on upstream/main `390e2985b`, which carries the merged 4446 "[spmd_types] Enable Kimi K3 backend"). It is the declarations commit the CP PR (`k3_cp_text`) already carries as `8c8d9436f`, lifted onto main after 4446: the backend branch that commit added to `parallelize.py` is now 4446's, so nothing of it remains here. The TP/SP PR (`tpsp_review3`) and the CP PR stack on this one. CPU: 15 tests pass, pyrefly count equal to main's. Paste between the markers.
+Branch `spmd_decl_review1` on the fork (`482f21753`, one commit on upstream/main `390e2985b`, which carries the merged 4446 "[spmd_types] Enable Kimi K3 backend"). It is the declarations commit the CP PR (`k3_cp_text`) already carries as `8c8d9436f`, lifted onto main after 4446: the backend branch that commit added to `parallelize.py` is now 4446's, so nothing of it remains here. The TP/SP PR (`tpsp_review3`) and the CP PR stack on this one. CPU: 15 tests pass, pyrefly count equal to main's. Paste between the markers.
 
 --- PASTE BEGIN ---
 
@@ -43,8 +43,8 @@ Running locally, the rows follow:
 ### Changed files
 
     torchtitan/models/kimi_k3/
-      sharding.py           +313/-0   the declarations: weight types, stream conversions, the tower's plan, the local-map keys; the TP/SP seams, issued at tp = 1
-      model.py              +156/-14  the declared modules, the local regions, the multimodal input layout
+      sharding.py           +311/-0   the declarations: weight types, stream conversions, the tower's plan, the local-map keys; the TP/SP seams, issued at tp = 1
+      model.py              +155/-14  the declared modules, the local regions, the multimodal input layout
       kda.py                +6/-3     cu_seqlens keyword-only on InnerKDA.forward; head views with -1
 
 ### CI/CD Coverage

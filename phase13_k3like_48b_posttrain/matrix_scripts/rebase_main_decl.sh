@@ -1,5 +1,5 @@
 #!/bin/bash
-# The declarations PR (spmd_decl_review1 010c96e45 on upstream/main 390e2985b with 4446): the multimodal
+# The declarations PR (spmd_decl_review1 482f21753 on upstream/main 390e2985b with 4446): the multimodal
 # debug flavor under spmd_types (the default now) against partial_dtensor, on the dp / ep meshes, and
 # the way 4446's B200 cell runs it (spmd_types with typechecking, AC off).
 set -uo pipefail
