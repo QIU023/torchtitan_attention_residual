@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Tensor parallelism with sequence parallel, on the spmd_types declarations
 
-Branch `tpsp_review3` on the fork (`ebd83e941`, two commits on `spmd_decl_review1` `96eeb51c1`, the declarations PR, on upstream/main `390e2985b` with 4446 merged). Stacked: it is filed after the declarations PR and rebases when that one lands. Its tree is byte-identical to `tpsp_spmd_review1` `2e2230cbb` (the same content as one line of six commits), which the matrix below runs on. CPU: 13 tests pass on the branch's files, pyrefly count equal to main's. Paste between the markers.
+Branch `tpsp_review3` on the fork (`1fe86490f`, two commits on `spmd_decl_review1` `010c96e45`, the declarations PR, on upstream/main `390e2985b` with 4446 merged). Stacked: it is filed after the declarations PR and rebases when that one lands. The matrix below runs on it; the previous head `ebd83e941` (byte-identical to `tpsp_spmd_review1` `2e2230cbb`) differs only by the base's tp > 1 guard on the entry conversion. CPU: 13 tests pass on the branch's files, pyrefly count equal to main's. Paste between the markers.
 
 --- PASTE BEGIN ---
 
@@ -49,10 +49,10 @@ On the previous head (`8e7d4998d`, before 4446) dp1, dp2 and dp2 x ep2 under `sp
 ### Changed files
 
     torchtitan/models/kimi_k3/
-      model.py              +63/-4   enable_sp from the parallelism config; the splice under sequence parallel; the latent MoE norm on the sequence shard
-      parallelize.py        +16/-2   tensor parallel off the unsupported list; model.parallelize under TP; the tp group for the splice
+      model.py              +59/-4   enable_sp from the parallelism config; the splice under sequence parallel; the latent MoE norm on the sequence shard
+      parallelize.py        +14/-2   tensor parallel off the unsupported list; model.parallelize under TP; the tp group for the splice
     torchtitan/distributed/
-      utils.py              +46/-4   clip_grad_norm_ grouped by parameter mesh
+      utils.py              +42/-4   clip_grad_norm_ grouped by parameter mesh
     tests/unit_tests/cpu/
       test_kimi_k3_sp_splice.py  +76/-0  the sequence-parallel splice on a one-rank group (new)
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# TP/SP + spmd_types on tpsp_spmd_review1 2e2230cbb (upstream/main 390e2985b with 4446 merged; the
+# TP/SP + spmd_types on tpsp_review3 1fe86490f (upstream/main 390e2985b with 4446 merged; the
 # default backend is spmd_types now, so the partial_dtensor control names its backend).
 set -uo pipefail
 MX=/workspace/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh

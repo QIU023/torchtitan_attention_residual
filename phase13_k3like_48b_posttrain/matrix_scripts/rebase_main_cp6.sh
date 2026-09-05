@@ -1,5 +1,5 @@
 #!/bin/bash
-# The CP matrix on cp_review5 3e268b313 (the declarations PR + the stack copy + the CP layer, on
+# The CP matrix on cp_review5 4a8ce7ac8 (the declarations PR + the stack copy + the CP layer, on
 # upstream/main 390e2985b with 4446): the same eleven cells as the cp_review5 matrix.
 set -uo pipefail
 MX=/workspace/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh

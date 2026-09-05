@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Context parallelism for the text decoder: packed MLA kernels on the CP kernel stack, KCP on KDA
 
-PR 4313. Branch `cp_review5` on the fork (`3e268b313`): stacked on the declarations PR (`spmd_decl_review1` `96eeb51c1`, on upstream/main `390e2985b` with 4446 merged), then two commits. The first is the open upstream CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) copied to unblock running, every copied file and class marked "copied from upstream open PR 4322/4449/4450 to unblock running; pending rebase and reconcile", the whole commit to be dropped at the rebase once the stack merges. The second (`3e268b313`) is this PR: the CP layer, re-stacked on 2026-09-05 with one conflict in `parallelize.py` against 4446 (the CP hook sits after the model assertion, before 4446's replicated annotation and mesh resolution). The declarations the CP layer needs are the base PR's now; the previous head of this branch, `223e97a23`, carried its own copy of them, which is what the PR branch `k3_cp_text` holds until the sync is approved.
+PR 4313. Branch `cp_review5` on the fork (`4a8ce7ac8`): stacked on the declarations PR (`spmd_decl_review1` `010c96e45`, on upstream/main `390e2985b` with 4446 merged), then two commits. The first is the open upstream CP stack (PR 4322 / 4449 / 4450 at `860d5aa64d`) copied to unblock running, every copied file and class marked "copied from upstream open PR 4322/4449/4450 to unblock running; pending rebase and reconcile", the whole commit to be dropped at the rebase once the stack merges. The second (`4a8ce7ac8`) is this PR: the CP layer, re-stacked on 2026-09-05 with one conflict in `parallelize.py` against 4446 (the CP hook sits after the model assertion, before 4446's replicated annotation and mesh resolution). The declarations the CP layer needs are the base PR's now; the previous head of this branch, `223e97a23`, carried its own copy of them, which is what the PR branch `k3_cp_text` holds until the sync is approved.
 
 The PR composes with data parallelism and, optionally, expert parallelism; TP x CP is the TP PR's matter. The matrix below is being rerun on `cp_review5` (running locally); the rows are from `223e97a23`, whose CP files are byte-identical.
 
@@ -96,7 +96,7 @@ The maxima are again the 16-element `A_log` vectors with gradient norms below 1e
 
     torchtitan/models/kimi_k3/
       sharding.py                           +312/-0  the declarations: the dense path at tp = 1, the tower over cp, the MoE seams
-      model.py                              +260/-14  the declaration calls and local regions; the KDA-kernel check; the cp group and the vision splice under CP
+      model.py                              +261/-14  the declaration calls and local regions; the KDA-kernel check; the cp group and the vision splice under CP
       parallelize.py                        +44/-19  the spmd_types backend branch; context parallel off the unsupported list; apply_cp_kimi_k3
       context_parallel.py                   +246/-0  the packed MLA kernels, the KCP kernel, the plan (new)
       kda.py                                +76/-7   InnerKDA split into pack / conv-and-scan; the KCP branch in the kernel; head views with -1
