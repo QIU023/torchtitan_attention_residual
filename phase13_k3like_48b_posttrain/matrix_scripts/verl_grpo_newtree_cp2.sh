@@ -17,6 +17,8 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export VERL_VLLM_VERSION=${VERL_VLLM_VERSION:-0.18.0}
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5}
 # Hang diagnostics: SIGABRT on a worker prints every Python thread; NCCL keeps a collective trace.
+# A per-run CuTeDSL cache: the short-conv backward blocked on the shared cache's flock while other cells compiled.
+export ATTN_GYM_CUTE_CACHE_DIR=${ATTN_GYM_CUTE_CACHE_DIR:-/workspace/.attn_gym_cute_cp2}
 export PYTHONFAULTHANDLER=1 TORCH_NCCL_TRACE_BUFFER_SIZE=2000 TORCH_NCCL_DUMP_ON_TIMEOUT=1 TORCH_NCCL_DEBUG_INFO_TEMP_FILE=/workspace/nccl_trace_cp2_
 export TORCHINDUCTOR_CACHE_DIR=/workspace/.inductor_verl_cp2 TRITON_CACHE_DIR=/workspace/.triton_verl_cp2
 # The container caps pids at 15616 (threads count): one Ray instance per cell pre-starts num_cpus idle
@@ -38,7 +40,7 @@ actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=${LOGP_MBS:-8} \
   +actor_rollout_ref.rollout.engine_kwargs.vllm.max_num_seqs=8 \
   actor_rollout_ref.rollout.max_num_batched_tokens=512 \
   actor_rollout_ref.rollout.max_model_len=1024 \
-  ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-8} \
+  ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-24} \
   actor_rollout_ref.rollout.gpu_memory_utilization=0.35 \
   "$@" > /workspace/${VERL_EXP_NAME:-grpo-k3-newtree-cp2}.log 2>&1
 rc=$?
