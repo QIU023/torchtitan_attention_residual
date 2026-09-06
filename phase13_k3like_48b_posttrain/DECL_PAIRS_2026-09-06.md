@@ -50,3 +50,29 @@ Every pair bitwise through step 10, not only at step 1: on one compile cache the
 the same computation for the whole run. The 09-04 matrix's rows (the GitHub body) are these numbers;
 the 09-05 matrix's rows (the logbook body until today) were the other cache's. Run dir
 `/workspace/mx3_decl_pairs_0906_005832`, dumps under `/workspace/decl_dump`.
+
+## Rerun of 4492's tables, and the one-cache version (2026-09-06 night)
+
+The filed tables reproduce. On the environment the 09-05/06 runs actually resolved (`/tmp/wt_declrun`
+at `dbc60701d`, the Attention Gym of the logbook submodule: `7c83f6c`, upstream `56eabde` (#448) plus
+the staged delta-rule recipe commit; `rebase_main_decl_pairs.sh`, `rebase_main_decl.sh`), the six pair
+rows and the four declaration rows came back bitwise (`mx3_decl_pairs_0906_195221`,
+`mx3_decl_0906_195301`); the type-checking cells on their own cache landed on the other autotune pick
+(dp1 7.27107 / 2.98077, dp2 7.31579 / 3.13055, dp2 x ep2 7.17051 / 3.32389, `mx3_decl_tc_0906_203151`),
+step 1 bitwise everywhere. The body's environment line named upstream/main `b19162e`; the same tables on
+that gym (`/tmp/attn_gym_up`, `decl_pairs_b19.sh`, `decl_b19.sh`) give step 1 bitwise and, for every
+cell, one of the two autotune families already known from 09-05.
+
+The filed body had table 1 on one cache and table 2 on another. The one-cache version (gym `b19162e`,
+one inductor cache -- the pair run's, which the type-checking run starts from via `INDUCTOR_SEED_CACHE`
+-- one triton cache; `decl_tc_onecache.sh`):
+
+| cell | partial_dtensor | spmd_types | type checking on, AC off |
+| --- | --- | --- | --- |
+| dp1 | 12.52977 / 7.36833 / 2.91045 | 12.52977 / 7.36833 / 2.91045 | 12.52977 / 7.36833 / 2.91045 |
+| dp2 | 12.53137 / 7.25082 / 3.15411 | 12.53137 / 7.25082 / 3.15411 | 12.53137 / 7.22561 / 3.20438 |
+| dp2 x ep2 | 12.53146 / 7.13441 / 3.09174 | 12.53146 / 7.13441 / 3.09174 | 12.53146 / 7.15088 / 3.14271 |
+
+Runs `mx3_decl_pairs_b19_0906_195423` and `mx3_decl_tc_onecache_0906_205615`. The other-cache floor row
+is now the previous table's dp1 (7.27107 / 2.98077). `PR_BODY_SPMD.md` carries these tables
+(`DIFF_PR_BODY_SPMD_onecache_2026-09-06.diff`); the user pastes.

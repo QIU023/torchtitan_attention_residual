@@ -27,7 +27,7 @@ PR branch `k3_spmd_decl` on the fork (`dbc60701d`, same commit as `spmd_decl_rev
 
 Every cell is bitwise identical under the two backends through step 10; the declarations change what the backend is told, not what is computed.
 
-`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256, on an RTX 5060 Ti with Attention Gym at upstream/main `b19162e` and its SM100/SM103 guard in `kda.py` lifted locally (KDA on Attention Gym's portable kernels). The table reads in adjacent PAIRS: two rows are one cell under the two backends, and only a pair is a comparison. Across pairs the numbers move for two reasons that are not the backend's: the loader shards documents by dp rank (`components/data/sources.py`), so dp1 and dp2 read different samples from step 1 on, and turning EP on regroups the expert GEMMs, which in bf16 flips the sign of 1.4% of the step-1 gradient elements on the same samples. All six cells share one compile cache, each warmed once and then run for 10 steps.
+`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256, on an RTX 5060 Ti with Attention Gym at upstream/main `b19162e` and its SM100/SM103 guard in `kda.py` lifted locally (KDA on Attention Gym's portable kernels). Every row of both tables below comes from one compile cache (one inductor cache, one triton cache; the type-checking cells start from the pair table's). The table reads in adjacent PAIRS: two rows are one cell under the two backends, and only a pair is a comparison. Across pairs the numbers move for two reasons that are not the backend's: the loader shards documents by dp rank (`components/data/sources.py`), so dp1 and dp2 read different samples from step 1 on, and turning EP on regroups the expert GEMMs, which in bf16 flips the sign of 1.4% of the step-1 gradient elements on the same samples. All six cells share one compile cache, each warmed once and then run for 10 steps.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
@@ -39,18 +39,18 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 
 | cell | world | backend | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
-| dp1 | 1 | partial_dtensor | 12.52977 | 7.27107 | 2.98077 |
-| dp1 | 1 | spmd_types | 12.52977 | 7.27107 | 2.98077 |
-| dp2 | 2 | partial_dtensor | 12.53137 | 7.31248 | 3.15823 |
-| dp2 | 2 | spmd_types | 12.53137 | 7.31248 | 3.15823 |
-| dp2 x ep2 | 2 | partial_dtensor | 12.53146 | 7.20212 | 3.10296 |
-| dp2 x ep2 | 2 | spmd_types | 12.53146 | 7.20212 | 3.10296 |
+| dp1 | 1 | partial_dtensor | 12.52977 | 7.36833 | 2.91045 |
+| dp1 | 1 | spmd_types | 12.52977 | 7.36833 | 2.91045 |
+| dp2 | 2 | partial_dtensor | 12.53137 | 7.25082 | 3.15411 |
+| dp2 | 2 | spmd_types | 12.53137 | 7.25082 | 3.15411 |
+| dp2 x ep2 | 2 | partial_dtensor | 12.53146 | 7.13441 | 3.09174 |
+| dp2 x ep2 | 2 | spmd_types | 12.53146 | 7.13441 | 3.09174 |
 
 Step-1 gradients of the same cell under the two backends, every parameter (rank 0, own dtype, before clipping): dp2 750/750 bitwise, dp2 x ep2 750/750 bitwise, zero sign flips over 1.12e9 elements each.
 
-Noise floor of this flavor (bf16 end to end, lr 8e-4, 2-step warm-up, so Adam's first update is lr times sign(g)): the same dp1 cell on another compile cache reads 12.52977 / 7.36833 / 2.91045 with bitwise step-1 gradients; EP on with the same samples (the dp2 and dp2 x ep2 rows) flips the sign of 1.4% of the gradient elements at step 1. Any two runs that round differently separate by a few percent by step 10; the pairs above do not.
+Noise floor of this flavor (bf16 end to end, lr 8e-4, 2-step warm-up, so Adam's first update is lr times sign(g)): the same dp1 cell on another compile cache reads 12.52977 / 7.27107 / 2.98077 with bitwise step-1 gradients; EP on with the same samples (the dp2 and dp2 x ep2 rows) flips the sign of 1.4% of the gradient elements at step 1. Any two runs that round differently separate by a few percent by step 10; the pairs above do not.
 
-4446's CI cell (`kimi_k3_debugmodel_mm_fsdp2`: `_use_spmd_types(typechecking=True)`, which turns activation checkpointing off since the checker rejects selective AC with FlexAttention), the cell this PR unbreaks, on its own compile cache; its dp1 is bitwise the AC-on dp1 of that cache:
+4446's CI cell (`kimi_k3_debugmodel_mm_fsdp2`: `_use_spmd_types(typechecking=True)`, which turns activation checkpointing off since the checker rejects selective AC with FlexAttention), the cell this PR unbreaks, on the compile cache of the table above; its dp1 is bitwise the AC-on dp1 row of that table:
 
 | cell | world | run | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
