@@ -40,4 +40,13 @@ autotuned kernels from step 2 on and this flavor (bf16 end to end, lr 8e-4, 2-st
 amplifies the rounding into 1.3% at step 3 and 2.4% at step 10. That row is the noise floor the
 table shows.
 
-(rows filled when the run finishes)
+| cell | partial_dtensor | spmd_types |
+| --- | --- | --- |
+| dp1 | 12.52977 / 7.27107 / 2.98077 | 12.52977 / 7.27107 / 2.98077 |
+| dp2 | 12.53137 / 7.31248 / 3.15823 | 12.53137 / 7.31248 / 3.15823 |
+| dp2 x ep2 | 12.53146 / 7.20212 / 3.10296 | 12.53146 / 7.20212 / 3.10296 |
+
+Every pair bitwise through step 10, not only at step 1: on one compile cache the two backends are
+the same computation for the whole run. The 09-04 matrix's rows (the GitHub body) are these numbers;
+the 09-05 matrix's rows (the logbook body until today) were the other cache's. Run dir
+`/workspace/mx3_decl_pairs_0906_005832`, dumps under `/workspace/decl_dump`.

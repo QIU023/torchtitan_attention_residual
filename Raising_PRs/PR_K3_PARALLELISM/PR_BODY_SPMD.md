@@ -25,24 +25,34 @@ PR branch `k3_spmd_decl` on the fork (`dbc60701d`, same commit as `spmd_decl_rev
 
 ### Results
 
-`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256, every cell run twice and the second run read, on an RTX 5060 Ti with Attention Gym at upstream/main `b19162e` (2026-09-04) and its SM100/SM103 guard in `kda.py` lifted locally, which routes KDA through Attention Gym's portable kernels; the last three rows run the flavor as 4446's B200 cell does (type checking on, activation checkpointing off): dp1 is bitwise the checked-off row, the dp2 rows move from step 3 on, the few percent any bf16 re-ordering of this flavor shows.
+`kimi_k3_debugmodel` (multimodal), `--debug.seed 42 --debug.deterministic`, one seed checkpoint, 8192 tokens per step in micro-batches of 256, on an RTX 5060 Ti with Attention Gym at upstream/main `b19162e` and its SM100/SM103 guard in `kda.py` lifted locally (KDA on Attention Gym's portable kernels). Each row is one cell under both backends: the same degree reads the same samples (the loader shards documents by dp rank, `components/data/sources.py`, so the dp1 and dp2 rows do not, and their step-1 losses differ with identical weights); the six cells share one compile cache, each warmed once and then run for 10 steps.
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel \
   --debug.seed 42 --debug.deterministic --training.steps 10 --metrics.log_freq 1 \
   --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 \
-  --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2
+  --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 \
+  --parallelism.spmd_backend spmd_types
 ```
 
-| cell | world | backend | step 1 | step 3 | step 10 |
+| cell | world | partial_dtensor (step 1 / 3 / 10) | spmd_types (step 1 / 3 / 10) |
+|---|---|---|---|
+| dp1 | 1 | 12.52977 / 7.27107 / 2.98077 | 12.52977 / 7.27107 / 2.98077 |
+| dp2 | 2 | 12.53137 / 7.31248 / 3.15823 | 12.53137 / 7.31248 / 3.15823 |
+| dp2 x ep2 | 2 | 12.53146 / 7.20212 / 3.10296 | 12.53146 / 7.20212 / 3.10296 |
+
+Step-1 gradients of the same cell under the two backends, every parameter (rank 0, own dtype, before clipping): dp2 750/750 bitwise, dp2 x ep2 750/750 bitwise, zero sign flips over 1.12e9 elements each.
+
+Noise floor of this flavor (bf16 end to end, lr 8e-4, 2-step warm-up, so Adam's first update is lr times sign(g)): the same dp1 cell on another compile cache reads 12.52977 / 7.36833 / 2.91045 with bitwise step-1 gradients; EP on with the same samples (the dp2 and dp2 x ep2 rows) flips the sign of 1.4% of the gradient elements at step 1. Any two runs that round differently separate by a few percent by step 10; the pairs above do not.
+
+4446's CI cell (`kimi_k3_debugmodel_mm_fsdp2`: `_use_spmd_types(typechecking=True)`, which turns activation checkpointing off since the checker rejects selective AC with FlexAttention), the cell this PR unbreaks, on its own compile cache; its dp1 is bitwise the AC-on dp1 of that cache:
+
+| cell | world | spmd_types, type checking on, AC off | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|
-| dp1 | 1 | partial_dtensor | 12.52977 | 7.36833 | 2.91045 |
-| dp1 | 1 | spmd_types | 12.52977 | 7.36833 | 2.91045 |
-| dp2 | 2 | spmd_types | 12.53137 | 7.25082 | 3.15411 |
-| dp2 x ep2 | 2 | spmd_types | 12.53146 | 7.13441 | 3.09174 |
-| dp1 | 1 | spmd_types, type checking, AC off | 12.52977 | 7.36833 | 2.91045 |
-| dp2 | 2 | spmd_types, type checking, AC off | 12.53137 | 7.22561 | 3.20438 |
-| dp2 x ep2 | 2 | spmd_types, type checking, AC off | 12.53146 | 7.15088 | 3.14271 |
+| dp1 | 1 | AC on, the cache's reference | 12.52977 | 7.36833 | 2.91045 |
+| dp1 | 1 | | 12.52977 | 7.36833 | 2.91045 |
+| dp2 | 2 | | 12.53137 | 7.22561 | 3.20438 |
+| dp2 x ep2 | 2 | | 12.53146 | 7.15088 | 3.14271 |
 
 ### Changed files
 
