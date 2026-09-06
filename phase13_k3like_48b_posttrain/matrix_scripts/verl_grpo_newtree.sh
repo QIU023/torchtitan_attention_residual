@@ -15,6 +15,9 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export VERL_VLLM_VERSION=${VERL_VLLM_VERSION:-0.18.0}
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-6,7}
 export TORCHINDUCTOR_CACHE_DIR=/workspace/.inductor_verl_newtree TRITON_CACHE_DIR=/workspace/.triton_verl_newtree
+# The container caps pids at 15616 (threads count): one Ray instance per cell pre-starts num_cpus idle
+# workers and every rank a compile-worker pool, so keep both small.
+export TORCHINDUCTOR_COMPILE_THREADS=1
 cd /tmp/wt_verl_new
 NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=/root/models/kimi-k3-debug-nt TP_SIZE=1 \
 timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
@@ -29,6 +32,7 @@ actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=${LOGP_MBS:-8} \
   +actor_rollout_ref.rollout.engine_kwargs.vllm.max_num_seqs=8 \
   actor_rollout_ref.rollout.max_num_batched_tokens=512 \
   actor_rollout_ref.rollout.max_model_len=1024 \
+  ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-8} \
   actor_rollout_ref.rollout.gpu_memory_utilization=0.35 \
   "$@" > /workspace/${VERL_EXP_NAME:-grpo-k3-newtree}.log 2>&1
 rc=$?

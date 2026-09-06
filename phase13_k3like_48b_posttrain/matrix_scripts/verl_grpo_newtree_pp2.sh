@@ -39,6 +39,7 @@ actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=${LOGP_MBS:-8} \
   +actor_rollout_ref.rollout.engine_kwargs.vllm.max_num_seqs=8 \
   actor_rollout_ref.rollout.max_num_batched_tokens=512 \
   actor_rollout_ref.rollout.max_model_len=1024 \
+  ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-8} \
   actor_rollout_ref.rollout.gpu_memory_utilization=0.35 \
   "$@" > /workspace/${VERL_EXP_NAME:-grpo-k3-newtree-pp2}.log 2>&1
 rc=$?

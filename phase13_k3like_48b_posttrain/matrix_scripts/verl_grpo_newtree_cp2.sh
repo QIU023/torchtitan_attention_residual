@@ -19,6 +19,9 @@ export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5}
 # Hang diagnostics: SIGABRT on a worker prints every Python thread; NCCL keeps a collective trace.
 export PYTHONFAULTHANDLER=1 TORCH_NCCL_TRACE_BUFFER_SIZE=2000 TORCH_NCCL_DUMP_ON_TIMEOUT=1 TORCH_NCCL_DEBUG_INFO_TEMP_FILE=/workspace/nccl_trace_cp2_
 export TORCHINDUCTOR_CACHE_DIR=/workspace/.inductor_verl_cp2 TRITON_CACHE_DIR=/workspace/.triton_verl_cp2
+# The container caps pids at 15616 (threads count): one Ray instance per cell pre-starts num_cpus idle
+# workers and every rank a compile-worker pool, so keep both small.
+export TORCHINDUCTOR_COMPILE_THREADS=1
 cd /tmp/wt_verl_cp
 NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-1} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=/root/models/kimi-k3-debug-nt TP_SIZE=1 \
 timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
@@ -35,6 +38,7 @@ actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=${LOGP_MBS:-8} \
   +actor_rollout_ref.rollout.engine_kwargs.vllm.max_num_seqs=8 \
   actor_rollout_ref.rollout.max_num_batched_tokens=512 \
   actor_rollout_ref.rollout.max_model_len=1024 \
+  ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-8} \
   actor_rollout_ref.rollout.gpu_memory_utilization=0.35 \
   "$@" > /workspace/${VERL_EXP_NAME:-grpo-k3-newtree-cp2}.log 2>&1
 rc=$?
