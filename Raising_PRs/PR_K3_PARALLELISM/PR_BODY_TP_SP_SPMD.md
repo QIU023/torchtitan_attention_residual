@@ -12,8 +12,10 @@ Enables tensor parallelism for Kimi K3, with sequence parallel on the same mesh,
 
 - Sequence parallel (`model.py`): norms compute on the sequence shard, the attention boundaries gather it on the way in and `wo` / `output_proj` reduce-scatter back to `S(0)` -- the GQA pattern. The stream weights follow `norm_config`'s rule: invariant without SP, replicated under it.
 - The multimodal splice: *vision_positions* index the global token axis and a placeholder run can cross a shard boundary, so `_splice_under_sequence_parallel` gathers the stream (`S(0) -> R`, reduce-scatter backward), splices on the whole sequence, and `forward` cuts the shard back out past the DP-local vision region. Found by the tp4 cell, whose 64-token shards cut the debug image.
+- Tensor parallel here is the text decoder's. The MoonViT tower is declared invariant on the TP axis (the base PR's `_set_vision_encoder_sharding`, the `kimi_k2_7` shape): it runs whole on every TP rank exactly as it does under `partial_dtensor`, and sharding the tower is not in this PR.
 - Two type-checking seams at tp > 1: the shared vision encoder mutated its position tables to `R` on every axis while the tower declares them invariant on tp, and `local_head_split` asserted heads sharded on tp. Both keep the declared TP type now.
-- `clip_grad_norm_` (`distributed/utils.py`): parameters are grouped by mesh before the norm. Undeclared, hence replicated, modules under TP hold gradients on `(fsdp, tp)` and `(fsdp,)`, and `get_total_norm`'s foreach stack refuses to mix them; disjoint groups combine exactly ($(\sum \lVert g Vert^p)^{1/p}$, max for inf), the algebra the EP path already uses. With one mesh it is the single call it always was.
+- `clip_grad_norm_` (`distributed/utils.py`): parameters are grouped by mesh before the norm. Undeclared, hence replicated, modules under TP hold gradients on `(fsdp, tp)` and `(fsdp,)`, and `get_total_norm`'s foreach stack refuses to mix them; disjoint groups combine exactly ($(\sum \lVert g 
+Vert^p)^{1/p}$, max for inf), the algebra the EP path already uses. With one mesh it is the single call it always was.
 
 ### Results
 
