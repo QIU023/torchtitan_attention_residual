@@ -1,5 +1,5 @@
 #!/bin/bash
-# GRPO on the K3 debug export (/root/models/kimi-k3-debug, 12 layers) with the torchtitan engine on the
+# GRPO on the NEW tree's 12-layer debug export (/root/models/kimi-k3-debug-nt, export_rl_newtree.py) with the torchtitan engine on the
 # NEW tree: torchtitan = the 2026-09-06 integration branch (/tmp/wt_k3int, with the run-worktree `rl`
 # flavor that matches the export's shape), verl = kimi_k3_integration_rebased + the core-LoRA port
 # (/tmp/wt_verl_new), venv_verl (vLLM source build) with spmd_types 0.2.5 and Attention Gym b19162e.
@@ -12,10 +12,10 @@ export HF_HOME=/workspace/.hf_home
 export FLASHINFER_DISABLE_VERSION_CHECK=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export VERL_VLLM_VERSION=${VERL_VLLM_VERSION:-0.11.0}
-export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5,6,7}
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-6,7}
 export TORCHINDUCTOR_CACHE_DIR=/workspace/.inductor_verl_newtree TRITON_CACHE_DIR=/workspace/.triton_verl_newtree
 cd /tmp/wt_verl_new
-NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug MODEL_PATH=/root/models/kimi-k3-debug TP_SIZE=1 \
+NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=/root/models/kimi-k3-debug-nt TP_SIZE=1 \
 timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   data.train_batch_size=32 \
   actor_rollout_ref.actor.ppo_mini_batch_size=16 \
