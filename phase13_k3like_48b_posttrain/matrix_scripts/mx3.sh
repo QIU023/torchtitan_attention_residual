@@ -6,6 +6,8 @@ set -uo pipefail
 TAG=$1
 OUT=/workspace/mx3_${TAG}_$(date +%m%d_%H%M%S); mkdir -p "$OUT"
 export TORCHINDUCTOR_CACHE_DIR=$OUT/inductor
+# INDUCTOR_SEED_CACHE=<dir>: start from another run's warm inductor cache, so two runs share the autotune picks.
+[ -n "${INDUCTOR_SEED_CACHE:-}" ] && cp -r "$INDUCTOR_SEED_CACHE" "$OUT/inductor"
 R=$OUT/results.txt; : > $R
 echo "tree=$TITAN cfg=$CFG seed_cfg=${SEED_CFG:-$CFG} batch=$BATCH" >> $R
 
