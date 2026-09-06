@@ -8,6 +8,8 @@ The PR composes with data parallelism and, optionally, expert parallelism; TP x 
 
 ### Summary
 
+Stacked on 4492 (the declarations: the tower over cp and the multimodal inputs' layout are what CP needs under `spmd_types`; its diff shows here until it merges, and its TP entries are inert at tp = 1) and on the open CP kernel stack 4322 / 4449 / 4450, carried as copies until they merge. None of their files are this PR's.
+
 Adds context parallelism to the Kimi K3 decoder on the CP kernel stack (PR 4322 / 4449 / 4450), with the model under `spmd_types` through its own declarations: every attention layer runs a `ContextParallelKernel` installed by a transform, and each kernel owns its collectives behind the identity boundary. Before this change `parallelize.py` rejects `context_parallel_degree > 1`.
 
 After it the MLA layers run `MLAUlyssesCPFlexAttention` (the default) or `MLAAllGatherCPFlexAttention`, the generic Ulysses and all-gather kernels specialised to MLA's expanded key: MLA expands one rotary vector per token onto every head before the kernel, so the kernels split the key back, move the nope part packed with q and v (one all-to-all) or with v (one gather), move the rotary slice once as the headless vector it is, and expand it after the exchange -- the packed exchange of the first version of this PR, on the new interface.

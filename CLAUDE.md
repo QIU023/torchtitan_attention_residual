@@ -29,6 +29,20 @@ edits files REPO-WIDE (deletes "unused" suppressions with newer pyrefly), so
 never `git add -A` after running hooks -- stage only the intended files and
 `git checkout` the hook's collateral away.
 
+## Numerics-table rule (user, 2026-09-06)
+
+Reviewers read step-10 gaps as bugs (4312, 4492). A results table pairs only
+cells that read the same samples: the loader shards documents by dp rank, so
+dp1 and dp2 rows are different data streams (their step-1 forward already
+differs) and never sit as a before/after pair. The comparison a PR needs is
+the same cell with and without the change (backend, kernel, transport), on
+ONE shared inductor cache -- a fresh cache picks other autotuned kernels and
+moves step 3/10 of the K3 debug flavor by percents on its own. Every table
+carries one noise-floor row (the same cell twice on fresh caches, or the same
+data under another reduction order) so the reader sees what the flavor does
+by itself. Step 1 (bitwise) and step-1 gradient comparisons are the
+correctness bar; step 10 is shown, never argued from.
+
 ## Flavor rule (user, 2026-08-29)
 
 Do NOT add model flavors casually on upstream-bound branches. A text-only
