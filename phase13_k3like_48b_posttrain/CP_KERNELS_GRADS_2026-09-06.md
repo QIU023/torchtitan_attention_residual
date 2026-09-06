@@ -24,3 +24,23 @@ the per-invocation compile caches (the dp1 floor: 1.3% / 2.4%).
 
 Precision note: the body's earlier "median 1.8e-4" for cp8 was a per-parameter NORM figure
 (`grad_hash_hack`, norms only); the elementwise level is 1e-2. The caption now states both.
+
+## Located (`cp_kernel_attn_grad_probe.sh`): the rope slice's gradient, delivered two ways
+
+Full backward hooks on the MLA inner kernels of layers 23 (the first the backward meets; nothing
+downstream holds a CP kernel) and 3, first micro-batch of step 1, both ranks, packed against generic
+Ulysses:
+
+| point | rank 0 | rank 1 |
+| --- | --- | --- |
+| layer 23, gradient arriving at the kernel (d out) | bitwise | bitwise |
+| layer 23, d q and d v | bitwise | bitwise |
+| layer 23, d k nope columns | bitwise | bitwise |
+| layer 23, d k rope columns | packed: on head 0 only (summed inside its collective); generic: on all 16 heads | same |
+| layer 23, rope gradient after the model's `expand` backward sums the heads | rel 2.4e-3; 87% of elements within 1 bf16 ulp, 97% within 4 | rel 2.5e-3; 86% / 97% |
+| layer 3, d out | rel 1.7e-2 | rel 1.7e-2 |
+
+So the two kernels part at exactly one place, the addition order of the shared rope slice's
+gradient (a last-bit bf16 difference, 1 to 4 ulp), and the backward of the 20 layers in between
+amplifies it to 1.7e-2 by layer 3, 1e-2 elementwise on the parameters with per-parameter norms
+still within 1e-4. Nothing else differs.
