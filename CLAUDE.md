@@ -43,6 +43,26 @@ data under another reduction order) so the reader sees what the flavor does
 by itself. Step 1 (bitwise) and step-1 gradient comparisons are the
 correctness bar; step 10 is shown, never argued from.
 
+## Numerics-acceptance rule (user, 2026-09-06)
+
+When a maintainer challenges numbers, the reply's first sentence states the
+verdict against a stated bar, not the method. The bar we claim a change on:
+step-1 loss BITWISE between the paired cells, and step-1 gradients bitwise
+(or, when a comm order legitimately differs, every parameter group inside
+the stated floor) -- N/N parameters, counted, with sign flips reported. A
+change that clears that bar is correct even when step 3/10 move; say so in
+one sentence and show the noise-floor row that sizes the move.
+
+If any gap remains, it is LOCATED, never waved at: name the layer, op or
+reduction that produces it, the probe that found it (script in
+`matrix_scripts/`, tree named), and the magnitude next to the floor. An
+unexplained gap blocks the push -- do not file numbers we cannot account
+for, and never attribute a gap to "backend arithmetic" or "bf16 rounding"
+without a measurement that separates it from a real defect. When the honest
+answer is that the cells are not comparable (different data streams,
+different caches), say that first and re-pair them per the numerics-table
+rule; do not argue the old table.
+
 ## Flavor rule (user, 2026-08-29)
 
 Do NOT add model flavors casually on upstream-bound branches. A text-only
