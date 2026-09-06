@@ -52,13 +52,13 @@ cell cp2 2 --config kimi_k3_debugmodel_cp2 $D 1;  cell cp2_ag 2 --config kimi_k3
 cell cp4 4 --config kimi_k3_debugmodel_cp2 $D 1 $C 4;  cell cp8 8 --config kimi_k3_debugmodel_cp2 $D 1 $C 8;  cell dp2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2;  cell dp2_ep2_cp2 4 --config kimi_k3_debugmodel_cp2 $D 2 $E 2
 ```
 
-Every cell ran twice on the same seed checkpoint and the second run is read. cp8 starts 1e-2 above cp2 and cp4 at step 1 (12.54963 against 12.53972 and 12.53932, reproduced on both of its runs); the same cell on upstream's generic Ulysses kernel reads the same 12.54963, and at step 1 the packed kernel's per-parameter gradients at cp8 sit at the same distance from dp1 as cp2's (median 1.2e-2 against 1.1e-2, max 3.3e-1 against 4.6e-1, the tail on 16-element norm weights and `A_log`) and within bf16 rounding of the generic kernel at cp8 (median 1.8e-4, 24 of 750 parameters identical), so the offset belongs to the CP degree, not to the packing.
+Rows within a table read the same samples (the loader shards documents by dp rank, so the three tables are three data streams and do not compare with each other). The cells ran in separate invocations with their own compile caches, so step 1 is the comparison and step 3 / 10 carry this flavor's own floor: the dp1 cell on another cache reads 12.52977 / 7.27107 / 2.98077 against 12.52977 / 7.36833 / 2.91045 here, with bitwise step-1 gradients (bf16 end to end at lr 8e-4 with a 2-step warm-up). The CP cells start 1e-2 above their dp reference at step 1, cp8 another 1e-2 (reproduced on both of its runs and on the generic Ulysses kernel). Located layer by layer on the first micro-batch: the first KDA layer's output under KCP differs from the single-sequence kernel's on bitwise-identical inputs at bf16 accumulation level (relative 3e-3, largest element 2.4e-4, on the rank holding the sequence start as on the other), and the random-init router flips on it (5% of the stream by layer 3, 60% at the head); the four MLA kernels are bitwise against each other. The same-data EP pair of the declarations PR shows the same amplification (EP on flips 1.4% of the gradient elements' signs at step 1).
+
+dp = 1: one data stream, the sequence sharded over cp.
 
 | cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
 |---|---|---|---|---|---|---|
 | dp1 | 1 | - | - | 12.52977 | 7.36833 | 2.91045 |
-| dp2 | 2 | - | - | 12.53137 | 7.25082 | 3.15411 |
-| dp2 x ep2 | 2 | - | - | 12.53146 | 7.13441 | 3.09174 |
 | cp2 | 2 | packed Ulysses (this PR) | KCP | 12.53972 | 7.20787 | 2.98935 |
 | cp2 | 2 | generic Ulysses (4450) | KCP | 12.53972 | 7.27002 | 3.01910 |
 | cp2 | 2 | packed all-gather KV (this PR) | KCP | 12.53972 | 7.31401 | 3.04420 |
@@ -66,10 +66,23 @@ Every cell ran twice on the same seed checkpoint and the second run is read. cp8
 | cp4 | 4 | packed Ulysses | KCP | 12.53932 | 7.11244 | 3.09557 |
 | cp8 | 8 | packed Ulysses | KCP | 12.54963 | 7.26635 | 3.00692 |
 | cp8 | 8 | generic Ulysses (4450) | KCP | 12.54963 | 7.33906 | 3.08600 |
+
+dp = 2.
+
+| cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|
+| dp2 | 2 | - | - | 12.53137 | 7.25082 | 3.15411 |
+| dp2 x ep2 | 2 | - | - | 12.53146 | 7.13441 | 3.09174 |
 | dp2 x cp2 | 4 | packed Ulysses | KCP | 12.52908 | 7.27039 | 3.15622 |
 | dp2 x ep2 x cp2 | 4 | packed Ulysses | KCP | 12.52759 | 7.23991 | 3.11484 |
 | dp2 x cp4 | 8 | packed Ulysses | KCP | 12.53067 | 7.12889 | 3.16472 |
 | dp2 x ep2 x cp4 | 8 | packed Ulysses | KCP | 12.52663 | 7.12298 | 3.10091 |
+
+dp = 4.
+
+| cell | world | MLA kernel | KDA | step 1 | step 3 | step 10 |
+|---|---|---|---|---|---|---|
+| dp4 | 4 | - | - | 12.54929 | 6.97152 | 3.04988 |
 | dp4 x cp2 | 8 | packed Ulysses | KCP | 12.54269 | 6.95012 | 3.10984 |
 | dp4 x ep2 x cp2 | 8 | packed Ulysses | KCP | 12.53850 | 6.93310 | 2.97357 |
 | dp4 x ep4 x cp2 | 8 | packed Ulysses | KCP | 12.53869 | 6.94088 | 3.09810 |
