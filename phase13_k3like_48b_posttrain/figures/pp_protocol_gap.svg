@@ -32,32 +32,33 @@
 <text class="s" x="40" y="218">nothing keeps a received activation for a LATER stage on the same rank</text>
 <text class="s" x="40" y="234">no notion of an output consumed by a non-adjacent stage; the chunk id stays inside the stage;</text>
 <text class="s" x="40" y="250">backward P2P buffers are sized from the next stage's input-gradient strides</text>
-<text class="s" x="40" y="266">backward_one_chunk is called in eval too (base class returns at once); every output is assumed to get a gradient</text>
+<text class="s" x="40" y="266">backward_one_chunk runs in eval too; every output is assumed to get a gradient</text>
 
 <!-- RIGHT: the multi-consumer edge -->
-<rect x="560" y="44" width="500" height="250" rx="6" fill="#ffffff" stroke="#4b5a70"/>
+<rect x="560" y="44" width="500" height="256" rx="6" fill="#ffffff" stroke="#4b5a70"/>
 <text class="b" x="572" y="64">Block AttnRes: b0 committed at S0 is read by S1, S2, S3</text>
-<rect x="576" y="88" width="188" height="90" rx="4" fill="#f4f6fb" stroke="#4b5a70" stroke-dasharray="3,2"/>
-<text class="s" x="582" y="100">rank R0 (interleaved: S0 and S2)</text>
+<rect x="578" y="104" width="190" height="104" rx="4" fill="#f4f6fb" stroke="#4b5a70" stroke-dasharray="3,2"/>
+<text class="s" x="584" y="117">rank R0</text>
+<text class="s" x="584" y="204">interleaved: S0 and S2</text>
 <g>
-  <rect x="590" y="110" width="70" height="50" fill="#eef1f8" stroke="#2547d0"/><text class="t" x="600" y="130">S0</text><text class="s" x="596" y="150">commits b0</text>
-  <rect x="690" y="110" width="70" height="50" fill="#eef1f8" stroke="#2547d0"/><text class="t" x="700" y="130">S2</text><text class="s" x="696" y="150">reads b0</text>
-  <rect x="800" y="110" width="70" height="50" fill="#eef1f8" stroke="#2547d0"/><text class="t" x="810" y="130">S1</text><text class="s" x="806" y="150">reads b0</text>
-  <rect x="930" y="110" width="70" height="50" fill="#fbeff6" stroke="#a81e7a"/><text class="t" x="940" y="130">S3</text><text class="s" x="936" y="150">reads b0</text>
+  <rect x="590" y="122" width="70" height="50" fill="#eef1f8" stroke="#2547d0"/><text class="t" x="600" y="142">S0</text><text class="s" x="596" y="162">commits b0</text>
+  <rect x="690" y="122" width="70" height="50" fill="#eef1f8" stroke="#2547d0"/><text class="t" x="700" y="142">S2</text><text class="s" x="696" y="162">reads b0</text>
+  <rect x="800" y="122" width="70" height="50" fill="#eef1f8" stroke="#2547d0"/><text class="t" x="810" y="142">S1</text><text class="s" x="806" y="162">reads b0</text>
+  <rect x="930" y="122" width="70" height="50" fill="#fbeff6" stroke="#a81e7a"/><text class="t" x="940" y="142">S3</text><text class="s" x="936" y="162">reads b0</text>
   <!-- fan-out of b0 -->
-  <path d="M660,120 C740,60 780,60 800,120" stroke="#0f7b5f" stroke-width="1.6" fill="none" marker-end="url(#ag)"/>
-  <path d="M660,125 C700,90 700,90 690,125" stroke="#0f7b5f" stroke-width="1.6" fill="none" marker-end="url(#ag)"/>
-  <path d="M660,115 C800,40 900,40 930,120" stroke="#0f7b5f" stroke-width="1.6" fill="none" marker-end="url(#ag)"/>
+  <path d="M655,124 C720,84 770,84 805,122" stroke="#0f7b5f" stroke-width="1.6" fill="none" marker-end="url(#ag)"/>
+  <path d="M655,130 C670,100 690,100 695,122" stroke="#0f7b5f" stroke-width="1.6" fill="none" marker-end="url(#ag)"/>
+  <path d="M650,124 C760,72 900,72 935,122" stroke="#0f7b5f" stroke-width="1.6" fill="none" marker-end="url(#ag)"/>
   <!-- gradients back -->
-  <path d="M800,150 C760,190 700,190 660,150" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
-  <path d="M930,152 C860,215 720,215 660,155" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
-  <path d="M690,150 C680,175 665,175 660,152" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
+  <path d="M805,172 C770,212 700,212 662,176" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
+  <path d="M935,172 C860,224 730,224 657,178" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
+  <path d="M695,172 C690,196 668,196 662,174" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
 </g>
-<text class="s" x="576" y="196">the edge b0 -> {S1, S2, S3} does not exist in the chain protocol; the subclass builds it from the</text>
-<text class="s" x="576" y="212">chain: relay along the hops and keep what arrived (routing tables), deposit + collect on a rank</text>
-<text class="s" x="576" y="228">green: forward reads of b0   magenta: every consumer's gradient must reach S0, summed</text>
-<text class="s" x="576" y="252">same-rank consumer (S2 on R0): nothing travels, but the gradient still has to merge into S0's</text>
-<text class="s" x="576" y="268">-- the store deposit, collected before S0's backward, which the schedule orders last on the rank</text>
+<text class="s" x="576" y="234">green: forward reads of b0; magenta: every consumer's gradient reaches S0, summed.</text>
+<text class="s" x="576" y="248">The edge b0 -> {S1, S2, S3} is not in the chain protocol. The subclass builds it</text>
+<text class="s" x="576" y="262">from the chain: relay along the hops and keep what arrived (routing tables); for</text>
+<text class="s" x="576" y="276">the same-rank consumer S2, a store deposit collected before S0's backward, which</text>
+<text class="s" x="576" y="290">the schedule orders last on the rank.</text>
 
 <!-- FIVE suggestions -->
 <text class="b" x="20" y="322">The five interfaces, where each one sits</text>

@@ -37,10 +37,10 @@
 <g>
   <rect x="110" y="150" width="110" height="46" fill="#fff" stroke="#0f7b5f"/>
   <text class="s" x="116" y="166">put(mb0, own</text><text class="s" x="116" y="180">commits + received)</text>
-  <rect x="350" y="150" width="110" height="46" fill="#fff" stroke="#0f7b5f"/>
-  <text class="s" x="356" y="166">read(mb0) -> assemble</text><text class="s" x="356" y="180">full stack + delta</text>
-  <rect x="465" y="150" width="112" height="46" fill="#fff" stroke="#9a6100"/>
-  <text class="s" x="471" y="166">release(mb0): last</text><text class="s" x="471" y="180">stage on rank ran fwd</text>
+  <rect x="350" y="150" width="112" height="46" fill="#fff" stroke="#0f7b5f"/>
+  <text class="s" x="356" y="166">read(mb0): assemble</text><text class="s" x="356" y="180">the stack + delta</text>
+  <rect x="472" y="150" width="112" height="46" fill="#fff" stroke="#9a6100"/>
+  <text class="s" x="478" y="166">release(mb0) after</text><text class="s" x="478" y="180">last stage fwd on rank</text>
   <path d="M220,173 L350,173" stroke="#0f7b5f" stroke-width="1.4" fill="none" marker-end="url(#ag)"/>
   <text class="s" x="240" y="168">held across v0 -> v1</text>
 </g>
@@ -52,10 +52,10 @@
 <g>
   <rect x="610" y="244" width="110" height="52" fill="#fff" stroke="#a81e7a"/>
   <text class="s" x="616" y="260">backward_one_chunk:</text><text class="s" x="616" y="274">grad of stored cols</text><text class="s" x="616" y="288">-> deposit(mb0, b)</text>
-  <rect x="850" y="244" width="200" height="52" fill="#fff" stroke="#a81e7a"/>
-  <text class="s" x="856" y="260">_retrieve_recv_grads (before own bwd):</text><text class="s" x="856" y="274">wire grad + collect(mb0, b) deposits</text><text class="s" x="856" y="288">count must equal deposits_expected(b, S)</text>
-  <path d="M720,270 L850,270" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
-  <text class="s" x="735" y="264">slot, no collective</text>
+  <rect x="836" y="244" width="224" height="52" fill="#fff" stroke="#a81e7a"/>
+  <text class="s" x="842" y="260">_retrieve_recv_grads, before own bwd:</text><text class="s" x="842" y="274">wire grad + collect(mb0, b) deposits;</text><text class="s" x="842" y="288">count == deposits_expected(b, S)</text>
+  <path d="M720,270 L836,270" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
+  <text class="s" x="730" y="264">slot, no collective</text>
 </g>
 
 <!-- wire row -->
@@ -63,8 +63,8 @@
 <g>
   <text class="s" x="110" y="332">fwd: (hidden, delta) to the next stage, delta = blocks the receiving rank lacks</text>
   <path d="M110,348 L580,348" stroke="#2547d0" stroke-width="1.4" fill="none" marker-end="url(#ab)"/>
-  <text class="s" x="610" y="332">bwd: the delta's gradient goes back as any stage-input gradient (the schedule's SEND_B / RECV_B)</text>
-  <path d="M1050,348 L610,348" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
+  <text class="s" x="600" y="332">bwd: the delta's gradient returns as a stage-input gradient (schedule SEND_B / RECV_B)</text>
+  <path d="M1050,348 L600,348" stroke="#a81e7a" stroke-width="1.4" fill="none" marker-end="url(#am)"/>
 </g>
 
 <!-- rules -->
