@@ -92,12 +92,17 @@ is one full stack per rank at a time, as the EP path already pays. Unit test:
 no expert stacks and is skipped.
 
 Result on the reward cell and the cp2 cell (cp folds into the fsdp mesh, so its experts were
-sharded the same way):
+sharded the same way). The cp2 cell also needs one sequence per micro-batch now
+(`log_prob_micro_batch_size_per_gpu=1`, `actor.ppo_micro_batch_size_per_gpu=1`,
+`ref.log_prob_micro_batch_size_per_gpu=1`): the KDA context-parallel path runs one document per
+batch and, since the engine passes the packed stream's document offsets (`4b08b917`), it refuses a
+packed micro-batch instead of running the recurrent state across the sequences as the 09-06 cp2 cell
+did; the engine raises with that hint.
 
 | cell | before: logprobs_diff_mean / max / probs corr | after (step 1) |
 | --- | --- | --- |
-| fsdp2 reward cell (`grpo-k3-newtree-reward-stackfix.log`) | 0.782 / 5.20 / 0.49 | 0.107 / 3.63 / 0.965 |
-| cp2, one sequence per micro-batch (`grpo-k3-newtree-cp2-stackfix.log`) | not measured before the metric existed | (pending) |
+| fsdp2 reward cell (`grpo-k3-newtree-reward-stackfix.log`) | 0.782 / 5.20 / 0.49 | 0.107 / 3.63 / 0.965; steps 2-3: 0.107 / 2.77 / 0.963 and 0.108 / 3.15 / 0.963 (live sync, score 0.867 to 0.871) |
+| cp2, one sequence per micro-batch (`grpo-k3-newtree-cp2-stackfix.log`) | not measured before the metric existed; the 09-06 cell ran with half-expert replicas | 0.110 / 3.24 / (corr not logged for the cp2 runner) |
 
 0.107 is the floor the offline probes give for this export (0.10 to 0.12 between the two engines,
 0.09 between bf16 and near-fp32 torchtitan), and the probability correlation goes from 0.49 to 0.96.
