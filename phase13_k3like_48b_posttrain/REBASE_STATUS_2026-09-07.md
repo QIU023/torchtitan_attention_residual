@@ -16,7 +16,7 @@ numerics use it and name it.
 | `spmd_decl_review1` (4492) | `dbc60701d` | clean | clean |
 | `tpsp_review3` (4499) | `c0ab32d07` | clean | clean |
 | `cp_review5` = `k3_cp_text` (4313) | `61a73ca6c` | clean | conflict in `trainer.py` (#4493 vs the copied 4322/4449/4450 lines; drops when that stack lands) |
-| `pp_review3` (4312) | `a3be242bf` | conflict in `kimi_k3/parallelize.py` at the first PP commit (base `6e2ac3dcd` predates the EP merge; rerere holds an earlier resolution) | same |
+| `pp_review3` (4312) | `a3be242bf` | conflict in `kimi_k3/parallelize.py` at the first PP commit (base `6e2ac3dcd` predates #4446, the spmd_types enablement of `parallelize.py`; rerere holds an earlier resolution) | same |
 | `pp_balance_review1`, `pp_offload_review1` | on `pp_review3` | same as PP | same |
 | `ac_review2` | `a02b5e195` | clean | clean |
 | `lora_review1` | `93f78b5ab` | clean | clean |
