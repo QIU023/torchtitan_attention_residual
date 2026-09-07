@@ -67,9 +67,9 @@ The transport is an argument of the pipelining entry rather than an environment 
 
 The stage itself is a `PipelineStage` subclass. `forward_one_chunk` assembles the stack from the rank's store plus the received delta, runs the stage, keeps its commits and sends only what the next rank lacks; `backward_one_chunk` reads the gradient of the assembled stack -- a leaf the stage owns -- returns the received columns as the delta's gradient and deposits the stored columns; `_retrieve_recv_grads` collects the deposits for the blocks this rank brought in, before their producer's backward. No hooks, no custom Functions, no detach tricks: the schedule's own ordering carries the design. One core hook makes it possible, `pipeline_llm(..., stage_class=...)`. Step 1 is bitwise with a single GPU on every pp x vp cell of the irregular debug model, from 2 to 32 stages, under both transports.
 
-![P=2 x V=2 walk-through, subclass labels](../phase3_attnres_pp_integration/pp_adapter_flow_v2.svg)
+![The looped stage grid: rows are ranks, columns are virtual stages, one store per row](figures/pp_stage_grid.svg)
 
-Figure 3. Receive / assemble / emit per stage, and the two ranks' stores.
+Figure 3. The looped assignment $S = v \cdot P + R$ (shown: $P=4$, $V=3$). A micro-batch walks the stages in increasing $S$, so it returns to the same rank every $P$ stages and that rank's store already holds every block committed at stages $\le S-P$. The delta window, the same-rank slot and its expected deposit count all follow from this.
 
 ![One rank's interleaved timeline: the store's put / read / release and deposit / collect](figures/pp_rank_timeline.svg)
 

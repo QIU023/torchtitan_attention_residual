@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 408" width="1100" height="408" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Looped stage grid, P=4 V=3">
+<style>
+  text{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;fill:#0E1626}
+  .sv-t{font-size:11px} .sv-s{font-size:9.5px;fill:#4B5A70} .sv-b{font-size:12px;font-weight:700}
+</style>
+
+        <defs>
+          <marker id="g2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 Z" fill="#2547D0"/></marker>
+        </defs>
+        <text class="sv-b" x="24" y="22">V columns × P rows (shown: P = 4, V = 3 → T = 12 global stages)</text>
+        <text class="sv-s" x="120" y="46">v = 0</text><text class="sv-s" x="420" y="46">v = 1</text><text class="sv-s" x="720" y="46">v = 2</text>
+        <text class="sv-s" x="912" y="46" fill="#9A6100">← one RankStore per row</text>
+
+        <!-- rank rows -->
+        <g>
+          <rect x="70" y="56" width="880" height="56" rx="5" fill="#FDF4E7" stroke="#9A6100" stroke-width="1.3"/>
+          <text class="sv-s" x="52" y="90" text-anchor="end">R=0</text>
+          <rect x="86" y="68" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="176" y="89" text-anchor="middle">S = 0</text>
+          <rect x="386" y="68" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="476" y="89" text-anchor="middle">S = 4</text>
+          <rect x="686" y="68" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="776" y="89" text-anchor="middle">S = 8</text>
+
+          <rect x="70" y="120" width="880" height="56" rx="5" fill="#FDF4E7" stroke="#9A6100" stroke-width="1.3"/>
+          <text class="sv-s" x="52" y="154" text-anchor="end">R=1</text>
+          <rect x="161" y="132" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="251" y="153" text-anchor="middle">S = 1</text>
+          <rect x="461" y="132" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="551" y="153" text-anchor="middle">S = 5</text>
+          <rect x="761" y="132" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="851" y="153" text-anchor="middle">S = 9</text>
+
+          <rect x="70" y="184" width="880" height="56" rx="5" fill="#FDF4E7" stroke="#9A6100" stroke-width="1.3"/>
+          <text class="sv-s" x="52" y="218" text-anchor="end">R=2</text>
+          <rect x="236" y="196" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="326" y="217" text-anchor="middle">S = 2</text>
+          <rect x="536" y="196" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="626" y="217" text-anchor="middle">S = 6</text>
+          <rect x="836" y="196" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="926" y="217" text-anchor="middle">S = 10</text>
+
+          <rect x="70" y="248" width="880" height="56" rx="5" fill="#FDF4E7" stroke="#9A6100" stroke-width="1.3"/>
+          <text class="sv-s" x="52" y="282" text-anchor="end">R=3</text>
+          <rect x="311" y="260" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="401" y="281" text-anchor="middle">S = 3</text>
+          <rect x="611" y="260" width="180" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="701" y="281" text-anchor="middle">S = 7</text>
+          <rect x="911" y="260" width="139" height="32" rx="3" fill="#fff" stroke="#2547D0" stroke-width="1.4"/><text class="sv-t" x="980" y="281" text-anchor="middle">S = 11</text>
+        </g>
+
+        <!-- traversal arrows -->
+        <g stroke="#2547D0" stroke-width="1.6" fill="none" marker-end="url(#g2)">
+          <path d="M266,84 L157,132"/><path d="M341,148 L232,196"/><path d="M416,212 L307,260"/>
+          <path d="M491,276 C520,276 500,110 382,84"/>
+          <path d="M566,84 L457,132"/><path d="M641,148 L532,196"/><path d="M716,212 L607,260"/>
+          <path d="M791,276 C820,276 800,110 682,84"/>
+          <path d="M866,84 L757,132"/><path d="M941,148 L832,196"/><path d="M1016,212 L907,260"/>
+        </g>
+
+        <text class="sv-s" x="516" y="322" text-anchor="middle" fill="#2547D0">Forward walks the stages in increasing S: finish one column (v fixed, R = 0..P−1), then wrap to R = 0 of the next column.</text>
+        <text class="sv-s" x="516" y="338" text-anchor="middle" fill="#2547D0">This is why a microbatch returns to the same physical rank every P stages.</text>
+
+        <rect x="24" y="352" width="1052" height="46" rx="4" fill="#fff" stroke="#0F7B5F" stroke-width="1.3"/>
+        <text class="sv-t" x="550" y="372" text-anchor="middle" fill="#0F7B5F" font-weight="700">Key corollary — when rank R runs stage S, its cache already holds every block committed at stages ≤ S − P,</text>
+        <text class="sv-s" x="550" y="390" text-anchor="middle" fill="#0F7B5F">because the rank's previous virtual stage was exactly S − P. The delta payload and both gradient channels are consequences of this one fact.</text>
+      </svg>
