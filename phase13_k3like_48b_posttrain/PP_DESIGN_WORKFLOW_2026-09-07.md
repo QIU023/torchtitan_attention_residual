@@ -51,6 +51,10 @@ Block 大小 12 与 stage 切分之间**没有整除要求**：K3 是 93 层 = 7
 partial；debug flavor 特意用 33 层（35 个单元含 embed/head），让任何 pp 形状都切不齐，路由表按实际
 切分（一次 all_gather 的 layer→stage 映射）构建，不再有 even-split 前置条件。
 
+![依赖图：栈随 stage 增长、partial block 上线、只有 head stage 聚合](figures/pp_attnres_dependencies.svg)
+
+图 1. 12 层、block 大小 4、4 个 stage 的画法：每一跳的载荷是 (hidden, 栈)，栈随深度增长，被边界切开的 block 以 partial 列上线；聚合只在 head stage。下半是两种传输的差别。
+
 ### 1.2 两种传输
 
 - **朴素传输**：非末 stage 返回 `(hidden, block_stack)`，torch 原样搬运。正确，无需 adapter；`1F1B` 一 rank
@@ -119,6 +123,10 @@ partial；debug flavor 特意用 33 层（35 个单元含 embed/head），让任
 的根因（消费者反向沿着挂着图的缓存条目走进了生产者图），detach 是承重的保证，`view` 和 "Function 返回
 None" 都不够。
 
+![双梯度路径：delta 窗口与通道 A/B 及其计数](../Raising_PRs/PR_K3_PARALLELISM/pp_dual_gradient_bridge_v2.svg)
+
+图 2. 前向的 delta 窗口（block 只在线上新鲜 P−1 跳）与反向的两条通道；标签已换成子类版（store deposit / `_retrieve_recv_grads` 收集 / `deposits_expected`）。原图 `pp_dual_gradient_bridge.svg` 保留。
+
 ### 2.4 K3 移植（8 月）与 review 分支的子类重写（9 月）
 
 - 布局来自模型 config 而不是模型上的标记属性；传输开关从环境变量变成 `pipeline_kimi_k3` 的参数
@@ -134,6 +142,14 @@ None" 都不够。
   会 raise。核心 hook 只有一个：`pipeline_llm(..., stage_class=...)`。
 - 数值：irregular debug 模型 2 到 32 个 stage 的每个 pp×vp 格，step 1 与单卡逐位相同（delta 传输与整栈
   传输都是）；老 adapter 的数值在一个 bf16 舍入内复现。
+
+![P=2×V=2 的完整走线（子类版标签）](../phase3_attnres_pp_integration/pp_adapter_flow_v2.svg)
+
+图 3. P=2×V=2 每个 stage 的接收 / 组装 / 发出与两个 rank 的 store；由 phase 3 的 `pp_adapter_flow.svg` 换标签而来（hook / Capture / keepalive → store put / deposit / `_retrieve_recv_grads`），原图保留。
+
+![一个 rank 的交错时间线：store 的 put/read/release 与 deposit/collect](figures/pp_rank_timeline.svg)
+
+图 4. 一个 rank 上 v0 / v1 两个虚拟 stage 与 mb0 的生命周期：put 在 v0 的前向、read 在 v1 的前向、release 在该 rank 最后一个虚拟 stage 的前向之后；deposit 在 v1 的反向、collect 在 v0 反向之前——顺序由 schedule 保证。
 
 ### 2.5 路上的 bug 一览（含本周）
 
@@ -173,18 +189,22 @@ None" 都不够。
 5. **forward-only 与"无梯度输出"的契约。** `has_backward=False` 时的 `backward_one_chunk` 行为写进子类
    契约；允许 stage 输出 `requires_grad=False`（对应 None 梯度），而不是假定每个输出都有梯度回来。
 
+![协议对照：torch 的相邻链 vs 多消费者边，五条建议各在其位](figures/pp_protocol_gap.svg)
+
+图 5. 左：`PipelineStage` 的链式协议与它的 `fwd_cache` / `bwd_cache` 只服务本 stage；右：b0 被 S1/S2/S3 读、S2 与 S0 同 rank 的多消费者边；下方五条建议各标在它落点的位置。
+
 可写成一个短 RFC 挂在 4312 的讨论下，措辞沿用 review 里已经答过的 §3.2。
 
 ---
 
-## 4. 现有两张图能不能用
+## 4. 图：两张旧图的处理与三张新图
 
 | 图 | 内容 | 判断 |
 | --- | --- | --- |
 | `phase3_attnres_pp_integration/pp_adapter_flow.svg`（含 dark 版） | P=2×V=2 的完整走线：每个 rank 的 `RankLocalCache`、各 stage 的 recv/assemble/emit、`_install_augment_hook`、`_LocalCacheCapture`、`_keepalive_touch` | **前向路由部分可直接用**（stage/rank/缓存/delta 的走法没变）；**反向标注是旧 adapter 的**（hook / Capture / keepalive），要改成子类版：缓存读出的列 → store deposit；提交/带入该 block 的 stage 在 `_retrieve_recv_grads` 收集。建议改成一张"两版对照"或直接更新标签 |
 | `Raising_PRs/PR_K3_PARALLELISM/pp_dual_gradient_bridge.svg` | 前向 delta 窗口（block 只在线上新鲜 P−1 跳）+ 反向通道 A/B + 计数（消费者 T−1−S_p，通道 B = V−1−v_p）+ 自检 | **计数与窗口完全有效**（`deposits_expected` 就是它）；同样只需把 "`_LocalCacheCapture.backward` deposits here / `_install_augment_hook`" 改成 "store deposit / collect before own backward" |
 
-建议补的图（对应 §0 的三层）：
+三张新图已画（`figures/`），两张旧图做了换标签的 v2 副本；五张都已嵌在上文对应的位置（图 1-5）。新图对应 §0 的三层：
 
 1. **依赖图**：栈随 stage 增长、partial block 落在边界、聚合只在 head stage——一张纵向的 stage 序列。
 2. **一个 rank 的交错时间线**：V 个虚拟 stage 的 forward/backward 交错，store 里每个 mb 的 put / read /
