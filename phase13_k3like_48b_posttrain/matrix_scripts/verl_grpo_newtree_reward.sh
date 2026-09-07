@@ -32,6 +32,7 @@ timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   actor_rollout_ref.actor.torchtitan.optimizer_offload=${OFFLOAD:-False} \
   reward.custom_reward_function.path=/workspace/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/synthetic_reward.py \
   reward.custom_reward_function.name=compute_score \
+  actor_rollout_ref.actor.optim.lr=${ACTOR_LR:-1e-6} \
 actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=${LOGP_MBS:-8} \
   actor_rollout_ref.rollout.enable_chunked_prefill=True \
   +actor_rollout_ref.rollout.engine_kwargs.vllm.max_num_seqs=8 \
