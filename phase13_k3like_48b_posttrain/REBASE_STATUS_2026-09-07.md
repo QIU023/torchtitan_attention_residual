@@ -35,3 +35,22 @@ every one of the six filed rows reproduced to the digit on `d0d75fa8b` -- contro
 7.38270 / 3.00769, 12.53137 / 7.30862 / 3.20259, 12.53146 / 7.57599 / 3.16632. `PR_BODY_QB.md` names the
 new tree (`DIFF_PR_BODY_QB_rebase_2026-09-07.diff`); syncing `k3_qb` to `qb_review2` and undrafting #4412
 are the user's.
+
+## Main tip runs here now (venv_bfx9, 2026-09-07)
+
+`/workspace/venv_bfx9`: torch 2.15.0.dev20260906+cu130 and torchvision 0.30.0.dev20260906 from the cu130
+nightly index (pytorch#195301 landed 09-02 06:00 UTC; nightlies from 09-03 carry it), torchtitan's
+`requirements.txt`, cutlass-dsl 4.6.0, cuda-python 13.3.1, torchdata 0.11.0. `mx3.sh` takes `VENV=`.
+`/tmp/wt_maintip` is `d263ca0a1` plus the guard lift. Declarations protocol (8192 / 256, seed 42,
+partial_dtensor, gym `b19162e`), 10 steps:
+
+| tree | venv | dp1 | dp2 x ep2 |
+| --- | --- | --- | --- |
+| `aecbb8199` (+QB, control flavor) | /venv/main (torch 2.14.0.dev20260802) | 12.52977 / 7.36833 / 2.91045 | 12.53146 / 7.13441 / 3.09174 |
+| same | venv_bfx9 (torch 2.15.0.dev20260906) | 12.52977 / 7.36833 / 2.91045 | 12.53146 / 7.13441 / 3.09174 |
+| main tip `d263ca0a1` | venv_bfx9 | 12.51887 / 7.11252 / 3.11301 | 12.52372 / 7.50218 / 3.21130 |
+
+The torch upgrade is bitwise neutral on the same tree (`mx3_venvneutral_0907_061221`); the step-1 move of
+about 1.1e-2 on main tip is #4484's `RouterLinear` (router forward output kept fp32, backward in fp32
+through bf16x9 tensor-core matmuls), an upstream numerics change every K3 table after it will carry.
+Scripts: `maintip_smoke.sh`, `venv_neutrality.sh`.
