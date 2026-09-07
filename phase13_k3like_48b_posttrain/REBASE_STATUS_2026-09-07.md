@@ -9,7 +9,9 @@ Upstream main tip is `d263ca0a1` (2026-09-06). Its last four commits matter here
 | `a423ddeb0` #4498, `d263ca0a1` | DeepSeek V4 MTP conversion; rl renderers | none |
 
 `aecbb8199` (#4494, 09-05, after the EP merge of 09-03) is the last commit this box can run; rebases for
-numerics use it and name it.
+numerics use it and name it. Every run worktree on main also carries the local lift of `kda.py`'s SM100/SM103
+guard (`local_hacks/kda_sm120_guard_lift.patch`; the bodies say so), or the first step dies with
+`Attention Gym KDA requires Blackwell SM100/SM103; got CUDA capability (12, 0)`.
 
 | branch | head | rebase onto `aecbb8199` | rebase onto tip `d263ca0a1` |
 | --- | --- | --- | --- |
