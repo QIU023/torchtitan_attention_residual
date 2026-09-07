@@ -81,6 +81,11 @@ after the conversion, but only under `ep_enabled` and only for `mlp.experts.` na
 ran here nor would match Kimi K3's `block_sparse_moe.experts.` keys. The sharded (LoRA merged) path
 already sends expert stacks whole with a slot table (`_expert_stack_slots`) and is not affected.
 
+The pipeline cells have the same class of hole one level up: under pp2 each rank holds its stage's
+layers only, `to_hf` names only those, and each replica received one stage and kept zeros for the
+other. Measured on the log-prob scale with the expert-stack fix alone, the pp2 cell sat at 0.884
+nats (`grpo-k3-newtree-pp2-stackfix.log`, first run).
+
 ## The fix (verl engine)
 
 `get_per_tensor_param` takes every sharded expert stack out of the state dict before `to_hf`
@@ -89,7 +94,10 @@ as before, and appends a generator that gathers each stack whole with `full_tens
 time, and lets `to_hf` split the plain tensor into all its experts (`_iter_expert_stacks`). Memory
 is one full stack per rank at a time, as the EP path already pays. Unit test:
 `tests/workers/test_torchtitan_engine_expert_stacks.py` (2 pass). The adapter-only LoRA half carries
-no expert stacks and is skipped.
+no expert stacks and is skipped. Under a pipeline the generator is wrapped once more
+(`_iter_pp_gathered`): the stages stream in order, the owning rank broadcasts each tensor to the
+other pipeline ranks as it yields it, and every rank yields every stage's tensors, one in flight at
+a time (two-process test in `tests/workers/test_torchtitan_engine_pp_sync.py`).
 
 Result on the reward cell and the cp2 cell (cp folds into the fsdp mesh, so its experts were
 sharded the same way). The cp2 cell also needs one sequence per micro-batch now
@@ -102,6 +110,7 @@ did; the engine raises with that hint.
 | cell | before: logprobs_diff_mean / max / probs corr | after (step 1) |
 | --- | --- | --- |
 | fsdp2 reward cell (`grpo-k3-newtree-reward-stackfix.log`) | 0.782 / 5.20 / 0.49 | 0.107 / 3.63 / 0.965; steps 2-3: 0.107 / 2.77 / 0.963 and 0.108 / 3.15 / 0.963 (live sync, score 0.867 to 0.871) |
+| pp2 (`grpo-k3-newtree-pp2-stackfix.log`) | 0.884 / 4.59 with the expert fix alone (each replica held one stage) | (pending) |
 | cp2, one sequence per micro-batch (`grpo-k3-newtree-cp2-stackfix.log`) | not measured before the metric existed; the 09-06 cell ran with half-expert replicas | 0.110 / 3.24 / (corr not logged for the cp2 runner) |
 
 0.107 is the floor the offline probes give for this export (0.10 to 0.12 between the two engines,
