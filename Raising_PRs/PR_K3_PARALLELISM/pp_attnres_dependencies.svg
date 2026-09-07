@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="500" viewBox="0 0 1080 500" role="img" aria-label="What Block Attention Residuals need from a pipeline split">
+<style>
+  text{font-family:ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospace;fill:#0e1626}
+  .t{font-size:11.5px}.s{font-size:10px;fill:#4b5a70}.b{font-size:12.5px;font-weight:700}.h{font-size:13px;font-weight:700}
+</style>
+<rect width="1080" height="500" fill="#ffffff"/>
+<defs>
+  <marker id="ab" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 Z" fill="#2547d0"/></marker>
+  <marker id="ag" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 Z" fill="#0f7b5f"/></marker>
+</defs>
+<text class="h" x="20" y="24">Block AttnRes under a pipeline split: the stack crosses every boundary, partial blocks ride the wire, the head stage aggregates</text>
+<text class="s" x="20" y="42">Drawing: 12 layers, blocks of 4 (b0 = L0-3, b1 = L4-7, b2 = L8-11), 4 stages of 3 layers -- every block boundary falls inside a stage.</text>
+
+<!-- stage boxes -->
+<g>
+  <rect x="20" y="70" width="230" height="150" rx="6" fill="#eef1f8" stroke="#2547d0"/>
+  <text class="b" x="32" y="92">Stage 0</text>
+  <text class="t" x="32" y="112">tok_embeddings</text>
+  <text class="t" x="32" y="130">L0  L1  L2   (b0 open)</text>
+  <text class="s" x="32" y="150">stack entering L0: []</text>
+  <text class="s" x="32" y="166">each layer attends over</text>
+  <text class="s" x="32" y="180">all earlier blocks + the</text>
+  <text class="s" x="32" y="194">running partial block</text>
+
+  <rect x="290" y="70" width="230" height="150" rx="6" fill="#eef1f8" stroke="#2547d0"/>
+  <text class="b" x="302" y="92">Stage 1</text>
+  <text class="t" x="302" y="112">L3 closes b0  -> commit b0</text>
+  <text class="t" x="302" y="130">L4  L5   (b1 open)</text>
+  <text class="s" x="302" y="150">first layer of a block joins</text>
+  <text class="s" x="302" y="166">the stack before it attends:</text>
+  <text class="s" x="302" y="180">a boundary at a block start</text>
+  <text class="s" x="302" y="194">needs nothing special</text>
+
+  <rect x="560" y="70" width="230" height="150" rx="6" fill="#eef1f8" stroke="#2547d0"/>
+  <text class="b" x="572" y="92">Stage 2</text>
+  <text class="t" x="572" y="112">L6  L7 close b1 -> commit b1</text>
+  <text class="t" x="572" y="130">L8   (b2 open)</text>
+  <text class="s" x="572" y="150">a stage never needs to know</text>
+  <text class="s" x="572" y="166">the transport: it takes and</text>
+  <text class="s" x="572" y="180">returns the whole stack</text>
+
+  <rect x="830" y="70" width="230" height="150" rx="6" fill="#fbeff6" stroke="#a81e7a"/>
+  <text class="b" x="842" y="92">Stage 3 (head)</text>
+  <text class="t" x="842" y="112">L9 L10 L11 close b2</text>
+  <text class="t" x="842" y="130">output_res_proj over [b0,b1,b2]</text>
+  <text class="t" x="842" y="148">output_res_norm -> lm_head</text>
+  <text class="s" x="842" y="168">the ONLY stage that runs the</text>
+  <text class="s" x="842" y="182">aggregation: it must own</text>
+  <text class="s" x="842" y="196">lm_head and the res modules</text>
+</g>
+
+<!-- hops -->
+<g stroke="#2547d0" stroke-width="1.6" fill="none">
+  <path d="M250,145 L290,145" marker-end="url(#ab)"/>
+  <path d="M520,145 L560,145" marker-end="url(#ab)"/>
+  <path d="M790,145 L830,145" marker-end="url(#ab)"/>
+</g>
+
+<!-- payload per hop -->
+<text class="b" x="20" y="262">Payload of each hop: (hidden_TD, stack_TND) -- the stack grows with depth; a block cut by the boundary is a partial column on the wire</text>
+<g>
+  <!-- hop 0->1 -->
+  <text class="t" x="150" y="292">hop 0 -> 1</text>
+  <rect x="150" y="300" width="60" height="22" fill="#fff" stroke="#2547d0"/><text class="s" x="156" y="315">hidden</text>
+  <rect x="216" y="300" width="60" height="22" fill="#fff" stroke="#9a6100" stroke-dasharray="3,2"/><text class="s" x="220" y="315">b0 partial</text>
+  <text class="s" x="150" y="340">N = 0 committed</text>
+  <!-- hop 1->2 -->
+  <text class="t" x="420" y="292">hop 1 -> 2</text>
+  <rect x="420" y="300" width="60" height="22" fill="#fff" stroke="#2547d0"/><text class="s" x="426" y="315">hidden</text>
+  <rect x="486" y="300" width="40" height="22" fill="#eef1f8" stroke="#0f7b5f"/><text class="s" x="496" y="315">b0</text>
+  <rect x="532" y="300" width="60" height="22" fill="#fff" stroke="#9a6100" stroke-dasharray="3,2"/><text class="s" x="536" y="315">b1 partial</text>
+  <text class="s" x="420" y="340">N = 1 committed</text>
+  <!-- hop 2->3 -->
+  <text class="t" x="690" y="292">hop 2 -> 3</text>
+  <rect x="690" y="300" width="60" height="22" fill="#fff" stroke="#2547d0"/><text class="s" x="696" y="315">hidden</text>
+  <rect x="756" y="300" width="40" height="22" fill="#eef1f8" stroke="#0f7b5f"/><text class="s" x="766" y="315">b0</text>
+  <rect x="802" y="300" width="40" height="22" fill="#eef1f8" stroke="#0f7b5f"/><text class="s" x="812" y="315">b1</text>
+  <rect x="848" y="300" width="60" height="22" fill="#fff" stroke="#9a6100" stroke-dasharray="3,2"/><text class="s" x="852" y="315">b2 partial</text>
+  <text class="s" x="690" y="340">N = 2 committed</text>
+</g>
+
+<!-- the two transports -->
+<rect x="20" y="365" width="1040" height="115" rx="6" fill="#ffffff" stroke="#4b5a70" stroke-dasharray="4,3"/>
+<text class="b" x="32" y="386">Two transports of the same stack</text>
+<text class="t" x="32" y="406">naive: every hop carries the whole stack -> correct, no adapter (plain 1F1B, one stage per rank), bytes per hop grow with the stage index</text>
+<text class="t" x="32" y="424">cross-stage cache (report 4.1): with V virtual stages per rank, a hop carries only the blocks the receiving rank has not seen;</text>
+<text class="t" x="32" y="442">  a block committed at stage S is fresh on the wire for P-1 hops, then every receiving rank holds it from its virtual stage S-P</text>
+<text class="t" x="32" y="460">  => per-hop payload bounded by the commits of the last P-1 stages, independent of depth; both transports are one routing table (attn_res_cache)</text>
+</svg>

@@ -2,7 +2,9 @@
 
 PR 4312. Branch `pp_review3` on the fork (`a3be242bf`): the reviewed PR head `087c4d177` squashed onto post-expert-parallel main as `a4d68655c`, the review-round commits replayed on top, the whole line rebased onto upstream/main `6e2ac3dcd` on 2026-09-04 (clean; main touched nothing under the model), then three commits: the split takes any layer count, the debug model is 33 layers, and the integration cell runs pp8 x vp4. The PR branch `k3_pp_text` was synced to `0e7cc5ea1` on 2026-09-04 (forced update over `087c4d177`, lease-protected) and sits there until the next sync is approved.
 
-Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` (logbook); the body carries what the branch does and the evidence.
+Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` and the design note `phase13_k3like_48b_posttrain/PP_DESIGN_WORKFLOW_2026-09-07.en.md` (logbook); the body carries what the branch does and the evidence.
+
+TODO before pasting: upload svg-1 `pp_attnres_dependencies.svg` and svg-2 `pp_stage_grid.svg` (both in this folder) by dragging them into the PR comment box, then replace the two `UPLOAD-SVG-N` placeholders below with the URLs GitHub returns. Cross-repo raw SVG links do not render (camo blocks them), so the files have to be uploaded, or the two figure lines dropped.
 
 --- PASTE BEGIN ---
 
@@ -15,6 +17,14 @@ After it `pipeline_kimi_k3` (in `parallelize.py`) splits the model with this mod
 Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular debug model, two to thirty-two stages, with the delta transport and with the whole stack on every hop.
 
 ### Design
+
+What forces the protocol: every layer attends over all earlier blocks plus the running partial block, so (R1) the block stack must cross every stage boundary with the hidden state, (R2) the final aggregation runs only on the stage that owns `lm_head`, and (R3) the stack grows with depth, with a boundary inside a block putting a partial block on the wire. Sending the whole stack every hop satisfies all three and costs bytes that grow with the stage index; the delta transport sends only what the receiver lacks, which needs the routing tables, a micro-batch key that survives P2P, and a way home for a cached block's gradient.
+
+![UPLOAD-SVG-1: the stack across stages, partial blocks on the wire, aggregation on the head stage](UPLOAD-SVG-1)
+
+Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, so a micro-batch returns to the same rank every $P$ stages and that rank already holds every block committed at stages $\le S-P$. A freshly committed block is therefore new on the wire for $P-1$ hops and no longer, the same-rank consumers of a block are exactly the stages congruent to its producer modulo $P$, and their number is what the tables expect as gradient deposits.
+
+![UPLOAD-SVG-2: the looped stage grid, rows are ranks and columns virtual stages, one store per row](UPLOAD-SVG-2)
 
 - The stage protocol, in the subclass (`pipeline_stage.py`)
   - `forward_one_chunk` assembles the full block stack the model expects from the rank's store plus the received *delta*, runs the stage, keeps the blocks the stage committed, and sends on only what the next rank lacks. The model takes and returns the whole stack and knows nothing of the transport; the chunk id comes with the call.
