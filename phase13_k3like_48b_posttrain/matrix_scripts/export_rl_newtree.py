@@ -53,6 +53,9 @@ fields = {
     "routed_expert_hidden_size": moe.routed_experts.inner_experts.dim,
     "moe_intermediate_size": moe.routed_experts.inner_experts.hidden_dim,
     "attn_res_block_size": layers[0].attn_res_block_size,
+    # vLLM's KimiK3 reads num_experts_per_token; the template carried 16 while the model routes top_k.
+    "num_experts_per_token": moe.router.top_k,
+    "num_experts_per_tok": moe.router.top_k,
 }
 config_path = MODEL_DIR / "config.json"
 cfg = json.loads(config_path.read_text())
