@@ -110,7 +110,7 @@ did; the engine raises with that hint.
 | cell | before: logprobs_diff_mean / max / probs corr | after (step 1) |
 | --- | --- | --- |
 | fsdp2 reward cell (`grpo-k3-newtree-reward-stackfix.log`) | 0.782 / 5.20 / 0.49 | 0.107 / 3.63 / 0.965; steps 2-3: 0.107 / 2.77 / 0.963 and 0.108 / 3.15 / 0.963 (live sync, score 0.867 to 0.871) |
-| pp2 (`grpo-k3-newtree-pp2-stackfix.log`) | 0.884 / 4.59 with the expert fix alone (each replica held one stage) | (pending) |
+| pp2 (`grpo-k3-newtree-pp2-stackfix.log`, budget 2048, micro-batch 2) | 0.884 / 4.59 with the expert fix alone (each replica held one stage) | 0.108 / 3.63 with the stage gather (160 s/step) |
 | cp2, one sequence per micro-batch (`grpo-k3-newtree-cp2-stackfix.log`) | not measured before the metric existed; the 09-06 cell ran with half-expert replicas | 0.110 / 3.24 / (corr not logged for the cp2 runner) |
 
 0.107 is the floor the offline probes give for this export (0.10 to 0.12 between the two engines,
