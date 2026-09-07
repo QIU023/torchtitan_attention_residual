@@ -28,3 +28,10 @@ QB: #4412 was waiting on the EP merge; EP merged 09-03. `qb_review2` carries the
 `aecbb8199`; `matrix_scripts/qb_rebase_onecache.sh` runs the sign-step control and quantile balancing on
 one compile cache (dp1 / dp2 / dp2 x ep2, partial_dtensor per cell since the declarations PR is not in main).
 Results go to `PR_BODY_QB.md` when the run ends; syncing `k3_qb` and undrafting are the user's.
+
+QB result (2026-09-07, `mx3_qb4_control_0907_040856` + `mx3_qb4_qb_0907_043737`, one cache, gym `b19162e`):
+every one of the six filed rows reproduced to the digit on `d0d75fa8b` -- control dp1 12.52977 / 7.36833 /
+2.91045, dp2 12.53137 / 7.25082 / 3.15411, dp2 x ep2 12.53146 / 7.13441 / 3.09174; quantile 12.52977 /
+7.38270 / 3.00769, 12.53137 / 7.30862 / 3.20259, 12.53146 / 7.57599 / 3.16632. `PR_BODY_QB.md` names the
+new tree (`DIFF_PR_BODY_QB_rebase_2026-09-07.diff`); syncing `k3_qb` to `qb_review2` and undrafting #4412
+are the user's.
