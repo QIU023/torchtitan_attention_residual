@@ -1,4 +1,4 @@
-# Pipeline parallelism for Block Attention Residuals
+# Pipeline Parallelism for Block Attention Residuals: Design ideas and motivations
 
 ## 0. One page
 
@@ -40,31 +40,32 @@ Micro-batch dependencies: the cache key must be the schedule's integer chunk id 
 
 Figure 1. 12 layers, blocks of 4, 4 stages: the payload per hop, and the two transports.
 
-## 2. From Reku's note to our implementation, and the bugs on the way
+## 2. The design: what each problem forced
 
-Reku's public note (Zhihu, Kimi infra) puts an adapter after the pipeline communication: it concatenates the received block with the cached ones, the backward accumulates all blocks' gradients in the adapter and sends the buffer on, the send/recv hides in interleaved steady state, and the changed accumulation order makes precision alignment harder when the PP config changes. It is about wire bytes; for very deep models it recommends selective AC plus activation offload over a distributed cache.
+The published note from the model's infrastructure team puts an adapter after the pipeline communication: it concatenates the received block with the cached ones, its backward accumulates all blocks' gradients and sends the buffer on, and the send/recv hides in interleaved steady state. It is a statement about wire bytes, and it leaves three problems to whoever implements it.
 
-Our phase-3 adapter (2026-04) had to add four pieces: who holds which blocks without sending metadata (`BlockLayoutTables`, both sides simulate one micro-batch offline); a micro-batch key that survives P2P (the chunk id stashed in a thread-local by wrapping `forward_one_chunk` / `backward_one_chunk` -- the "patch / thread" the reviewer flagged, whose root cause is that `PipelineStage` does not hand the chunk id to the submodule); the backward, below; and eviction after `step()` from the rank's last virtual stage.
+**Who holds what, without metadata on the wire.** A hop's payload depends on what the receiver already has, so both sides must agree on the columns before the first send. The layout tables are built once from the actual layer -> stage split and simulated offline on both sides; nothing about the payload travels with it.
 
-The backward took six attempts:
+**A micro-batch key that survives P2P.** The cache is per micro-batch, and tensor identity does not survive the transport (fresh receive buffers). The key has to come from the schedule. Subclassing the stage makes this trivial -- the chunk id is the argument of the call being overridden -- where anything outside the stage has to reach for it.
 
-1. custom NCCL inside `autograd.Function.backward` -> deadlock (the engine is single-threaded and depth-first; the peer has not reached its matching Function; races with the schedule's own `SEND_B` / `RECV_B`).
-2. flush block gradients after `backward_one_chunk` -> deadlock (interleaved ranks reach a micro-batch's backward at different times; P2P ops with no peer).
-3. one batched exchange at step end -> keeps every micro-batch's graph alive until step end; rejected.
-4. ride PP's own `SEND_B`: received blocks stay attached to the tensor they arrived in and gradients flow hop by hop with no custom collective -> **route A**. One case fails: a block a rank committed at virtual stage `v` and reads back from its own cache at `v+1`, where the consumer's backward walks into the producer's graph and frees it ("backward through the graph a second time").
-5. `retain_graph=True` -> correct, +5 GiB on rank 7 of a 175M model, growing with V and the micro-batch count; stop-gap.
-6. `_LocalCacheAugment` + `_LocalCacheCapture` Functions -> still double-backward on 4 GPUs (both fired in one `backward_one_chunk`).
-7. cache a DETACHED copy + Capture + a grad hook on the producer's block -> **route B**: the consumer's input has no upstream graph, Capture deposits the gradient in a slot keyed `(mb, producer stage, commit index)`, and the hook adds it during the producer's own backward. Memory back to naive PP plus the cache (7.71 vs 7.45 GiB, PP4 x VP2, 175M); a static count of expected captures refuses the step on a lost gradient.
+**The backward of a cached block.** A block committed at one stage is read by several later stages, so its gradient has to come back from all of them to the stage that committed it. Every general mechanism we tried failed for a reason worth stating:
 
-So the two routes are: across ranks, PP's own backward P2P and no new code; on a rank, a slot. The cache stores VALUES (detached copies), never activations or graphs, and every forward graph is traversed once per micro-batch. Detach is load-bearing: a `view` and a Function returning `None` were not enough (attempts 4 and 6).
+1. A custom collective inside `autograd.Function.backward` deadlocks: the autograd engine is single-threaded and depth-first, the peer has not reached the matching Function, and the exchange races the schedule's own backward P2P.
+2. Flushing the gradients after each micro-batch's backward deadlocks too: under interleaving, ranks reach a given micro-batch's backward at different times, so the P2P has no peer.
+3. One batched exchange at step end removes the deadlock but keeps every micro-batch's graph alive until the step ends.
+4. Letting the gradients ride the schedule's own backward P2P is correct across ranks and needs no new communication. It fails in exactly one case: a block a rank commits at one virtual stage and reads back from its own store at the next, where the consumer's backward walks into the producer's graph and frees it a second time.
+5. `retain_graph=True` fixes that case and gives up the memory PP exists to save; the cost grows with virtual stages and micro-batches.
+6. Wrapping the same-rank hand-off in autograd Functions still double-fires when both ends land in one micro-batch's backward.
 
-![Two gradient routes: the delta window and routes A / B with their counts](../Raising_PRs/PR_K3_PARALLELISM/pp_dual_gradient_bridge_v2.svg)
+What works is to stop treating the cached block as a graph at all. The store holds VALUES, so a consumer's input has no upstream graph and every forward graph is traversed once per micro-batch; the gradient is deposited in a slot keyed by (micro-batch, producing stage, commit index) and collected by the stage that brought the block onto the rank, before its own backward -- an ordering every schedule already provides, since it runs the later virtual stages' backward first. Across ranks nothing is added: the gradient rides the pipeline's own backward P2P. The tables say how many deposits each block must receive, so a lost gradient raises instead of training silently.
 
-Figure 2. The delta window (a block is fresh on the wire for $P-1$ hops) and the two backward routes.
+![Two gradient routes: the delta window, the pipeline's backward P2P across ranks and the store slot within a rank](../Raising_PRs/PR_K3_PARALLELISM/pp_dual_gradient_bridge_v2.svg)
 
-The K3 port (August) took the layout from the model config, made the transport a `functools.partial` argument of `pipeline_kimi_k3` rather than an environment variable (a non-uniform export once gave ranks different topologies and hung), and replaced the even-split gate with the layer -> stage all-gather.
+Figure 2. The delta window (a block is fresh on the wire for $P-1$ hops) and the two gradient routes: the pipeline's own backward P2P across ranks, a store slot within a rank.
 
-The September review branch replaces the 1228-line adapter with `AttnResPipelineStage(PipelineStage)`, 388 lines: `forward_one_chunk` assembles the stack from the rank's `RankStore` plus the received delta, runs the stage, keeps its commits and sends only what the next rank lacks; `backward_one_chunk` reads the gradient of the assembled stack (a leaf the stage owns), returns the received columns as the delta's gradient and deposits the stored columns in the store; the stage that brought a block onto the rank collects the deposits in `_retrieve_recv_grads` before its own backward, which every schedule orders after the later stages' backward on the rank. No hook, no Function, no detach trick, and the tables say how many deposits each block must have, so a lost gradient raises. It needs one core hook, `pipeline_llm(..., stage_class=...)`. Step 1 is bitwise with a single GPU on every pp x vp cell of the irregular debug model, 2 to 32 stages, both transports.
+The transport is an argument of the pipelining entry rather than an environment variable (a non-uniform export once gave ranks different topologies and hung), the layout comes from the model config, and the split is whatever the recipe asks for: an `all_gather_object` of layer -> stage replaces the even-split assumption, so an irregular model needs no divisibility.
+
+The stage itself is a `PipelineStage` subclass. `forward_one_chunk` assembles the stack from the rank's store plus the received delta, runs the stage, keeps its commits and sends only what the next rank lacks; `backward_one_chunk` reads the gradient of the assembled stack -- a leaf the stage owns -- returns the received columns as the delta's gradient and deposits the stored columns; `_retrieve_recv_grads` collects the deposits for the blocks this rank brought in, before their producer's backward. No hooks, no custom Functions, no detach tricks: the schedule's own ordering carries the design. One core hook makes it possible, `pipeline_llm(..., stage_class=...)`. Step 1 is bitwise with a single GPU on every pp x vp cell of the irregular debug model, from 2 to 32 stages, under both transports.
 
 ![P=2 x V=2 walk-through, subclass labels](../phase3_attnres_pp_integration/pp_adapter_flow_v2.svg)
 
@@ -77,15 +78,15 @@ Figure 4. One rank, virtual stages v0 / v1, micro-batch 0: put at v0's forward, 
 | symptom | cause | fix |
 | --- | --- | --- |
 | every middle stage missed its cache | `id(tensor)` as the key; NCCL fresh buffers | the schedule's chunk id |
-| NCCL watchdog timeout | custom P2P inside autograd / in a flush | ride the schedule's `SEND_B` (route A) |
-| "backward through the graph a second time" | a same-rank cached block still attached to the producer's graph | detached copies; later the store's deposit / collect |
-| +5 GiB on rank 7 | `retain_graph=True` stop-gap | route B |
-| ranks with different topologies hang | env-var transport switch, non-uniform export | `functools.partial` argument |
+| NCCL watchdog timeout | custom P2P inside autograd / in a flush | the gradients ride the schedule's own backward P2P |
+| "backward through the graph a second time" | a same-rank cached block still attached to the producer's graph | the store holds values, not graphs |
+| memory grows with virtual stages and micro-batches | `retain_graph=True` as a stop-gap for the same-rank re-read | values in the store, deposits collected by the schedule's ordering |
+| ranks with different topologies hang | the transport chosen by an environment variable, exported non-uniformly | an argument of the pipelining entry |
 | even split only | interleaved ranks lack the global layer -> stage map | one `all_gather_object` |
 | `Tensors for P2P must be non-overlapping and dense` | torch sizes the backward receive buffer from the next stage's input-gradient strides; a stage starting with cat / stack / slice yields view gradients | model-side `_DenseGradient` (identity, `.contiguous()` backward); upstream should allocate `torch.empty(shape)` and send `.contiguous()` |
 | "no gradient arrived for the payload" under LoRA | nothing trainable upstream of the payload (frozen embedding feeds block 0); the next stage has no gradient channel | `_retrieve_recv_grads` accepts `None`; deposits discarded |
 | `KeyError: 0` in verl's forward-only log-prob pass | `schedule.eval` calls `backward_one_chunk` with backward off; the base returns, the override read the cache it never filled | honour `has_backward`, drop the chunk's bookkeeping |
-| `KeyError` in the HF initial load on a stage | the adapter shaped layer-0 placeholders from layer 1, absent on that stage | place only on the rank holding layer 0, shape from the config |
+| `KeyError` in the HF initial load on a stage | layer-0 placeholders were shaped from layer 1, absent on that stage | place only on the rank holding layer 0, shape from the config |
 | `'FSDPParam' has no attribute '_unsharded_param'` on a text batch under PP | FSDP2's root final callback runs `post_backward` for every group, and the no-reduce branch (PP's non-last micro-batches) lacks the `hasattr` guard the reduce branch has; a never-forwarded FSDP unit (the vision tower on text) has no `_unsharded_param` | a text-only model has no tower (the text alias sets `vision_encoder=None`); the torch guard is an upstream issue, not a parallelism change |
 | step 10 spreads by percents | Adam's first step is `lr * sign(g)`; bf16 rounding flips 0.2% of elements and the descent amplifies it; fp32 total norm does not remove it | step 1 and per-parameter gradients are the bar |
 
