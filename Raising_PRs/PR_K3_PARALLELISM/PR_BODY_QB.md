@@ -26,8 +26,11 @@ Training loss on `d0d75fa8b` (the two commits on upstream/main `aecbb8199`, the 
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_qb \
   --debug.seed 42 --debug.deterministic --training.steps 10 --metrics.log_freq 1 \
   --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 \
-  --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2
+  --parallelism.data_parallel_shard_degree 2 --parallelism.expert_parallel_degree 2 \
+  --parallelism.spmd_backend partial_dtensor
 ```
+
+The backend flag is required on this base: under the default `spmd_types` the multimodal debug flavor stops at `preprocess_inputs` (`pixel_values` and `grid_thw` have no input layout on main; the declarations PR supplies one). The table's cells start from one seed checkpoint shared by every configuration (`--checkpoint.enable`, written once by the dp1 cell), so the rows differ by the parallelism and the hook alone.
 
 | config | hook | step 1 | step 3 | step 10 |
 |---|---|---|---|---|
