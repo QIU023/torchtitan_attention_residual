@@ -40,7 +40,7 @@ Use the note's sections 1-6 in order (outline in its section 7, 25 minutes). The
 
 ## 6. On #4312: replace the attachment with a rendered document (post this comment)
 
-The 09-07 design note went out as a file attachment (`user-attachments/files/...md`): GitHub serves it as a raw text file, its relative image links do not resolve, so the reader saw no figures. The rendered version lives in the public logbook, and the figures below are absolute links that render inline.
+The 09-07 design note went out as a file attachment (`user-attachments/files/...md`): GitHub serves it as a raw text file, its relative image links do not resolve, so the reader saw no figures. Two remedies, use both: the rendered version in the public logbook (linked below), and the PDF with the figures embedded -- `phase13_k3like_48b_posttrain/PP_RUNTIME_DESIGN_NOTE_2026-09-08.en.pdf` (8 pages; rendered from the markdown with weasyprint, `PP_DESIGN_WORKFLOW_2026-09-07.en.pdf` likewise) -- attached to the comment. The figures below are absolute links that render inline.
 
 --- PASTE BEGIN ---
 
