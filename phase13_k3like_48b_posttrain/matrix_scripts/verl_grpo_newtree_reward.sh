@@ -22,7 +22,7 @@ export TORCHINDUCTOR_CACHE_DIR=${TORCHINDUCTOR_CACHE_DIR:-/workspace/.inductor_v
 # workers and every rank a compile-worker pool, so keep both small.
 export TORCHINDUCTOR_COMPILE_THREADS=1
 cd /tmp/wt_verl_cp
-NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=/root/models/kimi-k3-debug-nt TP_SIZE=1 \
+NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=/root/models/kimi-k3-debug-nt TP_SIZE=${TP_SIZE:-1} EP_SIZE=${EP_SIZE:-1} \
 timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   data.train_batch_size=32 \
   actor_rollout_ref.actor.ppo_mini_batch_size=16 \
