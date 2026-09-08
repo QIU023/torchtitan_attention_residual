@@ -127,3 +127,14 @@ did; the engine raises with that hint.
   them for packed micro-batches; deriving them from position restarts inside the model moved the mm
   dp1 step-3 loss (7.612 vs 7.491) and was rejected.
 - The probability-scale metric stays in the tables as what verl prints, with the caveat above.
+
+## The ladder after the fixes (2026-09-08)
+
+Every cell judged by `training/rollout_logprobs_diff_mean` at steps 1 and 3 with the synthetic
+reward as the sync instrument (the actor must move for steps 2-3 to test the sync of updated
+weights; nothing is being trained). The offline cross-engine floor for this export is 0.10-0.12.
+
+| cell | GPUs | flavor / knobs | step 1 | step 2 | step 3 | s/step | note |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| fsdp2 x ep2 | 2 | `rl`, `EP_SIZE=2`, log-prob micro-batch 4 | 0.108 | 0.107 | 0.107 | 424-768 | the fork's EP branch referenced `iter_per_tensor_params_ep` without importing it (never exercised before); the expert-stack gather holds under the EP placements |
+| tp2 (fsdp1) | 2 | `rl`, `TP_SIZE=2`, micro-batch 2 | 0.110 | 0.110 | 0.106 | 433-1393 | two engine gaps: sequence parallel needs the packed stream padded to a multiple of the TP degree (the CP padding now pads to lcm(cp multiple, tp)), and the head's logits come back vocab-sharded (loss-parallel layout) and are gathered over the tp group before the loss side |
