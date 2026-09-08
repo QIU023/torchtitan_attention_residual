@@ -1,6 +1,6 @@
 # verl upstream PRs from the sync work (2026-09-08)
 
-Branch `sync_fixes_upstream` on the fork (QIU023/verl), two commits on verl-project/verl main `7cb65014`. Upstream main already gathers sharded expert stacks whole before the HF split (#7324), so the expert-stack fix from the fork is not needed there; the pipeline-stage gather and the TP padding/vocab gather have no home upstream yet (its engine raises NotImplementedError under PP and has no TP path), they wait for the engine's PP/CP/TP support to be upstreamed.
+Branch `sync_fixes_upstream` on the fork (QIU023/verl): the metric commit on verl-project/verl main `7cb65014`. The QAT sync port sits on `qat_sync_upstream_pending` (same base): upstream verl pins the torchtitan nightly `0.1.0.dev20260701` and upstream torchtitan main has no `mx_qat` converter yet (the K3 QAT PR carries it), so that PR waits for both; its guarded import makes it inert until then. Upstream main already gathers sharded expert stacks whole before the HF split (#7324), so the expert-stack fix from the fork is not needed there; the pipeline-stage gather and the TP padding/vocab gather have no home upstream yet (its engine raises NotImplementedError under PP and has no TP path), they wait for the engine's PP/CP/TP support to be upstreamed.
 
 ## PR 1: [debug] rollout-vs-actor log-prob difference next to the probability one
 
