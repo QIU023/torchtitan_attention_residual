@@ -28,3 +28,7 @@ Order of value for a verl contribution: the pin bump plus CP (small, generic, ex
 ## Numbers upstream reviewers will ask for
 
 Step-1 rollout-vs-actor log-prob gap on the Kimi K3 debug export, every cell at the floor 0.10-0.12 after the sync fixes; the QAT cell at 0.26 with the residual attributed (weights 0.47, activations 0.24 offline). Tables and probes: `VERL_PARITY_2026-09-07.md`, `matrix_scripts/verl_parity/`.
+
+## Dry run (2026-09-08 evening)
+
+The first generic engine commit (`4a93e121`, the mesh lookup without an fsdp mesh) already conflicts in `transformer_impl.py` against upstream main `7cb65014`: upstream restructured the sync generator (#7324) and the fork's engine file has diverged over 41 commits. The CP / PP / TP support does not cherry-pick; it is a re-implementation on upstream's current engine, sized at a few days per axis after the torchtitan pin bump, and it needs a torchtitan whose import paths upstream verl accepts. Not started; the fork stays the runnable reference (`VERL_PARITY_2026-09-07.md`).

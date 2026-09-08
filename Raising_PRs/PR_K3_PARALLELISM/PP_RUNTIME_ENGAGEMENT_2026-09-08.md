@@ -33,3 +33,7 @@ Same scope as #4313 on this stack; I will re-scope that PR to the deltas (the pa
 ## 4. The talk
 
 Use the note's sections 1-6 in order (outline in its section 7, 25 minutes). The one sentence to land: parameters can be a placement or a runtime concern; cross-stage activations need the runtime plus one ordering guarantee the schedules already provide.
+
+## 5. The client branch
+
+`pp_runtime_client` on the fork (`464421e13`): #4312's 17 commits rebased onto #4486's head (`713a6bbb6` = main `2af775ea9` + its two commits) plus one commit -- `pipeline_kimi_k3` returns the `PipelineResult` with an `AttnResPipelineRuntime` (advisory micro-batch tag on the kwargs, drained-store check at step end), `pipeline_llm` keeps the `stage_class` hook next to `stage_args_factory` (9 lines in the core file). Unit tests 21 (ours and #4486's). Debug model, one seed checkpoint, `partial_dtensor`, 3 steps: dp1 12.41853 / 7.64136, pp2 (8 micro-batches, delta transport) 12.41853 / 7.63540 -- step 1 bitwise, the store drained every step. To move the PR head: `git push origin pp_runtime_client:k3_pp_text --force-with-lease` (the user's action) after #4486's shape settles; rebase again when #4486 or #4488 (`stage_metadata_fn`) moves.
