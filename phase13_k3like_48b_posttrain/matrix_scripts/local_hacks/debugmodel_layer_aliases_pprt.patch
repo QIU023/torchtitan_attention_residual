@@ -1,0 +1,40 @@
+diff --git a/torchtitan/models/kimi_k3/__init__.py b/torchtitan/models/kimi_k3/__init__.py
+index 3ec8b6e2f..82ba1a801 100644
+--- a/torchtitan/models/kimi_k3/__init__.py
++++ b/torchtitan/models/kimi_k3/__init__.py
+@@ -552,6 +552,9 @@ kimi_k3_configs = {
+     # (93 = 7 x 12 + 9); 35 units with the embedding and the head, which no
+     # pipeline shape divides, so every split is uneven the way the real one is.
+     "debugmodel": (partial(_debugmodel, num_layers=33), 16384),
++    "debugmodel17": (partial(_debugmodel, num_layers=17), 16384),  # run-worktree alias, not for commit
++    "debugmodel13": (partial(_debugmodel, num_layers=13), 16384),  # run-worktree alias, not for commit
++    "debugmodel9": (partial(_debugmodel, num_layers=9), 16384),  # run-worktree alias, not for commit
+     "Kimi-K3": (_kimi_k3, 262144),
+ }
+ 
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index 4de331117..75d07159c 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -94,3 +94,21 @@ def kimi_k3_debugmodel() -> Trainer.Config:
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++
++
++def kimi_k3_debugmodel17() -> Trainer.Config:  # run-worktree alias (17 layers), not for commit
++    cfg = kimi_k3_debugmodel()
++    cfg.model_spec = model_registry("debugmodel17")
++    return cfg
++
++
++def kimi_k3_debugmodel13() -> Trainer.Config:  # run-worktree alias (13 layers), not for commit
++    cfg = kimi_k3_debugmodel()
++    cfg.model_spec = model_registry("debugmodel13")
++    return cfg
++
++
++def kimi_k3_debugmodel9() -> Trainer.Config:  # run-worktree alias (9 layers), not for commit
++    cfg = kimi_k3_debugmodel()
++    cfg.model_spec = model_registry("debugmodel9")
++    return cfg

@@ -2,6 +2,8 @@
 
 PR 4312. Branch `pp_review3` on the fork (`a3be242bf`): the reviewed PR head `087c4d177` squashed onto post-expert-parallel main as `a4d68655c`, the review-round commits replayed on top, the whole line rebased onto upstream/main `6e2ac3dcd` on 2026-09-04 (clean; main touched nothing under the model), then three commits: the split takes any layer count, the debug model is 33 layers, and the integration cell runs pp8 x vp4. The PR branch `k3_pp_text` was synced to `0e7cc5ea1` on 2026-09-04 (forced update over `087c4d177`, lease-protected) and sits there until the next sync is approved.
 
+Client branch `pp_runtime_client` (`464421e13`, 2026-09-08): the same 17 commits on the head of upstream PR 4486 (the pipeline runtime) plus the runtime-client commit; it replaces `pp_review3` as the next head once PR 4486's shape settles. The Results section opens with the five-step loss/grad-norm table in the format of PR 4488, measured on that branch; the pp x vp matrix below it was measured on `pp_review3` (same model code).
+
 Paste between the markers into the PR body. Design history, the rejected designs and the per-comment answers are in `phase13_k3like_48b_posttrain/REVIEW_ANSWERS_PP_CP_2026-09-04.md` and the design note `phase13_k3like_48b_posttrain/PP_DESIGN_WORKFLOW_2026-09-07.en.md` (logbook); the body carries what the branch does and the evidence.
 
 TODO before pasting: upload svg-1 `pp_attnres_dependencies.svg` and svg-2 `pp_stage_grid.svg` (both in this folder) by dragging them into the PR comment box, then replace the two `UPLOAD-SVG-N` placeholders below with the URLs GitHub returns. Cross-repo raw SVG links do not render (camo blocks them), so the files have to be uploaded, or the two figure lines dropped.
@@ -43,6 +45,44 @@ Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, s
 - What this replaced: the reviewed version carried the same protocol in a 1228-line adapter that wrapped `forward_one_chunk`, `backward_one_chunk` and `step`, kept a thread-local micro-batch id, and bridged the same-rank gradient path with a tensor grad hook and an autograd Function. The subclass implements it once, on the stage's own methods, in 388 lines; the adapter's numerics are reproduced to within one bf16 rounding (table below).
 
 ### Results
+
+Loss and total gradient norm, 1 GPU vs 2-GPU pipeline, five steps (the format of the DSV3 MTP pipeline table): `pp_runtime_client` (`464421e13`), `kimi_k3_debugmodel` (33 layers), one seed checkpoint, 512 tokens per step in two 256-token micro-batches, `--debug.seed 42 --debug.deterministic`, 1F1B with 2 micro-batches, the delta transport, values as printed by the trainer.
+
+```
+COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 512 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+torchrun --nproc_per_node=1 $COMMON --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
+cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 5 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
+cell dp1 1
+cell pp2 2 --parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 2
+```
+
+The debug config trains in bf16 end to end (`training.dtype="bfloat16"`: bf16 parameters, gradients and Adam states; torchtitan's default is float32):
+
+| step | loss dp1 | loss pp2 | rel diff | grad norm dp1 | grad norm pp2 | rel diff |
+|---|---|---|---|---|---|---|
+| 1 | 12.42445 | 12.42445 | 0 | 31.875 | 31.75 | 3.9e-3 |
+| 2 | 11.33692 | 11.34505 | 7.2e-4 | 24.375 | 24.375 | 0 |
+| 3 | 9.22832 | 9.48903 | 2.8e-2 | 16.5 | 17.875 | 8.3e-2 |
+| 4 | 8.59245 | 7.85436 | 8.6e-2 | 14.375 | 14.9375 | 3.9e-2 |
+| 5 | 6.51366 | 6.84844 | 5.1e-2 | 9.375 | 10.125 | 8.0e-2 |
+
+Same protocol with `--training.dtype float32` (float32 parameters, gradients and Adam states; the 33-layer model does not fit them on a 16 GB GPU, so this row is a 9-layer alias of the flavor, blocks of 12, one partial block on the wire):
+
+| step | loss dp1 | loss pp2 | rel diff | grad norm dp1 | grad norm pp2 | rel diff |
+|---|---|---|---|---|---|---|
+| 1 | 12.52069 | 12.52069 | 0 | 14.9514 | 14.9498 | 1.1e-4 |
+| 2 | 10.98197 | 10.98491 | 2.7e-4 | 11.1756 | 11.3731 | 1.8e-2 |
+| 3 | 9.66179 | 9.67821 | 1.7e-3 | 10.1811 | 10.0973 | 8.2e-3 |
+| 4 | 8.40848 | 8.28552 | 1.5e-2 | 9.2338 | 9.2838 | 5.4e-3 |
+| 5 | 6.17097 | 6.16612 | 7.9e-4 | 8.1669 | 8.2551 | 1.1e-2 |
+
+Step 1: the loss is bitwise on both rows; the total norm differs by one bf16 ulp on the bf16 row (it is reduced over the two stages in the flavor's dtype) and by 1e-4 in float32.
+
+Steps 2-5 move by percents on both rows, and that is not the pipeline's: the same dp1 cell on two fresh compile caches is bitwise for five steps, pp2 twice is bitwise, and the step-1 per-parameter gradients (13-layer alias, float32, 432 tensors) put the origin inside one stage: `lm_head`, the final norms and the last layer's MoE and output projection are bitwise, the first non-identical tensors are the query path of the last attention layer at 1e-7 (its dO, K, V are bitwise), and the difference grows by three to five times per layer walking down the backward with no jump at the stage boundary (median 2.2e-4, max 4.7e-3 over the 410 non-identical tensors, sign flips 0.131% of 768M elements, 88% of them below 1e-2 of their tensor's rms). Adam's first update is `lr * sign(g)`, so the elements whose sign that flips become the step-2 spread, in float32 as in bf16.
+
+Dumps, scripts and the per-layer table: `phase13_k3like_48b_posttrain/PP_NUMERICS_4488STYLE_2026-09-08.md`.
+
+The pp x vp matrix below was measured on the previous head `pp_review3` (`0e7cc5ea1`, 4096 tokens per step, 8 micro-batches); the model code is the same on the client branch, the transport plumbing moved into the runtime.
 
 `kimi_k3_debugmodel` is 33 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: two blocks of 12 and a partial block of 9 (33 = 2 x 12 + 9, the same tail block as 93 = 7 x 12 + 9), the stack ending on two adjacent MLA layers, and 35 units with the embedding and the head, which no pipeline shape divides. The KDA kernels are Attention Gym's at the pre-merge recipe checkout `7c83f6c`; on the RTX 5060 Ti (SM120) they run with the SM100/SM103 guard in `kda.py` lifted locally, a patch not on the branch.
 
