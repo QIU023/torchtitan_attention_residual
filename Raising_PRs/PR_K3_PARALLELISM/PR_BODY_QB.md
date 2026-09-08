@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-PR 4412 (draft, head `k3_qb` = `3c9cef31a`, the pre-rebase content; the GitHub title still carries the "[DO NOT review, pending EP PR merging]" prefix). The content to raise is `qb_review3` = `0e52d7b46`: the two QB commits plus the registration-comment/counter fix, on upstream/main `f6b9152e9` (#4505, 2026-09-08); clean cherry-pick; QB unit tests 14/14 in venv_bfx9 (the tip needs `torch_remat`, installed). `qb_review2` (`d0d75fa8b` on `aecbb8199`) and `qb_release` (`a4658eefe`) are superseded. Evidence and the probe scripts: `phase13_k3like_48b_posttrain/QB_EVIDENCE_2026-09-08.md`, `matrix_scripts/qb_probe/`. Raising is the user's: force-push `qb_review3` to `k3_qb`, drop the title prefix, undraft, paste the body below.
+PR 4412 (draft, head `k3_qb` = `3c9cef31a`, the pre-rebase content; the GitHub title still carries the "[DO NOT review, pending EP PR merging]" prefix). The content to raise is `qb_review3` = `db65fc9f2`: the two QB commits plus the registration-comment/counter fix, on upstream/main `f6b9152e9` (#4505, 2026-09-08); clean cherry-pick; QB unit tests 14/14 in venv_bfx9 (the tip needs `torch_remat`, installed). `qb_review2` (`d0d75fa8b` on `aecbb8199`) and `qb_release` (`a4658eefe`) are superseded. Evidence and the probe scripts: `phase13_k3like_48b_posttrain/QB_EVIDENCE_2026-09-08.md`, `matrix_scripts/qb_probe/`. Raising is the user's: force-push `qb_review3` to `k3_qb`, drop the title prefix, undraft, paste the body below.
 
 --- PASTE BEGIN ---
 

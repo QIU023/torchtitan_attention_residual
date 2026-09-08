@@ -58,7 +58,7 @@ Scripts: `maintip_smoke.sh`, `venv_neutrality.sh`.
 
 ## 2026-09-08: QB moved to the main tip
 
-`qb_review3` = `0e52d7b46`: the two QB commits plus a comment/counter fix on upstream/main `f6b9152e9` (#4505).
+`qb_review3` = `db65fc9f2`: the two QB commits plus a comment/counter fix on upstream/main `f6b9152e9` (#4505).
 Clean cherry-pick; QB unit tests 14/14 in `venv_bfx9` after installing the tip's new `torch_remat` dependency
 (pyproject pins a meta-pytorch/remat commit; the four runtime tests import it). The "last runnable commit
 before the gate" framing above is obsolete: the tip runs in venv_bfx9. Matrix and load-balance evidence on
