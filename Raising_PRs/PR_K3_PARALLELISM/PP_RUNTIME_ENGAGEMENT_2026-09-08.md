@@ -37,3 +37,21 @@ Use the note's sections 1-6 in order (outline in its section 7, 25 minutes). The
 ## 5. The client branch
 
 `pp_runtime_client` on the fork (`464421e13`): #4312's 17 commits rebased onto #4486's head (`713a6bbb6` = main `2af775ea9` + its two commits) plus one commit -- `pipeline_kimi_k3` returns the `PipelineResult` with an `AttnResPipelineRuntime` (advisory micro-batch tag on the kwargs, drained-store check at step end), `pipeline_llm` keeps the `stage_class` hook next to `stage_args_factory` (9 lines in the core file). Unit tests 21 (ours and #4486's). Debug model, one seed checkpoint, `partial_dtensor`, 3 steps: dp1 12.41853 / 7.64136, pp2 (8 micro-batches, delta transport) 12.41853 / 7.63540 -- step 1 bitwise, the store drained every step. To move the PR head: `git push origin pp_runtime_client:k3_pp_text --force-with-lease` (the user's action) after #4486's shape settles; rebase again when #4486 or #4488 (`stage_metadata_fn`) moves.
+
+## 6. On #4312: replace the attachment with a rendered document (post this comment)
+
+The 09-07 design note went out as a file attachment (`user-attachments/files/...md`): GitHub serves it as a raw text file, its relative image links do not resolve, so the reader saw no figures. The rendered version lives in the public logbook, and the figures below are absolute links that render inline.
+
+--- PASTE BEGIN ---
+
+@tianyu-l the design note I attached on 09-07 rendered as raw text without its figures; the rendered version is here: https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/PP_RUNTIME_DESIGN_NOTE_2026-09-08.en.md (rewritten against #4486's runtime, five figures, a 25-minute outline at the end for the talk). The three pictures that carry the argument:
+
+![The stack grows across stages, partial blocks ride the wire, only the head stage aggregates](https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/main/phase13_k3like_48b_posttrain/figures/png/pp_attnres_dependencies.png)
+
+![Two gradient routes: the pipeline's own backward P2P across ranks, a store slot within a rank](https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/main/phase13_k3like_48b_posttrain/figures/png/pp_dual_gradient_bridge_v2.png)
+
+![torch's chain protocol against the multi-consumer edge, and where each of the five suggestions bites](https://raw.githubusercontent.com/QIU023/torchtitan_attention_residual/main/phase13_k3like_48b_posttrain/figures/png/pp_protocol_gap.png)
+
+In #4486's terms: Block AttnRes is a second client of a model-owned pipeline runtime, with per-micro-batch ACTIVATIONS shared across stages where MTP shares a PARAMETER. `pp_runtime_client` on my fork is this PR rebased onto #4486 with the K3 entry returning a `PipelineResult` and an `AttnResPipelineRuntime` (drained-store check at step end); dp1 and pp2 read the same step-1 loss bitwise from one seed checkpoint. Section 2 of the note maps the lifecycle onto the hooks: the stage/rank map and the per-micro-batch hook are there, the store, the routing table, a micro-batch-end callback and the in-schedule gradient merge are not, and `prepare_microbatch` needs the micro-batch index (a counter in the runtime drifts, the metadata-inference pass calls it too). Happy to walk through it whenever suits.
+
+--- PASTE END ---
