@@ -1,0 +1,64 @@
+--- a/torch/distributed/pipelining/_utils.py	2026-09-08 21:10:20.053740811 +0000
++++ b/torch/distributed/pipelining/_utils.py
+@@ -76,9 +76,13 @@
+             raise PipeliningMetadataError(
+                 "Expected plain tensor, got DTensor. Use _DTensorMeta.from_dtensor instead."
+             )
++        # The wire format is contiguous: senders pass ``.contiguous()`` tensors
++        # and receivers allocate dense buffers, so the recorded stride is the
++        # contiguous one whatever the layout of the tensor seen here (a stage
++        # whose forward starts with a view op hands back strided gradients).
+         return _TensorMeta(
+             shape=tensor.shape,
+-            stride=tensor.stride(),
++            stride=_contiguous_strides(tensor.shape),
+             dtype=tensor.dtype,
+             requires_grad=tensor.requires_grad,
+         )
+@@ -307,6 +311,11 @@
+     ]  # Stage i's input_grads → Stage i-1's output_grads
+ 
+ 
++
++def _contiguous_strides(shape: torch.Size | tuple[int, ...]) -> tuple[int, ...]:
++    """Strides of a contiguous tensor of ``shape``."""
++    return torch.empty(tuple(shape), device="meta").stride()
++
+ def _make_tensor_from_meta(
+     meta: _TensorMeta,
+     device: torch.device | str,
+@@ -320,12 +329,8 @@
+     Returns:
+         Empty tensor preserving the exact memory layout.
+     """
+-    return torch.empty_strided(
+-        size=meta.shape,
+-        stride=meta.stride,
+-        dtype=meta.dtype,
+-        device=device,
+-    )
++    # Dense: P2P requires it, and the sender ships a contiguous tensor.
++    return torch.empty(meta.shape, dtype=meta.dtype, device=device)
+ 
+ 
+ def _derive_grad_metas(
+--- a/torch/distributed/pipelining/stage.py	2026-09-08 21:10:20.053740811 +0000
++++ b/torch/distributed/pipelining/stage.py
+@@ -595,7 +595,7 @@
+                 if dst is None:
+                     continue
+                 # Extract local tensor if DTensor
+-                send_tensor = to_local_if_dtensor(out, detach=True)
++                send_tensor = to_local_if_dtensor(out, detach=True).contiguous()
+                 logger.debug(
+                     "%s Sending tensor to Stage %s: %s",
+                     self.log_prefix,
+@@ -654,6 +654,8 @@
+         for idx, (grad, grad_recv_stage) in enumerate(
+             zip(grads_input, self.grad_send_info, strict=True)
+         ):
++            if isinstance(grad, torch.Tensor):
++                grad = grad.contiguous()
+             if grad_recv_stage is None:
+                 if grad is not None:
+                     raise PipeliningMetadataError(
