@@ -58,6 +58,16 @@ Training loss, the same runs (the LR schedule spans the 30 steps):
 
 The last two rows are the dp1 pair on a second fresh cache: step 1 is bitwise across caches, steps 3 / 10 / 30 move by 1.5 / 0.8 / 21 percent (sign step) and 0.2 / 5.6 / 15 percent (quantile balancing) from the autotune picks alone, while the load windows reproduce within 0.1 (sign step 1.32 / 1.41 / 1.39, quantile balancing 0.94 / 0.91 / 0.63) -- the load table is the reproducible quantity, the late loss is not. Step 1 is bitwise on every pair (the bias is first written at the end of step 1). From step 2 the two hooks route the same tokens differently -- 96 percent of the tokens' routed expert sets differ at step 2 and 99.7 percent at step 10, on every configuration -- so the later loss values are two different runs and are shown only as "the flavor still trains", not compared. Step 1 differs between dp2 and dp2 x ep2 by 2e-3 because the expert kernels round differently, on both hooks alike.
 
+Loss and total gradient norm, maximum relative difference over steps 1-5, from the same runs (the format of the DSV3 MTP pipeline table); the expert-parallel pair moves as much under either hook and no more than the same cell on two caches, and its step-1 loss pair is the same with and without the hook (the bias is 0 at step 1), so it is expert parallelism's, not the hook's:
+
+| pair | hook | step-1 loss A / B | max rel loss diff, steps 1-5 | max rel grad-norm diff, steps 1-5 |
+|---|---|---|---|---|
+| dp2 vs dp2 x ep2 | quantile balancing | 12.52560 / 12.52372 | 3.0e-2 | 2.4e-1 |
+| dp2 vs dp2 x ep2 | sign-step (main) | 12.52560 / 12.52372 | 3.2e-2 | 1.0e-1 |
+| dp1 vs dp1, other cache | quantile balancing | 12.51887 / 12.51887 | 1.2e-2 | 4.8e-2 |
+| dp1 vs dp1, other cache | sign-step (main) | 12.51887 / 12.51887 | 7.4e-2 | 2.4e-1 |
+
+
 ### Changed files
 
     torchtitan/components/

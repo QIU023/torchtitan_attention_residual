@@ -98,3 +98,21 @@ convergence rate; the PR's claim is the mechanism and the measured direction.
 - Results section: step 1 bitwise per pair; the load table above as the evidence; the routing census as the
   explanation of the step-3/10 loss gaps; the loss rows with a second-cache floor row; the frozen-router rows.
 - Design section: the registration statement corrected (`aff7abb` in the logbook body).
+
+
+## 6. The five-step loss / grad-norm format (2026-09-08, evening)
+
+The DSV3 MTP pipeline PR reports loss and total gradient norm as relative differences per step, 1 GPU vs PP, max over 5 steps. For quantile balancing the hook-on/hook-off pair is not that kind of comparison (the routing differs by design from step 2), but the parallelism pair under each hook is. From the 30-step runs of section 3 (`mx3_qbtip_*`, tip tree, 8192 tokens per step, `partial_dtensor`), per step:
+
+| step | dp2 QB | dp2 x ep2 QB | rel | grad norm | | rel | dp2 sign | dp2 x ep2 sign | rel | grad norm | | rel |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 12.52560 | 12.52372 | 1.5e-4 | 13.8125 | 13.8125 | 0 | 12.52560 | 12.52372 | 1.5e-4 | 13.8125 | 13.8125 | 0 |
+| 2 | 9.37802 | 9.29753 | 8.6e-3 | 15.9375 | 13.8125 | 1.3e-1 | 9.23186 | 9.21862 | 1.4e-3 | 14.75 | 15.1875 | 3.0e-2 |
+| 3 | 7.35559 | 7.28418 | 9.7e-3 | 11.5 | 8.75 | 2.4e-1 | 7.29986 | 7.50218 | 2.8e-2 | 8.6875 | 9.5625 | 1.0e-1 |
+| 4 | 6.25070 | 6.43894 | 3.0e-2 | 8.375 | 8.0625 | 3.7e-2 | 6.23767 | 6.36916 | 2.1e-2 | 7.8438 | 7.5938 | 3.2e-2 |
+| 5 | 5.75054 | 5.65299 | 1.7e-2 | 6.9062 | 8.4375 | 2.2e-1 | 6.20885 | 6.01047 | 3.2e-2 | 7.875 | 7.7188 | 2.0e-2 |
+| 10 | 3.05933 | 2.94781 | 3.6e-2 | 3.3906 | 2.1562 | 3.6e-1 | 3.02123 | 3.00328 | 5.9e-3 | 2.8438 | 2.375 | 1.6e-1 |
+
+Floors, the same dp1 cell on two fresh caches (`mx3_qbtip_dp1_*` vs `mx3_qbtip2_dp1_*`): QB step 5 loss 1.2e-2 / grad norm 3.9e-2, step 10 5.6e-2 / 4.3e-1; sign step step 5 3.2e-2 / 2.4e-1, step 10 7.8e-3 / 5.4e-1. So on this tree the run-to-run floor after step 1 is the size of the EP pair's difference, which is why the PR body states the parallelism claim on the loads and the all-gathered bias (identical on every rank), and shows this table only with the floor rows next to it. Note the contrast with the pipeline client tree of the same day (`PP_NUMERICS_4488STYLE_2026-09-08.md`, 512 tokens per step): there dp1 twice is bitwise for 5 steps. The difference is the tree and the batch (32 micro-batches of 256 against 2), not the protocol; which kernel choice moves the tip tree between caches under `--debug.deterministic` is not located.
+
+The step-1 loss pair dp2 vs dp2 x ep2 (12.52560 vs 12.52372, 1.5e-4) is the same under both hooks and does not depend on the bias (0 at step 1): expert parallelism's own step-1 difference on this flavor, the same one the merged EP PR carried.
