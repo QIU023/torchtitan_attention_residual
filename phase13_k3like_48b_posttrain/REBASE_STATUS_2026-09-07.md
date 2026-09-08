@@ -54,3 +54,12 @@ The torch upgrade is bitwise neutral on the same tree (`mx3_venvneutral_0907_061
 about 1.1e-2 on main tip is #4484's `RouterLinear` (router forward output kept fp32, backward in fp32
 through bf16x9 tensor-core matmuls), an upstream numerics change every K3 table after it will carry.
 Scripts: `maintip_smoke.sh`, `venv_neutrality.sh`.
+
+
+## 2026-09-08: QB moved to the main tip
+
+`qb_review3` = `0e52d7b46`: the two QB commits plus a comment/counter fix on upstream/main `f6b9152e9` (#4505).
+Clean cherry-pick; QB unit tests 14/14 in `venv_bfx9` after installing the tip's new `torch_remat` dependency
+(pyproject pins a meta-pytorch/remat commit; the four runtime tests import it). The "last runnable commit
+before the gate" framing above is obsolete: the tip runs in venv_bfx9. Matrix and load-balance evidence on
+the tip: `QB_EVIDENCE_2026-09-08.md`.
