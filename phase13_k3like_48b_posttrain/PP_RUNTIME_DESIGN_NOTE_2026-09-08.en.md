@@ -49,7 +49,7 @@ Figure 1. 12 layers, blocks of 4, 4 stages: the payload per hop, and the two tra
 
 | adapter step (per micro-batch $m$, rank $R$, virtual stage $v$) | what it needs | #4486 hook | covered? |
 | --- | --- | --- | --- |
-| key the store by the micro-batch | the schedule's chunk id, not tensor identity (NCCL hands out fresh receive buffers) | `prepare_microbatch(inputs, kwargs)` can inject `mb_id` into the kwargs every stage receives | yes, once the hook runs per micro-batch (it does: it is called while `kwarg_mbs` is built) |
+| key the store by the micro-batch | the schedule's chunk id, not tensor identity (NCCL hands out fresh receive buffers) | `prepare_microbatch(inputs, kwargs)` runs per micro-batch while `kwarg_mbs` is built and can tag the kwargs | not as it stands: the hook carries no micro-batch index and no step boundary, and the trainer's metadata-inference pass calls it too, so a runtime counter drifts from the schedule's chunk id (measured: 8 at chunk 0 of step 1); the hook should receive the index, or the step start should be a hook |
 | put: keep this stage's commits for the rank's later virtual stages | rank-local storage keyed by (m, stage) | none; today the `PipelineStage` subclass owns the store | no |
 | read: assemble the stack from the store plus the received delta | the routing table (what the previous rank sent, what this rank holds) | `PipelineResult.stage_indices` and the stage -> rank map are the inputs of that table | partly: the map exists, the table and the assembly do not |
 | send only what the next rank lacks | the same table on the sender | as above | partly |
@@ -59,7 +59,7 @@ Figure 1. 12 layers, blocks of 4, 4 stages: the payload per hop, and the two tra
 | across ranks: the gradient of the delta rides the pipeline's own backward P2P | nothing new | the chain protocol | yes |
 | count the expected deposits so a lost gradient raises | the table | none | no |
 
-So #4486 covers the key (suggestion 3 below) and the stage/rank map, and leaves the store, the routing table, the per-micro-batch release and the in-schedule gradient merge to the stage. Those four are the multi-consumer edge itself; they cannot be expressed as a parameter placement, and they cannot wait for a step-end hook.
+So #4486 nearly covers the key (suggestion 3 below: the hook needs the micro-batch index or a step-start hook) and covers the stage/rank map, and leaves the store, the routing table, the per-micro-batch release and the in-schedule gradient merge to the stage. Those four are the multi-consumer edge itself; they cannot be expressed as a parameter placement, and they cannot wait for a step-end hook.
 
 ## 3. What each problem forced (the design of #4312, condensed)
 
@@ -98,7 +98,7 @@ The stage is a `PipelineStage` subclass: `forward_one_chunk` assembles the stack
 
 1. **Multi-consumer stage outputs.** The library owns the routing table (`BlockLayoutTables` is that table, computed outside it today) and decides per hop what travels and what is kept; the chain relay with a rank store is one implementation, bounded to the last $P-1$ stages' commits. `PipelineResult.stage_indices` plus the stage -> rank map are its inputs; a `PipelineRuntime` is a natural owner of the table and the store, if the runtime is given a per-micro-batch view.
 2. **Rank-local delivery for same-rank consumers.** The schedule knows `stage_index_to_group_rank`; such an output can be handed over by reference and its gradient merged before the producer's backward, which the schedule already orders last on the rank (route B without a hook; the subclass proves the ordering is enough). This is the one piece that must live at schedule or stage level: a step-end `finalize_gradients` is too late.
-3. **Chunk id and lifecycle for the submodule.** #4486's `prepare_microbatch` gives the id; what is missing is a micro-batch-end callback (release) next to the step-end one. Removes the two wrappers and enables per-micro-batch release.
+3. **Chunk id and lifecycle for the submodule.** #4486's `prepare_microbatch` is the right place but carries no micro-batch index and no step boundary (the metadata-inference pass calls it as well, so a counter in the runtime drifts); pass the index, and add a micro-batch-end callback (release) next to the step-end one. Removes the two wrappers and enables per-micro-batch release.
 4. **Dense backward P2P buffers.** `torch.empty(shape)` receive and `.contiguous()` before send; stride-sized buffers fail when a stage starts with a view op (`cat` / `stack` / slice on its input).
 5. **Forward-only and no-gradient contracts.** `backward_one_chunk` under `has_backward=False` as part of the subclass contract; stage outputs with `requires_grad=False` get `None` rather than an assumed gradient.
 
