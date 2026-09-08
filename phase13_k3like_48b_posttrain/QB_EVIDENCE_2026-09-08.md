@@ -52,6 +52,10 @@ batch). Sign step is core's rule with `load_balance_coeff` 1e-3, the flavor's de
 | dp2 x ep2 | sign step | 1.42 | 1.48 | 1.27 | 4.6 | 0.03 | [-0.042, 0.016] |
 | dp2 x ep2 | quantile balancing | 1.14 | 0.97 | 0.74 | 3.1 | 0.08 | [-0.183, 0.273] |
 
+Second fresh cache, dp1 pair (`mx3_qbtip2_*`): sign step cv 1.32 / 1.41 / 1.39, quantile balancing 0.94 / 0.91 / 0.63
+over the three windows -- the load statistics reproduce across caches within 0.1, while the step-30 losses of
+the same cells move by 21 and 15 percent (1.678 vs 1.320, 1.400 vs 1.191).
+
 Under the sign step the imbalance grows from cv 1.07 at step 1 to about 1.4 and stays there (the largest
 expert takes five times the mean, the smallest a few percent of it: the rule moves the bias by 1e-3 per
 step against score gaps of order 1e-1). Quantile balancing brings it to 0.6-0.7 by steps 21-30 and is still
