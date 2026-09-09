@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Tensor parallelism with sequence parallel, stacked on the multimodal spmd fix
 
-For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7), re-pointed at fork branch `tp_sp_on_4527` = `1bb6cb9a7` (6 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`). The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. Numbers below: this branch on the 5060 Ti box, 10 steps (`mx3_tp4527_*`, 2026-09-09); the A100 run of `matrix_scripts/tp_a100/` gives the 100-step and tp4 rows. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
+For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7), re-pointed at fork branch `tp_sp_on_4527` = `566977326` (7 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`). The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. Numbers below: this branch on the 5060 Ti box, 10 steps (`mx3_tp4527_*`, 2026-09-09); the A100 run of `matrix_scripts/tp_a100/` gives the 100-step and tp4 rows. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
 
 --- PASTE BEGIN ---
 
@@ -8,7 +8,7 @@ For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7),
 
 - #4527 (the multimodal spmd annotations and the KDA local map; this PR's base)
 
-Stacked on #4527, which carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the six commits after `d1e3979c7`; the same delta rebased onto #4500 is on the fork as `tp_sp_on_4500`). One commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires (drop it if the SM100 gate is deliberate); one makes `RouterGateLinear` run on the local shards when its weight or input is a DTensor, since `aten.mm.dtype` has no DTensor sharding strategy and the gate is replicated on tp.
+Stacked on #4527, which carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the seven commits after `d1e3979c7`; the same delta rebased onto #4500 is on the fork as `tp_sp_on_4500`). One commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires (drop it if the SM100 gate is deliberate); one makes `RouterGateLinear` run on the local shards when its weight or input is a DTensor, since `aten.mm.dtype` has no DTensor sharding strategy and the gate is replicated on tp.
 
 ## Summary
 
@@ -18,6 +18,7 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 - Sequence parallel carries the tp-axis `Shard(0)` of the token stream between modules: norms on the shard, the attention boundaries gather, the rowwise outputs reduce-scatter (the llama3 template); the MoE internals take and return the shard (`set_moe_sharding_config(enable_sp=True)`).
 - The multimodal splice under SP indexes global token positions, so it gathers the shard for the scatter and re-shards after; under spmd_types the splice learns the tp group from `parallelize` (`_sp_group`).
 - `clip_grad_norm_` groups parameters by mesh, on the dense and the EP path: undeclared modules under TP hold gradients on the fsdp-only mesh while the declared ones sit on (fsdp, tp).
+- Under EP the routed experts are whole on every tp rank, so `routed_down` follows the stream's rule (invariant without SP, replicated with it) instead of the replicated declaration the TP-sharded experts need; the 36-cell matrix caught the replicated version by its step-1 grad norm (+37% at tp=2, +131% at tp=4, SP off, spmd_types).
 
 ## Implementation
 
@@ -26,7 +27,7 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 ## Limitations
 
 - TP x CP is not exercised (CP is #4500's; the two are not combined).
-- EP x TP is measured at dp2 x ep2 x tp2 only (eight GPUs here).
+- EP x TP is measured at dp2 x ep2 with tp=2 and tp=4 (eight GPUs here); larger degrees are not.
 - The tower runs whole on every rank under both backends (invariant on tp).
 
 ## Tests
@@ -39,23 +40,58 @@ Result: `test_kimi_k3_sp_splice.py` 1 passed (this box); `gpu/test_kda_attention
 
 ## Results
 
-Same protocol as #4500: `seed=42`, deterministic, 256 tokens per step, one seed checkpoint, tp=1 on the parent commit as the reference, percentages relative to it; 10 steps here (the 100-step run follows on A100). The debug config trains in bf16 end to end.
+Same protocol as #4500: `seed=42`, deterministic, one seed checkpoint per stream, tp=1 on the parent commit as the reference, percentages relative to it, loss and grad norm side by side; 10 steps on this box (the 100-step run follows on A100), 36 cells: dp1, dp2 and dp2 x ep2 streams x tp=1/2/4 x SP on/off x both SPMD backends, with the parent tp=1 cell of each stream. The debug config trains in bf16 end to end.
 
-| Step | tp=1 parent loss | tp=1 parent, spmd_types | tp=1 this branch | tp=1 this branch, spmd_types | tp=2 SP on (diff) | tp=2 SP on, spmd_types (diff) | tp=2 SP off (diff) | tp=2 SP off, spmd_types (diff) | tp=4 SP on (diff) | tp=4 SP off (diff) |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | `12.600330` | bitwise | bitwise | bitwise | `12.603320` (`0.024%`) | `12.603320` (`0.024%`) | `12.633610` (`0.26%`) | `12.607430` (`0.056%`) | `12.641470` (`0.33%`) | `12.636180` (`0.29%`) |
-| 3 | `9.759030` | bitwise | bitwise | bitwise | `9.782700` (`0.24%`) | `9.799900` (`0.42%`) | `10.063880` (`3.1%`) | `9.755270` (`0.039%`) | `9.676980` (`0.84%`) | `10.043420` (`2.9%`) |
-| 10 | `4.309360` | bitwise | bitwise | bitwise | `4.162170` (`3.4%`) | `4.155300` (`3.6%`) | `4.614790` (`7.1%`) | `4.133930` (`4.1%`) | `4.068740` (`5.6%`) | `4.127090` (`4.2%`) |
+dp1 stream, 256 tokens per step:
 
-Grad norm, same runs: tp=1 rows bitwise (`25.625`, `19.875`, `4.75`); tp=2 SP on `25.625` (`0%`) / `20.875` (`5.0%`) / `4.5625` (`3.9%`) on partial_dtensor and `25.625` / `21.125` / `4.3438` on spmd_types; tp=2 SP off `25.375` (`0.98%`) / `23.625` / `6.5938`; tp=4 SP on `25.0` (`2.4%`) / `22.25` / `4.3438`.
+| cell | loss 1 | grad norm 1 | loss 3 | grad norm 3 | loss 10 | grad norm 10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| tp=1, parent, partial_dtensor | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
+| tp=1, this branch, partial_dtensor | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
+| tp=2 SP on, partial_dtensor | `12.603320` (`0.0237%`) | `25.625` (bitwise) | `9.905730` (`1.5%`) | `22.75` (`14.5%`) | `4.208350` (`2.34%`) | `5.1562` (`8.55%`) |
+| tp=2 SP off, partial_dtensor | `12.633610` (`0.264%`) | `25.375` (`0.976%`) | `10.063880` (`3.12%`) | `23.625` (`18.9%`) | `4.614790` (`7.09%`) | `6.5938` (`38.8%`) |
+| tp=4 SP on, partial_dtensor | `12.641470` (`0.326%`) | `25` (`2.44%`) | `9.676980` (`0.841%`) | `22.25` (`11.9%`) | `4.068740` (`5.58%`) | `4.3438` (`8.55%`) |
+| tp=4 SP off, partial_dtensor | `12.636180` (`0.285%`) | `25.875` (`0.976%`) | `10.043420` (`2.91%`) | `22.625` (`13.8%`) | `4.127090` (`4.23%`) | `4.5938` (`3.29%`) |
+| tp=1, parent, spmd_types | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
+| tp=1, this branch, spmd_types | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
+| tp=2 SP on, spmd_types | `12.603320` (`0.0237%`) | `25.625` (bitwise) | `9.799900` (`0.419%`) | `21.125` (`6.29%`) | `4.155300` (`3.58%`) | `4.3438` (`8.55%`) |
+| tp=2 SP off, spmd_types | `12.607430` (`0.0563%`) | `25.5` (`0.488%`) | `9.755270` (`0.0385%`) | `27` (`35.8%`) | `4.133930` (`4.07%`) | `4.4062` (`7.24%`) |
+| tp=4 SP on, spmd_types | `12.641470` (`0.326%`) | `25` (`2.44%`) | `9.592080` (`1.71%`) | `21.25` (`6.92%`) | `4.094390` (`4.99%`) | `4.3125` (`9.21%`) |
+| tp=4 SP off, spmd_types | `12.589200` (`0.0883%`) | `26.625` (`3.9%`) | `9.590550` (`1.73%`) | `21.625` (`8.81%`) | `4.570760` (`6.07%`) | `5.7188` (`20.4%`) |
 
-The data-parallel stream (a second dp rank reads other samples, so these rows compare with dp2 only), 512 tokens per step:
+dp2 stream, 512 tokens per step (a second dp rank reads other samples; compare within the stream):
 
-| Step | dp2 | dp2 x tp2 (diff) | dp2 x tp2, spmd_types (diff) | dp2 x ep2 (diff) | dp2 x ep2 x tp2 (diff) |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | `12.427210` | `12.446900` (`0.16%`) | `12.446900` (`0.16%`) | `12.427330` (`0.001%`) | `12.467330` (`0.32%`) |
-| 3 | `9.635420` | `9.419580` (`2.2%`) | `9.513450` (`1.3%`) | `9.659570` (`0.25%`) | `9.538430` (`1.0%`) |
-| 10 | `4.026080` | `4.004540` (`0.54%`) | `3.954370` (`1.8%`) | `4.056090` (`0.75%`) | `3.849490` (`4.4%`) |
+| cell | loss 1 | grad norm 1 | loss 3 | grad norm 3 | loss 10 | grad norm 10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| tp=1, parent, partial_dtensor | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
+| tp=1, this branch, partial_dtensor | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
+| tp=2 SP on, partial_dtensor | `12.446900` (`0.158%`) | `23.75` (`1.6%`) | `9.419580` (`2.24%`) | `19.625` (`5.99%`) | `4.004540` (`0.535%`) | `4.25` (`1.49%`) |
+| tp=2 SP off, partial_dtensor | `12.489630` (`0.502%`) | `23.625` (`1.07%`) | `9.829360` (`2.01%`) | `15.1875` (`27.2%`) | `4.104440` (`1.95%`) | `4.5625` (`8.96%`) |
+| tp=4 SP on, partial_dtensor | `12.459320` (`0.258%`) | `24.25` (`3.74%`) | `9.640990` (`0.0578%`) | `20.625` (`1.2%`) | `3.921070` (`2.61%`) | `3.5938` (`14.2%`) |
+| tp=4 SP off, partial_dtensor | `12.441040` (`0.111%`) | `23.25` (`0.535%`) | `9.860660` (`2.34%`) | `18.5` (`11.4%`) | `4.218880` (`4.79%`) | `5.1562` (`23.1%`) |
+| tp=1, parent, spmd_types | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
+| tp=1, this branch, spmd_types | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
+| tp=2 SP on, spmd_types | `12.446900` (`0.158%`) | `23.75` (`1.6%`) | `9.513450` (`1.27%`) | `18.25` (`12.6%`) | `3.954370` (`1.78%`) | `3.6094` (`13.8%`) |
+| tp=2 SP off, spmd_types | `12.480910` (`0.432%`) | `23.875` (`2.14%`) | `9.637730` (`0.024%`) | `18` (`13.8%`) | `4.043920` (`0.443%`) | `4.9062` (`17.2%`) |
+| tp=4 SP on, spmd_types | `12.459320` (`0.258%`) | `24.25` (`3.74%`) | `9.743860` (`1.13%`) | `21.125` (`1.2%`) | `4.014260` (`0.294%`) | `4.25` (`1.49%`) |
+| tp=4 SP off, spmd_types | `12.472210` (`0.362%`) | `23.5` (`0.535%`) | `9.736010` (`1.04%`) | `17.625` (`15.6%`) | `4.228030` (`5.02%`) | `4.4688` (`6.72%`) |
+
+dp2 x ep2 stream, 512 tokens per step:
+
+| cell | loss 1 | grad norm 1 | loss 3 | grad norm 3 | loss 10 | grad norm 10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| tp=1, parent, partial_dtensor | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
+| tp=1, this branch, partial_dtensor | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
+| tp=2 SP on, partial_dtensor | `12.467330` (`0.322%`) | `23.625` (`1.07%`) | `9.538430` (`1.25%`) | `18.5` (`12.4%`) | `3.849490` (`5.09%`) | `3.9531` (`4.17%`) |
+| tp=2 SP off, partial_dtensor | `12.446510` (`0.154%`) | `23.5` (`0.535%`) | `9.941480` (`2.92%`) | `17.375` (`17.8%`) | `4.082590` (`0.653%`) | `4.5938` (`11.4%`) |
+| tp=4 SP on, partial_dtensor | `12.413060` (`0.115%`) | `23.875` (`2.14%`) | `9.367700` (`3.02%`) | `21.25` (`0.592%`) | `3.920780` (`3.34%`) | `3.8438` (`6.82%`) |
+| tp=4 SP off, partial_dtensor | `12.446670` (`0.156%`) | `23.625` (`1.07%`) | `9.618450` (`0.426%`) | `21.75` (`2.96%`) | `3.844170` (`5.22%`) | `4.0312` (`2.27%`) |
+| tp=1, parent, spmd_types | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
+| tp=1, this branch, spmd_types | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
+| tp=2 SP on, spmd_types | `12.467330` (`0.322%`) | `23.625` (`1.07%`) | `9.394440` (`2.74%`) | `19.125` (`9.47%`) | `3.871160` (`4.56%`) | `3.7812` (`8.33%`) |
+| tp=2 SP off, spmd_types | `12.446770` (`0.156%`) | `23.625` (`1.07%`) | `9.412070` (`2.56%`) | `21.875` (`3.55%`) | `4.206590` (`3.71%`) | `5.7812` (`40.2%`) |
+| tp=4 SP on, spmd_types | `12.413060` (`0.115%`) | `23.875` (`2.14%`) | `9.434100` (`2.33%`) | `21.5` (`1.78%`) | `4.271710` (`5.32%`) | `4.6562` (`12.9%`) |
+| tp=4 SP off, spmd_types | `12.452520` (`0.203%`) | `23.625` (`1.07%`) | `9.967720` (`3.19%`) | `19.75` (`6.51%`) | `4.021300` (`0.858%`) | `4.1875` (`1.52%`) |
 
 Reading the tables: the four tp=1 rows are #4500's control, nothing changes at tp=1 on either backend; with SP on the two backends read the same step-1 loss and grad norm, at tp=2 and at dp2 x tp2. The later steps spread by percents, and that spread is this model's on this box, not TP's: upstream's llama3 debugmodel under the same protocol reads tp=2 within `0.017%` of tp=1 at every one of the 10 steps (grad norm within `0.67%`), while for K3 the two backends of one TP configuration, bitwise at step 1, are `11%` apart by step 8; dp1 with a fixed `1e-3` perturbation on its KDA projections and no parallelism is `24%` off dp1 at step 7; and the 9-layer alias in float32 compute takes tp=2 from `3e-5` at step 1 to `10%` at step 10 (float32 masters with bf16 compute: `7.5%` at step 4). #4500's own CP=2 recipes on this box read `9.6%` at step 7 and `18.7%` at step 9 (all-gather) and `12%` at step 8 (Ulysses) against its dp1, where its H100 table reads `0.15%` at step 10. The same cell twice is bitwise in every regime. So on this hardware the 10-step column measures the flavor's sensitivity, and correctness is the step-1 comparison and the float32 gradient comparison below; the A100 run will show whether the sensitivity is Blackwell-specific.
 
