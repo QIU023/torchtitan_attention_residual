@@ -21,16 +21,18 @@ Extends core LoRA with the export path and QLoRA. Three pieces: `merge_lora_stat
 
 ### Results
 
-Training loss on the rebased branch, one seed, every cell run twice and the second read (the dp1 and dp2 rows reproduce the previous base to the digit). The adapters train (loss moves) while the bases stay frozen; the packed-MXFP4 flavor starts from a different step-1 value because its bases are quantized at build.
+Training loss and total gradient norm on the rebased branch (`f092d37d9` on main `ac10ca48f`), `seed=42`, deterministic, 10 steps, the debug config's 256-token micro-batches; every cell run twice on its own compile cache and the two runs bitwise. The adapters train (loss moves) while the bases stay frozen; the packed-MXFP4 flavor starts from a different step-1 value because its bases are quantized at build. Runs on 8 x RTX 5060 Ti (SM120) with the KDA capability check widened locally so Attention Gym's Triton path runs; torchao 0.18.0.
 
-| cell | flavor | step 1 | step 3 | step 10 |
-|---|---|---|---|---|
-| dp1 | lora | 12.45603 | 11.93088 | 10.42394 |
-| dp2 | lora | 12.48369 | 11.89999 | 10.51706 |
-| dp1 | qlora_mxfp4 | 12.48328 | 12.00891 | 10.42474 |
-| dp2 | qlora_mxfp4 | 12.50176 | 12.00203 | 10.45663 |
-| dp2 x ep2 | lora | 12.48346 | 11.90808 | 10.50562 |
-| dp2 x ep2 | qlora_mxfp4 | 12.50176 | 11.99613 | 10.51754 |
+| cell | flavor | loss 1 | loss 3 | loss 10 | grad norm 1 / 3 / 10 |
+|---|---|---|---|---|---|
+| dp1 | lora | 12.48753 | 12.23086 | 11.04303 | 2.1875 / 3.1562 / 3.0938 |
+| dp1 | qlora_mxfp4 | 12.48055 | 12.38397 | 11.25097 | 2.2344 / 3.0469 / 3.0312 |
+| dp2 | lora | 12.64212 | 12.19887 | 11.24266 | 2.0625 / 3.3906 / 3.2344 |
+| dp2 | qlora_mxfp4 | 12.52119 | 12.12227 | 10.97080 | 1.9297 / 3.3438 / 3.2500 |
+| dp2 x ep2 | lora | 12.64212 | 12.23453 | 11.12248 | 2.0616 / 3.4095 / 3.3260 |
+| dp2 x ep2 | qlora_mxfp4 | 12.52119 | 12.12227 | 10.94595 | 1.9284 / 3.3448 / 3.1721 |
+
+dp2 and dp2 x ep2 read the same step-1 loss for each flavor (expert parallelism moves experts, not data); the later steps spread as every 10-step column does on this box. Tests on the rebased branch: `cpu/test_lora.py` + `kimi_k3/tests/test_qlora_experts.py` 17 passed, 2 skipped (the two NF4 tests import `torchao.dtypes.nf4tensor`, which torchao 0.18.0 no longer has at that path).
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_lora \
