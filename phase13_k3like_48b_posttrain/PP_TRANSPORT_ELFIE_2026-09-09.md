@@ -70,3 +70,9 @@ The optimizer-state fix is independent of the tree: torch's `_init_optim_state` 
 
 不改变的：K3 模型侧、adapter/store/路由表、多消费者梯度路径。opt-in 环境变量，默认关闭，老树行为不变。
 
+## 端口与单机验证（2026-09-09 深夜）
+
+`pp_review4` 现在 = `k3_pp_text`（`a3be242bf`）+ `fd7ff7400`（暖机）+ 传输隔离端口（mixin：`_NeighborP2PTransportMixin` / `_create_pipeline_transport_groups` / `_configure_neighbor_p2p_schedule`，`ParallelDims._create_pipeline_neighbor_groups`，`init_distributed` 的 `device_id` 绑定；边组按全局 rank 对键控、peer 索引按边查，覆盖 looped 调度最后 rank→首 rank 的回绕边；单测 6 过）。单机（守卫本地抬起）：暖机 dp1/pp2 五步、pp8×vp4 三步与无暖机位级一致（vp4 那次不一致是 triton 缓存抽奖，同缓存复跑一致）；传输开启：pp2 五步、pp8 纯 1F1B 三步、pp8×vp4 三步与关闭时全部位级一致。给她的英文说明：`Raising_PRs/PR_K3_PARALLELISM/PP_TRANSPORT_NOTE_FOR_ELFIE.md`。
+
+恢复测试（新树，dp1/pp2，step 2 存档后恢复重跑 3-4）：第 3 步 loss 与 grad norm 位级一致，第 4 步不一致；检查点里 1002 个参数全有 Adam 状态（32 个无状态的是 `expert_bias_E` 缓冲区），不是她在老树遇到的缺状态；逐张量比较连续跑与恢复跑的 step-3 存档：737/1034 个权重差 1e-4~1e-3（bf16 一个 ulp 量级），Adam 动量差 ~1e-7——第 3 步的更新本身不同，来源待定（复原路径的系统性差异 vs 恢复后非确定性，正在用"同一检查点恢复两次"分辨）。这一条要和她的优化器 PR 一起处理，属于 torchtitan 核心的检查点语义，不是 K3 的。
+

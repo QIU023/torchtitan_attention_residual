@@ -1,6 +1,6 @@
 # Kimi K3 pipeline parallelism on the new tree: the stage design, your transport fix on it, and the two-node test
 
-For Elfie. Everything below is on `QIU023:pp_review4`, which is PR 4312's branch (`k3_pp_text`, main after the K3 EP merge) plus three commits: the edge-communicator warm-up, your transport isolation composed onto the new stage class, and its tests.
+For Elfie. Everything below is on `QIU023:pp_review4`, which is PR 4312's branch (`k3_pp_text`, main after the K3 EP merge) plus two commits: the edge-communicator warm-up (`fd7ff7400`) and your transport isolation composed onto the new stage class with its tests.
 
 ## 1. What changed between the old tree's pipeline and PR 4312's
 
@@ -29,7 +29,7 @@ On the new tree the ordering problem does not exist (no traffic outside the sche
 ## 3. What is verified on one node (8 x RTX 5060 Ti, SM120, Attention Gym's Triton KDA path)
 
 - Warm-up: dp1 and pp2 five steps bitwise with and without it; the `kimi_k3_debugmodel_pp8_vp4` recipe (Interleaved1F1B, 8 ranks x 4 virtual stages) bitwise with and without it on one inductor cache (a second cache moves step 2 by 0.2 percent on this box, the autotune lottery, not the code).
-- Transport on: see the line appended below once the runs finish (pp2 five steps, pp8 plain 1F1B three steps, the pp8 x vp4 recipe).
+- Transport on (`TORCHTITAN_PIPELINE_NEIGHBOR_P2P=1`): pp2 five steps bitwise with the default path (`12.42445 ... 6.84844`); pp8 plain 1F1B three steps bitwise with the default path (`12.37602`, `10.62226`, `8.08259`); the pp8 x vp4 recipe three steps bitwise (`12.60052`, `10.97197`, `8.87735`). Unit tests: `tests/unit_tests/cpu/test_pipeline_neighbor_transport.py`, 6 passed.
 - Checkpoint resume on the new tree (dp1 and pp2, save at step 2, resume, re-run steps 3-4): the step-3 loss and grad norm are bitwise with the continuous run, the step-4 loss is not (`8.59245` vs `8.59860` at dp1). Every parameter has Adam state in the checkpoint (1002 of 1002; the 32 tensors without state are the `expert_bias_E` buffers), so this is not the missing-state case you hit on the old tree; what is not restored exactly is being located (learning-rate schedule, data position, or the update itself).
 
 ## 4. The ask
