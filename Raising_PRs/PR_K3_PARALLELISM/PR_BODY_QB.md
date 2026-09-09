@@ -37,11 +37,23 @@ The deterministic BF16 comparison used `seed=42`, `--debug.deterministic`, one s
 
 Step 1 is identical under both hooks by construction (the bias is 0 before the first solve); from step 2 the two hooks route the same tokens to different experts, so every row below step 1 is two different runs of the same model rather than a numerics comparison, and the percentages size that divergence rather than an error.
 
-| Step | dp8 x ep8 sign-step loss | dp8 x ep8 QB loss (diff) | dp2 x ep2 sign-step loss | dp2 x ep2 QB loss (diff) | dp1 sign-step loss | dp1 QB loss (diff) | dp8 x ep8 sign-step grad norm | dp8 x ep8 QB grad norm (diff) | dp1 sign-step grad norm | dp1 QB grad norm (diff) |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | `12.522390` | `12.522390` (`0%`) | `12.523720` | `12.523720` (`0%`) | `12.518870` | `12.518870` (`0%`) | `13.3125` | `13.3125` (`0%`) | `14.125` | `14.125` (`0%`) |
-| 3 | `6.618530` | `6.791680` (`2.62%`) | `7.502180` | `7.284180` (`2.91%`) | `7.112520` | `7.353260` (`3.38%`) | `8.6875` | `10.875` (`25.2%`) | `10.0625` | `9.5` (`5.59%`) |
-| 10 | `2.754520` | `2.743960` (`0.38%`) | `3.211300` | `3.156020` (`1.72%`) | `3.113010` | `3.047750` (`2.10%`) | `1.1953` | `1.3125` (`9.81%`) | `2.0312` | `2.1406` (`5.39%`) |
+| config | hook | step 1 | step 3 | step 10 |
+| --- | --- | ---: | ---: | ---: |
+| dp8 x ep8 | sign-step (main) | `12.522390` | `6.618530` | `2.754520` |
+| dp8 x ep8 | quantile balancing | `12.522390` (`0%`) | `6.791680` (`2.62%`) | `2.743960` (`0.38%`) |
+| dp2 x ep2 | sign-step (main) | `12.523720` | `7.502180` | `3.211300` |
+| dp2 x ep2 | quantile balancing | `12.523720` (`0%`) | `7.284180` (`2.91%`) | `3.156020` (`1.72%`) |
+| dp1 | sign-step (main) | `12.518870` | `7.112520` | `3.113010` |
+| dp1 | quantile balancing | `12.518870` (`0%`) | `7.353260` (`3.38%`) | `3.047750` (`2.10%`) |
+
+Gradient norms on the two configurations that carry them:
+
+| config | hook | step 1 | step 3 | step 10 |
+| --- | --- | ---: | ---: | ---: |
+| dp8 x ep8 | sign-step (main) | `13.3125` | `8.6875` | `1.1953` |
+| dp8 x ep8 | quantile balancing | `13.3125` (`0%`) | `10.875` (`25.2%`) | `1.3125` (`9.81%`) |
+| dp1 | sign-step (main) | `14.125` | `10.0625` | `2.0312` |
+| dp1 | quantile balancing | `14.125` (`0%`) | `9.5` (`5.59%`) | `2.1406` (`5.39%`) |
 
 As a control, the sign-step flavor on this commit matched the parent commit's run at every step (loss and grad norm), with and without the load probe that produced the table below. Every rank holds the same solved bias after every step (all-gathered and compared, ep8 included).
 
