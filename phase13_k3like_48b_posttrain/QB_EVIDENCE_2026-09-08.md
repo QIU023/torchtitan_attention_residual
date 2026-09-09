@@ -116,3 +116,15 @@ The DSV3 MTP pipeline PR reports loss and total gradient norm as relative differ
 Floors, the same dp1 cell on two fresh caches (`mx3_qbtip_dp1_*` vs `mx3_qbtip2_dp1_*`): QB step 5 loss 1.2e-2 / grad norm 3.9e-2, step 10 5.6e-2 / 4.3e-1; sign step step 5 3.2e-2 / 2.4e-1, step 10 7.8e-3 / 5.4e-1. So on this tree the run-to-run floor after step 1 is the size of the EP pair's difference, which is why the PR body states the parallelism claim on the loads and the all-gathered bias (identical on every rank), and shows this table only with the floor rows next to it. Note the contrast with the pipeline client tree of the same day (`PP_NUMERICS_4488STYLE_2026-09-08.md`, 512 tokens per step): there dp1 twice is bitwise for 5 steps. The difference is the tree and the batch (32 micro-batches of 256 against 2), not the protocol; which kernel choice moves the tip tree between caches under `--debug.deterministic` is not located.
 
 The step-1 loss pair dp2 vs dp2 x ep2 (12.52560 vs 12.52372, 1.5e-4) is the same under both hooks and does not depend on the bias (0 at step 1): expert parallelism's own step-1 difference on this flavor, the same one the merged EP PR carried.
+
+## 7. Diff audit of `qb_review4` (2026-09-09): what left the module
+
+Per the diff-audit rule, `quantile_balance.py` went from 407 lines / 106 docstring lines to 331 / 68. Removed from the source and kept here:
+
+- the module docstring's pointer to `phase13_k3like_48b_posttrain/QUANTILE_BALANCING.md`;
+- the accuracy table of `quantile_balance_bias_histogram` (a deliberately skewed n=16 / k=2 / m=4096 router iterated to its fixed point, load cv from 0.607: exact quantile 0.053 after 60 updates and still descending; histogram 256 bins 0.160, 512 bins 0.147, 2048 bins 0.104, 8192 bins 0.092);
+- the two findings on the histogram plateau: snapping the quantile to the crossing bin's edge locks the iteration at cv 0.232 (the bias lives on a lattice and the update map is piecewise constant), so the solve interpolates inside the bin; the margin distribution has an atom at exactly 0 (`s_ij - alpha_i` is 0 when expert j is token i's (k+1)-th, 419 of 4096 tokens for the most over-subscribed expert), handling it as its own mass made the plateau worse (0.154 vs 0.147), and dropping those boundary tokens from both bins and total lowered it to 0.118 at 512 bins, a departure from eq. 14 that the module does not adopt;
+- the tp note in the hook: the router's gate is declared, so under TP its output is a DTensor while `expert_bias_E` is unwrapped; the two met in `topk_with_cutoff` and every tp cell died until the scores were unwrapped too (scores are Replicate under TP, so `to_local` is exact);
+- the loss-mesh note in `step`: the pre-reduce counts differ across the loss group (34765 of 81920 bins at dp2, 32928 at dp4), so the reduction aggregates distinct data; the collective is one stacked all-reduce rather than 92 per step at K3's depth.
+
+Behaviour unchanged; the 14 unit tests pass; the fixup is squashed into the first commit.
