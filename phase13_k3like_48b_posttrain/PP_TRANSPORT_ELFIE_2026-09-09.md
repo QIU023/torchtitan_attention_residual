@@ -51,3 +51,22 @@ Your diagnosis matches what the runtime itself says: `schedules.py` carries a TO
 The optimizer-state fix is independent of the tree: torch's `_init_optim_state` skips every parameter once any state exists, so a parameter that never received a gradient has no state at save time. The new tree's layer 0 has no residual projection, so it does not hit it today, but the hazard is generic (an unused parameter under PP, LoRA, MTP); would you open it as a standalone PR against main with your test? I'll review it right away.
 
 --- PASTE END ---
+
+## 为什么老树的暖机没用、她的隔离有用（推断，两节点无法本机复现）
+
+她测的分支 `a81722d10` **包含** `d1ec535d1`（git 祖先关系确认），仍然挂；她的两个提交叠在其上才通。差别在 hazard 的位置：
+
+- 暖机修的是**创建时机**：把每条边的通信器在建 schedule 后由所有 rank 同一点建起来。它的 docstring 自己写着"Metadata inference (DYNAMIC mode) happens to warm self.group"——老树跑的是 DYNAMIC 模式。
+- DYNAMIC 模式下每个 micro-batch 都要走 `_send_meta/_recv_meta`（`send_object_list` / `recv_object_list`，阻塞式对象 P2P，两次 send：长度和字节），发生在调度的批量张量 P2P 之间，都在同一个 PP 组通信器上；再加串行的投票链。8 stage 的 1F1B 稳态里，相邻 rank 各自看到的 {metadata P2P, 张量批} 序列不一致：rank r 阻塞在等 r-1 的 metadata recv，而 r-1 正在一个包含"发给 r、收自 r-2"的批里等 r 的匹配 recv——同一通信器上的环形等待。8/27 GB200 上看到的"300 秒卡在建 5->6、6->7 的通信器"只是这种错序**第一次露头的地方**（建通信器本身也是要所有成员同序进入的集体操作），不是原因；把创建提前只是把露头点挪走。
+- 她的隔离按构造拆掉了耦合：metadata 走 CPU Gloo（与 NCCL 流无关、无序约束），每条边一个只含两个成员的 NCCL 通信器（它只会看到这一条边的操作，两端顺序由调度本身保证一致），投票变成一次全体同时进入的 all-reduce。共享通信器上的跨边、跨类型排序问题不复存在。
+
+对新树的推论：新树没有 metadata 在线上（STATIC），DYNAMIC 那类错序按设计不存在；剩下的只有 torch TODO 写明的 STATIC lazy 创建 gap，暖机针对的正是它，所以"老树上失效的同一个暖机"在新树上可能足够——但这是推断，两节点跑过才算数；若仍挂，`AttnResPipelineStage` 继承她的边组传输（两者都是 `PipelineStage` 子类，她改的是 `get_*_ops` 与 `_send_meta/_recv_meta`，我们改的是 `forward_one_chunk` 与 metadata 推断，可组合）。
+
+## 她的修复的连锁反应（改的是传输层，但有三处架构后果）
+
+1. 进程组拓扑与创建顺序：`ParallelDims` 在 DeviceMesh 之前创建每副本的 Gloo 组和每条边的 NCCL 组，所有 rank 同序（ProcessGroupNCCL 的全局一致创建顺序要求）；任何别处建组的代码（EP 的 all-to-all 组、CP 组、DeepEP 缓冲）都要保持在其后；通信器数量增加（每边一个 + Gloo）。
+2. 传输契约收窄：只允许相邻 stage 收发，非相邻直接 raise。我们的中继设计（block stack 逐 hop 相邻转发、梯度走调度反向 P2P）满足；带跳连的通用模型不满足。
+3. 与 torch 运行时内部的耦合：重写四个 `get_*_ops`、`_send_meta/_recv_meta`，并把 `_warmup_p2p` 用 `MethodType` 绑到 schedule 实例上；torch 自己正在把两 rank 子通信器做进投票协议，内部一变她的覆盖就要跟着改。归属应在运行时。
+
+不改变的：K3 模型侧、adapter/store/路由表、多消费者梯度路径。opt-in 环境变量，默认关闭，老树行为不变。
+
