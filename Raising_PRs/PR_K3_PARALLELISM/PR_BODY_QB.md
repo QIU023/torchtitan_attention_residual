@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-PR 4412. Content: `qb_review4` = `743cefe6a`, three commits on upstream/main `65ba8a697`; `git diff upstream/main` is exactly `torchtitan/components/quantile_balance.py` (+407), `tests/unit_tests/cpu/test_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+16). Sync: `git push origin qb_review4:k3_qb --force-with-lease`, drop the "[DO NOT review, pending EP PR merging]" title prefix, un-draft, paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). 10-step numbers from `mx3_qb10_*` (2026-09-09), complete. The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_probe/qb_summarize.py`).
+PR 4412. Content: `qb_review4` = `743cefe6a`, three commits on upstream/main `65ba8a697`; `git diff upstream/main` is exactly `torchtitan/components/quantile_balance.py` (+407), `tests/unit_tests/cpu/test_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+16). Sync: `git push origin qb_review4:k3_qb --force-with-lease`, un-draft (the title prefix is already gone), paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). 10-step numbers from `mx3_qb10_*` (2026-09-09), complete. The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_probe/qb_summarize.py`).
 
 --- PASTE BEGIN ---
 
@@ -33,7 +33,9 @@ pytest tests/unit_tests/cpu/test_quantile_balance.py
 
 Result: `14 passed` (histogram accumulation, CDF inversion, the solve against a brute-force reference, in-place zeroing, the SAC-identical op sequence). `tests/unit_tests/gpu/test_kimi_k3.py`: `2 passed, 1 skipped`.
 
-The deterministic BF16 comparison used `seed=42`, `--debug.deterministic`, one seed checkpoint, 8192 tokens per rank per step in 256-token micro-batches, and 10 training steps (the 100-step run is in progress and replaces this table when it lands). The sign-step reference is the debug flavor on the parent commit `65ba8a697`; quantile balancing is the qb flavor on this commit. Percentages are relative to the sign-step run of the same parallelism; dp8 x ep8 is the K3 layout (32 experts, 4 per rank, the histogram summed over the 8-rank loss mesh).
+The deterministic BF16 comparison used `seed=42`, `--debug.deterministic`, one seed checkpoint, 8192 tokens per rank per step in 256-token micro-batches, and 10 training steps. The sign-step reference is the debug flavor on the parent commit `65ba8a697`; quantile balancing is the qb flavor on this commit. Percentages are relative to the sign-step run of the same parallelism; dp8 x ep8 is the K3 layout (32 experts, 4 per rank, the histogram summed over the 8-rank loss mesh).
+
+Step 1 is identical under both hooks by construction (the bias is 0 before the first solve); from step 2 the two hooks route the same tokens to different experts, so every row below step 1 is two different runs of the same model rather than a numerics comparison, and the percentages size that divergence rather than an error.
 
 | Step | dp8 x ep8 sign-step loss | dp8 x ep8 QB loss (diff) | dp2 x ep2 sign-step loss | dp2 x ep2 QB loss (diff) | dp1 sign-step loss | dp1 QB loss (diff) | dp8 x ep8 sign-step grad norm | dp8 x ep8 QB grad norm (diff) | dp1 sign-step grad norm | dp1 QB grad norm (diff) |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -41,7 +43,7 @@ The deterministic BF16 comparison used `seed=42`, `--debug.deterministic`, one s
 | 3 | `6.618530` | `6.791680` (`2.62%`) | `7.502180` | `7.284180` (`2.91%`) | `7.112520` | `7.353260` (`3.38%`) | `8.6875` | `10.875` (`25.2%`) | `10.0625` | `9.5` (`5.59%`) |
 | 10 | `2.754520` | `2.743960` (`0.38%`) | `3.211300` | `3.156020` (`1.72%`) | `3.113010` | `3.047750` (`2.10%`) | `1.1953` | `1.3125` (`9.81%`) | `2.0312` | `2.1406` (`5.39%`) |
 
-Step 1 is identical under both hooks by construction (the bias is 0 before the first solve); from step 2 the two hooks route the same tokens to different experts, so the later rows are two different runs of the same model, not a numerics comparison. As a control, the sign-step flavor on this commit matched the parent commit's run at every step (loss and grad norm), with and without the load probe that produced the table below. Every rank holds the same solved bias after every step (all-gathered and compared, ep8 included).
+As a control, the sign-step flavor on this commit matched the parent commit's run at every step (loss and grad norm), with and without the load probe that produced the table below. Every rank holds the same solved bias after every step (all-gathered and compared, ep8 included).
 
 What the change is for is the load. Expert load per MoE layer (tokens routed to each expert, summed over the loss mesh) as the coefficient of variation over the 32 experts and the largest and smallest expert's load relative to the mean, averaged over the 23 MoE layers and over the step window; the bias range at step 10:
 
