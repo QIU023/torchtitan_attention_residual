@@ -57,3 +57,17 @@ The 09-07 design note went out as a file attachment (`user-attachments/files/...
 In #4486's terms: Block AttnRes is a second client of a model-owned pipeline runtime, with per-micro-batch ACTIVATIONS shared across stages where MTP shares a PARAMETER. `pp_runtime_client` on my fork is this PR rebased onto #4486 with the K3 entry returning a `PipelineResult` and an `AttnResPipelineRuntime` (drained-store check at step end); dp1 and pp2 read the same step-1 loss bitwise from one seed checkpoint. Section 2 of the note maps the lifecycle onto the hooks: the stage/rank map and the per-micro-batch hook are there, the store, the routing table, a micro-batch-end callback and the in-schedule gradient merge are not, and `prepare_microbatch` needs the micro-batch index (a counter in the runtime drifts, the metadata-inference pass calls it too). Happy to walk through it whenever suits.
 
 --- PASTE END ---
+
+## 7. Comments for the TP/SP re-scope (2026-09-09)
+
+On #4492 (close it after posting):
+
+> Closing: #4500 carries the CP-side declarations this PR made (the KDA local map, the tower over cp, the multimodal inputs) with the spmd_types backend for CP, so the remaining delta is TP/SP only. That now lives in #4499, re-pointed at a branch stacked on #4500's head; the `clip_grad_norm_` per-mesh grouping goes with it.
+
+On #4499 (after the head moves to `tp_sp_on_4500` and the title loses the "DO NOT review" prefix):
+
+> Re-based onto #4500's head (`2884d82a9`) as three commits, the TP/SP delta only; the PR stack is #4500 -> #4450 -> #4449 -> #4322, and the body follows #4500's format (same protocol, tp=1 on the parent as the reference, 100 steps). One note for #4500 from bringing TP onto it: at tp > 1 the tower's colwise / rowwise projector declaration leaves a Partial at its exit that nothing reduces when sequence parallel is off, so under spmd_types this branch declares the tower invariant on tp (it runs whole on every rank, as under partial_dtensor). Happy to fold that into #4500 instead if preferred.
+
+On #4412 (with the head synced to `qb_review4`):
+
+> Synced the head to main (`65ba8a697`); the CI run on the old head hit seven pyrefly type errors (fixed here: the bias is fetched once as a Tensor, `post_optimizer_build_fn` is set on an asserted model_spec) and the `torch.cuda._annotate_cuda_graph_trace` import that main's CI hit the same night (#4493 removed it). Locally on this head: the 14 CPU tests and the K3 GPU tests pass, pyrefly is clean on the touched files. Could you re-run CI?
