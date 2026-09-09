@@ -81,3 +81,15 @@ On #4499 (after the head moves to `tp_sp_on_4500` and the title loses the "DO NO
 On #4412 (with the head synced to `qb_review4`):
 
 > Synced the head to main (`65ba8a697`); the CI run on the old head hit seven pyrefly type errors (fixed here: the bias is fetched once as a Tensor, `post_optimizer_build_fn` is set on an asserted model_spec) and the `torch.cuda._annotate_cuda_graph_trace` import that main's CI hit the same night (#4493 removed it). Locally on this head: the 14 CPU tests and the K3 GPU tests pass, pyrefly is clean on the touched files. Could you re-run CI?
+
+## 8. On #4500: the multimodal encoder's own CP (2026-09-09)
+
+No draft PR yet -- `k3_cp_mm`'s base predates the EP merge, so a PR from it would show hundreds of files. The comment carries the commit; the draft follows the re-cut on #4500's head.
+
+--- PASTE BEGIN ---
+
+The tower is replicated on the cp axis here (`_set_vision_encoder_sharding`), which leaves the other multimodal item of report section 5.2.3 open: partitioning one large image along the patch dimension across cp ranks with gather-KV inside the tower, and dividing a cp group into sub-groups so several large images balance across them.
+
+That part is implemented and ran on 8 GPUs: https://github.com/QIU023/torchtitan/commit/a5339256e8eb6e18d6ca9a9a4aea26f3c2fefa8f -- the planners in `vit_cp_plan.py`, gather-KV attention and position-table slicing in `vision_encoder.py`, sub-group dispatch in `_encode_images`, about 750 lines inside the model folder with one line of pass-through in `common/vision_encoder.py`. The commit sits on a pre-EP base, so I will re-cut it on this PR's head and raise it as a stacked draft. It does not overlap this PR: the encoder stays replicated whenever no sample is large enough to partition.
+
+--- PASTE END ---
