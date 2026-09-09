@@ -1,6 +1,6 @@
 # RFC (pytorch/pytorch issue): multi-consumer stage outputs in `torch.distributed.pipelining`
 
-For `torch/distributed/pipelining` (owners: H-Huang, wconstab, sanketpurandare, fegin). File as an issue with the `oncall: distributed` and `module: pipelining` labels; the contiguous-wire PR (`Raising_PRs/PR_pytorch_pipelining_contiguous_wire`) is the first, mechanical piece and can go in independently. One line per paragraph.
+For `torch/distributed/pipelining` (owners: H-Huang, wconstab, sanketpurandare). File as an issue with the `oncall: distributed` and `module: pipelining` labels; the contiguous-wire PR (`Raising_PRs/PR_pytorch_pipelining_contiguous_wire`) is the first, mechanical piece and can go in independently. One line per paragraph.
 
 --- PASTE BEGIN ---
 
