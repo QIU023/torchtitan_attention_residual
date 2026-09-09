@@ -35,7 +35,7 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 pytest tests/unit_tests/cpu/test_kimi_k3_sp_splice.py tests/unit_tests/test_kda_attention.py tests/unit_tests/gpu/test_kimi_k3.py
 ```
 
-Result: `test_kimi_k3_sp_splice.py` 1 passed (this box); `gpu/test_kda_attention.py` and `gpu/test_kimi_k3.py` TBD_GPU_TESTS. pre-commit clean on the touched files except one pyrefly hit that is main's (`common/attention.py:805`).
+Result: `test_kimi_k3_sp_splice.py` 1 passed (this box); `gpu/test_kda_attention.py` + `gpu/test_kimi_k3.py` 2 passed, 2 skipped (4 GPUs). pre-commit clean on the touched files except one pyrefly hit that is main's (`common/attention.py:805`).
 
 ## Results
 
@@ -53,9 +53,9 @@ The data-parallel stream (a second dp rank reads other samples, so these rows co
 
 | Step | dp2 | dp2 x tp2 (diff) | dp2 x tp2, spmd_types (diff) | dp2 x ep2 (diff) | dp2 x ep2 x tp2 (diff) |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | `12.427210` | `12.446900` (`0.16%`) | `12.446900` (`0.16%`) | `12.427330` (`0.001%`) | TBD_EPTP |
-| 3 | `9.635420` | `9.419580` (`2.2%`) | `9.513450` (`1.3%`) | `9.659570` (`0.25%`) | TBD_EPTP |
-| 10 | `4.026080` | `4.004540` (`0.54%`) | `3.954370` (`1.8%`) | `4.056090` (`0.75%`) | TBD_EPTP |
+| 1 | `12.427210` | `12.446900` (`0.16%`) | `12.446900` (`0.16%`) | `12.427330` (`0.001%`) | `12.467330` (`0.32%`) |
+| 3 | `9.635420` | `9.419580` (`2.2%`) | `9.513450` (`1.3%`) | `9.659570` (`0.25%`) | `9.538430` (`1.0%`) |
+| 10 | `4.026080` | `4.004540` (`0.54%`) | `3.954370` (`1.8%`) | `4.056090` (`0.75%`) | `3.849490` (`4.4%`) |
 
 Reading the tables: the four tp=1 rows are #4500's control, nothing changes at tp=1 on either backend; with SP on the two backends read the same step-1 loss and grad norm, at tp=2 and at dp2 x tp2. The later steps move by percents on this flavor for any step-1 difference (the same cell twice is bitwise), so correctness is the float32-compute comparison below.
 
@@ -66,7 +66,7 @@ Float32 masters and float32 compute (`--training.mixed_precision_param float32`,
 | dp1 + 3e-7 on the KDA projections (control) | 2.1e-4 | 1.9e-3 | 1.6e-2 | 370 | 468 | 738 |
 | tp=2 SP on, partial_dtensor | 1.2e-4 | 2.0e-3 | 1.8e-2 | 366 | 466 | 737 |
 | tp=2 SP off, partial_dtensor | 1.2e-4 | 2.0e-3 | 1.6e-2 | 364 | 466 | 736 |
-| tp=2 SP on, spmd_types | TBD_STSP |
+| tp=2 SP on, spmd_types | 1.1e-4 | 2.0e-3 | 1.8e-2 | 366 | 466 | 737 |
 
 Every TP cell holds the same gradient on both ranks for all 750 parameters. The tp=2 SP-off cell under spmd_types is withheld from the tables until its step-1 gradient gap (median 1e-2 against dp1, not present with SP on, not present on a 9-layer alias) is located; its forward matches dp1 at the float32 floor.
 
