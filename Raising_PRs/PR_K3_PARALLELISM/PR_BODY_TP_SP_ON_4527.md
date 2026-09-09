@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Tensor parallelism with sequence parallel, stacked on the multimodal spmd fix
 
-For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7), re-pointed at fork branch `tp_sp_on_4527` = `566977326` (7 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`). The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. Numbers below: this branch on the 5060 Ti box, 10 steps (`mx3_tp4527_*`, 2026-09-09); the A100 run of `matrix_scripts/tp_a100/` gives the 100-step and tp4 rows. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
+For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7), re-pointed at fork branch `tp_sp_on_4527` = `54ebe13ee` (8 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`). The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. Numbers below: this branch on the 5060 Ti box, 10 steps (`mx3_tp4527_*`, 2026-09-09); the A100 run of `matrix_scripts/tp_a100/` gives the 100-step and tp4 rows. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
 
 --- PASTE BEGIN ---
 
@@ -8,7 +8,7 @@ For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7),
 
 - #4527 (the multimodal spmd annotations and the KDA local map; this PR's base)
 
-Stacked on #4527, which carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the seven commits after `d1e3979c7`; the same delta rebased onto #4500 is on the fork as `tp_sp_on_4500`). One commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires (drop it if the SM100 gate is deliberate); one makes `RouterGateLinear` run on the local shards when its weight or input is a DTensor, since `aten.mm.dtype` has no DTensor sharding strategy and the gate is replicated on tp.
+Stacked on #4527, which carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the eight commits after `d1e3979c7`; the same delta rebased onto #4500 is on the fork as `tp_sp_on_4500`). One commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires (drop it if the SM100 gate is deliberate); one makes `RouterGateLinear` run on the local shards when its weight or input is a DTensor, since `aten.mm.dtype` has no DTensor sharding strategy and the gate is replicated on tp.
 
 ## Summary
 
@@ -36,7 +36,7 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 pytest tests/unit_tests/cpu/test_kimi_k3_sp_splice.py tests/unit_tests/test_kda_attention.py tests/unit_tests/gpu/test_kimi_k3.py
 ```
 
-Result: `test_kimi_k3_sp_splice.py` 1 passed (this box); `gpu/test_kda_attention.py` + `gpu/test_kimi_k3.py` 2 passed, 2 skipped (4 GPUs). pre-commit clean on the touched files except one pyrefly hit that is main's (`common/attention.py:805`).
+Result: `test_kimi_k3_sp_splice.py` 1 passed; `gpu/test_kda_attention.py` + `gpu/test_kimi_k3.py` 2 passed, 2 skipped (this box, 8 x RTX 5060 Ti); `cpu/test_trainer.py` + `cpu/test_invalid_loss.py` (the clipping callers) 23 passed. pre-commit passes on the touched files with the pinned pyrefly 0.45.1.
 
 ## Results
 
