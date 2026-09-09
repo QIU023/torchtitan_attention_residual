@@ -19,4 +19,13 @@ wait
 cell tp4_nosp    $TT        0,1,2,3 4 bf16 100 $B $D 1 $T 4 $PD $NOSP &
 cell tp4_nosp_st $TT        4,5,6,7 4 bf16 100 $B $D 1 $T 4 $ST $NOSP &
 wait
+# data and expert parallel around TP (dp2 reads its own data stream: compare these rows with each other, not with tp1)
+cell dp2         $TT        0,1     2 bf16 100 $B $D 2 $PD &
+cell dp2_tp2     $TT        2,3,4,5 4 bf16 100 $B $D 2 $T 2 $PD &
+cell dp2_ep2     $TT        6,7     2 bf16 100 $B $D 2 $E 2 $PD &
+wait
+cell dp2_ep2_tp2 $TT        0,1,2,3 4 bf16 100 $B $D 2 $E 2 $T 2 $PD &
+cell dp2_tp2_st  $TT        4,5,6,7 4 bf16 100 $B $D 2 $T 2 $ST &
+wait
 table tp1_parent tp1_parent_st tp1 tp1_st tp2_sp tp2_sp_st tp2_nosp tp2_nosp_st tp4_sp tp4_sp_st tp4_nosp tp4_nosp_st
+echo; echo '# dp2 stream (reference dp2; SP on):'; table dp2 dp2_tp2 dp2_tp2_st dp2_ep2 dp2_ep2_tp2

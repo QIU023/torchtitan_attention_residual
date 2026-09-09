@@ -1,7 +1,7 @@
 # Shared by the run scripts. Set TT (branch tree), TT_PARENT (parent worktree), OUT.
 TT=${TT:-$PWD}; TT_PARENT=${TT_PARENT:-$PWD/../tt_parent}; OUT=${OUT:-$PWD/tp_a100_out}; mkdir -p $OUT
 CFG=${CFG:-kimi_k3_debugmodel}
-D="--parallelism.data_parallel_shard_degree"; T="--parallelism.tensor_parallel_degree"
+D="--parallelism.data_parallel_shard_degree"; T="--parallelism.tensor_parallel_degree"; E="--parallelism.expert_parallel_degree"
 ST="--parallelism.spmd_backend spmd_types"; PD="--parallelism.spmd_backend partial_dtensor"; NOSP="--parallelism.no-enable-sequence-parallel"
 COMMON="-m torchtitan.train --module kimi_k3 --config $CFG --debug.seed 42 --debug.deterministic --metrics.log_freq 1 --checkpoint.enable --checkpoint.interval 100000"
 seed() {  # one seed checkpoint per batch shape, built on the branch tree with 1 GPU

@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Tensor parallelism with sequence parallel, stacked on the multimodal spmd fix
 
-For PR 4499, re-pointed at fork branch `tp_sp_on_4527` = `265a41416` (4 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`; `git diff d1e3979c7` = 8 files, +661/-37). The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. NUMBERS BELOW ARE FROM THE 4500-BASE BRANCH ON THE 5060 Ti BOX; replace them with the A100 run of `matrix_scripts/tp_a100/` on this branch before pasting. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
+For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7), re-pointed at fork branch `tp_sp_on_4527` = `265a41416` (4 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`; `git diff d1e3979c7` = 8 files, +661/-37). The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. NUMBERS BELOW ARE FROM THE 4500-BASE BRANCH ON THE 5060 Ti BOX; replace them with the A100 run of `matrix_scripts/tp_a100/` on this branch before pasting. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
 
 --- PASTE BEGIN ---
 

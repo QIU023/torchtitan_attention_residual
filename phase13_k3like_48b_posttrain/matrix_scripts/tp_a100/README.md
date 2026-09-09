@@ -28,7 +28,7 @@ pytest tests/unit_tests/cpu/test_kimi_k3_sp_splice.py tests/unit_tests/gpu/test_
 
 ## What to run, in order
 
-1. `bash run_bf16_100.sh` -- the table in 4500's format: seed 42, deterministic, 256 tokens per step, 100 steps, one seed checkpoint; parent tp=1, this branch tp=1 (both backends), tp=2 SP on/off (both backends), tp=4 SP on/off. Prints the table. ~1 h on 8 GPUs (cells run in parallel).
+1. `bash run_bf16_100.sh` -- the table in 4500's format: seed 42, deterministic, 256 tokens per step, 100 steps, one seed checkpoint; parent tp=1, this branch tp=1 (both backends), tp=2 SP on/off (both backends), tp=4 SP on/off, then the dp2 stream: dp2, dp2 x tp2 (both backends), dp2 x ep2, dp2 x ep2 x tp2 (their reference is dp2: a second dp rank reads other samples). Prints both tables. ~1.5 h on 8 GPUs.
 2. `bash run_fp32m_100.sh` -- the same table with float32 masters (`--training.dtype float32`, bf16 compute), the DSV3 table's regime, on the full 24-layer model (dp1 needs ~36 GB).
 3. `bash run_fp32_loss.sh` -- true float32 (masters and compute, fp32 experts loop), 2 steps, loss and grad norm printed for dp1 and every tp2 cell: the forward-equivalence check on the full model.
 4. `bash run_fp32_grads.sh` -- true float32 step-1 gradient dumps for dp1, the tp2 cells and the dp1 perturbation control (`KDA_PERTURB=3e-7`); prints the per-class relative-difference distribution. The tp2 cells should reproduce the control's distribution class by class (on the 5060 Ti box: median 1.2e-4, p90 2.0e-3, max 1.8e-2 vs control 1.6e-4 / 2.0e-3 / 1.5e-2).
