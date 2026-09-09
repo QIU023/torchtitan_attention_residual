@@ -1,34 +1,33 @@
-# PR title: [Kimi K3] Tensor parallelism with sequence parallel, stacked on the CP PR
+# PR title: [Kimi K3] Tensor parallelism with sequence parallel, stacked on the multimodal spmd fix
 
-For PR 4499, re-pointed at fork branch `tp_sp_on_4500` = `3fdd8c40d` (3 commits on `acisseJZhong:kda_cp` = `2884d82a9`; `git diff 2884d82a9` = 8 files, +676/-38). Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
+For PR 4499, re-pointed at fork branch `tp_sp_on_4527` = `265a41416` (4 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`; `git diff d1e3979c7` = 8 files, +661/-37). The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. NUMBERS BELOW ARE FROM THE 4500-BASE BRANCH ON THE 5060 Ti BOX; replace them with the A100 run of `matrix_scripts/tp_a100/` on this branch before pasting. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
 
 --- PASTE BEGIN ---
 
 ## PR stack
 
-- #4500 (CP for Kimi K3; this PR's base)
-- #4450, #4449, #4322
+- #4527 (the multimodal spmd annotations and the KDA local map; this PR's base)
 
-Stacked on #4500: the CP-side declarations that #4492 carried are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the three commits after `2884d82a9`).
+Stacked on #4527, which carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the four commits after `d1e3979c7`; the same delta rebased onto #4500 is on the fork as `tp_sp_on_4500`). The last commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires; drop it if the SM100 gate is deliberate.
 
 ## Summary
 
 Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hybrid KDA/MLA decoder and its multimodal input path, on both SPMD backends.
 
-- KDA and MLA are head-parallel: the projections that produce or consume the head axis are colwise / rowwise, the per-head KDA state (`A_log`, `dt_bias`, the depthwise convolutions) shards with the heads, and the kernel runs on the local heads behind the `local_map` that #4500 installs for CP, re-declared head-sharded on tp with #4500's cp gradient placements unchanged. The two rank-sized compressions (`wq_a` / `wkv_a`, `forget_a`) stay whole.
+- KDA and MLA are head-parallel: the projections that produce or consume the head axis are colwise / rowwise, the per-head KDA state (`A_log`, `dt_bias`, the depthwise convolutions) shards with the heads, and the kernel runs on the local heads behind the `local_map` that #4527 installs, re-declared head-sharded on tp. The two rank-sized compressions (`wq_a` / `wkv_a`, `forget_a`) stay whole.
 - Sequence parallel carries the tp-axis `Shard(0)` of the token stream between modules: norms on the shard, the attention boundaries gather, the rowwise outputs reduce-scatter (the llama3 template); the MoE internals take and return the shard (`set_moe_sharding_config(enable_sp=True)`).
 - The multimodal splice under SP indexes global token positions, so it gathers the shard for the scatter and re-shards after; under spmd_types the splice learns the tp group from `parallelize` (`_sp_group`).
 - `clip_grad_norm_` groups parameters by mesh: undeclared modules under TP hold gradients on the fsdp-only mesh.
 
 ## Implementation
 
-`sharding.py` keeps #4500's `set_kimi_k3_sharding_config` (CP local maps, the tower over CP, the MoE) and gains `enable_sp` and `declare_vision_encoder`; `set_tensor_parallel_sharding_config` adds the head-parallel and stream declarations. `update_from_config` issues #4500's declarations under spmd_types or tp > 1 (the MoE declarations serve TP on partial_dtensor too, the tower's only under spmd_types) and the TP declarations at tp > 1. The head splits read the local head count from the projection width (`local_head_split` in KDA, the MLA reshapes), so the model code has no tp-degree arithmetic.
+`sharding.py` keeps #4527's `set_kimi_k3_sharding_config` (the KDA local map, the vision buffer, the MoE with `enable_ep`) and passes it `enable_sp`; `set_tensor_parallel_sharding_config` adds the head-parallel and stream declarations, and under spmd_types declares the tower invariant on tp (it runs whole on every rank, as under partial_dtensor). `update_from_config` issues the TP declarations at tp > 1. The head splits read the local head count from the projection width (`local_head_split` in KDA, the MLA reshapes), so the model code has no tp-degree arithmetic.
 
 ## Limitations
 
-- TP x CP is not exercised: the CP path's vision-bank gather returns before the SP splice, and the two are not combined.
+- TP x CP is not exercised (CP is #4500's; the two are not combined).
 - EP x TP waits for #4500's rebase past the K3 EP merge (`9b5f60c40`); #4500's base lists EP as unsupported.
-- The tower under spmd_types at tp > 1 takes #4500's TP-sharded projector declarations; under partial_dtensor it stays undeclared and runs whole on every rank.
+- The tower runs whole on every rank under both backends (invariant on tp).
 
 ## Tests
 
