@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-PR 4412. Content: `qb_review4` = `743cefe6a`, three commits on upstream/main `65ba8a697`; `git diff upstream/main` is exactly `torchtitan/components/quantile_balance.py` (+407), `tests/unit_tests/cpu/test_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+16). Sync: `git push origin qb_review4:k3_qb --force-with-lease`, drop the "[DO NOT review, pending EP PR merging]" title prefix, un-draft, paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). 10-step numbers from `mx3_qb10_*` (2026-09-09); TBD = dp8 x ep8 (running). The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_summarize.py`).
+PR 4412. Content: `qb_review4` = `743cefe6a`, three commits on upstream/main `65ba8a697`; `git diff upstream/main` is exactly `torchtitan/components/quantile_balance.py` (+407), `tests/unit_tests/cpu/test_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+16). Sync: `git push origin qb_review4:k3_qb --force-with-lease`, drop the "[DO NOT review, pending EP PR merging]" title prefix, un-draft, paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). 10-step numbers from `mx3_qb10_*` (2026-09-09), complete. The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_probe/qb_summarize.py`).
 
 --- PASTE BEGIN ---
 
@@ -37,9 +37,9 @@ The deterministic BF16 comparison used `seed=42`, `--debug.deterministic`, one s
 
 | Step | dp8 x ep8 sign-step loss | dp8 x ep8 QB loss (diff) | dp2 x ep2 sign-step loss | dp2 x ep2 QB loss (diff) | dp1 sign-step loss | dp1 QB loss (diff) | dp8 x ep8 sign-step grad norm | dp8 x ep8 QB grad norm (diff) | dp1 sign-step grad norm | dp1 QB grad norm (diff) |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | `12.522390` | TBD | `12.523720` | `12.523720` (`0%`) | `12.518870` | `12.518870` (`0%`) | `13.3125` | TBD | `14.125` | `14.125` (`0%`) |
-| 3 | `6.618530` | TBD | `7.502180` | `7.284180` (`2.91%`) | `7.112520` | `7.353260` (`3.38%`) | `8.6875` | TBD | `10.0625` | `9.5` (`5.59%`) |
-| 10 | TBD | TBD | `3.211300` | `3.156020` (`1.72%`) | `3.113010` | `3.047750` (`2.10%`) | TBD | TBD | `2.0312` | `2.1406` (`5.39%`) |
+| 1 | `12.522390` | `12.522390` (`0%`) | `12.523720` | `12.523720` (`0%`) | `12.518870` | `12.518870` (`0%`) | `13.3125` | `13.3125` (`0%`) | `14.125` | `14.125` (`0%`) |
+| 3 | `6.618530` | `6.791680` (`2.62%`) | `7.502180` | `7.284180` (`2.91%`) | `7.112520` | `7.353260` (`3.38%`) | `8.6875` | `10.875` (`25.2%`) | `10.0625` | `9.5` (`5.59%`) |
+| 10 | `2.754520` | `2.743960` (`0.38%`) | `3.211300` | `3.156020` (`1.72%`) | `3.113010` | `3.047750` (`2.10%`) | `1.1953` | `1.3125` (`9.81%`) | `2.0312` | `2.1406` (`5.39%`) |
 
 Step 1 is identical under both hooks by construction (the bias is 0 before the first solve); from step 2 the two hooks route the same tokens to different experts, so the later rows are two different runs of the same model, not a numerics comparison. As a control, the sign-step flavor on this commit matched the parent commit's run at every step (loss and grad norm), with and without the load probe that produced the table below. Every rank holds the same solved bias after every step (all-gathered and compared, ep8 included).
 
@@ -47,8 +47,8 @@ What the change is for is the load. Expert load per MoE layer (tokens routed to 
 
 | config | hook | cv steps 1-5 | cv 6-10 | max/mean 6-10 | min/mean 6-10 | bias range at 10 |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| dp8 x ep8 | sign-step (main) | TBD | TBD | TBD | TBD | TBD |
-| dp8 x ep8 | quantile balancing | TBD | TBD | TBD | TBD | TBD |
+| dp8 x ep8 | sign-step (main) | 1.25 | 1.49 | 5.5 | 0.01 | [-0.016, 0.006] |
+| dp8 x ep8 | quantile balancing | 1.09 | 0.82 | 3.4 | 0.05 | [-0.297, 0.333] |
 | dp2 x ep2 | sign-step (main) | 1.26 | 1.51 | 5.7 | 0.01 | [-0.016, 0.006] |
 | dp2 x ep2 | quantile balancing | 1.13 | 0.90 | 3.6 | 0.03 | [-0.352, 0.339] |
 | dp2 | sign-step (main) | 1.25 | 1.54 | 5.9 | 0.02 | [-0.016, 0.006] |
