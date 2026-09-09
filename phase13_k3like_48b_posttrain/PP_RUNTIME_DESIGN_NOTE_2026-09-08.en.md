@@ -106,6 +106,12 @@ The stage is a `PipelineStage` subclass: `forward_one_chunk` assembles the stack
 
 Figure 5. Left: the chain protocol and its per-stage caches. Right: b0 committed at S0 read by S1 / S2 / S3, with S2 on S0's rank. The five suggestions where each bites.
 
+## 4b. Transport: the multi-node hazard and what the design does about it
+
+The old tree's pipeline carried per-micro-batch metadata (the block stack's shape changes with the stage) through `_send_meta` / `_recv_meta`, object P2P on the full PP NCCL group, and voted the inference mode through a serial P2P chain on the same group. On one node that never hung; on two GB200 nodes with eight stages under 1F1B it hangs at the late edges every time (`torchtitan#4281`, 2026-09-09): the metadata traffic and the tensor traffic share one communicator whose creation and op order the ranks reach in different sequences. The fix that unblocked it (`elfiegg:fix/pp8-neighbor-p2p-metadata`) moves metadata to a CPU Gloo group per PP replica, gives every edge its own two-rank NCCL group created before the mesh's other groups, and replaces the vote chain by one all-reduce.
+
+This design has no metadata on the wire: the routing tables fix every hop's payload before the first send, so the stage runs STATIC and the schedule's own batched P2P is the only traffic. What remains is the runtime's own gap, written as a TODO in `schedules.py`: in STATIC mode the group communicator behind the mixed send/receive batch is created lazily at the first steady-state batch, and across nodes the late edges of an eight-stage pipeline can sit in that creation until the timeout. The entry therefore creates every edge communicator right after the schedule build (`_warmup_pp_edge_communicators`, the TODO's prescription applied from the trainer side, every rank entering at the same point). Single node: dp1 and pp2 bitwise with and without it; the two-node run is the pending validation. If the late edges still hang there, the per-edge groups are the next step, and the right owner is the runtime: the vote protocol already creates two-rank sub-communicators for the homogeneous path.
+
 ## 5. A split of work that fits #4486
 
 - The team owns the abstraction: `PipelineResult`, the runtime hooks, and whether cross-stage activations are a runtime concern or a placement (this note's answer: activations need the runtime plus one schedule-level ordering guarantee; parameters can be either).
