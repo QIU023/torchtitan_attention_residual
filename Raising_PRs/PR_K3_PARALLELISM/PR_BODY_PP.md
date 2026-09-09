@@ -66,7 +66,7 @@ The debug config trains in bf16 end to end (`training.dtype="bfloat16"`: bf16 pa
 | 4 | 8.59245 | 7.85436 | 8.6e-2 | 14.375 | 14.9375 | 3.9e-2 |
 | 5 | 6.51366 | 6.84844 | 5.1e-2 | 9.375 | 10.125 | 8.0e-2 |
 
-Same protocol with `--training.dtype float32` (float32 parameters, gradients and Adam states; the 33-layer model does not fit them on a 16 GB GPU, so this row is a 9-layer alias of the flavor, blocks of 12, one partial block on the wire):
+Same protocol with `--training.dtype float32` (float32 parameters, gradients and Adam states with bf16 compute under FSDP mixed precision, torchtitan's default regime; the 33-layer model does not fit the float32 states on a 16 GB GPU, so this row is a 9-layer alias of the flavor, blocks of 12, one partial block on the wire):
 
 | step | loss dp1 | loss pp2 | rel diff | grad norm dp1 | grad norm pp2 | rel diff |
 |---|---|---|---|---|---|---|
@@ -78,7 +78,7 @@ Same protocol with `--training.dtype float32` (float32 parameters, gradients and
 
 Step 1: the loss is bitwise on both rows; the total norm differs by one bf16 ulp on the bf16 row (it is reduced over the two stages in the flavor's dtype) and by 1e-4 in float32.
 
-Steps 2-5 move by percents on both rows, and that is not the pipeline's: the same dp1 cell on two fresh compile caches is bitwise for five steps, pp2 twice is bitwise, and the step-1 per-parameter gradients (13-layer alias, float32, 432 tensors) put the origin inside one stage: `lm_head`, the final norms and the last layer's MoE and output projection are bitwise, the first non-identical tensors are the query path of the last attention layer at 1e-7 (its dO, K, V are bitwise), and the difference grows by three to five times per layer walking down the backward with no jump at the stage boundary (median 2.2e-4, max 4.7e-3 over the 410 non-identical tensors, sign flips 0.131% of 768M elements, 88% of them below 1e-2 of their tensor's rms). Adam's first update is `lr * sign(g)`, so the elements whose sign that flips become the step-2 spread, in float32 as in bf16.
+Steps 2-5 move by percents on both rows, and that is not the pipeline's: the same dp1 cell on two fresh compile caches is bitwise for five steps, pp2 twice is bitwise, and the step-1 per-parameter gradients (13-layer alias, float32 masters, 432 tensors) put the origin inside one stage: `lm_head`, the final norms and the last layer's MoE and output projection are bitwise, the first non-identical tensors are the query path of the last attention layer at ulp level, 1e-7 on the norm (its dO, K, V are bitwise), and the difference grows by three to five times per layer walking down the backward with no jump at the stage boundary (median 2.2e-4, max 4.7e-3 over the 410 non-identical tensors, sign flips 0.131% of 768M elements, 88% of them below 1e-2 of their tensor's rms). Adam's first update is `lr * sign(g)`, so the elements whose sign that flips become the step-2 spread, with float32 masters as with bf16 ones.
 
 Dumps, scripts and the per-layer table: `phase13_k3like_48b_posttrain/PP_NUMERICS_4488STYLE_2026-09-08.md`.
 
