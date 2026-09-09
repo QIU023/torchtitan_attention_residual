@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] LoRA adapter export and QLoRA (NF4 and packed MXFP4)
 
-Branch `lora_review1` (`93f78b5ab`, rebased onto upstream/main `af9b6b195`; `k3_lora_extras` `2344c1f9e` was the pre-rebase head). The rebase was clean; three commits on top type the LoRA marker bases for pyrefly (repo count equal to main's), drop the `mx_qat` flavor, whose converter belongs to the QAT change, and let the packed experts carry main's `SpmdType` entry through (the seed build of the packed-MXFP4 flavor raised on the rebased tree; a trainer-path test covers it now). 30 CPU tests pass on the branch (test_lora, the kimi_k3 tests, the suite definitions). Paste between the markers into the PR body.
+Branch `lora_review2` (`f092d37d9`, the eight commits of `lora_review1` = `93f78b5ab` rebased onto upstream/main `ac10ca48f`, the commit that merged PR 4527 on 2026-09-09; the rebase was clean). `k3_lora_extras` `2cd6a35e0` was the pre-rebase head. The packed-MXFP4 flavor imports `torchao.prototype.mx_formats` (torchao 0.18.0 on the box's torch 2.15 nightly); the matrix below is the 2026-09-10 rerun on the rebased branch, dp and ep cells only.
 
 Upstream's only LoRA precedent is llama3's `float8_emulate_lora` flavor: one `LoRAConverter.Config(rank=8, alpha=16.0, target_modules=[...])` line, a CI cell in the features suite, and `components/lora.py` at 235 lines with no export and no quantization. Everything below the flavor is new core surface with no upstream counterpart; expect the reviewers to ask for the split noted after the markers.
 
