@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-PR 4412 (draft, head `k3_qb` = `3c9cef31a`, the pre-rebase content; the GitHub title still carries the "[DO NOT review, pending EP PR merging]" prefix). The content to raise is `qb_review3` = `db65fc9f2`: the two QB commits plus the registration-comment/counter fix, on upstream/main `f6b9152e9` (#4505, 2026-09-08); clean cherry-pick; QB unit tests 14/14 in venv_bfx9 (the tip needs `torch_remat`, installed). `qb_review2` (`d0d75fa8b` on `aecbb8199`) and `qb_release` (`a4658eefe`) are superseded. Evidence and the probe scripts: `phase13_k3like_48b_posttrain/QB_EVIDENCE_2026-09-08.md`, `matrix_scripts/qb_probe/`. Raising is the user's: force-push `qb_review3` to `k3_qb`, drop the title prefix, undraft, paste the body below.
+PR 4412 (head `k3_qb` = `3c9cef31a`, the 2026-09-02 content; the GitHub title still carries the "[DO NOT review, pending EP PR merging]" prefix, to drop). The content to raise is `qb_review4` = `743cefe6a`: three commits (the balancer, the type narrowing for the checker, the registration comment and counter reset) on upstream/main `65ba8a697` (2026-09-08); `git diff upstream/main` is the three files below and nothing else. Sync: `git push origin qb_review4:k3_qb --force-with-lease` (the user's step), then paste this body.
 
 --- PASTE BEGIN ---
 
@@ -20,7 +20,7 @@ Adds quantile balancing for the MoE router bias. Before this change the bias upd
 
 ### Results
 
-Debug flavor on `f6b9152e9` plus the two commits, seed 42, one seed checkpoint shared by every configuration, 30 measured steps, each hook pair on one inductor cache (the sign-step control compiles fresh, the quantile-balancing cell starts from that cache), `partial_dtensor` backend: under the default `spmd_types` the multimodal debug flavor stops at `preprocess_inputs` on main (`pixel_values` and `grid_thw` have no input layout; the declarations PR supplies one).
+Debug flavor on `65ba8a697` plus the three commits, seed 42, one seed checkpoint shared by every configuration, 30 measured steps, each hook pair on one inductor cache (the sign-step control compiles fresh, the quantile-balancing cell starts from that cache), `partial_dtensor` backend: under the default `spmd_types` the multimodal debug flavor stops at `preprocess_inputs` on main (`pixel_values` and `grid_thw` have no input layout; the declarations PR supplies one).
 
 ```
 torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_qb \
