@@ -4,15 +4,23 @@ Companion to `phase13_k3like_48b_posttrain/PP_RUNTIME_DESIGN_NOTE_2026-09-08.en.
 
 ## 1. On #4486 (review comment, top level)
 
-Scope note for us: this is #4486's PR, so the comment reports what a second client measured against THEIR hooks and asks for one generalization they are already half-way to. The lifecycle gaps AttnRes still has are deferred to our own diff after this lands -- asking a maintainer to design for an unmerged client is how the CP line got overtaken.
+Scope note for us: the comment reports what a second client measured against THEIR hooks and asks for one line at a call this PR already edits. The lifecycle gaps AttnRes still has are deferred to our own diff after this lands -- asking a maintainer to design for an unmerged client is how the CP line got overtaken. The `stage_class` ask has no in-tree user before #4312 and the comment says so, so it can be declined cleanly.
 
 --- PASTE BEGIN ---
 
-One thing measured while bringing a second client onto this: `prepare_microbatch` carries neither the micro-batch index nor a step boundary, and the trainer's metadata-inference pass calls it as well, so an index counted inside the runtime drifts from the schedule's chunk id. For a shared parameter that does not matter, but a client whose state is per micro-batch needs a key that survives P2P -- tensor identity does not, NCCL hands out fresh receive buffers -- and the schedule's chunk id is the only one. Passing the index into the hook would settle it.
+Two things from bringing a second client onto this runtime, both about the hooks rather than the client.
 
-Second, smaller, in the function this PR already touches: `stage_args_factory` lets a model supply a stage's static input/output metadata, but `_pipeline_module_split` still constructs `PipelineStage` directly. A client that overrides the stage's forward and backward needs the class too; `stage_class: type[PipelineStage] = PipelineStage` threaded to that call is the same generalization.
+**`prepare_microbatch` cannot give a client the micro-batch it is preparing.** `PipelineRuntime.prepare_microbatch` (`pipeline_parallel.py:72`) receives the inputs and kwargs but no index, and `Trainer.pp_forward_backward_step` calls it while `kwarg_mbs` is built, so a client that needs the identity of a micro-batch has to count inside the runtime. That count is wrong in three ways:
 
-The client is Kimi K3's block attention residuals: activations shared across stages with micro-batch lifetime, where MTP shares a parameter with step lifetime. `pp_runtime_client` on my fork is #4312's stage on this PR's `PipelineResult` (dp1 and pp2 bitwise at step 1 from a shared seed checkpoint); today it uses `finalize_gradients` as a step-end check that the block store drained, and the design note is [here](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/PP_RUNTIME_DESIGN_NOTE_2026-09-08.en.md). The two lifecycle points it still lacks -- a micro-batch-end release, and a place inside the schedule where a same-rank consumer's gradient merges before the producer's backward -- I will raise as concrete diffs once this lands rather than argue them here.
+- Nothing marks a step boundary, so the counter can only be reset from another hook -- `finalize_gradients` (`pipeline_parallel.py:84`), which runs in the optimizer block of a training step.
+- The schedule's metadata inference re-executes the first micro-batch's forward (`_initialize_stage(arg_mbs[0], kwarg_mbs[0], ...)`, `torch/distributed/pipelining/schedules.py:843`), so anything counting per forward sees micro-batch 0 twice while the schedule's chunk ids stay unique.
+- Validation builds its own micro-batches and drives `pp_schedule` from `components/validate.py`, reaching neither hook, so the runtime is bypassed there entirely.
+
+Passing the schedule's chunk id into the hook settles all three: it is the one key that survives P2P, since tensor identity does not (NCCL hands out fresh receive buffers). For a shared parameter with step lifetime none of this matters, which is why it does not show up in the MTP case.
+
+**One line at a call this PR already edits.** `stage_args_factory` lets a model supply a stage's static input and output metadata, and `_pipeline_module_split` now passes them into `PipelineStage(...)` (`pipeline_parallel.py:966`). A client that overrides the stage's forward and backward needs the class itself as well -- `stage_class: type[PipelineStage] = PipelineStage` threaded to the same call. There is no in-tree user for it before #4312, so this is only worth taking if the generalization looks right to you.
+
+The client is Kimi K3's block attention residuals: activations shared across stages with micro-batch lifetime, where MTP shares a parameter with step lifetime. `pp_runtime_client` on my fork is #4312's stage on this PR's `PipelineResult`, dp1 and pp2 bitwise at step 1 from a shared seed checkpoint; today it uses `finalize_gradients` as a step-end check that the block store drained, and the design note is [here](https://github.com/QIU023/torchtitan_attention_residual/blob/main/phase13_k3like_48b_posttrain/PP_RUNTIME_DESIGN_NOTE_2026-09-08.en.md). The two lifecycle points it still lacks -- a micro-batch-end release, and a place inside the schedule where a same-rank consumer's gradient merges before the producer's backward -- I will raise as concrete diffs once this lands rather than argue them here.
 
 --- PASTE END ---
 
