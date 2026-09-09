@@ -76,7 +76,7 @@ On #4492 (close it after posting):
 
 On #4499 (after the head moves to `tp_sp_on_4500` and the title loses the "DO NOT review" prefix):
 
-> Re-based onto #4500's head (`2884d82a9`) as three commits, the TP/SP delta only; the PR stack is #4500 -> #4450 -> #4449 -> #4322, and the body follows #4500's format (same protocol, tp=1 on the parent as the reference, 100 steps). One note for #4500 from bringing TP onto it: at tp > 1 the tower's colwise / rowwise projector declaration leaves a Partial at its exit that nothing reduces when sequence parallel is off, so under spmd_types this branch declares the tower invariant on tp (it runs whole on every rank, as under partial_dtensor). Happy to fold that into #4500 instead if preferred.
+> Re-based onto #4527's head (`d1e3979c7`) as four commits, the TP/SP delta only: the head-parallel declarations for KDA and MLA on top of #4527's local map, sequence parallel with the multimodal splice, the per-mesh `clip_grad_norm_` grouping, and one line accepting CUDA capability >= 8.0 for the KDA kernels (Attention Gym's default Triton path needs 8.0; drop it if the SM100 gate is deliberate). The body follows #4500's format: same protocol, tp=1 on the parent as the reference. The same delta on #4500's head is `tp_sp_on_4500` on my fork, for when CP lands; one note for #4500 from that: at tp > 1 its colwise / rowwise projector declaration for the tower leaves a Partial at the exit that nothing reduces when sequence parallel is off, so under spmd_types the branch declares the tower invariant on tp.
 
 On #4412 (with the head synced to `qb_review4`):
 
