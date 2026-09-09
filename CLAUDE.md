@@ -63,6 +63,23 @@ answer is that the cells are not comparable (different data streams,
 different caches), say that first and re-pair them per the numerics-table
 rule; do not argue the old table.
 
+## Diff-audit rule (user, 2026-09-09)
+
+Before a PR draft is called ready, read the branch's own diff line by line --
+`git diff <base> <head>` -- not just the changed-file counts. Three things
+that reached a draft this way and must never appear upstream:
+
+- a logbook path in a source file (`See phase13_.../X.md`); the code names no
+  file the reader cannot open from the repo it is in;
+- experiment records inside a docstring (measured cv numbers, bin sweeps,
+  "two findings about that plateau"); findings belong in the PR body or the
+  logbook, the docstring says what the function does;
+- docstrings that carry the design argument. One K3 file reached 115 docstring
+  lines out of 408. Upstream's own components are far leaner; match them.
+
+The audit is part of drafting, not a step after review asks for it. Its
+output goes in the kit's notes so the next reader can see what was checked.
+
 ## Flavor rule (user, 2026-08-29)
 
 Do NOT add model flavors casually on upstream-bound branches. A text-only
