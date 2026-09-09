@@ -76,3 +76,9 @@ The optimizer-state fix is independent of the tree: torch's `_init_optim_state` 
 
 恢复测试（新树，dp1/pp2，step 2 存档后恢复重跑 3-4）：第 3 步 loss 与 grad norm 位级一致，第 4 步不一致；检查点里 1002 个参数全有 Adam 状态（32 个无状态的是 `expert_bias_E` 缓冲区），不是她在老树遇到的缺状态；逐张量比较连续跑与恢复跑的 step-3 存档：737/1034 个权重差 1e-4~1e-3（bf16 一个 ulp 量级），Adam 动量差 ~1e-7——第 3 步的更新本身不同，来源待定（复原路径的系统性差异 vs 恢复后非确定性，正在用"同一检查点恢复两次"分辨）。这一条要和她的优化器 PR 一起处理，属于 torchtitan 核心的检查点语义，不是 K3 的。
 
+## 恢复不精确的定位（2026-09-10 凌晨）
+
+链条：(1) 恢复两次（B、C）step-3 存档位级一致，连续跑 A 与之差 737/1034 → 系统性、非随机；(2) 检查点 dtype 与内存一致（权重/动量 bf16、step fp32、expert_bias fp32），非 dtype 往返；(3) 恒定 LR（warmup 0、decay_ratio 0）下仍差 738/1034 → 非调度；(4) 探针：恢复后第 3 步 param_group（lr 8e-4、fused、wd、betas）、状态张量 dtype/设备、step=2.0、调度器 last_epoch 全部相同；(5) 探针 2（优化器 step 前，CPU fp64 校验和）：权重、exp_avg、exp_avg_sq、step 在 A/B **位级相同**，**梯度不同**（tok_embeddings grad sum 8.2192e-3 vs 8.1604e-3，norm 6.86831e-3 vs 6.86754e-3，约 1e-3 相对），而 loss 位级相同。
+
+结论：检查点往返是精确的；差异出在恢复后进程的反向计算——同样的权重、同样的前向 loss，反向梯度差 1e-3 量级。这是运行时确定性问题（首选候选：Triton/inductor 内核按进程的内存分配/对齐特化，恢复进程在前向前多做了一次优化器状态分配；连续跑两次位级一致、恢复跑两次位级一致，两种"进程形状"各自确定但彼此不同），不是 K3 也不是检查点语义的 bug。与 Elfie 的缺状态修复无关，单独记录；若要闭环，下一步是按参数 dump 第 3 步梯度、按模块归类差异，并在关掉 compile 的条件下复测。探针脚本：scratchpad `opt_probe.sh` / `opt_probe2.sh`（trainer.py 临时 hack，已还原）。
+
