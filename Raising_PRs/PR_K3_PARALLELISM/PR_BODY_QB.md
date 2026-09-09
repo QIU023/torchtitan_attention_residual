@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-PR 4412. Content: `qb_review4` = `74813381d`, three commits on upstream/main `65ba8a697`; `git diff upstream/main` is exactly `torchtitan/components/quantile_balance.py` (+331), `tests/unit_tests/cpu/test_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+16). Sync: `git push origin qb_review4:k3_qb --force-with-lease`, un-draft (the title prefix is already gone), paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). Diff audited line by line on 2026-09-09: no logbook path, no experiment record in a docstring, docstrings say what the code does (QB_EVIDENCE sec. 7 holds what was removed). 10-step numbers from `mx3_qb10_*` (2026-09-09), complete. The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_probe/qb_summarize.py`).
+PR 4412, head `0303a9886` (the review branch `qb_review4` = `91a00ccac`, squashed onto upstream/main `65ba8a697`); `git diff upstream/main` is exactly `torchtitan/models/kimi_k3/quantile_balance.py` (+299), `tests/unit_tests/cpu/test_kimi_k3_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+4). Remaining: run the 14 CPU tests on a machine whose `spmd_types` matches main (this box's does not), then un-draft and paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). 10-step numbers from `mx3_qb10_*` (2026-09-09), complete. The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_probe/qb_summarize.py`).
 
 --- PASTE BEGIN ---
 
@@ -10,7 +10,7 @@ Add quantile balancing for Kimi K3's MoE router bias.
 
 - The bias is solved at each optimizer step from an accumulated per-expert load histogram at the balanced quantile (report sec. 2.3.3, eqs. 13-14, app. D), instead of nudged by a fixed sign step from the current step's counts. Same bias tensor, same hook point, no model change.
 - The hook is one preallocated `(num_experts, num_bins)` histogram per MoE layer and a single `add_` on the router's scores; the solve inverts the accumulated CDF at the Top-(k+1) cutoff with mean-centred margins.
-- The `kimi_k3_debugmodel_qb` flavor installs the solver as the model spec's `post_optimizer_build_fn`, the slot core's sign-rule hook occupies; under the flavor the solver is the only writer of `expert_bias_E`.
+- `kimi_k3_debugmodel` registers the solver as the model spec's `post_optimizer_build_fn`, the slot core's sign-rule hook occupies, so the solve is the only writer of `expert_bias_E`. The rule is K3's, so it lives in the model folder rather than in `components`, where core's model-agnostic hook is.
 
 ## Implementation
 
@@ -21,19 +21,19 @@ Add quantile balancing for Kimi K3's MoE router bias.
 
 ## Limitations
 
-- The flavor replaces core's load-balancing registration instead of composing with it: a model spec holds one `post_optimizer_build_fn`.
+- Registering the solver replaces core's load-balancing hook instead of composing with it: a model spec holds one `post_optimizer_build_fn`.
 - The histogram range is fixed: scores outside `[-1, 1]` land in the end bins. The debug model's scores stay inside it.
 - Not exercised with pipeline parallelism.
 
 ## Tests
 
 ```text
-pytest tests/unit_tests/cpu/test_quantile_balance.py
+pytest tests/unit_tests/cpu/test_kimi_k3_quantile_balance.py
 ```
 
 Result: `14 passed` (histogram accumulation, CDF inversion, the solve against a brute-force reference, in-place zeroing, the SAC-identical op sequence). `tests/unit_tests/gpu/test_kimi_k3.py`: `2 passed, 1 skipped`.
 
-The deterministic BF16 comparison used `seed=42`, `--debug.deterministic`, one seed checkpoint, 8192 tokens per rank per step in 256-token micro-batches, and 10 training steps. The sign-step reference is the debug flavor on the parent commit `65ba8a697`; quantile balancing is the qb flavor on this commit. Percentages are relative to the sign-step run of the same parallelism; dp8 x ep8 is the K3 layout (32 experts, 4 per rank, the histogram summed over the 8-rank loss mesh).
+The deterministic BF16 comparison used `seed=42`, `--debug.deterministic`, one seed checkpoint, 8192 tokens per rank per step in 256-token micro-batches, and 10 training steps. The sign-step reference is the debug config on the parent commit `65ba8a697`; quantile balancing is the same config on this commit, where it registers the solver. Percentages are relative to the sign-step run of the same parallelism; dp8 x ep8 is the K3 layout (32 experts, 4 per rank, the histogram summed over the 8-rank loss mesh).
 
 Step 1 is identical under both hooks by construction (the bias is 0 before the first solve); from step 2 the two hooks route the same tokens to different experts, so every row below step 1 is two different runs of the same model rather than a numerics comparison, and the percentages size that divergence rather than an error.
 
@@ -55,7 +55,7 @@ Gradient norms on the two configurations that carry them:
 | dp1 | sign-step (main) | `14.125` | `10.0625` | `2.0312` |
 | dp1 | quantile balancing | `14.125` (`0%`) | `9.5` (`5.59%`) | `2.1406` (`5.39%`) |
 
-As a control, the sign-step flavor on this commit matched the parent commit's run at every step (loss and grad norm), with and without the load probe that produced the table below. Every rank holds the same solved bias after every step (all-gathered and compared, ep8 included).
+As a control, the sign-step hook on this commit matched the parent commit's run at every step (loss and grad norm), with and without the load probe that produced the table below. Every rank holds the same solved bias after every step (all-gathered and compared, ep8 included).
 
 What the change is for is the load. Expert load per MoE layer (tokens routed to each expert, summed over the loss mesh) as the coefficient of variation over the 32 experts and the largest and smallest expert's load relative to the mean, averaged over the 23 MoE layers and over the step window; the bias range at step 10:
 
@@ -72,6 +72,6 @@ What the change is for is the load. Expert load per MoE layer (tokens routed to 
 
 With the router frozen (`lr` 0, dp1, 10 steps, the same data through unchanging weights) the sign step moves the load cv from 1.05 (steps 1-5) to 0.89 (steps 6-10) and quantile balancing from 0.76 to 0.58: the hook moves the loads, not the training.
 
-Runs on RTX 5060 Ti (SM120) with the KDA capability check widened locally so Attention Gym's Triton path runs; the flavor is otherwise unchanged.
+Runs on RTX 5060 Ti (SM120) with the KDA capability check widened locally so Attention Gym's Triton path runs; nothing else in the config differs.
 
 --- PASTE END ---
