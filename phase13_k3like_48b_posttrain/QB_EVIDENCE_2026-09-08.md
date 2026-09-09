@@ -127,4 +127,4 @@ Per the diff-audit rule, `quantile_balance.py` went from 407 lines / 106 docstri
 - the tp note in the hook: the router's gate is declared, so under TP its output is a DTensor while `expert_bias_E` is unwrapped; the two met in `topk_with_cutoff` and every tp cell died until the scores were unwrapped too (scores are Replicate under TP, so `to_local` is exact);
 - the loss-mesh note in `step`: the pre-reduce counts differ across the loss group (34765 of 81920 bins at dp2, 32928 at dp4), so the reduction aggregates distinct data; the collective is one stacked all-reduce rather than 92 per step at K3's depth.
 
-Behaviour unchanged; the 14 unit tests pass; the fixup is squashed into the first commit.
+Behaviour unchanged; the 14 unit tests pass; it is the fourth commit of the branch.
