@@ -67,7 +67,8 @@ Float32 masters and float32 compute (`--training.mixed_precision_param float32`,
 | tp=2 SP on, partial_dtensor | 1.2e-4 | 2.0e-3 | 1.8e-2 | 366 | 466 | 737 |
 | tp=2 SP off, partial_dtensor | 1.2e-4 | 2.0e-3 | 1.6e-2 | 364 | 466 | 736 |
 | tp=2 SP on, spmd_types | 1.1e-4 | 2.0e-3 | 1.8e-2 | 366 | 466 | 737 |
+| tp=2 SP off, spmd_types (one routing flip, below) | 9.8e-3 | 1.4e-2 | 5.7e-2 | 0 | 4 | 402 |
 
-Every TP cell holds the same gradient on both ranks for all 750 parameters. The tp=2 SP-off cell under spmd_types is withheld from the tables until its step-1 gradient gap (median 1e-2 against dp1, not present with SP on, not present on a 9-layer alias) is located; its forward matches dp1 at the float32 floor.
+Every TP cell holds the same gradient on both ranks for all 750 parameters. The tp=2 SP-off spmd_types row is one token's top-4 routing: at layer 17, token 6's fourth and fifth routing scores in dp1 are `0.6296397` and `0.6296365` (`3.3e-6` apart), the router's input differs from dp1 by `1.2e-5` relative under either backend, and spmd_types' rounding flips the order (expert 12 for 17) where partial_dtensor's keeps it. Layers 0 to 16 match dp1 at `5.4e-5` on that micro-batch and the other micro-batch matches through the last layer; from the flip on, that token routes differently in every later layer, which is the whole of the cell's step-1 loss (`5.5e-5`) and gradient difference. Three of the 5888 (router, token) pairs in the micro-batch sit within `1e-5`, and the control row moves the router scores by the same amount (`7e-6` relative) without flipping any: the discrete floor of top-k routing, not the sharding.
 
 --- PASTE END ---
