@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Quantile balancing for the MoE router bias
 
-PR 4412, head `0303a9886` (the review branch `qb_review4` = `91a00ccac`, squashed onto upstream/main `65ba8a697`); `git diff upstream/main` is exactly `torchtitan/models/kimi_k3/quantile_balance.py` (+299), `tests/unit_tests/cpu/test_kimi_k3_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+4). Remaining: run the 14 CPU tests on a machine whose `spmd_types` matches main (this box's does not), then un-draft and paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). 10-step numbers from `mx3_qb10_*` (2026-09-09), complete. The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_probe/qb_summarize.py`).
+PR 4412, head `k3_qb` = `qb_review4` = `895f4d6e9` (one commit squashed onto upstream/main `65ba8a697`, pushed 2026-09-09); `git diff upstream/main` is exactly `torchtitan/models/kimi_k3/quantile_balance.py` (+299), `tests/unit_tests/cpu/test_kimi_k3_quantile_balance.py` (+273) and `torchtitan/models/kimi_k3/config_registry.py` (+4). Verified on the GPU box: 14 CPU tests pass, `tests/unit_tests/gpu/test_kimi_k3.py` passes; un-draft and paste the body between the markers. Format: PR 4500's (Summary / Implementation / Limitations / Tests with the deterministic comparison). 10-step numbers from `mx3_qb10_*` (2026-09-09), complete. The 100-step batch runs overnight and replaces the tables (`matrix_scripts/qb_probe/qb_summarize.py`).
 
 --- PASTE BEGIN ---
 
