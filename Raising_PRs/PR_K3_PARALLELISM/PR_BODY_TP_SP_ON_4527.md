@@ -40,7 +40,7 @@ Result: `test_kimi_k3_sp_splice.py` 1 passed (this box); `gpu/test_kda_attention
 
 ## Results
 
-Same protocol as #4500: `seed=42`, deterministic, one seed checkpoint per stream, tp=1 on the parent commit as the reference, percentages relative to it, loss and grad norm side by side; 10 steps on this box (the 100-step run follows on A100), 36 cells: dp1, dp2 and dp2 x ep2 streams x tp=1/2/4 x SP on/off x both SPMD backends, with the parent tp=1 cell of each stream. The debug config trains in bf16 end to end.
+Same protocol as #4500: `seed=42`, deterministic, one seed checkpoint per stream, tp=1 on the parent commit as the reference, percentages relative to it, loss and grad norm side by side; 10 steps on this box (the 100-step run follows on A100; the debug config decays its learning rate from step 5 of a 10-step run, so these rows are a 10-step schedule, not the first ten steps of a 100-step one), 36 cells: dp1, dp2 and dp2 x ep2 streams x tp=1/2/4 x SP on/off x both SPMD backends, with the parent tp=1 cell of each stream. The debug config trains in bf16 end to end.
 
 dp1 stream, 256 tokens per step:
 

@@ -36,3 +36,8 @@ pytest tests/unit_tests/cpu/test_kimi_k3_sp_splice.py tests/unit_tests/gpu/test_
 Scripts 3 and 4 patch a throwaway copy of the tree with the hacks in `hacks/` (fp32 experts loop, dump-and-exit, the perturbation); never commit those.
 
 Every script writes under `$OUT` (default `./tp_a100_out`); the tables are the last lines of each script's output.
+
+## Kernel sensitivity (run first, one GPU, one minute)
+
+`python kda_kernel_sensitivity.py` (needs Attention Gym on `sys.path`; edit the path at the top). On the 5060 Ti (SM120) it reads: fp32 inputs, fused kernel output moves `2.2e-4` for a `3e-7` input perturbation while the reference moves `5.5e-7`, and fused vs reference differ by `4.5e-3` on the same input (the fused path keeps FP16 intermediates). If the A100 reads the same, the kernel's precision is the kernel's on every GPU; if the A100 reads `1e-6`-class numbers, the SM120 Triton path is the source of this box's step-to-step spread, and the 100-step tables on the A100 will be the ones to quote.
+
