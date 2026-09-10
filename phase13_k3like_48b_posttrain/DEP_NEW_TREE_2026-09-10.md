@@ -26,3 +26,7 @@ Unseeded recipe runs (each rank initialising its own parts) read different step-
 Two things the port fixed on the way: the bubble runtime and the step wrapper must be installed so `begin_step` runs outermost, or the plan sees the previous step's micro-batch count; and an encode issued before the stage's first forward makes the tower an FSDP root of its own ("FSDP state has already been lazily initialized"), so the first step runs inline.
 
 Commit on `k3_int_20260910`: see `git log` (the DEP commit). Local aliases for the cells (`kimi_k3_debugmodel_pp2_vit_dep`, `_pp4i`, `_pp4i_vit_dep`, `_pp4i_vit_dep_bubble`, `_pp4i_vit_dep_prefetch`) stay uncommitted in `/tmp/wt_k3int2`'s registry; the committed recipe is `kimi_k3_debugmodel_pp8_vp4_vit_dep` with its integration cell.
+
+## The new head for PR 4381
+
+`k3_pp_mm_v2` (pushed) = the published `k3_pp_text` head `a3be242bf` (PR 4312) + the two DEP commits cherry-picked with the integration-only context left out (`attn_res_cache_offload`, `pp_balance`, `_apply_ac_outside_attention`, the `cu_seqlens` forward argument, `multimodal_context`); CPU: import, 33 tests, pinned pyrefly clean (the prefetch timing spans typed as CUDA events). Body: `Raising_PRs/PR_K3_PARALLELISM/PR_BODY_PP_MM_v2.md`. The local branch `k3_pp_text` is an older lineage; the base is `origin/k3_pp_text`.

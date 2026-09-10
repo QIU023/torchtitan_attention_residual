@@ -37,3 +37,7 @@ The two CP flavours read the same step-1 loss because the tower path is the same
 | large + small | bf16 params | 1.2e-2 | 1.4e-2 | 2.1e-2 |
 
 In fp32 the partition is the replicated computation to rounding, forward and backward, on every layout the planner produces; the bf16 rows are the dtype's own noise (the fp32 rows are the control), which is where the 0.16% step-1 move of the cp2 cells comes from. Commit on `k3_int_20260910`: see the branch log ("dynamic context parallelism for the vision tower").
+
+## The new head for PR 4380
+
+`k3_cp_mm_v2` (pushed, `121303718`) = the published `k3_cp_text` head `61a73ca6c` + the dynamic CP commit cherry-picked with the integration-only context left out (the sequence-parallel splice, MTP, `ac_reuse_attention`, the DEP vision stream); on that head the splice calls the new `encode_images`, and the tower helpers the head's image-free branch uses stay. CPU: import, 19 tests, pinned pyrefly clean. Body: `Raising_PRs/PR_K3_PARALLELISM/PR_BODY_CP_MM_v2.md`.
