@@ -1,14 +1,15 @@
-# PR title: [Kimi K3] Tensor parallelism with sequence parallel, stacked on the multimodal spmd fix
+# PR title: [DO NOT review: on main after #4527, rebases after #4500] [Kimi K3] Tensor parallelism with sequence parallel
 
-For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7), re-pointed at fork branch `tp_sp_on_4527` = `54ebe13ee` (8 commits on `shuhuayu:k3` = `d1e3979c7`, PR 4527, on main `53326e559`). PR 4527 merged into main on 2026-09-09 as `ac10ca48f`; the same eight commits rebased onto it are `tp_sp_on_main` = `ce10692c1` (clean rebase; tp=1, tp=2 SP on and dp2 x ep2 x tp2 read the matrix's step-1 loss and grad norm bitwise; GPU tests 3 passed 2 skipped), the branch to force-push onto `k3_tp_sp` so the PR diff stops carrying 4527's commits. The same delta on 4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. Numbers below: this branch on the 5060 Ti box, 10 steps (`mx3_tp4527_*`, 2026-09-09); the A100 run of `matrix_scripts/tp_a100/` gives the 100-step and tp4 rows. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
+For PR 4499. Base: main `ac10ca48f` (PR 4527 merged into it on 2026-09-09). PR head `k3_tp_sp` = `ce10692c1`; the review branch `tp_sp_on_main` = `8a9c129d7` (the `preprocess_inputs` bad-override suppression dropped, the four cp-axis declarations marked `TODO: rebase after upstream CP merge`) is what gets synced onto `k3_tp_sp` after approval. The same delta on #4500's head is `tp_sp_on_4500` = `3fdd8c40d`, kept for when CP lands. Numbers below: this branch on the 5060 Ti box, 10 steps (`mx3_tp4527_*`, 2026-09-09); the A100 run of `matrix_scripts/tp_a100/` gives the 100-step and tp4 rows. Paste between the markers. Numbers come from `phase13_k3like_48b_posttrain/TP_SP_ON_4500_2026-09-09.md`.
 
 --- PASTE BEGIN ---
 
 ## PR stack
 
-- #4527 (the multimodal spmd annotations and the KDA local map; this PR's base)
+- main (`ac10ca48f`, after #4527 merged): this PR's base
+- #4500 (Kimi K3 context parallelism, open): this PR rebases onto main once it lands
 
-Stacked on #4527, which carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the eight commits after `d1e3979c7`; the same delta rebased onto #4500 is on the fork as `tp_sp_on_4500`). One commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires (drop it if the SM100 gate is deliberate); one makes `RouterGateLinear` run on the local shards when its weight or input is a DTensor, since `aten.mm.dtype` has no DTensor sharding strategy and the gate is replicated on tp.
+#4527 carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only. #4500 adds its own `kimi_k3/sharding.py` and declares the vision tower over cp, so the four functions here that carry the cp axis (`_set_mla_sharding`, `_set_kda_sharding`, `set_tensor_parallel_sharding_config`, `_set_vision_encoder_tp_invariant_sharding`) are marked `TODO: rebase after upstream CP merge` and are revisited in that rebase. One commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires (drop it if the SM100 gate is deliberate); one makes `RouterGateLinear` run on the local shards when its weight or input is a DTensor, since `aten.mm.dtype` has no DTensor sharding strategy and the gate is replicated on tp.
 
 ## Summary
 
