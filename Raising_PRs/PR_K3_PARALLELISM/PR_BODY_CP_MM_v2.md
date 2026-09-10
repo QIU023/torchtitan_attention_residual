@@ -40,7 +40,15 @@ Integration tree (`k3_int_20260910`, 33-layer debug model, 4096 tokens per step,
 | cp2 Ulysses MLA + KCP, partitioned tower | 12.41139 | 10.48488 | 7.39567 |
 | cp2 all-gather MLA + KCP, partitioned tower | 12.41139 | 10.46471 | 7.43285 |
 
-On this branch (`k3_cp_mm_v2`): dp1 and the two cp2 recipes -- (to be filled from `heads_verify`).
+On this branch (`k3_cp_mm_v2`, its own seed checkpoint, 3 steps):
+
+| cell | loss 1 | vs dp1 | loss 3 |
+| --- | ---: | ---: | ---: |
+| dp1 | 12.54425 | | 6.71085 |
+| cp2 Ulysses MLA + KCP (`kimi_k3_debugmodel_cp2`) | 12.56483 | +0.16% | 6.96542 |
+| cp2 all-gather MLA + KCP (`kimi_k3_debugmodel_cp2_allgather`) | 12.56483 | +0.16% | 6.92415 |
+
+The two recipes share the tower path and read the same step-1 loss; the +0.16% against dp1 is the partitioned tower's bf16 rounding, the same figure as on the integration tree, with the fp32 probe as the control.
 
 ### Changed files
 

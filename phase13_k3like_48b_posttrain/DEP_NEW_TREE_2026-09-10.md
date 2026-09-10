@@ -30,3 +30,5 @@ Commit on `k3_int_20260910`: see `git log` (the DEP commit). Local aliases for t
 ## The new head for PR 4381
 
 `k3_pp_mm_v2` (pushed) = the published `k3_pp_text` head `a3be242bf` (PR 4312) + the two DEP commits cherry-picked with the integration-only context left out (`attn_res_cache_offload`, `pp_balance`, `_apply_ac_outside_attention`, the `cu_seqlens` forward argument, `multimodal_context`); CPU: import, 33 tests, pinned pyrefly clean (the prefetch timing spans typed as CUDA events). Body: `Raising_PRs/PR_K3_PARALLELISM/PR_BODY_PP_MM_v2.md`. The local branch `k3_pp_text` is an older lineage; the base is `origin/k3_pp_text`.
+
+GPU cells on the head (own seed): dp1 12.41967 / 7.49054, pp8 x vp4 12.41967 / 7.61791, pp8 x vp4 with `vit_dep` 12.41967 / 7.71360 (steps 1 and 3; step 1 bitwise across the three). PR 4381's branch `k3_pp_mm` now points at this head (force-pushed 2026-09-10, replacing the old-tree head f5e60f066).

@@ -34,7 +34,15 @@ Integration tree (`k3_int_20260910`, 8x RTX 5060 Ti, 33-layer debug model, 4096 
 
 Step 1 bitwise with dp1 in every cell; the three DEP placements are bitwise with each other (the placement moves when the encode runs, not what it computes); the later-step difference between splits is the reduction-order class this box shows for every parallelism. Bubble mode at pp4 x vp2: 4 upfront encodes, 2 of 2 planned encodes in bubbles, 2 synchronous, 14 idle slots per step; prefetch: 8 of 8 cache hits per step from the second step. pp2 with DEP runs out of memory on a 16 GB card (all 33 layers on one stage), the expected imbalance.
 
-On this branch (`k3_pp_mm_v2`): pp8 x vp4 recipe with and without `vit_dep` -- (to be filled from `heads_verify`).
+On this branch (`k3_pp_mm_v2`, its own seed checkpoint, 3 steps):
+
+| cell | loss 1 | loss 3 |
+| --- | ---: | ---: |
+| dp1 | 12.41967 | 7.49054 |
+| pp8 x vp4 recipe | 12.41967 | 7.61791 |
+| pp8 x vp4 recipe with `vit_dep` | 12.41967 | 7.71360 |
+
+Step 1 bitwise across the three; the later-step differences are the split's reduction order, as on the integration tree.
 
 ### Changed files
 
