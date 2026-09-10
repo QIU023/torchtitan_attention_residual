@@ -1,6 +1,6 @@
 # PR title: [Draft] [Kimi K3] LoRA adapter export and QLoRA (NF4 and packed MXFP4)
 
-Branch `lora_review2` (`f092d37d9`, the eight commits of `lora_review1` = `93f78b5ab` rebased onto upstream/main `ac10ca48f`, the commit that merged PR 4527 on 2026-09-09; the rebase was clean). `k3_lora_extras` `2cd6a35e0` was the pre-rebase head. The packed-MXFP4 flavor imports `torchao.prototype.mx_formats` (torchao 0.18.0 on the box's torch 2.15 nightly); the matrix below is the 2026-09-10 rerun on the rebased branch, dp and ep cells only.
+Branch `lora_review2` (`3f931cf47`: the eight commits of `lora_review1` = `93f78b5ab` rebased onto upstream/main `ac10ca48f`, the commit that merged PR 4527 on 2026-09-09, as `f092d37d9`, plus one commit on 2026-09-10 that types the packed-experts factory so the pinned pyrefly 0.45.1 reads 0 errors on `lora.py`, as main does; it had 4, and the two class-line ignores went with them). `k3_lora_extras` `2cd6a35e0` was the pre-rebase head. The packed-MXFP4 flavor imports `torchao.prototype.mx_formats` (torchao 0.18.0 on the box's torch 2.15 nightly); the matrix below is the 2026-09-10 rerun on the rebased branch, dp and ep cells only.
 
 Upstream's only LoRA precedent is llama3's `float8_emulate_lora` flavor: one `LoRAConverter.Config(rank=8, alpha=16.0, target_modules=[...])` line, a CI cell in the features suite, and `components/lora.py` at 235 lines with no export and no quantization. Everything below the flavor is new core surface with no upstream counterpart; expect the reviewers to ask for the split noted after the markers.
 
@@ -46,7 +46,7 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
 ### Changed files
 
     torchtitan/components/
-      lora.py                        +759/-2  export, NF4 and packed-MXFP4 bases, packed experts, packed TP
+      lora.py                        +754/-2  export, NF4 and packed-MXFP4 bases, packed experts, packed TP
       optimizer/optimizer.py         +13/-0  a fully frozen model part gets no optimizer
     scripts/
       quantize_lora_dcp.py           +158/-0  repack an unquantized checkpoint into the packed layout (new)
@@ -55,7 +55,7 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
     tests/unit_tests/cpu/
       test_lora.py                   +230/-0  merge key sets, hook keys, wrapper traversal, NF4 and MXFP4 round trips
     torchtitan/models/kimi_k3/tests/
-      test_qlora_experts.py          +66/-0  packed experts build and merge (new)
+      test_qlora_experts.py          +95/-0  packed experts build and merge (new)
 
 ### CI/CD Coverage
 
