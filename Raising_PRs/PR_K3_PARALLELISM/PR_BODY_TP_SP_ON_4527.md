@@ -68,7 +68,7 @@ dp2 stream, 512 tokens per step (two ranks read their own data, so dp2 on this b
 | dp2 x ep2 x tp2 SP on, spmd_types | `12.460900` (`0.051%`) | `3.708090` (`4.24%`) | `23.5` (`2.1%`) | `4.375` (`4.5%`) |
 
 
-The later-step percentages are the class this model reads on every card measured with the debug recipe (256 tokens per step, lr 8e-4): #4500's own CP cells read +8.6% / +9.7% at step 10 on this A100 (`TP_SP_ON_4500_2026-09-09.md`), against the 0.15% its H100 table reports; llama3 under the same tensor-parallel code reads 0.017%. The dp2 stream at 100 steps is running (the kit's first pass passed a 256-token train step to two ranks).
+The later-step percentages are the class this model reads on every card measured with the debug recipe (256 tokens per step, lr 8e-4): #4500's own CP cells read +8.6% / +9.7% at step 10 on this A100 (`TP_SP_ON_4500_2026-09-09.md`), against the 0.15% its H100 table reports; llama3 under the same tensor-parallel code reads 0.017%.
 
 
 ## CI/CD
