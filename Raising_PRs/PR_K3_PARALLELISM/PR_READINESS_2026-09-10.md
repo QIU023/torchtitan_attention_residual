@@ -29,5 +29,5 @@ Every branch below is on the fork `QIU023/torchtitan`; unless a stack is named, 
 ## Not extracted
 
 - `attn_res_cache_offload` (763e24083) and `pp_balance` (222108864): stack on #4312's runtime; wait for the transport decision on that PR.
-- Kimi-Linear-48B graft: needs a design decision.
+- Kimi-Linear-48B graft: needs a design decision; the options, costs and a recommendation are in `phase13_k3like_48b_posttrain/GRAFT_48B_DESIGN_2026-09-10.md` (the 48B weights are not on this box either way).
 - The integration tree `k3_int_20260910` = `da7f9e348` stays on `ac10ca48f`; the trial rebase onto `d398a8fb9` is not pushed (#4572 moves pp2 numerics from step 2).
