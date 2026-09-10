@@ -26,6 +26,9 @@ CPU tests (no package needed): the fake-world end-to-end with a forced duplicati
     torchtitan/models/kimi_k3/
       moon_ep_dispatcher.py    the contract mapping and the two autograd.Functions
       moon_ep_experts.py       [E+B] tables, prefetch, slot-grad reduce
-      config_registry.py       the moonep debug flavor
-      tests/moonep_fake.py     the in-process Buffer fake
-      tests/test_moon_ep_dispatcher.py
+      __init__.py              "moonep" selects the dispatcher and the expert module, sized by the latent width
+      moe.py                   KimiLatentMoE.parallelize attaches the expert side once the EP mesh exists
+      model.py                 the model config fills moonep's static per-rank token count from the training shape
+    tests/unit_tests/cpu/
+      kimi_k3_moonep_fake.py            the in-process Buffer fake
+      test_kimi_k3_moon_ep_dispatcher.py
