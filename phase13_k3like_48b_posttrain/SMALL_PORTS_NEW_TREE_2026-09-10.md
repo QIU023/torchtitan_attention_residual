@@ -21,6 +21,12 @@ Bitwise over three steps. The first attempt at 4096 tokens shared its GPU with t
 
 Old tree: a hand-written `Muon` optimizer with `_muon_heads` tags on parameters (per-head orthogonalisation by row blocks), not sharding-aware, MoE experts silently on its AdamW path. New tree: upstream `DistMuon` with FQN-keyed compute layouts (`ComputeLayout`, `BlockShard`, `Owned`), which is where per-head tagging lives now. Ported as a recipe, `kimi_k3_debugmodel_muon` in `torchtitan/models/kimi_k3/config_registry.py`, mirroring the Kimi K2.5 registry: MLA `wq_b` per query head (`qk_nope + qk_rope`), `wkv_b` per key-value head (`qk_nope + v_head`), KDA `q_proj/k_proj/v_proj` per head (`head_dim`), routed experts per expert (EP/EFSDP layouts rebuilt from the final parallelism in `__post_init__`), every other matrix owned whole (MLA `wq_a/wkv_a/wo/gate`, KDA `output_gate/output_proj/beta/forget_a/forget_b`, the latent projections, shared experts, the router gate, the dense feed-forward); AdamW keeps norms, biases, the convolutions, `A_log`/`dt_bias`, the one-row residual projections, embeddings, the LM head and the vision tower. The per-expert layout helper is imported from the K2.5 registry rather than copied; it belongs in `flex_shard` if a third model needs it. Tensor parallelism is refused, as K2.5 does, until PR 4353 (DistMuon TP storage layouts, open, updated 2026-09-10) lands.
 
-On the 33-layer debug model every Muon-pattern parameter has a compute layout and every layout names a parameter (537 on Muon, 465 on AdamW... see the check in the session: 537 matrices with layouts, the rest AdamW), 34 buckets.
+On the 33-layer debug model every Muon-pattern parameter has a compute layout and every layout names a parameter (537 matrices on Muon, 465 tensors on AdamW, 34 buckets). The recipe's lr is the K2.5 debug recipe's 8e-4 with `match_rms_adamw`.
 
-GPU cells: (pending: dp1, fsdp2, ep2 x fsdp2, three steps)
+| cell (`kimi_k3_debugmodel_muon`, 4096 tokens per step, seeded model weights, fresh optimizer state) | loss 1 | loss 3 | AdamW loss 3 (same cell, mm18 matrix) |
+| --- | ---: | ---: | ---: |
+| dp1 | 12.40087 | 11.18928 | 7.71281 |
+| fsdp2 | 12.37309 | 11.37703 | 7.42964 |
+| ep2 x fsdp2 | 12.36806 | 11.34356 | 7.45531 |
+
+Step 1 is each cell's AdamW value (the loss precedes the first update, so the model and data path are untouched); DistMuon initialises on the DTensor layouts of all three meshes and trains through three steps. The slower descent at this lr is the optimizer's, not a defect of the layouts: it is what the K2.5 debug recipe does at the same setting, and a learning-rate study is not this port's business.
