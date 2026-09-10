@@ -7,17 +7,18 @@ For PR 4499 (keep it; close 4492 with the comment in PP_RUNTIME_ENGAGEMENT §7),
 ## PR stack
 
 - #4527 (the multimodal spmd annotations and the KDA local map; this PR's base)
+- the Kimi K2.5 vision-table retype under type checking (`kimi_k2_7/vision_encoder.py`, one commit at the bottom of this branch, filed as its own small PR): the shared position tables named a tp destination as well as the dp one, which the checker refuses at tp > 1 once the tower's parameters carry a tp declaration; the same check fails for K2.5 itself at tp2 with type checking on
 
 Stacked on #4527, which carries the K3 spmd declarations this PR builds on; the CP-side declarations #4492 made are #4500's now, so #4492 is closed and this PR holds the TP/SP delta only (the eight commits after `d1e3979c7`; the same delta rebased onto #4500 is on the fork as `tp_sp_on_4500`). One commit accepts any CUDA capability of 8.0 or newer for the KDA kernels, which Attention Gym's default Triton path requires (drop it if the SM100 gate is deliberate); one makes `RouterGateLinear` run on the local shards when its weight or input is a DTensor, since `aten.mm.dtype` has no DTensor sharding strategy and the gate is replicated on tp.
 
 ## Summary
 
-Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hybrid KDA/MLA decoder and its multimodal input path, on both SPMD backends.
+Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hybrid KDA/MLA decoder and its multimodal input path, on the spmd_types backend (the default; with partial_dtensor, tensor parallelism is refused, see Limitations).
 
 - KDA and MLA are head-parallel: the projections that produce or consume the head axis are colwise / rowwise, the per-head KDA state (`A_log`, `dt_bias`, the depthwise convolutions) shards with the heads, and the kernel runs on the local heads behind the `local_map` that #4527 installs, re-declared head-sharded on tp. The two rank-sized compressions (`wq_a` / `wkv_a`, `forget_a`) stay whole.
 - Sequence parallel carries the tp-axis `Shard(0)` of the token stream between modules: norms on the shard, the attention boundaries gather, the rowwise outputs reduce-scatter (the llama3 template); the MoE internals take and return the shard (`set_moe_sharding_config(enable_sp=True)`).
 - The multimodal splice under SP indexes global token positions, so it gathers the shard for the scatter and re-shards after; under spmd_types the splice learns the tp group from `parallelize` (`_sp_group`).
-- `clip_grad_norm_` groups parameters by mesh, on the dense and the EP path: undeclared modules under TP hold gradients on the fsdp-only mesh while the declared ones sit on (fsdp, tp).
+- No core change to gradient clipping: under spmd_types the tower's parameters are declared on the tp axis with the rest of the model, so every gradient lives on one mesh and `clip_grad_norm_` is the single call it always was. Under partial_dtensor the tower is sharded by FSDP alone and its gradients would sit on the fsdp mesh next to the decoder's on (fsdp, tp), which the gradient-norm stack refuses to mix; rather than teach core to group by mesh, `parallelize_kimi_k3` refuses tensor parallelism on that backend.
 - Under EP the routed experts are whole on every tp rank, so `routed_down` follows the stream's rule (invariant without SP, replicated with it) instead of the replicated declaration the TP-sharded experts need; the 36-cell matrix caught the replicated version by its step-1 grad norm (+37% at tp=2, +131% at tp=4, SP off, spmd_types).
 
 ## Implementation
@@ -28,7 +29,8 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 
 - TP x CP is not exercised (CP is #4500's; the two are not combined).
 - EP x TP is measured at dp2 x ep2 with tp=2 and tp=4 (eight GPUs here); larger degrees are not.
-- The tower runs whole on every rank under both backends (invariant on tp).
+- The tower runs whole on every rank (invariant on tp).
+- Tensor parallelism needs `--parallelism.spmd_backend spmd_types` (the default): with partial_dtensor the tower's gradients live on the fsdp mesh alone and the gradient-norm stack refuses the mix with the decoder's (fsdp, tp) gradients; `parallelize_kimi_k3` raises with that reason. Placing the tower on the tp mesh under partial_dtensor would need its inputs and outputs wrapped as DTensors around a flex-attention forward, which is left for later.
 
 ## Tests
 
@@ -36,7 +38,7 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 pytest tests/unit_tests/cpu/test_kimi_k3_sp_splice.py tests/unit_tests/test_kda_attention.py tests/unit_tests/gpu/test_kimi_k3.py
 ```
 
-Result: `test_kimi_k3_sp_splice.py` 1 passed; `gpu/test_kda_attention.py` + `gpu/test_kimi_k3.py` 2 passed, 2 skipped (this box, 8 x RTX 5060 Ti); `cpu/test_trainer.py` + `cpu/test_invalid_loss.py` (the clipping callers) 23 passed. pre-commit passes on the touched files with the pinned pyrefly 0.45.1.
+Result: `test_kimi_k3_sp_splice.py` 1 passed; `gpu/test_kda_attention.py` + `gpu/test_kimi_k3.py` 2 passed, 2 skipped (this box, 8 x RTX 5060 Ti). pre-commit passes on the touched files with the pinned pyrefly 0.45.1; `torchtitan/distributed/utils.py` is untouched.
 
 ## Results
 
@@ -48,10 +50,6 @@ dp1 stream, 256 tokens per step:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | tp=1, parent, partial_dtensor | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
 | tp=1, this branch, partial_dtensor | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
-| tp=2 SP on, partial_dtensor | `12.603320` (`0.0237%`) | `25.625` (bitwise) | `9.905730` (`1.5%`) | `22.75` (`14.5%`) | `4.208350` (`2.34%`) | `5.1562` (`8.55%`) |
-| tp=2 SP off, partial_dtensor | `12.633610` (`0.264%`) | `25.375` (`0.976%`) | `10.063880` (`3.12%`) | `23.625` (`18.9%`) | `4.614790` (`7.09%`) | `6.5938` (`38.8%`) |
-| tp=4 SP on, partial_dtensor | `12.641470` (`0.326%`) | `25` (`2.44%`) | `9.676980` (`0.841%`) | `22.25` (`11.9%`) | `4.068740` (`5.58%`) | `4.3438` (`8.55%`) |
-| tp=4 SP off, partial_dtensor | `12.636180` (`0.285%`) | `25.875` (`0.976%`) | `10.043420` (`2.91%`) | `22.625` (`13.8%`) | `4.127090` (`4.23%`) | `4.5938` (`3.29%`) |
 | tp=1, parent, spmd_types | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
 | tp=1, this branch, spmd_types | `12.600330` (bitwise) | `25.625` (bitwise) | `9.759030` (bitwise) | `19.875` (bitwise) | `4.309360` (bitwise) | `4.75` (bitwise) |
 | tp=2 SP on, spmd_types | `12.603320` (`0.0237%`) | `25.625` (bitwise) | `9.799900` (`0.419%`) | `21.125` (`6.29%`) | `4.155300` (`3.58%`) | `4.3438` (`8.55%`) |
@@ -65,10 +63,6 @@ dp2 stream, 512 tokens per step (a second dp rank reads other samples; compare w
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | tp=1, parent, partial_dtensor | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
 | tp=1, this branch, partial_dtensor | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
-| tp=2 SP on, partial_dtensor | `12.446900` (`0.158%`) | `23.75` (`1.6%`) | `9.419580` (`2.24%`) | `19.625` (`5.99%`) | `4.004540` (`0.535%`) | `4.25` (`1.49%`) |
-| tp=2 SP off, partial_dtensor | `12.489630` (`0.502%`) | `23.625` (`1.07%`) | `9.829360` (`2.01%`) | `15.1875` (`27.2%`) | `4.104440` (`1.95%`) | `4.5625` (`8.96%`) |
-| tp=4 SP on, partial_dtensor | `12.459320` (`0.258%`) | `24.25` (`3.74%`) | `9.640990` (`0.0578%`) | `20.625` (`1.2%`) | `3.921070` (`2.61%`) | `3.5938` (`14.2%`) |
-| tp=4 SP off, partial_dtensor | `12.441040` (`0.111%`) | `23.25` (`0.535%`) | `9.860660` (`2.34%`) | `18.5` (`11.4%`) | `4.218880` (`4.79%`) | `5.1562` (`23.1%`) |
 | tp=1, parent, spmd_types | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
 | tp=1, this branch, spmd_types | `12.427210` (bitwise) | `23.375` (bitwise) | `9.635420` (bitwise) | `20.875` (bitwise) | `4.026080` (bitwise) | `4.1875` (bitwise) |
 | tp=2 SP on, spmd_types | `12.446900` (`0.158%`) | `23.75` (`1.6%`) | `9.513450` (`1.27%`) | `18.25` (`12.6%`) | `3.954370` (`1.78%`) | `3.6094` (`13.8%`) |
@@ -82,10 +76,6 @@ dp2 x ep2 stream, 512 tokens per step:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | tp=1, parent, partial_dtensor | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
 | tp=1, this branch, partial_dtensor | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
-| tp=2 SP on, partial_dtensor | `12.467330` (`0.322%`) | `23.625` (`1.07%`) | `9.538430` (`1.25%`) | `18.5` (`12.4%`) | `3.849490` (`5.09%`) | `3.9531` (`4.17%`) |
-| tp=2 SP off, partial_dtensor | `12.446510` (`0.154%`) | `23.5` (`0.535%`) | `9.941480` (`2.92%`) | `17.375` (`17.8%`) | `4.082590` (`0.653%`) | `4.5938` (`11.4%`) |
-| tp=4 SP on, partial_dtensor | `12.413060` (`0.115%`) | `23.875` (`2.14%`) | `9.367700` (`3.02%`) | `21.25` (`0.592%`) | `3.920780` (`3.34%`) | `3.8438` (`6.82%`) |
-| tp=4 SP off, partial_dtensor | `12.446670` (`0.156%`) | `23.625` (`1.07%`) | `9.618450` (`0.426%`) | `21.75` (`2.96%`) | `3.844170` (`5.22%`) | `4.0312` (`2.27%`) |
 | tp=1, parent, spmd_types | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
 | tp=1, this branch, spmd_types | `12.427330` (bitwise) | `23.375` (bitwise) | `9.659570` (bitwise) | `21.125` (bitwise) | `4.056090` (bitwise) | `4.125` (bitwise) |
 | tp=2 SP on, spmd_types | `12.467330` (`0.322%`) | `23.625` (`1.07%`) | `9.394440` (`2.74%`) | `19.125` (`9.47%`) | `3.871160` (`4.56%`) | `3.7812` (`8.33%`) |
@@ -100,11 +90,13 @@ Float32 masters and float32 compute (`--training.mixed_precision_param float32`,
 | cell | median | p90 | max | within 1e-4 | within 1e-3 | within 1e-2 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp1 + 3e-7 on the KDA projections (control) | 2.1e-4 | 1.9e-3 | 1.6e-2 | 370 | 468 | 738 |
-| tp=2 SP on, partial_dtensor | 1.2e-4 | 2.0e-3 | 1.8e-2 | 366 | 466 | 737 |
-| tp=2 SP off, partial_dtensor | 1.2e-4 | 2.0e-3 | 1.6e-2 | 364 | 466 | 736 |
 | tp=2 SP on, spmd_types | 1.1e-4 | 2.0e-3 | 1.8e-2 | 366 | 466 | 737 |
 | tp=2 SP off, spmd_types (one routing flip, below) | 9.8e-3 | 1.4e-2 | 5.7e-2 | 0 | 4 | 402 |
 
 Every TP cell holds the same gradient on both ranks for all 750 parameters. The tp=2 SP-off spmd_types row is one token's top-4 routing: at layer 17, token 6's fourth and fifth routing scores in dp1 are `0.6296397` and `0.6296365` (`3.3e-6` apart), the router's input differs from dp1 by `1.2e-5` relative under either backend, and spmd_types' rounding flips the order (expert 12 for 17) where partial_dtensor's keeps it. Layers 0 to 16 match dp1 at `5.4e-5` on that micro-batch and the other micro-batch matches through the last layer; from the flip on, that token routes differently in every later layer, which is the whole of the cell's step-1 loss (`5.5e-5`) and gradient difference. Three of the 5888 (router, token) pairs in the micro-batch sit within `1e-5`, and the control row moves the router scores by the same amount (`7e-6` relative) without flipping any: the discrete floor of top-k routing, not the sharding.
 
 --- PASTE END ---
+
+## CI/CD
+
+A new cell in the b200 suite: `kimi_k3_mm_tp2` (`torchtitan_recipes/tests/b200.py: kimi_k3_debugmodel_mm_tp2`, the multimodal debug model at tp=2 with sequence parallel on spmd_types with type checking, 2 GPUs), next to the existing `kimi_k3_mm_fsdp` cell.
