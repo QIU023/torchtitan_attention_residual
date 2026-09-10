@@ -38,7 +38,7 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 pytest tests/unit_tests/cpu/test_kimi_k3_sp_splice.py tests/unit_tests/test_kda_attention.py tests/unit_tests/gpu/test_kimi_k3.py
 ```
 
-Result: `test_kimi_k3_sp_splice.py` 1 passed; `gpu/test_kda_attention.py` + `gpu/test_kimi_k3.py` 2 passed, 2 skipped (this box, 8 x RTX 5060 Ti). pre-commit passes on the touched files with the pinned pyrefly 0.45.1; `torchtitan/distributed/utils.py` is untouched.
+Result: `test_kimi_k3_sp_splice.py` 1 passed; `gpu/test_kda_attention.py` + `gpu/test_kimi_k3.py` 2 passed, 2 skipped (this box, 8 x RTX 5060 Ti). pre-commit passes on the touched files with the pinned pyrefly 0.45.1; `torchtitan/distributed/utils.py` is untouched. The Kimi K2.5 debug model at dp2 x tp2 with spmd_types type checking (AdamW, activation checkpointing off, 3 steps) fails on main at the shared vision tables with `mutate_type: expected current type R on axis mesh_tp, got I`, and with the bottom commit of this stack gets past them (it then hits a K2.5 tensor-parallel problem of its own in `qk_clip.py`, `QK clip scales do not match the MLA weight shape`, reported separately).
 
 ## Results
 
