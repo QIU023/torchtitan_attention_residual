@@ -1,6 +1,6 @@
 # Kimi K3 pipeline parallelism on the new tree: the stage design, your transport fix on it, and the two-node test
 
-For Elfie. Everything below is on `QIU023:pp_review4`, which is PR 4312's branch (`k3_pp_text`, main after the K3 EP merge) plus two commits: the edge-communicator warm-up (`fd7ff7400`) and your transport isolation composed onto the new stage class with its tests.
+For Elfie. Everything below is on `QIU023:pp_review4`, which is PR 4312's branch (`k3_pp_text`, main after the K3 EP merge) plus two commits: the edge-communicator warm-up (`fd7ff7400`) and your transport isolation composed onto the new stage class with its tests. Update 2026-09-10: the same line rebased onto main `d398a8fb9` is `QIU023:pp_review5` (`6042863a4`); use that branch, its base carries PR 4474.
 
 ## 1. What changed between the old tree's pipeline and PR 4312's
 
@@ -34,8 +34,8 @@ On the new tree the ordering problem does not exist (no traffic outside the sche
 
 ## 4. The ask
 
-1. PP=8 across your two GB200 nodes on `QIU023:pp_review4`, twice: default, and with `TORCHTITAN_PIPELINE_NEIGHBOR_P2P=1`. Plain 1F1B first (the configuration that hung), then `torchtitan_recipes.tests.features:kimi_k3_debugmodel_pp8_vp4`. Two or three steps are enough; what matters is whether the late edges hang, and the step-1 loss of each run (they should agree).
-2. The optimizer-state fix (`344fccf17`) is independent of the tree: torch's `_init_optim_state` skips every parameter once any state exists. The new tree's layer 0 has no residual projection, so it does not hit it today, but an unused parameter under PP, LoRA or MTP would. Please open it as a standalone PR against main with your test.
+1. PP=8 across your two GB200 nodes on `QIU023:pp_review5`, twice: default, and with `TORCHTITAN_PIPELINE_NEIGHBOR_P2P=1`. Plain 1F1B first (the configuration that hung), then `torchtitan_recipes.tests.features:kimi_k3_debugmodel_pp8_vp4`. Two or three steps are enough; what matters is whether the late edges hang, and the step-1 loss of each run (they should agree).
+2. The optimizer-state fix (`344fccf17`) needs no PR from you: main's PR 4474 (`dc3985ad4`, 2026-09-05) materializes the missing state per parameter and resets the Adam step and moments, and `pp_review5` sits on top of it. The new tree's layer 0 has no residual projection either, so nothing on this branch reaches the old gap.
 3. The old tree (PR 4281) is frozen. The sequence on main: PR 4527 (Shuhua's multimodal spmd declarations, the base), PR 4499 TP/SP (`k3_tp_sp`), PR 4412 Quantile Balancing (`k3_qb`), PR 4312 PP text (`k3_pp_text`), PR 4500 CP (fegin's stack); multimodal PP and CP follow as PR 4381 and PR 4380 once the text sides land.
 
 ## 5. Reproduction (one node, for reference)
