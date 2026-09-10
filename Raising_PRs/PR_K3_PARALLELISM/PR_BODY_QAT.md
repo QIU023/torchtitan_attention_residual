@@ -1,52 +1,49 @@
-# PR title: [Draft] MXFP4-weight / MXFP8-activation fake-quant QAT for grouped experts
+# PR title: [Kimi K3] MXFP4-weight / MXFP8-activation fake-quant QAT on the routed experts
 
-Branch `k3_qat` (`99defeab8`: the original commit, a merge of upstream/main `1dcb14a0c`, and the base-class alignment). 11 CPU tests pass on the merged tree. DEFERRED behind QB and LoRA -- see `phase13_k3like_48b_posttrain/QAT_UPSTREAM_AUDIT_2026-09-02.md`; if it goes up, it goes up as this draft, with the relation section, or it will sit like PR-3265. Results are a placeholder. Paste between the markers.
+Fork branch `k3_mx_qat` = `a8a850860` (two commits on main `ac10ca48f`, independent of the parallelism PRs; the first is the port, the second its scope test). Verified on this box: CPU tests below, one dp1 smoke on a single GPU.
 
 --- PASTE BEGIN ---
 
-### Summary
+## Summary
 
-Fake-quant QAT for MoE grouped experts. Before this change the grouped-expert forward consumes the bf16 parameters directly; after it, with `MXFP4QATConverter` in the model's converters, the forward consumes `dequant(quant(w))` -- MXFP4 weights, MXFP8 activations, OCP microscaling block 32 -- through a straight-through estimator, while the bf16 masters keep training underneath. Quantization is emulated over torchao's MX primitives, so QAT runs on any GPU; FP4 hardware only speeds deployment. Kimi K3's released quantization scope (report sec 4.1.4) is the routed experts, which is what the converter targets, but nothing in it is model-specific.
+Kimi K3's quantization path: MXFP4 weights and MXFP8 activations, OCP microscaling with block 32, and bf16 master parameters training underneath. The forward sees `dequant(quant(w))` with a straight-through estimator, emulated over torchao's MX primitives, so QAT runs on any GPU; FP4 hardware only speeds deployment.
 
-### Design
+- Scope is the released one: the routed experts and nothing else. In this module tree those are the `GroupedExperts` 3-D parameters, so the converter's isinstance check on `GroupedExperts.Config` is the official scope (K3's released `quantization_config` targets `Linear` with an ignore list that removes attention, shared experts, dense FFN projections, the head and the vision tower; a name-based Linear target list would quantize precisely the set K3 keeps in high precision).
+- The fake-quantized weights shadow `_parameters` through `self.__dict__` for the duration of `forward` only: a class property breaks FSDP2's `reset_sharded_param`, and renaming the masters breaks the state-dict contract and the expert TP/EP layout.
+- Per-shard quantization under expert TP narrows the scope on `w2_EDF` (block scales are per-block max-abs); the non-blockable case warns once per shape instead of skipping silently.
+- `kimi_k3_debugmodel_mx_qat` is the debug model under the converter.
 
-- `MXFP4QATConverter` is a `QuantizationConverter` like the MXFP8 and NVFP4 converters and is exported with them. It matches on `GroupedExperts.Config` -- a type check rather than a name list -- and a model with no grouped experts raises rather than silently training unquantized.
-  - K3's shipped `quantization_config` targets `Linear` with an ignore list that removes attention, shared experts, dense FFN, `lm_head` and the vision tower; in this module tree that set is exactly the grouped experts, so the isinstance check is the official scope.
-- The fake-quantized weights shadow `_parameters` through the instance `__dict__` for the duration of forward only.
-  - FSDP2's `reset_sharded_param` does `getattr` outside forward and needs the DTensor parameter back; renaming the masters would break the state-dict contract and the expert TP/EP layout, which key off these names.
-- Under expert TP the block scales are per-block max-abs and `w2`'s blocked dim is the sharded one, so a shard that stops being block-divisible falls back to bf16 with a once-per-shape warning instead of a silent skip.
-- Out-of-range values fall back elementwise to the high-precision value rather than emitting non-finites; emulated MX targets the OCP spec but is not verified bit-identical to vendor kernels -- MX-deployable, not bit-parity.
-- This is the complement of QLoRA's really-packed frozen bases; the two do not compose on the same weights.
-- CPU tests: STE identity gradient, unblockable passthrough, converter swap, forward-window restore, gradient flow to the masters.
+Fidelity, stated plainly: the emulated MX rounding targets the OCP spec and is not verified bit-identical to Moonshot's kernels ("MX-deployable", not "K3-QAT-bit-parity"). This is fake-quant QAT (bf16 masters, quantize at import/export only), the complement of `components/lora.py`'s QLoRA (really-packed frozen bases, trainable adapters); the two do not compose on the same weights.
 
-### Relation to in-flight work
+## Implementation
 
-Three groups are moving this ground; this converter is the narrowest of them and is written to be folded rather than to compete.
+`torchtitan/components/quantization/mx_qat.py`: `_fake_quant_mx` (MX quantize/dequantize with the STE, passthrough when the last dim is not a multiple of the block), `_get_qat_experts_cls` (builds a subclass of the model's experts class whose `forward` swaps the fake-quantized `w1_EFD` / `w2_EDF` / `w3_EFD` in for the call and restores the masters after), `MXFP4QATConverter` (a `ModelConfigConverter` that replaces every `GroupedExperts.Config` in the model config with the QAT subclass's config and raises when it finds none). `torchtitan/models/kimi_k3/config_registry.py`: the `kimi_k3_debugmodel_mx_qat` flavor. Requires `torchao.prototype.mx_formats` (the tests skip without it).
 
-- PR-3265 (torchao `QATConfig` post-build converter, seven schemes) and PR-3889 (NVFP4 quantization-aware distillation, self-contained fake-quant on experts and dense linears) are the other two fake-quant designs. If PR-3889 lands first, the MXFP4 element dtype and the experts-only scope here are what it lacks, and `_fake_quant_mx` (block-32 non-divisible fallback, non-finite fallback) is the contributable piece.
-- PR-4368 / PR-4344 redefine the expert-weight lifecycle for real MXFP8 compute (FSDP owns qdata and scale after all-gather). This converter does not override the grouped-mm seam, so PR-4368 does not touch it; PR-4344 makes the forward-window shadowing a second mechanism on the same tensors, and the right form after it lands is an MXFP4 fake-quant policy in that lifecycle.
+## Limitations
 
-### Results
+- Emulated rounding, see above; no claim of bit parity with the released kernels.
+- Under expert TP a `w2_EDF` shard whose last dim is not a multiple of 32 stays unquantized (warned once per shape).
+- The cross-check of the converter's scope against the released checkpoint index (only the routed experts are packed there) lives with the released-format PR, which brings the `report_arch` flavor that matches the artifact; this PR checks the scope on the debug model.
 
-<placeholder: dp1 / dp2 rows on `kimi_k3_debugmodel_mx_qat`, steps 1 / 3 / 10, one seed, warmed compile cache, with the unquantized flavor as the control>
+## Tests
 
-```
-torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_mx_qat \
-  --debug.seed 42 --debug.deterministic --training.steps 10 \
-  --parallelism.data_parallel_shard_degree 2
+```text
+pytest -q tests/unit_tests/cpu/test_kimi_k3_mx_qat.py tests/unit_tests/cpu/test_integration_test_definitions.py
 ```
 
-### Changed files
+Result: 18 passed (5 QAT: STE identity gradient, unblockable passthrough, the flavor swaps the experts while the masters stay parameters, the QAT forward differs from the parent's and the gradients flow to the masters, the converter reaches exactly the routed expert modules; 13 definitions). pre-commit passes on the touched files; `pyrefly check` reports the same error set as main `ac10ca48f`.
 
-    torchtitan/components/quantization/
-      mx_qat.py                     +211/-0  the converter and the STE fake-quant (new)
-      __init__.py                   +2/-0  export
-    torchtitan/models/kimi_k3/
-      config_registry.py            +15/-0  the mx_qat flavor
-      tests/test_mx_qat.py          +74/-0  (new)
+## Results
 
-### CI/CD Coverage
+One dp1 smoke on a single GPU (RTX 5060 Ti, the KDA capability guard lifted locally for the run), the Kimi K3 debug model, bf16, `seed=42`, deterministic, one seed checkpoint shared by both cells (4096 tokens per step, 256 per micro-batch), 3 steps: the plain flavor against `kimi_k3_debugmodel_mx_qat` on this branch. Same init, so the step-1 gap is the fake-quant rounding of the routed experts alone.
 
-The QAT tests are CPU and run in the default suite; no GPU cell is added.
+| cell | step 1 loss / grad norm | step 2 | step 3 | peak memory |
+| --- | ---: | ---: | ---: | ---: |
+| `kimi_k3_debugmodel` | `12.37043` / `14.4375` | `10.23010` / `14.8125` | `7.74434` / `18.8750` | 12.64 GiB |
+| `kimi_k3_debugmodel_mx_qat` | `12.37822` / `14.1250` | `10.17222` / `15.6250` | `7.36159` / `13.9375` | 12.64 GiB |
 
---- PASTE END ---
+The fake-quant forward adds no resident memory (the quantized copies live only for the duration of the call). No same-configuration number exists from the earlier tree, so these are new.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+https://claude.ai/code/session_01WBy1d9YVu44nYCVqykRqL1
