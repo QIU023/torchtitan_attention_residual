@@ -10,19 +10,9 @@ For Elfie (PR 4281's reviewer and the only one of us with multi-node GB200/GB300
   - `k3_pp_text` = `75045fed5` (PR 4312, text pipeline + your transport fix ported), `k3_pp_mm` = `c87097ae5` (PR 4381, DEP on top), `k3_cp_text` = `61a73ca6c`, `k3_cp_mm` = `a063a3d0e` (PR 4380), `k3_tp_sp` = `9a62f5229` (PR 4499), `k3_qb` = `895f4d6e9` (PR 4412). Use these for the per-PR cells.
 - Protocol we use everywhere: `--debug.seed 42 --debug.deterministic --metrics.log_freq 1`, the 33-layer `kimi_k3_debugmodel` (main's), 4096 tokens per step in 256-token micro-batches unless stated, spmd_types (`--parallelism.spmd_backend spmd_types`, the default). Report loss and grad norm at steps 1, 3, 10 per cell; "bitwise" means identical printed values.
 
-## 0b. Is the tree current? (checked 2026-09-10 evening)
+## 0b. Is the tree current? (rebuilt 2026-09-10 evening)
 
-`k3_on_4025` = `k3_int_20260910` = `da7f9e348` bundles every feature, but it is behind five of today's branch heads; nothing in the list changes a number the plan asks for, and the two-node PP ask (1.1) is on `k3_pp_text`, which is current.
-
-| feature | tree carries | branch head today | gap |
-| --- | --- | --- | --- |
-| TP/SP | the pre-rework stack (core `clip_grad_norm_` grouping, no partial_dtensor refusal, no b200 cell) | `k3_tp_sp` `9a62f5229` | the rework was bitwise for spmd_types cells; the tree still edits core `distributed/utils.py` |
-| LoRA | 8 commits | `lora_review2` `72bbcb639` | the user's 5 commits of 2026-09-10 (typing, test location, torchao 0.18 NF4 import, flavor cleanup, flake8) |
-| quantile balancing | our #4412 | maintainers' #4577 supersedes it | rebase onto Shuhua's router once it merges |
-| Kimi-Linear graft | absent | `k3_linear_graft` `3b6f03347` | new today, fork-internal |
-| empty container / QAT / MTP / AC | the ports | the standalone branches add tests and typing on top | tests only |
-
-So: run the plan on the tree as it is; the tree gets re-bundled after #4577 and the LoRA commits, and that re-bundle is the one to hand over for the full-scale cells (1.3).
+Yes: the local rebuild `k3_int_20260910b` = `85e77d814` (58 commits on `ac10ca48f`, in `/tmp/wt_k3int_rb`, not pushed yet) carries the reworked TP/SP stack (`k3_tp_sp` `9a62f5229`), the maintainers' quantile balancing (#4577, head `ebf6cc451`, every flavor balanced from step 2), and the user's five LoRA commits (`lora_review2` `72bbcb639`). The only feature outside it is the Kimi-Linear graft, which stays its own branch (`k3_linear_graft`). Step-1 numbers moved by the router's sorted top-k order (see `K3_INT_20260910.md`, "2026-09-10 rebuild"); the 18-cell one-node table there is the reference for the cells in section 2. Hand this rebuild over once it is pushed as `k3_on_4025`.
 
 ## 1. What only you can measure, in the order it unblocks PRs
 
