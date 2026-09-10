@@ -19,7 +19,7 @@ Port of the multimodal PP draft (PR 4381, `k3_pp_mm` f5e60f066, 2114 lines on th
 | pp4 x vp2, DEP + bubble (cost ratio 0.5) | 12.40087 | 10.43479 | 7.62074 | bitwise with DEP alone; per step 4 upfront, 2/2 planned encodes in bubbles, 2 synchronous, 14 idle slots; 2 deferred tower backwards at planned slots, 0 drained |
 | pp4 x vp2, DEP + prefetch depth 1 | 12.40087 | 10.43479 | 7.62074 | bitwise with DEP alone; 8/8 cache hits per step from the second step (the first step is inline) |
 | pp8 x vp4 recipe, seeded, no DEP | 12.40087 | | 7.68959 | |
-| pp8 x vp4 recipe, seeded, DEP | (below) | | | |
+| pp8 x vp4 recipe, seeded, DEP | 12.40087 | 10.44804 | 7.68082 | step 1 bitwise with the non-DEP recipe and with dp1 |
 
 Unseeded recipe runs (each rank initialising its own parts) read different step-1 losses with and without DEP (12.48589 vs 12.59142): the trainer initialises weights per model part, so the split changes the random draws. Not a numerics difference; the seeded cells are the comparison.
 
