@@ -1,0 +1,33 @@
+#!/bin/bash
+# 4500's table: bf16 flavor, 256 tokens per step, 100 steps; parent tp=1 is the reference.
+set -u; . "$(dirname "$0")/common.sh"
+B="--training.num-tokens-per-train-step 256 --training.num-tokens-per-microbatch-per-dp-rank 256"
+seed bf16 $B
+B2="--training.num-tokens-per-train-step 512 --training.num-tokens-per-microbatch-per-dp-rank 256"
+seed bf16_dp2 $B2
+cell tp1_parent  $TT_PARENT 0   1 bf16 100 $B $D 1 $PD &
+cell tp1         $TT        1   1 bf16 100 $B $D 1 $PD &
+cell tp1_st      $TT        2   1 bf16 100 $B $D 1 $ST &
+cell tp2_sp      $TT        3,4 2 bf16 100 $B $D 1 $T 2 $PD &
+cell tp2_sp_st   $TT        5,6 2 bf16 100 $B $D 1 $T 2 $ST &
+wait
+cell tp1_parent_st $TT_PARENT 0 1 bf16 100 $B $D 1 $ST &
+cell tp2_nosp    $TT        1,2 2 bf16 100 $B $D 1 $T 2 $PD $NOSP &
+cell tp2_nosp_st $TT        3,4 2 bf16 100 $B $D 1 $T 2 $ST $NOSP &
+wait
+cell tp4_sp      $TT        0,1,2,3 4 bf16 100 $B $D 1 $T 4 $PD &
+cell tp4_sp_st   $TT        4,5,6,7 4 bf16 100 $B $D 1 $T 4 $ST &
+wait
+cell tp4_nosp    $TT        0,1,2,3 4 bf16 100 $B $D 1 $T 4 $PD $NOSP &
+cell tp4_nosp_st $TT        4,5,6,7 4 bf16 100 $B $D 1 $T 4 $ST $NOSP &
+wait
+# data and expert parallel around TP (dp2 reads its own data stream: compare these rows with each other, not with tp1)
+cell dp2         $TT        0,1     2 bf16_dp2 100 $B2 $D 2 $PD &
+cell dp2_tp2     $TT        2,3,4,5 4 bf16_dp2 100 $B2 $D 2 $T 2 $PD &
+cell dp2_ep2     $TT        6,7     2 bf16_dp2 100 $B2 $D 2 $E 2 $PD &
+wait
+cell dp2_ep2_tp2 $TT        0,1,2,3 4 bf16_dp2 100 $B2 $D 2 $E 2 $T 2 $PD &
+cell dp2_tp2_st  $TT        4,5,6,7 4 bf16_dp2 100 $B2 $D 2 $T 2 $ST &
+wait
+table tp1_parent tp1_parent_st tp1 tp1_st tp2_sp tp2_sp_st tp2_nosp tp2_nosp_st tp4_sp tp4_sp_st tp4_nosp tp4_nosp_st
+echo; echo '# dp2 stream (reference dp2; SP on):'; table dp2 dp2_tp2 dp2_tp2_st dp2_ep2 dp2_ep2_tp2

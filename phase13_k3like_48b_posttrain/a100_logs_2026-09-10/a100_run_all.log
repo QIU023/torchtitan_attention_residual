@@ -1,0 +1,20 @@
+=== tests 06:17:07
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 2 skipped, 2 warnings in 303.66s (0:05:03)
+=== kernel sensitivity 06:22:45
+torch.float32   fused     : output change for a 3e-07 relative input perturbation = 1.62e-04; same input twice = 0.0e+00
+torch.float32   reference : output change for a 3e-07 relative input perturbation = 5.47e-07; same input twice = 0.0e+00
+torch.float32   fused vs reference on the same input: 4.51e-03
+torch.bfloat16  fused     : output change for a 4e-03 relative input perturbation = 8.35e-03; same input twice = 0.0e+00
+torch.bfloat16  reference : output change for a 4e-03 relative input perturbation = 7.85e-03; same input twice = 0.0e+00
+torch.bfloat16  fused vs reference on the same input: 3.79e-03
+=== fp32 loss 06:24:06
+./common.sh: line 16:  5089 Killed                  CUDA_VISIBLE_DEVICES=$gpus TORCHINDUCTOR_CACHE_DIR=$OUT/ind_$nm TRITON_CACHE_DIR=$OUT/tri_$nm torchrun --nproc_per_node=$np --master_port=$((30000+RANDOM%20000)) $COMMON --training.steps $steps "$@" --dump-folder $d > $OUT/$nm.log 2>&1
+x_tp2_sp_st rc=0 steps=0
+x_tp2_nosp_st rc=0 steps=0
+x_dp1: 
+x_tp2_sp: 
+x_tp2_sp_st: 
+x_tp2_nosp: 
+x_tp2_nosp_st: 

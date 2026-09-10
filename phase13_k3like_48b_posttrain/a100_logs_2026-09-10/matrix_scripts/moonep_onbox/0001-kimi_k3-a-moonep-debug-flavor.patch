@@ -1,0 +1,37 @@
+From 12bad1b3f4c898a40f677859d8aefea975684f6a Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Fri, 28 Aug 2026 15:50:10 +0000
+Subject: [PATCH] kimi_k3: a moonep debug flavor
+
+kimi_k3_debugmodel_moonep selects the MoonEP dispatcher and its [E+B]
+expert tables (moe_comm_backend="moonep"); needs the moonep package, an
+NVLink-connected EP group and dp_shard == ep.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018VSpEdqktVJCkFpG217pYh
+---
+ torchtitan/models/kimi_k3/config_registry.py | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index 7361df9..6df1f29 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -96,6 +96,14 @@ def kimi_k3_debugmodel() -> Trainer.Config:
+     )
+ 
+ 
++def kimi_k3_debugmodel_moonep() -> Trainer.Config:
++    """MoonEP dispatch + [E+B] expert tables (report sec 5.2.1); needs the
++    moonep package, an NVLink-mapped EP group and dp_shard == ep."""
++    config = kimi_k3_debugmodel()
++    config.model_spec = model_registry("debugmodel", moe_comm_backend="moonep")
++    return config
++
++
+ def kimi_k3_debugmodel_32l() -> Trainer.Config:
+     """The debug model at 32 layers, for the pipeline x virtual-stage matrix."""
+     config = kimi_k3_debugmodel()
+-- 
+2.43.0
+
