@@ -146,6 +146,15 @@ With one layer per stage the last stage holds only the head, whose first op on t
 
 Every other split passed because a later op consumed the input and autograd accumulated a dense gradient. The subclass returns dense gradients from `_compute_input_grads`; the library-side fix would be a dense `torch.empty` receive buffer and `.contiguous()` before the send.
 
+### Transport (round 3): the multi-node hang fix, ported
+
+Two commits on top of the round-2 head, both in `torchtitan/distributed/`, nothing in the model folder:
+
+- `distributed: create pipeline-edge NCCL communicators eagerly, before step one`: right after the schedule build every rank runs the warm-up `schedules.py` prescribes for its STATIC-mode gap (`_get_init_p2p_neighbors_ops` + `_batch_p2p` with dummy payloads). Harmless where the communicators already exist; it is the runtime's own TODO applied from the trainer side.
+- `distributed: port the multi-node PP NCCL hang fix from @elfiegg onto the new PP branch`: the fix from https://github.com/pytorch/torchtitan/pull/4281/changes/2c81784c18b186e201197d97d9f2425cfad5bef0, opt-in with `TORCHTITAN_PIPELINE_NEIGHBOR_P2P=1`: one two-rank NCCL group per adjacent stage edge created before the mesh's other groups, stage metadata over a per-replica CPU group, the inference-mode vote as one all-reduce. Composed as a mixin in front of `AttnResPipelineStage`; edge groups keyed by the sorted rank pair so looped schedules get their wrap edge.
+
+Tensor payloads do not change (only the communicators that carry them, the metadata's transport and the vote), so the numerics cannot move: on one node pp2, pp8 (1F1B) and pp8 x vp4 are bitwise the same with the switch on and off and with the round-2 head. Two nodes are the pending measurement (`PP_TRANSPORT_NOTE_FOR_ELFIE.md`). Six CPU tests cover the edge keying, the wrap edge and the vote.
+
 ### Changed files
 
     torchtitan/distributed/
