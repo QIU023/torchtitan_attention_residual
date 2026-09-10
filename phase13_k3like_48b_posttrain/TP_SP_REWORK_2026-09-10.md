@@ -27,7 +27,7 @@ Checks on the stack: pinned pyrefly 0 errors on the touched files; `test_kimi_k3
 
 ## 4. Body and sync
 
-`PR_BODY_TP_SP_ON_4527.md`: the clip bullet replaced by "no core change" with the mesh reason, Limitations names the backend requirement, Tests drops the clipping callers and states `utils.py` untouched, the partial_dtensor TP rows are out of the tables (tp1 partial_dtensor rows stay as the reference), the PR stack names the K2.5 small PR, a CI/CD section names the new cell. Sync to `k3_tp_sp` (PR 4499) with `--force-with-lease tp_sp_on_main:k3_tp_sp` waits for the user's word.
+`PR_BODY_TP_SP_ON_4527.md`: the clip bullet replaced by "no core change" with the mesh reason, Limitations names the backend requirement, Tests drops the clipping callers and states `utils.py` untouched, the partial_dtensor TP rows are out of the tables (tp1 partial_dtensor rows stay as the reference), the PR stack names the K2.5 small PR, a CI/CD section names the new cell. Synced on the user's word (07:48): `git push --force-with-lease=k3_tp_sp:ce10692c1 origin e6bed4bc9:refs/heads/k3_tp_sp`, so PR 4499's branch is `e6bed4bc9` (10 commits on main); the title goes to the body's first line.
 
 ## The A100 table and this rework
 
