@@ -40,10 +40,10 @@ dp1 on one GPU (8 x RTX 5060 Ti, one used; 16 GB), the debug recipe with 1024 to
 | --- | ---: | ---: | ---: | ---: |
 | `kimi_k3_debugmodel` | `12.51200` / `19.6250` | `10.71575` / `16.7500` | `8.24823` / `11.5000` | 12.63 GiB |
 | `kimi_k3_debugmodel_mtp`, `mtp_weight` 0.3 | `16.24698` / `20.2500` | `13.97159` / `16.7500` | `10.58028` / `18.7500` | 14.04 GiB |
+| `kimi_k3_debugmodel` with the MTP recipe's non-chunked cross entropy (control) | `12.51200` / `19.6250` | `10.67570` / `16.1250` | `8.25151` / `10.9375` | 12.96 GiB |
 | `kimi_k3_debugmodel_mtp`, `mtp_weight` 0.0 | `12.51200` / `19.6250` | `10.67570` / `16.1250` | `8.25151` / `10.9375` | 14.04 GiB |
 
-The MTP flavor's loss is the composite `main CE + 0.3 x depth-1 CE`; at step 1 the depth term is `(16.24698 - 12.51200) / 0.3 = 12.45`, a freshly initialised depth head at chance over the 163840-token vocabulary (`ln 163840 = 12.0`). With the weight at 0 the flavor reports the plain model's step-1 loss and grad norm exactly, which is the init-stream claim: the MTP layer leaves the backbone's init and forward untouched. From step 2 the two cells differ by 0.4% and 0.04% in loss; besides the zero-weighted MTP branch they differ in the loss implementation (chunked cross entropy in the plain recipe, non-chunked in the MTP recipe). The MTP layer costs 1.4 GiB here: the mirror block plus the full-vocab logits of the main head and the depth, which the chunked loss otherwise avoids.
-
+The MTP flavor's loss is the composite `main CE + 0.3 x depth-1 CE`; at step 1 the depth term is `(16.24698 - 12.51200) / 0.3 = 12.45`, a freshly initialised depth head at chance over the 163840-token vocabulary (`ln 163840 = 12.0`). With the weight at 0 the flavor matches the plain model under the same loss implementation at every step (loss and grad norm identical at the printed precision over the 3 steps), which is the init-stream claim: the MTP layer leaves the backbone's init, forward and gradients untouched. The plain recipe's own row differs from that pair from step 2 (0.4% and 0.04%) because it uses the chunked cross entropy; the control row is the plain model with the MTP recipe's non-chunked cross entropy. Memory: the non-chunked full-vocab logits cost 0.33 GiB over the chunked loss, and the MTP layer another 1.08 GiB (the mirror block plus the depth's full-vocab logits).
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 https://claude.ai/code/session_01WBy1d9YVu44nYCVqykRqL1
