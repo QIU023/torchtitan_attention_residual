@@ -44,19 +44,20 @@ Result: `test_kimi_k3_sp_splice.py` 1 passed; `gpu/test_kda_attention.py` + `gpu
 
 Same protocol as #4500: `seed=42`, deterministic, one seed checkpoint per stream, bf16, 100 steps, tp=1 on the parent commit (main `ac10ca48f`) as the reference, percentages relative to it, loss and grad norm side by side. Measured on 8 x A100-SXM4-40GB (the A100's gate kernel is attn-gym's eager reference below capability 9.0, its chunk kernels the portable Triton ones, as on H100). Tensor parallelism runs on spmd_types (partial_dtensor with TP is refused, see Limitations); the tp=1 rows on both backends are the control.
 
-(The A100 run on the reworked head is in progress; the table below is from the same delta on the 4527 base and will be replaced.)
-
-100 steps, 8 x A100-SXM4-40GB (bf16, seed checkpoint, 256 tokens per step, tp=1 on the parent as the reference; the A100's gate kernel is attn-gym's eager reference below capability 9.0, its chunk kernels the portable Triton ones, as on H100):
+dp1 stream, 256 tokens per step (this head `9a62f5229` against main `ac10ca48f`):
 
 | cell | step 1 loss (diff) | step 10 loss (diff) | step 100 loss (diff) | mean abs loss diff, steps 1-100 | step 1 grad norm (diff) | step 10 (diff) | step 100 (diff) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| tp=1, parent | `12.584470` | `3.900930` | `2.969010` | 0% | `25.875` | `9.125` | `5.3438` |
+| tp=1, parent, partial_dtensor | `12.584470` | `3.900930` | `2.969010` | 0% | `25.875` | `9.125` | `5.3438` |
 | tp=1, parent, spmd_types | bitwise | bitwise | bitwise | 0% | bitwise | bitwise | bitwise |
+| tp=1, this branch, partial_dtensor | bitwise | bitwise | bitwise | 0% | bitwise | bitwise | bitwise |
 | tp=1, this branch, spmd_types | bitwise | bitwise | bitwise | 0% | bitwise | bitwise | bitwise |
-| tp=2 SP on, spmd_types | `12.593710` (`0.073%`) | `4.085840` (`4.74%`) | `3.011340` (`1.43%`) | 6.83% | `25.375` (`1.9%`) | `5.6875` (`37.7%`) | `6.0625` (`13.4%`) |
+| tp=2 SP on, spmd_types | `12.593710` (`0.073%`) | `3.989400` (`2.27%`) | `2.954350` (`0.49%`) | 4.08% | `25.25` (`2.4%`) | `6.0625` (`33.6%`) | `5.5312` (`3.5%`) |
 | tp=2 SP off, spmd_types | `12.626320` (`0.333%`) | `4.111170` (`5.39%`) | `2.924570` (`1.50%`) | 3.90% | `25.625` (`1.0%`) | `7.2188` (`20.9%`) | `5.7812` (`8.2%`) |
-| tp=4 SP on, spmd_types | `12.608530` (`0.191%`) | `4.072260` (`4.39%`) | `2.736770` (`7.82%`) | 9.98% | `25.875` (`0%`) | `4.9375` (`45.9%`) | `5.8125` (`8.8%`) |
-| tp=4 SP off, spmd_types | `12.593140` (`0.069%`) | `4.223250` (`8.26%`) | `2.774510` (`6.55%`) | 4.94% | `25.625` (`1.0%`) | `12.9375` (`41.8%`) | `5.5` (`2.9%`) |
+| tp=4 SP on, spmd_types | `12.608530` (`0.191%`) | `4.060410` (`4.09%`) | `2.952170` (`0.57%`) | 6.26% | `25.875` (`0%`) | `6.3438` (`30.5%`) | `5.6562` (`5.9%`) |
+| tp=4 SP off, spmd_types | `12.593140` (`0.069%`) | `3.980570` (`2.04%`) | `2.915250` (`1.81%`) | 5.29% | `25.625` (`1.0%`) | `6.125` (`32.9%`) | `5.5312` (`3.5%`) |
+
+dp2 stream, 512 tokens per step (dp2 on this branch as the reference, dp2 on the parent as the control): running, pasted when done.
 
 The later-step percentages are the class this model reads on every card measured with the debug recipe (256 tokens per step, lr 8e-4): #4500's own CP cells read +8.6% / +9.7% at step 10 on this A100 (`TP_SP_ON_4500_2026-09-09.md`), against the 0.15% its H100 table reports; llama3 under the same tensor-parallel code reads 0.017%. The dp2 stream at 100 steps is running (the kit's first pass passed a 256-token train step to two ranks).
 
