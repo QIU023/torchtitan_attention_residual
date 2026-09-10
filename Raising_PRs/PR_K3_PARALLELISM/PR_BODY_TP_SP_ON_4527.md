@@ -57,7 +57,16 @@ dp1 stream, 256 tokens per step (this head `9a62f5229` against main `ac10ca48f`)
 | tp=4 SP on, spmd_types | `12.608530` (`0.191%`) | `4.060410` (`4.09%`) | `2.952170` (`0.57%`) | 6.26% | `25.875` (`0%`) | `6.3438` (`30.5%`) | `5.6562` (`5.9%`) |
 | tp=4 SP off, spmd_types | `12.593140` (`0.069%`) | `3.980570` (`2.04%`) | `2.915250` (`1.81%`) | 5.29% | `25.625` (`1.0%`) | `6.125` (`32.9%`) | `5.5312` (`3.5%`) |
 
-dp2 stream, 512 tokens per step (dp2 on this branch as the reference, dp2 on the parent as the control): running, pasted when done.
+dp2 stream, 512 tokens per step (two ranks read their own data, so dp2 on this branch is the reference and dp2 on the parent the control). Only steps 1 and 10 are given: by step 100 the two-rank stream has consumed the debug dataset several times over and the reference is memorising its batches (2.05 at step 80, 0.109 at step 100), so a per-step relative difference against a near-zero loss no longer measures the parallelism.
+
+| cell | step 1 loss (diff) | step 10 loss (diff) | step 1 grad norm (diff) | step 10 (diff) |
+| --- | ---: | ---: | ---: | ---: |
+| dp2, this branch, spmd_types | `12.467310` | `3.872160` | `24.0` | `4.1875` |
+| dp2, parent, spmd_types | bitwise | bitwise | bitwise | bitwise |
+| dp2 x tp2 SP on, spmd_types | `12.467750` (`0.0035%`) | `3.692300` (`4.64%`) | `23.375` (`2.6%`) | `4.4062` (`5.2%`) |
+| dp2 x ep2, spmd_types | `12.435800` (`0.253%`) | `3.620440` (`6.50%`) | `23.625` (`1.6%`) | `4.625` (`10.4%`) |
+| dp2 x ep2 x tp2 SP on, spmd_types | `12.460900` (`0.051%`) | `3.708090` (`4.24%`) | `23.5` (`2.1%`) | `4.375` (`4.5%`) |
+
 
 The later-step percentages are the class this model reads on every card measured with the debug recipe (256 tokens per step, lr 8e-4): #4500's own CP cells read +8.6% / +9.7% at step 10 on this A100 (`TP_SP_ON_4500_2026-09-09.md`), against the 0.15% its H100 table reports; llama3 under the same tensor-parallel code reads 0.017%. The dp2 stream at 100 steps is running (the kit's first pass passed a 256-token train step to two ranks).
 
