@@ -32,3 +32,7 @@ Checks on the stack: pinned pyrefly 0 errors on the touched files; `test_kimi_k3
 ## The A100 table and this rework
 
 The A100 bf16 table (`TP_SP_ON_4500_2026-09-09.md`) ran the pre-rework branch: its spmd_types rows are unchanged by the rework (bitwise above), its partial_dtensor TP rows describe a configuration the reworked branch refuses and are kept as reference only. Nothing on the A100 had to be restarted.
+
+## 5. The user's audit of the rebuilt branch (07:55) and the A100-only decision
+
+Findings taken: the body must carry no 5060 Ti numbers and read in PR 4500's format from the A100 alone; the reviewer's local commit `8a9c129d7` (pyrefly suppressions, four CP TODOs) never reached origin and is not in this clone, so the suppression the branch itself added was re-removed (`9a62f5229`, the pinned checker does not need it) and the TODOs await the reviewer's text; the handoff file now exists in the logbook with the rebuilt SHAs (`TP_SP_REWORK_HANDOFF_2026-09-10.md`). One finding was already stale: the "revert, then run both backends" experiment had been run (§1), and the body already carried spmd_types tp=4 rows. The A100 driver's remaining fp32 stages were stopped; `a100_tp_final.sh` runs the 4500-format bf16 100-step table on the reworked head (`9a62f5229` + the local Ampere gate commit) against main `ac10ca48f` (spmd_types cells, tp=1 on both backends as the control, the dp2 stream at 512 tokens per step), then QB dp8 x ep8; the body's Results section is rewritten around it.
