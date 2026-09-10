@@ -112,6 +112,19 @@ When a maintainer asks a question, the first sentence of the reply answers
 it. Verbatim trigger: "sorry I couldn't really understand the PR summary
 which seems to be written by AI."
 
+## Abstraction rule: titan's seams first, no side structures (user, 2026-09-10)
+
+Triggered by quantile balancing: our #4412 built a side object (`QuantileBalancer` holding histograms in a dict keyed by `id(moe)`, a `register_forward_hook` on the router that redoes the top-k, a flavor-level `post_optimizer_build_fn` swap that needs the sign-rule coefficient set just to get the bias buffer); the maintainers' #4577 does the same maths as a `TokenChoiceTopKRouter` subclass with a `Module.Config`, a non-persistent buffer re-created by `_init_self_buffers`, the persistent `expert_bias_E` owned by the MoE, `model_registry(post_optimizer_build_fn=...)` for every flavor, and a `DTensorTestBase` GPU test. Same pattern in the old tree generally: 7.6k lines in the K3 folder against upstream's 2.25k, with model-local LoRA, key maps, pipeline adapters and a tests dir of their own where core had the seam. Before writing any helper, hook, wrapper or side object, find the titan class that owns that responsibility and extend it (details in `phase13_k3like_48b_posttrain/QB_4577_VS_4412_2026-09-10.md`):
+
+- Model behaviour: subclass the `models/common` module (`TokenChoiceTopKRouter`, `MoE`, `GroupedExperts`, `FeedForward`, `Attention`) and widen its `Config` (`Module.Config`, `build()`); state is a `register_buffer` (persistent when it must checkpoint) plus `_init_self_buffers` for the meta -> device move; never a dict on a helper object, never a forward hook to recover what the module's own forward already computed (the graft port did this right: the plain MoE is core's router + experts + FFN).
+- Per-step actions: `OptimizersContainer.register_step_pre_hook` via the spec's `post_optimizer_build_fn` on `model_registry` (all flavors), composing with core's registration rather than replacing it; the sign rule and any balancer are alternatives selected by config, not by which flavor overwrote the slot.
+- Meshes: `ParallelDims.get_optional_mesh("loss")`, `get_dense_tp_mesh()`, `get_mesh(...)`; never a hand-built group, and reductions must name every axis that shards the tensor (the router is token-sharded on the dense-tp axis under EP).
+- Recompute: `remat.region(..., recompute=False)` + `recompute_needs_tensor` for routing decisions, the way core's router does it, instead of reasoning about hook order under SAC.
+- Parallelism: the spmd declarations and `local_map` of #4527, `apply_compile(fullgraph=)`-style parameters on core functions, `parallelize_*` seams; a core change that only serves our model is the upstream issue to raise, not a fork edit (the TP/SP clip-grouping revert, memory `search-the-host-repo-utils-first`).
+- Checkpoint formats: `StateDictAdapter` + the HF storage readers (`QuantizedHuggingFaceStorageReader`), not a model-local key map module.
+- Tests: `tests/unit_tests/cpu` and `tests/unit_tests/gpu` (`DTensorTestBase` / `with_comms` for anything with a collective), never a tests dir inside the model folder; a GPU test that runs the real collective beats a CPU mock of it.
+- Review yardstick: when a maintainer re-implements a feature of ours, the diff between the two is the list of seams we missed; write that list down (as above) before touching the code again.
+
 ## What this project is
 
 IC (Yiqiao / QIU023) **reference implementation** of Kimi K3's training-side
