@@ -24,10 +24,11 @@ Every branch below is on the fork `QIU023/torchtitan`; unless a stack is named, 
 | `lora_review2` = `72bbcb639` | 9 (the user's 8 + one flake8 fix) | `PR_BODY_LORA.md` | 19 LoRA tests; dp1/fsdp2 3 steps bitwise before/after the fix | ready; the user decides whether the fix commit stays |
 | `k3_mtp_layers` = `937fe9276` | 1 | `PR_BODY_MTP.md` | 37 tests; weight-0 MTP identical to plain under the same CE; MTP layer costs 1.08 GiB | ready; MTP x PP stays on the integration tree |
 | `k3_dist_muon` = `1f9831580` | 1 | `PR_BODY_MUON.md` | 390 Muon layouts cover 390 params; step-1 bitwise with AdamW at dp1 / fsdp2 / ep2 x fsdp2 | draft, waits for #4353 |
+| `k3_linear_graft` = `3b6f03347` | 3 (Kimi-Linear shapes + `kimi_linear_48b` / `kimi_linear_debugmodel`; alpha-gated reads + `_gated` suffix; text-only checkpoint spelling) | `PR_BODY_LINEAR_GRAFT.md` | 20 CPU tests + 2 GPU; K3 debug model bitwise with main; gated at alpha=0 equals the plain backbone bitwise on GPU and CPU; official-spelling load leaves the alphas at init | fork-internal (option A) until the A/B + upstream decision; the unbounded Kimi-Linear decay runs on attn-gym's eager reference path (the fused chunk kernels take decays in about [-5.9, 0]) |
 | `k3_ac_reuse_attention` = `6ef880995` | 3 | `PR_BODY_AC_REUSE.md` | 16 tests; dp1 10 steps bitwise with main for both flavors; `ac_reuse_attention` 246 -> 305 tps at +0.13 GiB on the debug model | ready |
 
 ## Not extracted
 
 - `attn_res_cache_offload` (763e24083) and `pp_balance` (222108864): stack on #4312's runtime; wait for the transport decision on that PR.
-- Kimi-Linear-48B graft: needs a design decision; the options, costs and a recommendation are in `phase13_k3like_48b_posttrain/GRAFT_48B_DESIGN_2026-09-10.md` (the 48B weights are not on this box either way).
+- Kimi-Linear-48B graft: ported under option A as `k3_linear_graft` (table above); whether it goes upstream in the K3 folder or as a `kimi_linear` folder (option B) is still the decision in `phase13_k3like_48b_posttrain/GRAFT_48B_DESIGN_2026-09-10.md`; a graft train needs the 48B weights and a bigger box, and a training kernel for the unbounded decay.
 - The integration tree `k3_int_20260910` = `da7f9e348` stays on `ac10ca48f`; the trial rebase onto `d398a8fb9` is not pushed (#4572 moves pp2 numerics from step 2).
