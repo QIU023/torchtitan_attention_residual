@@ -82,3 +82,17 @@ The optimizer-state fix is independent of the tree: torch's `_init_optim_state` 
 
 结论：检查点往返是精确的；差异出在恢复后进程的反向计算——同样的权重、同样的前向 loss，反向梯度差 1e-3 量级。这是运行时确定性问题（首选候选：Triton/inductor 内核按进程的内存分配/对齐特化，恢复进程在前向前多做了一次优化器状态分配；连续跑两次位级一致、恢复跑两次位级一致，两种"进程形状"各自确定但彼此不同），不是 K3 也不是检查点语义的 bug。与 Elfie 的缺状态修复无关，单独记录；若要闭环，下一步是按参数 dump 第 3 步梯度、按模块归类差异，并在关掉 compile 的条件下复测。探针脚本：scratchpad `opt_probe.sh` / `opt_probe2.sh`（trainer.py 临时 hack，已还原）。
 
+
+## 2026-09-10: the socket-transport simulation on one box, and what the NCCL INIT log says
+
+Two torchrun agents x 4 GPUs on the 5060 Ti box, NCCL forced off CUDA P2P and shared memory onto the socket network path (`NCCL_P2P_DISABLE=1 NCCL_SHM_DISABLE=1 NCCL_SOCKET_IFNAME=lo`), pp8 plain 1F1B, eight micro-batches, three steps, `NCCL_DEBUG_SUBSYS=INIT`:
+
+| cell | tree | result |
+| --- | --- | --- |
+| #4312 head as published (`a3be242bf`, no warm-up, no isolation) | `/tmp/wt_pp4312_base` | 3 steps, exit 0 on both agents |
+| `pp_review4` default (warm-up only) | `/tmp/wt_pp4312` | 3 steps, exit 0 |
+| `pp_review4` with `TORCHTITAN_PIPELINE_NEIGHBOR_P2P=1` | `/tmp/wt_pp4312` | 3 steps, exit 0 |
+
+No hang on the socket path, so the box cannot reproduce the two-node failure; the transport code path is the inter-node one but the connection semantics of RDMA over the proxy are not.
+
+What the INIT log settles regardless: in every cell the 8-rank communicator (`ncclCommInitRankConfig ... nranks 8`) is created at `init_process_group`, before "Building device mesh", and the mesh's sub-groups come out of `ncclCommSplit` right at mesh build; no communicator of any size is created during the schedule, and the default cells create no two-rank communicators at all (only the isolation cell does, one per edge, at mesh build). With pp equal to the world size the PP group's communicator IS the world communicator, so the `schedules.py` TODO's "group communicator created lazily at the first mixed batch" has nothing to create on this torch (2.15.0.dev20260906) with the device bound at init, and `_warmup_pp_edge_communicators` is a no-op here by construction, which is what the bitwise-identical single-node runs already suggested. Elfie's two-node topology (2 x 4 GPUs, pp8) has pp equal to the world as well. So the remaining candidates for her hang are below the communicator: NCCL's per-pair transport connection setup at first use inside a communicator (not logged under INIT) and the op ordering across ranks on the shared communicator; the isolation into per-edge communicators removes both, the warm-up removes neither. The design note's section 4c and the note for Elfie are amended accordingly.

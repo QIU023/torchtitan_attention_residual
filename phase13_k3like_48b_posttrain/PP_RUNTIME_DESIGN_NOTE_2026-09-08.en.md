@@ -123,6 +123,8 @@ Why both, and why apart: the old tree's hang was op ordering on one shared commu
 
 One node (8 x RTX 5060 Ti): pp2, pp8 plain 1F1B, pp8 x vp4 are bitwise identical with the switch on and off, and bitwise with the pre-port `k3_pp_text` head; the CPU test (`tests/unit_tests/cpu/test_pipeline_neighbor_transport.py`, 6 tests) covers the edge-group keying, the looped wrap, and the vote. The two-node run is the one measurement this box cannot make; it is the ask in `PP_TRANSPORT_NOTE_FOR_ELFIE.md`.
 
+Addendum (2026-09-10, after a socket-transport simulation on one box, `PP_TRANSPORT_ELFIE_2026-09-09.md`): with the device bound at `init_process_group` the world communicator is created at init and every mesh sub-group at mesh build (`ncclCommSplit`), and with pp equal to the world size the PP group's communicator is the world communicator. Nothing is created lazily during the schedule on torch 2.15, so the warm-up has nothing to warm; the TODO's gap does not exist in this configuration. What the isolation still changes is below the communicator: the per-pair transport connections NCCL sets up at first use and the order in which neighbouring ranks issue operations on a shared communicator. The two-node ask stands, but the discriminating question is now "does the per-edge isolation alone fix it", and the warm-up should be read as harmless rather than as a fix.
+
 ## 5. A split of work that fits #4486
 
 - The team owns the abstraction: `PipelineResult`, the runtime hooks, and whether cross-stage activations are a runtime concern or a placement (this note's answer: activations need the runtime plus one schedule-level ordering guarantee; parameters can be either).
