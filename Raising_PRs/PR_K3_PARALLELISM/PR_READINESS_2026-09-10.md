@@ -24,7 +24,7 @@ Every branch below is on the fork `QIU023/torchtitan`; unless a stack is named, 
 | `lora_review2` = `72bbcb639` | 9 (the user's 8 + one flake8 fix) | `PR_BODY_LORA.md` | 19 LoRA tests; dp1/fsdp2 3 steps bitwise before/after the fix | ready; the user decides whether the fix commit stays |
 | `k3_mtp_layers` = `937fe9276` | 1 | `PR_BODY_MTP.md` | 37 tests; weight-0 MTP identical to plain under the same CE; MTP layer costs 1.08 GiB | ready; MTP x PP stays on the integration tree |
 | `k3_dist_muon` = `1f9831580` | 1 | `PR_BODY_MUON.md` | 390 Muon layouts cover 390 params; step-1 bitwise with AdamW at dp1 / fsdp2 / ep2 x fsdp2 | draft, waits for #4353 |
-| `k3_ac_reuse_attention` | pending | `PR_BODY_AC_REUSE.md` | pending | in progress |
+| `k3_ac_reuse_attention` = `6ef880995` | 3 | `PR_BODY_AC_REUSE.md` | 16 tests; dp1 10 steps bitwise with main for both flavors; `ac_reuse_attention` 246 -> 305 tps at +0.13 GiB on the debug model | ready |
 
 ## Not extracted
 
