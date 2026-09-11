@@ -7,7 +7,7 @@ Every branch below is on the fork `QIU023/torchtitan`; unless a stack is named, 
 | PR | branch = head | base / stack | body | state |
 | --- | --- | --- | --- | --- |
 | #4312 text PP | `k3_pp_text` = `75045fed5` | main; carries the transport round 3 (warm-up default, Elfie's isolation opt-in) | `PR_BODY_PP.md` (transport section) + `REPLY_4312_2026-09-10.md` (two threads for Tianyu) | do not rebase; the user pastes the replies |
-| #4499 TP/SP | `k3_tp_sp` = `9a62f5229` | #4527, 11 commits; bottom commit = the K2.5 tables PR | `PR_BODY_TP_SP_ON_4527.md` (A100-only, #4500 format, dp1 + dp2 streams) | ready; the user's CP TODO comment text still to be re-applied if they send it |
+| #4499 TP/SP | `k3_tp_sp` = `9a62f5229` (PR branch, untouched); review branch `tp_sp_on_main` = `d4d6e774c` (4 commits on main `da2f82670`, Shuhua's 18 comments addressed 2026-09-11) | main `da2f82670`; bottom commit = the K2.5 tables PR | `REPLY_4499_2026-09-11.md` (top-level + 18 replies), `PR_BODY_TP_SP_v2_DRAFT.md` (A100 100-step table to re-measure on the new stack; tp4 rows need a tower whose heads divide by 4) | waiting for the A100 rerun before the PR branch moves; note `k3_tp_sp`'s bottom commit `c0e1584df` is mis-attributed to Shuhua Yu (my identity slip on 2026-09-10) and gets corrected by that same force-push |
 | #4381 mm PP | `k3_pp_mm` = `c87097ae5` | #4312, restacked DEP | `PR_BODY_PP_MM_v2.md` | ready |
 | #4380 mm CP | `k3_cp_mm` = `a063a3d0e` | #4500 stack, dynamic vision CP (carries the fsdp zero-valued dependency guard) | `PR_BODY_CP_MM_v2.md` | ready |
 
@@ -15,7 +15,7 @@ Every branch below is on the fork `QIU023/torchtitan`; unless a stack is named, 
 
 | branch = head | commits | body | verification | state |
 | --- | --- | --- | --- | --- |
-| `k27_vision_tables_tp` = `c0e1584df` | 1 | `PR_BODY_K27_TABLES.md` | K2.5 dp2 x tp2 type check gets past the tables with it (fails on main) | ready, small |
+| `k27_vision_tables_tp` = `d8120354e` (author corrected 2026-09-11; content = `c0e1584df`) | 1 | `PR_BODY_K27_TABLES.md` | K2.5 dp2 x tp2 type check gets past the tables with it (fails on main) | ready, small |
 | `k3_empty_optimizer` = `1c075f212` | 2 (change + tests) | `PR_BODY_EMPTY_OPTIMIZER.md` | 33 CPU tests (4 new); pyrefly no delta | ready, core-only |
 | `k3_released_format` = `65badf428` | 1 | `PR_BODY_RELEASED_FORMAT.md` | 27 tests, 0 skipped against the released-layout artifact; `report_arch` loads 658 keys and trains | ready |
 | `k3_compile_blocks` = `5ee84f0c4` | 1 | `PR_BODY_COMPILE.md` | dp1 3 steps compiled bitwise with eager, same 12.64 GiB peak; main without it raises NotImplementedError | ready |

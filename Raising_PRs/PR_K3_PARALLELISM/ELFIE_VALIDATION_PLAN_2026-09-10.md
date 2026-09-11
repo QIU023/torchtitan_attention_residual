@@ -12,7 +12,7 @@ For Elfie (PR 4281's reviewer and the only one of us with multi-node GB200/GB300
 
 ## 0b. Is the tree current? (rebuilt 2026-09-10 evening)
 
-Yes: the local rebuild `k3_int_20260910b` = `85e77d814` (58 commits on `ac10ca48f`, in `/tmp/wt_k3int_rb`, not pushed yet) carries the reworked TP/SP stack (`k3_tp_sp` `9a62f5229`), the maintainers' quantile balancing (#4577, head `ebf6cc451`, every flavor balanced from step 2), and the user's five LoRA commits (`lora_review2` `72bbcb639`). The only feature outside it is the Kimi-Linear graft, which stays its own branch (`k3_linear_graft`). Step-1 numbers moved by the router's sorted top-k order (see `K3_INT_20260910.md`, "2026-09-10 rebuild"); the 18-cell one-node table there is the reference for the cells in section 2. Hand this rebuild over once it is pushed as `k3_on_4025`.
+Yes: the local rebuild `k3_int_20260910b` = `acf7c2ae6` (author of the tables commit corrected on 2026-09-11; content identical to `acf7c2ae6`) (58 commits on `ac10ca48f`, in `/tmp/wt_k3int_rb`, not pushed yet) carries the reworked TP/SP stack (`k3_tp_sp` `9a62f5229`), the maintainers' quantile balancing (#4577, head `ebf6cc451`, every flavor balanced from step 2), and the user's five LoRA commits (`lora_review2` `72bbcb639`). The only feature outside it is the Kimi-Linear graft, which stays its own branch (`k3_linear_graft`). Step-1 numbers moved by the router's sorted top-k order (see `K3_INT_20260910.md`, "2026-09-10 rebuild"); the 18-cell one-node table there is the reference for the cells in section 2. Hand this rebuild over once it is pushed as `k3_on_4025`.
 
 ## 1. What only you can measure, in the order it unblocks PRs
 
