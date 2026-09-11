@@ -57,3 +57,36 @@ change the reduction order of the fp32 matmul in `_apply_attention_residual`. Re
 both `cat` and `stack` return contiguous tensors of the same shape, so the stride half of the
 hypothesis looks unlikely and the likelier candidate is the open block's partial sum, which the
 pipeline path re-materialises. Nothing here measures either way.
+
+
+## Reading rules drafted for the cancelled 24-layer profile rerun (2026-09-11)
+
+Found as an uncommitted edit to the numerics reply in the shared checkout, written before the
+rerun it describes. The rerun was cancelled by the user; the reply cites the existing 33-layer
+profile instead. Kept here so the rules are not lost if the rerun is ever done.
+
+
+Fixing the reading rules first, so the shape of the result cannot be chosen after seeing it.
+
+- **Metric.** Relative L2 distance per parameter tensor, `||g_pp2 - g_dp1|| / ||g_dp1||`, with each
+  tensor's own gradient norm printed beside it. Elementwise detail is support only and is
+  restricted to elements above the tensor's median absolute value: near-zero elements dominate any
+  elementwise metric through sign flips and tiny denominators while carrying no weight in the
+  update. Three earlier metrics were discarded for exactly that reason, each returning a number
+  about the floating-point representation rather than about the model.
+- **Gate.** The profile is reported only if two identical `dp1` runs are bit-identical to each
+  other on this box, and only if `dp1` reproduces the table's reference and `pp2` sits within one
+  float32 unit in the last place of it at step 1, with the loss read from whichever rank did not
+  print the `-1.0` sentinel that non-last pipeline stages emit.
+- **What is being looked for.** The per-layer relative L2 from the last layer down to layer 0. If
+  the growth is smooth, it is smooth; if it steps at the stage boundary, it steps. At 24 layers the
+  boundary is at layer 12 and `12 % 12 == 0`, so no partial block crosses it and the
+  partial-sum mechanism predicts nothing special there. A step at layer 12 would weaken that
+  mechanism, and the six boundary cells -- which hold the model and its size fixed and vary only
+  where the boundary falls -- become the arbiter. Either outcome is usable; the prediction cells
+  were built for it.
+- **Layer 0 discriminates nothing on its own.** It is the deepest point of the backward pass, so
+  the accumulated difference is expected to be largest there under any mechanism, including one
+  with no block stack at all. A large value at layer 0 is not evidence for or against anything and
+  will not be presented as such.
+
