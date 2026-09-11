@@ -1,6 +1,6 @@
 # TP/SP #4499 返工分支审核（CPU 盒子，2026-09-11）
 
-对象：`tp_sp_on_main` = `d4d6e774c`（4 个提交，基 `da2f82670`，落后 upstream main `91abd2301` 5 个），
+对象：`tp_sp_on_main` = `bd55160a8`（5 个提交，(a)(b) 已落，基 `da2f82670`，落后 upstream main `91abd2301` 5 个），
 `k27_vision_tables_tp` = `d8120354e`（基 `ac10ca48f`，落后 22），PR 分支 `k3_tp_sp` = `9a62f5229` 未动。
 逐行读了 `git diff da2f82670 d4d6e774c`（8 个文件，+437/−55）。
 

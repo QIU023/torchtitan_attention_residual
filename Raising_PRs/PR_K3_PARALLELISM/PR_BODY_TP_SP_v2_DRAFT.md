@@ -26,9 +26,10 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 ## Limitations
 
 - TP x CP is not exercised (CP is #4500's; the two are not combined).
-- EP x TP is measured at dp2 x ep2 with tp=2 and tp=4 (eight GPUs); larger degrees are not.
+- EP x TP is measured at dp2 x ep2 with tp=2; larger degrees are not.
 - Tensor parallelism needs `--parallelism.spmd_backend spmd_types` (the default); partial_dtensor is refused with the reason above.
 - The tower runs without sequence parallel (its patch sequence is short), as in Kimi K2.5.
+- The tensor-parallel degree must divide the vision tower's head count, the check Kimi K2.5 carries. The debug tower has 6 heads, so the cells here stop at tp=2; the released tower has 12, where tp=2, tp=3, tp=4, tp=6 and tp=12 divide it and tp=8 does not.
 
 ## Tests
 
@@ -41,7 +42,7 @@ Result: `test_integration_test_definitions.py` 13 passed; `gpu/test_kimi_k3.py` 
 
 ## Results
 
-To re-measure on the new stack (the previous head's 8 x A100 table does not transfer: the tower is tensor-parallel now): `seed=42`, deterministic, one seed checkpoint per stream, bf16, 100 steps, tp=1 on main as the reference, percentages relative to it, loss and grad norm side by side; dp1 stream (256 tokens per step): tp=1 main / tp=1 this branch / tp=2 SP on / tp=2 SP off / tp=4 SP on / tp=4 SP off; dp2 stream (512 tokens per step, steps 1 and 10): dp2 / dp2 x tp2 / dp2 x ep2 / dp2 x ep2 x tp2.
+TO BE MEASURED on the new stack -- the previous head's 8 x A100 table does not transfer, the tower is tensor-parallel now. One protocol, no mixing: `seed=42`, `--debug.deterministic`, one seed checkpoint per batch shape, one inductor cache per cell, bf16, 100 steps, steps 1 / 10 / 20 reported, `spmd_types` throughout. Reference: tp=1 on main. Cells, dp1 stream (256 tokens per step): tp=1 main / tp=1 this branch (must be bitwise with it) / tp=2 SP on / tp=2 SP off / tp=1 again on a fresh cache (the noise floor). dp2 stream (512 tokens per step, its own reference because a second dp rank reads other samples): dp2 / dp2 x ep2 / dp2 x tp2 / dp2 x ep2 x tp2. The kit is `phase13_k3like_48b_posttrain/matrix_scripts/tp_h100/` (logbook).
 
 Measured on the rebuild (8 GPUs, 3 steps, seed 42, deterministic, spmd_types, 4096 tokens per step, one seed checkpoint; loss at steps 1 / 3):
 
@@ -53,7 +54,7 @@ Measured on the rebuild (8 GPUs, 3 steps, seed 42, deterministic, spmd_types, 40
 | dp2 x tp2 SP on | `12.53445` | `7.02513` |
 | dp2 x ep2 x tp2 SP on | `12.52623` | `7.00102` |
 
-With type checking on (the b200 cell's settings, the recipe's batch): tp=2 SP on `12.49262 / 11.38085 / 10.23243`, tp=2 SP off `12.48463 / 11.41571 / 9.89427`, dp2 x tp2 `12.56306 / 11.38314 / 9.64091`. At the 4096-token batch with a seed-42 init per cell: tp=1 `12.51269 / 9.93869 / 7.14302`, tp=2 SP on `12.45116 / 9.86473 / 7.14307`, tp=2 SP off `12.44463 / 9.90965 / 7.12468`. tp=4 needs a tower whose head count it divides (the debug tower has 6), so the tp=4 rows move to a text-only or larger-tower configuration.
+With type checking on (the b200 cell's settings, the recipe's batch): tp=2 SP on `12.49262 / 11.38085 / 10.23243`, tp=2 SP off `12.48463 / 11.41571 / 9.89427`, dp2 x tp2 `12.56306 / 11.38314 / 9.64091`. At the 4096-token batch with a seed-42 init per cell: tp=1 `12.51269 / 9.93869 / 7.14302`, tp=2 SP on `12.45116 / 9.86473 / 7.14307`, tp=2 SP off `12.44463 / 9.90965 / 7.12468`.
 
 ## CI/CD
 
