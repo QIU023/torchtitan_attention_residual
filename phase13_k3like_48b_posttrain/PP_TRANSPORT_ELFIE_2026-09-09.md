@@ -24,7 +24,7 @@
 - 老树 8/27 的修复 `d1ec535d1`（`_warmup_pp_edge_communicators`，35 行，正是 TODO 开的方子）**没有** cherry-pick 到 #4312（`k3_pp_text` = `a3be242bf`，diff 里没有任何 eager/warmup/new_group）。今天已在 `pp_review4`（`fd7ff7400`）上无冲突落下，调用点在 `pipeline_llm` 建完 schedule 之后，K3 入口走 `pipeline_llm`。
 - 新树的 `AttnResPipelineStage` 线上不发 metadata（grep 不到任何 send/recv/object 调用）：路由表由层布局决定，hop 载荷在第一次发送前就定了 → STATIC；DYNAMIC 那条 hazard 在新树按设计不存在，剩下的只有 TODO 那条 STATIC gap → warmup 覆盖。两节点是否还挂，只能由她在 GB200 上跑 `pp_review4` 验证。
 - 她的方案更强（按构造消除共享通信器，而不是靠 warmup 的时机），但要求"只有相邻 stage 收发"——我们的设计也满足（block stack 逐 hop 相邻转发，梯度走调度自己的反向 P2P）。如果两节点仍挂，下一步是让 `AttnResPipelineStage` 继承她的边组路由；而正确的归属是运行时本身（投票协议已经在内部建两 rank 子通信器）。
-- 优化器：torch 的 `_init_optim_state`（DCP `get_optimizer_state_dict` 用）是"`optim.state` 非空就整体跳过"，从未拿到梯度的参数就没有状态，恢复时缺键。老树第 0 层的 `attention_res_proj` 就是这种参数；新树第 0 层没有这个投影（`attention_res_proj=None if layer_idx == 0`），当前不触发，但缺陷是通用的（PP 下未用参数、LoRA/MTP 变体），她的逐参数补状态应作为独立小 PR 进 main（带她的测试）。
+- 优化器：torch 的 `_init_optim_state`（DCP `get_optimizer_state_dict` 用）是"`optim.state` 非空就整体跳过"，从未拿到梯度的参数就没有状态，恢复时缺键。老树第 0 层的 `attention_res_proj` 就是这种参数；新树第 0 层没有这个投影（`attention_res_proj=None if layer_idx == 0`），当前不触发，但缺陷是通用的（PP 下未用参数、LoRA/MTP 变体），**2026-09-10 更正**：main 的 #4474（`dc3985ad4`，2026-09-05）已经逐参数补齐缺失的优化器状态（并重置 Adam 的 step/moments），`pp_review5` 起的 PP 分支都在它之上，不需要她再提 PR。
 
 ## 对 RFC 和给 Tianyu 的设计文档的实质影响
 
@@ -33,9 +33,9 @@
 
 ## 要做的事
 
-1. 回复 #4281（草稿见下）并建渠道；把她从老树引到新树：base #4527，TP/SP #4499（`k3_tp_sp`），QB #4412（`k3_qb`），PP #4312（`k3_pp_text`；两节点请用 `pp_review4`），CP #4500（fegin/Shuhua 的栈）。老树 #4281 冻结，不再修。
-2. 请她在 GB200 两节点跑 `pp_review4` 的 PP8（先 `--parallelism.pipeline_parallel_schedule Interleaved1F1B` 的 `kimi_k3_debugmodel_pp8_vp4` recipe），报告是否还挂；单机验证结果见本目录 `pp_warmup_verify.log`。
-3. 请她把优化器状态补齐作为独立 PR 提到 main。
+1. 回复 #4281（草稿见下）并建渠道；把她从老树引到新树：base #4527，TP/SP #4499（`k3_tp_sp`），QB #4412（`k3_qb`），PP #4312（`k3_pp_text`；两节点请用 `pp_review5`：同一条线 rebase 到 main `d398a8fb9`，基里含 #4474），CP #4500（fegin/Shuhua 的栈）。老树 #4281 冻结，不再修。
+2. 请她在 GB200 两节点跑 `pp_review5` 的 PP8（先 `--parallelism.pipeline_parallel_schedule Interleaved1F1B` 的 `kimi_k3_debugmodel_pp8_vp4` recipe），报告是否还挂；单机验证结果见本目录 `pp_warmup_verify.log`。
+3. 优化器状态不用她提 PR：main 的 #4474（`dc3985ad4`）已经覆盖，告诉她一句即可。
 4. 把传输条目并进 PyTorch pipelining 的 issue/RFC。
 
 ## 回复草稿（英文，贴 #4281 或渠道首条）
