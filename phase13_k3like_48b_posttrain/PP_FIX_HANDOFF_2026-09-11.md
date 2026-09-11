@@ -122,3 +122,30 @@ payload on every hop"是照抄 Tianyu 的说法，不准确——倍数是 ≈ S
 - 第 3 节（数值）以 `REPLY_4312_NUMERICS_2026-09-11.md` 为准，我写的那版作废（它把 cache on/off
   说成不同的累加顺序，与实测的逐位相同矛盾）。
 - recipe 里跨文件 import 私有的 `_generate_llm_fqn_per_model_part`（rounds 汇总里记了正在删）。
+
+## 6. #5/#6（层→stage 映射去掉 all-gather）与 #4560 的关系
+
+问题：`0f189b93c` 去掉 all-gather 之后，`pipeline_kimi_k3` 需要知道"core 到底用了哪个 split"，
+而 `pipeline_llm` 在内部算完 split 并不交还（只返回 schedule / model_parts / has_first / has_last）。
+于是分支现在的做法是**在 `pipeline_llm` 返回之后把同一个 split 再算一遍**：
+`_module_fqns_per_model_part()` 调用 core 的 `_get_pipeline_metadata()` + 
+`_generate_llm_fqn_per_model_part()`，参数与 core 内部那次一致。
+
+**#4560 本身不解决这个**——它没有碰层映射。但**它规定的形状可以让问题消失**：
+`pipeline_with_first_stage_modules` 是**调用方**先算出 `fqn_per_part`，用
+`dataclasses.replace` 塞进 `module_fqns_per_model_part`，再调 `pipeline_llm`。在这个形状下
+K3 手里本来就握着刚算出的 split，`layer_to_stage_from_split(fqns)` 直接可用：一次推导、
+没有私有 import、没有集合通信。这正是 `2b9b1a788` 之前 K3 的做法
+（`kimi_k3_module_fqns_per_model_part` + replace），也正是 Tianyu "extend L144" 指的方向。
+
+今天不是活 bug（已核：`_split_module` 先 `copy.deepcopy(whole_model)`，所以 `pipeline_llm` 返回后
+原 model 完整，`_kimi_k3_first_stage_modules(model)` 在每个 rank 上一致；两边调的是同一对函数、
+同样的入参，不会各算各的）。代价是两条：一个模型文件里硬编码了 core 的**两个私有函数及其调用
+顺序**（round 1 的 3922481936 就是对这种写法提的意见），以及默默依赖 `pipeline_llm` 今后仍用同样
+的方式推导 split。
+
+结论：#5/#6 的干净解法与第 3 节是**同一个改动**——改走 #4560 的形状（给
+`pipeline_with_first_stage_modules` 加 `last_stage_module_fqns`，K3 用它算一次 split、注入、
+同一个对象喂给 `layer_to_stage_from_split`），#4/L144 和 #5/#6 两条评论一起结清。
+注意这需要先做第 2 节的修复：K3 一旦恢复用 `dataclasses.replace` 注入 split，就会撞上
+`b9e7cf8e7` 的 post_init 检查。三件事是一个连贯的改动，按 2 → 3 → 1 的顺序做。
