@@ -146,14 +146,9 @@ With one layer per stage the last stage holds only the head, whose first op on t
 
 Every other split passed because a later op consumed the input and autograd accumulated a dense gradient. The subclass returns dense gradients from `_compute_input_grads`; the library-side fix would be a dense `torch.empty` receive buffer and `.contiguous()` before the send.
 
-### Transport (round 3): the multi-node hang fix, ported
+### Transport (round 3): moved out of this PR
 
-Two commits on top of the round-2 head, both in `torchtitan/distributed/`, nothing in the model folder:
-
-- `distributed: create pipeline-edge NCCL communicators eagerly, before step one`: right after the schedule build every rank runs the warm-up `schedules.py` prescribes for its STATIC-mode gap (`_get_init_p2p_neighbors_ops` + `_batch_p2p` with dummy payloads). Harmless where the communicators already exist; it is the runtime's own TODO applied from the trainer side.
-- `distributed: port the multi-node PP NCCL hang fix from @elfiegg onto the new PP branch`: the fix from https://github.com/pytorch/torchtitan/pull/4281/changes/2c81784c18b186e201197d97d9f2425cfad5bef0, opt-in with `TORCHTITAN_PIPELINE_NEIGHBOR_P2P=1`: one two-rank NCCL group per adjacent stage edge created before the mesh's other groups, stage metadata over a per-replica CPU group, the inference-mode vote as one all-reduce. Composed as a mixin in front of `AttnResPipelineStage`; edge groups keyed by the sorted rank pair so looped schedules get their wrap edge.
-
-Tensor payloads do not change (only the communicators that carry them, the metadata's transport and the vote), so the numerics cannot move: on one node pp2, pp8 (1F1B) and pp8 x vp4 are bitwise the same with the switch on and off and with the round-2 head. Two nodes are the pending measurement (`PP_TRANSPORT_NOTE_FOR_ELFIE.md`). Six CPU tests cover the edge keying, the wrap edge and the vote.
+The two transport commits that sat on the round-2 head (`fd7ff7400`, the communicator warm-up, and `75045fed5`, the port of @elfiegg's multi-node hang fix) are no longer in this PR. The warm-up is a no-op by construction: the NCCL INIT log of a pp8 run shows the 8-rank communicator created at `init_process_group` and the sub-groups by `ncclCommSplit` at mesh build, nothing lazy during the schedule. The neighbour-group transport is opt-in for a two-node hang this PR's runtime does not cause and cannot reproduce on one node; it lives on the fork branch `k3_pp_transport` (the port alone, stacked on this PR's head) for the two-node evidence, and comes back as its own PR if that evidence holds. Tensor payloads are the same on either transport, so nothing in the Results section depends on it.
 
 ### Changed files
 
@@ -184,6 +179,14 @@ Three CPU unit tests (the split, the layout tables, the stage's carrier handling
 - The block's first layer joins the stack before its sub-layers attend ("cat at the start"); the rank store releases a micro-batch's blocks when the rank is done with them, not at step end.
 - The 32-layer flavor is replaced by making the one debug model irregular (now 33 layers, the 93-layer model's partial block of 9, 35 units no pipeline shape divides) and the whole pp x vp matrix rerun on it, which is what surfaced the P2P buffer finding.
 - The adapter and its wrappers were replaced by the `PipelineStage` subclass above; the reconstruction of how the adapter got there, the rejected designs, and why torch's per-stage `fwd_cache` cannot serve a non-adjacent consumer are in the logbook document linked from the top.
+
+### Review round 3 (2026-09-11, Tianyu)
+
+- The pipeline split is core's: `pipeline_llm` and `_generate_llm_fqn_per_model_part` take `first_stage_modules` / `last_stage_modules` (modules pinned next to the embedding / the head, counted as no layer; defaults leave every existing split unchanged, checked on 441 stage/layer/weight shapes), and this model passes the vision tower and the AttnRes aggregation modules. The model-specific split function is gone; the pp8 x vp4 recipe spells its 32-stage split with the generator instead of steering `layers_per_stage`.
+- `ParallelismConfig` refuses `module_fqns_per_model_part` together with `pipeline_parallel_layers_per_stage` in `__post_init__`; the pipelining entry no longer rewrites the config.
+- The layer-to-stage map is read off the split (a pure function of the config every rank computes), no all-gather.
+- `RankStore` is `PPRankLocalCache`, one per rank shared by its stages, blocks device-resident; the block's first-layer flag is computed at init; the pipeline files type-check under the pinned pyrefly.
+- Transport out (above). `stage_class` stays: `AttnResPipelineStage` overrides `forward_one_chunk`, `backward_one_chunk` and the gradient plumbing, so the stage has to be constructed as that class; the `cast` in `_schedule_stages` is a typing no-op.
 
 ### Review round 2
 
