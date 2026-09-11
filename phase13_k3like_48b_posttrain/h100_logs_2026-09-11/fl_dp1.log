@@ -1,0 +1,52 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+W0911 08:15:24.659000 31224 site-packages/torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0911 08:15:24.683000 31224 site-packages/torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[titan] 2026-09-11 08:15:25,071 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-11 08:15:25,372 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-11 08:15:25,438 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-11 08:15:25,439 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/fl_dp1/structured_logs/training.global_rank_0.20260911-081525-9C1XRN.jsonl
+[titan] 2026-09-11 08:15:25,546 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-11 08:15:25,940 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-11 08:15:25,940 - root - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-11 08:15:25,957 - root - INFO - Building kimi_k3 debugmodel_33_layers
+[titan] 2026-09-11 08:15:26,142 - root - INFO - CUDA capacity: NVIDIA H100 PCIe with 79.17GiB memory
+[titan] 2026-09-11 08:15:26,159 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-11 08:15:26,167 - root - INFO - Total parameter count: 1,399,095,936, active parameters: 666,354,816
+[titan] 2026-09-11 08:15:26,167 - root - INFO - [34mModel kimi_k3 debugmodel_33_layers [31msize: 1,399,095,936 total parameters[39m
+[titan] 2026-09-11 08:15:26,168 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-11 08:15:26,193 - root - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-11 08:15:26,236 - root - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-11 08:15:26,237 - root - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-11 08:15:26,410 - root - INFO - Applied FSDP to the model
+[titan] 2026-09-11 08:15:27,063 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-11 08:15:27,063 - root - INFO - Peak FLOPS used for computing MFU: 7.560e+14
+[titan] 2026-09-11 08:15:27,063 - root - INFO - CUDA memory usage for model: 4.39GiB(5.55%)
+[titan] 2026-09-11 08:15:27,067 - root - INFO - Optimizer AdamW (model_part=0): 1002 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-11 08:15:27,071 - root - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[titan] 2026-09-11 08:15:27,071 - root - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[titan] 2026-09-11 08:15:27,071 - root - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-11 08:15:27,088 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-11 08:15:27,088 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-11 08:15:27,099 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/fl_dp1/checkpoint
+[titan] 2026-09-11 08:15:27,099 - root - INFO - Trainer is initialized with 256 tokens per DP rank, 1024 tokens per train step, gradient accumulation steps 4, maximum context length 2048, total steps 1 (warmup 2)
+[titan] 2026-09-11 08:15:27,100 - root - INFO - Loading the checkpoint from /workspace/fl_dp1/checkpoint/step-0.
+[titan] 2026-09-11 08:15:28,800 - root - INFO - [GC] GC collection for checkpoint loading. took 0.02 seconds
+[titan] 2026-09-11 08:15:28,800 - root - INFO - Finished loading the checkpoint in 1.70 seconds.
+[titan] 2026-09-11 08:15:28,800 - root - INFO - Training starts at step 1
+/venv/main/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/venv/main/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/venv/main/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[titan] 2026-09-11 08:16:20,335 - root - INFO - FULLLOSS step=1 loss=12.336345672607422 gn=23.25
+[titan] 2026-09-11 08:16:20,335 - root - INFO - [31mstep:  1  [32mloss: 12.33635  [38;2;180;60;0mgrad_norm: 23.2500  [38;2;54;234;195mmemory: 12.33GiB(15.58%)  [34mtps: 19  [36mtflops: 0.08  [35mmfu: 0.01%[39m
+[titan] 2026-09-11 08:16:20,339 - root - INFO - Saving the checkpoint.
+[titan] 2026-09-11 08:16:20,339 - root - INFO - Saving a full checkpoint at last step, step 1.
+[titan] 2026-09-11 08:16:30,180 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.33 seconds
+[titan] 2026-09-11 08:16:30,188 - root - INFO - Last step checkpoint completed in 9.85s
+[titan] 2026-09-11 08:16:30,188 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[titan] 2026-09-11 08:16:30,189 - root - INFO - Sleeping 2 seconds for other ranks to complete
+[titan] 2026-09-11 08:16:32,190 - root - INFO - Training completed
+[titan] 2026-09-11 08:16:32,191 - root - INFO - Destroying the purge thread.
+[titan] 2026-09-11 08:16:32,535 - root - INFO - Process group destroyed

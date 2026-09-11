@@ -18,7 +18,7 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
 
 After it `pipeline_kimi_k3` (in `parallelize.py`) splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes.
 
-Step 1 is bit-identical to a single GPU on every pp x vp cell of the irregular debug model, two to thirty-two stages, with the delta transport and with the whole stack on every hop.
+Step 1 agree to within one unit in the last place (`9.5e-07` absolute, `7.7e-08` relative on the loss; `0.125`, one bf16 ulp, on the total gradient norm) against a single GPU on every pp x vp cell of the irregular debug model, two to thirty-two stages, with the delta transport and with the whole stack on every hop.
 
 ### Design
 
@@ -78,7 +78,7 @@ Same protocol with `--training.dtype float32` (float32 parameters, gradients and
 | 4 | 8.40848 | 8.28552 | 1.5e-2 | 9.2338 | 9.2838 | 5.4e-3 |
 | 5 | 6.17097 | 6.16612 | 7.9e-4 | 8.1669 | 8.2551 | 1.1e-2 |
 
-Step 1: the loss is bitwise on both rows; the total norm differs by one bf16 ulp on the bf16 row (it is reduced over the two stages in the flavor's dtype) and by 1e-4 in float32.
+Step 1: the loss agrees to within one float32 ulp on both rows (`9.5e-07` absolute, `7.7e-08` relative, measured at full precision; the printed five decimals match); the total norm differs by one bf16 ulp on the bf16 row (it is reduced over the two stages in the flavor's dtype) and by 1e-4 in float32.
 
 Steps 2-5 move by percents on both rows, and that is not the pipeline's: the same dp1 cell on two fresh compile caches is bitwise for five steps, pp2 twice is bitwise, and the step-1 per-parameter gradients (13-layer alias, float32 masters, 432 tensors) put the origin inside one stage: `lm_head`, the final norms and the last layer's MoE and output projection are bitwise, the first non-identical tensors are the query path of the last attention layer at ulp level, 1e-7 on the norm (its dO, K, V are bitwise), and the difference grows by three to five times per layer walking down the backward with no jump at the stage boundary (median 2.2e-4, max 4.7e-3 over the 410 non-identical tensors, sign flips 0.131% of 768M elements, 88% of them below 1e-2 of their tensor's rms). Adam's first update is `lr * sign(g)`, so the elements whose sign that flips become the step-2 spread, with float32 masters as with bf16 ones.
 
@@ -124,7 +124,7 @@ Every virtual-pipeline cell twice, with the delta transport and naive (every hop
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910, 3.24169 | 7.40208, 3.31594 |
 | dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40257 | 7.30184, 3.25535 | 7.30184, 3.26341 |
 
-The two transports sum a block's gradients in a different order, so they agree at step 1 and separate after it. Step 1 is the comparable number: every cell of a data-parallel group prints it with the pipeline on or off (the three values in the table), on all three splits, both transports and both grad-norm precisions.
+The two transports sum a block's gradients in a different order, so they agree at step 1 to within one unit in the last place and separate after it. Step 1 is the comparable number: every cell of a data-parallel group prints it with the pipeline on or off (the three values in the table), on all three splits, both transports and both grad-norm precisions.
 
 Its gradients agree to bf16 rounding, and the pipeline's deviation is two orders below what a genuinely different gradient does -- the control reads another batch:
 

@@ -1,0 +1,90 @@
+diff --git a/torchtitan/components/metrics.py b/torchtitan/components/metrics.py
+index 08277016..4e076b90 100644
+--- a/torchtitan/components/metrics.py
++++ b/torchtitan/components/metrics.py
+@@ -529,6 +529,16 @@ class MetricsProcessor(Configurable):
+ 
+         color = self.color
+         mfu_str = f"{mfu:.2f}%" if mfu is not None else "N/A"
++        # LOCAL PROBE (not committed): full-precision loss for a step-1 comparison.
++        import os as _os
++
++        if _os.environ.get("LOSS_FULL") == "1":
++            logger.info(
++                "FULLLOSS step=%d loss=%r gn=%r",
++                step,
++                float(global_avg_loss),
++                float(grad_norm) if grad_norm is not None else None,
++            )
+         logger.info(
+             f"{color.red}step: {step:2}  "
+             f"{color.green}loss: {global_avg_loss:8.5f}  "
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index e2fe219b..4dfd5fa2 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -94,3 +94,38 @@ def kimi_k3_debugmodel(
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++
++
++def kimi_k3_debugmodel_ppnaive() -> Trainer.Config:  # LOCAL PROBE ALIAS (not committed)
++    """The debug model with the naive pipeline transport (whole stack every hop)."""
++    import functools
++
++    from .parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel()
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
++
++
++def kimi_k3_debugmodel_deep() -> Trainer.Config:  # LOCAL PROBE ALIAS (not committed)
++    """The 33-layer flavor the pipeline stress cell uses, at dp1/pp2 shapes."""
++    from torchtitan.models.kimi_k3 import model_registry
++
++    config = kimi_k3_debugmodel()
++    config.model_spec = model_registry("debugmodel_33_layers")
++    return config
++
++
++def kimi_k3_debugmodel_deep_ppnaive() -> Trainer.Config:  # LOCAL PROBE ALIAS (not committed)
++    """The 33-layer flavor with the naive pipeline transport."""
++    import functools
++
++    from .parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel_deep()
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
+diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
+index 32145085..353097ce 100644
+--- a/torchtitan/models/kimi_k3/kda.py
++++ b/torchtitan/models/kimi_k3/kda.py
+@@ -83,7 +83,7 @@ class KDAKernel(Module):
+         if not q_1THK.is_cuda:
+             raise RuntimeError("Attention Gym KDA requires CUDA tensors.")
+         capability = torch.cuda.get_device_capability(q_1THK.device)
+-        if capability not in {(10, 0), (10, 3)}:
++        if capability < (8, 0):  # local guard lift, uncommitted
+             raise RuntimeError(
+                 "Attention Gym KDA requires Blackwell SM100/SM103; "
+                 f"got CUDA capability {capability}."
+diff --git a/torchtitan/trainer.py b/torchtitan/trainer.py
+index 516e11e9..31c7799e 100644
+--- a/torchtitan/trainer.py
++++ b/torchtitan/trainer.py
+@@ -896,6 +896,8 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                 local_valid_tokens += input_dict.pop("num_valid_tokens")
+                 microbatches.append(input_dict)
+             microbatch_groups.append(microbatches)
++        if os.environ.get("MB_REVERSE") == "1":  # LOCAL PROBE HACK (not committed): accumulation order only
++            microbatch_groups.reverse()
+         sl.log_trace_scalar({"local_valid_tokens": local_valid_tokens})
+ 
+         # Keep the global token count on device so loss normalization does not

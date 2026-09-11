@@ -1,0 +1,24 @@
+diff --git a/torchtitan/distributed/cudagraph.py b/torchtitan/distributed/cudagraph.py
+index b9dafeb7..e40660ac 100644
+--- a/torchtitan/distributed/cudagraph.py
++++ b/torchtitan/distributed/cudagraph.py
+@@ -14,7 +14,6 @@ from dataclasses import dataclass
+ from typing import Any, cast
+ 
+ import torch
+-from torch.cuda._annotate_cuda_graph_trace import annotate_trace
+ from torch.cuda._graph_annotations import get_kernel_annotations
+ from torch.nn.attention.flex_attention import BlockMask
+ from torch.utils import _pytree as pytree
+@@ -203,6 +202,11 @@ def cudagraph_annotate_trace_post_processor(trace_path: str) -> None:
+     with open_trace(trace_path, "rt") as trace_file:
+         trace = json.load(trace_file)
+ 
++    # LOCAL PROBE FIX (not committed): this torch nightly has no
++    # torch.cuda._annotate_cuda_graph_trace; the import is only needed by this
++    # profiling post-processor, so it moves inside it.
++    from torch.cuda._annotate_cuda_graph_trace import annotate_trace
++
+     count = annotate_trace(trace, annotations)
+     if count > 0:
+         with open_trace(trace_path, "wt") as trace_file:
