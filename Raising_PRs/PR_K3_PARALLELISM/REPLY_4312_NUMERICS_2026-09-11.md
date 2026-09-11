@@ -37,11 +37,58 @@ and `7.7e-08` relative -- and their total gradient norms are `23.25` and `23.125
 apart. Where the printed five decimals agree, they are rounding a difference of this size, not
 showing its absence. We are correcting that here rather than leaving it for you to find.
 
-<<PENDING-MECHANISM>>
+**Where the one ulp comes from.** Kimi's attention residual groups layers into blocks of 12: inside a
+block each layer adds into a running partial sum, and a finished block joins the stack. Whether a partial
+sum has to cross the stage boundary depends only on where the split falls. At 24 layers pp2 splits after
+layer 11, so the second stage opens at layer 12, a block start, and only finished blocks cross; every
+cell in the section 3 tables prints the same step-1 loss as `dp1`. At 33 layers pp2 splits after layer 16,
+five layers into block 1, so the partial sum of layers 12 to 16 crosses the wire and is rebuilt on the far
+side before layer 17 adds to it. That is the difference in what crosses the boundary at the two depths,
+and the 33-layer shape is the one where the one ulp appears. This is an inference from the split and from the
+profile in section 2, not a separate run; the direct test is to move the 33-layer boundary onto layer 24,
+a block start, which should make step 1 bit-identical, and we can run it if that would help.
 
 ## 2. Step 1, per parameter
 
-<<PENDING-PROFILE>>
+Step-1 gradients of every parameter, `dp1` against `pp2` with the cache on, 33 layers, 1,002 tensors,
+both cells resumed from the same step-0 checkpoint. Two micro-batches of 256 tokens, so there is no
+accumulation-order term: the only difference between the two runs is the pipeline. Measured on the head
+this PR was reviewed at (`75045fed5`). Per tensor: the fraction of elements that differ, the median
+difference among them in bf16 units in the last place, and the relative difference of the norms.
+
+| group | tensors | bitwise | diff frac | median ulps | normrel median | normrel max |
+| --- | --- | --- | --- | --- | --- | --- |
+| lm_head, norm, output_res_* | 4 | 4 | 0 | - | 0 | 0 |
+| layer 32 (KDA) | 24 | 24 | 0 | - | 0 | 0 |
+| layer 31 (MLA) | 24 | 23 | 2 elements | 1.03 | 0 | 4.8e-7 |
+| layers 30, 29, 28 | 90 | 90 | 0 | - | 0 | 0 |
+| layer 27 (MLA) | 24 | 18 | 0.001 | 1.38 | 0 | 2.5e-4 |
+| layer 26 | 30 | 1 | 0.024 | 1.71 | 3.6e-4 | 1.7e-3 |
+| layer 25 | 30 | 0 | 0.140 | 1.79 | 1.5e-3 | 2.8e-3 |
+| layer 24 (block 2 start) | 30 | 0 | 0.283 | 1.95 | 3.1e-3 | 4.3e-3 |
+| layers 23 .. 17 (stage 1) | 24-30 each | 0 | 0.21-0.31 | 1.83-1.91 | 2.0e-3 .. 2.6e-3 | 3.3e-3 .. 4.2e-3 |
+| layer 16 (stage 0, first across the boundary) | 30 | 0 | 0.348 | 1.97 | 3.1e-3 | 3.7e-3 |
+| layers 15 .. 13 | 24-30 | 0 | 0.44-0.60 | 2.05-2.59 | 3.4e-3 .. 5.8e-3 | 5.5e-3 .. 8.2e-3 |
+| layer 12 (block 1 start) | 30 | 0 | 0.762 | 5.15 | 1.9e-2 | 2.4e-2 |
+| layers 11 .. 1 | 24-38 | 0 | 0.65-0.83 | 2.5-4.2 | 6.0e-3 .. 1.3e-2 | 7.4e-3 .. 2.5e-2 |
+| layer 0 | 29 | 0 | 0.880 | 5.82 | 2.1e-2 | 5.0e-2 |
+| tok_embeddings | 1 | 0 | 0.000 (sparse rows) | 4.11 | 1.1e-2 | 1.1e-2 |
+| vision encoder (stage 0) | 6 | 0 | 0.818 | 4.92 | 1.4e-2 | 2.0e-2 |
+
+Three things in this table are what a bug would not produce. The top of the model -- `lm_head`, the final
+norm, the output aggregation, and layers 32, 30, 29 and 28 -- is bit-identical, so the backward starts from
+identical values. The first difference is two elements of one tensor, layer 31's `wq_b`, at one ulp. And
+from there it grows smoothly layer by layer. The one sharp step is at layer 12, a block start, where the
+median difference goes from about 2.6 ulps to 5.15 and the attention residual changes what the stack
+holds; layer 24, the other block start, rises more gently. Across the stage boundary between layers 17
+and 16, where the transport lives, nothing steps: the median goes from 1.91 ulps to 1.97. A wrong tensor on the wire would show up at
+the boundary, large, in every element it touched.
+
+For scale: upstream's own pipeline on upstream's own models, with the same harness and shared step-0
+checkpoint on this box (2026-09-05, 4,096 tokens per step in 256-token micro-batches), reads `4.11391`
+for `llama3_debugmodel` pp2 and `4.11384` for its dp1 at step 10 (1.7e-5), and `3.88192` and `3.88273`
+for `deepseek_v3_debugmodel` (2.1e-4). The debug K3 flavour is the sensitive one; its no-pipeline reordering row in section 3
+shows that sensitivity without any pipeline in it.
 
 ## 3. The trajectory, with a band around it
 
@@ -137,9 +184,33 @@ What the rows say, on both boxes, and nothing more.
 
 **How the flag changes accumulation.** At one stage per rank, not at all; at more than one, it changes the association of the same sum. `attn_res_cache` decides which hop carries a block: `route_payload` picks the columns of the model's own stack tensor that the next stage still lacks (cache on) or all of them (cache off), and the receiving stage rebuilds the stack from the received columns plus the ones it already holds (`assemble_stack`). With one stage per rank no rank ever receives a block twice, so the set the receiver lacks is the whole stack and the two settings are the same code path -- measured bitwise for ten steps below (rows b, c). With two stages per rank they are not: the cached path assembles received columns next to locally held ones, so the backward sums the same contributions in a different association, and on 2 x H100 at pp2 x vp2 the two read `3.150940` and `3.514970` at step 10 (1.17% and 12.9% against dp1). That difference is the same class as the no-PP noise floor in row d below, which is what an association change costs with no pipeline in sight; it is not the flag computing something else.
 
-**How PP changes accumulation against one GPU.** The one thing the pipeline changes is where the gradient of a block stack is summed. Every layer reads the whole stack twice (`_apply_attention_residual` before its attention and before its FFN), so a block committed on stage 0 has readers on both stages. On one GPU autograd accumulates all of those read-contributions into one buffer in engine order. Under PP the stack a stage receives is a fresh autograd leaf (`assemble_stack` returns `stack.detach().requires_grad_(True)`), so stage 1 sums its sixteen layers' contributions into that leaf's `.grad`, hands the result back as one dense bf16 tensor, and stage 0's backward adds its own layers' contributions on top. Same terms, one extra rounding boundary in the sum. Measured at step 1 (profile below), that boundary adds nothing visible: the per-layer difference walks through it without a jump. What the profile does show is where the first bits move, and it is not at the boundary. And with more than two micro-batches a second difference appears at the very top of the backward: with two micro-batches (a two-term sum, order-free) `lm_head`, the final norms, `output_res_*` and layers 32-28 are bitwise; with four, a third of the elements of every tensor from `output_res_*` down differ by about 1.5 bf16 ulps, i.e. the four micro-batch gradients are associated differently by the trainer's accumulation loop and by the schedule's per-chunk backward. Both are bf16-ulp perturbations; what makes them a percent at step 10 is this flavor, not the pipeline, which is what the noise-floor row shows.
+**How PP changes accumulation against one GPU.** Two things change. In the forward, only when the stage boundary falls inside a block: the open block's partial sum crosses and is rebuilt on the next stage (section 1), which is where the one-ulp step-1 loss difference at 33 layers enters; at a block-start boundary only finished blocks cross. In the backward, always: where the gradient of a block stack is summed. Every layer reads the whole stack twice (`_apply_attention_residual` before its attention and before its FFN), so a block committed on stage 0 has readers on both stages. On one GPU autograd accumulates all of those read-contributions into one buffer in engine order. Under PP the stack a stage receives is a fresh autograd leaf (`assemble_stack` returns `stack.detach().requires_grad_(True)`), so stage 1 sums its sixteen layers' contributions into that leaf's `.grad`, hands the result back as one dense bf16 tensor, and stage 0's backward adds its own layers' contributions on top. Same terms, one extra rounding boundary in the sum. Measured at step 1 (the profile in section 2), that boundary adds nothing visible: the per-layer difference walks through it without a jump. What the profile does show is where the first bits move, and it is not at the boundary. And with more than two micro-batches a second difference appears at the very top of the backward: with two micro-batches (a two-term sum, order-free) `lm_head`, the final norms, `output_res_*` and layers 32-28 are bitwise; with four, a third of the elements of every tensor from `output_res_*` down differ by about 1.5 bf16 ulps, i.e. the four micro-batch gradients are associated differently by the trainer's accumulation loop and by the schedule's per-chunk backward. Both are bf16-ulp perturbations; what makes them a percent at step 10 is this flavor, not the pipeline, which is what the noise-floor row shows.
 --- PASTE END ---
 
+
+## Two mechanisms, not one, and a runtime fact recorded on the way
+
+**A reordering cannot move the step-1 loss, and pipelining can.** The step-1 loss is computed from
+the step-0 weights, before the optimizer has consumed any gradient, so permuting the accumulation
+groups cannot change it by construction -- for the ordering cells the load-bearing evidence is the
+step-1 gradient norm and the trajectory from step 2 onwards. Pipelining is a different mechanism:
+it changes the forward path itself, which is why `pp2` at 33 layers moves the step-1 loss by one
+float32 unit in the last place where a reordering moves it not at all. The reply should name both
+rather than let them blur into "step 1 agrees".
+
+**A runtime fact, recorded and not chased.** In the (void) forward dumps the single-GPU path made
+380 instrumented calls to the attention residual on one step and the pipeline path made 452, a
+difference of 72, at 24 layers with four micro-batches. The two paths therefore do not recompute
+the same amount under activation checkpointing. That is worth knowing next to the activation
+save/release question from the previous round; the 72 is not investigated here.
+
+**Why the forward A/B is not the instrument.** Those dumps were keyed by call index, and with the
+two paths making different numbers of calls the pairing compared different work: the comparison
+reported distances of about 2^31 units in the last place, which is an instrument reporting on
+itself. The per-parameter gradient profile pairs by parameter name instead, so the call-sequence
+problem cannot reach it, and it is the instrument that answers the correctness question anyway. If
+a forward A/B is rebuilt it will pair by (layer, site, micro-batch) with an explicit recompute
+flag.
 
 ## Background, superseded
 
