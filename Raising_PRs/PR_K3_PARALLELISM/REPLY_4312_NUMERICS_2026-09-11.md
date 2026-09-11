@@ -24,11 +24,26 @@ its own comment; everything under "Background, superseded" is working material, 
 
 --- PASTE ---
 
-Two questions, taken in order.
+Four parts: what step 1 actually reads and where its difference comes from, the per-parameter
+picture at step 1, the trajectory tables with a noise band around them, and what the transport
+flag does.
 
-**How the flag changes accumulation.** At one stage per rank, not at all; at more than one, it changes the association of the same sum. `attn_res_cache` decides which hop carries a block: `route_payload` picks the columns of the model's own stack tensor that the next stage still lacks (cache on) or all of them (cache off), and the receiving stage rebuilds the stack from the received columns plus the ones it already holds (`assemble_stack`). With one stage per rank no rank ever receives a block twice, so the set the receiver lacks is the whole stack and the two settings are the same code path -- measured bitwise for ten steps below (rows b, c). With two stages per rank they are not: the cached path assembles received columns next to locally held ones, so the backward sums the same contributions in a different association, and on 2 x H100 at pp2 x vp2 the two read `3.150940` and `3.514970` at step 10 (1.17% and 12.9% against dp1). That difference is the same class as the no-PP noise floor in row d below, which is what an association change costs with no pipeline in sight; it is not the flag computing something else.
+## 1. Step 1, and a correction to what this PR claimed
 
-**How PP changes accumulation against one GPU.** The one thing the pipeline changes is where the gradient of a block stack is summed. Every layer reads the whole stack twice (`_apply_attention_residual` before its attention and before its FFN), so a block committed on stage 0 has readers on both stages. On one GPU autograd accumulates all of those read-contributions into one buffer in engine order. Under PP the stack a stage receives is a fresh autograd leaf (`assemble_stack` returns `stack.detach().requires_grad_(True)`), so stage 1 sums its sixteen layers' contributions into that leaf's `.grad`, hands the result back as one dense bf16 tensor, and stage 0's backward adds its own layers' contributions on top. Same terms, one extra rounding boundary in the sum. Measured at step 1 (profile below), that boundary adds nothing visible: the per-layer difference walks through it without a jump. What the profile does show is where the first bits move, and it is not at the boundary. And with more than two micro-batches a second difference appears at the very top of the backward: with two micro-batches (a two-term sum, order-free) `lm_head`, the final norms, `output_res_*` and layers 32-28 are bitwise; with four, a third of the elements of every tensor from `output_res_*` down differ by about 1.5 bf16 ulps, i.e. the four micro-batch gradients are associated differently by the trainer's accumulation loop and by the schedule's per-chunk backward. Both are bf16-ulp perturbations; what makes them a percent at step 10 is this flavor, not the pipeline, which is what the noise-floor row shows.
+The PR said step 1 was bit-identical across pipeline shapes. That was read off printed losses,
+and it is wrong. At full precision, on the 33-layer shape, `dp1` reads `12.336345672607422` and
+`pp2` reads `12.336344718933105` -- one float32 unit in the last place apart, `9.5e-07` absolute
+and `7.7e-08` relative -- and their total gradient norms are `23.25` and `23.125`, one bf16 unit
+apart. Where the printed five decimals agree, they are rounding a difference of this size, not
+showing its absence. We are correcting that here rather than leaving it for you to find.
+
+<<PENDING-MECHANISM>>
+
+## 2. Step 1, per parameter
+
+<<PENDING-PROFILE>>
+
+## 3. The trajectory, with a band around it
 
 **The controls.** Five cells, 100 steps, seed 42, deterministic, every cell resumed from the SAME step-0 seed checkpoint so the weights they start from are bit-identical, 1024 tokens
 per step as four 256-token micro-batches (the smallest this flavour's loader accepts, see the
@@ -39,93 +54,62 @@ asserted.
 **8 x RTX 5060 Ti.** Loss, then total gradient norm; `dp1`'s absolute value is printed at every step, so the reference is visible where the percentages are taken.
 
 
-| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| dp1 (reference) | `12.593920` | `3.297890` | `3.337080` | `1.776880` | `0.259270` |
-| pp2 | `12.593920` (+0%) | `3.750270` (+13.7%) | `3.471810` (+4.04%) | `1.683830` (-5.24%) | `0.287780` (+11%) |
-| pp2 x vp2, cached transport | `12.593920` (+0%) | `3.175340` (-3.72%) | `3.426070` (+2.67%) | `1.195360` (-32.7%) | `0.164000` (-36.7%) |
-| pp2 x vp2, whole-stack transport | `12.593920` (+0%) | `3.321520` (+0.717%) | `3.361730` (+0.739%) | `1.083430` (-39%) | `0.166730` (-35.7%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `12.593920` (+0%) | `3.349840` (+1.58%) | `3.396910` (+1.79%) | `1.240870` (-30.2%) | `0.170380` (-34.3%) |
+| cell | step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: |
+| dp1 (reference) | `12.593920` | `3.297890` | `3.337080` |
+| pp2 | `12.593920` (+0%) | `3.750270` (+13.7%) | `3.471810` (+4.04%) |
+| pp2 x vp2, cached transport | `12.593920` (+0%) | `3.175340` (-3.72%) | `3.426070` (+2.67%) |
+| pp2 x vp2, whole-stack transport | `12.593920` (+0%) | `3.321520` (+0.717%) | `3.361730` (+0.739%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `12.593920` (+0%) | `3.349840` (+1.58%) | `3.396910` (+1.79%) |
 
 
-| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| dp1 (reference) | `18.6250` | `7.4688` | `4.0625` | `7.6250` | `1.7109` |
-| pp2 | `18.6250` (+0%) | `7.4688` (+0%) | `4.9062` (+20.8%) | `5.6250` (-26.2%) | `4.3125` (+152%) |
-| pp2 x vp2, cached transport | `18.6250` (+0%) | `5.1562` (-31%) | `4.0312` (-0.77%) | `8.8125` (+15.6%) | `0.9922` (-42%) |
-| pp2 x vp2, whole-stack transport | `18.6250` (+0%) | `4.8125` (-35.6%) | `4.5938` (+13.1%) | `3.1406` (-58.8%) | `1.5234` (-11%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (+0%) | `6.1875` (-17.2%) | `3.9531` (-2.69%) | `3.2656` (-57.2%) | `1.0469` (-38.8%) |
+| cell | step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: |
+| dp1 (reference) | `18.6250` | `7.4688` | `4.0625` |
+| pp2 | `18.6250` (+0%) | `7.4688` (+0%) | `4.9062` (+20.8%) |
+| pp2 x vp2, cached transport | `18.6250` (+0%) | `5.1562` (-31%) | `4.0312` (-0.77%) |
+| pp2 x vp2, whole-stack transport | `18.6250` (+0%) | `4.8125` (-35.6%) | `4.5938` (+13.1%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (+0%) | `6.1875` (-17.2%) | `3.9531` (-2.69%) |
 
 **2 x H100 PCIe.** The same five cells and the same protocol; `dp1` of this box is its own reference.
 
-| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| dp1 (reference) | `12.605700` | `3.114620` | `3.373330` | `1.206420` | `0.189940` |
-| pp2 | `12.605700` (0%) | `3.227050` (3.61%) | `3.288290` (2.52%) | `1.310800` (8.65%) | `0.208850` (9.96%) |
-| pp2 x vp2, cached transport | `12.605700` (0%) | `3.150940` (1.17%) | `3.349300` (0.712%) | `1.291140` (7.02%) | `0.220590` (16.1%) |
-| pp2 x vp2, whole-stack transport | `12.605700` (0%) | `3.514970` (12.9%) | `3.281700` (2.72%) | `1.639940` (35.9%) | `0.244630` (28.8%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `12.605700` (0%) | `3.247610` (4.27%) | `3.295370` (2.31%) | `1.446870` (19.9%) | `0.182700` (3.81%) |
+| cell | step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: |
+| dp1 (reference) | `12.605700` | `3.114620` | `3.373330` |
+| pp2 | `12.605700` (0%) | `3.227050` (3.61%) | `3.288290` (2.52%) |
+| pp2 x vp2, cached transport | `12.605700` (0%) | `3.150940` (1.17%) | `3.349300` (0.712%) |
+| pp2 x vp2, whole-stack transport | `12.605700` (0%) | `3.514970` (12.9%) | `3.281700` (2.72%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `12.605700` (0%) | `3.247610` (4.27%) | `3.295370` (2.31%) |
 
-| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| dp1 (reference) | `18.6250` | `5.4375` | `3.9844` | `3.9531` | `4.2500` |
-| pp2 | `18.7500` (0.671%) | `5.6875` (4.6%) | `3.7344` (6.27%) | `3.3594` (15%) | `1.0547` (75.2%) |
-| pp2 x vp2, cached transport | `18.6250` (0%) | `3.7188` (31.6%) | `4.0625` (1.96%) | `2.9375` (25.7%) | `1.4609` (65.6%) |
-| pp2 x vp2, whole-stack transport | `18.6250` (0%) | `6.0312` (10.9%) | `3.6719` (7.84%) | `3.1719` (19.8%) | `1.1953` (71.9%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (0%) | `6.6562` (22.4%) | `4.2500` (6.67%) | `3.2656` (17.4%) | `1.2344` (71%) |
+| cell | step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: |
+| dp1 (reference) | `18.6250` | `5.4375` | `3.9844` |
+| pp2 | `18.7500` (0.671%) | `5.6875` (4.6%) | `3.7344` (6.27%) |
+| pp2 x vp2, cached transport | `18.6250` (0%) | `3.7188` (31.6%) | `4.0625` (1.96%) |
+| pp2 x vp2, whole-stack transport | `18.6250` (0%) | `6.0312` (10.9%) | `3.6719` (7.84%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (0%) | `6.6562` (22.4%) | `4.2500` (6.67%) |
 
-Which columns are readable: steps 1 through 20. The reference is `12.593920` at step 1,
-`3.297890` at step 10 and `3.337080` at step 20, so a percentage against it means something there.
-By step 50 it has fallen to `1.776880` and by step 100 to `0.259270` -- 100 steps of this budget
-memorises the debug set -- so those two columns are printed for completeness and are two
-collapsing curves being divided, not a measurement of the parallelism.
+The tables stop at step 20 on purpose. `dp1` reads `12.593920`, `3.297890` and `3.337080` at
+steps 1, 10 and 20, so a percentage against it means something there. Run further on this budget
+and the reference falls to `1.78` by step 50 and `0.26` by step 100 as the model memorises the
+debug set, and a ratio between two collapsing curves stops measuring the parallelism, so those
+steps are not reported here. The full series is in the branch notes if you want it.
 
 What the rows say, on both boxes, and nothing more.
 
 - Step 1 prints the same loss in every cell on each box, pipelined or not. Printed, not identical: on the deeper model, where the print does differ, the full-precision pair reads `12.336345672607422` for `dp1` against `12.336344718933105` for `pp2`, one float32 unit in the last place apart, with the total gradient norm one bf16 unit apart. So the forward agrees to the last representable place and the difference the pipeline introduces is in the step-1 gradients.
 - The bottom row has no pipeline in it at all: it is `dp1` with the four accumulation groups consumed in the opposite order, everything else equal. On the H100 box it reads `4.27%` at step 10 and `2.31%` at step 20; on the 5060 Ti box `1.58%` and `1.79%`. That is the size of a pure association change on this flavour, with no pipeline available to blame.
 - Against that floor, in the readable range: at step 20 `pp2` reads `2.52%` (H100) and `4.04%` (5060 Ti), the cached `vp2` `0.712%` and `2.67%`, the whole-stack `vp2` `2.72%` and `0.739%`. Every pipeline cell is the same class as the no-pipeline floor, on both boxes; none of them is an order of magnitude away from it.
-- At step 10 the two boxes disagree about which cell is largest -- the H100 box has the whole-stack `vp2` at `12.9%` and `pp2` at `3.61%`, the 5060 Ti box has `pp2` at `13.7%` and the whole-stack `vp2` at `0.717%`. We are not offering a mechanism for that. What both boxes agree on is the class: single-digit to low-double-digit percentages at step 10 for every cell including the one with no pipeline. The widest gap between a pipeline cell and the floor anywhere in the readable range is `pp2` at step 10 on the 5060 Ti box, `13.7%` against the floor's `1.58%`, a factor of nine; on the H100 box at the same step the floor is the larger of the two (`4.27%` against `pp2`'s `3.61%`). Both numbers are single runs of a quantity that reordering four accumulation groups already moves by percents, so we do not read a factor of nine at one step on one box as evidence of anything beyond that.
+- At step 10 the two boxes order the cells differently: the H100 box has the whole-stack `vp2` largest at `12.9%` with `pp2` at `3.61%`, this box has `pp2` largest at `13.7%` with the whole-stack `vp2` at `0.717%`. That is single-sample scatter, and the noise band below is its scale: one ordering of the accumulation groups against another, with no pipeline anywhere, spans the same range. The widest pipeline-to-floor gap in the readable range is `pp2` at step 10 on this box, `13.7%` against a floor sample of `1.58%`; on the H100 box the floor is the larger of the pair at the same step (`4.27%` against `3.61%`). Read them against the band, not against each other.
 - The two transports do not agree with each other at `vp2` on either box, and they agree at every printed step at one stage per rank on both. That is the flag's whole effect: at one stage per rank the delta is the whole stack, so the two are the same code path; at two, the cached path assembles received blocks next to locally held ones and the same contributions are summed in a different association.
-- Readable range: steps 1 through 20 on both boxes. The references fall to `1.21` / `1.78` by step 50 and `0.19` / `0.26` by step 100, so the last two columns divide two collapsing curves and are printed for completeness only.
 
+## 4. What the transport flag does
+
+**How the flag changes accumulation.** At one stage per rank, not at all; at more than one, it changes the association of the same sum. `attn_res_cache` decides which hop carries a block: `route_payload` picks the columns of the model's own stack tensor that the next stage still lacks (cache on) or all of them (cache off), and the receiving stage rebuilds the stack from the received columns plus the ones it already holds (`assemble_stack`). With one stage per rank no rank ever receives a block twice, so the set the receiver lacks is the whole stack and the two settings are the same code path -- measured bitwise for ten steps below (rows b, c). With two stages per rank they are not: the cached path assembles received columns next to locally held ones, so the backward sums the same contributions in a different association, and on 2 x H100 at pp2 x vp2 the two read `3.150940` and `3.514970` at step 10 (1.17% and 12.9% against dp1). That difference is the same class as the no-PP noise floor in row d below, which is what an association change costs with no pipeline in sight; it is not the flag computing something else.
+
+**How PP changes accumulation against one GPU.** The one thing the pipeline changes is where the gradient of a block stack is summed. Every layer reads the whole stack twice (`_apply_attention_residual` before its attention and before its FFN), so a block committed on stage 0 has readers on both stages. On one GPU autograd accumulates all of those read-contributions into one buffer in engine order. Under PP the stack a stage receives is a fresh autograd leaf (`assemble_stack` returns `stack.detach().requires_grad_(True)`), so stage 1 sums its sixteen layers' contributions into that leaf's `.grad`, hands the result back as one dense bf16 tensor, and stage 0's backward adds its own layers' contributions on top. Same terms, one extra rounding boundary in the sum. Measured at step 1 (profile below), that boundary adds nothing visible: the per-layer difference walks through it without a jump. What the profile does show is where the first bits move, and it is not at the boundary. And with more than two micro-batches a second difference appears at the very top of the backward: with two micro-batches (a two-term sum, order-free) `lm_head`, the final norms, `output_res_*` and layers 32-28 are bitwise; with four, a third of the elements of every tensor from `output_res_*` down differ by about 1.5 bf16 ulps, i.e. the four micro-batch gradients are associated differently by the trainer's accumulation loop and by the schedule's per-chunk backward. Both are bf16-ulp perturbations; what makes them a percent at step 10 is this flavor, not the pipeline, which is what the noise-floor row shows.
 --- PASTE END ---
 
-## PR 4500's own CP cells, reproduced on 2 x H100 PCIe (2026-09-11)
-
-PR 4500 published its table on H100. We had only reproduced it on A100, where it read two orders of magnitude larger than published, and the open question was whether the hardware class explained that. This run answers it: the same code, the same protocol, on H100.
-
-`kimi_k3_debugmodel` CP=1 on spmd_types as the reference, then the two CP=2 recipes from the b200 suite, on the 4500 head `2884d82a9`; seed 42, `--debug.deterministic`, `--metrics.log_freq 1`, 256 tokens per train step, 100 steps, no seed checkpoint — the script is the one archived from the A100 run, with only the paths and the GPU ids changed.
-
-| step | CP=1 loss | CP=2 all-gather (diff) | CP=2 Ulysses (diff) | CP=1 grad norm | all-gather gn (diff) | Ulysses gn (diff) |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | `12.561730` | `12.327760` (-1.863%) | `12.340670` (-1.760%) | `28.8750` | `29.500000` (+2.165%) | `29.125000` (+0.866%) |
-| 2 | `11.719530` | `11.186950` (-4.544%) | `11.034520` (-5.845%) | `38.0000` | `39.500000` (+3.947%) | `36.500000` (-3.947%) |
-| 5 | `8.713460` | `8.047820` (-7.639%) | `7.766800` (-10.864%) | `15.8125` | `13.687500` (-13.439%) | `15.562500` (-1.581%) |
-| 10 | `4.149080` | `4.162870` (+0.332%) | `4.510770` (+8.717%) | `7.3750` | `10.687500` (+44.915%) | `13.937500` (+88.983%) |
-| 20 | `3.312170` | `3.241000` (-2.149%) | `3.246450` (-1.984%) | `6.6875` | `5.625000` (-15.888%) | `5.812500` (-13.084%) |
-| 50 | `2.928190` | `3.037940` (+3.748%) | `2.992010` (+2.180%) | `3.4688` | `5.000000` (+44.142%) | `4.062500` (+17.115%) |
-| 100 | `2.872700` | `2.967340` (+3.294%) | `2.866940` (-0.201%) | `5.3438` | `5.250000` (-1.755%) | `5.687500` (+6.432%) |
-
-Side by side with what exists, steps 1 / 10 / 100 of the loss:
-
-| source | hardware | CP=2 all-gather | CP=2 Ulysses |
-| --- | --- | --- | --- |
-| PR 4500, as published | H100 | `0.608%` / `0.150%` / `2.72%` | `0.576%` / `0.371%` / `1.34%` |
-| our replication | 8 x A100-SXM4-40GB | `-0.115%` / `+8.56%` / `-7.86%` | `-0.26%` / `+9.70%` / `-6.31%` |
-| our replication | 2 x H100 PCIe | `-1.863%` / `+0.332%` / `+3.294%` | `-1.760%` / `+8.717%` / `-0.201%` |
-
-Cell by cell, which is the only way this comparison means anything:
-
-- **All-gather, steps 10 and 100: our numbers are in her class.** `+0.332%` against her `0.150%`, and `+3.294%` against her `2.72%`. On the A100 the same cell read `+8.56%` and `-7.86%`, so for this cell the H100 run moves it from an order of magnitude away to the same size.
-- **Ulysses, step 10: not in her class.** `+8.717%` against her `0.371%`, and that is the size the A100 read for the same cell (`+9.70%`). At step 100 Ulysses reads `-0.201%` against her `+1.34%`: both small, opposite sign.
-- **Step 1, both cells: different in sign and about three times the magnitude.** Hers are `+0.608%` and `+0.576%`; ours are `-1.863%` and `-1.760%`. The A100 read `-0.115%` and `-0.26%`, so the three runs do not agree with each other here either.
-
-So "not reproduced" was too broad. One cell lands in her class at the later steps and one does not, and step 1 disagrees for both. What the run does settle is narrower than we assumed: the hardware class alone does not account for the gap, since the same code on H100 puts all-gather close to her table and leaves Ulysses where the A100 had it.
-
-These are single runs on each box, one seed, no repeats. A step-10 comparison between `+0.332%` and `0.150%` is a comparison of two small numbers from one sample each, and nothing here separates them; only the Ulysses step-10 gap and the step-1 sign difference are larger than what a single run can be trusted to show. Why the environments differ at all is open; the candidates are the torch build, the Attention Gym version, the exact code state behind the head, and the data, and this run settles none of them.
-
-Footnote: 2 x NVIDIA H100 PCIe, capability 9.0; head `2884d82a9` (PR 4500), fetched from `pull/4500/head`; torch `2.15.0.dev20260906+cu130` (CUDA 13.0), triton `3.8.0+gitc01b6774`, spmd-types 0.2.5, torch-remat 0.2.0, nvidia-cutlass-dsl 4.6.0; Attention Gym at upstream main `b16d6d3`. That head's own KDA guard already admits capability 9.0 ("Hopper SM90 or Blackwell SM100/SM103"), so no guard relaxation was applied and `bound_gate` ran its fused CuTeDSL path, which is what an H100 run of hers would take; the A100 run had needed both a guard relaxation and an eager reference gate, neither of which applies here. One local uncommitted change was needed: `torchtitan/distributed/cudagraph.py` imports `torch.cuda._annotate_cuda_graph_trace`, which this torch nightly does not have, so the import moved inside the profiling post-processor that is its only user. Nothing else was patched, and nothing was committed.
 
 ## Background, superseded
 
