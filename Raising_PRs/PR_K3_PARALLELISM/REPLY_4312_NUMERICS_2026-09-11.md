@@ -45,6 +45,8 @@ showing its absence. We are correcting that here rather than leaving it for you 
 
 ## 3. The trajectory, with a band around it
 
+<<PENDING-BAND>>
+
 **The controls.** Five cells, 100 steps, seed 42, deterministic, every cell resumed from the SAME step-0 seed checkpoint so the weights they start from are bit-identical, 1024 tokens
 per step as four 256-token micro-batches (the smallest this flavour's loader accepts, see the
 note under the tables), on main's 24-layer `debugmodel`. `dp1` is the reference; its absolute loss
@@ -97,7 +99,7 @@ steps are not reported here. The full series is in the branch notes if you want 
 
 What the rows say, on both boxes, and nothing more.
 
-- Step 1 prints the same loss in every cell on each box, pipelined or not. Printed, not identical: on the deeper model, where the print does differ, the full-precision pair reads `12.336345672607422` for `dp1` against `12.336344718933105` for `pp2`, one float32 unit in the last place apart, with the total gradient norm one bf16 unit apart. So the forward agrees to the last representable place and the difference the pipeline introduces is in the step-1 gradients.
+- Step 1 prints the same loss in every cell on each box. What that print is worth is section 1: one float32 unit in the last place, not identity.
 - The bottom row has no pipeline in it at all: it is `dp1` with the four accumulation groups consumed in the opposite order, everything else equal. On the H100 box it reads `4.27%` at step 10 and `2.31%` at step 20; on the 5060 Ti box `1.58%` and `1.79%`. That is the size of a pure association change on this flavour, with no pipeline available to blame.
 - Against that floor, in the readable range: at step 20 `pp2` reads `2.52%` (H100) and `4.04%` (5060 Ti), the cached `vp2` `0.712%` and `2.67%`, the whole-stack `vp2` `2.72%` and `0.739%`. Every pipeline cell is the same class as the no-pipeline floor, on both boxes; none of them is an order of magnitude away from it.
 - At step 10 the two boxes order the cells differently: the H100 box has the whole-stack `vp2` largest at `12.9%` with `pp2` at `3.61%`, this box has `pp2` largest at `13.7%` with the whole-stack `vp2` at `0.717%`. That is single-sample scatter, and the noise band below is its scale: one ordering of the accumulation groups against another, with no pipeline anywhere, spans the same range. The widest pipeline-to-floor gap in the readable range is `pp2` at step 10 on this box, `13.7%` against a floor sample of `1.58%`; on the H100 box the floor is the larger of the pair at the same step (`4.27%` against `3.61%`). Read them against the band, not against each other.
