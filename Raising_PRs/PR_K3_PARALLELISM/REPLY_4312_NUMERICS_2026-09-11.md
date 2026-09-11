@@ -45,7 +45,35 @@ showing its absence. We are correcting that here rather than leaving it for you 
 
 ## 3. The trajectory, with a band around it
 
-<<PENDING-BAND>>
+The bottom row of each table is one ordering of the four accumulation groups. There are 24 of
+them, and the ordering alone -- no pipeline anywhere -- is worth a band, not a point. Four of the
+24 measured on the 5060 Ti box, all against the identity ordering, everything else equal:
+
+| ordering of the four accumulation groups | step 10 | step 20 |
+| --- | ---: | ---: |
+| identity (the reference) | `3.297890` | `3.337080` |
+| reversed | `3.349840` (+1.58%) | `3.396910` (+1.79%) |
+| `1,3,0,2` | `3.214190` (-2.54%) | `3.501760` (+4.93%) |
+| `2,0,3,1` | `3.078880` (-6.64%) | `3.399090` (+1.86%) |
+| **band** | **-6.64% .. +1.58%** | **0.00% .. +4.93%** |
+
+Against that band, the pipeline cells on the same box:
+
+| cell | step 10 | step 20 |
+| --- | --- | --- |
+| `pp2` | `+13.7%`, **outside the band** | `+4.04%`, inside |
+| `pp2 x vp2`, cached | `-3.72%`, inside | `+2.67%`, inside |
+| `pp2 x vp2`, whole-stack | `+0.72%`, inside | `+0.74%`, inside |
+
+We are not going to pretend that reads cleanly. At step 20 every pipeline cell sits inside the
+band that reordering alone produces. At step 10 two of the three do and `pp2` does not: `+13.7%`
+against a band whose upper edge is `+1.58%`. Four samples of 24 orderings is a lower bound on the
+band, so a wider sample may contain it, and the H100 box puts the ordering row above `pp2` at the
+same step (`4.27%` against `3.61%`) -- but on this box, at this step, it is outside what we
+measured, and that is the honest statement. It is also why the correctness argument in sections 1
+and 2 is made at step 1 in the gradients and not here: at step 10 the quantity is already a
+chaotic function of a one-ulp difference, and a band of four samples is a weak instrument for it.
+
 
 **The controls.** Five cells, 100 steps, seed 42, deterministic, every cell resumed from the SAME step-0 seed checkpoint so the weights they start from are bit-identical, 1024 tokens
 per step as four 256-token micro-batches (the smallest this flavour's loader accepts, see the
