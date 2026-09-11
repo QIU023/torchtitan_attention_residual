@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Tensor parallelism with sequence parallel
 
-Body for PR 4499. The PR branch `k3_tp_sp` = `tp_sp_on_main` = `bd55160a8` (pushed 2026-09-11 with lease on `9a62f5229`), five commits on upstream main `da2f82670` -- the fifth, `bd55160a8`, drops the tensor-parallel disjunct the dispatcher condition cannot reach. The first four: `ddb306332` (K2.5 tables), `fc44fbb80` (the declarations), `bb2dad9da` (spmd_types required), `d4d6e774c` (the b200 cell). The Results section of the previous body (8 x A100, head `9a62f5229`) does not transfer: the tower is tensor-parallel now and the multimodal cells move; the table has to be re-measured on the new stack (cells listed below). TODO-NUMBERS marks what this box measured meanwhile.
+Body for PR 4499. The PR branch `k3_tp_sp` = `tp_sp_on_main` = `bd55160a8` (pushed 2026-09-11 with lease on `9a62f5229`), five commits on upstream main `da2f82670` -- the fifth, `bd55160a8`, drops the tensor-parallel disjunct the dispatcher condition cannot reach. The first four: `ddb306332` (K2.5 tables), `fc44fbb80` (the declarations), `bb2dad9da` (spmd_types required), `d4d6e774c` (the b200 cell). The Results section of the previous body (8 x A100, head `9a62f5229`) does not transfer: the tower is tensor-parallel now and the multimodal cells move; the table has to be re-measured on the new stack (cells listed below).
 
 --- PASTE BEGIN ---
 
@@ -57,14 +57,14 @@ dp1 stream, 256 tokens per step (reference: tp=1 on main):
 | tp=2, SP on | `12.631220` (+0.0508%) | `4.108150` (-5.59%) | `3.323500` (-8.47%) | `25.875000` (+0.976%) | `6.718800` (+38.7%) | `5.875000` (-40.5%) |
 | tp=2, SP off | `12.628260` (+0.0273%) | `4.057510` (-6.76%) | `3.379290` (-6.94%) | `26.000000` (+1.46%) | `7.093800` (+46.5%) | `6.062500` (-38.6%) |
 
-dp2 stream, 512 tokens per step (reference: dp2 on this PR, since a second data-parallel rank reads other samples):
+dp2 stream, 512 tokens per step (reference: dp2 on this PR, since a second data-parallel rank reads other samples). This pair carries no tensor parallelism at all: expert parallelism changes which rank reduces which expert's contribution and nothing else, so it measures what a pure change of summation order costs on this flavour, and the tp=2 rows above are read against it:
 
 | cell | step 1 | step 10 | step 20 | step 1 grad norm | step 10 | step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp2 | `12.463530` | `4.039750` | `3.340510` | `23.750000` | `6.218800` | `4.875000` |
 | dp2 x ep2 | bitwise | `3.609350` (-10.7%) | `3.340420` (-0.00269%) | `23.625000` (-0.526%) | `4.593800` (-26.1%) | `3.734400` (-23.4%) |
 
-At tp=1 this PR changes nothing on either backend: every tp=1 row is bitwise with main for 100 steps, and a fresh inductor cache reproduces it. One partial_dtensor tp=1 run on a cold cache diverged from step 2 and did not reproduce; the row above is its rerun on the same seed checkpoint, and the parent's rerun is bitwise too. The tp=2 rows move at step 1 by a few hundredths of a percent -- the sharded bf16 matmuls reduce in a different order -- and by percents at steps 10 and 20, the class the debug model reads for any change in summation order.
+At tp=1 this PR changes nothing on either backend: every tp=1 row is bitwise with main for 100 steps, and a fresh inductor cache reproduces it. One partial_dtensor tp=1 run on a cold cache diverged from step 2 and did not reproduce; the row above is its rerun on the same seed checkpoint, and the parent's rerun is bitwise too. The tp=2 rows move at step 1 by a few hundredths of a percent -- the sharded bf16 matmuls reduce in a different order -- and by single-digit percents at steps 10 and 20. The dp2 pair below sizes that: with no tensor parallelism in it at all, expert parallelism alone moves step 10 by `-10.7%` on the loss and `-26.1%` on the gradient norm, so the tp=2 rows sit inside what a reordering costs on this flavour rather than outside it.
 
 Box: 2 x H100 PCIe (capability 9.0), torch `2.15.0.dev20260906+cu130`, Attention Gym upstream main `b16d6d3`; the KDA capability guard was widened locally to admit SM 9.0 and is not part of this PR. The four-GPU cells (dp2 x tp2, dp2 x ep2 x tp2) need the pending A100 rerun.
 
