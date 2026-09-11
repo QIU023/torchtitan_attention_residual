@@ -14,7 +14,11 @@ Not run: the four-card cells (dp2 x tp2, dp2 x ep2 x tp2, tp4), the box has two 
 Not comparable with the A100 table in the PR body: that was the previous stack (`9a62f5229`), with
 the vision tower replicated on TP; this stack shards the tower.
 
-Finding: `tp1_pd` (branch, partial_dtensor, tp=1) is bitwise with main at step 1 and diverges after
-(-2.96% at step 10, -6.6% at step 20), where the kit expects the non-TP path to be bitwise. The same
-pair was bitwise on the previous stack on A100. A determinism rerun of both partial_dtensor cells
-on fresh caches is in `rerun_table.txt` once it lands.
+Outlier, not a regression. The first `tp1_pd` run (branch, partial_dtensor, tp=1) read bitwise
+with main at step 1 and then diverged (-2.96% at step 10, -6.6% at step 20). It did not reproduce:
+rerun on the same seed checkpoint with a fresh inductor cache (`tp1_pd_again`), the branch is bitwise
+with main at every step, and so is the parent's rerun (`tp1_parent_pd_again`); the first run differs
+from its own rerun by +3.05% at step 10 and +7.06% at step 20. The non-TP path is therefore unchanged
+by the branch, as the kit expects. Cold inductor compiles picking a different kernel have produced
+this pattern on these boxes before; that cause is not established for this cell. Both comparisons are
+in `rerun_table.txt`.
