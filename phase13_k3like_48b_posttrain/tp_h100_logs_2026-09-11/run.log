@@ -1,0 +1,32 @@
+seed_bf16 rc=0
+seed_bf16_dp2 rc=0
+tp1_parent rc=0 steps=100
+tp1 rc=0 steps=100
+tp1_again rc=0 steps=100
+tp2_sp rc=0 steps=200
+tp2_nosp rc=0 steps=200
+tp1_parent_pd rc=0 steps=100
+tp1_pd rc=0 steps=100
+dp2 rc=0 steps=200
+dp2_ep2 rc=0 steps=200
+
+# dp1 stream (reference: tp=1 on main; tp1 must read bitwise with it)
+| cell | step 1 | step 10 | step 20 | step 1 | step 10 | step 20 (grad norm) |
+|---|---|---|---|---|---|---|
+| tp1_parent | `12.624810` | `4.351560` | `3.631110` | `25.625000` | `4.843800` | `9.875000` |
+| tp1 | `12.624810` (bitwise) | `4.351560` (bitwise) | `3.631110` (bitwise) | `25.625000` (bitwise) | `4.843800` (bitwise) | `9.875000` (bitwise) |
+| tp1_again | `12.624810` (bitwise) | `4.351560` (bitwise) | `3.631110` (bitwise) | `25.625000` (bitwise) | `4.843800` (bitwise) | `9.875000` (bitwise) |
+| tp2_sp | `12.631220` (+0.0508%) | `4.108150` (-5.59%) | `3.323500` (-8.47%) | `25.875000` (+0.976%) | `6.718800` (+38.7%) | `5.875000` (-40.5%) |
+| tp2_nosp | `12.628260` (+0.0273%) | `4.057510` (-6.76%) | `3.379290` (-6.94%) | `26.000000` (+1.46%) | `7.093800` (+46.5%) | `6.062500` (-38.6%) |
+
+# the non-TP path, partial_dtensor (reference: tp=1 on main)
+| cell | step 1 | step 10 | step 20 | step 1 | step 10 | step 20 (grad norm) |
+|---|---|---|---|---|---|---|
+| tp1_parent_pd | `12.624810` | `4.351560` | `3.631110` | `25.625000` | `4.843800` | `9.875000` |
+| tp1_pd | `12.624810` (bitwise) | `4.222840` (-2.96%) | `3.391620` (-6.6%) | `25.625000` (bitwise) | `6.562500` (+35.5%) | `5.875000` (-40.5%) |
+
+# dp2 stream (reference: dp2 on this branch)
+| cell | step 1 | step 10 | step 20 | step 1 | step 10 | step 20 (grad norm) |
+|---|---|---|---|---|---|---|
+| dp2 | `12.463530` | `4.039750` | `3.340510` | `23.750000` | `6.218800` | `4.875000` |
+| dp2_ep2 | `12.463530` (bitwise) | `3.609350` (-10.7%) | `3.340420` (-0.00269%) | `23.625000` (-0.526%) | `4.593800` (-26.1%) | `3.734400` (-23.4%) |

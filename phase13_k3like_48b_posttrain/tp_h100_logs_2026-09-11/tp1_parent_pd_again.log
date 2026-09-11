@@ -1,0 +1,33 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+W0911 09:40:19.279000 53111 site-packages/torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0911 09:40:19.305000 53111 site-packages/torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[titan] 2026-09-11 09:40:19,689 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-11 09:40:20,016 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-11 09:40:20,082 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-11 09:40:20,083 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/tp_h100_out/tp1_parent_pd_again/structured_logs/training.global_rank_0.20260911-094020-PV2N5W.jsonl
+[titan] 2026-09-11 09:40:20,251 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-11 09:40:20,621 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-11 09:40:20,621 - root - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-11 09:40:20,640 - root - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-11 09:40:20,802 - root - INFO - CUDA capacity: NVIDIA H100 PCIe with 79.17GiB memory
+[titan] 2026-09-11 09:40:20,804 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-11 09:40:20,808 - root - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-11 09:40:20,808 - root - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-11 09:40:20,818 - root - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-11 09:40:20,819 - root - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-11 09:40:20,819 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-11 09:40:20,843 - root - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-11 09:40:20,992 - root - INFO - Applied FSDP to the model
+[titan] 2026-09-11 09:40:21,561 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-11 09:40:21,562 - root - INFO - Peak FLOPS used for computing MFU: 7.560e+14
+[titan] 2026-09-11 09:40:21,562 - root - INFO - CUDA memory usage for model: 3.86GiB(4.87%)
+[titan] 2026-09-11 09:40:21,565 - root - INFO - Optimizer AdamW (model_part=0): 750 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-11 09:40:21,568 - root - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-11 09:40:21,586 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-11 09:40:21,586 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-11 09:40:21,595 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/tp_h100_out/tp1_parent_pd_again/checkpoint
+[titan] 2026-09-11 09:40:21,596 - root - INFO - Trainer is initialized with 256 tokens per DP rank, 256 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 100 (warmup 2)
+[titan] 2026-09-11 09:40:21,596 - root - INFO - Loading the checkpoint from /workspace/tp_h100_out/tp1_parent_pd_again/checkpoint/step-0.
+[titan] 2026-09-11 09:40:23,066 - root - INFO - [GC] GC collection for checkpoint loading. took 0.02 seconds
+[titan] 2026-09-11 09:40:23,066 - root - INFO - Finished loading the checkpoint in 1.47 seconds.
+[titan] 2026-09-11 09:40:23,066 - root - INFO - Training starts at step 1
