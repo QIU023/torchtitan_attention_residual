@@ -36,9 +36,43 @@ note under the tables), on main's 24-layer `debugmodel`. `dp1` is the reference;
 is printed at every step, so where it stops being a meaningful denominator is visible rather than
 asserted.
 
-TABLE-5060-PENDING
+**8 x RTX 5060 Ti.** Loss, then total gradient norm; `dp1`'s absolute value is printed at every step, so the reference is visible where the percentages are taken.
 
-TABLE-H100-PENDING
+
+| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| dp1 (reference) | `12.593920` | `3.297890` | `3.337080` | `1.776880` | `0.259270` |
+| pp2 | `12.593920` (+0%) | `3.750270` (+13.7%) | `3.471810` (+4.04%) | `1.683830` (-5.24%) | `0.287780` (+11%) |
+| pp2 x vp2, cached transport | `12.593920` (+0%) | `3.175340` (-3.72%) | `3.426070` (+2.67%) | `1.195360` (-32.7%) | `0.164000` (-36.7%) |
+| pp2 x vp2, whole-stack transport | `12.593920` (+0%) | `3.321520` (+0.717%) | `3.361730` (+0.739%) | `1.083430` (-39%) | `0.166730` (-35.7%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `12.593920` (+0%) | `3.349840` (+1.58%) | `3.396910` (+1.79%) | `1.240870` (-30.2%) | `0.170380` (-34.3%) |
+
+
+| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| dp1 (reference) | `18.6250` | `7.4688` | `4.0625` | `7.6250` | `1.7109` |
+| pp2 | `18.6250` (+0%) | `7.4688` (+0%) | `4.9062` (+20.8%) | `5.6250` (-26.2%) | `4.3125` (+152%) |
+| pp2 x vp2, cached transport | `18.6250` (+0%) | `5.1562` (-31%) | `4.0312` (-0.77%) | `8.8125` (+15.6%) | `0.9922` (-42%) |
+| pp2 x vp2, whole-stack transport | `18.6250` (+0%) | `4.8125` (-35.6%) | `4.5938` (+13.1%) | `3.1406` (-58.8%) | `1.5234` (-11%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (+0%) | `6.1875` (-17.2%) | `3.9531` (-2.69%) | `3.2656` (-57.2%) | `1.0469` (-38.8%) |
+
+**2 x H100 PCIe.** The same five cells and the same protocol; `dp1` of this box is its own reference.
+
+| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| dp1 (reference) | `12.605700` | `3.114620` | `3.373330` | `1.206420` | `0.189940` |
+| pp2 | `12.605700` (0%) | `3.227050` (3.61%) | `3.288290` (2.52%) | `1.310800` (8.65%) | `0.208850` (9.96%) |
+| pp2 x vp2, cached transport | `12.605700` (0%) | `3.150940` (1.17%) | `3.349300` (0.712%) | `1.291140` (7.02%) | `0.220590` (16.1%) |
+| pp2 x vp2, whole-stack transport | `12.605700` (0%) | `3.514970` (12.9%) | `3.281700` (2.72%) | `1.639940` (35.9%) | `0.244630` (28.8%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `12.605700` (0%) | `3.247610` (4.27%) | `3.295370` (2.31%) | `1.446870` (19.9%) | `0.182700` (3.81%) |
+
+| cell | step 1 | step 10 | step 20 | step 50 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| dp1 (reference) | `18.6250` | `5.4375` | `3.9844` | `3.9531` | `4.2500` |
+| pp2 | `18.7500` (0.671%) | `5.6875` (4.6%) | `3.7344` (6.27%) | `3.3594` (15%) | `1.0547` (75.2%) |
+| pp2 x vp2, cached transport | `18.6250` (0%) | `3.7188` (31.6%) | `4.0625` (1.96%) | `2.9375` (25.7%) | `1.4609` (65.6%) |
+| pp2 x vp2, whole-stack transport | `18.6250` (0%) | `6.0312` (10.9%) | `3.6719` (7.84%) | `3.1719` (19.8%) | `1.1953` (71.9%) |
+| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (0%) | `6.6562` (22.4%) | `4.2500` (6.67%) | `3.2656` (17.4%) | `1.2344` (71%) |
 
 Which columns are readable: steps 1 through 20. The reference is `12.593920` at step 1,
 `3.297890` at step 10 and `3.337080` at step 20, so a percentage against it means something there.
@@ -46,7 +80,14 @@ By step 50 it has fallen to `1.776880` and by step 100 to `0.259270` -- 100 step
 memorises the debug set -- so those two columns are printed for completeness and are two
 collapsing curves being divided, not a measurement of the parallelism.
 
-ROWS-SAY-PENDING
+What the rows say, on both boxes, and nothing more.
+
+- Step 1 prints the same loss in every cell on each box, pipelined or not. Printed, not identical: on the deeper model, where the print does differ, the full-precision pair reads `12.336345672607422` for `dp1` against `12.336344718933105` for `pp2`, one float32 unit in the last place apart, with the total gradient norm one bf16 unit apart. So the forward agrees to the last representable place and the difference the pipeline introduces is in the step-1 gradients.
+- The bottom row has no pipeline in it at all: it is `dp1` with the four accumulation groups consumed in the opposite order, everything else equal. On the H100 box it reads `4.27%` at step 10 and `2.31%` at step 20; on the 5060 Ti box `1.58%` and `1.79%`. That is the size of a pure association change on this flavour, with no pipeline available to blame.
+- Against that floor, in the readable range: at step 20 `pp2` reads `2.52%` (H100) and `4.04%` (5060 Ti), the cached `vp2` `0.712%` and `2.67%`, the whole-stack `vp2` `2.72%` and `0.739%`. Every pipeline cell is the same class as the no-pipeline floor, on both boxes; none of them is an order of magnitude away from it.
+- At step 10 the two boxes disagree about which cell is largest -- the H100 box has the whole-stack `vp2` at `12.9%` and `pp2` at `3.61%`, the 5060 Ti box has `pp2` at `13.7%` and the whole-stack `vp2` at `0.717%`. We are not offering a mechanism for that. What both boxes agree on is the class: single-digit to low-double-digit percentages at step 10 for every cell including the one with no pipeline. The widest gap between a pipeline cell and the floor anywhere in the readable range is `pp2` at step 10 on the 5060 Ti box, `13.7%` against the floor's `1.58%`, a factor of nine; on the H100 box at the same step the floor is the larger of the two (`4.27%` against `pp2`'s `3.61%`). Both numbers are single runs of a quantity that reordering four accumulation groups already moves by percents, so we do not read a factor of nine at one step on one box as evidence of anything beyond that.
+- The two transports do not agree with each other at `vp2` on either box, and they agree at every printed step at one stage per rank on both. That is the flag's whole effect: at one stage per rank the delta is the whole stack, so the two are the same code path; at two, the cached path assembles received blocks next to locally held ones and the same contributions are summed in a different association.
+- Readable range: steps 1 through 20 on both boxes. The references fall to `1.21` / `1.78` by step 50 and `0.19` / `0.26` by step 100, so the last two columns divide two collapsing curves and are printed for completeness only.
 
 --- PASTE END ---
 
@@ -184,7 +225,7 @@ dp1 vs pp2 (cache on), 4 x 256 tokens (the transport plus the micro-batch accumu
 
 
 
-## The controls on 2 x H100 PCIe (1024 tokens per step as four pieces of 256)
+## Superseded in presentation: the H100 controls in their original wide layout (same numbers, reproduced in the paste block above)
 
 The five controls on the branch under review, measured on rented H100s. `dp1` of this box is the reference for every row, and its absolute value is printed in every column so the reader can see where the reference stops being usable.
 
