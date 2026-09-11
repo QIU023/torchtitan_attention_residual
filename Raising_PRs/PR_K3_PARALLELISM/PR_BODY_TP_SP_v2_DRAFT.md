@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Tensor parallelism with sequence parallel
 
-Draft body for the rebuilt stack after Shuhua's review (review branch `tp_sp_on_main`; the PR branch `k3_tp_sp` is updated by the user). Four commits on upstream main `da2f82670`: `ddb306332` (K2.5 tables), `fc44fbb80` (the declarations), `bb2dad9da` (spmd_types required), `d4d6e774c` (the b200 cell). The Results section of the previous body (8 x A100, head `9a62f5229`) does not transfer: the tower is tensor-parallel now and the multimodal cells move; the table has to be re-measured on the new stack (cells listed below). TODO-NUMBERS marks what this box measured meanwhile.
+Body for PR 4499. The PR branch `k3_tp_sp` = `tp_sp_on_main` = `bd55160a8` (pushed 2026-09-11 with lease on `9a62f5229`), five commits on upstream main `da2f82670` -- the fifth, `bd55160a8`, drops the tensor-parallel disjunct the dispatcher condition cannot reach. The first four: `ddb306332` (K2.5 tables), `fc44fbb80` (the declarations), `bb2dad9da` (spmd_types required), `d4d6e774c` (the b200 cell). The Results section of the previous body (8 x A100, head `9a62f5229`) does not transfer: the tower is tensor-parallel now and the multimodal cells move; the table has to be re-measured on the new stack (cells listed below). TODO-NUMBERS marks what this box measured meanwhile.
 
 --- PASTE BEGIN ---
 
@@ -26,7 +26,7 @@ Enable tensor parallelism, with and without sequence parallel, for Kimi K3's hyb
 ## Limitations
 
 - TP x CP is not exercised (CP is #4500's; the two are not combined).
-- EP x TP is measured at dp2 x ep2 with tp=2; larger degrees are not.
+- EP x TP (dp2 x ep2 x tp2) and the other four-GPU cells are part of the pending 8 x A100 rerun; larger degrees are not planned.
 - Tensor parallelism needs `--parallelism.spmd_backend spmd_types` (the default); partial_dtensor is refused with the reason above.
 - The tower runs without sequence parallel (its patch sequence is short), as in Kimi K2.5.
 - The tensor-parallel degree must divide the vision tower's head count, the check Kimi K2.5 carries. The debug tower has 6 heads, so the cells here stop at tp=2; the released tower has 12, where tp=2, tp=3, tp=4, tp=6 and tp=12 divide it and tp=8 does not.
@@ -42,19 +42,31 @@ Result: `test_integration_test_definitions.py` 13 passed; `gpu/test_kimi_k3.py` 
 
 ## Results
 
-TO BE MEASURED on the new stack -- the previous head's 8 x A100 table does not transfer, the tower is tensor-parallel now. One protocol, no mixing: `seed=42`, `--debug.deterministic`, one seed checkpoint per batch shape, one inductor cache per cell, bf16, 100 steps, steps 1 / 10 / 20 reported, `spmd_types` throughout. Reference: tp=1 on main. Cells, dp1 stream (256 tokens per step): tp=1 main / tp=1 this branch (must be bitwise with it) / tp=2 SP on / tp=2 SP off / tp=1 again on a fresh cache (the noise floor). dp2 stream (512 tokens per step, its own reference because a second dp rank reads other samples): dp2 / dp2 x ep2 / dp2 x tp2 / dp2 x ep2 x tp2. The kit is `phase13_k3like_48b_posttrain/matrix_scripts/tp_h100/` (logbook).
+**8 x A100: pending rerun after revision.** The previous head's 8 x A100 table does not transfer -- the vision tower is tensor-parallel on this stack, where it was replicated before -- and will be re-measured here in the same format.
 
-Measured on the rebuild (8 GPUs, 3 steps, seed 42, deterministic, spmd_types, 4096 tokens per step, one seed checkpoint; loss at steps 1 / 3):
+Measured on the revised stack, 2 x H100 PCIe: this PR (`bd55160a8`) against main (`da2f82670`), same protocol as #4500 -- `seed=42`, `--debug.deterministic`, bf16, one seed checkpoint per batch shape, one inductor cache per cell, 100 steps. Loss, then total gradient norm; percentages are relative to the reference row.
 
-| cell | step 1 | step 3 |
-| --- | ---: | ---: |
-| tp=1 (bitwise with main) | `12.53584` | `6.63797` |
-| tp=2 SP on | `12.56396` | `6.53527` |
-| tp=2 SP off | `12.55333` | `6.81346` |
-| dp2 x tp2 SP on | `12.53445` | `7.02513` |
-| dp2 x ep2 x tp2 SP on | `12.52623` | `7.00102` |
+dp1 stream, 256 tokens per step (reference: tp=1 on main):
 
-With type checking on (the b200 cell's settings, the recipe's batch): tp=2 SP on `12.49262 / 11.38085 / 10.23243`, tp=2 SP off `12.48463 / 11.41571 / 9.89427`, dp2 x tp2 `12.56306 / 11.38314 / 9.64091`. At the 4096-token batch with a seed-42 init per cell: tp=1 `12.51269 / 9.93869 / 7.14302`, tp=2 SP on `12.45116 / 9.86473 / 7.14307`, tp=2 SP off `12.44463 / 9.90965 / 7.12468`.
+| cell | step 1 | step 10 | step 20 | step 1 grad norm | step 10 | step 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| tp=1, main | `12.624810` | `4.351560` | `3.631110` | `25.625000` | `4.843800` | `9.875000` |
+| tp=1, this PR, spmd_types | bitwise | bitwise | bitwise | bitwise | bitwise | bitwise |
+| tp=1, this PR, spmd_types, fresh cache | bitwise | bitwise | bitwise | bitwise | bitwise | bitwise |
+| tp=1, this PR, partial_dtensor | bitwise | bitwise | bitwise | bitwise | bitwise | bitwise |
+| tp=2, SP on | `12.631220` (+0.0508%) | `4.108150` (-5.59%) | `3.323500` (-8.47%) | `25.875000` (+0.976%) | `6.718800` (+38.7%) | `5.875000` (-40.5%) |
+| tp=2, SP off | `12.628260` (+0.0273%) | `4.057510` (-6.76%) | `3.379290` (-6.94%) | `26.000000` (+1.46%) | `7.093800` (+46.5%) | `6.062500` (-38.6%) |
+
+dp2 stream, 512 tokens per step (reference: dp2 on this PR, since a second data-parallel rank reads other samples):
+
+| cell | step 1 | step 10 | step 20 | step 1 grad norm | step 10 | step 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp2 | `12.463530` | `4.039750` | `3.340510` | `23.750000` | `6.218800` | `4.875000` |
+| dp2 x ep2 | bitwise | `3.609350` (-10.7%) | `3.340420` (-0.00269%) | `23.625000` (-0.526%) | `4.593800` (-26.1%) | `3.734400` (-23.4%) |
+
+At tp=1 this PR changes nothing on either backend: every tp=1 row is bitwise with main for 100 steps, and a fresh inductor cache reproduces it. One partial_dtensor tp=1 run on a cold cache diverged from step 2 and did not reproduce; the row above is its rerun on the same seed checkpoint, and the parent's rerun is bitwise too. The tp=2 rows move at step 1 by a few hundredths of a percent -- the sharded bf16 matmuls reduce in a different order -- and by percents at steps 10 and 20, the class the debug model reads for any change in summation order.
+
+Box: 2 x H100 PCIe (capability 9.0), torch `2.15.0.dev20260906+cu130`, Attention Gym upstream main `b16d6d3`; the KDA capability guard was widened locally to admit SM 9.0 and is not part of this PR. The four-GPU cells (dp2 x tp2, dp2 x ep2 x tp2) need the pending A100 rerun.
 
 ## CI/CD
 
