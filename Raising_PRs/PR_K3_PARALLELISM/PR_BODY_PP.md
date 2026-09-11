@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-PR 4312. PR branch `k3_pp_text` = `1c1a88e3e` since 2026-09-11 (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then one test commit on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
+PR 4312. PR branch `k3_pp_text` = `dd1c0b925` since 2026-09-11 (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then a test commit and the stage rebuild on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
 
 Candidate `pp_review5` = `6042863a4` (2026-09-10): the same 19 commits rebased onto upstream/main `d398a8fb9`. Two files conflicted, both against PR 4527: `model.py`, where the empty stack a first stage starts from is now `h_TD.unsqueeze(1)[:, :0]` (the stack a later stage receives is unchanged), and `parallelize.py`, where the `annotate_replicated_parameters` import and the vision tower's `cpu_offload` / `dp_mesh_dims` kwargs sit beside `pp_enabled=parallel_dims.pp_enabled`. The interdiff against `75045fed5` is those two `model.py` lines; the diff against main is the same 14 files, +1693/-34. Checked on the Windows box: no conflict markers, `compileall` clean, `test_pipeline_neighbor_transport.py` and `test_integration_test_definitions.py` pass (the one failure there is upstream's `/tmp` path assertion, failing identically on main); the three K3 test files import attn-gym's CuTeDSL backend (Linux only) and run on the GPU box.
 
@@ -38,11 +38,11 @@ Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, s
   - Metadata inference runs the same assembly (`_compute_outputs`); `_compute_input_grads` returns dense gradients, which is where the P2P buffer finding below is handled.
 - The routing tables (`layout.py`)
   - `BlockLayoutTables` simulates one micro-batch's forward in stage order over the split the trainer actually applied and tabulates, per stage, the blocks it commits, the blocks its rank already holds, and the blocks its P2P must carry; sender and receiver compute the same tables, so nothing but the delta travels.
-  - The layer-to-stage map is one all-gather over the pipeline group; the stage-to-rank map is the schedule's own `stage_index_to_group_rank`. Uneven stages are allowed; a block boundary inside a stage is a partial block on the wire.
+  - The layer-to-stage map is read off the split every rank computes, with no collective; the stage-to-rank map is the schedule's own `stage_index_to_group_rank`. Uneven stages are allowed; a block boundary inside a stage is a partial block on the wire.
   - Why the delta is bounded: with $P$ ranks a block committed at stage $S$ is fresh on the wire for $P-1$ hops; from $S+P$ on every receiving rank already holds it, because its previous virtual stage was $S-P$. The per-hop payload is bounded by the commits of the last $P-1$ stages, independent of depth.
   - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop (naive); the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the naive transport by construction, so the two are bitwise there; where a rank holds more than one stage they are not, because the cached path assembles received blocks next to locally held ones and the backward sums the same contributions in a different association (at pp2 x vp2 on 2 x H100, step 10 reads `3.150940` cached against `3.514970` whole-stack, 1.17% and 12.9% against dp1 -- the class an accumulation-order change costs with no pipeline at all).
-- The split and the entry (`parallelize.py`, where every model keeps its parallelism entry points): `kimi_k3_module_fqns_per_model_part` is a pure function of the config -- core's layer distribution, `lm_head` where core says `output`, the AttnRes aggregation modules with the head, the vision tower with the embedding.
-- The core hook: `pipeline_llm(..., stage_class=...)` (`pipeline_parallel.py`), the one generic change, so a model can run its stages on a `PipelineStage` subclass.
+- The split (`parallelize.py`, where every model keeps its parallelism entry points): core's `llm_split_with_pinned_modules` builds it, with the vision tower pinned to the first stage through #4560's `pipeline_with_first_stage_modules` and the AttnRes aggregation to the last; K3 computes it once and hands the same object to core and to the layer map.
+- The stages: core's `pipeline_llm` constructs plain `PipelineStage`s, as on main; K3 rebuilds each one the schedule holds as an `AttnResPipelineStage` from the constructed stage's own fields and puts it back in the schedule.
 - The model (`model.py`): the first layer of a block joins the stack before its sub-layers attend, so a stage boundary at a block start needs nothing special and the stack a stage receives is exactly the stack the layers read; the head-owning stage alone runs the aggregation.
 - What this replaced: the reviewed version carried the same protocol in a 1228-line adapter that wrapped `forward_one_chunk`, `backward_one_chunk` and `step`, kept a thread-local micro-batch id, and bridged the same-rank gradient path with a tensor grad hook and an autograd Function. The subclass implements it once, on the stage's own methods, in 388 lines; the adapter's numerics are reproduced to within one bf16 rounding (table below).
 
@@ -154,20 +154,25 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
 
 ### Changed files
 
+    torchtitan/config/
+      configs.py                            +42/-0   pipeline_parallel_virtual_stages_per_rank; at most one of the three split knobs
     torchtitan/distributed/
-      pipeline_parallel.py                  +4/-1    pipeline_llm(stage_class=...)
+      pipeline_parallel.py                  +116/-20 llm_split_with_pinned_modules, last-stage pinned modules, the virtual-stage count; the injected split clears the knobs that derived it
     torchtitan/models/kimi_k3/
-      pipeline_stage.py                     +395/-0  AttnResPipelineStage and the rank store (new)
-      layout.py                             +233/-0  BlockLayoutTables from the split the trainer applied (new)
-      parallelize.py                        +169/-3  the pipelining entry: the split (any layer count), the tables, the transport switch; pipeline parallel off the unsupported list
-      model.py                              +39/-22  the block stack in and out of a stage; the block's first layer joins the stack before attending
-      __init__.py                           +17/-7   registers the pipelining_fn; the debug model at 33 layers, the 93-layer model's partial block
+      pipeline_stage.py                     +403/-0  AttnResPipelineStage and the rank-local cache (new)
+      layout.py                             +213/-0  BlockLayoutTables from the split the trainer applied (new)
+      parallelize.py                        +160/-3  the pipelining entry: the split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
+      model.py                              +40/-23  the block stack in and out of a stage; the block's first layer joins the stack before attending
+      __init__.py                           +18/-6   registers the pipelining_fn; the 33-layer flavor for the pp8 x vp4 cell
     tests/unit_tests/cpu/
-      test_kimi_k3_pp_fqn_injection.py      +131/-0  the split, including a layer count no shape divides (new)
-      test_kimi_k3_pp_layout.py             +122/-0  the tables: uneven split, cache on and off, the local map (new)
+      test_pipeline_llm_split.py            +180/-0  the split, the pinned modules, the virtual-stage count, the shared debug model's depth (new)
+      test_kimi_k3_pp_layout.py             +115/-0  the tables: uneven split, cache on and off (new)
+      test_kimi_k3_stage_swap.py            +84/-0   the stage rebuild for single- and multi-stage schedules (new)
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
-    tests/integration_tests/features.py     +8/-0    the pp8 x vp4 cell
-    torchtitan_recipes/tests/features.py    +13/-0   the pp8 x vp4 configuration
+      test_pipeline_parallel.py             +35/-0   the injected split clears the knob that derived it
+      test_config_manager.py                +31/-0   the split-knob exclusivity and the virtual-stage count
+    tests/integration_tests/features.py     +16/-0   the pp8 x vp4 and pp2 x vp2 cells
+    torchtitan_recipes/tests/features.py    +37/-0   the pp8 x vp4 and pp2 x vp2 configurations
 
 ### CI/CD Coverage
 
@@ -192,11 +197,11 @@ Three CPU unit tests (the split, the layout tables, the stage's carrier handling
 - `ParallelismConfig` refuses `module_fqns_per_model_part` together with `pipeline_parallel_layers_per_stage` in `__post_init__`; the pipelining entry no longer rewrites the config.
 - The layer-to-stage map is read off the split (a pure function of the config every rank computes), no all-gather, and the split comes from a public entry point: `llm_fqns_with_pinned_modules` returns the split with the caller's modules pinned to both ends, so this model computes it once, hands it to `pipeline_llm` through `parallelism.module_fqns_per_model_part` and reads the same object. `pipeline_with_first_stage_modules` shares that code rather than owning a copy and gains `last_stage_module_fqns`; `pipeline_llm` keeps only `stage_class`. No private core function is imported in the model.
 - `RankStore` is `PPRankLocalCache`, one per rank shared by its stages, blocks device-resident; the block's first-layer flag is computed at init; the pipeline files type-check under the pinned pyrefly.
-- Transport out (above). `stage_class` stays: `AttnResPipelineStage` overrides `forward_one_chunk`, `backward_one_chunk` and the gradient plumbing, so the stage has to be constructed as that class; the `cast` in `_schedule_stages` is a typing no-op.
+- Transport out (above). `stage_class` is gone from core: core builds plain `PipelineStage`s and K3 rebuilds each one from its own fields as an `AttnResPipelineStage` (`dd1c0b925`). Against the previous head, on one seed checkpoint and one inductor cache, dp1, pp2, pp2 x vp2, pp4 interleaved and the 8-GPU pp8 x vp4 cell read the same at every printed step.
 
 ### Review round 2
 
-- `pipeline_llm` keeps only the `stage_class` parameter, no docstring (the file has none) and the pyrefly suppression the hook had dropped is back; the core diff is the seam and nothing else.
+- `pipeline_llm` keeps only the `stage_class` parameter, no docstring (the file has none) and the pyrefly suppression the hook had dropped is back; the core diff is the seam and nothing else. (Superseded in round 3: `stage_class` is gone.)
 - The pipelining entry, the split and the stage lookup moved from a `pipeline.py` into `parallelize.py`, where every model keeps its parallelism entry points; `layout.py` and `pipeline_stage.py` stay as files.
 - The full-attention helper's docstring, the debug registry comment and the residual docstring are one line or upstream's own; the helper is the deduction asked for ("(3 KDA + 1 MLA) * k + remainder"), shared by the 30-layer and the 93-layer model.
 
