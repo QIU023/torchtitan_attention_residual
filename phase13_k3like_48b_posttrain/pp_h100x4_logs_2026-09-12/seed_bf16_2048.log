@@ -1,0 +1,33 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+W0912 09:11:09.149000 28509 site-packages/torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0912 09:11:09.175000 28509 site-packages/torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[titan] 2026-09-12 09:11:09,727 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-12 09:11:10,069 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-12 09:11:10,134 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-12 09:11:10,135 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/pp_out/seed_bf16_2048/structured_logs/training.global_rank_0.20260912-091110-H1RJDL.jsonl
+[titan] 2026-09-12 09:11:10,266 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-12 09:11:11,153 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-12 09:11:11,153 - root - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-12 09:11:11,171 - root - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-12 09:11:11,314 - root - INFO - CUDA capacity: NVIDIA H100 PCIe with 79.18GiB memory
+[titan] 2026-09-12 09:11:11,321 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-12 09:11:11,326 - root - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-12 09:11:11,326 - root - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-12 09:11:20,847 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-12 09:11:20,848 - root - INFO - Peak FLOPS used for computing MFU: 7.560e+14
+[titan] 2026-09-12 09:11:20,848 - root - INFO - CUDA memory usage for model: 0.00GiB(0.00%)
+[titan] 2026-09-12 09:11:20,852 - root - INFO - Optimizer AdamW (model_part=0): 750 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-12 09:11:20,854 - root - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[titan] 2026-09-12 09:11:20,854 - root - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[titan] 2026-09-12 09:11:20,854 - root - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-12 09:11:20,879 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-12 09:11:20,879 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-12 09:11:20,882 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/pp_out/seed_bf16_2048/checkpoint
+[titan] 2026-09-12 09:11:20,882 - root - INFO - Trainer is initialized with 256 tokens per DP rank, 2048 tokens per train step, gradient accumulation steps 8, maximum context length 2048, total steps 1 (warmup 2)
+[titan] 2026-09-12 09:11:20,882 - root - INFO - Saving the checkpoint.
+[titan] 2026-09-12 09:11:20,882 - root - INFO - Saving a full checkpoint at last step, step 0.
+[titan] 2026-09-12 09:11:28,093 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.13 seconds
+[titan] 2026-09-12 09:11:28,098 - root - INFO - Last step checkpoint completed in 7.22s
+[titan] 2026-09-12 09:11:28,099 - root - INFO - Created seed checkpoint
+[titan] 2026-09-12 09:11:28,099 - root - INFO - Destroying the purge thread.
+[titan] 2026-09-12 09:11:28,164 - root - INFO - Process group destroyed

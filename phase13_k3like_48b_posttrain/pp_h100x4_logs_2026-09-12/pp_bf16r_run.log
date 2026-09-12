@@ -1,0 +1,18 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+br_pp2 rc=0 steps=200
+br_dp1_ns rc=0 steps=100
+br_dp1 rc=0 steps=100
+br_vp2c rc=0 steps=200
+br_vp2n rc=0 steps=200
+br_dp1_rev rc=1 steps=0
+
+# mixed_precision_reduce bfloat16, cc12m-test, 1024 tokens per step (4 x 256), reference dp1
+| cell | step 1 | step 10 | step 100 | step 1 | step 10 | step 100 (grad norm) |
+|---|---|---|---|---|---|---|
+| br_dp1 | `12.605700` | `3.220060` | `0.166140` | `18.625000` | `5.937500` | `1.085900` |
+| br_dp1_ns | `12.605700` (bitwise) | `3.220060` (bitwise) | `0.166140` (bitwise) | `18.625000` (bitwise) | `5.937500` (bitwise) | `1.085900` (bitwise) |
+| br_dp1_rev | - | - | - | - | - | - |
+| br_pp2 | `12.605700` (bitwise) | `3.429420` (+6.5%) | `0.252480` (+52%) | `18.750000` (+0.671%) | `5.656200` (-4.74%) | `1.375000` (+26.6%) |
+| br_vp2c | `12.605700` (bitwise) | `3.163740` (-1.75%) | `0.172110` (+3.59%) | `18.625000` (bitwise) | `5.218800` (-12.1%) | `1.078100` (-0.718%) |
+| br_vp2n | `12.605700` (bitwise) | `3.228610` (+0.266%) | `0.209030` (+25.8%) | `18.625000` (bitwise) | `4.500000` (-24.2%) | `1.140600` (+5.04%) |
+RUN-PP-BF16R-DONE

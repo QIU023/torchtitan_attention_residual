@@ -8,3 +8,42 @@ Tree: `pp_review4` = `dbc425403` (on upstream main `d9ca9e55a`) plus `matrix_scr
 - Reportable steps (CLAUDE.md numerics-table rule, 2026-09-12): the 1024-token dp1 reference reads 3.71 / 3.77 at steps 8 / 9 (its first non-monotone step), 3.11 at 10, 3.37 at 20, 2.18 at 30 and 1.35 at 40, so steps 1 / 10 / 20 are shown and step 20 is at the edge; the 512-token reference first rises at step 11. Step 100 is never shown. The streamed-cc12m passes were dropped (the user, 2026-09-12: the original dataset only).
 - Steps 1 / 10 / 20 against plain dp1 (loss): matched accumulation (no PP) 0 / +3.85 / -1.72 %, reversed accumulation 0 / +4.27 / -2.31 %, pp2 0 / +3.61 / -2.52 %, vp2 cached 0 / +1.17 / -0.71 %, vp2 naive 0 / +12.85 / -2.72 %. Against the matched-accumulation dp1: pp2 0 / -0.24 / -0.81 %, vp2 cached 0 / -2.59 / +1.03 %, vp2 naive 0 / +8.67 / -1.01 %. 512 tokens: pp2 0 / +4.71 / -0.37 %. Step-1 grad norm is bitwise except pp2 (+1 bf16 ulp).
 - The matched-accumulation row is a probe. Upstream #4597 lets `training.mixed_precision_reduce` be bfloat16, which makes FSDP accumulate in the parameter dtype in both paths; pp_review4's base predates it.
+
+## The full matrix on this box (2026-09-12), steps 1 / 10 / 20
+
+Loss, then grad norm, as percentages against each block's reference; "same" is the same printed value. The reference loss first rises at step 9 in both the 1024- and 2048-token streams, so step 20 is at the edge of the numerics-table rule; nothing later is shown.
+
+1024 tokens (4 x 256), reference dp1 (`12.605700` / `3.114620` / `3.373330`; grad norm `18.625` / `5.4375` / `3.9844`):
+
+| cell | loss 1 | 10 | 20 | gnorm 1 | 10 | 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp1, pipeline's accumulation (no PP, probe) | same | +3.85% | -1.72% | same | -10.92% | -6.67% |
+| dp1, reversed accumulation (no PP, probe) | same | +4.27% | -2.31% | same | +22.41% | +6.67% |
+| pp2 | same | +3.61% | -2.52% | +0.67% | +4.60% | -6.27% |
+| pp2 x vp2, cache on | same | +1.17% | -0.71% | same | -31.61% | +1.96% |
+| pp2 x vp2, cache off | same | +12.85% | -2.72% | same | +10.92% | -7.84% |
+
+1024 tokens with `training.mixed_precision_reduce=bfloat16` (#4597's option added to the probe tree), reference dp1 (`12.605700` / `3.220060` / `3.382050`); the pipeline's accumulation is then bitwise with dp1 for all 100 steps:
+
+| cell | loss 1 | 10 | 20 | gnorm 1 | 10 | 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp1, pipeline's accumulation (no PP, probe) | same | same | same | same | same | same |
+| pp2 | same | +6.50% | -1.97% | +0.67% | -4.74% | -14.09% |
+| pp2 x vp2, cache on | same | -1.75% | +5.74% | same | -12.10% | +208.7% (one-step spike: 14.38 at 20, 3.45 at 19, 4.16 at 21) |
+| pp2 x vp2, cache off | same | +0.27% | -0.01% | same | -24.21% | -8.05% |
+| dp1, reversed accumulation | rerun queued (its first run died on the misplaced KDA switch) | | | | | |
+
+512 tokens (2 x 256), reference dp1 (`12.614650` / `3.657440` / `2.948510`): pp2 same / +4.71% / -0.37%, grad norm same / +55.74% / +9.38%.
+
+2048 tokens (dp2, 4 x 256 per rank), reference dp2 (`12.521100` / `3.221120` / `2.839810`; grad norm `16.375` / `7.0625` / `2.4844`):
+
+| cell | loss 1 | 10 | 20 | gnorm 1 | 10 | 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp2, pipeline's accumulation (no PP, probe) | same | +5.68% | +4.40% | same | -36.28% | +36.48% |
+| dp2, reversed accumulation (no PP, probe) | +0.12% | +3.22% | +6.17% | +0.76% | -27.43% | +39.62% |
+| dp2 x ep2 (no PP) | same | -2.23% | +4.56% | same | -28.32% | +18.87% |
+| dp2 x pp2 | same | -0.60% | +0.23% | same | -29.20% | +6.92% |
+| dp2 x pp2 x vp2, cache on | same | -0.48% | -5.52% | same | -23.89% | +1.26% |
+| dp2 x pp2 x vp2, cache off | running | | | | | |
+
+The dp2 reversed-accumulation row moves step 1 by 0.12%, which a reordering of the same terms should not do at ulp level; not investigated. KDA-autotune-off pass: queued after the dp2 stream.
