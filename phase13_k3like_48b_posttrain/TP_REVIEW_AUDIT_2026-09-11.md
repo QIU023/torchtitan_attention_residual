@@ -154,3 +154,10 @@ kimi_k3 里只剩 core 的公开入口。
 **有意没做的**：`_shard_decoder_after_embedding_scatter` 里 `tok_embeddings` 那一半与 K2.5、**Qwen3.5** 三处逐字相同。抽成公共函数就要改 Qwen3.5 和 K2.5 的 decoder 路径，这是评审没有问、也不在本 PR 范围里的东西；而且全树目前就是三处各自内联，K3 跟随同一写法。记作上游 follow-up，不在 4499 做。
 
 **对回复稿的影响**：`sharding.py:390` 那条现在可以照实写"已提到 `models/common/vision_encoder_sharding.py` 成 `set_moonvit_sharding_config`，两个模型共用，投影器的 norm 名做参数"；`model.py:473` 那条"what is left in the two functions is one comment"仍然成立（scatter 注释现在是一行）；top-level 的提交数从 five 变成 seven。
+
+
+## 再追加：`tp_sp_on_main` = `2a57b3fc3`
+
+- `set_kimi_k3_sharding_config` 的 docstring 改回 main 的原文，只追加一行 "``enable_tp`` adds tensor parallelism and ``enable_sp`` sequence parallelism."；这样 diff 在这个 docstring 上只有 +1 行，不再改写 main 已有的文字。`sharding.py` 对 main 从 +264/-13 变成 +263/-8。PR 分支 `k3_tp_sp` 仍是 `bd55160a8`，PR 页面上看到的还是那段 16 行的旧 docstring（用户 09-11 在 R114 指出）。
+- Shuhua 的 r3984662548（"merged into a unified `set_kimi_k3_sharding_config`"）和 r3984667863（"move this line before `set_kimi_k3_sharding_config`"）在代码里都已做到：PR head `model.py:298-317`，`Decoder.Config.update_from_config` 在第一行，TP 与 SP 由同一个 `set_kimi_k3_sharding_config(enable_ep, enable_tp, enable_sp)` 声明，原来第二个调用 `set_tensor_parallel_sharding_config(..., spmd_types=..., enable_ep=...)` 已不存在。看起来"没处理"是因为：线程上没有回复；GitHub 没有把它们标成 outdated，而是重新锚到新 head 的行上（r3984662548 → 新第 310 行，正落在塔头数检查旁边；r3984667863 → 新第 299 行）。塔头数检查留在 `update_from_config` 是照 K2.5 的 `model.py:79-84`。
+- 旧 head 上 `update_from_config` 开头的 sample-packing 拒绝不见了，是上游 `62b423a5a`（#4347，KDA 支持 sample packing）删的，不是我们。
