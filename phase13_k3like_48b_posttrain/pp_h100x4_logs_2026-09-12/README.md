@@ -46,4 +46,4 @@ Loss, then grad norm, as percentages against each block's reference; "same" is t
 | dp2 x pp2 x vp2, cache on | same | -0.48% | -5.52% | same | -23.89% | +1.26% |
 | dp2 x pp2 x vp2, cache off | same | -0.99% | +0.26% | same | -20.80% | -4.40% |
 
-The dp2 reversed-accumulation row moves step 1 by 0.12%, which a reordering of the same terms should not do at ulp level; not investigated. KDA-autotune-off pass: queued after the dp2 stream.
+The dp2 reversed-accumulation row moves step 1 by 0.12%, which a reordering of the same terms should not do at ulp level; not investigated. KDA-autotune-off pass (`KDA_NOAUTOTUNE=1`: `chunk_kda(..., autotune=False)`, which reaches Attention Gym's fused Triton path on this box; the kernels' own `@triton.autotune` still runs): every 1024-token cell -- dp1, the pipeline's accumulation, pp2, pp2 x vp2 cache on and off -- is identical to the autotune-on run on every printed step. On H100 the fused KDA autotuning is not a source of the pipeline-vs-dp1 difference.

@@ -1,31 +1,3 @@
-# Reply to Tianyu's numerics comment on PR 4312 (id 3985333653, `parallelize.py` L267), 2026-09-11
-
-Corrected 2026-09-12: section 4 by the step-1 bitwise campaign (`phase13_k3like_48b_posttrain/PP_STEP1_BITWISE_PREDICTIONS_2026-09-12.md`); steps past the reference's memorisation removed (CLAUDE.md numerics-table rule); the 4 x H100 PCIe rerun of 2026-09-12 added to section 3.
-
-One protocol, one model depth, two boxes. Everything measured on the review head
-(`pp_review4`, on upstream main `d9ca9e55a`) with main's 24-layer `debugmodel`, 1024 tokens per
-step as four 256-token micro-batches, seed 42, `--debug.deterministic`, one shared seed
-checkpoint, one warm step, 100 measured steps. The five cells are the same on both boxes.
-
-Why not PR 4500's 256 tokens per step: measured, not assumed. A micro-batch is not tied to the
-context length (`trainer.py` requires only that it divide by `tp * (2 * cp)`, which is 1 for these
-cells, and the debug seq len is 2048), but the multimodal collator refuses a micro-batch narrower
-than the rows it packs -- `pad_len = num_tokens_per_batch - input_ids.shape[0]` must not go
-negative, `mm_collator.py:101`. On this flavour's `cc12m-test` stream, 64, 96, 128 and 192 tokens
-per micro-batch are all refused and 256 is the first that runs (`dp1` at 4 x 256 reads
-`12.51200` at step 1). `pp2 x vp2` is four stages and so needs at least four micro-batches, which
-puts the floor for the four-stage cells at 4 x 256 = 1024 tokens per step. That is this table's
-protocol, and it is the honest answer if the difference from #4500 is raised.
-
-(An earlier draft of this note asserted the same 1024 figure from a rule that does not exist --
-that a micro-batch is one sequence of the context length. That was the right number for the wrong
-reason; it was retracted and re-established by the measurement above.)
-
-Paste the block between the markers. The CP replication below it is a separate answer and goes in
-its own comment; everything under "Background, superseded" is working material, not for posting.
-
---- PASTE ---
-
 Four parts: what step 1 actually reads and where its difference comes from, the per-parameter
 picture at step 1, the trajectory tables with a noise band around them, and what the transport
 flag does.
@@ -226,6 +198,7 @@ What the rows say, on both boxes, and nothing more.
 - The bottom row has no pipeline in it at all: it is `dp1` with the four accumulation groups consumed in the opposite order, everything else equal. On the H100 box it reads `4.27%` at step 10 and `2.31%` at step 20; on the 5060 Ti box `1.58%` and `1.79%`. That is the size of a pure association change on this flavour, with no pipeline available to blame.
 - Rerun on 4 x H100 PCIe at the PR head `dbc425403` (2026-09-12): every H100 value above reproduces to the printed digit. A second no-pipeline control changes only how the four micro-batch gradients accumulate -- in float32, rounded once, as the pipeline's FSDP does, instead of in bf16 after each micro-batch: `+3.85%` at step 10, `-1.72%` at step 20.
 - The dp2 stream on the same 4 x H100 PCIe box (2048 tokens per step, against dp2): dp2 x pp2 `-0.60%` / `+0.23%` at steps 10 / 20, dp2 x pp2 x vp2 cache on `-0.48%` / `-5.52%`, cache off `-0.99%` / `+0.26%`; dp2 x ep2, with no pipeline, `-2.23%` / `+4.56%`. Step 1 is the same printed value in every cell.
+- With Attention Gym's fused KDA autotuning turned off (`chunk_kda(..., autotune=False)`), every 1024-token cell on the H100 box is identical to the run with it on, step for step: on one device, KDA's autotuned configuration is not where the pipeline-vs-dp1 difference comes from. What differs across devices is the KDA kernels themselves (main admits only SM100/SM103), which is why these tables are on H100.
 - At step 20, in the readable range: `pp2` reads `2.52%` (H100) and `4.04%` (5060 Ti), the cached `vp2` `0.712%` and `2.67%`, the whole-stack `vp2` `2.72%` and `0.739%` -- every one of them inside the ordering band measured above. Step 10 is where `pp2` on this box is not; that is stated above and not softened here.
 - At step 10 the two boxes order the cells differently: the H100 box has the whole-stack `vp2` largest at `12.9%` with `pp2` at `3.61%`, this box has `pp2` largest at `13.7%` with the whole-stack `vp2` at `0.717%`. That is single-sample scatter, and the noise band below is its scale: one ordering of the accumulation groups against another, with no pipeline anywhere, spans the same range. The widest pipeline-to-floor gap in the readable range is `pp2` at step 10 on this box, `13.7%` against a floor sample of `1.58%`; on the H100 box the floor is the larger of the pair at the same step (`4.27%` against `3.61%`). Read them against the band, not against each other.
 - The two transports do not agree with each other at `vp2` on either box, and they agree at every printed step at one stage per rank on both. That is the flag's whole effect: at one stage per rank the delta is the whole stack, so the two are the same code path; at two, the cached path assembles received blocks next to locally held ones and the same contributions are summed in a different association.
@@ -559,19 +532,3 @@ dp1 vs pp2 (cache on), 2 x 256 tokens (the transport alone):
 | vision encoder (stage 0) | 6 | 0 | 0.818 | 4.92 | 1.4e-2 | 2.0e-2 |
 
 dp1 vs pp2 (cache on), 4 x 256 tokens (the transport plus the micro-batch accumulation): `lm_head` and `norm` bitwise; `output_res_*` 13% of elements at 1.5 ulps; layer 32 31% at 1.5 ulps (normrel 2.8e-3); then 33%, 47%, 54%, 56%, 57%, 63%, 66% for layers 31 .. 25; 75% / 3.4 ulps at layer 24; 66-73% through 23 .. 17; 75% at layer 16 (no jump); 82% / 4.8 ulps at layer 12; 89% / 5.5 ulps at layer 0. pp2 cache on vs cache off at 4 x 256: every tensor bitwise on both ranks (548 + 454 tensors).
-
-
-
-## Removed 2026-09-12
-
-Two wide tables stood here -- the H100 controls in their original layout and the 33-layer stress shape on 2 x H100 PCIe -- both with step-50 and step-100 columns past the reference's memorisation. They are removed under the numerics-table rule; steps 1 / 10 / 20 of the same runs are in the paste block.
-
-### The step-1 print, scoped by box and depth
-
-Three measured facts, no mechanism attached:
-
-- 24 layers on this box: all five cells print the same step-1 loss, `12.605700`.
-- 33 layers on this box: `pp2`, `pp2 x vp2` and the whole-stack cell print `12.336340` where `dp1` and the reversed-accumulation cell print `12.336350` -- a difference in the last printed digit.
-- 33 layers on the other box: every pipeline shape printed the same step-1 loss.
-
-A printed loss agrees only to the precision printed, and that is all these three facts assert. They are not claims about tensors: on the other box the step-1 gradient dump at this depth already showed the deepest attention layer's `wq_b` differing by one bf16 unit in the last place in 2 of 786,432 elements, so the step-1 gradients were not identical even in the runs whose printed losses matched. Measured, rather than left at the printed digits: a step-1 run of each cell at this depth with the loss logged at full precision reads `dp1` `12.336345672607422` and `pp2` `12.336344718933105`. The difference is `9.536743e-07` absolute, `7.7e-08` relative -- exactly one float32 unit in the last place at that magnitude, so the two step-1 losses are adjacent float32 values rather than the same one. The total gradient norm reads `23.25` against `23.125`, one bf16 unit in the last place apart. The printed five decimals were rounding a real difference of one ulp in each, not showing agreement.
