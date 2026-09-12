@@ -125,6 +125,15 @@ Triggered by quantile balancing: our #4412 built a side object (`QuantileBalance
 - Tests: `tests/unit_tests/cpu` and `tests/unit_tests/gpu` (`DTensorTestBase` / `with_comms` for anything with a collective), never a tests dir inside the model folder; a GPU test that runs the real collective beats a CPU mock of it.
 - Review yardstick: when a maintainer re-implements a feature of ours, the diff between the two is the list of seams we missed; write that list down (as above) before touching the code again.
 
+## Reuse check before any private helper (user, 2026-09-11)
+
+The abstraction rule above, applied at function level, because it keeps recurring and reviewers read each case as not having looked. Three in one week: `_local_head_split` (core already has `local_head_split(t, head_dim)` in `models/common/attention.py`; it survived a handoff that read the GQA closure `local_qkv_head_split` instead and concluded core could not take a head dim), `_set_vision_encoder_sharding` in K3 (a line-for-line copy of Kimi K2.5's in `kimi_k2_7/sharding.py`, differing only in `pre_norm` vs `post_norm`, written right after the reviewer asked to "reuse or generalize the existing MoonViT sharding path"), and quantile balancing (#4412 against #4577). Before an upstream-bound branch keeps or adds any private `def`:
+
+- Search `models/common`, `distributed`, `components` and the sibling models (`kimi_k2_7` for the MoonViT tower, `qwen3_5` for hybrid attention, `deepseek_v3` for MLA and MoE) for the behaviour, not just the name, and read the candidate's signature before deciding it does not fit.
+- A sibling model's function with a one-line difference is generalized into `models/common` with that difference as a parameter and called from both models; it is never copied, and never called-then-overridden.
+- When core really lacks it, the PR body says so in one line naming what was checked; the docstring does not argue it.
+- The diff audit lists every new private `def` with what was searched and what was found. A copy is a finding, not a style note.
+
 ## What this project is
 
 IC (Yiqiao / QIU023) **reference implementation** of Kimi K3's training-side

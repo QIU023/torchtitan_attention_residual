@@ -102,3 +102,25 @@ seed-42 初始化，没有共享检查点）。一个 Results 里三套协议，
 
 Tests 段里"the CPU suite's failure set is main's own"太含糊，给个数或者删掉；
 "pinned pyrefly 13 errors, none in the touched files"很好，保留。
+
+## 追加（09-11 晚）：新私有函数的复用检查，PR head `bd55160a8`
+
+`_local_head_split` 在当前 head 上已经没了（MLA 与 KDA 都调 core 的 `local_head_split(t, head_dim)`）。
+**但它能活到 Shuhua 指出来，有我的责任**：09-10 的 `TP_SP_REWORK_HANDOFF` 第 4 条让 GPU 盒子"保留"，
+理由是 core 的 `local_qkv_head_split` 是 GQA forward 里写死 `self.head_dim` 的闭包——我看错了函数，
+`attention.py:108` 那个模块级的 `local_head_split` 本来就收 `head_dim` 参数。
+
+对 PR head 上 kimi_k3 里 9 个新增私有函数逐个搜了 core 与兄弟模型：
+
+| 函数 | 结论 |
+|---|---|
+| `_set_vision_encoder_sharding` | **复制品，要改。** 与 K2.5 的 `kimi_k2_7/sharding.py:96` 逐行相同（pos_embed、rotary、patch_embed_proj、`set_vision_transformer_block_sharding_config`、final_norm、projector 两个 linear），唯一差别是 K2.5 声明 `proj.pre_norm`、K3 声明 `proj.post_norm`。Shuhua 在 `sharding.py:390` 原话是 "Could we **reuse or generalize** the existing MoonViT sharding path here"——我们的回应是复制了一份，她下一轮一定会看到。改法：把它提到 `models/common/vision_encoder_sharding.py` 成公开函数，投影器的 norm 名做参数，K2.5 与 K3 都调它（直接调 K2.5 的不行：K3 的 projector 没有 `pre_norm`，会炸；先调再覆盖正是她上一轮反对的写法）。 |
+| `_shard_decoder_after_embedding_scatter` | 半个复制品。`tok_embeddings` 那半与 K2.5 同名函数逐字相同（K2.5 的 `_REPLICATE_ACT` 就是 K3 的 `replicated`）；layer 0 那半因为要带 `block_residual_TND` 是 K3 自己的。可以一起提到 common：embedding 那半共用，layer 0 的边界由调用方给。 |
+| `_stream_param_config` | 权重规则 `R if enable_sp else I` 与 core `norm_config` 的 state 完全相同（它自己的 docstring 也这么说），只是不带激活边界。不算造轮子，但同一条规则在两处，docstring 8 行是在论证它。 |
+| `_tp_replicate_config` | 一行 `dense_param_placement(tp=spmd.R)`；树上已有 5 处各自内联同一句（lora、deepseek_v3、qwen3、qwen3_5 ×2），core 确实没有公开版本。可以留，docstring 砍到一行。 |
+| `_set_mla_sharding` / `_set_kda_sharding` / `_set_moe_sharding` / `_set_tensor_parallel_sharding` / `_block_residual_placement` | 模型专属，core 与兄弟模型无对应。 |
+
+PP head `dd1c0b925`：`_get_pipeline_metadata` / `_generate_llm_fqn_per_model_part` 的私有导入与 split 重算都已消失，
+kimi_k3 里只剩 core 的公开入口。
+
+规则已写进 `CLAUDE.md`（"Reuse check before any private helper"）。
