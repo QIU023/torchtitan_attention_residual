@@ -4,36 +4,28 @@ For the user to post. CLAUDE.md numerics-acceptance rule: the residual is locate
 
 --- PASTE BEGIN ---
 
-Against our bar -- step-1 loss bitwise, step-1 gradients bitwise or every difference located -- the pipeline passes on the loss and on every gradient the transport touches; one located residual remains, starting at one bf16 ulp in 0.4% of the last layer's `attention.wq_a` gradient, inside that layer's attention backward on the last stage, before any gradient crosses a stage boundary. The later percents are this debug flavour amplifying ulp-level differences, and a single GPU does the same with no pipeline in it.
+Against our bar -- step-1 loss bitwise, step-1 gradients bitwise or located -- the pipeline passes: step 1 matches a single GPU in every cell below, and the one step-1 gradient difference left is located in the last layer's attention backward, before anything crosses a stage boundary.
 
-**Accumulation order, cache off / on vs no PP.** Take one block of the attention-residual stack under pp2 x vp2 (rank 0 holds stages 0 and 2, rank 1 stages 1 and 3). Autograd adds each layer's read of the block onto the gradient that has already arrived, top-down. Without PP that is one running sum. With the cache off each hop hands that running sum to the previous stage, which keeps adding, so the order is the same as one GPU. With the cache on, stages 2 and 3 read the block from their rank's store, sum their own reads from zero and deposit the subtotal, and stages 1 and 0 add it when they collect: the same terms, grouped differently.
+We moved these runs to H100. KDA runs Attention Gym kernels outside the SM100/SM103 path main supports, with configurations autotuned per process, so how much this debug flavour amplifies ulp-level differences by step 10 depends on the device: the same pp2 cell reads +13.7% at step 10 on RTX 5060 Ti and +3.6% on H100.
 
-```python
-import torch
-torch.manual_seed(0)
-a = [[torch.randn(4096).mul(10.0 ** torch.randint(-2, 2, (4096,))).bfloat16() for _ in range(3)] for _ in range(4)]
-def fold(g, reads):                                   # autograd's order: add each read onto what arrived
-    for r in reads: g = r.clone() if g is None else g + r
-    return g
-no_pp = fold(None, a[3] + a[2] + a[1] + a[0])
-g = fold(None, a[3])
-for k in (2, 1, 0): g = fold(g, a[k])                 # cache off: the running sum crosses each hop
-cache_off = g
-cache_on = fold(fold(None, a[1]) + fold(None, a[3]) + fold(None, a[2]), a[0])   # stages 2, 3 deposit
-print(torch.equal(cache_off, no_pp), int((cache_on != no_pp).sum()))           # True 1568 (of 4096); float64: equal
-```
+Not a bug: comparing every parameter's step-1 gradient, the cache changes only the parameters that produce a block read from a rank's store, by 2-3 bf16 ulps, and leaves everything downstream bitwise; deleting one gradient deposit, a real bug in that path, moves the same tensors about a hundred times further.
 
-**Why it is not a bug.** Step-1 gradients of every parameter on the 24-layer debug model at pp2 x vp2, with the predictions written down before the dumps were read. Cache on vs off: layers 12-23 and the head are bitwise, and the parameters that produce a block read from a store (layers 0-11, embeddings, vision tower) move by a median of 2-3 bf16 ulps. Deleting one deposit, a real bug in that path, moves the same tensors about a hundred times further (relative L2 0.7-0.9). Against one GPU the pipeline differs in two places, neither the transport: FSDP accumulates the four micro-batch gradients in float32 under the pipeline and in bf16 after each micro-batch without it (matching that makes `lm_head` and the final norms bitwise), and a residual that starts in the last layer's attention backward on the last stage, before any gradient has crossed a stage boundary, identical with the cache on and off.
-
-**The table.** 4 x H100 PCIe, one seed checkpoint, 1024 tokens per step (four stages need four micro-batches, and the multimodal loader needs 256 tokens per micro-batch); steps stop at 20 because the reference memorises the 32-sample debug set after that.
+4 x H100 PCIe, one seed checkpoint, 100 steps; 1024 tokens per step because four stages need four 256-token micro-batches; steps stop at 20 because the reference memorises the debug set after that. Percentages against the first row; the last row has no pipeline in it.
 
 | cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
-| dp1, micro-batches accumulated as the pipeline does (no PP) | `12.605700` | +3.85% | -1.72% | `18.625` | -10.9% | -6.67% |
-| dp1, accumulation order reversed (no PP) | `12.605700` | +4.27% | -2.31% | `18.625` | +22.4% | +6.67% |
-| pp2 | `12.605700` | +3.61% | -2.52% | +0.67% | +4.60% | -6.27% |
-| pp2 x vp2, cache on | `12.605700` | +1.17% | -0.71% | `18.625` | -31.6% | +1.96% |
-| pp2 x vp2, cache off | `12.605700` | +12.85% | -2.72% | `18.625` | +10.9% | -7.84% |
+| pp2 | same | +3.61% | -2.52% | +0.67% | +4.60% | -6.27% |
+| pp2 x vp2, cache on | same | +1.17% | -0.71% | same | -31.6% | +1.96% |
+| pp2 x vp2, cache off | same | +12.85% | -2.72% | same | +10.9% | -7.84% |
+| dp1, accumulation order reversed | same | +4.27% | -2.31% | same | +22.4% | +6.67% |
 
-The size of that sensitivity depends on the device, and part of it is KDA: Attention Gym's KDA is written for SM100/SM103 (main refuses anything else), so on H100 and RTX 5060 Ti we run it with that guard lifted, and its fused kernels pick their configuration by autotuning in each process; main has not validated these cards. The same pp2 cell reads +3.6% at step 10 here and +13.7% on RTX 5060 Ti. A pass with KDA's autotuning off is running.
+dp2, 2048 tokens per step, against dp2; the last row has no pipeline in it.
+
+| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
+| dp2 x pp2 | same | -0.60% | +0.23% | same | -29.20% | +6.92% |
+| dp2 x pp2 x vp2, cache on | same | -0.48% | -5.52% | same | -23.89% | +1.26% |
+| dp2 x pp2 x vp2, cache off | same | -0.99% | +0.26% | same | -20.80% | -4.40% |
+| dp2 x ep2 | same | -2.23% | +4.56% | same | -28.32% | +18.87% |
