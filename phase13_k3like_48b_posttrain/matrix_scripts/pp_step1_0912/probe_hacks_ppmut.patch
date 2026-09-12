@@ -1,3 +1,16 @@
+diff --git a/torchtitan/models/common/attention.py b/torchtitan/models/common/attention.py
+index 964af39ac..af491f262 100644
+--- a/torchtitan/models/common/attention.py
++++ b/torchtitan/models/common/attention.py
+@@ -252,6 +252,8 @@ class FlexAttention(Module):
+         "coordinate_descent_tuning": True,
+         "triton.cudagraphs": False,
+     }
++    if __import__("os").environ.get("FLEX_NOAUTOTUNE") == "1":  # LOCAL PROBE HACK (not committed): one kernel per shape in every process
++        inductor_configs = {**inductor_configs, "max_autotune": False, "coordinate_descent_tuning": False}
+ 
+     # pyrefly: ignore[no-matching-overload]
+     _compiled_flex_attn: ClassVar[Callable] = torch.compile(
 diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
 index e2fe219b9..2ab3d9bcc 100644
 --- a/torchtitan/models/kimi_k3/config_registry.py
