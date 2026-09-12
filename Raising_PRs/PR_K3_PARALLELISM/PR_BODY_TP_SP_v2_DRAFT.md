@@ -85,7 +85,7 @@ torchrun --nproc_per_node=2 -m torchtitan.train --module kimi_k3 --config kimi_k
   --parallelism.tensor_parallel_degree 2   # add --parallelism.no-enable-sequence-parallel for SP off
 ```
 
-Kimi K2.5 (this PR touches `kimi_k2_7`): PENDING -- dp2, tp=1, this PR against main (K2.5 refuses tp > 1 on main, and cannot run on one GPU there).
+Kimi K2.5 (this PR touches `kimi_k2_7`): at dp2, tp=1, the debug config's 4096 tokens per step, this PR is bitwise with main on all 100 steps, loss and grad norm (step 1 `7.967150`, step 100 `2.736080`). K2.5 itself refuses tp > 1 on main (DistMuon, #3353), so its tensor-parallel path is exercised through K3's tower, which is K2.5's MoonViT encoder.
 
 Box: 4 x H100 PCIe (capability 9.0; NVLink between GPUs 0-1 and 2-3), torch `2.15.0.dev20260906+cu130`, Attention Gym upstream main `499404b`; the KDA capability guard was widened locally to admit SM 9.0 and is not part of this PR.
 
