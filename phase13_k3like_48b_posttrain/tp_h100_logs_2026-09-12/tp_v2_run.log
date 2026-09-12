@@ -1,0 +1,20 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+seed_bf16 rc=0
+tp1_parent rc=0 steps=100
+tp1 rc=0 steps=100
+tp2_sp rc=0 steps=200
+tp2_nosp rc=0 steps=200
+tp1_again rc=0 steps=100
+tc_tp2 rc=0 steps=6
+
+# dp1, 256 tokens per step (reference: tp=1 on main; tp1 and tp1_again must be bitwise with it)
+| cell | step 1 | step 10 | step 100 | step 1 | step 10 | step 100 (grad norm) |
+|---|---|---|---|---|---|---|
+| tp1_parent | `12.624810` | `4.009670` | `2.942050` | `25.625000` | `6.500000` | `5.562500` |
+| tp1 | `12.624810` (bitwise) | `4.009670` (bitwise) | `2.942050` (bitwise) | `25.625000` (bitwise) | `6.500000` (bitwise) | `5.562500` (bitwise) |
+| tp1_again | `12.624810` (bitwise) | `4.009670` (bitwise) | `2.942050` (bitwise) | `25.625000` (bitwise) | `6.500000` (bitwise) | `5.562500` (bitwise) |
+| tp2_sp | `12.631220` (+0.0508%) | `4.041600` (+0.796%) | `2.962110` (+0.682%) | `25.875000` (+0.976%) | `6.031200` (-7.21%) | `5.468800` (-1.68%) |
+| tp2_nosp | `12.628260` (+0.0273%) | `4.111430` (+2.54%) | `2.836290` (-3.59%) | `26.000000` (+1.46%) | `7.406200` (+13.9%) | `5.312500` (-4.49%) |
+
+tc_tp2: 6 steps, 0 tracebacks
+RUN-V2-DONE
