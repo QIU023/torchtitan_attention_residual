@@ -83,3 +83,13 @@ wanted.
   the two local patches above must be named as well, since a reader cannot reproduce the run
   without them.
 - If a cell fails, keep its log and report the failure rather than the cell's absence.
+
+## run_pp_c4.sh (2026-09-12): the PP matrix on c4_test text-only rows
+
+`pp4h_probe_c4.patch` on dbc425403 adds `kimi_k3_debugmodel_c4` (+ `_pp_naive`): c4_test through the multimodal
+loader, one text-only row per doc, its first 256 tokens (a row must fit one 256-token micro-batch). 2000 rows,
+~0.5M tokens; 100 steps read 21% (1024/step) or 43% (2048/step) once. Plumbing smoke on the 5060 (bfx9 venv):
+dp1, pp2, pp2 x vp2 cached all run. Memorisation check, dp1 1024/step, 100 steps, 5060 (data behaviour only,
+not numerics): loss 1:12.566 10:3.507 20:3.029 30:2.999 50:2.684 70:2.760 90:2.476 100:2.544, minimum 2.385 --
+no collapse toward zero, unlike cc12m-test (0.19 at step 100). JIT/temp dirs must not sit under a top-level
+`/tmp/triton_*` / `torchinductor_*` / `torchelastic_*` name while the disk watchdog is active.
