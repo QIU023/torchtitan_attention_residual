@@ -25,3 +25,13 @@ Predictions:
 - P1: held. 750 / 750 bitwise.
 - P2: partly refuted. Layers 12-23 and the head bitwise (346 / 750); layers 0-11, embeddings and vision differ. The prediction had layers 6-11 bitwise because block 1's two sums were argued to differ only by commutation. Wrong model: autograd folds each read onto the gradient that already arrived, so the incoming gradient starts a stage's fold; with the cache on a stage folds from zero and its subtotal joins later. Block 1's association changes too, and block 1 is layer 11's output, so the line of what moves is block 1's commit -- which is where the dump draws it.
 - P3: held in shape (differences from the head down, 1-2 ulps median); whether the accumulation dtype is all of it is P4.
+- P4: refuted in its strict form, and located. Against dp1 with matched accumulation the head is now bitwise in every pipeline cell (it was not against plain dp1), so the head-level difference was the accumulation dtype. A residual remains: 20 / 750 bitwise, starting inside layer 23 (the last layer, an MLA layer) in the attention's own tensors (`wq_a` 2,151 elements, `wq_b`, `wkv_a/b`, `q_norm`, `attention_norm`, `attention_res_*`) while layer 23's MoE and FFN, earlier in the backward, are bitwise. It is identical, number for number, in pp2, pp2 x vp2 cache off and cache on, so it does not depend on where the stage boundaries fall or on the flag; layer 23's backward runs before any gradient has crossed a wire. Suspect: `FlexAttention` compiles with `max_autotune` and `coordinate_descent_tuning`, so each process benchmarks its own kernel config.
+- P5: held. Dropped deposit vs cache on: layers 12-23 and head bitwise; layers 0-11, embeddings and vision at relative L2 0.68-0.84 (median about 190 ulps), against 6e-3 .. 3e-2 (median 2-3 ulps) for the cache on/off reordering in the same tensors.
+
+## P6 (written before the run)
+
+With `FLEX_NOAUTOTUNE=1` (flex compiled without max_autotune and coordinate descent, so the kernel is a fixed function of shape, dtype and device in every process), from `/tmp/wt_ppmut`, same seed checkpoint:
+- P6a. pp2 vs dp1 with matched accumulation: bitwise on all 750 tensors.
+- P6b. pp2 x vp2 cache off vs the same dp1: bitwise on all 750.
+- P6c. pp2 x vp2 cache on vs the same dp1: layers 12-23 and head bitwise; layers 0-11, embeddings and vision differ at the ulp scale of P2.
+If P6a fails, the first differing tensor in backward order names the next source (a KDA kernel with its own autotune is the next candidate).
