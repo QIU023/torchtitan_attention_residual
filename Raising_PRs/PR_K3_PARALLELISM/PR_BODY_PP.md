@@ -155,9 +155,9 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
 ### Changed files
 
     torchtitan/config/
-      configs.py                            +37/-0   pipeline_parallel_virtual_stages_per_rank; at most one of the three split knobs
+      configs.py                            +9/-0    module_fqns_per_model_part and pipeline_parallel_layers_per_stage are exclusive
     torchtitan/distributed/
-      pipeline_parallel.py                  +116/-20 llm_split_with_pinned_modules, last-stage pinned modules, the virtual-stage count; the injected split clears the knobs that derived it
+      pipeline_parallel.py                  +84/-19  llm_split_with_pinned_modules, last-stage pinned modules; the injected split clears the knob that derived it
     torchtitan/models/kimi_k3/
       pipeline_stage.py                     +403/-0  AttnResPipelineStage and the rank-local cache (new)
       layout.py                             +213/-0  BlockLayoutTables from the split the trainer applied (new)
@@ -165,16 +165,15 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
       model.py                              +40/-23  the block stack in and out of a stage; the block's first layer joins the stack before attending
       __init__.py                           +18/-6   registers the pipelining_fn; the 33-layer flavor for the pp8 x vp4 cell
     tests/unit_tests/cpu/
-      test_pipeline_llm_split.py            +180/-0  the split, the pinned modules, the virtual-stage count, the shared debug model's depth (new)
+      test_pipeline_llm_split.py            +145/-0  the split, the pinned modules at both ends, the pp8 x vp4 recipe's split, the shared debug model's depth (new)
       test_kimi_k3_pp_layout.py             +115/-0  the tables: uneven split, cache on and off (new)
       test_kimi_k3_stage_swap.py            +84/-0   the stage rebuild for single- and multi-stage schedules (new)
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
-      test_pipeline_parallel.py             +35/-0   the injected split clears the knob that derived it
-      test_config_manager.py                +31/-0   the split-knob exclusivity and the virtual-stage count
+      test_pipeline_parallel.py             +34/-0   the injected split clears the knob that derived it
+      test_config_manager.py                +10/-0   the split-knob exclusivity
       test_integration_test_definitions.py  +2/-0    the two pipeline cells are registered in the B200 suite
-      test_no_new_cli_options.py            +1/-0    the virtual-stage count joins the frozen command line
     tests/integration_tests/b200.py         +12/-0   the pp8 x vp4 and pp2 x vp2 cells
-    torchtitan_recipes/tests/b200.py        +37/-0   the pp8 x vp4 and pp2 x vp2 configurations
+    torchtitan_recipes/tests/b200.py        +42/-0   the pp8 x vp4 and pp2 x vp2 configurations; pp8 x vp4 hands core's 32-stage split to module_fqns_per_model_part
 
 ### CI/CD Coverage
 
@@ -194,10 +193,10 @@ Three CPU unit tests (the split, the layout tables, the stage's carrier handling
 - Rebased onto today's main (`d9ca9e55a`), so CI can run it.
 - The pipeline split is core's, in two halves. The vision tower rides with the embedding through #4560's public `pipeline_with_first_stage_modules`. The AttnRes aggregation has to sit next to the head, which that entry cannot express, so `_generate_llm_fqn_per_model_part` and `pipeline_llm` take `last_stage_modules` (appended after `norm, lm_head`, counted as no layer, forwarded by `pipeline_with_first_stage_modules`); with the default the generator is unchanged, checked against the previous function on 11232 stage/layer/weight shapes. The model-specific split function is gone.
 - The shared `"debugmodel"` registry entry is main's again (24 layers); the 33-layer shape is a flavor of its own that only `kimi_k3_debugmodel_pp8_vp4` builds, so no other K3 cell changes depth because of this PR. A second pipeline cell, pp2 x vp2 on two GPUs, runs on the shared model: uneven over four stages, a block boundary inside a stage, and two stages per rank so the rank cache and the gradient deposits are used.
-- New config field `pipeline_parallel_virtual_stages_per_rank`. The stage count was reachable only as `ceil(units / layers_per_stage)`, which over the debug model's 35 units takes 35, 18, 12, 9, 7, 6, 5, 4, 3, 2, 1 and never 32, so the pp8 x vp4 cell had been spelling `module_fqns_per_model_part` out by hand -- which silences the pinned modules and had left the vision tower on no stage at all. The field states the count per rank (a multiple of the degree by construction), is validated for positivity, against the model's unit count and against what the schedule accepts per rank, and is exclusive with the other two split knobs. The recipe keeps its shape and cell name and sets the field instead; a CPU test asserts the resulting split has 32 stages with `vision_encoder` on stage 0 and the aggregation modules on stage 31. The real 93-layer model reaches 32 stages through `layers_per_stage=3`; the field is what makes the debug depth testable at the same shape.
+- No new config field. No `layers_per_stage` gives the pp8 x vp4 cell's 32 stages over 35 units (`ceil(35 / n)` never equals 32), so that recipe hands core's own generated split for 32 stages to `module_fqns_per_model_part`, with `vision_encoder` on stage 0 and the aggregation modules on stage 31 where K3's entry pins them; a CPU test asserts that split. The real 93-layer model reaches 32 stages through `layers_per_stage=3`. The pp2 x vp2 recipe sets nothing: looped schedules default to two stages per rank.
 - Adding the exclusivity check surfaced that `pipeline_with_first_stage_modules` spells a split out while leaving `pipeline_parallel_layers_per_stage` set, so the knob is silently ignored from that point on; it now clears the field in the same `dataclasses.replace`. That site is shared by every model using the entry on main today (kimi_k2_7, muse_glimmer, qwen3_5, qwen3_6, qwen3_8).
 - `ParallelismConfig` refuses `module_fqns_per_model_part` together with `pipeline_parallel_layers_per_stage` in `__post_init__`; the pipelining entry no longer rewrites the config.
-- The layer-to-stage map is read off the split (a pure function of the config every rank computes), no all-gather, and the split comes from a public entry point: `llm_fqns_with_pinned_modules` returns the split with the caller's modules pinned to both ends, so this model computes it once, hands it to `pipeline_llm` through `parallelism.module_fqns_per_model_part` and reads the same object. `pipeline_with_first_stage_modules` shares that code rather than owning a copy and gains `last_stage_module_fqns`; `pipeline_llm` keeps only `stage_class`. No private core function is imported in the model.
+- The layer-to-stage map is read off the split (a pure function of the config every rank computes), no all-gather, and the split comes from a public entry point: `llm_split_with_pinned_modules` returns the split with the caller's modules pinned to both ends, so this model computes it once, hands it to `pipeline_llm` through `parallelism.module_fqns_per_model_part` and reads the same object. `pipeline_with_first_stage_modules` shares that code rather than owning a copy and gains `last_stage_module_fqns`; `pipeline_llm` keeps only `stage_class`. No private core function is imported in the model.
 - `RankStore` is `PPRankLocalCache`, one per rank shared by its stages, blocks device-resident; the block's first-layer flag is computed at init; the pipeline files type-check under the pinned pyrefly.
 - Transport out (above). `stage_class` is gone from core: core builds plain `PipelineStage`s and K3 rebuilds each one from its own fields as an `AttnResPipelineStage` (`dd1c0b925`). Against the previous head, on one seed checkpoint and one inductor cache, dp1, pp2, pp2 x vp2, pp4 interleaved and the 8-GPU pp8 x vp4 cell read the same at every printed step.
 
