@@ -31,7 +31,7 @@ Loss, then grad norm, as percentages against each block's reference; "same" is t
 | pp2 | same | +6.50% | -1.97% | +0.67% | -4.74% | -14.09% |
 | pp2 x vp2, cache on | same | -1.75% | +5.74% | same | -12.10% | +208.7% (one-step spike: 14.38 at 20, 3.45 at 19, 4.16 at 21) |
 | pp2 x vp2, cache off | same | +0.27% | -0.01% | same | -24.21% | -8.05% |
-| dp1, reversed accumulation | rerun queued (its first run died on the misplaced KDA switch) | | | | | |
+| dp1, reversed accumulation (no PP, probe) | same | +9.81% | -2.51% | same | +53.68% | -2.68% |
 
 512 tokens (2 x 256), reference dp1 (`12.614650` / `3.657440` / `2.948510`): pp2 same / +4.71% / -0.37%, grad norm same / +55.74% / +9.38%.
 
