@@ -44,6 +44,6 @@ Loss, then grad norm, as percentages against each block's reference; "same" is t
 | dp2 x ep2 (no PP) | same | -2.23% | +4.56% | same | -28.32% | +18.87% |
 | dp2 x pp2 | same | -0.60% | +0.23% | same | -29.20% | +6.92% |
 | dp2 x pp2 x vp2, cache on | same | -0.48% | -5.52% | same | -23.89% | +1.26% |
-| dp2 x pp2 x vp2, cache off | running | | | | | |
+| dp2 x pp2 x vp2, cache off | same | -0.99% | +0.26% | same | -20.80% | -4.40% |
 
 The dp2 reversed-accumulation row moves step 1 by 0.12%, which a reordering of the same terms should not do at ulp level; not investigated. KDA-autotune-off pass: queued after the dp2 stream.

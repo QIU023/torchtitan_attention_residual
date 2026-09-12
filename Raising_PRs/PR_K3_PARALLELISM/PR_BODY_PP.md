@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-Results updated 2026-09-12: 4 x H100 PCIe on `pp_review4` = `dbc425403`; the dp2 stream is running and marked pending. The numerics answer to Tianyu is `REPLY_4312_NUMERICS_SHORT_2026-09-12.md`; the long form, corrected the same day, is `REPLY_4312_NUMERICS_2026-09-11.md`.
+Results updated 2026-09-12: 4 x H100 PCIe on `pp_review4` = `dbc425403`; the dp2 stream measured on the same box. The numerics answer to Tianyu is `REPLY_4312_NUMERICS_SHORT_2026-09-12.md`; the long form, corrected the same day, is `REPLY_4312_NUMERICS_2026-09-11.md`.
 
 PR 4312. PR branch `k3_pp_text` = `dbc425403` since 2026-09-12 (fast-forward from `dd1c0b925`: the B200 cells, the per-rank stage count removed, the comment and docstring trims; GitHub: 31 commits, 16 files, +1324/-51, still `dirty` -- `torchtitan/config/configs.py` conflicts with main `56a721b64`, 17 commits past the base). Before that it was `dd1c0b925` (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then a test commit and the stage rebuild on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
 
@@ -70,7 +70,15 @@ cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_sch
 
 1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
 
-dp2 x pp2 and dp2 x pp2 x vp2 against dp2, with dp2 x ep2 beside them (2048 tokens per step): pending, running.
+dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol; percentages against dp2; the dp2 x ep2 row carries no pipeline and sizes what a change of reduction order alone does.
+
+| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
+| dp2 x pp2 | same | -0.60% | +0.23% | same | -29.20% | +6.92% |
+| dp2 x pp2 x vp2, cached | same | -0.48% | -5.52% | same | -23.89% | +1.26% |
+| dp2 x pp2 x vp2, naive | same | -0.99% | +0.26% | same | -20.80% | -4.40% |
+| dp2 x ep2 (noise floor, no pipeline) | same | -2.23% | +4.56% | same | -28.32% | +18.87% |
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
