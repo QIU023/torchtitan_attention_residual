@@ -19,3 +19,9 @@ Predictions:
 - P3. pp2 and cache-off pp2 x vp2 vs dp1: differences from the top of the model down (lm_head, norm, output_res), from the micro-batch accumulation dtype, not from the transport.
 - P4. pp2 and cache-off pp2 x vp2 vs dp1 with `NOSYNC_GA=1` (dp1 accumulating like the pipeline): bitwise on all 750 tensors. A failure here is the one result that leaves an unexplained difference, and it is localised by the first differing tensor in backward order.
 - P5. cache on with one deposit dropped vs cache on: stages 2 and 3 bitwise, stages 0 and 1 far outside the ulp scale of P2.
+
+## Results (appended after reading the dumps; the predictions above are unedited)
+
+- P1: held. 750 / 750 bitwise.
+- P2: partly refuted. Layers 12-23 and the head bitwise (346 / 750); layers 0-11, embeddings and vision differ. The prediction had layers 6-11 bitwise because block 1's two sums were argued to differ only by commutation. Wrong model: autograd folds each read onto the gradient that already arrived, so the incoming gradient starts a stage's fold; with the cache on a stage folds from zero and its subtotal joins later. Block 1's association changes too, and block 1 is layer 11's output, so the line of what moves is block 1's commit -- which is where the dump draws it.
+- P3: held in shape (differences from the head down, 1-2 ulps median); whether the accumulation dtype is all of it is P4.

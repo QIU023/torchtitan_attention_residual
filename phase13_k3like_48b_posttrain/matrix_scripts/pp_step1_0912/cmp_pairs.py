@@ -25,7 +25,7 @@ print(f"A={len(A)} B={len(B)} common={len(common)} A-only={len(set(A)-set(B))} B
 rows = {}
 for k in common:
     a, b = A[k], B[k]
-    L = layer(k); key = ("L%02d" % L) if L is not None else ("top" if any(s in k for s in ("lm_head", "norm.", "output_res")) and "layers" not in k else "other")
+    L = layer(k); key = ("L%02d" % L) if L is not None else ("vision" if k.startswith("vision_encoder") else "embed" if k.startswith("tok_embeddings") else "head")
     r = rows.setdefault(key, [0, 0, 0, 0, [], 0, []])
     r[0] += 1
     if torch.equal(a, b): r[1] += 1; r[6].append(0.0); continue
@@ -37,7 +37,7 @@ for k in common:
     r[6].append(float((a.float() - b.float()).norm() / a.float().norm().clamp_min(1e-30)))
 tot_equal = sum(r[1] for r in rows.values())
 print(f"bitwise tensors: {tot_equal}/{len(common)}")
-def sk(k): return (0, 0) if k == "top" else ((1, -int(k[1:])) if k.startswith("L") else (2, 0))
+def sk(k): return (0, 0) if k == "head" else ((1, -int(k[1:])) if k.startswith("L") else (2, 0 if k == "embed" else 1))
 print(f"{'group':6} {'stage':5} {'tensors':>7} {'bitwise':>7} {'diff frac':>9} {'med ulps':>8} {'max ulps>med|g|':>15} {'relL2 med':>9} {'relL2 max':>9}")
 for k in sorted(rows, key=sk):
     n, eq, nd, ne, meds, mx, rl = rows[k]
