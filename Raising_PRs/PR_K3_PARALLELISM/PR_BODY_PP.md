@@ -155,7 +155,7 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
 ### Changed files
 
     torchtitan/config/
-      configs.py                            +42/-0   pipeline_parallel_virtual_stages_per_rank; at most one of the three split knobs
+      configs.py                            +37/-0   pipeline_parallel_virtual_stages_per_rank; at most one of the three split knobs
     torchtitan/distributed/
       pipeline_parallel.py                  +116/-20 llm_split_with_pinned_modules, last-stage pinned modules, the virtual-stage count; the injected split clears the knobs that derived it
     torchtitan/models/kimi_k3/
@@ -171,12 +171,14 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
       test_pipeline_parallel.py             +35/-0   the injected split clears the knob that derived it
       test_config_manager.py                +31/-0   the split-knob exclusivity and the virtual-stage count
-    tests/integration_tests/features.py     +16/-0   the pp8 x vp4 and pp2 x vp2 cells
-    torchtitan_recipes/tests/features.py    +37/-0   the pp8 x vp4 and pp2 x vp2 configurations
+      test_integration_test_definitions.py  +2/-0    the two pipeline cells are registered in the B200 suite
+      test_no_new_cli_options.py            +1/-0    the virtual-stage count joins the frozen command line
+    tests/integration_tests/b200.py         +12/-0   the pp8 x vp4 and pp2 x vp2 cells
+    torchtitan_recipes/tests/b200.py        +37/-0   the pp8 x vp4 and pp2 x vp2 configurations
 
 ### CI/CD Coverage
 
-Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; two integration cells: pp2 x vp2 on two GPUs on the shared debug model, the smallest shape where a rank receives a block it already holds, and pp8 x vp4 on eight, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path.
+Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; two integration cells in the B200 suite, beside K3's existing cell, since Attention Gym's KDA runs only on SM100/SM103: pp2 x vp2 on two GPUs on the shared debug model, the smallest shape where a rank receives a block it already holds, and pp8 x vp4 on eight, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path.
 
 ### Review round 1
 
