@@ -17,9 +17,9 @@ cell tp2_nosp   $TT        0,1 2 bf16 100 $B $D 1 $T 2 $NOSP &
 cell tp1_again  $TT        2   1 bf16 100 $B $D 1 &
 wait
 # type-checking smokes: the declarations, not numerics
-cell tc_tp2        $TT 0,1     2 bf16     3 $B  $D 1 $T 2 $TC &
+TAIL=activation_checkpoint:none cell tc_tp2        $TT 0,1     2 bf16     3 $B  $D 1 $T 2 $TC &
 wait
-cell tc_dp2_ep2_tp2 $TT 0,1,2,3 4 bf16_dp2 3 $B2 $D 2 $E 2 $T 2 $TC
+TAIL=activation_checkpoint:none cell tc_dp2_ep2_tp2 $TT 0,1,2,3 4 bf16_dp2 3 $B2 $D 2 $E 2 $T 2 $TC
 echo
 echo '# dp1, 256 tokens per step (reference: tp=1 on main; tp1 and tp1_again must be bitwise with it)'
 table tp1_parent tp1 tp1_again tp2_sp tp2_nosp
