@@ -58,27 +58,27 @@ P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"
 cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_schedule Interleaved1F1B
 ```
 
-4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the naive row sets `attn_res_cache=False`; percentages against dp1.
+4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the naive row sets `attn_res_cache=False`; each cell gives the raw value and, beneath it, the change against dp1.
 
 | cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
-| pp2 | `12.605700` | `3.227050` (+3.61%) | `3.288290` (-2.52%) | `18.75` (+0.67%) | `5.6875` (+4.60%) | `3.7344` (-6.27%) |
-| pp2 x vp2, cached | `12.605700` | `3.150940` (+1.17%) | `3.349300` (-0.71%) | `18.625` | `3.7188` (-31.6%) | `4.0625` (+1.96%) |
-| pp2 x vp2, naive | `12.605700` | `3.514970` (+12.85%) | `3.281700` (-2.72%) | `18.625` | `6.0312` (+10.9%) | `3.6719` (-7.84%) |
-| dp1, accumulation order reversed (noise floor, no pipeline; a local probe switch) | `12.605700` | `3.247610` (+4.27%) | `3.295370` (-2.31%) | `18.625` | `6.6562` (+22.4%) | `4.25` (+6.67%) |
+| pp2 | `12.605700`<br>bitwise | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% | `18.75`<br>+0.67% | `5.6875`<br>+4.60% | `3.7344`<br>-6.27% |
+| pp2 x vp2, cached | `12.605700`<br>bitwise | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% | `18.625`<br>0% | `3.7188`<br>-31.61% | `4.0625`<br>+1.96% |
+| pp2 x vp2, naive | `12.605700`<br>bitwise | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% | `18.625`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
+| dp1, accumulation order reversed (noise floor, no pipeline; a local probe switch) | `12.605700`<br>bitwise | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
 
 1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
 
-dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol; percentages against dp2; the dp2 x ep2 row carries no pipeline and sizes what a change of reduction order alone does.
+dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol; each cell gives the raw value and, beneath it, the change against dp2; the dp2 x ep2 row carries no pipeline and sizes what a change of reduction order alone does.
 
 | cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
-| dp2 x pp2 | same | -0.60% | +0.23% | same | -29.20% | +6.92% |
-| dp2 x pp2 x vp2, cached | same | -0.48% | -5.52% | same | -23.89% | +1.26% |
-| dp2 x pp2 x vp2, naive | same | -0.99% | +0.26% | same | -20.80% | -4.40% |
-| dp2 x ep2 (noise floor, no pipeline) | same | -2.23% | +4.56% | same | -28.32% | +18.87% |
+| dp2 x pp2 | `12.521140`<br>same | `3.201920`<br>-0.60% | `2.846440`<br>+0.23% | `16.375`<br>0% | `5`<br>-29.20% | `2.6562`<br>+6.92% |
+| dp2 x pp2 x vp2, cached | `12.521140`<br>same | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
+| dp2 x pp2 x vp2, naive | `12.521140`<br>same | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
+| dp2 x ep2 (noise floor, no pipeline) | `12.521140`<br>same | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
