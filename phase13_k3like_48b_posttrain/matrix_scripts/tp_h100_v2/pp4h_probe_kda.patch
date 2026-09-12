@@ -1,0 +1,104 @@
+diff --git a/torchtitan/config/configs.py b/torchtitan/config/configs.py
+index 024b94090..c7ab0efa4 100644
+--- a/torchtitan/config/configs.py
++++ b/torchtitan/config/configs.py
+@@ -101,7 +101,7 @@ class TrainingConfig:
+     and no other parallelism is enabled, i.e. under DDP or single-device training.
+     """
+ 
+-    mixed_precision_reduce: Literal["float32"] = "float32"
++    mixed_precision_reduce: Literal["bfloat16", "float32"] = "float32"  # upstream #4597 (c48650f06), not in this base
+     """
+     torch dtype to use for reductions when applying mixed precision via FSDP.
+     This feature only takes effect when data_parallel_shard_degree > 1
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index e2fe219b9..dc79321a0 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -94,3 +94,33 @@ def kimi_k3_debugmodel(
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++def kimi_k3_debugmodel_pp_naive() -> Trainer.Config:  # PROBE ONLY (not committed)
++    import functools
++
++    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3  # pp_review3 round 2: the entry lives in parallelize.py
++
++    config = kimi_k3_debugmodel()
++    assert config.model_spec is not None
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
++def kimi_k3_debugmodel_cc12m() -> Trainer.Config:  # PROBE ONLY (not committed)
++    """The debug model on the streamed cc12m (no sample repeats in 100 steps; the 32-sample
++    test set is memorized by step 90)."""
++    config = kimi_k3_debugmodel()
++    config.dataloader = _kimi_k3_multimodal_dataloader(MM_DATASETS["cc12m"])
++    return config
++
++
++def kimi_k3_debugmodel_cc12m_pp_naive() -> Trainer.Config:  # PROBE ONLY (not committed)
++    import functools
++
++    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel_cc12m()
++    assert config.model_spec is not None
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
+diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
+index 321450858..53d435cac 100644
+--- a/torchtitan/models/kimi_k3/kda.py
++++ b/torchtitan/models/kimi_k3/kda.py
+@@ -83,10 +83,10 @@ class KDAKernel(Module):
+         if not q_1THK.is_cuda:
+             raise RuntimeError("Attention Gym KDA requires CUDA tensors.")
+         capability = torch.cuda.get_device_capability(q_1THK.device)
+-        if capability not in {(10, 0), (10, 3)}:
++        if capability < (8, 0):  # LOCAL RUN HACK (not committed)
+             raise RuntimeError(
+-                "Attention Gym KDA requires Blackwell SM100/SM103; "
+-                f"got CUDA capability {capability}."
++                "Attention Gym KDA requires CUDA capability 8.0 or newer; "
++                f"got {capability}."
+             )
+ 
+         gate_1THK = bound_gate(
+@@ -97,6 +97,7 @@ class KDAKernel(Module):
+             dt_bias_HK.float(),
+             lower_bound=self.lower_bound,
+             impl="fused",
++            autotune=__import__("os").environ.get("KDA_NOAUTOTUNE") != "1",  # LOCAL PROBE HACK (not committed)
+         )
+         output_1THV, _ = chunk_kda(
+             l2norm(q_1THK),
+diff --git a/torchtitan/trainer.py b/torchtitan/trainer.py
+index 516e11e9b..671adfb7e 100644
+--- a/torchtitan/trainer.py
++++ b/torchtitan/trainer.py
+@@ -896,6 +896,8 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                 local_valid_tokens += input_dict.pop("num_valid_tokens")
+                 microbatches.append(input_dict)
+             microbatch_groups.append(microbatches)
++        if os.environ.get("MB_REVERSE") == "1":  # LOCAL PROBE HACK (not committed): accumulation order only
++            microbatch_groups.reverse()
+         sl.log_trace_scalar({"local_valid_tokens": local_valid_tokens})
+ 
+         # Keep the global token count on device so loss normalization does not
+@@ -954,6 +956,13 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                         is_last
+                     )
+ 
++            if os.environ.get("NOSYNC_GA") == "1" and not self.parallel_dims.pp_enabled:  # LOCAL PROBE HACK (not committed)
++                # Accumulate micro-batches the way torch pipelining does under FSDP: no sync until the last backward.
++                _last = fwd_bwd_index == self.gradient_accumulation_steps - 1
++                for _part in self.model_parts:
++                    _part.set_is_last_backward(_last)
++                    _part.set_reshard_after_backward(_last)
++                    _part.set_requires_gradient_sync(_last)
+             if self.sdc_replayer is not None and fwd_bwd_index == 0:
+                 # Only the step's first gradient-accumulation group is
+                 # replay-checked; under PP one group is a complete pipeline
