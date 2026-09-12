@@ -132,9 +132,10 @@ Against that band, the pipeline cells on the same box:
 
 | cell | step 10 | step 20 |
 | --- | --- | --- |
-| `pp2` | `+13.7%`, **outside the band** | `+4.04%`, inside |
-| `pp2 x vp2`, cached | `-3.72%`, inside | `+2.67%`, inside |
-| `pp2 x vp2`, whole-stack | `+0.72%`, inside | `+0.74%`, inside |
+| dp1 (reference) | `3.297890` | `3.337080` |
+| `pp2` | `3.750270`<br>+13.72%, **outside the band** | `3.471810`<br>+4.04%, inside |
+| `pp2 x vp2`, cached | `3.175340`<br>-3.72%, inside | `3.426070`<br>+2.67%, inside |
+| `pp2 x vp2`, whole-stack | `3.321520`<br>+0.72%, inside | `3.361730`<br>+0.74%, inside |
 
 We are not going to pretend that reads cleanly. At step 20 every pipeline cell sits inside the
 band that reordering alone produces. At step 10 two of the three do and `pp2` does not: `+13.7%`
@@ -158,37 +159,37 @@ asserted.
 | cell | step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: |
 | dp1 (reference) | `12.593920` | `3.297890` | `3.337080` |
-| pp2 | `12.593920` (+0%) | `3.750270` (+13.7%) | `3.471810` (+4.04%) |
-| pp2 x vp2, cached transport | `12.593920` (+0%) | `3.175340` (-3.72%) | `3.426070` (+2.67%) |
-| pp2 x vp2, whole-stack transport | `12.593920` (+0%) | `3.321520` (+0.717%) | `3.361730` (+0.739%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `12.593920` (+0%) | `3.349840` (+1.58%) | `3.396910` (+1.79%) |
+| pp2 | `12.593920`<br>0% | `3.750270`<br>+13.72% | `3.471810`<br>+4.04% |
+| pp2 x vp2, cached transport | `12.593920`<br>0% | `3.175340`<br>-3.72% | `3.426070`<br>+2.67% |
+| pp2 x vp2, whole-stack transport | `12.593920`<br>0% | `3.321520`<br>+0.72% | `3.361730`<br>+0.74% |
+| **dp1, accumulation groups reversed (no pipeline)** | `12.593920`<br>0% | `3.349840`<br>+1.58% | `3.396910`<br>+1.79% |
 
 
 | cell | step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: |
 | dp1 (reference) | `18.6250` | `7.4688` | `4.0625` |
-| pp2 | `18.6250` (+0%) | `7.4688` (+0%) | `4.9062` (+20.8%) |
-| pp2 x vp2, cached transport | `18.6250` (+0%) | `5.1562` (-31%) | `4.0312` (-0.77%) |
-| pp2 x vp2, whole-stack transport | `18.6250` (+0%) | `4.8125` (-35.6%) | `4.5938` (+13.1%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (+0%) | `6.1875` (-17.2%) | `3.9531` (-2.69%) |
+| pp2 | `18.6250`<br>0% | `7.4688`<br>0% | `4.9062`<br>+20.77% |
+| pp2 x vp2, cached transport | `18.6250`<br>0% | `5.1562`<br>-30.96% | `4.0312`<br>-0.77% |
+| pp2 x vp2, whole-stack transport | `18.6250`<br>0% | `4.8125`<br>-35.57% | `4.5938`<br>+13.08% |
+| **dp1, accumulation groups reversed (no pipeline)** | `18.6250`<br>0% | `6.1875`<br>-17.16% | `3.9531`<br>-2.69% |
 
 **2 x H100 PCIe.** The same five cells and the same protocol; `dp1` of this box is its own reference.
 
 | cell | step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: |
 | dp1 (reference) | `12.605700` | `3.114620` | `3.373330` |
-| pp2 | `12.605700` (0%) | `3.227050` (3.61%) | `3.288290` (2.52%) |
-| pp2 x vp2, cached transport | `12.605700` (0%) | `3.150940` (1.17%) | `3.349300` (0.712%) |
-| pp2 x vp2, whole-stack transport | `12.605700` (0%) | `3.514970` (12.9%) | `3.281700` (2.72%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `12.605700` (0%) | `3.247610` (4.27%) | `3.295370` (2.31%) |
+| pp2 | `12.605700`<br>0% | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% |
+| pp2 x vp2, cached transport | `12.605700`<br>0% | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% |
+| pp2 x vp2, whole-stack transport | `12.605700`<br>0% | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% |
+| **dp1, accumulation groups reversed (no pipeline)** | `12.605700`<br>0% | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% |
 
 | cell | step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: |
 | dp1 (reference) | `18.6250` | `5.4375` | `3.9844` |
-| pp2 | `18.7500` (0.671%) | `5.6875` (4.6%) | `3.7344` (6.27%) |
-| pp2 x vp2, cached transport | `18.6250` (0%) | `3.7188` (31.6%) | `4.0625` (1.96%) |
-| pp2 x vp2, whole-stack transport | `18.6250` (0%) | `6.0312` (10.9%) | `3.6719` (7.84%) |
-| **dp1, accumulation groups reversed (no pipeline)** | `18.6250` (0%) | `6.6562` (22.4%) | `4.2500` (6.67%) |
+| pp2 | `18.7500`<br>+0.67% | `5.6875`<br>+4.60% | `3.7344`<br>-6.27% |
+| pp2 x vp2, cached transport | `18.6250`<br>0% | `3.7188`<br>-31.61% | `4.0625`<br>+1.96% |
+| pp2 x vp2, whole-stack transport | `18.6250`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
+| **dp1, accumulation groups reversed (no pipeline)** | `18.6250`<br>0% | `6.6562`<br>+22.41% | `4.2500`<br>+6.67% |
 
 The tables stop at step 20: after it the reference memorises the debug set, and a percentage against it measures that, not the parallelism.
 

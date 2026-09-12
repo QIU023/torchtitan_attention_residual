@@ -101,15 +101,15 @@ What the campaign establishes, and what it does not:
 
 ## E. Last night's tables, reorganised
 
-Same five cells on both boxes, 24-layer debug model, 1024 tokens as 4 x 256, shared step-0 checkpoint. Loss at step 10 and 20 relative to each box's dp1:
+Same five cells on both boxes, 24-layer debug model, 1024 tokens as 4 x 256, shared step-0 checkpoint. Loss at step 10 and 20; each cell gives the raw value and, beneath it, the change against that box's dp1:
 
 | cell | 5060 Ti step 10 | 5060 Ti step 20 | H100 step 10 | H100 step 20 |
 | --- | ---: | ---: | ---: | ---: |
-| dp1 (absolute) | 3.297890 | 3.337080 | 3.114620 | 3.373330 |
-| pp2 | +13.7% | +4.04% | +3.61% | +2.52% |
-| pp2 x vp2, cache on | -3.72% | +2.67% | +1.17% | +0.712% |
-| pp2 x vp2, cache off | +0.717% | +0.739% | +12.9% | +2.72% |
-| dp1, accumulation reversed (no PP) | +1.58% | +1.79% | +4.27% | +2.31% |
+| dp1 (reference) | `3.297890` | `3.337080` | `3.114620` | `3.373330` |
+| pp2 | `3.750270`<br>+13.72% | `3.471810`<br>+4.04% | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% |
+| pp2 x vp2, cache on | `3.175340`<br>-3.72% | `3.426070`<br>+2.67% | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% |
+| pp2 x vp2, cache off | `3.321520`<br>+0.72% | `3.361730`<br>+0.74% | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% |
+| dp1, accumulation reversed (no PP) | `3.349840`<br>+1.58% | `3.396910`<br>+1.79% | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% |
 
 Four orderings of the accumulation groups on the 5060 box span -6.64% .. +1.58% at step 10 and 0 .. +4.93% at step 20. The two boxes rank the cells in opposite orders at step 10 (the largest is pp2 on one, cache-off vp2 on the other), which is what single-sample scatter looks like and not what a systematic error looks like. Step 10 is where these numbers are weakest, so the argument does not rest on them: it rests on D.
 

@@ -12,22 +12,22 @@ We moved these runs to H100. KDA runs Attention Gym kernels outside the SM100/SM
 
 **How we know it is not a bug.** Comparing every parameter's step-1 gradient, with the predictions written down before the dumps were read: the cache changes only the parameters that produce a block read from a rank's store, by 2-3 bf16 ulps, and leaves everything downstream bitwise; deleting one gradient deposit, a real bug in that path, moves the same tensors about a hundred times further.
 
-4 x H100 PCIe, one seed checkpoint, 100 steps; 1024 tokens per step because four stages need four 256-token micro-batches; steps stop at 20 because the reference memorises the debug set after that. Percentages against the first row; the last row has no pipeline in it.
+4 x H100 PCIe, one seed checkpoint, 100 steps; 1024 tokens per step because four stages need four 256-token micro-batches; steps stop at 20 because the reference memorises the debug set after that. Each cell gives the raw value and, beneath it, the change against the first row; the last row has no pipeline in it.
 
 | cell | loss step 1 | loss step 10 | loss step 20 | grad norm step 1 | grad norm step 10 | grad norm step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
-| pp2 | same | +3.61% | -2.52% | +0.67% | +4.60% | -6.27% |
-| pp2 x vp2, cache on | same | +1.17% | -0.71% | same | -31.6% | +1.96% |
-| pp2 x vp2, cache off | same | +12.85% | -2.72% | same | +10.9% | -7.84% |
-| dp1, accumulation order reversed | same | +4.27% | -2.31% | same | +22.4% | +6.67% |
+| pp2 | `12.605700`<br>bitwise | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% | `18.75`<br>+0.67% | `5.6875`<br>+4.60% | `3.7344`<br>-6.27% |
+| pp2 x vp2, cache on | `12.605700`<br>bitwise | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% | `18.625`<br>0% | `3.7188`<br>-31.61% | `4.0625`<br>+1.96% |
+| pp2 x vp2, cache off | `12.605700`<br>bitwise | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% | `18.625`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
+| dp1, accumulation order reversed | `12.605700`<br>bitwise | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
 
-dp2, 2048 tokens per step, against dp2; the last row has no pipeline in it.
+dp2, 2048 tokens per step; raw value and, beneath it, the change against dp2; the last row has no pipeline in it.
 
 | cell | loss step 1 | loss step 10 | loss step 20 | grad norm step 1 | grad norm step 10 | grad norm step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
-| dp2 x pp2 | same | -0.60% | +0.23% | same | -29.20% | +6.92% |
-| dp2 x pp2 x vp2, cache on | same | -0.48% | -5.52% | same | -23.89% | +1.26% |
-| dp2 x pp2 x vp2, cache off | same | -0.99% | +0.26% | same | -20.80% | -4.40% |
-| dp2 x ep2 | same | -2.23% | +4.56% | same | -28.32% | +18.87% |
+| dp2 x pp2 | `12.521140`<br>same | `3.201920`<br>-0.60% | `2.846440`<br>+0.23% | `16.375`<br>0% | `5`<br>-29.20% | `2.6562`<br>+6.92% |
+| dp2 x pp2 x vp2, cache on | `12.521140`<br>same | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
+| dp2 x pp2 x vp2, cache off | `12.521140`<br>same | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
+| dp2 x ep2 | `12.521140`<br>same | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
