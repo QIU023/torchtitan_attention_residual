@@ -35,3 +35,10 @@ With `FLEX_NOAUTOTUNE=1` (flex compiled without max_autotune and coordinate desc
 - P6b. pp2 x vp2 cache off vs the same dp1: bitwise on all 750.
 - P6c. pp2 x vp2 cache on vs the same dp1: layers 12-23 and head bitwise; layers 0-11, embeddings and vision differ at the ulp scale of P2.
 If P6a fails, the first differing tensor in backward order names the next source (a KDA kernel with its own autotune is the next candidate).
+- P6a: refuted. With flex compiled without autotune in both processes, pp2 vs matched dp1 is 20 / 750 bitwise with the same profile, number for number, as the unpinned run. Flex kernel selection is not the source. Narrowed further: layer 23's `attention.wo` is bitwise in every pipeline cell, so flex's forward output and the gradient into it are identical; the difference is born in flex's backward outputs (dq, dk, dv).
+
+## P7 (written before the run)
+
+Last week's forward dumps counted 380 attention-residual calls per step on one GPU against 452 under the pipeline: the two paths do not recompute the same regions under activation checkpointing, and flex's backward reads what the recomputed forward saved. With activation checkpointing off in both cells (flex pinned, matched accumulation):
+- P7a. pp2 vs dp1: bitwise on all 750 tensors.
+If it fails, the first differing tensor in backward order is again the pointer.
