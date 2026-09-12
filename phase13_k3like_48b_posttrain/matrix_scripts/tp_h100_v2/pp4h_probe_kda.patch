@@ -50,7 +50,7 @@ index e2fe219b9..dc79321a0 100644
 +    )
 +    return config
 diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
-index 321450858..53d435cac 100644
+index 321450858..1beb31ef0 100644
 --- a/torchtitan/models/kimi_k3/kda.py
 +++ b/torchtitan/models/kimi_k3/kda.py
 @@ -83,10 +83,10 @@ class KDAKernel(Module):
@@ -67,14 +67,14 @@ index 321450858..53d435cac 100644
              )
  
          gate_1THK = bound_gate(
-@@ -97,6 +97,7 @@ class KDAKernel(Module):
-             dt_bias_HK.float(),
-             lower_bound=self.lower_bound,
-             impl="fused",
+@@ -105,6 +105,7 @@ class KDAKernel(Module):
+             gate_1THK,
+             raw_beta_1TH.float().sigmoid(),
+             cu_seqlens=cu_seqlens,
 +            autotune=__import__("os").environ.get("KDA_NOAUTOTUNE") != "1",  # LOCAL PROBE HACK (not committed)
          )
-         output_1THV, _ = chunk_kda(
-             l2norm(q_1THK),
+         return output_1THV
+ 
 diff --git a/torchtitan/trainer.py b/torchtitan/trainer.py
 index 516e11e9b..671adfb7e 100644
 --- a/torchtitan/trainer.py
