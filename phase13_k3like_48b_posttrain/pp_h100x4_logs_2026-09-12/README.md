@@ -47,3 +47,7 @@ Loss, then grad norm, as percentages against each block's reference; "same" is t
 | dp2 x pp2 x vp2, cache off | same | -0.99% | +0.26% | same | -20.80% | -4.40% |
 
 The dp2 reversed-accumulation row moves step 1 by 0.12%, which a reordering of the same terms should not do at ulp level; not investigated. KDA-autotune-off pass (`KDA_NOAUTOTUNE=1`: `chunk_kda(..., autotune=False)`, which reaches Attention Gym's fused Triton path on this box; the kernels' own `@triton.autotune` still runs): every 1024-token cell -- dp1, the pipeline's accumulation, pp2, pp2 x vp2 cache on and off -- is identical to the autotune-on run on every printed step. On H100 the fused KDA autotuning is not a source of the pipeline-vs-dp1 difference.
+
+## Why pp2's step-1 grad norm reads +0.67% on this box
+
+It is one bf16 unit of the printed norm, not a gradient difference of that size. `clip_grad_norm_` computes the total norm in the gradients' dtype (bf16) and, under PP, sums the stages' squared norms in bf16. From the 8 x RTX 5060 Ti step-1 dumps of the same config (`/workspace/ppnum_0912/{dp1,pp2}` on that box): exact float64 total norms `18.68801` (dp1) and `18.68617` (pp2), 0.01% apart, both on the bf16 rounding midpoint `18.6875` between `18.625` and `18.75`; single-pass bf16 gives `18.625` for both, and pp2's per-stage bf16 norms `17.125` and `7.4062` combine to `18.625` there. Which side a cell prints is decided by bf16 rounding inside the norm; on this box pp2 lands on `18.75`. A float32 total norm (torchtitan #4135 with pytorch 194033) removes it.
