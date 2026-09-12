@@ -25,11 +25,11 @@ cell() {  # cell <name> <tree> <gpus> <nproc> <seed tag> <steps> <flags...>
   echo "$nm rc=$rc steps=$(grep -a -c 'step: ' $OUT/$nm.log)"
 }
 
-table() {  # table <reference name> <names...>: steps 1 / 10 / 20, loss and grad norm
+table() {  # table <reference name> <names...>: loss and grad norm at TABLE_STEPS (default "1 10 20")
   python3 - "$OUT" "$@" <<'PY'
-import re, sys
+import os, re, sys
 out, ref, names = sys.argv[1], sys.argv[2], sys.argv[3:]
-STEPS = (1, 10, 100)
+STEPS = tuple(int(x) for x in os.environ.get("TABLE_STEPS", "1 10 20").split())
 def series(f):
     L, G = {}, {}
     for line in open(f, errors="ignore"):
