@@ -43,6 +43,17 @@ data under another reduction order) so the reader sees what the flavor does
 by itself. Step 1 (bitwise) and step-1 gradient comparisons are the
 correctness bar; step 10 is shown, never argued from.
 
+No step past the point where the reference memorises the dataset is ever
+reported (user, 2026-09-12). The K3 debug set repeats within a 100-step run:
+the reference loss stops falling and swings between near-zero and normal
+values (dp1 at 256 tokens/step: 0.84 at step 60, 0.59 at 90; dp2 at 512:
+1.27 at 60, 0.82 at 90), and percentages against it measure memorisation,
+not the change. Before a table is drafted, read the reference's loss
+trajectory and report only steps before its first non-monotone drop -- for
+the debug flavor at 256-512 tokens/step that is steps 1 / 10 / 20. A longer
+run may still back an "identical on all N steps" claim; its late values are
+not shown. One table per run carries loss and grad norm side by side.
+
 ## Numerics-acceptance rule (user, 2026-09-06)
 
 When a maintainer challenges numbers, the reply's first sentence states the
