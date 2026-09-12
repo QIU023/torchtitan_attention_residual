@@ -42,3 +42,6 @@ If P6a fails, the first differing tensor in backward order names the next source
 Last week's forward dumps counted 380 attention-residual calls per step on one GPU against 452 under the pipeline: the two paths do not recompute the same regions under activation checkpointing, and flex's backward reads what the recomputed forward saved. With activation checkpointing off in both cells (flex pinned, matched accumulation):
 - P7a. pp2 vs dp1: bitwise on all 750 tensors.
 If it fails, the first differing tensor in backward order is again the pointer.
+- P6b: refuted like P6a. Pinned-flex pp2 x vp2 cache off vs pinned-flex matched dp1: 20 / 750 bitwise, the same profile as unpinned.
+- P6c: held. Pinned-flex cache off vs cache on: 346 / 750 bitwise, layers 12-23 and the head bitwise, layers 0-11, embeddings and vision differ -- the flag's footprint is the same whichever flex kernel runs.
+- Side observation: pp2 vs pp2 x vp2 cache off (both pinned) is bitwise on layers 16-23 and the head, with a sparse difference from layer 15 down (0.1% of elements at layer 15). The two use different schedules (1F1B vs Interleaved1F1B); the likely source is the order of the float32 micro-batch accumulation, which rarely changes the final bf16 rounding. Not tested.
