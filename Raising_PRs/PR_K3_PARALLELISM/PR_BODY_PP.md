@@ -157,10 +157,10 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
     torchtitan/config/
       configs.py                            +9/-0    module_fqns_per_model_part and pipeline_parallel_layers_per_stage are exclusive
     torchtitan/distributed/
-      pipeline_parallel.py                  +84/-19  llm_split_with_pinned_modules, last-stage pinned modules; the injected split clears the knob that derived it
+      pipeline_parallel.py                  +64/-19  llm_split_with_pinned_modules, last-stage pinned modules; the injected split clears the knob that derived it
     torchtitan/models/kimi_k3/
-      pipeline_stage.py                     +403/-0  AttnResPipelineStage and the rank-local cache (new)
-      layout.py                             +213/-0  BlockLayoutTables from the split the trainer applied (new)
+      pipeline_stage.py                     +367/-0  AttnResPipelineStage and the rank-local cache (new)
+      layout.py                             +185/-0  BlockLayoutTables from the split the trainer applied (new)
       parallelize.py                        +118/-3  the pipelining entry: the split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
       model.py                              +40/-23  the block stack in and out of a stage; the block's first layer joins the stack before attending
       __init__.py                           +18/-6   registers the pipelining_fn; the 33-layer flavor for the pp8 x vp4 cell
