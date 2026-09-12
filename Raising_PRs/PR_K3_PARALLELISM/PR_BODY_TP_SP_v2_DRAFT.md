@@ -76,16 +76,16 @@ Type checking, 3 steps with `--debug.spmd_typechecking` and activation checkpoin
 ### Changed files
 
     torchtitan/models/kimi_k3/
-      sharding.py                                         +264/-68  the TP/SP declarations: MLA, KDA, latent MoE, the multimodal boundary
-      model.py                                            +34/-31   MLA head splits through local_head_split; update_from_config order and the tower head check; core's multimodal_input_sharding
-      kda.py                                              +9/-6     KDA head splits through local_head_split
-      parallelize.py                                      +0/-1     tensor parallel off the unsupported list
+      sharding.py                                              +264/-68  the TP/SP declarations: MLA, KDA, latent MoE, the multimodal boundary
+      model.py                                                 +34/-31   MLA head splits through local_head_split; update_from_config order and the tower head check; core's multimodal_input_sharding
+      kda.py                                                   +9/-6     KDA head splits through local_head_split
+      parallelize.py                                           +0/-1     tensor parallel off the unsupported list
     torchtitan/models/kimi_k2_7/
-      sharding.py                                         +8/-5     set_moonvit_sharding_config public, projector norm named by the caller
-      vision_encoder.py                                   +3/-6     the packed position tables retype the dp axis only
-    tests/integration_tests/b200.py                       +6/-0     the kimi_k3_mm_tp2 cell
-    tests/unit_tests/cpu/test_integration_test_definitions.py+1/-0     registers it in the b200 suite
-    torchtitan_recipes/tests/b200.py                      +11/-0    kimi_k3_debugmodel_mm_tp2
+      sharding.py                                              +8/-5     set_moonvit_sharding_config public, projector norm named by the caller
+      vision_encoder.py                                        +3/-6     the packed position tables retype the dp axis only
+    tests/integration_tests/b200.py                            +6/-0     the kimi_k3_mm_tp2 cell
+    tests/unit_tests/cpu/test_integration_test_definitions.py  +1/-0     registers it in the b200 suite
+    torchtitan_recipes/tests/b200.py                           +11/-0    kimi_k3_debugmodel_mm_tp2
 
 ### CI/CD Coverage
 
