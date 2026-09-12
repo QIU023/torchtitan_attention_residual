@@ -1,6 +1,6 @@
 # PP step-1 bitwise test: predictions, written before the dumps are read (2026-09-12 05:20)
 
-Tree: `pp_review4` = `9f984333e` (upstream main `d9ca9e55a` + PR 4312), worktree `/tmp/wt_ppnum` with three probe hacks (KDA SM120 guard lift, `kimi_k3_debugmodel_pp_naive` alias, `GRAD_DUMP` of every parameter's step-1 gradient in its own dtype). Mutation and matched-accumulation hacks live in `/tmp/wt_ppmut` (`MUTATE=drop_deposit`, `NOSYNC_GA=1`). Patches and drivers: `matrix_scripts/pp_step1_0912/`.
+Tree: `pp_review4` = `ab982d587` (upstream main `d9ca9e55a` + PR 4312), worktree `/tmp/wt_ppnum` with three probe hacks (KDA SM120 guard lift, `kimi_k3_debugmodel_pp_naive` alias, `GRAD_DUMP` of every parameter's step-1 gradient in its own dtype). Mutation and matched-accumulation hacks live in `/tmp/wt_ppmut` (`MUTATE=drop_deposit`, `NOSYNC_GA=1`). Patches and drivers: `matrix_scripts/pp_step1_0912/`.
 
 Protocol: 8 x RTX 5060 Ti, main's 24-layer `debugmodel`, 1024 tokens per step as 4 x 256, seed 42, `--debug.deterministic`, one shared step-0 seed checkpoint (`.mx3_seeds_pp100/kimi_k3_debugmodel_fbfadaabdd4f`, the key of the 2026-09-11 H100 runs), every cell on a copy of dp1's warm inductor cache, per-rank Triton cache.
 
