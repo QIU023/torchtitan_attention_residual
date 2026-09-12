@@ -25,3 +25,4 @@ echo '# dp1, 256 tokens per step (reference: tp=1 on main; tp1 and tp1_again mus
 table tp1_parent tp1 tp1_again tp2_sp tp2_nosp
 echo
 for c in tc_tp2 tc_dp2_ep2_tp2; do echo "$c: $(grep -a -c 'step: ' $OUT/$c.log) steps, $(grep -a -ciE 'error|Traceback' $OUT/$c.log) error lines"; done
+echo RUN-V2-DONE

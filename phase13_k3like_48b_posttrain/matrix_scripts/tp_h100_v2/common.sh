@@ -4,7 +4,7 @@ TT=${TT:-$PWD}; TT_PARENT=${TT_PARENT:-$PWD/../tt_parent}; OUT=${OUT:-$PWD/tp_h1
 CFG=${CFG:-kimi_k3_debugmodel}
 D="--parallelism.data_parallel_shard_degree"; T="--parallelism.tensor_parallel_degree"; E="--parallelism.expert_parallel_degree"
 NOSP="--parallelism.no-enable-sequence-parallel"; TC="--debug.spmd_typechecking"  # spmd_backend is gone on main after #4419; type checking needs TAIL=activation_checkpoint:none (SAC + flex is refused)
-COMMON="-m torchtitan.train --module kimi_k3 --config $CFG --debug.seed 42 --debug.deterministic --metrics.log_freq 1 --checkpoint.enable --checkpoint.interval 100000"
+COMMON="-m torchtitan.train --module ${MODULE:-kimi_k3} --config $CFG --debug.seed 42 --debug.deterministic --metrics.log_freq 1 --checkpoint.enable --checkpoint.interval 100000"
 
 seed() {  # seed <tag> <batch flags...>: one seed checkpoint per batch shape, built on the branch tree with 1 GPU
   local tag=$1; shift
@@ -17,7 +17,7 @@ seed() {  # seed <tag> <batch flags...>: one seed checkpoint per batch shape, bu
 
 cell() {  # cell <name> <tree> <gpus> <nproc> <seed tag> <steps> <flags...>
   local nm=$1 tree=$2 gpus=$3 np=$4 stag=$5 steps=$6; shift 6
-  local d=$OUT/$nm; rm -rf $d; mkdir -p $d; cp -r $OUT/seed_$stag/checkpoint $d/
+  local d=$OUT/$nm; rm -rf $d; mkdir -p $d; [ -d $OUT/seed_$stag/checkpoint ] && cp -r $OUT/seed_$stag/checkpoint $d/  # no seed dir: fresh init from --debug.seed
   ( cd $tree && CUDA_VISIBLE_DEVICES=$gpus TORCHINDUCTOR_CACHE_DIR=$OUT/ind_$nm TRITON_CACHE_DIR=$OUT/tri_$nm TRITON_CACHE_BASE=$OUT/tri_$nm \
       torchrun --nproc_per_node=$np --master_port=$((30000+RANDOM%20000)) \
       $COMMON --training.steps $steps "$@" --dump-folder $d ${TAIL:-} > $OUT/$nm.log 2>&1 )  # TAIL: a positional subcommand goes last
