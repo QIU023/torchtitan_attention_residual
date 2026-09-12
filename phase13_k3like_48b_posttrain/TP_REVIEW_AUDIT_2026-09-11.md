@@ -124,3 +124,33 @@ PP head `dd1c0b925`：`_get_pipeline_metadata` / `_generate_llm_fqn_per_model_pa
 kimi_k3 里只剩 core 的公开入口。
 
 规则已写进 `CLAUDE.md`（"Reuse check before any private helper"）。
+
+
+## 已在 review 分支落地（09-11，CPU 盒子）：`tp_sp_on_main` = `0b66b1b97`
+
+两个提交，快进推在 `bd55160a8` 上；**PR 分支 `k3_tp_sp` 未动**，仍是 `bd55160a8`。同步命令（你批准后）：
+`git push --force-with-lease=refs/heads/k3_tp_sp:bd55160a8 origin tp_sp_on_main:k3_tp_sp`（实际是快进）。
+
+1. `4c090f501` vision_encoder_sharding: one MoonViT plan for Kimi K2.5 and Kimi K3
+   - `models/common/vision_encoder_sharding.py` +27/-1：新增公开的 `set_moonvit_sharding_config(ve_cfg, *, projector_norm)`，`projector_norm` 取 `"pre_norm"` / `"post_norm"`。
+   - `kimi_k2_7/sharding.py` +2/-50：K2.5 的私有 `_set_vision_encoder_sharding` 删掉，改调公共函数（`projector_norm="pre_norm"`），顺带删掉只有它用的 `SpmdType` / `DP` / `TP` / `MeshAxisName`（全树无人从该模块导入这些名字，已查）。
+   - `kimi_k3/sharding.py` +2/-35：K3 那份拷贝删掉，改调公共函数（`projector_norm="post_norm"`）。
+   - **等价性**：用桩配置树分别跑旧的两个私有函数与新的公共函数，7 个 sharding config 与对 `set_vision_transformer_block_sharding_config` 的调用参数逐一相同（K2.5、K3 各一次，`matrix` 同款脚本在 scratchpad `tp_equiv_check.py`）。声明不变，数值不受影响。
+2. `0b66b1b97` kimi_k3: docstrings and comments say what is declared（+24/-90，无行为改动）
+   - docstring 砍到一两行：`set_kimi_k3_sharding_config`（16→3）、`_set_kda_sharding`（10→3）、`_stream_param_config`（8→1）、`_tp_replicate_config`（6→1）、`_set_mla_sharding`（5→1）、`_block_residual_placement`（6→1）、`_shard_decoder_after_embedding_scatter`（8→3）。
+   - 三行以上的注释全部压到两行以内（`sharding.py` 6 处、`parallelize.py` 1 处、`model.py` 2 处）；`model.py` 的 rope-key local 区域注释改成指向 DeepSeek-V3 的 MLA 同款写法，不再出现 "like local_head_split"。
+   - `model.py` 那个无关的删空行恢复。
+
+校验：pinned ufmt 2.3.0 / black 22.12.0 / usort 1.0.5 干净；py_compile 通过；pinned pyrefly 0.45.1 在 5 个触及文件上 0 errors；分支 diff 里不再有 ≥3 行的新增注释，也没有多余的删空行；提交信息无 trailer、无 `#N`、无 URL。
+
+注释/docstring 密度：
+
+| 文件 | 行数 | docstring 行 | 注释行 | 占比 |
+|---|---:|---:|---:|---:|
+| K3 sharding.py, before (bd55160a8) | 463 | 74 | 27 | 21.8% |
+| K3 sharding.py, after (0b66b1b97) | 370 | 20 | 13 | 8.9% |
+| K2.5 sharding.py on main | 131 | 28 | 2 | 22.9% |
+
+**有意没做的**：`_shard_decoder_after_embedding_scatter` 里 `tok_embeddings` 那一半与 K2.5、**Qwen3.5** 三处逐字相同。抽成公共函数就要改 Qwen3.5 和 K2.5 的 decoder 路径，这是评审没有问、也不在本 PR 范围里的东西；而且全树目前就是三处各自内联，K3 跟随同一写法。记作上游 follow-up，不在 4499 做。
+
+**对回复稿的影响**：`sharding.py:390` 那条现在可以照实写"已提到 `models/common/vision_encoder_sharding.py` 成 `set_moonvit_sharding_config`，两个模型共用，投影器的 norm 名做参数"；`model.py:473` 那条"what is left in the two functions is one comment"仍然成立（scatter 注释现在是一行）；top-level 的提交数从 five 变成 seven。
