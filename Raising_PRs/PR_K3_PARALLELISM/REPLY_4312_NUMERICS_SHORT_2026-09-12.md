@@ -12,7 +12,7 @@ Not a bug: comparing every parameter's step-1 gradient, the cache changes only t
 
 4 x H100 PCIe, one seed checkpoint, 100 steps; 1024 tokens per step because four stages need four 256-token micro-batches; steps stop at 20 because the reference memorises the debug set after that. Percentages against the first row; the last row has no pipeline in it.
 
-| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
+| cell | loss step 1 | loss step 10 | loss step 20 | grad norm step 1 | grad norm step 10 | grad norm step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
 | pp2 | same | +3.61% | -2.52% | +0.67% | +4.60% | -6.27% |
@@ -22,7 +22,7 @@ Not a bug: comparing every parameter's step-1 gradient, the cache changes only t
 
 dp2, 2048 tokens per step, against dp2; the last row has no pipeline in it.
 
-| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
+| cell | loss step 1 | loss step 10 | loss step 20 | grad norm step 1 | grad norm step 10 | grad norm step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
 | dp2 x pp2 | same | -0.60% | +0.23% | same | -29.20% | +6.92% |
