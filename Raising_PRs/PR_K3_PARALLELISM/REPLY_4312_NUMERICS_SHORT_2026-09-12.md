@@ -1,10 +1,10 @@
 # Short reply to Tianyu's numerics question on PR 4312 (2026-09-12)
 
-For the user to post. Numbers: 4 x H100 PCIe, `pp_review4` = `dbc425403`, logs in `phase13_k3like_48b_posttrain/pp_h100x4_logs_2026-09-12/`; step-1 campaign on 8 x RTX 5060 Ti, `PP_STEP1_BITWISE_PREDICTIONS_2026-09-12.md`. The two no-pipeline controls use local probe switches (`MB_REVERSE`, `NOSYNC_GA`), not the PR. Long form: `REPLY_4312_NUMERICS_2026-09-11.md`.
+For the user to post. CLAUDE.md numerics-acceptance rule: the residual is located (layer, op, first tensor, magnitude; probe `matrix_scripts/pp_step1_0912/`, tree `pp_review4` + probe patch) but its mechanism is not explained, which the rule says blocks posting -- the user's call. Numbers: 4 x H100 PCIe, `pp_review4` = `dbc425403`, logs in `phase13_k3like_48b_posttrain/pp_h100x4_logs_2026-09-12/`; step-1 campaign on 8 x RTX 5060 Ti, `PP_STEP1_BITWISE_PREDICTIONS_2026-09-12.md`. The two no-pipeline controls use local probe switches (`MB_REVERSE`, `NOSYNC_GA`), not the PR. Long form: `REPLY_4312_NUMERICS_2026-09-11.md`.
 
 --- PASTE BEGIN ---
 
-The gap is this debug flavour turning ulp-level differences into percents by step 10, and a single GPU does the same with no pipeline in it; step 1 matches, and the cache changes only how a sum is grouped.
+Against our bar -- step-1 loss bitwise, step-1 gradients bitwise or every difference located -- the pipeline passes on the loss and on every gradient the transport touches; one located residual remains, starting at one bf16 ulp in 0.4% of the last layer's `attention.wq_a` gradient, inside that layer's attention backward on the last stage, before any gradient crosses a stage boundary. The later percents are this debug flavour amplifying ulp-level differences, and a single GPU does the same with no pipeline in it.
 
 **Accumulation order, cache off / on vs no PP.** Take one block of the attention-residual stack under pp2 x vp2 (rank 0 holds stages 0 and 2, rank 1 stages 1 and 3). Autograd adds each layer's read of the block onto the gradient that has already arrived, top-down. Without PP that is one running sum. With the cache off each hop hands that running sum to the previous stage, which keeps adding, so the order is the same as one GPU. With the cache on, stages 2 and 3 read the block from their rank's store, sum their own reads from zero and deposit the subtotal, and stages 1 and 0 add it when they collect: the same terms, grouped differently.
 
@@ -36,4 +36,4 @@ print(torch.equal(cache_off, no_pp), int((cache_on != no_pp).sum()))           #
 | pp2 x vp2, cache on | `12.605700` | +1.17% | -0.71% | `18.625` | -31.6% | +1.96% |
 | pp2 x vp2, cache off | `12.605700` | +12.85% | -2.72% | `18.625` | +10.9% | -7.84% |
 
-The size of that sensitivity depends on the device, and part of it is KDA: Attention Gym's KDA is written for SM100/SM103 (main refuses anything else), so on H100 and RTX 5060 Ti we run it with that guard lifted, on kernels and per-process autotuned configurations that are not the ones main uses on B200. The same pp2 cell reads +3.6% at step 10 here and +13.7% on RTX 5060 Ti. A pass with KDA's autotuning off is running.
+The size of that sensitivity depends on the device, and part of it is KDA: Attention Gym's KDA is written for SM100/SM103 (main refuses anything else), so on H100 and RTX 5060 Ti we run it with that guard lifted, and its fused kernels pick their configuration by autotuning in each process; main has not validated these cards. The same pp2 cell reads +3.6% at step 10 here and +13.7% on RTX 5060 Ti. A pass with KDA's autotuning off is running.

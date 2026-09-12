@@ -66,6 +66,7 @@ cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_sch
 | pp2 | `12.605700` | `3.227050` (+3.61%) | `3.288290` (-2.52%) | `18.75` (+0.67%) | `5.6875` (+4.60%) | `3.7344` (-6.27%) |
 | pp2 x vp2, cached | `12.605700` | `3.150940` (+1.17%) | `3.349300` (-0.71%) | `18.625` | `3.7188` (-31.6%) | `4.0625` (+1.96%) |
 | pp2 x vp2, naive | `12.605700` | `3.514970` (+12.85%) | `3.281700` (-2.72%) | `18.625` | `6.0312` (+10.9%) | `3.6719` (-7.84%) |
+| dp1, accumulation order reversed (noise floor, no pipeline; a local probe switch) | `12.605700` | `3.247610` (+4.27%) | `3.295370` (-2.31%) | `18.625` | `6.6562` (+22.4%) | `4.25` (+6.67%) |
 
 1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
 
