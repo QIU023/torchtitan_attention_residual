@@ -1,5 +1,7 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
+Results updated 2026-09-12: 4 x H100 PCIe on `pp_review4` = `dbc425403`; the dp2 stream is running and marked pending. The numerics answer to Tianyu is `REPLY_4312_NUMERICS_SHORT_2026-09-12.md`; the long form, corrected the same day, is `REPLY_4312_NUMERICS_2026-09-11.md`.
+
 PR 4312. PR branch `k3_pp_text` = `dbc425403` since 2026-09-12 (fast-forward from `dd1c0b925`: the B200 cells, the per-rank stage count removed, the comment and docstring trims; GitHub: 31 commits, 16 files, +1324/-51, still `dirty` -- `torchtitan/config/configs.py` conflicts with main `56a721b64`, 17 commits past the base). Before that it was `dd1c0b925` (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then a test commit and the stage rebuild on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
 
 Candidate `pp_review5` = `6042863a4` (2026-09-10): the same 19 commits rebased onto upstream/main `d398a8fb9`. Two files conflicted, both against PR 4527: `model.py`, where the empty stack a first stage starts from is now `h_TD.unsqueeze(1)[:, :0]` (the stack a later stage receives is unchanged), and `parallelize.py`, where the `annotate_replicated_parameters` import and the vision tower's `cpu_offload` / `dp_mesh_dims` kwargs sit beside `pp_enabled=parallel_dims.pp_enabled`. The interdiff against `75045fed5` is those two `model.py` lines; the diff against main is the same 14 files, +1693/-34. Checked on the Windows box: no conflict markers, `compileall` clean, `test_pipeline_neighbor_transport.py` and `test_integration_test_definitions.py` pass (the one failure there is upstream's `/tmp` path assertion, failing identically on main); the three K3 test files import attn-gym's CuTeDSL backend (Linux only) and run on the GPU box.
@@ -18,7 +20,7 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
 
 After it `pipeline_kimi_k3` (in `parallelize.py`) splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes.
 
-Step 1 agree to within one unit in the last place (`9.5e-07` absolute, `7.7e-08` relative on the loss; `0.125`, one bf16 ulp, on the total gradient norm) against a single GPU on every pp x vp cell of the irregular debug model, two to thirty-two stages, with the delta transport and with the whole stack on every hop.
+Step 1 matches a single GPU at the printed precision in every cell of the table below (pp2's gradient norm is one bf16 ulp off); steps 10 and 20 sit inside what the same run moves with no pipeline in it at all.
 
 ### Design
 
@@ -48,99 +50,28 @@ Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, s
 
 ### Results
 
-Loss and total gradient norm, 1 GPU vs 2-GPU pipeline, five steps (the format of the DSV3 MTP pipeline table): `pp_runtime_client` (`464421e13`), `kimi_k3_debugmodel` (33 layers), one seed checkpoint, 512 tokens per step in two 256-token micro-batches, `--debug.seed 42 --debug.deterministic`, 1F1B with 2 micro-batches, the delta transport, values as printed by the trainer.
-
-```
-COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 512 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+```bash
+COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
 torchrun --nproc_per_node=1 $COMMON --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
-cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 5 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
-cell dp1 1
-cell pp2 2 --parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 2
+cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
+P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"
+cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_schedule Interleaved1F1B
 ```
 
-The debug config trains in bf16 end to end (`training.dtype="bfloat16"`: bf16 parameters, gradients and Adam states; torchtitan's default is float32):
+4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the naive row sets `attn_res_cache=False`; percentages against dp1.
 
-| step | loss dp1 | loss pp2 | rel diff | grad norm dp1 | grad norm pp2 | rel diff |
-|---|---|---|---|---|---|---|
-| 1 | 12.42445 | 12.42445 | 0 | 31.875 | 31.75 | 3.9e-3 |
-| 2 | 11.33692 | 11.34505 | 7.2e-4 | 24.375 | 24.375 | 0 |
-| 3 | 9.22832 | 9.48903 | 2.8e-2 | 16.5 | 17.875 | 8.3e-2 |
-| 4 | 8.59245 | 7.85436 | 8.6e-2 | 14.375 | 14.9375 | 3.9e-2 |
-| 5 | 6.51366 | 6.84844 | 5.1e-2 | 9.375 | 10.125 | 8.0e-2 |
+| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
+| pp2 | `12.605700` | `3.227050` (+3.61%) | `3.288290` (-2.52%) | `18.75` (+0.67%) | `5.6875` (+4.60%) | `3.7344` (-6.27%) |
+| pp2 x vp2, cached | `12.605700` | `3.150940` (+1.17%) | `3.349300` (-0.71%) | `18.625` | `3.7188` (-31.6%) | `4.0625` (+1.96%) |
+| pp2 x vp2, naive | `12.605700` | `3.514970` (+12.85%) | `3.281700` (-2.72%) | `18.625` | `6.0312` (+10.9%) | `3.6719` (-7.84%) |
 
-Same protocol with `--training.dtype float32` (float32 parameters, gradients and Adam states with bf16 compute under FSDP mixed precision, torchtitan's default regime; the 33-layer model does not fit the float32 states on a 16 GB GPU, so this row is a 9-layer alias of the flavor, blocks of 12, one partial block on the wire):
+1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
 
-| step | loss dp1 | loss pp2 | rel diff | grad norm dp1 | grad norm pp2 | rel diff |
-|---|---|---|---|---|---|---|
-| 1 | 12.52069 | 12.52069 | 0 | 14.9514 | 14.9498 | 1.1e-4 |
-| 2 | 10.98197 | 10.98491 | 2.7e-4 | 11.1756 | 11.3731 | 1.8e-2 |
-| 3 | 9.66179 | 9.67821 | 1.7e-3 | 10.1811 | 10.0973 | 8.2e-3 |
-| 4 | 8.40848 | 8.28552 | 1.5e-2 | 9.2338 | 9.2838 | 5.4e-3 |
-| 5 | 6.17097 | 6.16612 | 7.9e-4 | 8.1669 | 8.2551 | 1.1e-2 |
+dp2 x pp2 and dp2 x pp2 x vp2 against dp2, with dp2 x ep2 beside them (2048 tokens per step): pending, running.
 
-Step 1: the loss agrees to within one float32 ulp on both rows (`9.5e-07` absolute, `7.7e-08` relative, measured at full precision; the printed five decimals match); the total norm differs by one bf16 ulp on the bf16 row (it is reduced over the two stages in the flavor's dtype) and by 1e-4 in float32.
-
-Steps 2-5 move by percents on both rows, and that is not the pipeline's: the same dp1 cell on two fresh compile caches is bitwise for five steps, pp2 twice is bitwise, and the step-1 per-parameter gradients (13-layer alias, float32 masters, 432 tensors) put the origin inside one stage: `lm_head`, the final norms and the last layer's MoE and output projection are bitwise, the first non-identical tensors are the query path of the last attention layer at ulp level, 1e-7 on the norm (its dO, K, V are bitwise), and the difference grows by three to five times per layer walking down the backward with no jump at the stage boundary (median 2.2e-4, max 4.7e-3 over the 410 non-identical tensors, sign flips 0.131% of 768M elements, 88% of them below 1e-2 of their tensor's rms). Adam's first update is `lr * sign(g)`, so the elements whose sign that flips become the step-2 spread, with float32 masters as with bf16 ones.
-
-Dumps, scripts and the per-layer table: `phase13_k3like_48b_posttrain/PP_NUMERICS_4488STYLE_2026-09-08.md`.
-
-The pp x vp matrix below was measured on the previous head `pp_review3` (`0e7cc5ea1`, 4096 tokens per step, 8 micro-batches); the model code is the same on the client branch, the transport plumbing moved into the runtime.
-
-`kimi_k3_debugmodel` is 33 layers with a block size of 12 and MLA at every fourth layer and the last, so it is irregular the way the 93-layer model is: two blocks of 12 and a partial block of 9 (33 = 2 x 12 + 9, the same tail block as 93 = 7 x 12 + 9), the stack ending on two adjacent MLA layers, and 35 units with the embedding and the head, which no pipeline shape divides. The KDA kernels are Attention Gym's at the pre-merge recipe checkout `7c83f6c`; on the RTX 5060 Ti (SM120) they run with the SM100/SM103 guard in `kda.py` lifted locally, a patch not on the branch.
-
-Every split in the table is uneven; the stage count is the multiple of `pipeline_parallel_degree` nearest to units / `layers_per_stage`, and core sees the split rather than the knob (its ceiling would refuse 35 units at 4 per stage).
-
-`--debug.seed 42 --debug.deterministic`, one seed checkpoint per model shape, 4096 tokens per step in micro-batches of 256, 8 pipeline micro-batches, `first/last_stage_less_layers` at their default 1 so the embedding and the head count as units (35 in all, the number the stage columns below add up to); every cell runs twice and the second run is read. The runner with the seed-load assertion is `phase13_k3like_48b_posttrain/matrix_scripts/mx3.sh` in the logbook.
-
-```
-COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
-torchrun --nproc_per_node=1 $COMMON --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
-cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 10 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
-P="--parallelism.pipeline_parallel_degree"; L="--parallelism.pipeline-parallel-layers-per-stage"
-IL="--parallelism.num-pp-microbatches 8 --parallelism.pipeline_parallel_schedule Interleaved1F1B"
-cell dp1 1
-cell pp2_vp4 2 $P 2 $L 4 $IL;  cell pp4_vp4 4 $P 4 $L 2 $IL;  cell pp8_vp4 8 $P 8 $L 1 $IL
-```
-
-Every virtual-pipeline cell twice, with the delta transport and naive (every hop carries the whole stack), and the last six rows with data and expert parallel around the pipeline. The bf16 columns are the branch as it is; the float32 columns carry the total gradient norm in float32 (the `clip_grad_norm_` reduction of pytorch PR 194033 / torchtitan PR 4135, applied to the run tree and not on this branch). The dp2 rows read a different batch (the loader shards the dataset by data-parallel rank), so step 1 is compared within a data-parallel group.
-
-| cell | stages | ranks | layers per stage | transport | step 1 | step 3, step 10 (bf16 norm) | step 3, step 10 (float32 norm) |
-|---|---|---|---|---|---|---|---|
-| dp1 | - | 1 | - | - | 12.41967 | 7.56783, 3.45908 | 7.57490, 3.34752 |
-| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 (embedding on the first, head on the last) | delta | 12.41967 | 7.47862, 3.42131 | 7.49055, 3.33238 |
-| pp2 x vp4 | 8 | 2 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.41967 | 7.66420, 3.32480 | 7.61479, 3.35875 |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.41967 | 7.57579, 3.36337 | 7.57446, 3.43256 |
-| pp4 x vp4 | 16 | 4 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.41967 | 7.64929, 3.49334 | 7.68891, 3.43122 |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 (a head-only last stage) | delta | 12.41967 | 7.51825, 3.37366 | 7.49769, 3.49425 |
-| pp8 x vp4 | 32 | 8 | 1 / 2 / 2 / 1 ... 1 / 0 | naive | 12.41967 | 7.60614, 3.42516 | 7.51799, 3.30288 |
-| dp2 | - | 2 | - | - | 12.40417 | 7.37116, 3.30135 | 7.37116, 3.30122 |
-| dp2 x ep2 | - | 2 | - | - | 12.40257 | 7.45076, 3.38303 | 7.45076, 3.37020 |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40417 | 7.28299, 3.40680 | 7.29014, 3.42404 |
-| dp2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40417 | 7.32403, 3.36641 | 7.32403, 3.36488 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | delta | 12.40257 | 7.49486, 3.24775 | 7.49486, 3.24388 |
-| dp2 x ep2 x pp2 x vp4 | 8 | 4 | 4 / 5 / 5 / 4 / 4 / 4 / 4 / 3 | naive | 12.40257 | 7.39084, 3.34226 | 7.39084, 3.34489 |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40417 | 7.48020, 3.33841 | 7.49642, 3.31773 |
-| dp2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40417 | 7.60047, 3.25333 | 7.61220, 3.25558 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | delta | 12.40257 | 7.39910, 3.24169 | 7.40208, 3.31594 |
-| dp2 x ep2 x pp4 x vp4 | 16 | 8 | 2 / 3 / 3 / 2 ... 2 / 1 | naive | 12.40257 | 7.30184, 3.25535 | 7.30184, 3.26341 |
-
-The two transports sum a block's gradients in a different order, so they agree at step 1 to within one unit in the last place and separate after it. Step 1 is the comparable number: every cell of a data-parallel group prints it with the pipeline on or off (the three values in the table), on all three splits, both transports and both grad-norm precisions.
-
-Its gradients agree to bf16 rounding, and the pipeline's deviation is two orders below what a genuinely different gradient does -- the control reads another batch:
-
-| pair (step 1) | per-parameter norm, relative difference median / p90 / max | sign flips | flipped, below 1e-2 of the tensor's rms | implied first-update difference |
-|---|---|---|---|---|
-| dp1 vs pp2 x vp4 | 2.0e-4 / 1.7e-3 / 1.2e-2 | 0.267% | 80% | 10.3% |
-| dp1 vs pp8 x vp4 | 2.2e-4 / 1.5e-3 / 1.4e-2 | 0.277% | 80% | 10.5% |
-| dp1 vs dp2 (another batch) | 3.2e-2 / 1.1e-1 / 3.5e-1 | 22.99% | 6.3% | 96% |
-
-No parameter group stands out, and two dp1 runs on fresh compile caches are bitwise.
-
-The later steps spread by a few percent in either direction, and the spread is not the pipeline's: the same few percent appear with no pipeline in the run (the dp1 cell moves 3.2 percent when only the grad-norm precision changes, pure data parallel at 1 / 2 / 4 / 8 spreads 2.5 percent), a float32 end-to-end run places the pipeline's difference in the summation order of the assembled block stack with no step at any stage boundary, and on streamed cc12m the pipeline cells track dp1 inside the curves' own movement over a hundred steps.
-
-The per-step data, the census, the float32 probe and the curves are in the logbook: `phase13_k3like_48b_posttrain/PP_NUMERICS_FOR_4312_2026-09-05.md`.
-
-Memory at this scale does not move: a cached block of the debug model is 256 tokens x 1024 x 2 bytes, so a rank's store is a few MB against activations of GiB. The saving the per-micro-batch release buys is blocks x T x D x 2 bytes no longer resident per micro-batch, which is GB at K3's width and needs a measurement at that shape.
+The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
 ### A `torch.distributed.pipelining` finding
 
