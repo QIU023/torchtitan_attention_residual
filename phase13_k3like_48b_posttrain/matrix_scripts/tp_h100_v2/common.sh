@@ -18,7 +18,7 @@ seed() {  # seed <tag> <batch flags...>: one seed checkpoint per batch shape, bu
 cell() {  # cell <name> <tree> <gpus> <nproc> <seed tag> <steps> <flags...>
   local nm=$1 tree=$2 gpus=$3 np=$4 stag=$5 steps=$6; shift 6
   local d=$OUT/$nm; rm -rf $d; mkdir -p $d; cp -r $OUT/seed_$stag/checkpoint $d/
-  ( cd $tree && CUDA_VISIBLE_DEVICES=$gpus TORCHINDUCTOR_CACHE_DIR=$OUT/ind_$nm TRITON_CACHE_DIR=$OUT/tri_$nm \
+  ( cd $tree && CUDA_VISIBLE_DEVICES=$gpus TORCHINDUCTOR_CACHE_DIR=$OUT/ind_$nm TRITON_CACHE_DIR=$OUT/tri_$nm TRITON_CACHE_BASE=$OUT/tri_$nm \
       torchrun --nproc_per_node=$np --master_port=$((30000+RANDOM%20000)) \
       $COMMON --training.steps $steps "$@" --dump-folder $d ${TAIL:-} > $OUT/$nm.log 2>&1 )  # TAIL: a positional subcommand goes last
   local rc=$?; rm -rf $d/checkpoint
