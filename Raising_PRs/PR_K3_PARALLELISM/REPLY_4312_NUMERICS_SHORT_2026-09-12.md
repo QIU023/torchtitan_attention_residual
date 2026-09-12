@@ -8,7 +8,9 @@ Against our bar -- step-1 loss bitwise, step-1 gradients bitwise or located -- t
 
 We moved these runs to H100. KDA runs Attention Gym kernels outside the SM100/SM103 path main supports, with configurations autotuned per process, so how much this debug flavour amplifies ulp-level differences by step 10 depends on the device: the same pp2 cell reads +13.7% at step 10 on RTX 5060 Ti and +3.6% on H100.
 
-Not a bug: comparing every parameter's step-1 gradient, the cache changes only the parameters that produce a block read from a rank's store, by 2-3 bf16 ulps, and leaves everything downstream bitwise; deleting one gradient deposit, a real bug in that path, moves the same tensors about a hundred times further.
+**Accumulation order, flag off / on vs no PP.** Take one block of the residual stack under pp2 x vp2 (rank 0 runs stages 0 and 2, rank 1 stages 1 and 3). Without PP, autograd adds every layer's read of that block onto one running gradient, top-down. With the cache off, each hop hands that running gradient back and the previous stage keeps adding onto it, so the order is the same as without PP. With the cache on, stages 2 and 3 read the block from their rank's store, sum their own reads from zero and deposit the subtotal, and stages 1 and 0 add it when they collect: the same terms, grouped differently -- bitwise-different in bf16 where terms cancel, identical in float64.
+
+**How we know it is not a bug.** Comparing every parameter's step-1 gradient, with the predictions written down before the dumps were read: the cache changes only the parameters that produce a block read from a rank's store, by 2-3 bf16 ulps, and leaves everything downstream bitwise; deleting one gradient deposit, a real bug in that path, moves the same tensors about a hundred times further.
 
 4 x H100 PCIe, one seed checkpoint, 100 steps; 1024 tokens per step because four stages need four 256-token micro-batches; steps stop at 20 because the reference memorises the debug set after that. Percentages against the first row; the last row has no pipeline in it.
 
