@@ -198,6 +198,22 @@ Read the two simplest trees step by step:
   `(l15 + l11) + l7`), and the chain s3 -> s2 -> s1 -> s0 adds each rank's deposit at the stage that brought `e` onto
   that rank.
 
+`e` hop by hop, with `dl<s>` = stage s's contribution to `e`'s gradient and `G<s>` = the `e` gradient stage s sends back:
+
+```
+cache off:  G15 = dl15;  G14 = dl14 + G15;  ...;  G1 = dl1 + G2;  de = dl0 + G1
+            de = dl0 + (dl1 + (dl2 + (dl3 + (dl4 + (dl5 + (dl6 + (dl7 + (dl8 + (dl9 + (dl10 + (dl11 + (dl12 + (dl13 + (dl14 + dl15))))))))))))))
+
+cache on:   deposits, per rank, highest stage first:
+              D3 = (dl15 + dl11) + dl7;  D2 = (dl14 + dl10) + dl6;  D1 = (dl13 + dl9) + dl5;  D0 = (dl12 + dl8) + dl4
+            chain over the stages that brought e onto a rank:
+              G3 = dl3 + D3;  G2 = (dl2 + G3) + D2;  G1 = (dl1 + G2) + D1;  de = dl0 + (G1 + D0)
+            de = dl0 + (((dl1 + ((dl2 + (dl3 + ((dl15 + dl11) + dl7))) + ((dl14 + dl10) + dl6))) + ((dl13 + dl9) + dl5)) + ((dl12 + dl8) + dl4))
+```
+
+The same 16 terms: with the cache off the first addition is `dl14 + dl15`, with it on `dl15 + dl11` (both on r3, with s12-s14
+between them in the naive order).
+
 The rule: with the cache off the chain visits every stage and each stage adds onto the sum of everything after it; with
 the cache on the chain visits only the stages that brought the block onto a rank, and each rank's later readers are
 summed among themselves first and join the chain as one deposit. Inside a stage the same holds per read (two per layer):
