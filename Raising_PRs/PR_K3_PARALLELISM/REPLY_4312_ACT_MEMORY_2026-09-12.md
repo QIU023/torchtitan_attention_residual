@@ -4,7 +4,7 @@ For the user to post as the reply to 3976976576. Our earlier reply (3932773900) 
 
 --- PASTE BEGIN ---
 
-Our earlier reply covered the layer / block relation, so here is the per-stage view, where the cache matters. Your example, 2 blocks x 4 layers, with pp2 x vp2 (Interleaved1F1B: global stage s runs on rank s % 2) and the split core generates. `e` is the embedding (stack entry 0), `x4` block 1's result (entry 1); block 2's result is consumed by the output aggregation and never enters the stack.
+My earlier reply covered the layer / block relation, so here is the per-stage view, where the cache matters. Your example, 2 blocks x 4 layers, with pp2 x vp2 (Interleaved1F1B: global stage s runs on rank s % 2) and the split core generates. `e` is the embedding (stack entry 0), `x4` block 1's result (entry 1); block 2's result is consumed by the output aggregation and never enters the stack.
 
 | global stage (rank, virtual) | layers | Block AttnRes stored stack | PP Comm, fwd (no cache) | PP Comm, fwd (cache) | already cached |
 | --- | --- | --- | --- | --- | --- |

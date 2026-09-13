@@ -127,6 +127,10 @@ which seems to be written by AI."
 
 Reply and PR-body drafts are never pasted into the conversation: markdown tables and code blocks do not render there. The chat names the file and the marker to copy from (`--- PASTE BEGIN ---` / `--- PASTE ---`) and says what changed; the text itself lives only in the `.md` file.
 
+## Drafts speak as the author: no "we" (user, 2026-09-13)
+
+Every draft the user will paste to GitHub (review replies, PR bodies, comments) is written as the author: first person singular ("I", "my earlier reply") or impersonal ("the test now ...", "this PR ..."). Never "we" / "our" / "us": reviewers read it as an AI answer pasted by the author, and they dislike that. Before handing a draft over, grep its paste section for we/our/us.
+
 ## Abstraction rule: titan's seams first, no side structures (user, 2026-09-10)
 
 Triggered by quantile balancing: our #4412 built a side object (`QuantileBalancer` holding histograms in a dict keyed by `id(moe)`, a `register_forward_hook` on the router that redoes the top-k, a flavor-level `post_optimizer_build_fn` swap that needs the sign-rule coefficient set just to get the bias buffer); the maintainers' #4577 does the same maths as a `TokenChoiceTopKRouter` subclass with a `Module.Config`, a non-persistent buffer re-created by `_init_self_buffers`, the persistent `expert_bias_E` owned by the MoE, `model_registry(post_optimizer_build_fn=...)` for every flavor, and a `DTensorTestBase` GPU test. Same pattern in the old tree generally: 7.6k lines in the K3 folder against upstream's 2.25k, with model-local LoRA, key maps, pipeline adapters and a tests dir of their own where core had the seam. Before writing any helper, hook, wrapper or side object, find the titan class that owns that responsibility and extend it (details in `phase13_k3like_48b_posttrain/QB_4577_VS_4412_2026-09-10.md`):
