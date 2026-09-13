@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-Results updated 2026-09-13: 4 x H100 PCIe on `dbc425403`, `c4_test` text rows instead of the memorised debug set, one reference per stream accumulating in fp32 as the pipeline does; logs and the full step list in `phase13_k3like_48b_posttrain/pp_h100x4_c4_logs_2026-09-13/`. The cached rows move further from the reference than the naive rows (pp4 x vp4 at step 10, dp2 x pp2 x vp2 at step 10); under investigation, do not paste before that is located. The previous tables (debug set, 2026-09-12) are in git history.
+Results updated 2026-09-13: same 4 x H100 PCIe box, `c4_test` text rows instead of the memorised debug set, one reference per stream accumulating in fp32 as the pipeline does, steps 1 / 10 / 20 / 100; logs and every step in `phase13_k3like_48b_posttrain/pp_h100x4_c4_logs_2026-09-13/`. Head for the body: `pp_review4` = `c4fee4afd` (the split moved into Kimi K3); `k3_pp_text` is still `dbc425403` and needs the sync (approval) before the body and the r3987651867 reply are posted. The cached rows move further from the reference at steps 10-20 and are back within 0.10% (1024 tokens) / 2.1% (dp2, 2048) at step 100. Code review of the deposit path: every deposit is counted against the layout and a missing, extra or uncollected one raises, so the difference is the order of the bf16 additions (deposits summed, then added to the gradient that came down the chain). The previous tables (debug set, 2026-09-12) are in git history.
 
 PR 4312. PR branch `k3_pp_text` = `dbc425403` since 2026-09-12 (fast-forward from `dd1c0b925`: the B200 cells, the per-rank stage count removed, the comment and docstring trims; GitHub: 31 commits, 16 files, +1324/-51, still `dirty` -- `torchtitan/config/configs.py` conflicts with main `56a721b64`, 17 commits past the base). Before that it was `dd1c0b925` (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then a test commit and the stage rebuild on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
 
@@ -43,7 +43,7 @@ Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, s
   - The layer-to-stage map is read off the split every rank computes, with no collective; the stage-to-rank map is the schedule's own `stage_index_to_group_rank`. Uneven stages are allowed; a block boundary inside a stage is a partial block on the wire.
   - Why the delta is bounded: with $P$ ranks a block committed at stage $S$ is fresh on the wire for $P-1$ hops; from $S+P$ on every receiving rank already holds it, because its previous virtual stage was $S-P$. The per-hop payload is bounded by the commits of the last $P-1$ stages, independent of depth.
   - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop (naive); the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the naive transport by construction, so the two are bitwise there; where a rank holds more than one stage they are not, because the cached path assembles received blocks next to locally held ones and the backward sums the same contributions in a different association (at pp2 x vp2 on 2 x H100, step 10 reads `3.150940` cached against `3.514970` whole-stack, 1.17% and 12.9% against dp1 -- the class an accumulation-order change costs with no pipeline at all).
-- The split (`parallelize.py`, where every model keeps its parallelism entry points): core's `llm_split_with_pinned_modules` builds it, with the vision tower pinned to the first stage through #4560's `pipeline_with_first_stage_modules` and the AttnRes aggregation to the last; K3 computes it once and hands the same object to core and to the layer map.
+- The split (`parallelize.py`, where every model keeps its parallelism entry points): Kimi K3 builds it bottom up, the vision tower on the first stage and the AttnRes aggregation on the last, computes it once and hands the same list to `pipeline_llm` (through `module_fqns_per_model_part`) and to the layer map.
 - The stages: core's `pipeline_llm` constructs plain `PipelineStage`s, as on main; K3 rebuilds each one the schedule holds as an `AttnResPipelineStage` from the constructed stage's own fields and puts it back in the schedule.
 - The model (`model.py`): the first layer of a block joins the stack before its sub-layers attend, so a stage boundary at a block start needs nothing special and the stack a stage receives is exactly the stack the layers read; the head-owning stage alone runs the aggregation.
 - What this replaced: the reviewed version carried the same protocol in a 1228-line adapter that wrapped `forward_one_chunk`, `backward_one_chunk` and `step`, kept a thread-local micro-batch id, and bridged the same-rank gradient path with a tensor grad hook and an autograd Function. The subclass implements it once, on the stage's own methods, in 388 lines; the adapter's numerics are reproduced to within one bf16 rounding (table below).
@@ -58,30 +58,30 @@ P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"
 cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_schedule Interleaved1F1B
 ```
 
-4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (a local probe switch); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through a local stage-count switch; each cell gives the raw value and, beneath it, the change against the reference.
+4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (a local probe switch); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through a local stage-count switch; each cell gives the raw value and, beneath it, the change against the reference.
 
-| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp1, no-sync accumulation (reference) | `12.609980` | `3.335430` | `3.007030` | `16.875` | `3.2812` | `2.5312` |
-| pp2 | `12.609980`<br>bitwise | `3.334370`<br>-0.03% | `2.988620`<br>-0.61% | `16.875`<br>0% | `3.2969`<br>+0.48% | `2.2188`<br>-12.34% |
-| pp2 x vp2, cached | `12.609980`<br>bitwise | `3.310030`<br>-0.76% | `3.032070`<br>+0.83% | `16.875`<br>0% | `3.2812`<br>0% | `2.9375`<br>+16.05% |
-| pp2 x vp2, naive | `12.609980`<br>bitwise | `3.331430`<br>-0.12% | `2.996710`<br>-0.34% | `16.875`<br>0% | `3.3125`<br>+0.95% | `2.4062`<br>-4.94% |
-| pp4 x vp4, cached | `12.609980`<br>bitwise | `3.528470`<br>+5.79% | `3.059910`<br>+1.76% | `16.875`<br>0% | `10`<br>+204.77% | `2.75`<br>+8.64% |
-| pp4 x vp4, naive | `12.609980`<br>bitwise | `3.334860`<br>-0.02% | `2.995440`<br>-0.39% | `16.875`<br>0% | `3.2656`<br>-0.48% | `2.4219`<br>-4.32% |
-| dp1, default accumulation (no pipeline) | `12.609980`<br>bitwise | `3.421960`<br>+2.59% | `3.022710`<br>+0.52% | `16.875`<br>0% | `5.0625`<br>+54.29% | `2.1406`<br>-15.43% |
-| dp1, accumulation order reversed (noise floor, no pipeline) | `12.609980`<br>bitwise | `3.389450`<br>+1.62% | `3.066510`<br>+1.98% | `16.875`<br>0% | `4.6875`<br>+42.86% | `2.9531`<br>+16.67% |
+| cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp1, no-sync accumulation (reference) | `12.609980` | `3.335430` | `3.007030` | `2.568440` | `16.875` | `3.2812` | `2.5312` | `1.5547` |
+| pp2 | `12.609980`<br>bitwise | `3.334370`<br>-0.03% | `2.988620`<br>-0.61% | `2.562870`<br>-0.22% | `16.875`<br>0% | `3.2969`<br>+0.48% | `2.2188`<br>-12.34% | `1.5312`<br>-1.51% |
+| pp2 x vp2, cached | `12.609980`<br>bitwise | `3.310030`<br>-0.76% | `3.032070`<br>+0.83% | `2.565810`<br>-0.10% | `16.875`<br>0% | `3.2812`<br>0% | `2.9375`<br>+16.05% | `1.5781`<br>+1.51% |
+| pp2 x vp2, naive | `12.609980`<br>bitwise | `3.331430`<br>-0.12% | `2.996710`<br>-0.34% | `2.571170`<br>+0.11% | `16.875`<br>0% | `3.3125`<br>+0.95% | `2.4062`<br>-4.94% | `1.5547`<br>0% |
+| pp4 x vp4, cached | `12.609980`<br>bitwise | `3.528470`<br>+5.79% | `3.059910`<br>+1.76% | `2.571010`<br>+0.10% | `16.875`<br>0% | `10`<br>+204.77% | `2.75`<br>+8.64% | `1.6094`<br>+3.52% |
+| pp4 x vp4, naive | `12.609980`<br>bitwise | `3.334860`<br>-0.02% | `2.995440`<br>-0.39% | `2.565350`<br>-0.12% | `16.875`<br>0% | `3.2656`<br>-0.48% | `2.4219`<br>-4.32% | `1.5391`<br>-1.00% |
+| dp1, default accumulation (no pipeline) | `12.609980`<br>bitwise | `3.421960`<br>+2.59% | `3.022710`<br>+0.52% | `2.536600`<br>-1.24% | `16.875`<br>0% | `5.0625`<br>+54.29% | `2.1406`<br>-15.43% | `1.5703`<br>+1.00% |
+| dp1, accumulation order reversed (noise floor, no pipeline) | `12.609980`<br>bitwise | `3.389450`<br>+1.62% | `3.066510`<br>+1.98% | `2.563570`<br>-0.19% | `16.875`<br>0% | `4.6875`<br>+42.86% | `2.9531`<br>+16.67% | `1.6797`<br>+8.04% |
 
 dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol and reference accumulation; a rerun of dp2 x pp2 matched it on all 100 steps.
 
-| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp2, no-sync accumulation (reference) | `12.580740` | `3.663490` | `2.974910` | `14.4375` | `14.1875` | `2.4219` |
-| dp2 x pp2 | `12.580740`<br>bitwise | `3.607360`<br>-1.53% | `2.978480`<br>+0.12% | `14.4375`<br>0% | `13.1875`<br>-7.05% | `2.4375`<br>+0.64% |
-| dp2 x pp2 x vp2, cached | `12.580740`<br>bitwise | `3.369740`<br>-8.02% | `2.922550`<br>-1.76% | `14.4375`<br>0% | `5.625`<br>-60.35% | `2.2031`<br>-9.03% |
-| dp2 x pp2 x vp2, naive | `12.580740`<br>bitwise | `3.687230`<br>+0.65% | `2.973080`<br>-0.06% | `14.4375`<br>0% | `14.8125`<br>+4.41% | `2.3906`<br>-1.29% |
-| dp2, default accumulation (no pipeline) | `12.580740`<br>bitwise | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% |
-| dp2, accumulation order reversed (noise floor, no pipeline) | `12.580740`<br>bitwise | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% |
-| dp2 x ep2 (no pipeline) | `12.580740`<br>bitwise | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% |
+| cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp2, no-sync accumulation (reference) | `12.580740` | `3.663490` | `2.974910` | `2.443230` | `14.4375` | `14.1875` | `2.4219` | `1.0312` |
+| dp2 x pp2 | `12.580740`<br>bitwise | `3.607360`<br>-1.53% | `2.978480`<br>+0.12% | `2.431600`<br>-0.48% | `14.4375`<br>0% | `13.1875`<br>-7.05% | `2.4375`<br>+0.64% | `0.9609`<br>-6.82% |
+| dp2 x pp2 x vp2, cached | `12.580740`<br>bitwise | `3.369740`<br>-8.02% | `2.922550`<br>-1.76% | `2.392360`<br>-2.08% | `14.4375`<br>0% | `5.625`<br>-60.35% | `2.2031`<br>-9.03% | `1.0234`<br>-0.76% |
+| dp2 x pp2 x vp2, naive | `12.580740`<br>bitwise | `3.687230`<br>+0.65% | `2.973080`<br>-0.06% | `2.416180`<br>-1.11% | `14.4375`<br>0% | `14.8125`<br>+4.41% | `2.3906`<br>-1.29% | `0.9961`<br>-3.40% |
+| dp2, default accumulation (no pipeline) | `12.580740`<br>bitwise | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `2.426700`<br>-0.68% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% | `1.0312`<br>0% |
+| dp2, accumulation order reversed (noise floor, no pipeline) | `12.580740`<br>bitwise | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `2.437380`<br>-0.24% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% | `0.9766`<br>-5.29% |
+| dp2 x ep2 (no pipeline) | `12.580740`<br>bitwise | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `2.420510`<br>-0.93% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% | `1.0312`<br>0% |
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
@@ -100,23 +100,22 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
     torchtitan/config/
       configs.py                            +9/-0    module_fqns_per_model_part and pipeline_parallel_layers_per_stage are exclusive
     torchtitan/distributed/
-      pipeline_parallel.py                  +64/-19  llm_split_with_pinned_modules, last-stage pinned modules; the injected split clears the knob that derived it
+      pipeline_parallel.py                  +4/-1    pipeline_with_first_stage_modules clears the knob that derived the split it spells out
     torchtitan/models/kimi_k3/
       pipeline_stage.py                     +367/-0  AttnResPipelineStage and the rank-local cache (new)
       layout.py                             +185/-0  BlockLayoutTables from the split the trainer applied (new)
-      parallelize.py                        +118/-3  the pipelining entry: the split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
+      parallelize.py                        +200/-3  the pipelining entry: Kimi K3's own split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
       model.py                              +40/-23  the block stack in and out of a stage; the block's first layer joins the stack before attending
       __init__.py                           +18/-6   registers the pipelining_fn; the 33-layer flavor for the pp8 x vp4 cell
     tests/unit_tests/cpu/
-      test_pipeline_llm_split.py            +145/-0  the split, the pinned modules at both ends, the pp8 x vp4 recipe's split, the shared debug model's depth (new)
-      test_kimi_k3_pp_layout.py             +115/-0  the tables: uneven split, cache on and off (new)
+      test_kimi_k3_pp_layout.py             +209/-0  the tables: uneven split, cache on and off; Kimi K3's split, the pp8 x vp4 recipe's split, the shared debug model's depth (new)
       test_kimi_k3_stage_swap.py            +84/-0   the stage rebuild for single- and multi-stage schedules (new)
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
       test_pipeline_parallel.py             +34/-0   the injected split clears the knob that derived it
       test_config_manager.py                +10/-0   the split-knob exclusivity
       test_integration_test_definitions.py  +2/-0    the two pipeline cells are registered in the B200 suite
     tests/integration_tests/b200.py         +12/-0   the pp8 x vp4 and pp2 x vp2 cells
-    torchtitan_recipes/tests/b200.py        +42/-0   the pp8 x vp4 and pp2 x vp2 configurations; pp8 x vp4 hands core's 32-stage split to module_fqns_per_model_part
+    torchtitan_recipes/tests/b200.py        +37/-0   the pp8 x vp4 and pp2 x vp2 configurations; pp8 x vp4 hands Kimi K3's 32-stage split to module_fqns_per_model_part
 
 ### CI/CD Coverage
 
@@ -134,12 +133,12 @@ Three CPU unit tests (the split, the layout tables, the stage's carrier handling
 ### Review round 3 (2026-09-11, Tianyu)
 
 - Rebased onto today's main (`d9ca9e55a`), so CI can run it.
-- The pipeline split is core's, in two halves. The vision tower rides with the embedding through #4560's public `pipeline_with_first_stage_modules`. The AttnRes aggregation has to sit next to the head, which that entry cannot express, so `_generate_llm_fqn_per_model_part` and `pipeline_llm` take `last_stage_modules` (appended after `norm, lm_head`, counted as no layer, forwarded by `pipeline_with_first_stage_modules`); with the default the generator is unchanged, checked against the previous function on 11232 stage/layer/weight shapes. The model-specific split function is gone.
+- The pipeline split is Kimi K3's own, built bottom up in `parallelize.py`: the layers plus the embedding and head weights spread evenly, the vision tower with the embedding and the AttnRes aggregation with the head. It reaches `pipeline_llm` through `module_fqns_per_model_part`, so `pipeline_parallel.py` keeps main's shape apart from the one line below; the split matches the previous head's on 10368 layer / pp / schedule / layers-per-stage / weight configurations, and the previous and current heads give the same losses and step-1 gradients bit for bit.
 - The shared `"debugmodel"` registry entry is main's again (24 layers); the 33-layer shape is a flavor of its own that only `kimi_k3_debugmodel_pp8_vp4` builds, so no other K3 cell changes depth because of this PR. A second pipeline cell, pp2 x vp2 on two GPUs, runs on the shared model: uneven over four stages, a block boundary inside a stage, and two stages per rank so the rank cache and the gradient deposits are used.
-- No new config field. No `layers_per_stage` gives the pp8 x vp4 cell's 32 stages over 35 units (`ceil(35 / n)` never equals 32), so that recipe hands core's own generated split for 32 stages to `module_fqns_per_model_part`, with `vision_encoder` on stage 0 and the aggregation modules on stage 31 where K3's entry pins them; a CPU test asserts that split. The real 93-layer model reaches 32 stages through `layers_per_stage=3`. The pp2 x vp2 recipe sets nothing: looped schedules default to two stages per rank.
+- No new config field. No `layers_per_stage` gives the pp8 x vp4 cell's 32 stages over 35 units (`ceil(35 / n)` never equals 32), so that recipe hands Kimi K3's split for 32 stages to `module_fqns_per_model_part`; a CPU test asserts it. The real 93-layer model reaches 32 stages through `layers_per_stage=3`. The pp2 x vp2 recipe sets nothing: looped schedules default to two stages per rank.
 - Adding the exclusivity check surfaced that `pipeline_with_first_stage_modules` spells a split out while leaving `pipeline_parallel_layers_per_stage` set, so the knob is silently ignored from that point on; it now clears the field in the same `dataclasses.replace`. That site is shared by every model using the entry on main today (kimi_k2_7, muse_glimmer, qwen3_5, qwen3_6, qwen3_8).
 - `ParallelismConfig` refuses `module_fqns_per_model_part` together with `pipeline_parallel_layers_per_stage` in `__post_init__`; the pipelining entry no longer rewrites the config.
-- The layer-to-stage map is read off the split (a pure function of the config every rank computes), no all-gather, and the split comes from a public entry point: `llm_split_with_pinned_modules` returns the split with the caller's modules pinned to both ends, so this model computes it once, hands it to `pipeline_llm` through `parallelism.module_fqns_per_model_part` and reads the same object. `pipeline_with_first_stage_modules` shares that code rather than owning a copy and gains `last_stage_module_fqns`; `pipeline_llm` keeps only `stage_class`. No private core function is imported in the model.
+- The layer-to-stage map is read off that same split (a pure function of the config every rank computes), no all-gather; the model imports no private core function.
 - `RankStore` is `PPRankLocalCache`, one per rank shared by its stages, blocks device-resident; the block's first-layer flag is computed at init; the pipeline files type-check under the pinned pyrefly.
 - Transport out (above). `stage_class` is gone from core: core builds plain `PipelineStage`s and K3 rebuilds each one from its own fields as an `AttnResPipelineStage` (`dd1c0b925`). Against the previous head, on one seed checkpoint and one inductor cache, dp1, pp2, pp2 x vp2, pp4 interleaved and the 8-GPU pp8 x vp4 cell read the same at every printed step.
 
