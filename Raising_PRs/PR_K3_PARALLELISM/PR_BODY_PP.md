@@ -20,7 +20,7 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
 
 After it `pipeline_kimi_k3` (in `parallelize.py`) splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes.
 
-Step 1 is identical to the single-GPU reference in every cell. With the total grad norm taken in fp32 -- in bf16 the norm, and the clip factor it sets every step here, depend on how the pipeline groups the parameters (https://github.com/pytorch/pytorch/pull/194033) -- the whole-stack pipeline cells stay identical to the reference for 100 steps: the loss on every step, the grad norm on all but one (fourth decimal). The cached cells differ only in the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32. One cell is still open, dp2 x pp2 (note under its table). The same cells with the default bf16 norm are in the appendix.
+Step 1 is identical to the single-GPU reference in every cell. With the total grad norm taken in fp32 -- in bf16 the norm, and the clip factor it sets every step here, depend on how the pipeline groups the parameters (https://github.com/pytorch/pytorch/pull/194033) -- the whole-stack pipeline cells stay identical to the reference for 100 steps: the loss on every step, the grad norm on all but one (fourth decimal). The cached cells differ only in the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32. The same cells with the default bf16 norm are in the appendix.
 
 ### Design
 
@@ -87,12 +87,12 @@ dp2, 2048 tokens per step, same protocol.
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp2 ¹ | `12.580740` | `3.576250` | `2.976110` | `2.420420` | `14.4170` | `12.4659` | `2.4576` | `1.0313` |
+| dp2 x pp2 ⁴ | `12.580740`<br>identical | `3.576250`<br>identical | `2.976110`<br>identical | `2.420420`<br>identical | `14.4170`<br>identical | `12.4659`<br>identical | `2.4576`<br>identical | `1.0313`<br>identical |
 | dp2 x pp2 x vp2, naive ² | `12.580740`<br>identical | `3.576250`<br>identical | `2.976110`<br>identical | `2.420420`<br>identical | `14.4170`<br>identical | `12.4659`<br>identical | `2.4576`<br>identical | `1.0313`<br>identical |
 | dp2 x pp2 x vp2, cached | `12.580740`<br>identical | `3.305220`<br>-7.58% | `2.949200`<br>-0.90% | `2.434300`<br>+0.57% | `14.4191`<br>+0.01% | `4.5317`<br>-63.65% | `2.6572`<br>+8.12% | `1.0893`<br>+5.62% |
-| dp2 x pp2 ⁴ | `12.580740`<br>identical | `3.230210`<br>-9.68% | `2.916150`<br>-2.01% | `2.412500`<br>-0.33% | `14.4183`<br>+0.01% | `3.8945`<br>-68.76% | `2.3092`<br>-6.04% | `1.0711`<br>+3.86% |
 
-- ¹ ² as above; the naive row matches on all 100 steps
-- ⁴ open: the step-1 gradients dumped from this cell are bitwise with the reference (680/680, norm `14.4170`), but its logged norm is not and differs between two runs of the cell (`14.4183`, `14.4192`), so the difference sits in the norm computation rather than the gradients; a rerun on one shared compile cache is pending
+- ¹ ² as above; dp2 x pp2 and the naive row match on all 100 steps
+- ⁴ run on the reference's warm compile cache; on a fresh cache of its own its logged norm differed from step 1 (+0.01%) while its dumped step-1 gradients were bitwise with the reference (680/680)
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
