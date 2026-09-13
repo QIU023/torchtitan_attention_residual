@@ -396,7 +396,7 @@ index 321450858..e17105eb0 100644
  
          q_1TC, k_1TC, v_1TC = conv_output_1TC.chunk(3, dim=-1)
 diff --git a/torchtitan/trainer.py b/torchtitan/trainer.py
-index 516e11e9b..1ec864c7b 100644
+index 516e11e9b..2e7892389 100644
 --- a/torchtitan/trainer.py
 +++ b/torchtitan/trainer.py
 @@ -15,6 +15,33 @@ from typing import Annotated, Any, cast
@@ -475,7 +475,17 @@ index 516e11e9b..1ec864c7b 100644
              grad_norm = dist_utils.clip_grad_norm_(
                  [p for m in self.model_parts for p in m.parameters()],
                  self.config.training.max_norm,
-@@ -1057,6 +1105,9 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+@@ -1016,7 +1064,8 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                 f"step {self.step}. Stopping training before the optimizer update.",
+             )
+             self.checkpointer.maybe_wait_for_staging()
+-            self.optimizers.step()
++            if os.environ.get("NO_OPT_STEP") != "1":  # LOCAL PROBE HACK (not committed): parameters frozen
++                self.optimizers.step()
+             self.lr_schedulers.step()
+ 
+         # log metrics
+@@ -1057,6 +1106,9 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
                  global_avg_loss = global_max_loss = float(accumulated_loss.item())
                  global_ntokens_seen = self.ntokens_seen
  

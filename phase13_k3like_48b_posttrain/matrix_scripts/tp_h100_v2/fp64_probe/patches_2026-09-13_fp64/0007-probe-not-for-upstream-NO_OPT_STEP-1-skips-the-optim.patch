@@ -1,0 +1,27 @@
+From b3d2166ef2b333285fd931104657c93ba683c847 Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Sun, 13 Sep 2026 21:44:53 +0000
+Subject: [PATCH 7/7] probe (not for upstream): NO_OPT_STEP=1 skips the
+ optimizer step (parameters frozen, forward-identity checks)
+
+---
+ torchtitan/trainer.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/torchtitan/trainer.py b/torchtitan/trainer.py
+index 1ec864c7b..2e7892389 100644
+--- a/torchtitan/trainer.py
++++ b/torchtitan/trainer.py
+@@ -1064,7 +1064,8 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                 f"step {self.step}. Stopping training before the optimizer update.",
+             )
+             self.checkpointer.maybe_wait_for_staging()
+-            self.optimizers.step()
++            if os.environ.get("NO_OPT_STEP") != "1":  # LOCAL PROBE HACK (not committed): parameters frozen
++                self.optimizers.step()
+             self.lr_schedulers.step()
+ 
+         # log metrics
+-- 
+2.43.0
+
