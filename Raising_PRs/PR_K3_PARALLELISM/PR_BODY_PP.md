@@ -20,7 +20,7 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
 
 After it `pipeline_kimi_k3` (in `parallelize.py`) splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes.
 
-Step 1 is identical to the single-GPU reference in every cell of the c4 tables below (logged loss and grad norm). The whole-stack cells stay with the no-pipeline reorderings at later steps; the cached cells drift further because the rank cache changes the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32.
+Step 1 is identical to the single-GPU reference in every cell. With the total grad norm taken in fp32 -- in bf16 the norm, and the clip factor it sets every step here, depend on how the pipeline groups the parameters (https://github.com/pytorch/pytorch/pull/194033) -- the whole-stack pipeline cells stay identical to the reference for 100 steps: the loss on every step, the grad norm on all but one (fourth decimal). The cached cells differ only in the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32. One cell is still open, dp2 x pp2 (note under its table). The same cells with the default bf16 norm are in the appendix.
 
 ### Design
 
@@ -52,9 +52,10 @@ Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, s
 
 ### Results
 
-The c4 flavors (`kimi_k3_debugmodel_c4`, `kimi_k3_debugmodel_c4_pp_naive`) and the reference / floor switches (`NOSYNC_GA`, `MB_REVERSE`) are in [this probe patch](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp4h_probe_c4.patch), the 16-stage pp4 x vp4 switch (`PP_STAGES_PER_RANK`) in [this one](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp_stages_per_rank.patch), the whole matrix in [this script](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/run_pp_c4.sh); none of them is part of this PR.
+The c4 flavors (`kimi_k3_debugmodel_c4`, `kimi_k3_debugmodel_c4_pp_naive`) and the reference / floor switches (`NOSYNC_GA`, `MB_REVERSE`) are in [this probe patch](https://github.com/QIU023/torchtitan_attention_residual/blob/38c588bcc76c7dd3d97aa99722b9d9067ef951d2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp4h_probe_c4.patch), the 16-stage pp4 x vp4 switch (`PP_STAGES_PER_RANK`) in [this one](https://github.com/QIU023/torchtitan_attention_residual/blob/38c588bcc76c7dd3d97aa99722b9d9067ef951d2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp_stages_per_rank.patch), the fp32 total grad norm (`GN_FP32`) in [this hack](https://github.com/QIU023/torchtitan_attention_residual/blob/38c588bcc76c7dd3d97aa99722b9d9067ef951d2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/gn_fp32_hack.py), the whole matrix in [this script](https://github.com/QIU023/torchtitan_attention_residual/blob/38c588bcc76c7dd3d97aa99722b9d9067ef951d2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/run_pp_c4.sh); none of them is part of this PR.
 
 ```bash
+python gn_fp32_hack.py . && export GN_FP32=1   # total grad norm in fp32 (drop both for the appendix tables)
 COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
 torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel_c4 --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; c=$3; shift 3; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --config $c --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
@@ -64,6 +65,72 @@ cell pp2 2 kimi_k3_debugmodel_c4 $P; cell vp2_cached 2 kimi_k3_debugmodel_c4 $P 
 PP_STAGES_PER_RANK=4 cell pp4vp4_cached 4 kimi_k3_debugmodel_c4 --parallelism.pipeline_parallel_degree 4 --parallelism.num-pp-microbatches 4 $IL
 # dp2 table: --parallelism.data_parallel_shard_degree 2 and --training.num-tokens-per-train-step 2048, its own seed checkpoint
 ```
+
+4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows, one seed checkpoint, four 256-token micro-batches per rank, total grad norm in fp32; each cell gives the raw value and, beneath it, the change against the reference.
+
+| cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp1 ¹ | `12.609980` | `3.595760` | `2.998930` | `2.533960` | `16.9193` | `5.0429` | `2.1888` | `1.6014` |
+| pp2 | `12.609980`<br>identical | `3.595760`<br>identical | `2.998930`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `2.1888`<br>identical | `1.6014`<br>identical |
+| pp2 x vp2, naive ² | `12.609980`<br>identical | `3.595760`<br>identical | `2.998930`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `2.1888`<br>identical | `1.6014`<br>identical |
+| pp4 x vp4, naive ²³ | `12.609980`<br>identical | `3.595760`<br>identical | `2.998930`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `2.1888`<br>identical | `1.6014`<br>identical |
+| pp2 x vp2, cached | `12.609980`<br>identical | `3.554240`<br>-1.15% | `3.055690`<br>+1.89% | `2.571310`<br>+1.47% | `16.9177`<br>-0.01% | `5.2631`<br>+4.37% | `2.9058`<br>+32.76% | `1.6073`<br>+0.37% |
+| pp4 x vp4, cached ³ | `12.609980`<br>identical | `3.309360`<br>-7.96% | `3.007760`<br>+0.29% | `2.554590`<br>+0.81% | `16.9167`<br>-0.02% | `3.5408`<br>-29.79% | `2.0286`<br>-7.32% | `1.5763`<br>-1.57% |
+
+- ¹ reference: the micro-batches accumulate in fp32 with the gradient sync on the last one, as the pipeline does (`NOSYNC_GA`)
+- ² naive transport, the whole block stack on every hop (`attn_res_cache=False`); "cached" rows use the rank cache, the default
+- ³ 16 stages, four per rank (`PP_STAGES_PER_RANK=4`)
+- all 100 steps compared: pp2 matches on every step; the two naive rows match the loss on every step and the grad norm on every step but 59 (`1.6628` against `1.6629`)
+
+dp2, 2048 tokens per step, same protocol.
+
+| cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp2 ¹ | `12.580740` | `3.576250` | `2.976110` | `2.420420` | `14.4170` | `12.4659` | `2.4576` | `1.0313` |
+| dp2 x pp2 x vp2, naive ² | `12.580740`<br>identical | `3.576250`<br>identical | `2.976110`<br>identical | `2.420420`<br>identical | `14.4170`<br>identical | `12.4659`<br>identical | `2.4576`<br>identical | `1.0313`<br>identical |
+| dp2 x pp2 x vp2, cached | `12.580740`<br>identical | `3.305220`<br>-7.58% | `2.949200`<br>-0.90% | `2.434300`<br>+0.57% | `14.4191`<br>+0.01% | `4.5317`<br>-63.65% | `2.6572`<br>+8.12% | `1.0893`<br>+5.62% |
+| dp2 x pp2 ⁴ | `12.580740`<br>identical | `3.230210`<br>-9.68% | `2.916150`<br>-2.01% | `2.412500`<br>-0.33% | `14.4183`<br>+0.01% | `3.8945`<br>-68.76% | `2.3092`<br>-6.04% | `1.0711`<br>+3.86% |
+
+- ¹ ² as above; the naive row matches on all 100 steps
+- ⁴ open: the step-1 gradients dumped from this cell are bitwise with the reference (680/680, norm `14.4170`), but its logged norm is not and differs between two runs of the cell (`14.4183`, `14.4192`), so the difference sits in the norm computation rather than the gradients; a rerun on one shared compile cache is pending
+
+The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
+
+### A `torch.distributed.pipelining` finding
+
+With one layer per stage the last stage holds only the head, whose first op on the block stack is a `cat`, so autograd hands the stage's input gradients back as views; `PipelineStage._backward_metadata_inference` records those strides, `_create_grad_recv_info` allocates the receive buffer with `torch.empty_strided`, and c10d rejects it at the first `RECV_B` with "Tensors for P2P must be non-overlapping and dense".
+
+Every other split passed because a later op consumed the input and autograd accumulated a dense gradient. The subclass returns dense gradients from `_compute_input_grads`; the library-side fix would be a dense `torch.empty` receive buffer and `.contiguous()` before the send.
+
+### Changed files
+
+    torchtitan/config/
+      configs.py                            +9/-0    module_fqns_per_model_part and pipeline_parallel_layers_per_stage are exclusive
+    torchtitan/distributed/
+      pipeline_parallel.py                  +3/-1    pipeline_with_first_stage_modules clears the knob that derived the split it spells out
+    torchtitan/models/kimi_k3/
+      pipeline_stage.py                     +367/-0  AttnResPipelineStage and the rank-local cache (new)
+      layout.py                             +185/-0  BlockLayoutTables from the split the trainer applied (new)
+      parallelize.py                        +200/-3  the pipelining entry: Kimi K3's own split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
+      model.py                              +40/-23  the block stack in and out of a stage; the block's first layer joins the stack before attending
+      __init__.py                           +18/-6   registers the pipelining_fn; the 33-layer flavor for the pp8 x vp4 cell
+    tests/unit_tests/cpu/
+      test_kimi_k3_pp_layout.py             +209/-0  the tables: uneven split, cache on and off; Kimi K3's split, the pp8 x vp4 recipe's split, the shared debug model's depth (new)
+      test_kimi_k3_stage_swap.py            +84/-0   the stage rebuild for single- and multi-stage schedules (new)
+      test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
+      test_pipeline_parallel.py             +34/-0   the injected split clears the knob that derived it
+      test_config_manager.py                +10/-0   the split-knob exclusivity
+      test_integration_test_definitions.py  +2/-0    the two pipeline cells are registered in the B200 suite
+    tests/integration_tests/b200.py         +12/-0   the pp8 x vp4 and pp2 x vp2 cells
+    torchtitan_recipes/tests/b200.py        +37/-0   the pp8 x vp4 and pp2 x vp2 configurations; pp8 x vp4 hands Kimi K3's 32-stage split to module_fqns_per_model_part
+
+### CI/CD Coverage
+
+Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; two integration cells in the B200 suite, beside K3's existing cell, since Attention Gym's KDA runs only on SM100/SM103: pp2 x vp2 on two GPUs on the shared debug model, the smallest shape where a rank receives a block it already holds, and pp8 x vp4 on eight, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path.
+
+### Appendix: BF16 reduction numerical results
+
+The same cells with the default bf16 total grad norm. Step 1 is identical in every cell; later steps also carry the bf16 norm's dependence on how the parameters are grouped, which the fp32 tables above remove.
 
 c4 (2026-09-13): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; each cell gives the raw value and, beneath it, the change against the reference.
 
@@ -119,39 +186,5 @@ dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol
 | dp2 x pp2 x vp2, cached | `12.521140`<br>identical | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
 | dp2 x pp2 x vp2, naive ² | `12.521140`<br>identical | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
 | dp2 x ep2 ⁶ | `12.521140`<br>identical | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
-
-The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
-
-### A `torch.distributed.pipelining` finding
-
-With one layer per stage the last stage holds only the head, whose first op on the block stack is a `cat`, so autograd hands the stage's input gradients back as views; `PipelineStage._backward_metadata_inference` records those strides, `_create_grad_recv_info` allocates the receive buffer with `torch.empty_strided`, and c10d rejects it at the first `RECV_B` with "Tensors for P2P must be non-overlapping and dense".
-
-Every other split passed because a later op consumed the input and autograd accumulated a dense gradient. The subclass returns dense gradients from `_compute_input_grads`; the library-side fix would be a dense `torch.empty` receive buffer and `.contiguous()` before the send.
-
-### Changed files
-
-    torchtitan/config/
-      configs.py                            +9/-0    module_fqns_per_model_part and pipeline_parallel_layers_per_stage are exclusive
-    torchtitan/distributed/
-      pipeline_parallel.py                  +3/-1    pipeline_with_first_stage_modules clears the knob that derived the split it spells out
-    torchtitan/models/kimi_k3/
-      pipeline_stage.py                     +367/-0  AttnResPipelineStage and the rank-local cache (new)
-      layout.py                             +185/-0  BlockLayoutTables from the split the trainer applied (new)
-      parallelize.py                        +200/-3  the pipelining entry: Kimi K3's own split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
-      model.py                              +40/-23  the block stack in and out of a stage; the block's first layer joins the stack before attending
-      __init__.py                           +18/-6   registers the pipelining_fn; the 33-layer flavor for the pp8 x vp4 cell
-    tests/unit_tests/cpu/
-      test_kimi_k3_pp_layout.py             +209/-0  the tables: uneven split, cache on and off; Kimi K3's split, the pp8 x vp4 recipe's split, the shared debug model's depth (new)
-      test_kimi_k3_stage_swap.py            +84/-0   the stage rebuild for single- and multi-stage schedules (new)
-      test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
-      test_pipeline_parallel.py             +34/-0   the injected split clears the knob that derived it
-      test_config_manager.py                +10/-0   the split-knob exclusivity
-      test_integration_test_definitions.py  +2/-0    the two pipeline cells are registered in the B200 suite
-    tests/integration_tests/b200.py         +12/-0   the pp8 x vp4 and pp2 x vp2 cells
-    torchtitan_recipes/tests/b200.py        +37/-0   the pp8 x vp4 and pp2 x vp2 configurations; pp8 x vp4 hands Kimi K3's 32-stage split to module_fqns_per_model_part
-
-### CI/CD Coverage
-
-Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; two integration cells in the B200 suite, beside K3's existing cell, since Attention Gym's KDA runs only on SM100/SM103: pp2 x vp2 on two GPUs on the shared debug model, the smallest shape where a rank receives a block it already holds, and pp8 x vp4 on eight, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path.
 
 --- PASTE END ---
