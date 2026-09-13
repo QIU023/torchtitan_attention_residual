@@ -113,3 +113,23 @@ Step 1 is identical in all three; the first loss difference appears at step 2 (b
 precision only sets how late the two runs separate, not where they end up. Early peaks (bf16 9.5% at step 7) fall in
 the phase where the loss drops from 12.6 to 3.7; the LR (warmup 2, 8e-4 until step 20, linear to 0 at step 100) stops
 the growth late. Not measured: the parameter distance between the two runs.
+
+### The same three precisions on a dense-FFN debug model (no MoE), 100 steps
+
+`debugmodel_dense` on `pp_fp64_probe` `0fe77be10`: every layer the layer-0 dense FFN (896M params, no router), all else
+as above (`CFG=kimi_k3_debugmodel_c4_dense`, own seed). Logs and comparisons in `fp64_5060_logs_2026-09-13/triplet_dense/`.
+Mean |relative loss difference|, cache on against cache off, MoE (above) | dense:
+
+| steps | bf16 | fp32 | fp64 |
+| --- | --- | --- | --- |
+| 1-5 | 1.4e-2 \| 4.7e-3 | 1.3e-7 \| 7.9e-8 | 7.9e-16 \| 1.2e-16 |
+| 6-10 | 5.2e-2 \| 8.9e-3 | 3.9e-7 \| 8.5e-7 | 9.1e-15 \| 6.0e-16 |
+| 11-20 | 1.9e-2 \| 4.5e-3 | 8.2e-5 \| 3.6e-4 | 1.9e-14 \| 1.8e-12 |
+| 21-40 | 7.8e-3 \| 7.7e-3 | 1.1e-3 \| 3.4e-3 | 9.2e-12 \| 4.3e-5 |
+| 41-60 | 8.1e-3 \| 5.3e-3 | 5.0e-3 \| 3.4e-3 | 1.3e-4 \| 1.9e-3 |
+| 61-80 | 4.8e-3 \| 5.6e-3 | 4.3e-3 \| 4.6e-3 | 2.2e-3 \| 2.8e-3 |
+| 81-100 | 4.5e-3 \| 5.0e-3 | 3.9e-3 \| 3.4e-3 | 3.9e-3 \| 3.3e-3 |
+
+Dense fp64 grows without a plateau from step ~11 (1e-15 at step 11, 1e-12 at 16, 1e-9 at 26, 1e-6 at 31) and saturates
+by step ~41; the MoE fp64 run stayed at 1e-14 until step 26 and made one four-decade step at 55. Removing the MoE does not
+stop the growth; all nine runs end in the same ~0.4% band.
