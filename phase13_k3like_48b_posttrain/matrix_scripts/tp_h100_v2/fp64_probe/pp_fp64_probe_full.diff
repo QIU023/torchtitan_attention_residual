@@ -1,0 +1,414 @@
+diff --git a/torchtitan/components/loss.py b/torchtitan/components/loss.py
+index aa5daa58a..15afacfe3 100644
+--- a/torchtitan/components/loss.py
++++ b/torchtitan/components/loss.py
+@@ -669,7 +669,7 @@ class ChunkedLossWrapper(BaseLoss):
+                     GradAccumulator(
+                         hidden_state,
+                         num_chunks=num_chunks,
+-                        dtype=torch.float32,
++                        dtype=torch.float64 if __import__("os").environ.get("FP64_PROBE") == "1" else torch.float32,  # LOCAL PROBE HACK (not committed)
+                     )
+                     for hidden_state in pred
+                 )
+@@ -677,7 +677,7 @@ class ChunkedLossWrapper(BaseLoss):
+                 else ()
+             )
+ 
+-            total_loss = pred[0].new_zeros((), dtype=torch.float32)
++            total_loss = pred[0].new_zeros((), dtype=torch.float64 if __import__("os").environ.get("FP64_PROBE") == "1" else torch.float32)  # LOCAL PROBE HACK (not committed)
+             if get_spmd_backend() == "spmd_types" and spmd.is_type_checking():
+                 total_loss = spmd.mutate_type(
+                     total_loss,
+diff --git a/torchtitan/config/__init__.py b/torchtitan/config/__init__.py
+index 813b70189..e8ae0813b 100644
+--- a/torchtitan/config/__init__.py
++++ b/torchtitan/config/__init__.py
+@@ -10,6 +10,7 @@ TORCH_DTYPE_MAP = {
+     "float16": torch.float16,
+     "float32": torch.float32,
+     "bfloat16": torch.bfloat16,
++    "float64": torch.float64,  # LOCAL PROBE (fp64 runs)
+ }
+ 
+ from .configs import (
+diff --git a/torchtitan/config/configs.py b/torchtitan/config/configs.py
+index 024b94090..6d119a0d4 100644
+--- a/torchtitan/config/configs.py
++++ b/torchtitan/config/configs.py
+@@ -86,14 +86,14 @@ class TrainingConfig:
+     its own CUDA graph capture.
+     """
+ 
+-    dtype: Literal["bfloat16", "float32"] = "float32"
++    dtype: Literal["bfloat16", "float32", "float64"] = "float32"
+     """
+     torch dtype for training. In contrast to mixed precision training, setting training_dtype=bfloat16 will
+     put all parameters, gradients, and optimizer states in bfloat16, without an extra copy of fp32 weights.
+     In the case of full bf16 training, RoPE calculations and logits will still be in fp32.
+     """
+ 
+-    mixed_precision_param: Literal["bfloat16", "float32"] = "bfloat16"
++    mixed_precision_param: Literal["bfloat16", "float32", "float64"] = "bfloat16"
+     """
+     torch dtype to use for parameters when applying mixed precision via fully_shard or torch.autocast.
+     This feature takes effect via fully_shard when data_parallel_shard_degree > 1 or
+@@ -101,7 +101,7 @@ class TrainingConfig:
+     and no other parallelism is enabled, i.e. under DDP or single-device training.
+     """
+ 
+-    mixed_precision_reduce: Literal["float32"] = "float32"
++    mixed_precision_reduce: Literal["bfloat16", "float32", "float64"] = "float32"  # upstream #4597 (c48650f06), not in this base
+     """
+     torch dtype to use for reductions when applying mixed precision via FSDP.
+     This feature only takes effect when data_parallel_shard_degree > 1
+diff --git a/torchtitan/distributed/pipeline_parallel.py b/torchtitan/distributed/pipeline_parallel.py
+index 8cad79f2f..491552384 100644
+--- a/torchtitan/distributed/pipeline_parallel.py
++++ b/torchtitan/distributed/pipeline_parallel.py
+@@ -297,7 +297,7 @@ def _get_pipeline_metadata(
+         # Fallback to default behavior when layers_per_stage is not provided
+         # For multi-stage schedules, default is 2 virtual stages per rank
+         # For single-stage schedules, default is 1 virtual stage per rank
+-        stages_per_rank = 1 if is_single_stage_schedule else 2
++        stages_per_rank = 1 if is_single_stage_schedule else int(os.environ.get("PP_STAGES_PER_RANK", "2"))  # LOCAL PROBE HACK (not committed): pp4 x vp4
+         num_virtual_stages = parallel_dims.pp * stages_per_rank
+     return num_virtual_stages, num_layers, input_weight, output_weight
+ 
+diff --git a/torchtitan/distributed/utils.py b/torchtitan/distributed/utils.py
+index e343a1ed6..e6a75c745 100644
+--- a/torchtitan/distributed/utils.py
++++ b/torchtitan/distributed/utils.py
+@@ -212,7 +212,7 @@ def set_determinism(
+ 
+         from torchtitan.models.common.attention import FlexAttention
+ 
+-        if torch.version.hip is not None:
++        if torch.version.hip is not None or os.environ.get("FP64_PROBE") == "1":  # LOCAL PROBE HACK (not committed): eager flex in float64
+             # Compiled ROCm flex attention is not deterministic.
+             # Falling back to eager (non-compiled) flex_attention for determinism on ROCm.
+             logger.info(
+diff --git a/torchtitan/models/common/attention.py b/torchtitan/models/common/attention.py
+index 964af39ac..61f086ae9 100644
+--- a/torchtitan/models/common/attention.py
++++ b/torchtitan/models/common/attention.py
+@@ -1034,3 +1034,7 @@ class GQAttention(BaseAttention):
+         )(out_TD)
+         remat.recompute_needs_tensor(out_TD)
+         return out_TD
++
++
++if __import__("os").environ.get("FP64_PROBE") == "1":  # LOCAL PROBE HACK (not committed): eager flex in float64
++    FlexAttention._compiled_flex_attn = flex_attention
+diff --git a/torchtitan/models/common/moe.py b/torchtitan/models/common/moe.py
+index ebad99cdf..115fbc107 100644
+--- a/torchtitan/models/common/moe.py
++++ b/torchtitan/models/common/moe.py
+@@ -128,6 +128,13 @@ class GroupedExperts(Module):
+         ``__torch_function__`` -- means it is captured by FX tracers such as
+         graph_trainer's make_fx path.
+         """
++        if __import__("os").environ.get("FP32_PROBE") == "1" or __import__("os").environ.get("FP64_PROBE") == "1":  # LOCAL PROBE HACK (not committed): per-expert loop
++            W, pieces, start = weight_EOI.transpose(-2, -1), [], 0
++            for e, end in enumerate(offs.tolist()):
++                pieces.append(A[start:end] @ W[e].to(A.dtype))
++                start = end
++            pieces.append(A.new_zeros(A.shape[0] - start, W.shape[-1]))
++            return torch.cat(pieces)
+         return torch._grouped_mm(A, weight_EOI.bfloat16().transpose(-2, -1), offs=offs)
+ 
+ 
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index e2fe219b9..1d3875a23 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -94,3 +94,87 @@ def kimi_k3_debugmodel(
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++def kimi_k3_debugmodel_pp_naive() -> Trainer.Config:  # PROBE ONLY (not committed)
++    import functools
++
++    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3  # pp_review3 round 2: the entry lives in parallelize.py
++
++    config = kimi_k3_debugmodel()
++    assert config.model_spec is not None
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
++def kimi_k3_debugmodel_cc12m() -> Trainer.Config:  # PROBE ONLY (not committed)
++    """The debug model on the streamed cc12m (no sample repeats in 100 steps; the 32-sample
++    test set is memorized by step 90)."""
++    config = kimi_k3_debugmodel()
++    config.dataloader = _kimi_k3_multimodal_dataloader(MM_DATASETS["cc12m"])
++    return config
++
++
++def kimi_k3_debugmodel_cc12m_pp_naive() -> Trainer.Config:  # PROBE ONLY (not committed)
++    import functools
++
++    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel_cc12m()
++    assert config.model_spec is not None
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
++
++
++# One row per micro-batch: set C4_ROW_TOKENS to the micro-batch size (64 for #4500's
++# 256 tokens per step as four micro-batches). PROBE ONLY (not committed)
++_C4_ROW_TOKENS = int(__import__("os").environ.get("C4_ROW_TOKENS", "256"))
++
++
++def _process_c4_text_sample(sample, **kwargs):  # PROBE ONLY (not committed)
++    """A c4 doc as one text-only row: its first _C4_ROW_TOKENS tokens (the multimodal
++    batcher packs whole rows into a micro-batch, so a row never spans two)."""
++    from torchtitan.hf_datasets.multimodal.mm_datasets import _process_mm_sample
++
++    # Cut the text first so the processor's context-length skip keeps long docs.
++    out = _process_mm_sample(texts=[sample["text"][:4000]], images=[None], **kwargs)
++    if out is None:
++        return None
++    n = _C4_ROW_TOKENS - 1
++    for key in ("input_ids", "labels", "positions"):
++        out[key] = out[key][:n]
++    return out
++
++
++def kimi_k3_debugmodel_c4() -> Trainer.Config:  # PROBE ONLY (not committed)
++    """The debug model on c4_test as text-only rows, each doc's first 256 tokens:
++    2000 rows, about 0.5M tokens, so a 100-step run at 1024-2048 tokens per step
++    reads 21-43% of it once; the 32-sample cc12m test set is memorised by step 20."""
++    from torchtitan.components.data.sources import HuggingFaceRandomAccessSource
++
++    config = kimi_k3_debugmodel()
++    config.dataloader = _kimi_k3_multimodal_dataloader(
++        SingleDatasetConfig(
++            source=HuggingFaceRandomAccessSource.Config(
++                path="json",
++                split="train",
++                load_dataset_kwargs={"data_files": "tests/assets/c4_test/data.json"},
++            ),
++            processor=MultiModalProcessor.Config(sample_processor=_process_c4_text_sample),
++            post_filters=(lambda sample: sample is not None,),
++        )
++    )
++    return config
++
++
++def kimi_k3_debugmodel_c4_pp_naive() -> Trainer.Config:  # PROBE ONLY (not committed)
++    import functools
++
++    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel_c4()
++    assert config.model_spec is not None
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
+diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
+index 321450858..e17105eb0 100644
+--- a/torchtitan/models/kimi_k3/kda.py
++++ b/torchtitan/models/kimi_k3/kda.py
+@@ -50,6 +50,49 @@ class KimiRMSNormGated(Module):
+         return (normalized_THV * gate_THV.float().sigmoid()).to(input_dtype)
+ 
+ 
++
++# LOCAL PROBE HACK (not committed): FP64_PROBE=1 runs KDA and its short convolution in float64 on
++# Attention Gym's eager oracles (the fused kernels take fp16 / bf16 / fp32 only).
++def _kda_fp64(q, k, v, raw_gate, raw_beta, A_log, dt_bias, lower_bound, cu_seqlens):
++    import math
++    import sys
++    from functools import partial
++
++    from attn_gym.linear.kda import chunk_kda as _ck
++    from attn_gym.linear.kda.impl.reference import reference_kda
++    from attn_gym.linear.kda.naive import l2norm_fwd_ref, naive_chunk_kda
++
++    f = torch.float64
++    q, k, v, raw_gate, raw_beta = (t.to(f) for t in (q, k, v, raw_gate, raw_beta))
++    heads = raw_gate.shape[2]
++    gate = lower_bound * torch.sigmoid(A_log.to(f).exp().view(1, 1, heads, 1) * (raw_gate + dt_bias.to(f)))
++    chunk = sys.modules[_ck.__module__]._CHUNK_SIZE
++    out, _ = reference_kda(
++        partial(naive_chunk_kda, chunk_size=chunk),
++        l2norm_fwd_ref(q), l2norm_fwd_ref(k), v, gate * math.log2(math.e), raw_beta.sigmoid(),
++        None, cu_seqlens, 1.0 / math.sqrt(q.shape[-1]), False,
++    )
++    return out
++
++
++def _causal_conv1d_fp64(x_1TC, weight_CW, cu_seqlens):
++    """Depthwise causal conv + SiLU per document, taps in stored order (matches the kernel to 8.6e-6 in fp32)."""
++    import torch.nn.functional as F
++
++    x_1TC = x_1TC.to(torch.float64); weight_CW = weight_CW.to(torch.float64)
++    channels, width = weight_CW.shape
++    bounds = [0, x_1TC.shape[1]] if cu_seqlens is None else cu_seqlens.tolist()
++    pieces = []
++    for start, end in zip(bounds[:-1], bounds[1:]):
++        doc = x_1TC[:, start:end].transpose(1, 2)
++        y = F.conv1d(F.pad(doc, (width - 1, 0)), weight_CW.unsqueeze(1), groups=channels)
++        pieces.append(F.silu(y).transpose(1, 2))
++    tail = x_1TC.shape[1] - bounds[-1]
++    if tail:
++        pieces.append(x_1TC.new_zeros(1, tail, channels))
++    return torch.cat(pieces, dim=1)
++
++
+ class KDAKernel(Module):
+     """Apply KDA preprocessing and the Attention Gym kernel."""
+ 
+@@ -83,12 +126,14 @@ class KDAKernel(Module):
+         if not q_1THK.is_cuda:
+             raise RuntimeError("Attention Gym KDA requires CUDA tensors.")
+         capability = torch.cuda.get_device_capability(q_1THK.device)
+-        if capability not in {(10, 0), (10, 3)}:
++        if capability < (8, 0):  # LOCAL RUN HACK (not committed)
+             raise RuntimeError(
+-                "Attention Gym KDA requires Blackwell SM100/SM103; "
+-                f"got CUDA capability {capability}."
++                "Attention Gym KDA requires CUDA capability 8.0 or newer; "
++                f"got {capability}."
+             )
+ 
++        if __import__("os").environ.get("FP64_PROBE") == "1":  # LOCAL PROBE HACK (not committed)
++            return _kda_fp64(q_1THK, k_1THK, v_1THV, raw_gate_1THK, raw_beta_1TH, A_log_H, dt_bias_HK, self.lower_bound, cu_seqlens)
+         gate_1THK = bound_gate(
+             raw_gate_1THK,
+             # TODO: The long-term solution is to specify mixed precision per FQN
+@@ -96,7 +141,7 @@ class KDAKernel(Module):
+             A_log_H.float(),
+             dt_bias_HK.float(),
+             lower_bound=self.lower_bound,
+-            impl="fused",
++            impl="reference" if __import__("os").environ.get("FP32_PROBE") == "1" else "fused",  # LOCAL PROBE HACK (not committed)
+         )
+         output_1THV, _ = chunk_kda(
+             l2norm(q_1THK),
+@@ -105,6 +150,8 @@ class KDAKernel(Module):
+             gate_1THK,
+             raw_beta_1TH.float().sigmoid(),
+             cu_seqlens=cu_seqlens,
++            autotune=__import__("os").environ.get("KDA_NOAUTOTUNE") != "1",  # LOCAL PROBE HACK (not committed)
++            **({"impl": "reference"} if __import__("os").environ.get("FP32_PROBE") == "1" else {}),  # LOCAL PROBE HACK (not committed)
+         )
+         return output_1THV
+ 
+@@ -153,12 +200,15 @@ class InnerKDA(Module):
+             (conv_q_weight_C1W, conv_k_weight_C1W, conv_v_weight_C1W),
+             dim=0,
+         )
+-        conv_output_1TC = causal_conv1d(
+-            mixed_qkv_1TC,
+-            conv_weight_C1W[:, 0],
+-            activation="silu",
+-            cu_seqlens=cu_seqlens,
+-        )
++        if __import__("os").environ.get("FP64_PROBE") == "1":  # LOCAL PROBE HACK (not committed)
++            conv_output_1TC = _causal_conv1d_fp64(mixed_qkv_1TC, conv_weight_C1W[:, 0], cu_seqlens)
++        else:
++            conv_output_1TC = causal_conv1d(
++                mixed_qkv_1TC,
++                conv_weight_C1W[:, 0],
++                activation="silu",
++                cu_seqlens=cu_seqlens,
++            )
+         assert isinstance(conv_output_1TC, torch.Tensor)
+ 
+         q_1TC, k_1TC, v_1TC = conv_output_1TC.chunk(3, dim=-1)
+diff --git a/torchtitan/trainer.py b/torchtitan/trainer.py
+index 516e11e9b..1ec864c7b 100644
+--- a/torchtitan/trainer.py
++++ b/torchtitan/trainer.py
+@@ -15,6 +15,33 @@ from typing import Annotated, Any, cast
+ 
+ import spmd_types as spmd
+ import torch
++
++if __import__("os").environ.get("FP32_PROBE") == "1":  # LOCAL PROBE HACK (not committed): bf16 casts stay float32
++    torch.Tensor.bfloat16 = lambda self, *a, **k: self
++    _fp32_probe_to = torch.Tensor.to
++
++    def _fp32_probe_to_fn(self, *a, **k):
++        a = tuple(torch.float32 if x is torch.bfloat16 else x for x in a)
++        if k.get("dtype") is torch.bfloat16:
++            k["dtype"] = torch.float32
++        return _fp32_probe_to(self, *a, **k)
++
++    torch.Tensor.to = _fp32_probe_to_fn
++if __import__("os").environ.get("FP64_PROBE") == "1":  # LOCAL PROBE HACK (not committed): every float cast goes to float64
++    _f64_to = torch.Tensor.to
++    _f64_low = (torch.bfloat16, torch.float16, torch.float32)
++    torch.Tensor.float = lambda self, *a, **k: _f64_to(self, torch.float64)
++    torch.Tensor.bfloat16 = lambda self, *a, **k: _f64_to(self, torch.float64)
++    torch.Tensor.half = lambda self, *a, **k: _f64_to(self, torch.float64)
++
++    def _f64_to_fn(self, *a, **k):
++        a = tuple(torch.float64 if (isinstance(x, torch.dtype) and x in _f64_low) else x for x in a)
++        if k.get("dtype") in _f64_low:
++            k["dtype"] = torch.float64
++        return _f64_to(self, *a, **k)
++
++    torch.Tensor.to = _f64_to_fn
++    torch.set_default_dtype(torch.float64)
+ import torch.distributed.checkpoint.stateful
+ import tyro
+ from torch.distributed.elastic.multiprocessing.errors import record
+@@ -896,6 +923,8 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                 local_valid_tokens += input_dict.pop("num_valid_tokens")
+                 microbatches.append(input_dict)
+             microbatch_groups.append(microbatches)
++        if os.environ.get("MB_REVERSE") == "1":  # LOCAL PROBE HACK (not committed): accumulation order only
++            microbatch_groups.reverse()
+         sl.log_trace_scalar({"local_valid_tokens": local_valid_tokens})
+ 
+         # Keep the global token count on device so loss normalization does not
+@@ -954,6 +983,13 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                         is_last
+                     )
+ 
++            if os.environ.get("NOSYNC_GA") == "1" and not self.parallel_dims.pp_enabled:  # LOCAL PROBE HACK (not committed)
++                # Accumulate micro-batches the way torch pipelining does under FSDP: no sync until the last backward.
++                _last = fwd_bwd_index == self.gradient_accumulation_steps - 1
++                for _part in self.model_parts:
++                    _part.set_is_last_backward(_last)
++                    _part.set_reshard_after_backward(_last)
++                    _part.set_requires_gradient_sync(_last)
+             if self.sdc_replayer is not None and fwd_bwd_index == 0:
+                 # Only the step's first gradient-accumulation group is
+                 # replay-checked; under PP one group is a complete pipeline
+@@ -979,6 +1015,18 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                     accumulated_loss.add_(detached_loss)
+ 
+         with sl.log_trace_span("optim"):
++            if os.environ.get("GRAD_DUMP") and self.step == 1:  # LOCAL PROBE HACK (not committed)
++                import torch.distributed as _dist
++
++                _d = {}
++                for _m in self.model_parts:
++                    for _n, _p in _m.named_parameters():
++                        if _p.grad is None:
++                            continue
++                        _g = _p.grad
++                        _g = _g.full_tensor() if hasattr(_g, "full_tensor") else _g
++                        _d[_n] = _g.detach().cpu()
++                torch.save(_d, f"{os.environ['GRAD_DUMP']}.rank{_dist.get_rank()}.pt")
+             grad_norm = dist_utils.clip_grad_norm_(
+                 [p for m in self.model_parts for p in m.parameters()],
+                 self.config.training.max_norm,
+@@ -1057,6 +1105,9 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                 global_avg_loss = global_max_loss = float(accumulated_loss.item())
+                 global_ntokens_seen = self.ntokens_seen
+ 
++        if os.environ.get("REPR_LOG") == "1":  # LOCAL PROBE HACK (not committed): full-precision loss and norm
++            _gn = grad_norm.full_tensor() if hasattr(grad_norm, "full_tensor") else grad_norm
++            print(f"REPR {self.step} rank{torch.distributed.get_rank()} loss {float(global_avg_loss):.17e} gn {float(_gn):.17e}", flush=True)
+         extra_metrics = {
+             "n_tokens_seen": global_ntokens_seen,
+             **lr_metrics,

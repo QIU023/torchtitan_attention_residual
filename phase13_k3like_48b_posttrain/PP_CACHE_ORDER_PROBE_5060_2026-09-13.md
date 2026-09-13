@@ -65,3 +65,18 @@ pp2, pp2 x vp2 naive and pp4 x vp4 naive; the norm differs on 48-53 of the 100 s
 unit: step 1 16.919260025 against 16.919258118). The pipeline sums the squared norms per rank and all-reduces them, a
 different fp32 summation order than one GPU's; the reference's step-59 norm is 1.6628501415, on the rounding boundary of
 the fourth printed decimal, so that step prints 1.6629 against 1.6628. Not the compile cache, and the loss never moves.
+
+## float64 end to end (5060, 2026-09-13)
+
+`pp_fp64_probe` = `9a9400bfc` (patches and full diff in `matrix_scripts/tp_h100_v2/fp64_probe/`), `FP64_PROBE=1`: every
+float cast to float64, KDA and the short conv on Attention Gym's eager oracles, eager flex, per-expert MoE loop, float64
+loss accumulation; params, compute and reduce in float64 (grad dumps are float64). c4 64-token rows, 256 tokens per step
+as 4 x 64, pp4 x vp4, one seed.
+
+Step 1, cache off vs cache on: loss 12.6257936118563556 and grad norm 22.8332725616344483 in both, to every printed
+digit. Gradients: 346/680 bitwise, the other 334 are the same parameters as in bf16 and fp32 (layers 0-11 and
+`tok_embeddings`), max relative difference 1.68e-14. The cache-on difference follows the working precision -- 7.4e-2
+(bf16), 9.1e-6 (fp32), 1.7e-14 (fp64) -- so it is the order of the additions and nothing else.
+
+pp4 x vp4 in float64 runs out of memory on the rank that holds `lm_head` at the first optimizer step (16 GB cards); the
+trajectories run as pp8 x vp2 (`run_fp64_pp8vp2.sh`).
