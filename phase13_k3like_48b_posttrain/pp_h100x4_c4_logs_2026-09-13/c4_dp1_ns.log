@@ -1,0 +1,49 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-13 07:19:21,678 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-13 07:19:22,274 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-13 07:19:22,346 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-13 07:19:22,347 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/out_c4/c4_dp1_ns/structured_logs/training.global_rank_0.20260913-071922-CWLMY7.jsonl
+[titan] 2026-09-13 07:19:22,539 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-13 07:19:22,849 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-13 07:19:22,849 - root - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-13 07:19:22,869 - root - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-13 07:19:23,018 - root - INFO - CUDA capacity: NVIDIA H100 PCIe with 79.18GiB memory
+[titan] 2026-09-13 07:19:23,019 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-13 07:19:23,024 - root - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-13 07:19:23,024 - root - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-13 07:19:23,025 - root - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-13 07:19:23,049 - root - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-13 07:19:23,084 - root - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-13 07:19:23,086 - root - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-13 07:19:23,246 - root - INFO - Applied FSDP to the model
+[titan] 2026-09-13 07:19:23,867 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-13 07:19:23,867 - root - INFO - Peak FLOPS used for computing MFU: 7.560e+14
+[titan] 2026-09-13 07:19:23,868 - root - INFO - CUDA memory usage for model: 3.86GiB(4.87%)
+[titan] 2026-09-13 07:19:23,871 - root - INFO - Optimizer AdamW (model_part=0): 750 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-13 07:19:23,874 - root - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-13 07:19:24,181 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[titan] 2026-09-13 07:19:24,247 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-13 07:19:24,248 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-13 07:19:24,259 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/out_c4/c4_dp1_ns/checkpoint
+[titan] 2026-09-13 07:19:24,260 - root - INFO - Trainer is initialized with 256 tokens per DP rank, 1024 tokens per train step, gradient accumulation steps 4, maximum context length 2048, total steps 100 (warmup 2)
+[titan] 2026-09-13 07:19:24,260 - root - INFO - Loading the checkpoint from /workspace/out_c4/c4_dp1_ns/checkpoint/step-0.
+[titan] 2026-09-13 07:19:26,009 - root - INFO - [GC] GC collection for checkpoint loading. took 0.02 seconds
+[titan] 2026-09-13 07:19:26,010 - root - INFO - Finished loading the checkpoint in 1.75 seconds.
+[titan] 2026-09-13 07:19:26,010 - root - INFO - Training starts at step 1
+/workspace/venv_pp/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_pp/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[titan] 2026-09-13 07:19:58,625 - root - INFO - [31mstep:  1  [32mloss: 12.60998  [38;2;180;60;0mgrad_norm: 16.8750  [38;2;54;234;195mmemory: 12.29GiB(15.52%)  [34mtps: 29  [36mtflops: 0.10  [35mmfu: 0.01%[39m
+[titan] 2026-09-13 07:19:58,627 - root - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[titan] 2026-09-13 07:20:00,770 - root - INFO - [31mstep:  2  [32mloss: 10.20995  [38;2;180;60;0mgrad_norm: 15.3125  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 477  [36mtflops: 1.67  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:02,877 - root - INFO - [31mstep:  3  [32mloss:  8.02601  [38;2;180;60;0mgrad_norm: 10.0000  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 486  [36mtflops: 1.70  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:05,001 - root - INFO - [31mstep:  4  [32mloss:  7.46787  [38;2;180;60;0mgrad_norm:  8.6250  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 482  [36mtflops: 1.68  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:07,132 - root - INFO - [31mstep:  5  [32mloss:  5.62198  [38;2;180;60;0mgrad_norm:  8.2500  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 480  [36mtflops: 1.68  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:09,255 - root - INFO - [31mstep:  6  [32mloss:  4.63358  [38;2;180;60;0mgrad_norm:  5.9688  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 482  [36mtflops: 1.68  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:11,365 - root - INFO - [31mstep:  7  [32mloss:  4.43496  [38;2;180;60;0mgrad_norm:  6.9688  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 485  [36mtflops: 1.69  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:13,477 - root - INFO - [31mstep:  8  [32mloss:  3.90846  [38;2;180;60;0mgrad_norm:  5.6562  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 485  [36mtflops: 1.69  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:15,591 - root - INFO - [31mstep:  9  [32mloss:  3.65472  [38;2;180;60;0mgrad_norm:  3.6562  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 485  [36mtflops: 1.69  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:17,701 - root - INFO - [31mstep: 10  [32mloss:  3.33543  [38;2;180;60;0mgrad_norm:  3.2812  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 485  [36mtflops: 1.69  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:19,815 - root - INFO - [31mstep: 11  [32mloss:  3.16256  [38;2;180;60;0mgrad_norm:  2.8125  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 484  [36mtflops: 1.69  [35mmfu: 0.22%[39m
+[titan] 2026-09-13 07:20:21,942 - root - INFO - [31mstep: 12  [32mloss:  3.60159  [38;2;180;60;0mgrad_norm:  3.0000  [38;2;54;234;195mmemory: 16.36GiB(20.67%)  [34mtps: 482  [36mtflops: 1.68  [35mmfu: 0.22%[39m

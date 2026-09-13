@@ -1,0 +1,33 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-13 07:02:00,682 - root - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-13 07:02:01,273 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-13 07:02:01,345 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-13 07:02:01,347 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/out_c4/seed_c4_1024/structured_logs/training.global_rank_0.20260913-070201-ICEB1F.jsonl
+[titan] 2026-09-13 07:02:01,534 - root - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-13 07:02:01,814 - root - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-13 07:02:01,814 - root - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-13 07:02:01,832 - root - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-13 07:02:01,980 - root - INFO - CUDA capacity: NVIDIA H100 PCIe with 79.18GiB memory
+[titan] 2026-09-13 07:02:01,981 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-13 07:02:01,986 - root - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-13 07:02:01,986 - root - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-13 07:02:39,678 - root - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-13 07:02:39,678 - root - INFO - Peak FLOPS used for computing MFU: 7.560e+14
+[titan] 2026-09-13 07:02:39,679 - root - INFO - CUDA memory usage for model: 0.00GiB(0.00%)
+[titan] 2026-09-13 07:02:39,682 - root - INFO - Optimizer AdamW (model_part=0): 750 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-13 07:02:39,685 - root - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[titan] 2026-09-13 07:02:39,685 - root - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[titan] 2026-09-13 07:02:39,685 - root - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-13 07:02:39,992 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+Generating train split: 0 examples [00:00, ? examples/s]Generating train split: 2000 examples [00:00, 141951.23 examples/s]
+[titan] 2026-09-13 07:02:40,108 - root - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-13 07:02:40,109 - root - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-13 07:02:40,112 - root - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/out_c4/seed_c4_1024/checkpoint
+[titan] 2026-09-13 07:02:40,112 - root - INFO - Trainer is initialized with 256 tokens per DP rank, 1024 tokens per train step, gradient accumulation steps 4, maximum context length 2048, total steps 1 (warmup 2)
+[titan] 2026-09-13 07:02:40,112 - root - INFO - Saving the checkpoint.
+[titan] 2026-09-13 07:02:40,112 - root - INFO - Saving a full checkpoint at last step, step 0.
+[titan] 2026-09-13 07:03:46,387 - root - INFO - [GC] GC collection invoked by checkpointer. took 0.15 seconds
+[titan] 2026-09-13 07:03:46,393 - root - INFO - Last step checkpoint completed in 66.28s
+[titan] 2026-09-13 07:03:46,393 - root - INFO - Created seed checkpoint
+[titan] 2026-09-13 07:03:46,393 - root - INFO - Destroying the purge thread.
+[titan] 2026-09-13 07:03:46,516 - root - INFO - Process group destroyed
