@@ -6,10 +6,11 @@ For the user to post as the reply to 3976976576. Our earlier reply (3932773900) 
 
 Our earlier reply covered the layer / block relation, so here is the per-stage view, where the cache matters. Your example, 2 blocks x 4 layers, with pp2 x vp2 (Interleaved1F1B: global stage s runs on rank s % 2) and the split core generates. `e` is the embedding (stack entry 0), `x4` block 1's result (entry 1); block 2's result is consumed by the output aggregation and never enters the stack.
 
+pp2vp2: deposits 3, collected 3
 | global stage (rank, virtual) | layers | Block AttnRes stored stack | PP Comm, fwd (no cache) | PP Comm, fwd (cache) | already cached | PP Comm, bwd (no cache) | PP Comm, bwd (cache) | deposits into the rank cache | collects from the rank cache |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | s0 (r0, v0) | emb, 0-1 | e | - | - | - | s1 -> [de] | s1 -> [de] | - | s2 stored: [de] |
-| s1 (r1, v0) | 2-4 | x4 | s0 -> [e] | s0 -> [e] | - | s2 -> [de, dx4] | s2 -> [dx4] | - | s3 stored: [de, dx4] |
+| s1 (r1, v0) | 2-4 | x4 | s0 -> [e] | s0 -> [e] | - | s2 -> [de, dx4] | s2 -> [dx4] | - | s3 stored: [dx4, de] |
 | s2 (r0, v1) | 5-6 | - | s1 -> [e, x4] | s1 -> [x4] | [e] | s3 -> [de, dx4] | no op (empty payload) | [de] | - |
 | s3 (r1, v1) | 7, head | - | s2 -> [e, x4] | s2 -> [] (empty payload) | [e, x4] | - | - | [de, dx4] | - |
 
@@ -17,20 +18,21 @@ Stack entries sent per micro-batch: forward 5 with the cache off, 2 with it on; 
 
 A hop carries only the entries the receiving rank has not seen yet. The same with 4 blocks x 4 layers, pp4 x vp4 (stage s on rank s % 4; `x4`, `x8`, `x12` = the results of blocks 1-3):
 
+pp4vp4: deposits 27, collected 27
 | global stage (rank, virtual) | layers | Block AttnRes stored stack | PP Comm, fwd (no cache) | PP Comm, fwd (cache) | already cached | PP Comm, bwd (no cache) | PP Comm, bwd (cache) | deposits into the rank cache | collects from the rank cache |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| s0 (r0, v0) | emb, 0 | e | - | - | - | s1 -> [de] | s1 -> [de] | - | s4 stored: [de], s8 stored: [de, dx4], s12 stored: [de, dx4, dx8] |
-| s1 (r1, v0) | 1-2 | - | s0 -> [e] | s0 -> [e] | - | s2 -> [de] | s2 -> [de] | - | s5 stored: [de], s9 stored: [de, dx4], s13 stored: [de, dx4, dx8] |
-| s2 (r2, v0) | 3 | - | s1 -> [e] | s1 -> [e] | - | s3 -> [de] | s3 -> [de] | - | s6 stored: [de], s10 stored: [de, dx4], s14 stored: [de, dx4, dx8] |
-| s3 (r3, v0) | 4 | x4 | s2 -> [e] | s2 -> [e] | - | s4 -> [de, dx4] | s4 -> [dx4] | - | s7 stored: [de, dx4], s11 stored: [de, dx4, dx8], s15 stored: [de, dx4, dx8, dx12] |
-| s4 (r0, v1) | 5 | - | s3 -> [e, x4] | s3 -> [x4] | [e] | s5 -> [de, dx4] | s5 -> [dx4] | [de] | s8 stored: [de, dx4], s12 stored: [de, dx4, dx8] |
-| s5 (r1, v1) | 6 | - | s4 -> [e, x4] | s4 -> [x4] | [e] | s6 -> [de, dx4] | s6 -> [dx4] | [de] | s9 stored: [de, dx4], s13 stored: [de, dx4, dx8] |
-| s6 (r2, v1) | 7 | - | s5 -> [e, x4] | s5 -> [x4] | [e] | s7 -> [de, dx4] | no op (empty payload) | [de] | s10 stored: [de, dx4], s14 stored: [de, dx4, dx8] |
-| s7 (r3, v1) | 8 | x8 | s6 -> [e, x4] | s6 -> [] (empty payload) | [e, x4] | s8 -> [de, dx4, dx8] | s8 -> [dx8] | [de, dx4] | s11 stored: [de, dx4, dx8], s15 stored: [de, dx4, dx8, dx12] |
-| s8 (r0, v2) | 9 | - | s7 -> [e, x4, x8] | s7 -> [x8] | [e, x4] | s9 -> [de, dx4, dx8] | s9 -> [dx8] | [de, dx4] | s12 stored: [de, dx4, dx8] |
-| s9 (r1, v2) | 10 | - | s8 -> [e, x4, x8] | s8 -> [x8] | [e, x4] | s10 -> [de, dx4, dx8] | s10 -> [dx8] | [de, dx4] | s13 stored: [de, dx4, dx8] |
-| s10 (r2, v2) | 11 | - | s9 -> [e, x4, x8] | s9 -> [x8] | [e, x4] | s11 -> [de, dx4, dx8] | no op (empty payload) | [de, dx4] | s14 stored: [de, dx4, dx8] |
-| s11 (r3, v2) | 12 | x12 | s10 -> [e, x4, x8] | s10 -> [] (empty payload) | [e, x4, x8] | s12 -> [de, dx4, dx8, dx12] | s12 -> [dx12] | [de, dx4, dx8] | s15 stored: [de, dx4, dx8, dx12] |
+| s0 (r0, v0) | emb, 0 | e | - | - | - | s1 -> [de] | s1 -> [de] | - | s4 stored: [de], s8 stored: [de], s12 stored: [de] |
+| s1 (r1, v0) | 1-2 | - | s0 -> [e] | s0 -> [e] | - | s2 -> [de] | s2 -> [de] | - | s5 stored: [de], s9 stored: [de], s13 stored: [de] |
+| s2 (r2, v0) | 3 | - | s1 -> [e] | s1 -> [e] | - | s3 -> [de] | s3 -> [de] | - | s6 stored: [de], s10 stored: [de], s14 stored: [de] |
+| s3 (r3, v0) | 4 | x4 | s2 -> [e] | s2 -> [e] | - | s4 -> [de, dx4] | s4 -> [dx4] | - | s7 stored: [dx4, de], s11 stored: [dx4, de], s15 stored: [dx4, de] |
+| s4 (r0, v1) | 5 | - | s3 -> [e, x4] | s3 -> [x4] | [e] | s5 -> [de, dx4] | s5 -> [dx4] | [de] | s8 stored: [dx4], s12 stored: [dx4] |
+| s5 (r1, v1) | 6 | - | s4 -> [e, x4] | s4 -> [x4] | [e] | s6 -> [de, dx4] | s6 -> [dx4] | [de] | s9 stored: [dx4], s13 stored: [dx4] |
+| s6 (r2, v1) | 7 | - | s5 -> [e, x4] | s5 -> [x4] | [e] | s7 -> [de, dx4] | no op (empty payload) | [de] | s10 stored: [dx4], s14 stored: [dx4] |
+| s7 (r3, v1) | 8 | x8 | s6 -> [e, x4] | s6 -> [] (empty payload) | [e, x4] | s8 -> [de, dx4, dx8] | s8 -> [dx8] | [de, dx4] | s11 stored: [dx8], s15 stored: [dx8] |
+| s8 (r0, v2) | 9 | - | s7 -> [e, x4, x8] | s7 -> [x8] | [e, x4] | s9 -> [de, dx4, dx8] | s9 -> [dx8] | [de, dx4] | s12 stored: [dx8] |
+| s9 (r1, v2) | 10 | - | s8 -> [e, x4, x8] | s8 -> [x8] | [e, x4] | s10 -> [de, dx4, dx8] | s10 -> [dx8] | [de, dx4] | s13 stored: [dx8] |
+| s10 (r2, v2) | 11 | - | s9 -> [e, x4, x8] | s9 -> [x8] | [e, x4] | s11 -> [de, dx4, dx8] | no op (empty payload) | [de, dx4] | s14 stored: [dx8] |
+| s11 (r3, v2) | 12 | x12 | s10 -> [e, x4, x8] | s10 -> [] (empty payload) | [e, x4, x8] | s12 -> [de, dx4, dx8, dx12] | s12 -> [dx12] | [de, dx4, dx8] | s15 stored: [dx12] |
 | s12 (r0, v3) | 13 | - | s11 -> [e, x4, x8, x12] | s11 -> [x12] | [e, x4, x8] | s13 -> [de, dx4, dx8, dx12] | s13 -> [dx12] | [de, dx4, dx8] | - |
 | s13 (r1, v3) | 14 | - | s12 -> [e, x4, x8, x12] | s12 -> [x12] | [e, x4, x8] | s14 -> [de, dx4, dx8, dx12] | s14 -> [dx12] | [de, dx4, dx8] | - |
 | s14 (r2, v3) | 15 | - | s13 -> [e, x4, x8, x12] | s13 -> [x12] | [e, x4, x8] | s15 -> [de, dx4, dx8, dx12] | no op (empty payload) | [de, dx4, dx8] | - |
