@@ -80,3 +80,12 @@ digit. Gradients: 346/680 bitwise, the other 334 are the same parameters as in b
 
 pp4 x vp4 in float64 runs out of memory on the rank that holds `lm_head` at the first optimizer step (16 GB cards); the
 trajectories run as pp8 x vp2 (`run_fp64_pp8vp2.sh`).
+
+### float64 trajectories, 20 steps, pp8 x vp2 (cache off vs cache on)
+
+`run_fp64_pp8vp2.sh` with `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` (without it the lm_head rank ran out of
+memory at step 4; peak 14.1 GiB of 15.5), same seed and data, 20 steps each; full-precision comparison in
+`fp64_5060_logs_2026-09-13/repr_compare_pp8vp2.txt`. The loss agrees on every step to within 4e-14 relative (identical
+at steps 1-3 and 8), the grad norm to within 1.3e-12. In bf16 the cached pp4 x vp4 cell was 5.8% off the naive one in
+loss and 205% in grad norm at step 10 (H100 table); in float64 the same comparison stays at the 1e-14 level for all 20
+steps, so the bf16 gap is rounding amplified by the flavor's early steps, not a difference in what the cache computes.
