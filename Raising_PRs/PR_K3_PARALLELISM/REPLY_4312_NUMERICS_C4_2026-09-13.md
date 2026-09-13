@@ -8,6 +8,21 @@ Re-run on the same 4 x H100, now on `c4_test` as text-only rows (at 1024 tokens 
 
 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers), one seed checkpoint, four 256-token micro-batches per rank; the c4 flavor, the accumulation switch, the pp4 x vp4 stage count and the fp32 norm are local probe changes, not part of this PR ([c4 patch](https://github.com/QIU023/torchtitan_attention_residual/blob/74bd38d743b6f9353d4fb08e6946017db811e94e/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp4h_probe_c4.patch), [stage count](https://github.com/QIU023/torchtitan_attention_residual/blob/74bd38d743b6f9353d4fb08e6946017db811e94e/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp_stages_per_rank.patch), [fp32 norm](https://github.com/QIU023/torchtitan_attention_residual/blob/74bd38d743b6f9353d4fb08e6946017db811e94e/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/gn_fp32_hack.py)).
 
+Reproduction, on `k3_pp_text` plus the three probe files linked above:
+
+```bash
+python gn_fp32_hack.py . && export GN_FP32=1   # total grad norm in fp32
+export TORCHINDUCTOR_CACHE_DIR=$PWD/cache/inductor TRITON_CACHE_DIR=$PWD/cache/triton   # one compile cache for every cell of a table, warmed by a 1-step run of each configuration first
+COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel_c4 --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
+cell() { d=$1; n=$2; c=$3; shift 3; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --config $c --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
+P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"; IL="--parallelism.pipeline_parallel_schedule Interleaved1F1B"; P4="--parallelism.pipeline_parallel_degree 4 --parallelism.num-pp-microbatches 4 $IL"
+NOSYNC_GA=1 cell ref 1 kimi_k3_debugmodel_c4
+cell pp2 2 kimi_k3_debugmodel_c4 $P; cell vp2_naive 2 kimi_k3_debugmodel_c4_pp_naive $P $IL; cell vp2_cached 2 kimi_k3_debugmodel_c4 $P $IL
+PP_STAGES_PER_RANK=4 cell pp4vp4_naive 4 kimi_k3_debugmodel_c4_pp_naive $P4; PP_STAGES_PER_RANK=4 cell pp4vp4_cached 4 kimi_k3_debugmodel_c4 $P4
+# 2048-token table: --parallelism.data_parallel_shard_degree 2 --training.num-tokens-per-train-step 2048, its own seed checkpoint; NOSYNC_GA=1 for the reference
+```
+
 1024 tokens per step:
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
