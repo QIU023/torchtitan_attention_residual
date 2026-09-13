@@ -3,19 +3,21 @@ order in which each block's gradient contributions are added in the backward, wi
 following pipeline_stage.py (collect: grad_col.add_(deposit); deposit: prior + grad; the owner collects before its
 backward). l<s> = stage s's own contribution (its layers' AttnRes reads of the block, plus the head's aggregation on
 the last stage), combined with what arrived from the next stage by the stage's own autograd, the same in both modes.
-usage: PYTHONPATH=<tree> python pp_cache_reduction_order.py <pp> <stages per rank>"""
+usage: PYTHONPATH=<tree> python pp_cache_reduction_order.py <pp> <stages per rank> [<layers> <layers per block>]"""
 import sys
 
 from torchtitan.models.kimi_k3.layout import BlockLayoutTables, layer_to_stage_from_split
 from torchtitan.models.kimi_k3.parallelize import kimi_k3_module_fqns_per_model_part
 
 pp, vp = int(sys.argv[1]), int(sys.argv[2])
-S, N_LAYERS, BLOCK = pp * vp, 24, 12
+S = pp * vp
+N_LAYERS, BLOCK = (int(sys.argv[3]), int(sys.argv[4])) if len(sys.argv) > 4 else (24, 12)
+NB = -(-N_LAYERS // BLOCK)
 split = kimi_k3_module_fqns_per_model_part(S, N_LAYERS)
 l2s = layer_to_stage_from_split(split)
 rank = {s: s % pp for s in range(S)}
-name = {0: "e", 1: "x12"}
-tabs = {c: BlockLayoutTables(stage_to_rank=rank, num_blocks=2, n_layers=N_LAYERS, layers_per_block=BLOCK,
+name = {b: ("e" if b == 0 else f"x{b * BLOCK}") for b in range(NB)}
+tabs = {c: BlockLayoutTables(stage_to_rank=rank, num_blocks=NB, n_layers=N_LAYERS, layers_per_block=BLOCK,
                              layer_to_stage=l2s, cache=c) for c in (True, False)}
 on = tabs[True]
 
@@ -36,7 +38,7 @@ for s in range(S):
 print("\nPer rank, cache on (which stage brought the block onto the rank, which later stages there read it from the store):\n")
 for r in range(pp):
     parts = []
-    for b in (0, 1):
+    for b in range(NB):
         stages = [s for s in range(S) if rank[s] == r]
         readers = [s for s in on.cache_readers_of_block(b) if rank[s] == r]
         holders = [s for s in stages if b in on.commits_at(s) or (s > 0 and b in on.delta_to_send(s - 1))]
@@ -68,7 +70,7 @@ def tree(tab, b):
 
 
 print()
-for b in (0, 1):
+for b in range(NB):
     o = on.producer_stage_of_block(b)
     print(f"- block `{name[b]}` (committed at s{o}):")
     print(f"  - cache off: `{tree(tabs[False], b)}`")

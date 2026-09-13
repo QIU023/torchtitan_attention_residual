@@ -139,6 +139,70 @@ Per rank, cache on (which stage brought the block onto the rank, which later sta
   - cache off: `(l6 + (l7 + (l8 + (l9 + (l10 + (l11 + (l12 + (l13 + (l14 + l15)))))))))`
   - cache on:  `(l6 + (((l7 + (l8 + (l9 + (l10 + (l11 + (l12 + l13)))))) + l15) + l14))`
 
+## 4b. Worked example: 4 blocks x 4 layers, pp4 x vp4 (the split of the r3998924467 reply)
+
+Stack entries `e`, `x4`, `x8`, `x12` (the result of block 4 goes to the head's aggregation). Generated with
+`pp_cache_reduction_order.py 4 4 16 4`.
+
+### pp4 x vp4: 16 stages, stage s on rank s % 4
+
+| stage (rank) | layers | commits | cache at entry (on) | P2P out, cache on | P2P out, cache off |
+| --- | --- | --- | --- | --- | --- |
+| s0 (r0) | emb, 0 | [e] | - | [e] | [e] |
+| s1 (r1) | 1-2 | - | - | [e] | [e] |
+| s2 (r2) | 3 | - | - | [e] | [e] |
+| s3 (r3) | 4 | [x4] | - | [x4] | [e, x4] |
+| s4 (r0) | 5 | - | [e] | [x4] | [e, x4] |
+| s5 (r1) | 6 | - | [e] | [x4] | [e, x4] |
+| s6 (r2) | 7 | - | [e] | [] | [e, x4] |
+| s7 (r3) | 8 | [x8] | [e, x4] | [x8] | [e, x4, x8] |
+| s8 (r0) | 9 | - | [e, x4] | [x8] | [e, x4, x8] |
+| s9 (r1) | 10 | - | [e, x4] | [x8] | [e, x4, x8] |
+| s10 (r2) | 11 | - | [e, x4] | [] | [e, x4, x8] |
+| s11 (r3) | 12 | [x12] | [e, x4, x8] | [x12] | [e, x4, x8, x12] |
+| s12 (r0) | 13 | - | [e, x4, x8] | [x12] | [e, x4, x8, x12] |
+| s13 (r1) | 14 | - | [e, x4, x8] | [x12] | [e, x4, x8, x12] |
+| s14 (r2) | 15 | - | [e, x4, x8] | [] | [e, x4, x8, x12] |
+| s15 (r3) | head | - | [e, x4, x8, x12] | - | - |
+
+Per rank, cache on (which stage brought the block onto the rank, which later stages there read it from the store):
+
+- r0: `e` (commits at s0; store readers s4, s8, s12); `x4` (receives at s4; store readers s8, s12); `x8` (receives at s8; store readers s12); `x12` (receives at s12; store readers none)
+- r1: `e` (receives at s1; store readers s5, s9, s13); `x4` (receives at s5; store readers s9, s13); `x8` (receives at s9; store readers s13); `x12` (receives at s13; store readers none)
+- r2: `e` (receives at s2; store readers s6, s10, s14); `x4` (receives at s6; store readers s10, s14); `x8` (receives at s10; store readers s14); `x12` (receives at s14; store readers none)
+- r3: `e` (receives at s3; store readers s7, s11, s15); `x4` (commits at s3; store readers s7, s11, s15); `x8` (commits at s7; store readers s11, s15); `x12` (commits at s11; store readers s15)
+
+- block `e` (committed at s0):
+  - cache off: `(l0 + (l1 + (l2 + (l3 + (l4 + (l5 + (l6 + (l7 + (l8 + (l9 + (l10 + (l11 + (l12 + (l13 + (l14 + l15)))))))))))))))`
+  - cache on:  `(l0 + (((l1 + ((l2 + (l3 + ((l15 + l11) + l7))) + ((l14 + l10) + l6))) + ((l13 + l9) + l5)) + ((l12 + l8) + l4)))`
+- block `x4` (committed at s3):
+  - cache off: `(l3 + (l4 + (l5 + (l6 + (l7 + (l8 + (l9 + (l10 + (l11 + (l12 + (l13 + (l14 + l15))))))))))))`
+  - cache on:  `(l3 + (((l4 + ((l5 + (l6 + (l14 + l10))) + (l13 + l9))) + (l12 + l8)) + ((l15 + l11) + l7)))`
+- block `x8` (committed at s7):
+  - cache off: `(l7 + (l8 + (l9 + (l10 + (l11 + (l12 + (l13 + (l14 + l15))))))))`
+  - cache on:  `(l7 + (((l8 + ((l9 + (l10 + l14)) + l13)) + l12) + (l15 + l11)))`
+- block `x12` (committed at s11):
+  - cache off: `(l11 + (l12 + (l13 + (l14 + l15))))`
+  - cache on:  `(l11 + ((l12 + (l13 + l14)) + l15))`
+
+Read the two simplest trees step by step:
+
+- `x12` (committed at s11 on r3). Cache off: s15 -> s14 -> s13 -> s12 -> s11, each stage adding its reads onto what came in,
+  `l11 + (l12 + (l13 + (l14 + l15)))`. Cache on: the forward carries `x12` only s11 -> s12 -> s13 -> s14 (r3 already holds
+  it, so s14 -> s15 sends nothing); in the backward s15 deposits `l15` in r3's store, s14 starts from its own `l14` (no
+  `x12` gradient comes in), the chain s14 -> s13 -> s12 -> s11 carries the rest, and s11 adds r3's deposit before its own
+  reads: `l11 + ((l12 + (l13 + l14)) + l15)`. `l15` moves from the first addition to the last.
+- `e` (committed at s0, read by all 16 stages). Cache off: one chain through every stage. Cache on: the forward carries `e`
+  only s0 -> s1 -> s2 -> s3; every later stage reads it from its rank's store and deposits there, each rank summing its
+  readers from the highest stage down (r0 `(l12 + l8) + l4`, r1 `(l13 + l9) + l5`, r2 `(l14 + l10) + l6`, r3
+  `(l15 + l11) + l7`), and the chain s3 -> s2 -> s1 -> s0 adds each rank's deposit at the stage that brought `e` onto
+  that rank.
+
+The rule: with the cache off the chain visits every stage and each stage adds onto the sum of everything after it; with
+the cache on the chain visits only the stages that brought the block onto a rank, and each rank's later readers are
+summed among themselves first and join the chain as one deposit. Inside a stage the same holds per read (two per layer):
+with the cache off a stage's reads are added onto the incoming sum, a store reader's reads start from zero.
+
 ## 5. What the trees predict, against measurement
 
 A block whose tree differs changes the gradient of everything upstream of it: `e` only feeds the embedding, `x12` is the
