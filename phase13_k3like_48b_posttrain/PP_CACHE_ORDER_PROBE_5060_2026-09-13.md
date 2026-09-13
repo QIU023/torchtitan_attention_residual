@@ -56,3 +56,12 @@ The fp32 grad-norm table had dp2 x pp2 (1F1B) differ from step 1 (norm 14.4183, 
 `torch.cuda.synchronize()` before the clip and two without: all four 14.4170 / 15.2297 / 10.0644 at steps 1-3, the
 reference's values. So no stream race; the gap came from each 100-step cell running on its own (cold, then copied)
 compile cache, which the numerics-table rule forbids. Rerun with one warmed cache per stream: `run_pp_c4_gn32_shared.sh`.
+
+## H100: the one-step grad-norm digit (step 59 at 1024 tokens, step 27 at 256), located
+
+Full-precision norm printed every step (`gn_repr_hack.py`, `run_pp_c4_gnrepr.sh`), fp32 grad norm, 1024 tokens, all
+four cells on the warmed shared cache `jitwarm_sh1024`: the logged loss is identical to the reference on all 100 steps in
+pp2, pp2 x vp2 naive and pp4 x vp4 naive; the norm differs on 48-53 of the 100 steps by about 1e-7 relative (one fp32
+unit: step 1 16.919260025 against 16.919258118). The pipeline sums the squared norms per rank and all-reduces them, a
+different fp32 summation order than one GPU's; the reference's step-59 norm is 1.6628501415, on the rounding boundary of
+the fourth printed decimal, so that step prints 1.6629 against 1.6628. Not the compile cache, and the loss never moves.
