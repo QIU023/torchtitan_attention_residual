@@ -1,8 +1,8 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-Results updated 2026-09-13: same 4 x H100 PCIe box, `c4_test` text rows instead of the memorised debug set, one reference per stream accumulating in fp32 as the pipeline does, steps 1 / 10 / 20 / 100; logs and every step in `phase13_k3like_48b_posttrain/pp_h100x4_c4_logs_2026-09-13/`. Head for the body: `pp_review4` = `c4fee4afd` (the split moved into Kimi K3); `k3_pp_text` is still `dbc425403` and needs the sync (approval) before the body and the r3987651867 reply are posted. The cached rows move further from the reference at steps 10-20 and are back within 0.10% (1024 tokens) / 2.1% (dp2, 2048) at step 100. Code review of the deposit path: every deposit is counted against the layout and a missing, extra or uncollected one raises, so the difference is the order of the bf16 additions (deposits summed, then added to the gradient that came down the chain). The previous tables (debug set, 2026-09-12) are in git history.
+Results updated 2026-09-13: same 4 x H100 PCIe box, `c4_test` text rows instead of the memorised debug set, one reference per stream accumulating in fp32 as the pipeline does, steps 1 / 10 / 20 / 100; logs and every step in `phase13_k3like_48b_posttrain/pp_h100x4_c4_logs_2026-09-13/`. Head for the body: `pp_review4` = `c4fee4afd` (the split moved into Kimi K3); `k3_pp_text` = `c4fee4afd` (fast-forward, 2026-09-13). The cached rows move further from the reference at steps 10-20 and are back within 0.10% (1024 tokens) / 2.1% (dp2, 2048) at step 100. Code review of the deposit path: every deposit is counted against the layout and a missing, extra or uncollected one raises, so the difference is the order of the bf16 additions (deposits summed, then added to the gradient that came down the chain). The debug-set tables (2026-09-12) stay below the c4 ones. The numerics thread gets the c4 tables through `REPLY_4312_NUMERICS_C4_2026-09-13.md`.
 
-PR 4312. PR branch `k3_pp_text` = `dbc425403` since 2026-09-12 (fast-forward from `dd1c0b925`: the B200 cells, the per-rank stage count removed, the comment and docstring trims; GitHub: 31 commits, 16 files, +1324/-51, still `dirty` -- `torchtitan/config/configs.py` conflicts with main `56a721b64`, 17 commits past the base). Before that it was `dd1c0b925` (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then a test commit and the stage rebuild on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
+PR 4312. PR branch `k3_pp_text` = `c4fee4afd` since 2026-09-13 (fast-forward from `dbc425403`: the split moved into Kimi K3, `pipeline_parallel.py` +4/-1 against main). Before that `dbc425403` since 2026-09-12 (fast-forward from `dd1c0b925`: the B200 cells, the per-rank stage count removed, the comment and docstring trims; GitHub: 31 commits, 16 files, +1324/-51, still `dirty` -- `torchtitan/config/configs.py` conflicts with main `56a721b64`, 17 commits past the base). Before that it was `dd1c0b925` (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then a test commit and the stage rebuild on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
 
 Candidate `pp_review5` = `6042863a4` (2026-09-10): the same 19 commits rebased onto upstream/main `d398a8fb9`. Two files conflicted, both against PR 4527: `model.py`, where the empty stack a first stage starts from is now `h_TD.unsqueeze(1)[:, :0]` (the stack a later stage receives is unchanged), and `parallelize.py`, where the `annotate_replicated_parameters` import and the vision tower's `cpu_offload` / `dp_mesh_dims` kwargs sit beside `pp_enabled=parallel_dims.pp_enabled`. The interdiff against `75045fed5` is those two `model.py` lines; the diff against main is the same 14 files, +1693/-34. Checked on the Windows box: no conflict markers, `compileall` clean, `test_pipeline_neighbor_transport.py` and `test_integration_test_definitions.py` pass (the one failure there is upstream's `/tmp` path assertion, failing identically on main); the three K3 test files import attn-gym's CuTeDSL backend (Linux only) and run on the GPU box.
 
@@ -58,7 +58,7 @@ P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"
 cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_schedule Interleaved1F1B
 ```
 
-4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (a local probe switch); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through a local stage-count switch; each cell gives the raw value and, beneath it, the change against the reference.
+c4 (2026-09-13): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (a local probe switch); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through a local stage-count switch; each cell gives the raw value and, beneath it, the change against the reference.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -82,6 +82,28 @@ dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol
 | dp2, default accumulation (no pipeline) | `12.580740`<br>bitwise | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `2.426700`<br>-0.68% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% | `1.0312`<br>0% |
 | dp2, accumulation order reversed (noise floor, no pipeline) | `12.580740`<br>bitwise | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `2.437380`<br>-0.24% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% | `0.9766`<br>-5.29% |
 | dp2 x ep2 (no pipeline) | `12.580740`<br>bitwise | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `2.420510`<br>-0.93% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% | `1.0312`<br>0% |
+
+Debug set (2026-09-12, `--config kimi_k3_debugmodel`): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the naive row sets `attn_res_cache=False`; each cell gives the raw value and, beneath it, the change against dp1.
+
+| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
+| pp2 | `12.605700`<br>bitwise | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% | `18.75`<br>+0.67% | `5.6875`<br>+4.60% | `3.7344`<br>-6.27% |
+| pp2 x vp2, cached | `12.605700`<br>bitwise | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% | `18.625`<br>0% | `3.7188`<br>-31.61% | `4.0625`<br>+1.96% |
+| pp2 x vp2, naive | `12.605700`<br>bitwise | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% | `18.625`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
+| dp1, accumulation order reversed (noise floor, no pipeline; a local probe switch) | `12.605700`<br>bitwise | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
+
+1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
+
+dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol; each cell gives the raw value and, beneath it, the change against dp2; the dp2 x ep2 row carries no pipeline and sizes what a change of reduction order alone does.
+
+| cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
+| dp2 x pp2 | `12.521140`<br>same | `3.201920`<br>-0.60% | `2.846440`<br>+0.23% | `16.375`<br>0% | `5`<br>-29.20% | `2.6562`<br>+6.92% |
+| dp2 x pp2 x vp2, cached | `12.521140`<br>same | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
+| dp2 x pp2 x vp2, naive | `12.521140`<br>same | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
+| dp2 x ep2 (noise floor, no pipeline) | `12.521140`<br>same | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
