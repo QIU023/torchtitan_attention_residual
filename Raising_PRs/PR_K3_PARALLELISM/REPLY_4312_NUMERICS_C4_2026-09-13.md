@@ -6,7 +6,7 @@ Not in the paste (kept for reference): the cached rows move further than the nai
 
 --- PASTE BEGIN ---
 
-Re-run on the same 4 x H100, now on `c4_test` as text-only rows, since at 1024 tokens per step the reference memorised the original 32-sample debug set within the 100 steps. Step 1 is bitwise in every cell, and at step 100 every pipeline cell is within the range of the order-only noise-floor rows.
+Re-run on the same 4 x H100, now on `c4_test` as text-only rows, since at 1024 tokens per step the reference memorised the original 32-sample debug set within the 100 steps. Step 1 is identical in every cell (logged loss and grad norm); at step 100 every pipeline cell is within 0.22% of the reference loss at 1024 tokens and within 2.1% at 2048 tokens with dp2.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
