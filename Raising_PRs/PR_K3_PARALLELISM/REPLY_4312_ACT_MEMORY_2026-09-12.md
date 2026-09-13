@@ -6,11 +6,10 @@ For the user to post as the reply to 3976976576. Our earlier reply (3932773900) 
 
 Our earlier reply covered the layer / block relation, so here is the per-stage view, where the cache matters. Your example, 2 blocks x 4 layers, with pp2 x vp2 (Interleaved1F1B: global stage s runs on rank s % 2) and the split core generates. `e` is the embedding (stack entry 0), `x4` block 1's result (entry 1); block 2's result is consumed by the output aggregation and never enters the stack.
 
-pp2vp2: deposits 3, collected 3
 | global stage (rank, virtual) | layers | Block AttnRes stored stack | PP Comm, fwd (no cache) | PP Comm, fwd (cache) | already cached | PP Comm, bwd (no cache) | PP Comm, bwd (cache) | deposits into the rank cache | collects from the rank cache |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | s0 (r0, v0) | emb, 0-1 | e | - | - | - | s1 -> [de] | s1 -> [de] | - | s2 stored: [de] |
-| s1 (r1, v0) | 2-4 | x4 | s0 -> [e] | s0 -> [e] | - | s2 -> [de, dx4] | s2 -> [dx4] | - | s3 stored: [dx4, de] |
+| s1 (r1, v0) | 2-4 | x4 | s0 -> [e] | s0 -> [e] | - | s2 -> [de, dx4] | s2 -> [dx4] | - | s3 stored: [de, dx4] |
 | s2 (r0, v1) | 5-6 | - | s1 -> [e, x4] | s1 -> [x4] | [e] | s3 -> [de, dx4] | no op (empty payload) | [de] | - |
 | s3 (r1, v1) | 7, head | - | s2 -> [e, x4] | s2 -> [] (empty payload) | [e, x4] | - | - | [de, dx4] | - |
 
@@ -18,13 +17,12 @@ Stack entries sent per micro-batch: forward 5 with the cache off, 2 with it on; 
 
 A hop carries only the entries the receiving rank has not seen yet. The same with 4 blocks x 4 layers, pp4 x vp4 (stage s on rank s % 4; `x4`, `x8`, `x12` = the results of blocks 1-3):
 
-pp4vp4: deposits 27, collected 27
 | global stage (rank, virtual) | layers | Block AttnRes stored stack | PP Comm, fwd (no cache) | PP Comm, fwd (cache) | already cached | PP Comm, bwd (no cache) | PP Comm, bwd (cache) | deposits into the rank cache | collects from the rank cache |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | s0 (r0, v0) | emb, 0 | e | - | - | - | s1 -> [de] | s1 -> [de] | - | s4 stored: [de], s8 stored: [de], s12 stored: [de] |
 | s1 (r1, v0) | 1-2 | - | s0 -> [e] | s0 -> [e] | - | s2 -> [de] | s2 -> [de] | - | s5 stored: [de], s9 stored: [de], s13 stored: [de] |
 | s2 (r2, v0) | 3 | - | s1 -> [e] | s1 -> [e] | - | s3 -> [de] | s3 -> [de] | - | s6 stored: [de], s10 stored: [de], s14 stored: [de] |
-| s3 (r3, v0) | 4 | x4 | s2 -> [e] | s2 -> [e] | - | s4 -> [de, dx4] | s4 -> [dx4] | - | s7 stored: [dx4, de], s11 stored: [dx4, de], s15 stored: [dx4, de] |
+| s3 (r3, v0) | 4 | x4 | s2 -> [e] | s2 -> [e] | - | s4 -> [de, dx4] | s4 -> [dx4] | - | s7 stored: [de, dx4], s11 stored: [de, dx4], s15 stored: [de, dx4] |
 | s4 (r0, v1) | 5 | - | s3 -> [e, x4] | s3 -> [x4] | [e] | s5 -> [de, dx4] | s5 -> [dx4] | [de] | s8 stored: [dx4], s12 stored: [dx4] |
 | s5 (r1, v1) | 6 | - | s4 -> [e, x4] | s4 -> [x4] | [e] | s6 -> [de, dx4] | s6 -> [dx4] | [de] | s9 stored: [dx4], s13 stored: [dx4] |
 | s6 (r2, v1) | 7 | - | s5 -> [e, x4] | s5 -> [x4] | [e] | s7 -> [de, dx4] | no op (empty payload) | [de] | s10 stored: [dx4], s14 stored: [dx4] |
