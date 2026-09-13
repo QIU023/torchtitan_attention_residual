@@ -43,3 +43,7 @@ fp32 dp1 at 1024 tokens OOMs on 16 GB in the optimizer step; its step-1 gradient
 
 pp2 x vp2 cache on, 5 steps, shared cache: `dbc425403` vs `dbc425403 + c4fee4afd`, loss and grad norm identical at
 steps 1-5, step-1 gradients 680/680 bitwise.
+
+## 256 tokens (64-token rows, 4 x 64), bf16, one shared cache (5060 only)
+
+pp2 and pp2 x vp2 naive vs dp1 no-sync: 680/680 bitwise each, step-1 grad norm 22.75 in all three. The H100 256 kit's interleaved cells read 23.125 vs 23.000 at step 1 with a cold inductor cache per cell; warm-cache reruns queued there (`run_pp_c4_256_warm.sh`). The cache-on dump here was truncated by a full disk.
