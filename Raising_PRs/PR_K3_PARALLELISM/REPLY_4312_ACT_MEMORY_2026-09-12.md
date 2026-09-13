@@ -11,9 +11,9 @@ Our earlier reply covered the layer / block relation, so here is the per-stage v
 | s0 (r0, v0) | emb, 0-1 | e | - | - | - |
 | s1 (r1, v0) | 2-4 | x4 | s0 -> [e] | s0 -> [e] | - |
 | s2 (r0, v1) | 5-6 | - | s1 -> [e, x4] | s1 -> [x4] | [e] |
-| s3 (r1, v1) | 7, head | - | s2 -> [e, x4] | s2 -> [] | [e, x4] |
+| s3 (r1, v1) | 7, head | - | s2 -> [e, x4] | s2 -> [] (empty payload) | [e, x4] |
 
-Stack entries sent per micro-batch: 5 with the cache off, 2 with it on (the hidden state travels on every hop either way and is not listed).
+Stack entries sent per micro-batch: 5 with the cache off, 2 with it on (the hidden state travels on every hop and is not listed; an empty entry list still posts a 0-byte send / recv).
 
 A hop carries only the entries the receiving rank has not seen yet. The same with 4 blocks x 4 layers, pp4 x vp4 (stage s on rank s % 4; `x4`, `x8`, `x12` = the results of blocks 1-3):
 
@@ -26,17 +26,17 @@ A hop carries only the entries the receiving rank has not seen yet. The same wit
 | s4 (r0, v1) | 5 | - | s3 -> [e, x4] | s3 -> [x4] | [e] |
 | s5 (r1, v1) | 6 | - | s4 -> [e, x4] | s4 -> [x4] | [e] |
 | s6 (r2, v1) | 7 | - | s5 -> [e, x4] | s5 -> [x4] | [e] |
-| s7 (r3, v1) | 8 | x8 | s6 -> [e, x4] | s6 -> [] | [e, x4] |
+| s7 (r3, v1) | 8 | x8 | s6 -> [e, x4] | s6 -> [] (empty payload) | [e, x4] |
 | s8 (r0, v2) | 9 | - | s7 -> [e, x4, x8] | s7 -> [x8] | [e, x4] |
 | s9 (r1, v2) | 10 | - | s8 -> [e, x4, x8] | s8 -> [x8] | [e, x4] |
 | s10 (r2, v2) | 11 | - | s9 -> [e, x4, x8] | s9 -> [x8] | [e, x4] |
-| s11 (r3, v2) | 12 | x12 | s10 -> [e, x4, x8] | s10 -> [] | [e, x4, x8] |
+| s11 (r3, v2) | 12 | x12 | s10 -> [e, x4, x8] | s10 -> [] (empty payload) | [e, x4, x8] |
 | s12 (r0, v3) | 13 | - | s11 -> [e, x4, x8, x12] | s11 -> [x12] | [e, x4, x8] |
 | s13 (r1, v3) | 14 | - | s12 -> [e, x4, x8, x12] | s12 -> [x12] | [e, x4, x8] |
 | s14 (r2, v3) | 15 | - | s13 -> [e, x4, x8, x12] | s13 -> [x12] | [e, x4, x8] |
-| s15 (r3, v3) | head | - | s14 -> [e, x4, x8, x12] | s14 -> [] | [e, x4, x8, x12] |
+| s15 (r3, v3) | head | - | s14 -> [e, x4, x8, x12] | s14 -> [] (empty payload) | [e, x4, x8, x12] |
 
-Stack entries sent per micro-batch: 39 with the cache off, 12 with it on (the hidden state travels on every hop either way and is not listed).
+Stack entries sent per micro-batch: 39 with the cache off, 12 with it on (the hidden state travels on every hop and is not listed; an empty entry list still posts a 0-byte send / recv).
 
 Forward: a stage puts each entry it adds or receives into its rank's cache (a detached view of the stack, no copy). The rank drops a micro-batch's entries right after its last stage's forward for that micro-batch (stage 2 on rank 0, stage 3 on rank 1). What backward needs is held by autograd as usual, not by the cache.
 
