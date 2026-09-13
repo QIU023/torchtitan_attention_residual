@@ -11,7 +11,7 @@ IL="--parallelism.pipeline_parallel_schedule Interleaved1F1B"
 naive_common() { COMMON="${COMMON/--config kimi_k3_debugmodel_c4 /--config kimi_k3_debugmodel_c4_pp_naive }"; }
 seed c4_256 $B4
 seed c4_512 $B8
-# 1024 tokens per step, reference dp1
+# 256 tokens per step (4 x 64), reference dp1
 cell c4r64_dp1 $TT 0 1 c4_256 100 $B4 $D 1 &
 ( export MB_REVERSE=1; cell c4r64_dp1_rev $TT 1 1 c4_256 100 $B4 $D 1 ) &
 cell c4r64_pp2 $TT 2,3 2 c4_256 100 $B4 $D 1 $P &
@@ -19,7 +19,7 @@ wait
 cell c4r64_vp2c $TT 0,1 2 c4_256 100 $B4 $D 1 $P $IL &
 ( naive_common; cell c4r64_vp2n $TT 2,3 2 c4_256 100 $B4 $D 1 $P $IL ) &
 wait
-# 2048 tokens per step (4 x 256 per rank), reference dp2
+# 512 tokens per step (4 x 64 per rank), reference dp2
 cell c4r64_d2_dp2 $TT 0,1 2 c4_512 100 $B8 $D 2 &
 cell c4r64_d2_ep2 $TT 2,3 2 c4_512 100 $B8 $D 2 $E 2 &
 wait
