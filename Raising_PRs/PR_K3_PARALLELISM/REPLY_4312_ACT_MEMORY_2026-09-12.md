@@ -4,29 +4,15 @@ For the user to post as the reply to 3976976576 (Tianyu's follow-up, 2026-09-10;
 
 --- PASTE BEGIN ---
 
-Close, with one correction: the redundancy is per block, not per layer. Each block starts a new stack that holds every previous block's result, so the stacks of consecutive blocks overlap (that is the N(N+1)/2); but the layers inside a block share that one stack tensor, and no layer saves a copy of its own. The per-layer residual reads are recomputed in backward. This is the policy of this implementation (the default `SelectiveAC` of the debug flavors); Kimi has not published theirs.
+Close, with one correction: the redundancy is per block, not per layer. Each block starts a new stack holding all previous blocks' results (so consecutive stacks overlap -- that is the N(N+1)/2), but the layers of a block share that one tensor, and the per-layer residual reads are recomputed in backward: the default `SelectiveAC` makes each layer one checkpoint region, and the reads' ops (cat, fp32 cast, norm, softmax, bmm) are not in its save set. This is our implementation; Kimi hasn't published theirs.
 
-What each layer does (`KimiK3TransformerBlock.forward`, `_apply_attention_residual`):
+2 blocks x 4 layers, one micro-batch:
 
-- The first layer of a block appends its input `x` to the stack: `S = torch.cat((S, x.unsqueeze(1)), dim=1)`, a new `[T, n, D]` tensor. The other layers of the block take and return that same tensor object.
-- Every layer then reads the stack twice, before attention and before the FFN: `values = S` (first layer of a block, attention read) or `cat(S, partial)` (every other read), `.float()`, RMS-normalised, scored against the layer's projection, softmaxed over the entries, and a batched matmul gives the input. All of these are temporaries.
-- `SelectiveAC` wraps each layer in one checkpoint region with a per-op policy: it saves the outputs of the linears (every second one recomputed), flex attention, topk / max and the communication ops, plus the region's inputs. The read's ops (`cat`, the bf16 -> fp32 copy, pow / mean / rsqrt, mul / sum, softmax, bmm) are not in that set, so their outputs are freed right after the read and recomputed in that layer's backward. The region input `S` is a reference to the block's stack, which exists once.
-
-Your example, 2 blocks of 4 layers, one micro-batch of `T` tokens, hidden `D`:
-
-| forward step | lives until backward (beyond any decoder's per-layer saves) | temporaries, freed after the read |
+| forward | kept until backward | freed right after use |
 | --- | --- | --- |
-| embedding | `e` `[T, D]` | |
-| layer 0 (starts block 1) | `S1 = cat(empty, e)` `[T, 1, D]` | no attention read (its input is `e`); FFN read `cat(S1, h0)` `[T, 2, D]` + fp32 copy |
-| layers 1-3 | nothing new (they pass `S1` along) | two reads each: `cat(S1, partial)` `[T, 2, D]` + fp32 copy |
-| layer 4 (starts block 2) | `S2 = cat(S1, x4)` `[T, 2, D]`, `x4` = block 1's result | attention read `S2` + fp32 copy `[T, 2, D]`; FFN read `cat(S2, h4)` `[T, 3, D]` + fp32 copy |
-| layers 5-7 | nothing new (they pass `S2` along) | two reads each: `cat(S2, partial)` `[T, 3, D]` + fp32 copy |
-| output aggregation | | `cat(S2, x8)` `[T, 3, D]` + fp32 copy |
+| layer 0 | `S1 = [e]`, `[T, 1, D]` | FFN read `[S1, h]` |
+| layers 1-3 | nothing (they share `S1`) | 2 reads each, `[T, 2, D]` |
+| layer 4 | `S2 = [e, x4]`, `[T, 2, D]` | reads `[T, 2, D]` and `[T, 3, D]` |
+| layers 5-7 | nothing (they share `S2`) | 2 reads each, `[T, 3, D]` |
 
-So the stacks add `S1` and `S2`, 1 + 2 = 3 rows of `[T, D]`, on top of what any decoder keeps per layer. For N blocks that is N(N+1)/2 rows -- 36 for the 93-layer model's 8 blocks -- independent of how many layers a block has.
-
-Release: backward runs the aggregation, then layers 7 down to 0. Each layer's backward recomputes its two reads from the saved references (`S` and the layer input), uses them and frees them. `cat` saves nothing for its backward, so a stack is freed as soon as the last layer that took it as input has run backward: `S2` after layer 4's backward, `S1` after layer 0's.
-
-Under PP, each rank additionally keeps (detached) views of the blocks a later stage on that rank will read, and drops them after the rank's last stage has run forward for that micro-batch; they point into the same stack storage, so they add no memory while the stack is alive anyway.
-
-With activation checkpointing off, autograd would instead save every read's fp32 `values` and normalised keys, two reads per layer -- effectively a copy of all previous blocks per layer, the redundancy your question describes. Selective checkpointing is what keeps it at one stack per block.
+Extra memory: `S1` + `S2` = 3 rows of `[T, D]` (N(N+1)/2 for N blocks). Backward recomputes each layer's reads from `S` and the layer's input; `S2` is freed after layer 4's backward, `S1` after layer 0's. Without activation checkpointing, autograd would keep every read's fp32 copy -- the per-layer redundancy you describe.
