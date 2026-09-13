@@ -25,22 +25,22 @@ PP_STAGES_PER_RANK=4 cell pp4vp4_naive 4 kimi_k3_debugmodel_c4_pp_naive $P4; PP_
 
 1024 tokens per step:
 
-| cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
+| cell | loss, step 1 | step 10 | step 50 | step 100 | grad norm, step 1 | step 10 | step 50 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp1 (reference) | `12.609980` | `3.595760` | `2.998930` | `2.533960` | `16.9193` | `5.0429` | `2.1888` | `1.6014` |
-| pp2 (all 100 steps identical) | `12.609980`<br>identical | `3.595760`<br>identical | `2.998930`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `2.1888`<br>identical | `1.6014`<br>identical |
-| pp2 x vp2, naive | `12.609980`<br>identical | `3.595760`<br>identical | `2.998930`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `2.1888`<br>identical | `1.6014`<br>identical |
-| pp4 x vp4, naive | `12.609980`<br>identical | `3.595760`<br>identical | `2.998930`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `2.1888`<br>identical | `1.6014`<br>identical |
-| pp2 x vp2, cached | `12.609980`<br>identical | `3.554240`<br>-1.15% | `3.055690`<br>+1.89% | `2.571310`<br>+1.47% | `16.9177`<br>-0.01% | `5.2631`<br>+4.37% | `2.9058`<br>+32.76% | `1.6073`<br>+0.37% |
-| pp4 x vp4, cached | `12.609980`<br>identical | `3.309360`<br>-7.96% | `3.007760`<br>+0.29% | `2.554590`<br>+0.81% | `16.9167`<br>-0.02% | `3.5408`<br>-29.79% | `2.0286`<br>-7.32% | `1.5763`<br>-1.57% |
+| dp1 (reference) | `12.609980` | `3.595760` | `2.672340` | `2.533960` | `16.9193` | `5.0429` | `1.4695` | `1.6014` |
+| pp2 (all 100 steps identical) | `12.609980`<br>identical | `3.595760`<br>identical | `2.672340`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `1.4695`<br>identical | `1.6014`<br>identical |
+| pp2 x vp2, naive | `12.609980`<br>identical | `3.595760`<br>identical | `2.672340`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `1.4695`<br>identical | `1.6014`<br>identical |
+| pp4 x vp4, naive | `12.609980`<br>identical | `3.595760`<br>identical | `2.672340`<br>identical | `2.533960`<br>identical | `16.9193`<br>identical | `5.0429`<br>identical | `1.4695`<br>identical | `1.6014`<br>identical |
+| pp2 x vp2, cached | `12.609980`<br>identical | `3.554240`<br>-1.15% | `2.723740`<br>+1.92% | `2.571310`<br>+1.47% | `16.9177`<br>-0.01% | `5.2631`<br>+4.37% | `1.7956`<br>+22.19% | `1.6073`<br>+0.37% |
+| pp4 x vp4, cached | `12.609980`<br>identical | `3.309360`<br>-7.96% | `2.678180`<br>+0.22% | `2.554590`<br>+0.81% | `16.9167`<br>-0.02% | `3.5408`<br>-29.79% | `1.6092`<br>+9.51% | `1.5763`<br>-1.57% |
 
 2048 tokens per step, dp2:
 
-| cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
+| cell | loss, step 1 | step 10 | step 50 | step 100 | grad norm, step 1 | step 10 | step 50 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp2 (reference) | `12.580740` | `3.576250` | `2.976110` | `2.420420` | `14.4170` | `12.4659` | `2.4576` | `1.0313` |
-| dp2 x pp2 (all 100 steps identical) | `12.580740`<br>identical | `3.576250`<br>identical | `2.976110`<br>identical | `2.420420`<br>identical | `14.4170`<br>identical | `12.4659`<br>identical | `2.4576`<br>identical | `1.0313`<br>identical |
-| dp2 x pp2 x vp2, naive (all 100 steps identical) | `12.580740`<br>identical | `3.576250`<br>identical | `2.976110`<br>identical | `2.420420`<br>identical | `14.4170`<br>identical | `12.4659`<br>identical | `2.4576`<br>identical | `1.0313`<br>identical |
-| dp2 x pp2 x vp2, cached | `12.580740`<br>identical | `3.305220`<br>-7.58% | `2.949200`<br>-0.90% | `2.434300`<br>+0.57% | `14.4191`<br>+0.01% | `4.5317`<br>-63.65% | `2.6572`<br>+8.12% | `1.0893`<br>+5.62% |
+| dp2 (reference) | `12.580740` | `3.576250` | `2.657010` | `2.420420` | `14.4170` | `12.4659` | `1.7446` | `1.0313` |
+| dp2 x pp2 (all 100 steps identical) | `12.580740`<br>identical | `3.576250`<br>identical | `2.657010`<br>identical | `2.420420`<br>identical | `14.4170`<br>identical | `12.4659`<br>identical | `1.7446`<br>identical | `1.0313`<br>identical |
+| dp2 x pp2 x vp2, naive (all 100 steps identical) | `12.580740`<br>identical | `3.576250`<br>identical | `2.657010`<br>identical | `2.420420`<br>identical | `14.4170`<br>identical | `12.4659`<br>identical | `1.7446`<br>identical | `1.0313`<br>identical |
+| dp2 x pp2 x vp2, cached | `12.580740`<br>identical | `3.305220`<br>-7.58% | `2.664850`<br>+0.30% | `2.434300`<br>+0.57% | `14.4191`<br>+0.01% | `4.5317`<br>-63.65% | `1.7570`<br>+0.71% | `1.0893`<br>+5.62% |
 
 --- PASTE END ---

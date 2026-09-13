@@ -146,12 +146,22 @@ output of layers 0-11. So:
 - pp4 x vp4 (both trees differ): layers 0-11 and `tok_embeddings`. Measured on the 5060 (step-1 gradients, cache on vs
   off): exactly those 334 of 680 parameters differ, in bf16, fp32 and fp64, layers 12-23 bitwise
   (`PP_CACHE_ORDER_PROBE_5060_2026-09-13.md`).
-- pp2 x vp2 (only `e` differs): only `tok_embeddings`. pp8 x vp2 (both differ): layers 0-11 and `tok_embeddings`.
-  Check running: `matrix_scripts/tp_h100_v2/cache_order_prediction_check.sh`.
+- pp8 x vp2 (both differ): layers 0-11 and `tok_embeddings`. Measured (bf16 step 1, 256 tokens,
+  `cache_order_prediction_check.sh`): exactly those 334 parameters, max relative 7.5e-2.
+- pp2 x vp2: the stage-level trees above have `x12` the same in both modes, predicting only `tok_embeddings`. Measured
+  (bf16 step 1, 1024 tokens): the same 334 parameters as the other shapes, `x12` included. So the stage-level trees are
+  too coarse. A stage's `l<s>` is not one term: the stage's stack column receives the incoming gradient (the block's
+  payload gradient) and each of the stage's reads (two per layer) as separate contributions to one accumulator. With the
+  cache off, a stage's reads are added onto the sum that came from the next stage; with the cache on, a store reader's
+  reads are summed on their own and join the chain later as one deposit. At pp2 x vp2, `x12`'s naive order is
+  s3's reads, then s2's reads added onto that sum, then s1's; with the cache on s2's reads are summed from zero (s2 does
+  not forward `x12`, rank 1 holds it) and s3's sum is added at s1. Corrected rule, matching all three measured shapes:
+  every block that takes a deposit is summed in a different order, and everything upstream of it differs.
+
 
 ## 6. Can the cache's order be tweaked to the naive one?
 
-Not bitwise without moving gradients across ranks. The naive tree is a right fold over the stages in order,
+Not bitwise without moving gradients across ranks. (The finer, per-read picture of section 5 makes this stronger: a stage's first addition in the naive order starts from the next stage's sum.) The naive tree is a right fold over the stages in order,
 `l_o + (l_(o+1) + (... + l_(S-1)))`, which is what one GPU computes (measured bitwise). Every inner sum
 `l_s + (...)` whose two sides sit on different ranks needs the partial sum from stage s+1 to reach stage s, i.e. the
 block's gradient on that hop. With the cache on that gradient does not travel: in pp2 x vp2 the naive order needs
