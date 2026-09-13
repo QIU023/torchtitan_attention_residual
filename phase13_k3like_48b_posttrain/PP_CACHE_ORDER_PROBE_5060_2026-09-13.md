@@ -30,7 +30,12 @@ cache off is bitwise with dp1.
 | cell vs fp32 dp1 no-sync | bitwise params |
 | --- | --- |
 | pp4 x vp4, cache off | 680/680 |
-| pp4 x vp4, cache on | (rerun: the first dump was truncated by a full disk) |
+| pp4 x vp4, cache on | 346/680 |
+
+Cache on in fp32 differs in the same 334 parameters (layers 0-11, `tok_embeddings`) as in bf16, but the largest
+relative difference falls from 7.4e-2 to 9.1e-6 (`layers.0 delta_attention.dt_bias`; 3e-7 to 9e-6 per layer), i.e.
+to float32 rounding: the cache-on gap is the order of the additions, not a missing or extra term. (The first fp32
+cache-on dump was truncated by a full disk and rerun.)
 
 fp32 dp1 at 1024 tokens OOMs on 16 GB in the optimizer step; its step-1 gradients are dumped before that.
 
