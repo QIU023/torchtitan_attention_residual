@@ -137,11 +137,11 @@ Every other split passed because a later op consumed the input and autograd accu
     torchtitan/models/kimi_k3/
       pipeline_stage.py                     +367/-0  AttnResPipelineStage and the rank-local cache (new)
       layout.py                             +185/-0  BlockLayoutTables from the split the trainer applied (new)
-      parallelize.py                        +200/-3   the pipelining entry: Kimi K3's own split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
+      parallelize.py                        +200/-3  the pipelining entry: Kimi K3's own split, the stage rebuild, the tables, the transport switch; pipeline parallel off the unsupported list
       model.py                              +40/-23  the block stack in and out of a stage; the block's first layer joins the stack before attending
       __init__.py                           +18/-6   registers the pipelining_fn; the 33-layer flavor for the pp8 x vp4 cell
     tests/unit_tests/cpu/
-      test_kimi_k3_pp_layout.py             +209/-0   the tables: uneven split, cache on and off; Kimi K3's split, the pp8 x vp4 recipe's split, the shared debug model's depth (new)
+      test_kimi_k3_pp_layout.py             +209/-0  the tables: uneven split, cache on and off; Kimi K3's split, the pp8 x vp4 recipe's split, the shared debug model's depth (new)
       test_kimi_k3_stage_swap.py            +84/-0   the stage rebuild for single- and multi-stage schedules (new)
       test_kimi_k3_pp_stage.py              +79/-0   assembly, routing, the gradient split, the store (new)
       test_pipeline_parallel.py             +34/-0   the injected split clears the knob that derived it
