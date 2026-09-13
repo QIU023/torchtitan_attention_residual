@@ -118,11 +118,62 @@ index ebad99cdf..115fbc107 100644
          return torch._grouped_mm(A, weight_EOI.bfloat16().transpose(-2, -1), offs=offs)
  
  
+diff --git a/torchtitan/models/kimi_k3/__init__.py b/torchtitan/models/kimi_k3/__init__.py
+index 18ba13d42..d282f2271 100644
+--- a/torchtitan/models/kimi_k3/__init__.py
++++ b/torchtitan/models/kimi_k3/__init__.py
+@@ -385,6 +385,7 @@ def _kimi_k3_config(
+     vision_encoder: KimiK3VisionEncoder.Config,
+     attn_backend: str,
+     moe_comm_backend: str = "standard",
++    dense_ffn_only: bool = False,  # PROBE ONLY (not committed): every layer the layer-0 dense FFN, no MoE
+ ) -> KimiK3Model.Config:
+     """Assemble a Kimi K3 config from the released topology's free parameters.
+ 
+@@ -425,12 +426,12 @@ def _kimi_k3_config(
+                 ),
+                 feed_forward=(
+                     _feed_forward_config(dim=dim, hidden_dim=dense_hidden_dim)
+-                    if layer_idx == 0
++                    if layer_idx == 0 or dense_ffn_only
+                     else None
+                 ),
+                 moe=(
+                     None
+-                    if layer_idx == 0
++                    if layer_idx == 0 or dense_ffn_only
+                     else _latent_moe_config(
+                         dim=dim,
+                         latent_dim=latent_dim,
+@@ -477,12 +478,13 @@ def kimi_k3_full_attention_layers(num_layers: int) -> set[int]:
+ 
+ 
+ def _debugmodel(
+-    attn_backend: str, moe_comm_backend: str, *, num_layers: int = 24
++    attn_backend: str, moe_comm_backend: str, *, num_layers: int = 24, dense_ffn_only: bool = False
+ ) -> KimiK3Model.Config:
+     dim = 1024
+     return _kimi_k3_config(
+         dim=dim,
+         moe_comm_backend=moe_comm_backend,
++        dense_ffn_only=dense_ffn_only,
+         vocab_size=163840,
+         num_layers=num_layers,
+         full_attention_layers=kimi_k3_full_attention_layers(num_layers),
+@@ -560,6 +562,8 @@ kimi_k3_configs = {
+     # pipeline stress cell uses it; every other flavor keeps "debugmodel".
+     "debugmodel_33_layers": (partial(_debugmodel, num_layers=33), 16384),
+     "Kimi-K3": (_kimi_k3, 262144),
++    # PROBE ONLY (not committed): the debug model with a dense FFN in every layer (no MoE routing).
++    "debugmodel_dense": (partial(_debugmodel, dense_ffn_only=True), 16384),
+ }
+ 
+ 
 diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
-index e2fe219b9..1d3875a23 100644
+index e2fe219b9..244d02c87 100644
 --- a/torchtitan/models/kimi_k3/config_registry.py
 +++ b/torchtitan/models/kimi_k3/config_registry.py
-@@ -94,3 +94,87 @@ def kimi_k3_debugmodel(
+@@ -94,3 +94,109 @@ def kimi_k3_debugmodel(
          ),
          activation_checkpoint=SelectiveAC.Config(),
      )
@@ -205,6 +256,28 @@ index e2fe219b9..1d3875a23 100644
 +    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3
 +
 +    config = kimi_k3_debugmodel_c4()
++    assert config.model_spec is not None
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
++
++
++def kimi_k3_debugmodel_c4_dense() -> Trainer.Config:  # PROBE ONLY (not committed)
++    """kimi_k3_debugmodel_c4 with a dense FFN in every layer (no MoE routing)."""
++    from torchtitan.models.kimi_k3 import model_registry
++
++    config = kimi_k3_debugmodel_c4()
++    config.model_spec = model_registry("debugmodel_dense")
++    return config
++
++
++def kimi_k3_debugmodel_c4_dense_pp_naive() -> Trainer.Config:  # PROBE ONLY (not committed)
++    import functools
++
++    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel_c4_dense()
 +    assert config.model_spec is not None
 +    config.model_spec.pipelining_fn = functools.partial(
 +        pipeline_kimi_k3, attn_res_cache=False

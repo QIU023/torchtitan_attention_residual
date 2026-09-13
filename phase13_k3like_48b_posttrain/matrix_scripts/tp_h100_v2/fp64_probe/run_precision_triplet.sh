@@ -4,16 +4,17 @@
 # norm every step (REPR_LOG, logging only). Per precision one shared compile cache, warmed by a 1-step run of both
 # cells first. KDA_NOAUTOTUNE=1 keeps the fused KDA's configs fixed in bf16 (the other two run the reference KDA).
 # Local 8 x 5060 Ti, every cell on all eight GPUs, one after the other. Tree: pp_fp64_probe.
-set -u; export CFG=kimi_k3_debugmodel_c4 C4_ROW_TOKENS=64 REPR_LOG=1 KDA_NOAUTOTUNE=1
+set -u; export CFG=${CFG:-kimi_k3_debugmodel_c4} C4_ROW_TOKENS=64 REPR_LOG=1 KDA_NOAUTOTUNE=1  # CFG=kimi_k3_debugmodel_c4_dense: no MoE
+SEEDTAG=${SEEDTAG:-c4_256}
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 . "$(dirname "$0")/../common.sh"
 STEPS=${STEPS:-100}; PRECS=${PRECS:-"bf16 fp32 fp64"}
 TAG=${TAG:-}; EXTRA=${EXTRA:-}  # e.g. TAG=_clr EXTRA="--lr_scheduler.min_lr_factor 1.0" for a constant LR after the 2 warmup steps
 B="--training.num-tokens-per-train-step 256 --training.num-tokens-per-microbatch-per-dp-rank 64"
 P8="--parallelism.pipeline_parallel_degree 8 --parallelism.num-pp-microbatches 4 --parallelism.pipeline_parallel_schedule Interleaved1F1B"
-NAIVE="${COMMON/--config kimi_k3_debugmodel_c4 /--config kimi_k3_debugmodel_c4_pp_naive }"
-seed c4_256 $B
-g() { local nm=$1 common=$2 steps=$3 flags=$4; local d=$OUT/$nm; rm -rf $d; mkdir -p $d; cp -al $OUT/seed_c4_256/checkpoint $d/
+NAIVE="${COMMON/--config $CFG /--config ${CFG}_pp_naive }"
+seed $SEEDTAG $B
+g() { local nm=$1 common=$2 steps=$3 flags=$4; local d=$OUT/$nm; rm -rf $d; mkdir -p $d; cp -al $OUT/seed_$SEEDTAG/checkpoint $d/
   ( cd $TT && CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 TORCHINDUCTOR_CACHE_DIR=$J/inductor TRITON_CACHE_DIR=$J/triton \
       torchrun --nproc_per_node=8 --master_port=$((30000+RANDOM%20000)) $common --training.steps $steps $B $D 1 $P8 $flags $EXTRA --dump-folder $d > $OUT/$nm.log 2>&1 )
   echo "$nm rc=$? $(date +%T)"; rm -rf $d/checkpoint; }
