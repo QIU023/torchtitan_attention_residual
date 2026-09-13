@@ -159,6 +159,19 @@ output of layers 0-11. So:
   every block that takes a deposit is summed in a different order, and everything upstream of it differs.
 
 
+## 5b. The forward is identical: checked over many inputs and parameter draws
+
+`matrix_scripts/tp_h100_v2/fp64_probe/fwd_identity_check.sh` (5060, bf16 standard path, pp2 x vp2, 1024 tokens, one warm
+compile cache; logs in `fp64_5060_logs_2026-09-13/fwd_identity/`):
+- parameters frozen (`NO_OPT_STEP=1`), 50 steps = 50 different batches on the seed parameters: the full-precision loss is
+  identical with the cache on and off on all 50 steps (50 distinct values). The logged grad norm differs on 1 of the 50
+  steps, as expected: the backward sums the block gradients in another order.
+- fresh initialisation with seeds 1-4 (no seed checkpoint), one step each: the loss is identical with the cache on and
+  off for every seed (four distinct values).
+Why: the cached block is the same tensor the P2P would carry (a detached view of the stack, no copy; a P2P send copies
+the same bytes), and `assemble_stack` orders the stack by block index in both modes, so every stage's input is bitwise
+the same and the forward has no cross-stage reduction.
+
 ## 6. Can the cache's order be tweaked to the naive one?
 
 Not bitwise without moving gradients across ranks. (The finer, per-read picture of section 5 makes this stronger: a stage's first addition in the naive order starts from the next stage's sum.) The naive tree is a right fold over the stages in order,
