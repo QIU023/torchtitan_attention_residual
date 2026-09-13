@@ -56,6 +56,7 @@ The c4 flavors (`kimi_k3_debugmodel_c4`, `kimi_k3_debugmodel_c4_pp_naive`) and t
 
 ```bash
 python gn_fp32_hack.py . && export GN_FP32=1   # total grad norm in fp32 (drop both for the appendix tables)
+export TORCHINDUCTOR_CACHE_DIR=$PWD/cache/inductor TRITON_CACHE_DIR=$PWD/cache/triton   # one compile cache for every cell, run in this order so the reference fills it first
 COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
 torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel_c4 --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; c=$3; shift 3; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --config $c --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
@@ -63,10 +64,10 @@ P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"
 NOSYNC_GA=1 cell ref 1 kimi_k3_debugmodel_c4; MB_REVERSE=1 cell reversed 1 kimi_k3_debugmodel_c4; cell dp1 1 kimi_k3_debugmodel_c4
 cell pp2 2 kimi_k3_debugmodel_c4 $P; cell vp2_cached 2 kimi_k3_debugmodel_c4 $P $IL; cell vp2_naive 2 kimi_k3_debugmodel_c4_pp_naive $P $IL
 PP_STAGES_PER_RANK=4 cell pp4vp4_cached 4 kimi_k3_debugmodel_c4 --parallelism.pipeline_parallel_degree 4 --parallelism.num-pp-microbatches 4 $IL
-# dp2 table: --parallelism.data_parallel_shard_degree 2 and --training.num-tokens-per-train-step 2048, its own seed checkpoint
+# dp2 table: --parallelism.data_parallel_shard_degree 2 and --training.num-tokens-per-train-step 2048, its own seed checkpoint, the same cache, the dp2 reference first
 ```
 
-4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows, one seed checkpoint, four 256-token micro-batches per rank, total grad norm in fp32; each cell gives the raw value and, beneath it, the change against the reference.
+4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows, one seed checkpoint and one compile cache shared by every cell (a fresh cache per cell autotunes other kernels and moves the logged norm by itself), four 256-token micro-batches per rank, total grad norm in fp32; each cell gives the raw value and, beneath it, the change against the reference.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
