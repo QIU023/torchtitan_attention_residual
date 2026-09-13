@@ -65,30 +65,38 @@ PP_STAGES_PER_RANK=4 cell pp4vp4_cached 4 kimi_k3_debugmodel_c4 --parallelism.pi
 # dp2 table: --parallelism.data_parallel_shard_degree 2 and --training.num-tokens-per-train-step 2048, its own seed checkpoint
 ```
 
-c4 (2026-09-13): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (`NOSYNC_GA`); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through `PP_STAGES_PER_RANK`; each cell gives the raw value and, beneath it, the change against the reference.
+c4 (2026-09-13): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; each cell gives the raw value and, beneath it, the change against the reference.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp1, no-sync accumulation (reference) | `12.609980` | `3.335430` | `3.007030` | `2.568440` | `16.875` | `3.2812` | `2.5312` | `1.5547` |
+| dp1 ¹ | `12.609980` | `3.335430` | `3.007030` | `2.568440` | `16.875` | `3.2812` | `2.5312` | `1.5547` |
 | pp2 | `12.609980`<br>identical | `3.334370`<br>-0.03% | `2.988620`<br>-0.61% | `2.562870`<br>-0.22% | `16.875`<br>0% | `3.2969`<br>+0.48% | `2.2188`<br>-12.34% | `1.5312`<br>-1.51% |
 | pp2 x vp2, cached | `12.609980`<br>identical | `3.310030`<br>-0.76% | `3.032070`<br>+0.83% | `2.565810`<br>-0.10% | `16.875`<br>0% | `3.2812`<br>0% | `2.9375`<br>+16.05% | `1.5781`<br>+1.51% |
-| pp2 x vp2, naive | `12.609980`<br>identical | `3.331430`<br>-0.12% | `2.996710`<br>-0.34% | `2.571170`<br>+0.11% | `16.875`<br>0% | `3.3125`<br>+0.95% | `2.4062`<br>-4.94% | `1.5547`<br>0% |
-| pp4 x vp4, cached | `12.609980`<br>identical | `3.528470`<br>+5.79% | `3.059910`<br>+1.76% | `2.571010`<br>+0.10% | `16.875`<br>0% | `10`<br>+204.77% | `2.75`<br>+8.64% | `1.6094`<br>+3.52% |
-| pp4 x vp4, naive | `12.609980`<br>identical | `3.334860`<br>-0.02% | `2.995440`<br>-0.39% | `2.565350`<br>-0.12% | `16.875`<br>0% | `3.2656`<br>-0.48% | `2.4219`<br>-4.32% | `1.5391`<br>-1.00% |
-| dp1, default accumulation (no pipeline) | `12.609980`<br>identical | `3.421960`<br>+2.59% | `3.022710`<br>+0.52% | `2.536600`<br>-1.24% | `16.875`<br>0% | `5.0625`<br>+54.29% | `2.1406`<br>-15.43% | `1.5703`<br>+1.00% |
-| dp1, accumulation order reversed (noise floor, no pipeline) | `12.609980`<br>identical | `3.389450`<br>+1.62% | `3.066510`<br>+1.98% | `2.563570`<br>-0.19% | `16.875`<br>0% | `4.6875`<br>+42.86% | `2.9531`<br>+16.67% | `1.6797`<br>+8.04% |
+| pp2 x vp2, naive ² | `12.609980`<br>identical | `3.331430`<br>-0.12% | `2.996710`<br>-0.34% | `2.571170`<br>+0.11% | `16.875`<br>0% | `3.3125`<br>+0.95% | `2.4062`<br>-4.94% | `1.5547`<br>0% |
+| pp4 x vp4, cached ³ | `12.609980`<br>identical | `3.528470`<br>+5.79% | `3.059910`<br>+1.76% | `2.571010`<br>+0.10% | `16.875`<br>0% | `10`<br>+204.77% | `2.75`<br>+8.64% | `1.6094`<br>+3.52% |
+| pp4 x vp4, naive ²³ | `12.609980`<br>identical | `3.334860`<br>-0.02% | `2.995440`<br>-0.39% | `2.565350`<br>-0.12% | `16.875`<br>0% | `3.2656`<br>-0.48% | `2.4219`<br>-4.32% | `1.5391`<br>-1.00% |
+| dp1 ⁴ | `12.609980`<br>identical | `3.421960`<br>+2.59% | `3.022710`<br>+0.52% | `2.536600`<br>-1.24% | `16.875`<br>0% | `5.0625`<br>+54.29% | `2.1406`<br>-15.43% | `1.5703`<br>+1.00% |
+| dp1 ⁵ | `12.609980`<br>identical | `3.389450`<br>+1.62% | `3.066510`<br>+1.98% | `2.563570`<br>-0.19% | `16.875`<br>0% | `4.6875`<br>+42.86% | `2.9531`<br>+16.67% | `1.6797`<br>+8.04% |
+
+- ¹ reference: the micro-batches accumulate in fp32 with the gradient sync on the last one, as the pipeline does (`NOSYNC_GA`)
+- ² naive transport, the whole block stack on every hop (`attn_res_cache=False`); "cached" rows use the rank cache, the default
+- ³ 16 stages, four per rank (`PP_STAGES_PER_RANK=4`)
+- ⁴ no pipeline, default accumulation: gradient sync after every micro-batch
+- ⁵ noise floor: no pipeline, micro-batch order reversed (`MB_REVERSE`)
 
 dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol and reference accumulation; a rerun of dp2 x pp2 matched it on all 100 steps.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp2, no-sync accumulation (reference) | `12.580740` | `3.663490` | `2.974910` | `2.443230` | `14.4375` | `14.1875` | `2.4219` | `1.0312` |
+| dp2 ¹ | `12.580740` | `3.663490` | `2.974910` | `2.443230` | `14.4375` | `14.1875` | `2.4219` | `1.0312` |
 | dp2 x pp2 | `12.580740`<br>identical | `3.607360`<br>-1.53% | `2.978480`<br>+0.12% | `2.431600`<br>-0.48% | `14.4375`<br>0% | `13.1875`<br>-7.05% | `2.4375`<br>+0.64% | `0.9609`<br>-6.82% |
 | dp2 x pp2 x vp2, cached | `12.580740`<br>identical | `3.369740`<br>-8.02% | `2.922550`<br>-1.76% | `2.392360`<br>-2.08% | `14.4375`<br>0% | `5.625`<br>-60.35% | `2.2031`<br>-9.03% | `1.0234`<br>-0.76% |
-| dp2 x pp2 x vp2, naive | `12.580740`<br>identical | `3.687230`<br>+0.65% | `2.973080`<br>-0.06% | `2.416180`<br>-1.11% | `14.4375`<br>0% | `14.8125`<br>+4.41% | `2.3906`<br>-1.29% | `0.9961`<br>-3.40% |
-| dp2, default accumulation (no pipeline) | `12.580740`<br>identical | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `2.426700`<br>-0.68% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% | `1.0312`<br>0% |
-| dp2, accumulation order reversed (noise floor, no pipeline) | `12.580740`<br>identical | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `2.437380`<br>-0.24% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% | `0.9766`<br>-5.29% |
-| dp2 x ep2 (no pipeline) | `12.580740`<br>identical | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `2.420510`<br>-0.93% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% | `1.0312`<br>0% |
+| dp2 x pp2 x vp2, naive ² | `12.580740`<br>identical | `3.687230`<br>+0.65% | `2.973080`<br>-0.06% | `2.416180`<br>-1.11% | `14.4375`<br>0% | `14.8125`<br>+4.41% | `2.3906`<br>-1.29% | `0.9961`<br>-3.40% |
+| dp2 ⁴ | `12.580740`<br>identical | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `2.426700`<br>-0.68% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% | `1.0312`<br>0% |
+| dp2 ⁵ | `12.580740`<br>identical | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `2.437380`<br>-0.24% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% | `0.9766`<br>-5.29% |
+| dp2 x ep2 ⁶ | `12.580740`<br>identical | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `2.420510`<br>-0.93% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% | `1.0312`<br>0% |
+
+- ¹ ² ⁴ ⁵ as above; ⁶ no pipeline, expert parallel 2 (another reduction order)
 
 Debug set (2026-09-12, `--config kimi_k3_debugmodel`): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the naive row sets `attn_res_cache=False`; each cell gives the raw value and, beneath it, the change against dp1.
 
@@ -97,8 +105,8 @@ Debug set (2026-09-12, `--config kimi_k3_debugmodel`): 4 x H100 PCIe, `kimi_k3_d
 | dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
 | pp2 | `12.605700`<br>identical | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% | `18.75`<br>+0.67% | `5.6875`<br>+4.60% | `3.7344`<br>-6.27% |
 | pp2 x vp2, cached | `12.605700`<br>identical | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% | `18.625`<br>0% | `3.7188`<br>-31.61% | `4.0625`<br>+1.96% |
-| pp2 x vp2, naive | `12.605700`<br>identical | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% | `18.625`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
-| dp1, accumulation order reversed (noise floor, no pipeline; `MB_REVERSE`) | `12.605700`<br>identical | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
+| pp2 x vp2, naive ² | `12.605700`<br>identical | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% | `18.625`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
+| dp1 ⁵ | `12.605700`<br>identical | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
 
 1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
 
@@ -109,8 +117,8 @@ dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol
 | dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
 | dp2 x pp2 | `12.521140`<br>identical | `3.201920`<br>-0.60% | `2.846440`<br>+0.23% | `16.375`<br>0% | `5`<br>-29.20% | `2.6562`<br>+6.92% |
 | dp2 x pp2 x vp2, cached | `12.521140`<br>identical | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
-| dp2 x pp2 x vp2, naive | `12.521140`<br>identical | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
-| dp2 x ep2 (noise floor, no pipeline) | `12.521140`<br>identical | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
+| dp2 x pp2 x vp2, naive ² | `12.521140`<br>identical | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
+| dp2 x ep2 ⁶ | `12.521140`<br>identical | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 

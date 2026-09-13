@@ -8,29 +8,37 @@ Not in the paste (kept for reference): the cached rows move further than the nai
 
 Re-run on the same 4 x H100, now on `c4_test` as text-only rows, since at 1024 tokens per step the reference memorised the original 32-sample debug set within the 100 steps. Step 1 is identical in every cell (logged loss and grad norm); at step 100 every pipeline cell is within 0.22% of the reference loss at 1024 tokens and within 2.1% at 2048 tokens with dp2. The cached rows drift further at steps 10-20 because the rank cache changes the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32.
 
-1024 tokens per step as four 256-token micro-batches, one seed checkpoint; the reference accumulates the micro-batches in fp32 as the pipeline does (`NOSYNC_GA`), naive rows set `attn_res_cache=False`, pp4 x vp4 is 16 stages (`PP_STAGES_PER_RANK`), the floor reverses the micro-batch order (`MB_REVERSE`). The c4 flavors and these switches are in [this probe patch](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp4h_probe_c4.patch) and [this one](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp_stages_per_rank.patch), not part of this PR.
+1024 tokens per step as four 256-token micro-batches, one seed checkpoint; the c4 flavors and the switches in the notes are in [this probe patch](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp4h_probe_c4.patch) and [this one](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp_stages_per_rank.patch), not part of this PR.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp1, no-sync accumulation (reference) | `12.609980` | `3.335430` | `3.007030` | `2.568440` | `16.875` | `3.2812` | `2.5312` | `1.5547` |
+| dp1 ¹ | `12.609980` | `3.335430` | `3.007030` | `2.568440` | `16.875` | `3.2812` | `2.5312` | `1.5547` |
 | pp2 | `12.609980`<br>identical | `3.334370`<br>-0.03% | `2.988620`<br>-0.61% | `2.562870`<br>-0.22% | `16.875`<br>0% | `3.2969`<br>+0.48% | `2.2188`<br>-12.34% | `1.5312`<br>-1.51% |
 | pp2 x vp2, cached | `12.609980`<br>identical | `3.310030`<br>-0.76% | `3.032070`<br>+0.83% | `2.565810`<br>-0.10% | `16.875`<br>0% | `3.2812`<br>0% | `2.9375`<br>+16.05% | `1.5781`<br>+1.51% |
-| pp2 x vp2, naive | `12.609980`<br>identical | `3.331430`<br>-0.12% | `2.996710`<br>-0.34% | `2.571170`<br>+0.11% | `16.875`<br>0% | `3.3125`<br>+0.95% | `2.4062`<br>-4.94% | `1.5547`<br>0% |
-| pp4 x vp4, cached | `12.609980`<br>identical | `3.528470`<br>+5.79% | `3.059910`<br>+1.76% | `2.571010`<br>+0.10% | `16.875`<br>0% | `10`<br>+204.77% | `2.75`<br>+8.64% | `1.6094`<br>+3.52% |
-| pp4 x vp4, naive | `12.609980`<br>identical | `3.334860`<br>-0.02% | `2.995440`<br>-0.39% | `2.565350`<br>-0.12% | `16.875`<br>0% | `3.2656`<br>-0.48% | `2.4219`<br>-4.32% | `1.5391`<br>-1.00% |
-| dp1, default accumulation (no pipeline) | `12.609980`<br>identical | `3.421960`<br>+2.59% | `3.022710`<br>+0.52% | `2.536600`<br>-1.24% | `16.875`<br>0% | `5.0625`<br>+54.29% | `2.1406`<br>-15.43% | `1.5703`<br>+1.00% |
-| dp1, accumulation order reversed (noise floor, no pipeline) | `12.609980`<br>identical | `3.389450`<br>+1.62% | `3.066510`<br>+1.98% | `2.563570`<br>-0.19% | `16.875`<br>0% | `4.6875`<br>+42.86% | `2.9531`<br>+16.67% | `1.6797`<br>+8.04% |
+| pp2 x vp2, naive ² | `12.609980`<br>identical | `3.331430`<br>-0.12% | `2.996710`<br>-0.34% | `2.571170`<br>+0.11% | `16.875`<br>0% | `3.3125`<br>+0.95% | `2.4062`<br>-4.94% | `1.5547`<br>0% |
+| pp4 x vp4, cached ³ | `12.609980`<br>identical | `3.528470`<br>+5.79% | `3.059910`<br>+1.76% | `2.571010`<br>+0.10% | `16.875`<br>0% | `10`<br>+204.77% | `2.75`<br>+8.64% | `1.6094`<br>+3.52% |
+| pp4 x vp4, naive ²³ | `12.609980`<br>identical | `3.334860`<br>-0.02% | `2.995440`<br>-0.39% | `2.565350`<br>-0.12% | `16.875`<br>0% | `3.2656`<br>-0.48% | `2.4219`<br>-4.32% | `1.5391`<br>-1.00% |
+| dp1 ⁴ | `12.609980`<br>identical | `3.421960`<br>+2.59% | `3.022710`<br>+0.52% | `2.536600`<br>-1.24% | `16.875`<br>0% | `5.0625`<br>+54.29% | `2.1406`<br>-15.43% | `1.5703`<br>+1.00% |
+| dp1 ⁵ | `12.609980`<br>identical | `3.389450`<br>+1.62% | `3.066510`<br>+1.98% | `2.563570`<br>-0.19% | `16.875`<br>0% | `4.6875`<br>+42.86% | `2.9531`<br>+16.67% | `1.6797`<br>+8.04% |
+
+- ¹ reference: the micro-batches accumulate in fp32 with the gradient sync on the last one, as the pipeline does (`NOSYNC_GA`)
+- ² naive transport, the whole block stack on every hop (`attn_res_cache=False`); "cached" rows use the rank cache, the default
+- ³ 16 stages, four per rank (`PP_STAGES_PER_RANK=4`)
+- ⁴ no pipeline, default accumulation: gradient sync after every micro-batch
+- ⁵ noise floor: no pipeline, micro-batch order reversed (`MB_REVERSE`)
 
 dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol and reference accumulation; a rerun of dp2 x pp2 matched it on all 100 steps.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp2, no-sync accumulation (reference) | `12.580740` | `3.663490` | `2.974910` | `2.443230` | `14.4375` | `14.1875` | `2.4219` | `1.0312` |
+| dp2 ¹ | `12.580740` | `3.663490` | `2.974910` | `2.443230` | `14.4375` | `14.1875` | `2.4219` | `1.0312` |
 | dp2 x pp2 | `12.580740`<br>identical | `3.607360`<br>-1.53% | `2.978480`<br>+0.12% | `2.431600`<br>-0.48% | `14.4375`<br>0% | `13.1875`<br>-7.05% | `2.4375`<br>+0.64% | `0.9609`<br>-6.82% |
 | dp2 x pp2 x vp2, cached | `12.580740`<br>identical | `3.369740`<br>-8.02% | `2.922550`<br>-1.76% | `2.392360`<br>-2.08% | `14.4375`<br>0% | `5.625`<br>-60.35% | `2.2031`<br>-9.03% | `1.0234`<br>-0.76% |
-| dp2 x pp2 x vp2, naive | `12.580740`<br>identical | `3.687230`<br>+0.65% | `2.973080`<br>-0.06% | `2.416180`<br>-1.11% | `14.4375`<br>0% | `14.8125`<br>+4.41% | `2.3906`<br>-1.29% | `0.9961`<br>-3.40% |
-| dp2, default accumulation (no pipeline) | `12.580740`<br>identical | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `2.426700`<br>-0.68% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% | `1.0312`<br>0% |
-| dp2, accumulation order reversed (noise floor, no pipeline) | `12.580740`<br>identical | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `2.437380`<br>-0.24% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% | `0.9766`<br>-5.29% |
-| dp2 x ep2 (no pipeline) | `12.580740`<br>identical | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `2.420510`<br>-0.93% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% | `1.0312`<br>0% |
+| dp2 x pp2 x vp2, naive ² | `12.580740`<br>identical | `3.687230`<br>+0.65% | `2.973080`<br>-0.06% | `2.416180`<br>-1.11% | `14.4375`<br>0% | `14.8125`<br>+4.41% | `2.3906`<br>-1.29% | `0.9961`<br>-3.40% |
+| dp2 ⁴ | `12.580740`<br>identical | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `2.426700`<br>-0.68% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% | `1.0312`<br>0% |
+| dp2 ⁵ | `12.580740`<br>identical | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `2.437380`<br>-0.24% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% | `0.9766`<br>-5.29% |
+| dp2 x ep2 ⁶ | `12.580740`<br>identical | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `2.420510`<br>-0.93% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% | `1.0312`<br>0% |
+
+- ¹ ² ⁴ ⁵ as above; ⁶ no pipeline, expert parallel 2 (another reduction order)
 
 --- PASTE END ---
