@@ -123,6 +123,10 @@ When a maintainer asks a question, the first sentence of the reply answers
 it. Verbatim trigger: "sorry I couldn't really understand the PR summary
 which seems to be written by AI."
 
+## No new branches unless asked (user, 2026-09-13)
+
+Do not create a new git branch (or a `*_reviewN+1` review branch) on your own. Changes go onto the branch the work already lives on -- for a PR, its current review branch (`pp_review4` for PR 4312) -- unless the user explicitly asks for a new branch, or the change would clearly conflict with what that branch must keep (then say so and ask first). The fork already carries dozens of review / probe / integration branches and ~250 worktrees; every extra one is state the user has to track. Throwaway probe hacks go into an existing probe branch or an uncommitted patch file in `matrix_scripts/`, not a new branch.
+
 ## Drafts go in files, not in the chat (user, 2026-09-12)
 
 Reply and PR-body drafts are never pasted into the conversation: markdown tables and code blocks do not render there. The chat names the file and the marker to copy from (`--- PASTE BEGIN ---` / `--- PASTE ---`) and says what changed; the text itself lives only in the `.md` file.
