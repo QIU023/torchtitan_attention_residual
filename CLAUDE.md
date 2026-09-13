@@ -127,6 +127,12 @@ which seems to be written by AI."
 
 Do not create a new git branch (or a `*_reviewN+1` review branch) on your own. Changes go onto the branch the work already lives on -- for a PR, its current review branch (`pp_review4` for PR 4312) -- unless the user explicitly asks for a new branch, or the change would clearly conflict with what that branch must keep (then say so and ask first). The fork already carries dozens of review / probe / integration branches and ~250 worktrees; every extra one is state the user has to track. Throwaway probe hacks go into an existing probe branch or an uncommitted patch file in `matrix_scripts/`, not a new branch.
 
+## Cold compile caches: locate and rerun before writing anything (user, 2026-09-13)
+
+Every cell of a comparison runs on ONE inductor / triton cache, warmed by a 1-step run of each configuration before the measured runs. The kit's `cell()` gives each cell its own cache (`ind_<name>`, `tri_<name>`): fine for a smoke, never for a table; a cold cache autotunes flex and picks other kernels, and a copy of a cache that was filled cold does not reproduce the cold run either. Incident: with the fp32 grad norm, dp2 x pp2 read 14.4183 at step 1 on its own cold cache and 14.4192 on a copy of it, while on the cache the reference had warmed it read the reference's 14.4170 and stayed bitwise for 100 steps; before that rerun a stream-race story was proposed, a probe written for it, and an "except dp2 x pp2" sentence put into the reply draft.
+
+When a cell disagrees: do not write it into a draft, note, body or reply, and do not propose a mechanism. First locate it (the same cell again on the same cache, a step-1 gradient dump against the reference on a shared cache), rerun on the shared warm cache, and only then write the result. Tell the user explicitly that the number is held back until that rerun lands.
+
 ## Drafts go in files, not in the chat (user, 2026-09-12)
 
 Reply and PR-body drafts are never pasted into the conversation: markdown tables and code blocks do not render there. The chat names the file and the marker to copy from (`--- PASTE BEGIN ---` / `--- PASTE ---`) and says what changed; the text itself lives only in the `.md` file.
