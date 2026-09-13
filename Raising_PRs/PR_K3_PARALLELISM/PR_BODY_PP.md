@@ -20,7 +20,7 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
 
 After it `pipeline_kimi_k3` (in `parallelize.py`) splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes.
 
-Step 1 matches a single GPU at the printed precision in every cell of the table below (pp2's gradient norm is one bf16 ulp off); steps 10 and 20 sit inside what the same run moves with no pipeline in it at all.
+Step 1 is identical to the single-GPU reference in every cell of the c4 tables below (logged loss and grad norm). The whole-stack cells stay with the no-pipeline reorderings at later steps; the cached cells drift further because the rank cache changes the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32.
 
 ### Design
 
@@ -42,23 +42,30 @@ Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, s
   - `BlockLayoutTables` simulates one micro-batch's forward in stage order over the split the trainer actually applied and tabulates, per stage, the blocks it commits, the blocks its rank already holds, and the blocks its P2P must carry; sender and receiver compute the same tables, so nothing but the delta travels.
   - The layer-to-stage map is read off the split every rank computes, with no collective; the stage-to-rank map is the schedule's own `stage_index_to_group_rank`. Uneven stages are allowed; a block boundary inside a stage is a partial block on the wire.
   - Why the delta is bounded: with $P$ ranks a block committed at stage $S$ is fresh on the wire for $P-1$ hops; from $S+P$ on every receiving rank already holds it, because its previous virtual stage was $S-P$. The per-hop payload is bounded by the commits of the last $P-1$ stages, independent of depth.
-  - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop (naive); the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the naive transport by construction, so the two are bitwise there; where a rank holds more than one stage they are not, because the cached path assembles received blocks next to locally held ones and the backward sums the same contributions in a different association (at pp2 x vp2 on 2 x H100, step 10 reads `3.150940` cached against `3.514970` whole-stack, 1.17% and 12.9% against dp1 -- the class an accumulation-order change costs with no pipeline at all).
+  - `attn_res_cache=False` (a `functools.partial` on the pipelining function, so every rank resolves it identically) sends the whole stack on every hop (naive); the two transports differ only in the tables, which makes them the A/B in the results. Plain `1F1B`, one stage per rank, is the naive transport by construction, so the two are bitwise there; where a rank holds more than one stage they are not, because the cached path assembles received blocks next to locally held ones and the backward sums the same contributions in a different association (step-1 gradients at pp4 x vp4: the same 334 of 680 parameters differ in bf16 and in fp32, the largest relative difference falling from 7.4e-2 to 9.1e-6, i.e. a reordered sum).
 - The split (`parallelize.py`, where every model keeps its parallelism entry points): Kimi K3 builds it bottom up, the vision tower on the first stage and the AttnRes aggregation on the last, computes it once and hands the same list to `pipeline_llm` (through `module_fqns_per_model_part`) and to the layer map.
 - The stages: core's `pipeline_llm` constructs plain `PipelineStage`s, as on main; K3 rebuilds each one the schedule holds as an `AttnResPipelineStage` from the constructed stage's own fields and puts it back in the schedule.
 - The model (`model.py`): the first layer of a block joins the stack before its sub-layers attend, so a stage boundary at a block start needs nothing special and the stack a stage receives is exactly the stack the layers read; the head-owning stage alone runs the aggregation.
-- What this replaced: the reviewed version carried the same protocol in a 1228-line adapter that wrapped `forward_one_chunk`, `backward_one_chunk` and `step`, kept a thread-local micro-batch id, and bridged the same-rank gradient path with a tensor grad hook and an autograd Function. The subclass implements it once, on the stage's own methods, in 388 lines; the adapter's numerics are reproduced to within one bf16 rounding (table below).
+- Core: `ParallelismConfig.__post_init__` refuses `module_fqns_per_model_part` together with `pipeline_parallel_layers_per_stage`, and `pipeline_with_first_stage_modules` clears `layers_per_stage` once it spells its split out (the models on that entry today: kimi_k2_7, muse_glimmer, qwen3_5, qwen3_6, qwen3_8). Kimi K3's entry clears it the same way when it hands its own split to `pipeline_llm`.
+- The shared `debugmodel` flavor is unchanged (24 layers). `debugmodel_33_layers` exists only for the pp8 x vp4 cell: 35 units that no pipeline shape divides, and no `layers_per_stage` reaches 32 stages there, so that recipe passes Kimi K3's split through `module_fqns_per_model_part`.
+- What this replaced: the reviewed version carried the same protocol in a 1228-line adapter that wrapped `forward_one_chunk`, `backward_one_chunk` and `step`, kept a thread-local micro-batch id, and bridged the same-rank gradient path with a tensor grad hook and an autograd Function. The subclass implements it once, on the stage's own methods, in 367 lines.
 
 ### Results
 
+The c4 flavors (`kimi_k3_debugmodel_c4`, `kimi_k3_debugmodel_c4_pp_naive`) and the reference / floor switches (`NOSYNC_GA`, `MB_REVERSE`) are in [this probe patch](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp4h_probe_c4.patch), the 16-stage pp4 x vp4 switch (`PP_STAGES_PER_RANK`) in [this one](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp_stages_per_rank.patch), the whole matrix in [this script](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/run_pp_c4.sh); none of them is part of this PR.
+
 ```bash
-COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_c4 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
-torchrun --nproc_per_node=1 $COMMON --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
-cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
-P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"
-cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_schedule Interleaved1F1B
+COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel_c4 --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
+cell() { d=$1; n=$2; c=$3; shift 3; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --config $c --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
+P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"; IL="--parallelism.pipeline_parallel_schedule Interleaved1F1B"
+NOSYNC_GA=1 cell ref 1 kimi_k3_debugmodel_c4; MB_REVERSE=1 cell reversed 1 kimi_k3_debugmodel_c4; cell dp1 1 kimi_k3_debugmodel_c4
+cell pp2 2 kimi_k3_debugmodel_c4 $P; cell vp2_cached 2 kimi_k3_debugmodel_c4 $P $IL; cell vp2_naive 2 kimi_k3_debugmodel_c4_pp_naive $P $IL
+PP_STAGES_PER_RANK=4 cell pp4vp4_cached 4 kimi_k3_debugmodel_c4 --parallelism.pipeline_parallel_degree 4 --parallelism.num-pp-microbatches 4 $IL
+# dp2 table: --parallelism.data_parallel_shard_degree 2 and --training.num-tokens-per-train-step 2048, its own seed checkpoint
 ```
 
-c4 (2026-09-13): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (a local probe switch); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through a local stage-count switch; each cell gives the raw value and, beneath it, the change against the reference.
+c4 (2026-09-13): 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20, c4 is not by step 100), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (`NOSYNC_GA`); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through `PP_STAGES_PER_RANK`; each cell gives the raw value and, beneath it, the change against the reference.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -91,7 +98,7 @@ Debug set (2026-09-12, `--config kimi_k3_debugmodel`): 4 x H100 PCIe, `kimi_k3_d
 | pp2 | `12.605700`<br>identical | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% | `18.75`<br>+0.67% | `5.6875`<br>+4.60% | `3.7344`<br>-6.27% |
 | pp2 x vp2, cached | `12.605700`<br>identical | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% | `18.625`<br>0% | `3.7188`<br>-31.61% | `4.0625`<br>+1.96% |
 | pp2 x vp2, naive | `12.605700`<br>identical | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% | `18.625`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
-| dp1, accumulation order reversed (noise floor, no pipeline; a local probe switch) | `12.605700`<br>identical | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
+| dp1, accumulation order reversed (noise floor, no pipeline; `MB_REVERSE`) | `12.605700`<br>identical | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
 
 1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
 
@@ -100,10 +107,10 @@ dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol
 | cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
-| dp2 x pp2 | `12.521140`<br>same | `3.201920`<br>-0.60% | `2.846440`<br>+0.23% | `16.375`<br>0% | `5`<br>-29.20% | `2.6562`<br>+6.92% |
-| dp2 x pp2 x vp2, cached | `12.521140`<br>same | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
-| dp2 x pp2 x vp2, naive | `12.521140`<br>same | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
-| dp2 x ep2 (noise floor, no pipeline) | `12.521140`<br>same | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
+| dp2 x pp2 | `12.521140`<br>identical | `3.201920`<br>-0.60% | `2.846440`<br>+0.23% | `16.375`<br>0% | `5`<br>-29.20% | `2.6562`<br>+6.92% |
+| dp2 x pp2 x vp2, cached | `12.521140`<br>identical | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
+| dp2 x pp2 x vp2, naive | `12.521140`<br>identical | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
+| dp2 x ep2 (noise floor, no pipeline) | `12.521140`<br>identical | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
@@ -112,10 +119,6 @@ The KDA capability guard was widened locally to admit SM 9.0 for these runs; it 
 With one layer per stage the last stage holds only the head, whose first op on the block stack is a `cat`, so autograd hands the stage's input gradients back as views; `PipelineStage._backward_metadata_inference` records those strides, `_create_grad_recv_info` allocates the receive buffer with `torch.empty_strided`, and c10d rejects it at the first `RECV_B` with "Tensors for P2P must be non-overlapping and dense".
 
 Every other split passed because a later op consumed the input and autograd accumulated a dense gradient. The subclass returns dense gradients from `_compute_input_grads`; the library-side fix would be a dense `torch.empty` receive buffer and `.contiguous()` before the send.
-
-### Transport (round 3): moved out of this PR
-
-The two transport commits that sat on the round-2 head (`fd7ff7400`, the communicator warm-up, and `75045fed5`, the port of @elfiegg's multi-node hang fix) are no longer in this PR. The warm-up is a no-op by construction: the NCCL INIT log of a pp8 run shows the 8-rank communicator created at `init_process_group` and the sub-groups by `ncclCommSplit` at mesh build, nothing lazy during the schedule. The neighbour-group transport is opt-in for a two-node hang this PR's runtime does not cause and cannot reproduce on one node; it lives on the fork branch `k3_pp_transport` = `8126172f8` (the port alone, stacked on the review head) for the two-node evidence, and comes back as its own PR if that evidence holds. That neighbour-group work changes no tensor payload (it is about which communicator a send uses, not what is sent), so nothing in the Results section depends on it; it is unrelated to `attn_res_cache`, which chooses what a hop carries.
 
 ### Changed files
 
@@ -142,32 +145,5 @@ The two transport commits that sat on the round-2 head (`fd7ff7400`, the communi
 ### CI/CD Coverage
 
 Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; two integration cells in the B200 suite, beside K3's existing cell, since Attention Gym's KDA runs only on SM100/SM103: pp2 x vp2 on two GPUs on the shared debug model, the smallest shape where a rank receives a block it already holds, and pp8 x vp4 on eight, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path.
-
-### Review round 1
-
-- The one-line comments are applied as asked (comment revert, `first_layer_in_block`, the split function public, one integration cell rather than two).
-- The even-split precondition is gone: the tables follow whatever split the trainer applied, learned by one all-gather; a 5/7/6/6 split is a unit test.
-- The transport switch left the model config for the pipelining entry; the split became a pure function of the config; the stale naive-mode probe was deleted.
-- The block's first layer joins the stack before its sub-layers attend ("cat at the start"); the rank store releases a micro-batch's blocks when the rank is done with them, not at step end.
-- The 32-layer flavor is replaced by making the one debug model irregular (now 33 layers, the 93-layer model's partial block of 9, 35 units no pipeline shape divides) and the whole pp x vp matrix rerun on it, which is what surfaced the P2P buffer finding.
-- The adapter and its wrappers were replaced by the `PipelineStage` subclass above; the reconstruction of how the adapter got there, the rejected designs, and why torch's per-stage `fwd_cache` cannot serve a non-adjacent consumer are in the logbook document linked from the top.
-
-### Review round 3 (2026-09-11, Tianyu)
-
-- Rebased onto today's main (`d9ca9e55a`), so CI can run it.
-- The pipeline split is Kimi K3's own, built bottom up in `parallelize.py`: the layers plus the embedding and head weights spread evenly, the vision tower with the embedding and the AttnRes aggregation with the head. It reaches `pipeline_llm` through `module_fqns_per_model_part`, so `pipeline_parallel.py` keeps main's shape apart from the one line below; the split matches the previous head's on 10368 layer / pp / schedule / layers-per-stage / weight configurations, and the previous and current heads give the same losses and step-1 gradients bit for bit.
-- The shared `"debugmodel"` registry entry is main's again (24 layers); the 33-layer shape is a flavor of its own that only `kimi_k3_debugmodel_pp8_vp4` builds, so no other K3 cell changes depth because of this PR. A second pipeline cell, pp2 x vp2 on two GPUs, runs on the shared model: uneven over four stages, a block boundary inside a stage, and two stages per rank so the rank cache and the gradient deposits are used.
-- No new config field. No `layers_per_stage` gives the pp8 x vp4 cell's 32 stages over 35 units (`ceil(35 / n)` never equals 32), so that recipe hands Kimi K3's split for 32 stages to `module_fqns_per_model_part`; a CPU test asserts it. The real 93-layer model reaches 32 stages through `layers_per_stage=3`. The pp2 x vp2 recipe sets nothing: looped schedules default to two stages per rank.
-- Adding the exclusivity check surfaced that `pipeline_with_first_stage_modules` spells a split out while leaving `pipeline_parallel_layers_per_stage` set, so the knob is silently ignored from that point on; it now clears the field in the same `dataclasses.replace`. That site is shared by every model using the entry on main today (kimi_k2_7, muse_glimmer, qwen3_5, qwen3_6, qwen3_8).
-- `ParallelismConfig` refuses `module_fqns_per_model_part` together with `pipeline_parallel_layers_per_stage` in `__post_init__`; the pipelining entry no longer rewrites the config.
-- The layer-to-stage map is read off that same split (a pure function of the config every rank computes), no all-gather; the model imports no private core function.
-- `RankStore` is `PPRankLocalCache`, one per rank shared by its stages, blocks device-resident; the block's first-layer flag is computed at init; the pipeline files type-check under the pinned pyrefly.
-- Transport out (above). `stage_class` is gone from core: core builds plain `PipelineStage`s and K3 rebuilds each one from its own fields as an `AttnResPipelineStage` (`dd1c0b925`). Against the previous head, on one seed checkpoint and one inductor cache, dp1, pp2, pp2 x vp2, pp4 interleaved and the 8-GPU pp8 x vp4 cell read the same at every printed step.
-
-### Review round 2
-
-- `pipeline_llm` keeps only the `stage_class` parameter, no docstring (the file has none) and the pyrefly suppression the hook had dropped is back; the core diff is the seam and nothing else. (Superseded in round 3: `stage_class` is gone.)
-- The pipelining entry, the split and the stage lookup moved from a `pipeline.py` into `parallelize.py`, where every model keeps its parallelism entry points; `layout.py` and `pipeline_stage.py` stay as files.
-- The full-attention helper's docstring, the debug registry comment and the residual docstring are one line or upstream's own; the helper is the deduction asked for ("(3 KDA + 1 MLA) * k + remainder"), shared by the 30-layer and the 93-layer model.
 
 --- PASTE END ---
