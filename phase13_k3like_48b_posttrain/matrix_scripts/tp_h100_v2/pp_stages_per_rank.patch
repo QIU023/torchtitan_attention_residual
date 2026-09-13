@@ -1,0 +1,22 @@
+commit 0b38a8dbdb7e04e70a71bc7b622e4ab489fd6ba9
+Author: QIU023 <yiqiaoqiu@hotmail.com>
+Date:   Sun Sep 13 07:41:11 2026 +0000
+
+    probe (not for upstream): PP_STAGES_PER_RANK sets the stages per rank when no split is given (pp4 x vp4 on the debug flavor, whose 35 units no layers_per_stage divides into 16)
+    
+    Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_01WBy1d9YVu44nYCVqykRqL1
+
+diff --git a/torchtitan/distributed/pipeline_parallel.py b/torchtitan/distributed/pipeline_parallel.py
+index 8cad79f2f..491552384 100644
+--- a/torchtitan/distributed/pipeline_parallel.py
++++ b/torchtitan/distributed/pipeline_parallel.py
+@@ -297,7 +297,7 @@ def _get_pipeline_metadata(
+         # Fallback to default behavior when layers_per_stage is not provided
+         # For multi-stage schedules, default is 2 virtual stages per rank
+         # For single-stage schedules, default is 1 virtual stage per rank
+-        stages_per_rank = 1 if is_single_stage_schedule else 2
++        stages_per_rank = 1 if is_single_stage_schedule else int(os.environ.get("PP_STAGES_PER_RANK", "2"))  # LOCAL PROBE HACK (not committed): pp4 x vp4
+         num_virtual_stages = parallel_dims.pp * stages_per_rank
+     return num_virtual_stages, num_layers, input_weight, output_weight
+ 
