@@ -89,3 +89,27 @@ memory at step 4; peak 14.1 GiB of 15.5), same seed and data, 20 steps each; ful
 at steps 1-3 and 8), the grad norm to within 1.3e-12. In bf16 the cached pp4 x vp4 cell was 5.8% off the naive one in
 loss and 205% in grad norm at step 10 (H100 table); in float64 the same comparison stays at the 1e-14 level for all 20
 steps, so the bf16 gap is rounding amplified by the flavor's early steps, not a difference in what the cache computes.
+
+## bf16 / fp32 / fp64, pp8 x vp2, cache off vs cache on, 100 steps (5060, 2026-09-13)
+
+`run_precision_triplet.sh` on `pp_fp64_probe` `9a9400bfc`: c4 64-token rows, 256 tokens per step as 4 x 64, one fp32
+seed, per precision one compile cache warmed by a 1-step run of both cells, `KDA_NOAUTOTUNE=1`, expandable segments;
+bf16 is the standard path (no probe switch; the full-precision print only logs). Logs and per-step comparisons in
+`fp64_5060_logs_2026-09-13/triplet/`. Mean |relative loss difference| (cache on against cache off) per window:
+
+| steps | bf16 | fp32 | fp64 |
+| --- | --- | --- | --- |
+| 1-5 | 1.4e-2 | 1.3e-7 | 7.9e-16 |
+| 6-10 | 5.2e-2 | 3.9e-7 | 9.1e-15 |
+| 11-20 | 1.9e-2 | 8.2e-5 | 1.9e-14 |
+| 21-40 | 7.8e-3 | 1.1e-3 | 9.2e-12 |
+| 41-60 | 8.1e-3 | 5.0e-3 | 1.3e-4 |
+| 61-80 | 4.8e-3 | 4.3e-3 | 2.2e-3 |
+| 81-100 | 4.5e-3 | 3.9e-3 | 3.9e-3 |
+
+Step 1 is identical in all three; the first loss difference appears at step 2 (bf16, 5e-3), 3 (fp32, 1e-7), 4 (fp64,
+~1e-15), i.e. at the working precision's rounding, and grows until it saturates: by steps 6-10 in bf16, 41-60 in fp32,
+61-100 in fp64. The saturated band is the same in all three (about 0.4% mean at steps 81-100, sign changing), so the
+precision only sets how late the two runs separate, not where they end up. Early peaks (bf16 9.5% at step 7) fall in
+the phase where the loss drops from 12.6 to 3.7; the LR (warmup 2, 8e-4 until step 20, linear to 0 at step 100) stops
+the growth late. Not measured: the parameter distance between the two runs.
