@@ -47,3 +47,12 @@ steps 1-5, step-1 gradients 680/680 bitwise.
 ## 256 tokens (64-token rows, 4 x 64), bf16, one shared cache (5060 only)
 
 pp2 and pp2 x vp2 naive vs dp1 no-sync: 680/680 bitwise each, step-1 grad norm 22.75 in all three. The H100 256 kit's interleaved cells read 23.125 vs 23.000 at step 1 with a cold inductor cache per cell; warm-cache reruns queued there (`run_pp_c4_256_warm.sh`). The cache-on dump here was truncated by a full disk.
+
+## H100: dp2 x pp2 under the fp32 grad norm (2026-09-13, H100 numbers, kept here because they close the probe)
+
+The fp32 grad-norm table had dp2 x pp2 (1F1B) differ from step 1 (norm 14.4183, a rerun on a copy of its own cache
+14.4192, reference 14.4170). Step-1 gradients dumped on a shared warm cache: dp2 x pp2 and dp2 x pp2 x vp2 naive both
+680/680 bitwise with the reference, norm 14.4170. Four 3-step dp2 x pp2 runs on that same cache, two with
+`torch.cuda.synchronize()` before the clip and two without: all four 14.4170 / 15.2297 / 10.0644 at steps 1-3, the
+reference's values. So no stream race; the gap came from each 100-step cell running on its own (cold, then copied)
+compile cache, which the numerics-table rule forbids. Rerun with one warmed cache per stream: `run_pp_c4_gn32_shared.sh`.
