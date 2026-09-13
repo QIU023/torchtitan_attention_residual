@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Pipeline parallelism for the text decoder: the block attention residual crosses stages
 
-Results updated 2026-09-12: 4 x H100 PCIe on `pp_review4` = `dbc425403`; the dp2 stream measured on the same box. The numerics answer to Tianyu is `REPLY_4312_NUMERICS_SHORT_2026-09-12.md`; the long form, corrected the same day, is `REPLY_4312_NUMERICS_2026-09-11.md`.
+Results updated 2026-09-13: 4 x H100 PCIe on `dbc425403`, `c4_test` text rows instead of the memorised debug set, one reference per stream accumulating in fp32 as the pipeline does; logs and the full step list in `phase13_k3like_48b_posttrain/pp_h100x4_c4_logs_2026-09-13/`. The cached rows move further from the reference than the naive rows (pp4 x vp4 at step 10, dp2 x pp2 x vp2 at step 10); under investigation, do not paste before that is located. The previous tables (debug set, 2026-09-12) are in git history.
 
 PR 4312. PR branch `k3_pp_text` = `dbc425403` since 2026-09-12 (fast-forward from `dd1c0b925`: the B200 cells, the per-rank stage count removed, the comment and docstring trims; GitHub: 31 commits, 16 files, +1324/-51, still `dirty` -- `torchtitan/config/configs.py` conflicts with main `56a721b64`, 17 commits past the base). Before that it was `dd1c0b925` (moved with lease from `75045fed5`, which was 19 commits on upstream/main `6e2ac3dcd`, to `66601a7fb`, then a test commit and the stage rebuild on top); that head is `pp_review4`: the same runtime minus the two transport commits, plus round 3, rebased onto main `d9ca9e55a` (23 commits). The transport port alone is `k3_pp_transport` = `8126172f8`, stacked on it. GitHub has reported the PR unmergeable since PR 4527 landed on 2026-09-09.
 
@@ -51,34 +51,37 @@ Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, s
 ### Results
 
 ```bash
-COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
+COMMON="-m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_c4 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
 torchrun --nproc_per_node=1 $COMMON --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
 cell() { d=$1; n=$2; shift 2; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
 P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"
 cell dp1 1; cell pp2 2 $P; cell pp2_vp2 2 $P --parallelism.pipeline_parallel_schedule Interleaved1F1B
 ```
 
-4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the naive row sets `attn_res_cache=False`; each cell gives the raw value and, beneath it, the change against dp1.
+4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows (`kimi_k3_debugmodel_c4`, a local data flavor that is not part of this PR; the 32-sample debug set is memorised by step 20), one seed checkpoint, 1024 tokens per step as four 256-token micro-batches; the reference accumulates the four micro-batches in fp32 with the gradient sync on the last one, as the pipeline does (a local probe switch); naive rows set `attn_res_cache=False`; pp4 x vp4 is 16 stages through a local stage-count switch; each cell gives the raw value and, beneath it, the change against the reference.
 
 | cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp1 | `12.605700` | `3.114620` | `3.373330` | `18.625` | `5.4375` | `3.9844` |
-| pp2 | `12.605700`<br>bitwise | `3.227050`<br>+3.61% | `3.288290`<br>-2.52% | `18.75`<br>+0.67% | `5.6875`<br>+4.60% | `3.7344`<br>-6.27% |
-| pp2 x vp2, cached | `12.605700`<br>bitwise | `3.150940`<br>+1.17% | `3.349300`<br>-0.71% | `18.625`<br>0% | `3.7188`<br>-31.61% | `4.0625`<br>+1.96% |
-| pp2 x vp2, naive | `12.605700`<br>bitwise | `3.514970`<br>+12.85% | `3.281700`<br>-2.72% | `18.625`<br>0% | `6.0312`<br>+10.92% | `3.6719`<br>-7.84% |
-| dp1, accumulation order reversed (noise floor, no pipeline; a local probe switch) | `12.605700`<br>bitwise | `3.247610`<br>+4.27% | `3.295370`<br>-2.31% | `18.625`<br>0% | `6.6562`<br>+22.41% | `4.25`<br>+6.67% |
+| dp1, no-sync accumulation (reference) | `12.609980` | `3.335430` | `3.007030` | `16.875` | `3.2812` | `2.5312` |
+| pp2 | `12.609980`<br>bitwise | `3.334370`<br>-0.03% | `2.988620`<br>-0.61% | `16.875`<br>0% | `3.2969`<br>+0.48% | `2.2188`<br>-12.34% |
+| pp2 x vp2, cached | `12.609980`<br>bitwise | `3.310030`<br>-0.76% | `3.032070`<br>+0.83% | `16.875`<br>0% | `3.2812`<br>0% | `2.9375`<br>+16.05% |
+| pp2 x vp2, naive | `12.609980`<br>bitwise | `3.331430`<br>-0.12% | `2.996710`<br>-0.34% | `16.875`<br>0% | `3.3125`<br>+0.95% | `2.4062`<br>-4.94% |
+| pp4 x vp4, cached | `12.609980`<br>bitwise | `3.528470`<br>+5.79% | `3.059910`<br>+1.76% | `16.875`<br>0% | `10`<br>+204.77% | `2.75`<br>+8.64% |
+| pp4 x vp4, naive | `12.609980`<br>bitwise | `3.334860`<br>-0.02% | `2.995440`<br>-0.39% | `16.875`<br>0% | `3.2656`<br>-0.48% | `2.4219`<br>-4.32% |
+| dp1, default accumulation (no pipeline) | `12.609980`<br>bitwise | `3.421960`<br>+2.59% | `3.022710`<br>+0.52% | `16.875`<br>0% | `5.0625`<br>+54.29% | `2.1406`<br>-15.43% |
+| dp1, accumulation order reversed (noise floor, no pipeline) | `12.609980`<br>bitwise | `3.389450`<br>+1.62% | `3.066510`<br>+1.98% | `16.875`<br>0% | `4.6875`<br>+42.86% | `2.9531`<br>+16.67% |
 
-1024 tokens because four stages need four micro-batches and the multimodal loader needs 256 tokens per micro-batch. Steps stop at 20 because the reference memorises the 32-sample debug set after that.
-
-dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol; each cell gives the raw value and, beneath it, the change against dp2; the dp2 x ep2 row carries no pipeline and sizes what a change of reduction order alone does.
+dp2, 2048 tokens per step (four 256-token micro-batches per rank), same protocol and reference accumulation; a rerun of dp2 x pp2 matched it on all 100 steps.
 
 | cell | loss, step 1 | step 10 | step 20 | grad norm, step 1 | step 10 | step 20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dp2 | `12.521140` | `3.221120` | `2.839810` | `16.375` | `7.0625` | `2.4844` |
-| dp2 x pp2 | `12.521140`<br>same | `3.201920`<br>-0.60% | `2.846440`<br>+0.23% | `16.375`<br>0% | `5`<br>-29.20% | `2.6562`<br>+6.92% |
-| dp2 x pp2 x vp2, cached | `12.521140`<br>same | `3.205680`<br>-0.48% | `2.682970`<br>-5.52% | `16.375`<br>0% | `5.375`<br>-23.89% | `2.5156`<br>+1.26% |
-| dp2 x pp2 x vp2, naive | `12.521140`<br>same | `3.189240`<br>-0.99% | `2.847220`<br>+0.26% | `16.375`<br>0% | `5.5938`<br>-20.80% | `2.375`<br>-4.40% |
-| dp2 x ep2 (noise floor, no pipeline) | `12.521140`<br>same | `3.149310`<br>-2.23% | `2.969330`<br>+4.56% | `16.375`<br>0% | `5.0625`<br>-28.32% | `2.9531`<br>+18.87% |
+| dp2, no-sync accumulation (reference) | `12.580740` | `3.663490` | `2.974910` | `14.4375` | `14.1875` | `2.4219` |
+| dp2 x pp2 | `12.580740`<br>bitwise | `3.607360`<br>-1.53% | `2.978480`<br>+0.12% | `14.4375`<br>0% | `13.1875`<br>-7.05% | `2.4375`<br>+0.64% |
+| dp2 x pp2 x vp2, cached | `12.580740`<br>bitwise | `3.369740`<br>-8.02% | `2.922550`<br>-1.76% | `14.4375`<br>0% | `5.625`<br>-60.35% | `2.2031`<br>-9.03% |
+| dp2 x pp2 x vp2, naive | `12.580740`<br>bitwise | `3.687230`<br>+0.65% | `2.973080`<br>-0.06% | `14.4375`<br>0% | `14.8125`<br>+4.41% | `2.3906`<br>-1.29% |
+| dp2, default accumulation (no pipeline) | `12.580740`<br>bitwise | `3.307830`<br>-9.71% | `2.930770`<br>-1.48% | `14.4375`<br>0% | `4.5312`<br>-68.06% | `2.3438`<br>-3.22% |
+| dp2, accumulation order reversed (noise floor, no pipeline) | `12.580740`<br>bitwise | `3.588150`<br>-2.06% | `2.960280`<br>-0.49% | `14.4375`<br>0% | `12.125`<br>-14.54% | `2.2656`<br>-6.45% |
+| dp2 x ep2 (no pipeline) | `12.580740`<br>bitwise | `3.269320`<br>-10.76% | `2.966810`<br>-0.27% | `14.4375`<br>0% | `4.4375`<br>-68.72% | `2.25`<br>-7.10% |
 
 The KDA capability guard was widened locally to admit SM 9.0 for these runs; it is not part of this PR.
 
