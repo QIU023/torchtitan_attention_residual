@@ -6,7 +6,9 @@ Not in the paste (kept for reference): the cached rows move further than the nai
 
 --- PASTE BEGIN ---
 
-Re-run on the same 4 x H100, now on `c4_test` as text-only rows, since at 1024 tokens per step the reference memorised the original 32-sample debug set within the 100 steps. Step 1 is identical in every cell (logged loss and grad norm); at step 100 every pipeline cell is within 0.22% of the reference loss at 1024 tokens and within 2.1% at 2048 tokens with dp2.
+Re-run on the same 4 x H100, now on `c4_test` as text-only rows, since at 1024 tokens per step the reference memorised the original 32-sample debug set within the 100 steps. Step 1 is identical in every cell (logged loss and grad norm); at step 100 every pipeline cell is within 0.22% of the reference loss at 1024 tokens and within 2.1% at 2048 tokens with dp2. The cached rows drift further at steps 10-20 because the rank cache changes the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32.
+
+1024 tokens per step as four 256-token micro-batches, one seed checkpoint; the reference accumulates the micro-batches in fp32 as the pipeline does (`NOSYNC_GA`), naive rows set `attn_res_cache=False`, pp4 x vp4 is 16 stages (`PP_STAGES_PER_RANK`), the floor reverses the micro-batch order (`MB_REVERSE`). The c4 flavors and these switches are in [this probe patch](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp4h_probe_c4.patch) and [this one](https://github.com/QIU023/torchtitan_attention_residual/blob/c8f8dda4e43f653e97e36a0cd060cfa408493ba2/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2/pp_stages_per_rank.patch), not part of this PR.
 
 | cell | loss, step 1 | step 10 | step 20 | step 100 | grad norm, step 1 | step 10 | step 20 | step 100 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
