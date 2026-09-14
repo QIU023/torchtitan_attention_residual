@@ -21,7 +21,6 @@ No new config field and no change to `parallelize_kimi_k3`: RegionAC applies thr
 - MLA (`KimiMLAAttention`): `attention.q` (query down projection, norm, up projection), `attention.kv` (key/value latent, norm, up projection, and the shared rope key broadcast to the heads), `attention.inner_attention`, `attention.gate`, `attention.wo`.
 - KDA (`KDA`), in main's op order: `delta_attention.forget`, `delta_attention.beta`, `delta_attention.qkv`, `delta_attention.inner_kda` (short convolution plus the Attention Gym kernel), `delta_attention.output_gate`, `delta_attention.output_norm`, `delta_attention.output_proj`.
 - Block (`KimiK3TransformerBlock`): `attention_res` and `ffn_res`, the two attention-residual computations. Their math upcasts the whole block stack to fp32, so leaving them out of a save policy recomputes those intermediates instead of keeping them per layer.
-- Behaviour change: the attention-residual math is now recomputed only under an enclosing RegionAC checkpoint; under selective AC or no AC it saves its fp32 intermediates as main does, since the earlier always-on checkpoint wrapper is gone.
 - The MoE needs nothing beyond core: the router's routing decision is already a saved region, and the shared experts and dense feed-forward use `FeedForward`'s `w13` / `w2` regions.
 - `remat.recompute_needs_tensor` sits before every bare consumer of a region output (the gated attention output, the reshaped beta, the norm inputs after the residual, the attention outputs read by the block's residual sum), per the consumer-side rule in the remat doc.
 
@@ -58,6 +57,8 @@ torchtitan/models/kimi_k3/model.py                    +59/-19  MLA and attention
 torchtitan/models/kimi_k3/kda.py                      +55/-12  KDA regions
 tests/unit_tests/cpu/test_kimi_k3_remat_regions.py    +184/-0  region names, recompute counts, bitwise gradients
 ```
+
+--- PASTE END ---
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
