@@ -5,8 +5,8 @@ Branch `k3_moonep_seam` = [`cc46bde23`](https://github.com/QIU023/torchtitan/com
 Notes for filing:
 - Fixed in `cc46bde23` from the 2026-09-14 audit of `610f721bf`: the mesh check is now `dp_shard * cp * tp == ep`, one prefetch slot count (dispatcher config, read by the experts at attach), the expert GEMMs through `GroupedExperts._grouped_mm`, one combine call in the dispatch backward, the pass-through `wire_meshes` override gone, stale docstrings rewritten. Docstring size not re-measured.
 - Commit `8fef1aa5f`'s message says two EP-group barriers per MoE layer per step; the code has three (one in prefetch, two in reduce). The body states three.
-- The 2 x RTX 5060 Ti bitwise cells were measured on `610f721bf` (standard path and the EP=1 fallback), not rerun on `cc46bde23`. An earlier version of the table backend passed the four H100 checks on 2026-08-28; this one is that version ported onto this base.
-- `PASS-COUNT`: fill from a run on `cc46bde23` before filing (12 test functions in the two new test files).
+- The 2 x RTX 5060 Ti cells were rerun on `cc46bde23` against main `b21f7d43e` (logs: `Raising_PRs/PR_K3_PARALLELISM/logs_moonep_2026-09-14/`): dp1 standard, dp1 moonep EP=1 and two fresh-cache main runs are bitwise with main; dp2 x ep2 standard is bitwise with main on the shared cache. One of four fresh-cache main dp2 x ep2 runs moved from step 2 (`9.58979` / `13.3125`, then `7.50132` / `9.8750`); a second cold cache and a warm rerun both read the reference, so no mechanism is claimed. An earlier version of the table backend passed the four H100 checks on 2026-08-28; this one is that version ported onto this base.
+- Test counts below are from `cc46bde23`.
 
 --- PASTE BEGIN ---
 
@@ -29,8 +29,8 @@ Requirements and cost: Hopper or newer with NVSwitch. Every MoonEP buffer builds
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_moon_ep_dispatcher.py tests/unit_tests/cpu/test_ep_token_dispatcher_capacity.py -q` (`PASS-COUNT`): spec selection and latent sizing, the EP=1 local fallback, the import guard, the mesh check, the two-rank fake world against a dense reference with a duplicated expert; the capacity fill after CP and TP, the EP=1 refusal, the divisibility check, the local fallback, a backend without a static capacity.
-- `pytest tests/unit_tests/cpu/test_inference_moe.py tests/unit_tests/cpu/test_config_manager.py` and the Kimi K3 CPU tests (`PASS-COUNT`); ufmt and pyrefly on the changed files (`PASS-COUNT`).
+- `pytest tests/unit_tests/cpu/test_kimi_k3_moon_ep_dispatcher.py tests/unit_tests/cpu/test_ep_token_dispatcher_capacity.py -q` (12 passed): spec selection and latent sizing, the EP=1 local fallback, the import guard, the mesh check, the two-rank fake world against a dense reference with a duplicated expert; the capacity fill after CP and TP, the EP=1 refusal, the divisibility check, the local fallback, a backend without a static capacity.
+- `pytest tests/unit_tests/cpu/test_inference_moe.py tests/unit_tests/cpu/test_config_manager.py` and the Kimi K3 CPU tests (58 passed); ufmt clean on the changed files; `pyrefly check`: 51 errors on both the branch and main with the same search path, no per-file difference.
 - 2 x RTX 5060 Ti, Kimi K3 debug model, seed 42, deterministic, 3 steps, one warmed inductor cache per mesh (no NVSwitch, so the transport itself does not run): with the standard backend, dp1 and dp2 x ep2 are bitwise with main; moonep at EP=1 (the local fallback) is bitwise with the standard backend.
 - To run on 2 x H100 SXM, moonep `2bd860b`: moonep's own two-rank tests, ep2 x fsdp2 with moonep for 3 steps, the per-parameter gradient comparison against the standard dispatcher on the same seed, and a forced-hot routing run that populates a slot.
 
