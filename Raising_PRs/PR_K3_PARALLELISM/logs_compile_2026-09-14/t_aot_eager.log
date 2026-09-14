@@ -1,0 +1,192 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+W0914 06:45:30.840000 1778481 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0914 06:45:30.871000 1778481 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[titan] 2026-09-14 06:45:31,522 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-14 06:45:32,120 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 06:45:32,214 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 06:45:32,218 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/out_t_aot_eager/structured_logs/training.global_rank_0.20260914-064532-KFBMV0.jsonl
+[titan] 2026-09-14 06:45:32,355 - torchtitan.distributed.utils - INFO - Enabled BF16x9 emulation for FP32 CUDA matmuls
+[titan] 2026-09-14 06:45:32,356 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-14 06:45:32,845 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-14 06:45:32,845 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-14 06:45:32,870 - torchtitan.trainer - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-14 06:45:33,081 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA GeForce RTX 5060 Ti with 15.48GiB memory
+[titan] 2026-09-14 06:45:33,084 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-14 06:45:33,085 - torchtitan.tools.utils - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5060 Ti, fallback to A100
+[titan] 2026-09-14 06:45:33,090 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-14 06:45:33,090 - torchtitan.trainer - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-14 06:45:33,091 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-14 06:45:33,118 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-14 06:45:33,164 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-14 06:45:33,166 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-14 06:45:33,166 - torchtitan.distributed.compile - INFO - regional_inductor is enabled
+[titan] 2026-09-14 06:45:33,173 - torchtitan.distributed.compile - INFO - Compiling each TransformerBlock with torch.compile
+[titan] 2026-09-14 06:45:33,173 - torchtitan.distributed.compile - INFO - regional_inductor is enabled
+[titan] 2026-09-14 06:45:33,175 - torchtitan.distributed.compile - INFO - Compiling each TransformerBlock with torch.compile
+[titan] 2026-09-14 06:45:33,398 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-14 06:45:34,319 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-14 06:45:34,320 - torchtitan.tools.utils - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5060 Ti, fallback to A100
+[titan] 2026-09-14 06:45:34,320 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[titan] 2026-09-14 06:45:34,320 - torchtitan.trainer - INFO - CUDA memory usage for model: 3.85GiB(24.89%)
+[titan] 2026-09-14 06:45:34,324 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-14 06:45:34,328 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (2). Adjusting decay steps to 0.
+[titan] 2026-09-14 06:45:34,328 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-14 06:45:34,351 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-14 06:45:34,351 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 06:45:34,352 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 32, maximum context length 2048, total steps 2 (warmup 2)
+[titan] 2026-09-14 06:45:34,352 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:W0914 06:45:41.784000 1778481 torch/_logging/_internal.py:1394] [1/0] 
+[rank0]:W0914 06:45:41.784000 1778481 torch/_logging/_internal.py:1394] [1/0] Detected that context_fn is passed to torch.utils.checkpoint under torch.compile.
+[rank0]:W0914 06:45:41.784000 1778481 torch/_logging/_internal.py:1394] [1/0] Please make sure the checkpointed region does not contain in-place ops (e.g. torch.relu_).
+[rank0]:W0914 06:45:41.784000 1778481 torch/_logging/_internal.py:1394] [1/0] 
+[titan] 2026-09-14 06:45:43,999 - attn_gym.linear.kda.utils - INFO - Blackwell detected: registering default global_scratch allocator.
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py:3631: UserWarning: Your compiler for AOTAutograd is returning a function that doesn't take boxed arguments. Please wrap it with functorch.compile.make_boxed_func or handle the boxed arguments yourself. See https://github.com/pytorch/pytorch/pull/83137#issuecomment-1211320670 for rationale.
+  return call_func_at_runtime_with_args(
+[rank0]:W0914 06:46:04.790000 1778481 torch/_dynamo/convert_frame.py:2050] [1/8] torch._dynamo hit config.recompile_limit (8)
+[rank0]:W0914 06:46:04.790000 1778481 torch/_dynamo/convert_frame.py:2050] [1/8]    function: 'forward' (/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143)
+[rank0]:W0914 06:46:04.790000 1778481 torch/_dynamo/convert_frame.py:2050] [1/8]    last reason: 1/0: tensor 'args[0]' size mismatch at index 0. expected 192, actual 160
+[rank0]:W0914 06:46:04.790000 1778481 torch/_dynamo/convert_frame.py:2050] [1/8] To log all recompilation reasons, use TORCH_LOGS="recompiles".
+[rank0]:W0914 06:46:04.790000 1778481 torch/_dynamo/convert_frame.py:2050] [1/8] To diagnose recompilation issues, see https://docs.pytorch.org/docs/main/user_guide/torch_compiler/compile/programming_model.recompilation.html
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2080, in _compile
+[rank0]:     raise_unimplemented_cache_limit_exceeded()
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2064, in raise_unimplemented_cache_limit_exceeded
+[rank0]:     unimplemented(
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_dynamo/exc.py", line 782, in unimplemented
+[rank0]:     raise Unsupported(msg, gb_type, skip_frame)
+[rank0]: torch._dynamo.exc.Unsupported: Dynamo recompile limit exceeded
+[rank0]:   Explanation: Dynamo attempted to recompile the code object too many times, exceeding the recompile_limit cache size limit (currently set to 8). Excessive recompilations can degrade performance due to the compilation overhead of each recompilation.
+[rank0]:   Hint: To monitor recompilations, enable TORCH_LOGS=recompiles. If recompilations are expected, consider increasing torch._dynamo.config.recompile_limit to an appropriate value.
+[rank0]:   Hint: See https://docs.pytorch.org/docs/main/user_guide/torch_compiler/compile/programming_model.recompilation.html for tips on dealing with recompilations.
+
+[rank0]:   Developer debug context: Limit type: recompile_limit
+
+[rank0]:  For more details about this graph break, please visit: https://meta-pytorch.github.io/compile-graph-break-site/gb/gb0039.html
+
+[rank0]: The above exception was the direct cause of the following exception:
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank0]:     result = f(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/trainer.py", line 1132, in train
+[rank0]:     self.train_step(data_iterator)
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/trainer.py", line 959, in train_step
+[rank0]:     loss = fwd_bwd()
+[rank0]:            ^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/trainer.py", line 933, in fwd_bwd
+[rank0]:     return self.forward_backward_step(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/trainer.py", line 815, in forward_backward_step
+[rank0]:     return self.fwd_bwd_fn(inputs, labels, global_valid_tokens, extra_kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/trainer.py", line 825, in _forward_backward_body
+[rank0]:     pred = self.model_parts[0](inputs, **extra_kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank0]:     return inner()
+[rank0]:            ^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/models/kimi_k3/model.py", line 497, in forward
+[rank0]:     h_TD = self._prepare_multimodal_embeds(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/models/kimi_k3/model.py", line 463, in _prepare_multimodal_embeds
+[rank0]:     vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank0]:     return inner()
+[rank0]:            ^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/models/kimi_k2_7/vision_encoder.py", line 453, in forward
+[rank0]:     x = block(
+[rank0]:         ^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1785, in _wrapped_call_impl
+[rank0]:     return self._compiled_call_impl(*args, **kwargs)  # type: ignore[misc]
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1261, in compile_wrapper
+[rank0]:     result = fn(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2692, in __call__
+[rank0]:     result = self._torchdynamo_orig_backend(
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 781, in __call__
+[rank0]:     result = _compile(
+[rank0]:              ^^^^^^^^^
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py", line 2087, in _compile
+[rank0]:     raise FailOnRecompileLimitHit(
+[rank0]: torch._dynamo.exc.FailOnRecompileLimitHit: Hard failure due to fullgraph=True
+
+[rank0]: During handling of the above exception, another exception occurred:
+
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/train.py", line 76, in <module>
+[rank0]:     main()
+[rank0]:   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/probe5/torchtitan/train.py", line 62, in main
+[rank0]:     trainer.train()
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 407, in wrapper
+[rank0]:     error_handler.record_exception(e)
+[rank0]:   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/error_handler.py", line 111, in record_exception
+[rank0]:     with open(file, "w") as fp:
+[rank0]:          ^^^^^^^^^^^^^^^
+[rank0]: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/torchelastic_3a7pmcgo/none_hj_jhu0u/attempt_0/0/error.json'
+E0914 06:46:09.423000 1778414 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 1778481) of binary: /workspace/venv_bfx9/bin/python
+Traceback (most recent call last):
+  File "/workspace/venv_bfx9/bin/torchrun", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-14_06:46:09
+  host      : 477f77443d45
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1778481) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

@@ -1,0 +1,52 @@
+--- /tmp/wt_fix_compile/torchtitan/trainer.py	2026-09-14 03:24:29.595755839 +0000
++++ probe6/torchtitan/trainer.py	2026-09-14 06:43:37.865756772 +0000
+@@ -968,6 +968,49 @@
+                     accumulated_loss.add_(detached_loss)
+ 
+         with sl.log_trace_span("optim"):
++            if os.environ.get("GRAD_DUMP_TXT") and self.step == 1:  # LOCAL PROBE HACK
++                import torch as _t
++                _rows = []
++                _ref = os.environ.get("GRAD_REF")
++                _save = os.environ.get("GRAD_SAVE")
++                for _m in self.model_parts:
++                    for _n, _p in _m.named_parameters():
++                        if _p.grad is None:
++                            continue
++                        if os.environ.get("GRAD_FILTER") and os.environ["GRAD_FILTER"] not in _n:
++                            continue
++                        _g = _p.grad
++                        _g = _g.to_local() if hasattr(_g, "to_local") else _g
++                        _g = _g.detach().float().cpu()
++                        if _save:
++                            os.makedirs(_save, exist_ok=True)
++                            _t.save(_g, f"{_save}/{_n}.pt")
++                            _rows.append(f"{_n} norm={_g.norm().item():.10e}")
++                        else:
++                            _r = _t.load(f"{_ref}/{_n}.pt")
++                            _d = (_g - _r).abs()
++                            _rows.append(
++                                f"{_n} bitwise={int(_t.equal(_g, _r))} maxabs={_d.max().item():.3e} "
++                                f"rel={(_d.norm() / _r.norm().clamp_min(1e-30)).item():.3e} refnorm={_r.norm().item():.4e}"
++                            )
++                if os.environ.get("PROBE_TXT"):
++                    from torchtitan.models.kimi_k3.probe_tap import STORE as _ST
++                    if os.environ.get("PROBE_SAVE"):
++                        _t.save(_ST, os.environ["PROBE_SAVE"])
++                        _rows.append("probe saved: " + ", ".join(f"{k}x{len(v)}" for k, v in _ST.items()))
++                    else:
++                        _R = _t.load(os.environ["PROBE_REF"])
++                        for _k in _R:
++                            for _i, _r in enumerate(_R[_k]):
++                                _g = _ST[_k][_i]
++                                _d = (_g - _r).abs()
++                                _rows.append(
++                                    f"TAP {_k} mb{_i} shape={tuple(_r.shape)} bitwise={int(_t.equal(_g, _r))} "
++                                    f"maxabs={_d.max().item():.3e} rel={(_d.norm() / _r.norm().clamp_min(1e-30)).item():.3e}"
++                                )
++                open(os.environ["GRAD_DUMP_TXT"], "w").write("\n".join(_rows) + "\n")
++                if _save:
++                    open(_save + "/.done", "w").write("ok")
+             grad_norm = dist_utils.clip_grad_norm_(
+                 [p for m in self.model_parts for p in m.parameters()],
+                 self.config.training.max_norm,

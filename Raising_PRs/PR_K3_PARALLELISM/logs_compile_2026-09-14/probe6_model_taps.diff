@@ -1,0 +1,119 @@
+--- probe4/torchtitan/models/kimi_k3/model.py	2026-09-14 03:24:29.587755866 +0000
++++ probe6/torchtitan/models/kimi_k3/model.py	2026-09-14 06:52:32.756435381 +0000
+@@ -13,6 +13,8 @@
+ from torch import nn
+ from torch.nn.attention.flex_attention import BlockMask
+ 
++import os as _os
++
+ from torchtitan.config import ParallelismConfig
+ from torchtitan.distributed.parallel_dims import MeshAxisName, ParallelDims
+ from torchtitan.distributed.spmd_types import (
+@@ -112,17 +114,29 @@
+         del positions
+ 
+         num_tokens = x_TD.shape[0]
+-        q_THK = self.wq_b(self.q_norm(self.wq_a(x_TD))).view(
+-            num_tokens, self.n_heads, self.q_head_dim
+-        )
++        _pb = getattr(self, "_probe", False)
++        _qa = self.wq_a(x_TD)
++        if _pb:
++            _qa = _tap(_qa, "wq_a_out")
++        _qb = self.wq_b(self.q_norm(_qa))
++        if _pb:
++            _qb = _tap(_qb, "wq_b_out")
++        q_THK = _qb.view(num_tokens, self.n_heads, self.q_head_dim)
++        if _pb:
++            q_THK = _tap(q_THK, "q")
+ 
+         compressed_kv_TC = self.wkv_a(x_TD)
++        if _pb:
++            compressed_kv_TC = _tap(compressed_kv_TC, "wkv_a_out")
+         kv_latent_TC, k_rope_TK = torch.split(
+             compressed_kv_TC,
+             [self.kv_lora_rank, self.qk_rope_head_dim],
+             dim=-1,
+         )
+-        kv_THC = self.wkv_b(self.kv_norm(kv_latent_TC)).view(
++        _kvb = self.wkv_b(self.kv_norm(kv_latent_TC))
++        if _pb:
++            _kvb = _tap(_kvb, "wkv_b_out")
++        kv_THC = _kvb.view(
+             num_tokens,
+             self.n_heads,
+             self.qk_nope_head_dim + self.v_head_dim,
+@@ -136,6 +150,9 @@
+             -1, self.n_heads, -1
+         )
+         k_THK = torch.cat((k_nope_THK, k_rope_THK), dim=-1)
++        if _pb:
++            k_THK = _tap(k_THK, "k")
++            v_THV = _tap(v_THV, "v")
+ 
+         out_THV = self.inner_attention(
+             q_THK,
+@@ -144,6 +161,8 @@
+             attention_masks=attention_masks,
+             scale=self.scale,
+         )
++        if _pb:
++            out_THV = _tap(out_THV, "inner_out")
+         out_TD = out_THV.reshape(num_tokens, self.n_heads * self.v_head_dim)
+         out_TD = out_TD * torch.sigmoid(self.gate(x_TD))
+         return self.wo(out_TD)
+@@ -238,6 +257,9 @@
+         attention_masks: KimiK3AttentionMaskDict | None = None,
+         positions: torch.Tensor | None = None,
+     ) -> tuple[torch.Tensor, torch.Tensor]:
++        if self.attention is not None and getattr(self.attention, "_probe", False):
++            x_TD = _tap(x_TD, "block_in")
++            block_residual_TND = _tap(block_residual_TND, "stack_in")
+         prefix_sum_TD = x_TD
+ 
+         if block_residual_TND.shape[1] > 0:
+@@ -260,12 +282,19 @@
+                 dim=1,
+             )
+ 
++        _pb = self.attention is not None and getattr(self.attention, "_probe", False)
++        if _pb:
++            x_TD = _tap(x_TD, "attn_res_out")
+         h_TD = self.attention_norm(x_TD)
++        if _pb:
++            h_TD = _tap(h_TD, "attn_norm_out")
+         layer_mask = (
+             attention_masks[self.attn_mask_key] if attention_masks is not None else None
+         )
+         if self.attention is not None:
+             h_TD = self.attention(h_TD, layer_mask, positions)
++            if _pb:
++                h_TD = _tap(h_TD, "attn_out")
+         else:
+             assert self.delta_attention is not None
+             h_TD = self.delta_attention(h_TD, layer_mask, positions)
+@@ -504,3 +533,24 @@
+         if self._skip_lm_head:
+             return h_TD
+         return self.lm_head(h_TD) if self.lm_head is not None else h_TD
++
++
++# LOCAL PROBE: tap layer PROBE_LAYER's MLA.
++from torchtitan.models.kimi_k3 import probe_tap as _probe_tap  # noqa: E402
++
++
++def _tap(x, name):
++    return torch.ops.probe.tap(x, name)
++
++
++_PROBE_LAYER = int(_os.environ.get("PROBE_LAYER", "-1"))
++_orig_block_init = KimiK3TransformerBlock.__init__
++
++
++def _probe_block_init(self, config):
++    _orig_block_init(self, config)
++    if self.attention is not None and _PROBE_LAYER == config.layer_id:
++        self.attention._probe = True
++
++
++KimiK3TransformerBlock.__init__ = _probe_block_init

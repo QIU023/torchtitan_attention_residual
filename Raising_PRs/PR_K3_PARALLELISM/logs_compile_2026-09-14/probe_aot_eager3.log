@@ -1,0 +1,61 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+W0914 03:34:32.366000 1693847 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0914 03:34:32.397000 1693847 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[titan] 2026-09-14 03:34:33,066 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-14 03:34:33,652 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 03:34:33,745 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 03:34:33,749 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/out_probe_aot_eager3/structured_logs/training.global_rank_0.20260914-033433-4PS0HM.jsonl
+[titan] 2026-09-14 03:34:33,983 - torchtitan.distributed.utils - INFO - Enabled BF16x9 emulation for FP32 CUDA matmuls
+[titan] 2026-09-14 03:34:33,983 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-14 03:34:34,463 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-14 03:34:34,463 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-14 03:34:34,490 - torchtitan.trainer - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-14 03:34:34,702 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA GeForce RTX 5060 Ti with 15.48GiB memory
+[titan] 2026-09-14 03:34:34,705 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-14 03:34:34,705 - torchtitan.tools.utils - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5060 Ti, fallback to A100
+[titan] 2026-09-14 03:34:34,711 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-14 03:34:34,711 - torchtitan.trainer - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-14 03:34:34,711 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-14 03:34:34,742 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-14 03:34:34,788 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-14 03:34:34,791 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-14 03:34:34,791 - torchtitan.distributed.compile - INFO - regional_inductor is enabled
+[titan] 2026-09-14 03:34:34,797 - torchtitan.distributed.compile - INFO - Compiling each TransformerBlock with torch.compile
+[titan] 2026-09-14 03:34:35,022 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-14 03:34:35,945 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-14 03:34:35,945 - torchtitan.tools.utils - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5060 Ti, fallback to A100
+[titan] 2026-09-14 03:34:35,945 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[titan] 2026-09-14 03:34:35,945 - torchtitan.trainer - INFO - CUDA memory usage for model: 3.85GiB(24.89%)
+[titan] 2026-09-14 03:34:35,950 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-14 03:34:35,953 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[titan] 2026-09-14 03:34:35,953 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-14 03:34:35,977 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-14 03:34:35,978 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 03:34:35,978 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 32, maximum context length 2048, total steps 3 (warmup 2)
+[titan] 2026-09-14 03:34:35,978 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:W0914 03:34:53.535000 1693847 torch/_logging/_internal.py:1394] [2/0] 
+[rank0]:W0914 03:34:53.535000 1693847 torch/_logging/_internal.py:1394] [2/0] Detected that context_fn is passed to torch.utils.checkpoint under torch.compile.
+[rank0]:W0914 03:34:53.535000 1693847 torch/_logging/_internal.py:1394] [2/0] Please make sure the checkpointed region does not contain in-place ops (e.g. torch.relu_).
+[rank0]:W0914 03:34:53.535000 1693847 torch/_logging/_internal.py:1394] [2/0] 
+[titan] 2026-09-14 03:34:54,873 - attn_gym.linear.kda.utils - INFO - Blackwell detected: registering default global_scratch allocator.
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py:3631: UserWarning: Your compiler for AOTAutograd is returning a function that doesn't take boxed arguments. Please wrap it with functorch.compile.make_boxed_func or handle the boxed arguments yourself. See https://github.com/pytorch/pytorch/pull/83137#issuecomment-1211320670 for rationale.
+  return call_func_at_runtime_with_args(
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py:3631: UserWarning: Your compiler for AOTAutograd is returning a function that doesn't take boxed arguments. Please wrap it with functorch.compile.make_boxed_func or handle the boxed arguments yourself. See https://github.com/pytorch/pytorch/pull/83137#issuecomment-1211320670 for rationale.
+  return call_func_at_runtime_with_args(
+[titan] 2026-09-14 03:36:25,592 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: 12.54770  [38;2;180;60;0mgrad_norm: 15.1250  [38;2;54;234;195mmemory: 10.28GiB(66.42%)  [34mtps: 74  [36mtflops: 0.26  [35mmfu: 0.08%[39m
+[titan] 2026-09-14 03:36:25,593 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[titan] 2026-09-14 03:36:50,879 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss:  9.88943  [38;2;180;60;0mgrad_norm: 14.3750  [38;2;54;234;195mmemory: 12.62GiB(81.54%)  [34mtps: 324  [36mtflops: 1.13  [35mmfu: 0.36%[39m
+[titan] 2026-09-14 03:37:15,333 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss:  7.75367  [38;2;180;60;0mgrad_norm:  8.6875  [38;2;54;234;195mmemory: 12.62GiB(81.54%)  [34mtps: 335  [36mtflops: 1.17  [35mmfu: 0.37%[39m
+[titan] 2026-09-14 03:37:15,335 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[titan] 2026-09-14 03:37:17,335 - torchtitan.trainer - INFO - Training completed
+[titan] 2026-09-14 03:37:17,593 - __main__ - INFO - Process group destroyed
