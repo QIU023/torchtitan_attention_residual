@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Recompute the attention-residual math in backward
 
-Fork branch `k3_ac_reuse_attention` = `a3e7d857c` (three commits on main `b21f7d43e`: the recompute, the region declarations, the tests). Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
+Fork branch `k3_ac_reuse_attention` = `f3bc890dc` (three commits on main `b21f7d43e`: the recompute, the region declarations, the tests). Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
 
 --- PASTE BEGIN ---
 
