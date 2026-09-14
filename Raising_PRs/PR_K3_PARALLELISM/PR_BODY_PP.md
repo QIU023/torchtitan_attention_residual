@@ -20,7 +20,7 @@ Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `paral
 
 After it `pipeline_kimi_k3` (in `parallelize.py`) splits the model with this model's names and builds the schedule on `AttnResPipelineStage`, a `torch.distributed.pipelining.PipelineStage` subclass: a hop carries (*hidden*, *delta*), *delta* being the block residuals the receiving rank has not seen yet; each rank keeps the blocks it has seen in one store shared by its virtual stages; the backward returns every block's gradient along the same routes.
 
-Step 1 is identical to the single-GPU reference in every cell. With the total grad norm taken in fp32 -- in bf16 the norm, and the clip factor it sets every step here, depend on how the pipeline groups the parameters (https://github.com/pytorch/pytorch/pull/194033) -- the whole-stack pipeline cells stay identical to the reference for 100 steps: the loss on every step, the grad norm on all but one step, where the per-rank sum of squares differs by one fp32 unit. The cached cells differ only in the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16, 9.1e-6 in fp32 and 1.7e-14 in fp64. The same cells with the default bf16 norm are in the appendix.
+Step 1 is identical to the single-GPU reference in every cell. With the total grad norm taken in fp32 -- in bf16 the norm, and the clip factor it sets every step here, depend on how the pipeline groups the parameters (https://github.com/pytorch/pytorch/pull/194033) -- the whole-stack pipeline cells stay identical to the reference for 100 steps: the loss on every step, the grad norm on all but one (fourth decimal). The cached cells differ only in the order in which a cached block's gradient contributions are added: on step-1 gradients at pp4 x vp4, cache off is bitwise on all 680 parameters, and cache on differs in 334 (layers 0-11 and `tok_embeddings`) by up to 7.4e-2 relative in bf16 and 9.1e-6 in fp32. The same cells with the default bf16 norm are in the appendix.
 
 ### Design
 
@@ -59,14 +59,12 @@ python gn_fp32_hack.py . && export GN_FP32=1   # total grad norm in fp32 (drop b
 export TORCHINDUCTOR_CACHE_DIR=$PWD/cache/inductor TRITON_CACHE_DIR=$PWD/cache/triton   # one compile cache for every cell, run in this order so the reference fills it first
 COMMON="-m torchtitan.train --module kimi_k3 --debug.seed 42 --debug.deterministic --training.num-tokens-per-train-step 1024 --training.num-tokens-per-microbatch-per-dp-rank 256 --checkpoint.enable --parallelism.data_parallel_shard_degree 1"
 torchrun --nproc_per_node=1 $COMMON --config kimi_k3_debugmodel_c4 --training.steps 1 --checkpoint.create_seed_checkpoint --dump-folder seed
-cell() { d=$1; n=$2; c=$3; shift 3; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --config $c --training.steps $S --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
+cell() { d=$1; n=$2; c=$3; shift 3; rm -rf $d; mkdir -p $d; cp -r seed/checkpoint $d/; torchrun --nproc_per_node=$n $COMMON --config $c --training.steps 100 --metrics.log_freq 1 --checkpoint.interval 100000 "$@" --dump-folder $d; }
 P="--parallelism.pipeline_parallel_degree 2 --parallelism.num-pp-microbatches 4"; IL="--parallelism.pipeline_parallel_schedule Interleaved1F1B"
-for S in 1 100; do   # pass 1: one step of every configuration warms the shared cache; pass 2 is the measured run
 NOSYNC_GA=1 cell ref 1 kimi_k3_debugmodel_c4; MB_REVERSE=1 cell reversed 1 kimi_k3_debugmodel_c4; cell dp1 1 kimi_k3_debugmodel_c4
 cell pp2 2 kimi_k3_debugmodel_c4 $P; cell vp2_cached 2 kimi_k3_debugmodel_c4 $P $IL; cell vp2_naive 2 kimi_k3_debugmodel_c4_pp_naive $P $IL
 PP_STAGES_PER_RANK=4 cell pp4vp4_cached 4 kimi_k3_debugmodel_c4 --parallelism.pipeline_parallel_degree 4 --parallelism.num-pp-microbatches 4 $IL
-done
-# dp2 table: --parallelism.data_parallel_shard_degree 2 and --training.num-tokens-per-train-step 2048, its own seed checkpoint, the same cache and the same two passes, the dp2 reference first
+# dp2 table: --parallelism.data_parallel_shard_degree 2 and --training.num-tokens-per-train-step 2048, its own seed checkpoint, the same cache, the dp2 reference first
 ```
 
 4 x H100 PCIe, `kimi_k3_debugmodel` (24 layers) reading `c4_test` as text-only 256-token rows, one seed checkpoint and one compile cache shared by every cell (a fresh cache per cell autotunes other kernels and moves the logged norm by itself), four 256-token micro-batches per rank, total grad norm in fp32; each cell gives the raw value and, beneath it, the change against the reference.
@@ -83,7 +81,7 @@ done
 - ¹ reference: the micro-batches accumulate in fp32 with the gradient sync on the last one, as the pipeline does (`NOSYNC_GA`)
 - ² naive transport, the whole block stack on every hop (`attn_res_cache=False`); "cached" rows use the rank cache, the default
 - ³ 16 stages, four per rank (`PP_STAGES_PER_RANK=4`)
-- all 100 steps compared: pp2 matches on every step; the two naive rows match the loss on every step and the grad norm on every step but 59 (`1.6628` against `1.6629`, one fp32 unit in the per-rank sum of squares)
+- all 100 steps compared: pp2 matches on every step; the two naive rows match the loss on every step and the grad norm on every step but 59 (`1.6628` against `1.6629`)
 
 dp2, 2048 tokens per step, same protocol.
 
