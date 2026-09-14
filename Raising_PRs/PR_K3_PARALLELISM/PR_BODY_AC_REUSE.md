@@ -1,46 +1,60 @@
-# PR title: [Kimi K3] Activation checkpointing that reuses the attention activations, and a recompute wrapper for the attention residual
+# PR title: [Kimi K3] Declare torch_remat regions so RegionAC can keep attention and recompute the MoE
 
-Fork branch `k3_ac_reuse_attention` = `6ef880995` (three commits on main `ac10ca48f`, independent of the parallelism PRs). Verified on this box (8 x RTX 5060 Ti) with the tests and the dp1 smoke below; the KDA capability guard was lifted locally for the run and is not part of the branch.
+Fork branch `k3_ac_reuse_attention` = `50563873a` (two commits on main `1c7ab8089`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag plus a private wrap of the MoE / feed-forward under selective AC, and a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
 
 --- PASTE BEGIN ---
 
-## Summary
+### Summary
 
-Two memory-side changes to Kimi K3's activation checkpointing, both bitwise against the current code (checkpointing recomputes, it does not change the math):
-
-- `ac_reuse_attention` (a model config flag, off by default): under selective AC, checkpoint only each block's MoE / feed-forward and keep attention and the residual math outside the wrap, so their activations are saved once and reused in backward. The KDA kernel is a custom op outside the per-op policy's save set, so a whole-block wrap recomputes it in backward; wrapping just the FFN keeps the mm save/recompute balance where the parameter memory is and stops re-running the attention kernels. It trades activation memory for that.
-- The attention-residual computation runs under `torch.utils.checkpoint` (always on, no flag): the residual math upcasts the whole (N+1)-entry block stack to fp32 twice per layer, and saving those intermediates makes each layer's activation footprint grow with the stack. Recomputing them in backward from the stack and the prefix sum, both alive elsewhere, makes the activations saved per layer the same as a standard residual architecture.
-
-## Implementation
-
-- `torchtitan/models/kimi_k3/model.py`: `KimiK3Model.Config.ac_reuse_attention: bool = False`; `_apply_attention_residual` becomes the checkpoint wrapper around `_attention_residual_math` (the previous body, unchanged), taken only when grad is enabled and an input requires grad, so inference and the no-grad paths call the math directly.
-- `torchtitan/models/kimi_k3/parallelize.py`: with the flag, `_apply_ac_outside_attention` wraps `layers.<i>.moe` or `layers.<i>.feed_forward` with the configured policy's `_wrap_block` (the same `base_fqn` scheme the policy uses for whole blocks) instead of `ac_policy.apply(model)`; the vision tower keeps its own `apply`. The config and the layer dict are narrowed with `isinstance` for the checker.
-
-## Limitations
-
-- `ac_reuse_attention` is a model config field, not a CLI flag: a recipe sets it on `model_spec.model`. No recipe in the tree turns it on; the smoke below used a local alias.
-- Per-layer AC (`ac_freq`) and full AC are unchanged; the flag is read only on the selective path where the whole-block wrap is what recomputes the kernels.
-- The residual wrapper uses `use_reentrant=False`; the recompute runs the fp32 upcasts a second time in backward (the trade the wrapper makes).
-
-## Tests
+Kimi K3 declared no `torch_remat` regions, so under [RegionAC](https://github.com/pytorch/torchtitan/blob/main/docs/remat.md) every op of a block was recomputed, including the KDA and MLA kernels. This PR declares regions at Kimi K3's call sites, the way `GQAttention` and `FeedForward` already do, so a save policy can keep the attention activations and recompute only the MoE or feed-forward:
 
 ```text
-pytest -q tests/unit_tests/cpu/test_kimi_k3_attn_res_checkpoint.py tests/unit_tests/cpu/test_integration_test_definitions.py
+activation-checkpoint:region --activation-checkpoint.save-regions 'attention.*' 'delta_attention.*'
 ```
 
-Result: 16 passed (3 new: the wrapped residual's values and gradients equal the unwrapped math at `rtol=0, atol=0`; the body runs a second time in backward rather than being read back; under `no_grad` the wrapper is skipped and the values still match). pre-commit passes on the touched files; `pyrefly check` (the pinned 0.45.1) reports the same 21 errors as main `ac10ca48f`, none in the touched files.
+No new config field and no change to `parallelize_kimi_k3`: RegionAC applies through the existing `ac_policy.apply(model)`. Outside a `torch_remat` checkpoint the regions do not change execution.
 
-## Results
+### Design
 
-Kimi K3 debug model, dp1, bf16, `seed=42`, deterministic, one seed checkpoint for both cells, 8192 tokens per step in 256-token micro-batches, 10 steps; the flavor as it is (selective AC over the whole block, the residual under the new wrapper) against the same flavor with `ac_reuse_attention` on.
+- MLA (`KimiMLAAttention`): `attention.q` (query down projection, norm, up projection), `attention.kv` (key/value latent, norm, up projection, and the shared rope key broadcast to the heads), `attention.inner_attention`, `attention.gate`, `attention.wo`.
+- KDA (`KDA`): `delta_attention.qkv`, `delta_attention.forget`, `delta_attention.beta`, `delta_attention.inner_kda` (short convolution plus the Attention Gym kernel), `delta_attention.output_gate`, `delta_attention.output_norm`, `delta_attention.output_proj`.
+- Block (`KimiK3TransformerBlock`): `attention_res` and `ffn_res`, the two attention-residual computations. Their math upcasts the whole block stack to fp32, so leaving them out of a save policy recomputes those intermediates instead of keeping them per layer.
+- Behaviour change: the attention-residual math is now recomputed only under an enclosing RegionAC checkpoint; under selective AC or no AC it saves its fp32 intermediates as main does, since the earlier always-on checkpoint wrapper is gone.
+- The MoE needs nothing beyond core: the router's routing decision is already a saved region, and the shared experts and dense feed-forward use `FeedForward`'s `w13` / `w2` regions.
+- `remat.recompute_needs_tensor` sits before every bare consumer of a region output (the gated attention output, the reshaped beta, the norm inputs after the residual, the attention outputs read by the block's residual sum), per the consumer-side rule in the remat doc.
 
-| cell | step 1 loss / grad norm | step 3 | step 10 | peak memory | tps at step 10 |
+### Results
+
+Kimi K3 debug model (24 layers plus an 8-block vision tower), dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one GPU, one inductor cache warmed by a 1-step run of each cell. The branch source measured here is `e0905101f` (the second commit only adds the test).
+
+```bash
+PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.train \
+  --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic \
+  --training.steps 10 --training.num-tokens-per-train-step 2048 \
+  --training.num-tokens-per-microbatch-per-dp-rank 512 \
+  activation-checkpoint:region --activation-checkpoint.save-regions '*attention.*'
+```
+
+| activation checkpointing | step 1 loss / grad norm | step 10 loss / grad norm | loss and grad norm, steps 1 to 10 | peak memory | tps (mean of steps 6 to 10) |
 | --- | --- | --- | --- | ---: | ---: |
-| main `ac10ca48f`, selective AC over the whole block | `12.51887` / `14.1250` | `7.11252` / `10.0625` | `3.11301` / `2.0312` | 12.65 GiB | 256 |
-| this branch, the same flavor (residual under the wrapper) | bitwise | bitwise | bitwise | 12.65 GiB | 246 |
-| this branch, `ac_reuse_attention` on | bitwise | bitwise | bitwise | 12.78 GiB | 305 |
+| none | `12.63048` / `20.6250` | `3.93499` / `4.0938` | reference | 14.61 GiB | 835 |
+| selective (the flavor default) | same | same | bitwise | 12.78 GiB | 512 |
+| region, `save-regions '*attention.*'` | same | same | bitwise | 13.18 GiB | 664 |
+| full | same | same | bitwise | 12.52 GiB | 615 |
 
-Both changes are bitwise against main over the ten steps. On this debug model (24 layers, 256-token micro-batches) the residual wrapper's saved-activation reduction is below the 0.01 GiB resolution of the peak reading; `ac_reuse_attention` costs 0.13 GiB of activations and takes the step from 256 to 305 tokens per second by not re-running the KDA and MLA kernels in backward (the log confirms the wrap covered the MoE / feed-forward of all 24 blocks).
+The log confirms RegionAC wrapped all 24 decoder blocks and the 8 vision blocks with the `*attention.*` pattern. Keeping the MLA and KDA activations and recomputing the MoE / feed-forward and the residual math costs 0.40 GiB over selective AC and runs 30% faster than it (664 against 512 tokens per second; the per-step spread within a cell is under 20 tokens per second), because the attention kernels are no longer re-run in backward. `*attention.*` matches both `attention.*` (MLA) and `delta_attention.*` (KDA) and neither residual region; the CLI takes one pattern per option, so the single glob is the command-line spelling of that policy.
+
+### Tests
+
+`tests/unit_tests/cpu/test_kimi_k3_remat_regions.py` builds a KDA block and an MLA block from the debug model's layer configs, with CPU stand-ins for the CUDA-only kernels: every region is traced under its block-relative name; for each save policy (`[]`, the attention globs, the two residual regions, `["*"]`) the unsaved regions are recomputed exactly once and the saved ones are not; outputs and every gradient stay bitwise equal to the same blocks without activation checkpointing; applying RegionAC leaves the state dict unchanged.
+
+### Changed files
+
+```text
+torchtitan/models/kimi_k3/model.py                    +59/-19  MLA and attention-residual regions
+torchtitan/models/kimi_k3/kda.py                      +54/-12  KDA regions
+tests/unit_tests/cpu/test_kimi_k3_remat_regions.py    +183/-0  region names, recompute counts, bitwise gradients
+```
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
