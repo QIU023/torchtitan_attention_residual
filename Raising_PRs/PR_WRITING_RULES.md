@@ -65,7 +65,7 @@ Each of these was present in PR26's:
     clip_grad_norm_ computes the total norm in the gradients' dtype, because
     torch.nn.utils.get_total_norm returns the input dtype. With
     training.dtype=bfloat16 both the per-tensor norms and the norm-of-norms are
-    bf16, so the total is wrong by a few tenths of a percent -- and by an amount
+    bf16, so the total is wrong by a few tenths of a percent, and by an amount
     that depends on how the tensors are grouped, which under PP or EP means it
     depends on where the model was cut.
 
@@ -82,6 +82,12 @@ Each of these was present in PR26's:
     | bfloat16 | after  | 1.4508 | 1.6343 |
 
 Ten lines. Same information a reviewer needs to decide.
+
+## No dashes (user, 2026-09-13)
+
+Paste-ready text (PR bodies, review replies, comments) uses no dash as punctuation: no em dash, no en dash, no spaced double
+hyphen (` -- `). Write a period, comma, colon, semicolon or parentheses instead. Before a draft is handed over, grep its paste
+section for ` -- ` and the two dash characters. Hyphens inside words, flags and numbers (`pre-norm`, `--training.steps`, `-0.24%`) are fine.
 
 ## Applies to every kit in this folder
 
