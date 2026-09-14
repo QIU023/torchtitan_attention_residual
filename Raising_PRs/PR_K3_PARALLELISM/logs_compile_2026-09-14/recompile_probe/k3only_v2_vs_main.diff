@@ -1,0 +1,47 @@
+--- a/torchtitan/models/kimi_k3/parallelize.py
++++ b/torchtitan/models/kimi_k3/parallelize.py
+@@ -14,6 +14,7 @@
+ )
+ from torchtitan.distributed import ParallelDims
+ from torchtitan.distributed.activation_checkpoint import ActivationCheckpointingConfig
++from torchtitan.distributed.compile import apply_compile
+ from torchtitan.distributed.fsdp import (
+     apply_fsdp_to_decoder,
+     apply_fsdp_to_vision_encoder,
+@@ -51,8 +52,9 @@
+             "Kimi K3 currently supports FSDP2 data parallelism "
+             f"only; disable {', '.join(unsupported_parallelisms)}."
+         )
+-    if compile_config.enable and "model" in compile_config.components:
+-        raise NotImplementedError("Kimi K3 does not support model compilation yet.")
++    model_compile_enabled = (
++        compile_config.enable and "model" in compile_config.components
++    )
+ 
+     assert isinstance(model, KimiK3Model)
+     # Seed replicated layouts for parameters outside the explicit expert
+@@ -64,12 +66,24 @@
+     # needs GB200-class hardware.
+     model.parallelize(parallel_dims)
+ 
++    # Tower blocks compile before their AC wrap, so they do not share the decoder
++    # blocks' compiled code object and its recompile limit.
++    if model_compile_enabled and model.vision_encoder is not None:
++        apply_compile(
++            model.vision_encoder,  # pyrefly: ignore [bad-argument-type]
++            compile_config=compile_config,
++            parallel_dims=parallel_dims,
++        )
++
+     if ac_config is not None:
+         ac_policy = ac_config.build(dump_folder=dump_folder)
+         ac_policy.apply(model)
+         if model.vision_encoder is not None:
+             ac_policy.apply(model.vision_encoder)
+ 
++    if model_compile_enabled:
++        apply_compile(model, compile_config=compile_config, parallel_dims=parallel_dims)
++
+     # Skip FSDP wrapper for inference. FSDP's forward hooks
+     # are incompatible with torch.inference_mode() used by vLLM.
+     # AC and compile are disabled via config (mode="none", enable=False).

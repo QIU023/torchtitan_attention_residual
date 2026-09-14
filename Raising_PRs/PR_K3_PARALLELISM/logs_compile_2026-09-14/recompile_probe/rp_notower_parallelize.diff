@@ -1,0 +1,15 @@
+--- rp_base/torchtitan/models/kimi_k3/parallelize.py	2026-09-14 07:54:22.201901446 +0000
++++ rp_notower/torchtitan/models/kimi_k3/parallelize.py	2026-09-14 08:06:54.368547971 +0000
+@@ -73,12 +73,6 @@
+         assert isinstance(model.config, KimiK3Model.Config)
+         raise_dynamo_recompile_limit(64)  # LOCAL: count the variants
+         apply_compile(model, compile_config=compile_config, parallel_dims=parallel_dims)
+-        if model.vision_encoder is not None:
+-            apply_compile(
+-                model.vision_encoder,  # pyrefly: ignore [bad-argument-type]
+-                compile_config=compile_config,
+-                parallel_dims=parallel_dims,
+-            )
+ 
+     # Skip FSDP wrapper for inference. FSDP's forward hooks
+     # are incompatible with torch.inference_mode() used by vLLM.

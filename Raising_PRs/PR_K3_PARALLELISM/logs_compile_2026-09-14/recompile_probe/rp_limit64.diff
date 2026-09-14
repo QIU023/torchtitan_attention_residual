@@ -1,0 +1,11 @@
+--- /tmp/wt_fix_compile/torchtitan/models/kimi_k3/parallelize.py	2026-09-14 07:14:07.741415259 +0000
++++ rp_base/torchtitan/models/kimi_k3/parallelize.py	2026-09-14 07:54:22.201901446 +0000
+@@ -71,7 +71,7 @@
+ 
+     if compile_config.enable and "model" in compile_config.components:
+         assert isinstance(model.config, KimiK3Model.Config)
+-        raise_dynamo_recompile_limit(_kimi_k3_recompile_limit(model.config))
++        raise_dynamo_recompile_limit(64)  # LOCAL: count the variants
+         apply_compile(model, compile_config=compile_config, parallel_dims=parallel_dims)
+         if model.vision_encoder is not None:
+             apply_compile(

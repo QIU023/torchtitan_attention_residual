@@ -1,0 +1,35 @@
+--- /tmp/wt_fix_compile/torchtitan/models/kimi_k3/__init__.py	2026-09-14 03:24:29.587755866 +0000
++++ rp_base/torchtitan/models/kimi_k3/__init__.py	2026-09-14 07:54:22.201901446 +0000
+@@ -486,13 +486,30 @@
+ 
+ 
+ def _debugmodel(attn_backend: str, moe_comm_backend: str) -> KimiK3Model.Config:
++    import os as _os  # LOCAL: recompile probe layouts
++
++    _n = int(_os.environ.get("RP_LAYERS", "24"))
++    _full = set(range(3, _n, 4)) | {_n - 1}
++    if _os.environ.get("RP_TINY") == "1":
++        return _kimi_k3_config(
++            dim=256, moe_comm_backend=moe_comm_backend, vocab_size=163840, num_layers=_n,
++            full_attention_layers=_full, attn_res_block_size=12, num_heads=4, q_lora_rank=128,
++            kv_lora_rank=64, qk_nope_head_dim=32, qk_rope_head_dim=16, v_head_dim=32,
++            kda_head_dim=128, conv_kernel_size=4, dense_hidden_dim=512, latent_dim=128,
++            expert_hidden_dim=128, num_experts=8, top_k=2, num_shared_experts=1,
++            vision_encoder=_vision_encoder_config(
++                text_dim=256, dim=512, qkv_dim=768, hidden_dim=2048, num_layers=8, num_heads=6,
++                init_pos_emb_height=32, init_pos_emb_width=32,
++            ),
++            attn_backend=attn_backend,
++        )
+     dim = 1024
+     return _kimi_k3_config(
+         dim=dim,
+         moe_comm_backend=moe_comm_backend,
+         vocab_size=163840,
+-        num_layers=24,
+-        full_attention_layers={3, 7, 11, 15, 19, 23},
++        num_layers=_n,
++        full_attention_layers=_full,
+         attn_res_block_size=12,
+         num_heads=16,
+         q_lora_rank=512,

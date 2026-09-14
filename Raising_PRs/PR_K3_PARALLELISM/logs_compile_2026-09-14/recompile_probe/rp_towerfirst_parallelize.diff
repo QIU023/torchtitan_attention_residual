@@ -1,0 +1,34 @@
+--- rp_base/torchtitan/models/kimi_k3/parallelize.py	2026-09-14 07:54:22.201901446 +0000
++++ rp_towerfirst/torchtitan/models/kimi_k3/parallelize.py	2026-09-14 08:06:54.368547971 +0000
+@@ -63,6 +63,18 @@
+     # needs GB200-class hardware.
+     model.parallelize(parallel_dims)
+ 
++    if (
++        compile_config.enable
++        and "model" in compile_config.components
++        and model.vision_encoder is not None
++    ):
++        # LOCAL: the tower's blocks compile before their AC wrap, as their own code object.
++        apply_compile(
++            model.vision_encoder,  # pyrefly: ignore [bad-argument-type]
++            compile_config=compile_config,
++            parallel_dims=parallel_dims,
++        )
++
+     if ac_config is not None:
+         ac_policy = ac_config.build(dump_folder=dump_folder)
+         ac_policy.apply(model)
+@@ -73,12 +85,6 @@
+         assert isinstance(model.config, KimiK3Model.Config)
+         raise_dynamo_recompile_limit(64)  # LOCAL: count the variants
+         apply_compile(model, compile_config=compile_config, parallel_dims=parallel_dims)
+-        if model.vision_encoder is not None:
+-            apply_compile(
+-                model.vision_encoder,  # pyrefly: ignore [bad-argument-type]
+-                compile_config=compile_config,
+-                parallel_dims=parallel_dims,
+-            )
+ 
+     # Skip FSDP wrapper for inference. FSDP's forward hooks
+     # are incompatible with torch.inference_mode() used by vLLM.
