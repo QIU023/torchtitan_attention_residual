@@ -39,9 +39,35 @@ Padding cost of the uniform width, computed with 6840's own `attn_res_boundary_d
 | 93 layers, pp4 vp4, block 12 | 37 | 3 x 15 = 45 | +21.6% |
 | 96 layers, pp8 vp4, block 12 | 83 | 3 x 31 = 93 | +12.0% |
 
-These counts use 6840's accounting (every slice is one hidden-sized tensor, the partial included) and are not comparable with the 167 -> 83 unit figure for 4312 (different split and unit). Not measured on GPU.
+Caveat: under 6840 the 93-layer rows cannot actually be configured. It rejects `pipeline_model_parallel_layout` and `num_layers_in_first/last_pipeline_stage` with AttnRes, and the even split asserts `num_layers % pp == 0` and `(num_layers / pp) % vp == 0` (`transformer_block.py:175-197`); 93 = 3 x 31, so pp must be 3, 31 or 93. The rows show what the padding would cost once uneven splits are allowed. These counts use 6840's accounting (every slice is one hidden-sized tensor, the partial included) and are not comparable with the 167 -> 83 unit figure for 4312 (different split and unit). Not measured on GPU.
 
 Also observed (read, not run): the `_UNIFORM_SLICES_MEMO` key omits `pipeline_model_parallel_layout` and the first/last stage layer counts, so two configs in one process that differ only there share a memo entry.
+
+## 3b. How the 6840 VPP cache works (read from `ar6840`, head `64fbfe3`)
+
+- Entry point: `AttnResStageSources` (`attention_residual.py:386`), created by `TransformerBlock.forward` at chunk entry (`transformer_block.py:981-996`) via `enter(...)`, fed each block start by `append_block_start`, closed by `exit_pack` (payload for the next chunk) or `exit_aggregate_values` (head stage).
+- Microbatch id: read from `self.layers[0].current_microbatch`, the attribute `schedules.forward_step` already sets for TE CUDA-graph replay (`set_current_microbatch`, `schedules.py:494-495`); no new schedule plumbing.
+- Cache: one process-wide dict `mb -> list of leaves` (`_AttnResSourceCache`, 311). At entry of chunk v>0 the rank takes `cache[mb]` (the full source list as of its previous chunk), appends the unpacked delta, and asserts the count equals `sources_formed_through(layers_before)`. At exit it overwrites `cache[mb]` with the new list, or pops it on the rank's last chunk (v = V-1); backward never reads the cache, only autograd-saved references.
+- Gradient bridge: every source that first materializes in a chunk (each received delta slice and each locally formed block start) goes through `attn_res_tap_source`: the cache gets `tensor.detach().requires_grad_()`, the in-graph copy goes through `_AttnResGradTap`, an identity whose backward adds `leaf.grad` and clears it. Later chunks read the leaf, so their backward (which interleaved 1F1B runs first for the same microbatch) accumulates into `leaf.grad`; the producing chunk's backward drains it. autograd's own `.grad` accumulation is the slot, so there is no slot dict and no key.
+- Payload: `[*delta_sources, partial]` concatenated along the sequence dim, zero-padded to `attn_res_uniform_payload_slices` (max delta over all P*V-1 boundaries, memoised), so the schedule's single `tensor_shape` becomes `seq * uniform_slices` (`schedules.py:1300-1307`); rotary embedding length is patched for the same reason (`rotary_pos_embedding.py:306`). The receiver slices off the real slices before chunking so pad rows never enter a source.
+- Layer side: each `AttnResTransformerLayer` has two aggregations (`self_attention_attn_res`, `mlp_attn_res`, `transformer_layer.py:3003-3004`) and receives the stack as the `attn_res_sources` keyword; an assert checks its arity per layer.
+- Reset: `attn_res_source_cache_reset()` at the schedule entries (`schedules.py:735-737`, `1184-1186`) is nested inside `if moe_paged_stash:`, so the "safety net" runs only with paged stash; normal runs rely on the last-chunk eviction and the stale-entry asserts.
+- Refused with AttnRes (`transformer_config.py:1592-1724`): full recompute, CUDA graphs, `overlap_moe_expert_parallel_comm`, fused residual RMSNorm, fp32 residual, cpu offloading, custom pipeline layouts and first/last stage counts, variable seq lengths or packing with PP, VPP with embedding/loss split, heterogeneous block specs.
+
+Against 4312's adapter:
+
+| | 6840 | 4312 |
+| --- | --- | --- |
+| where it lives | core `TransformerBlock` / `HybridStack` plus one schedule line | model folder: `CrossStageCacheAdapter` wraps the stage module, no core change |
+| mb id | existing `current_microbatch` attribute | thread-local per adapter |
+| cached per mb | whole source list, replaced each visit | appended per commit with producer metadata `(rank, stage, idx)` |
+| received blocks | tapped like local ones (leaf + tap) | kept attached: the P2P recv buffer is already a leaf, so the schedule's backward send drains their grads with no bridge |
+| own-rank blocks | leaf `.grad` accumulation, drained by the tap | detached copy + `_LocalCacheCapture` depositing into a `(mb, stage, idx)` slot, producer-side grad hook sums it in |
+| lost-gradient check | none (a consumer backward that never fires leaves `leaf.grad = None` silently) | hook compares deposit count with `expected_same_rank_captures` from the layout tables and raises |
+| payload | seq-dim concat, padded to the max delta | `[T, K, D]` block axis, exact width per hop through `PipelineStage` shape inference |
+| eviction | at forward of the last chunk | step-end sweep after backward, plus slot clearing |
+| splits | even only (93 layers: pp in 3, 31, 93) | any layer count per stage |
+| extras 4312 lacks | hybrid stacks, MTP, FLA aggregation kernel, memory-lean custom Function, attention-scope offload | |
 
 ## 4. What Megatron-Core needs for this design (from the MCore PP survey, 54c62df)
 
