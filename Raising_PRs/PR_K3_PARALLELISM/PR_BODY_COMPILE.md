@@ -22,7 +22,7 @@ Enable `torch.compile` for Kimi K3, which `parallelize_kimi_k3` refused with `No
 
 ## Design
 
-Every decoder and tower block reaches Dynamo through one code object, the checkpoint wrapper's `forward`, and compiles it once per distinct block shape: MLA or KDA, whether the layer opens an attention-residual block, and the width of the residual stack it reads. The 24-layer debug model needs 8 variants, exactly Dynamo's default limit, and a 33-layer model needs 9, which stops before the first step under `fullgraph=True`. The bound counts those combinations from the config and adds 4 for the tower's image shapes and the FSDP wrapper types: 10 for the debug model, 12 for 33 layers, 28 for the released 93-layer layout.
+Every decoder and tower block reaches Dynamo through one code object, the checkpoint wrapper's `forward`, and compiles it once per distinct block shape: MLA or KDA, whether the layer opens an attention-residual block, and whether the residual stack it reads is 0, 1 or more entries wide (from 2 up the width is one dynamic graph); the tower adds 2. The 24-layer debug model needs 8 variants, exactly Dynamo's default limit, and a 33-layer model or the released 93-layer layout needs 9, which stops before the first step under `fullgraph=True`. The bound counts those combinations from the config and adds 2 for the tower: 8, 9 and 9.
 
 The helper lives in `distributed/compile.py` next to `apply_compile` because two models now need it; gpt_oss computes its own bound as before.
 
