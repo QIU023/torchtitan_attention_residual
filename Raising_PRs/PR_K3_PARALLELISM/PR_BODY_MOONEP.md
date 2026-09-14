@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] MoonEP as a MoE comm backend, on the standard dispatcher seam
 
-Branch `k3_moonep_seam` = [`cc46bde23`](https://github.com/QIU023/torchtitan/commit/cc46bde23), four commits on main `b21f7d43e` (2026-09-14). Draft until the package is public on the CI boxes and the H100 SXM run is done; the CPU tests need neither the package nor a GPU. Body in the #4577 format (2026-09-14).
+Branch `k3_moonep_seam` = [`a706a881d`](https://github.com/QIU023/torchtitan/commit/a706a881d124ff479e540a271384b36969d479bb), five commits on main `b21f7d43e` (2026-09-14); the fifth only cuts comments and docstrings to the #4577 rules, so the cells measured on `cc46bde23` hold. Not filed until the 2 x H100 SXM run is done (user, 2026-09-14). Draft until the package is public on the CI boxes and the H100 SXM run is done; the CPU tests need neither the package nor a GPU. Body in the #4577 format (2026-09-14).
 
 Notes for filing:
 - Fixed in `cc46bde23` from the 2026-09-14 audit of `610f721bf`: the mesh check is now `dp_shard * cp * tp == ep`, one prefetch slot count (dispatcher config, read by the experts at attach), the expert GEMMs through `GroupedExperts._grouped_mm`, one combine call in the dispatch backward, the pass-through `wire_meshes` override gone, stale docstrings rewritten. Docstring size not re-measured.
