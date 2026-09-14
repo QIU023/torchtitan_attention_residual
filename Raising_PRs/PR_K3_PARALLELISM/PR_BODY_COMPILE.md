@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Compile each transformer block
 
-Fork branch `k3_compile_blocks` = [`1354249a5`](https://github.com/QIU023/torchtitan/commit/1354249a576f), one commit on main `1c7ab8089`, Kimi K3 only (`parallelize.py` +4/-2), independent of the parallelism PRs (#4312, #4499). Measured on one RTX 5060 Ti (SM120) with the KDA capability guard lifted locally for the runs; the branch leaves the guard as main has it. Design choice (user, 2026-09-14): compile through the KDA wrapper with main's `apply_compile` unchanged, instead of a `torch.compiler.disable` carve-out plus a core `fullgraph` argument.
+Fork branch `k3_compile_blocks` = [`1cae3fd62`](https://github.com/QIU023/torchtitan/commit/1cae3fd629ea0ac51ac218b0ae975de9b95b42d2), one commit on main `b21f7d43e`, Kimi K3 only (`parallelize.py` +4/-2), independent of the parallelism PRs (#4312, #4499). Measured on `1c7ab8089`; the one newer main commit, `b21f7d43e` (#4611), only adds vision-encoder regions, which the text-only runs below do not execute. Measured on one RTX 5060 Ti (SM120) with the KDA capability guard lifted locally for the runs; the branch leaves the guard as main has it. Design choice (user, 2026-09-14): compile through the KDA wrapper with main's `apply_compile` unchanged, instead of a `torch.compiler.disable` carve-out plus a core `fullgraph` argument.
 
 --- PASTE BEGIN ---
 
@@ -8,7 +8,7 @@ Fork branch `k3_compile_blocks` = [`1354249a5`](https://github.com/QIU023/torcht
 
 `parallelize_kimi_k3` raised `Kimi K3 does not support model compilation yet` for `--compile.enable --compile.components model`. The refusal goes, and Kimi K3 calls the shared `apply_compile` after activation checkpointing and before FSDP, as the other models do. Dynamo traces the whole block, the KDA kernel wrapper included, with `fullgraph=True`; no core change.
 
-Compiled numerics differ from eager at the rounding level, from inductor's code for the KDA gate, normalisation and beta preprocessing; an `aot_eager` trace of the same blocks reads eager's step-1 loss and grad norm bitwise, so the trace itself is exact.
+Compiled numerics differ from eager at the rounding level, from inductor's generated kernels; an `aot_eager` trace of the same blocks reads eager's step-1 loss and grad norm bitwise, so the trace itself is exact.
 
 ## Results
 
@@ -24,7 +24,7 @@ NGPU=1 CONFIG=kimi_k3_debugmodel MODULE=kimi_k3 ./run_train.sh --parallelism.dat
 | compiled (inductor) | `12.54321` / `9.82954` / `7.87903` | `15.0000` / `14.6875` / `9.5000` | 12.63 GiB |
 | compiled, `--compile.backend aot_eager` | `12.54770` / `9.88943` / `7.75367` | `15.1250` / `14.3750` / `8.6875` | 12.62 GiB |
 
-The same compiled command on main `1c7ab8089` stops at `NotImplementedError: Kimi K3 does not support model compilation yet.`
+The same compiled command on main stops at `NotImplementedError: Kimi K3 does not support model compilation yet.`
 
 ## Limitations
 

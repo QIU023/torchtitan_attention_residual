@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Declare torch_remat regions so RegionAC can keep attention and recompute the MoE
 
-Fork branch `k3_ac_reuse_attention` = `e6e03a658` (two commits on main `1c7ab8089`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag plus a private wrap of the MoE / feed-forward under selective AC, and a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
+Fork branch `k3_ac_reuse_attention` = [`bc696be15`](https://github.com/QIU023/torchtitan/commit/bc696be15eca3fc26559c9aab76f7adde8c993a1) (two commits on main `b21f7d43e`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag plus a private wrap of the MoE / feed-forward under selective AC, and a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Measured on `1c7ab8089`; the one newer main commit, `b21f7d43e` (#4611), only adds vision-encoder regions, which the text-only runs below do not execute. Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
 
 --- PASTE BEGIN ---
 
@@ -9,15 +9,17 @@ Fork branch `k3_ac_reuse_attention` = `e6e03a658` (two commits on main `1c7ab808
 Kimi K3 declared no `torch_remat` regions, so under [RegionAC](https://github.com/pytorch/torchtitan/blob/main/docs/remat.md) every op of a block was recomputed, including the KDA and MLA kernels. This PR declares regions at Kimi K3's call sites, the way `GQAttention` and `FeedForward` already do, so a save policy can keep the attention activations and recompute only the MoE or feed-forward:
 
 ```text
-activation-checkpoint:region --activation-checkpoint.save-regions 'attention.*' 'delta_attention.*'
+activation-checkpoint:region --activation-checkpoint.save-regions '*attention.*'
 ```
+
+A recipe can list the patterns instead: `RegionAC.Config(save_regions=["attention.*", "delta_attention.*"])`.
 
 No new config field and no change to `parallelize_kimi_k3`: RegionAC applies through the existing `ac_policy.apply(model)`. Outside a `torch_remat` checkpoint the regions do not change execution.
 
 ### Design
 
 - MLA (`KimiMLAAttention`): `attention.q` (query down projection, norm, up projection), `attention.kv` (key/value latent, norm, up projection, and the shared rope key broadcast to the heads), `attention.inner_attention`, `attention.gate`, `attention.wo`.
-- KDA (`KDA`): `delta_attention.qkv`, `delta_attention.forget`, `delta_attention.beta`, `delta_attention.inner_kda` (short convolution plus the Attention Gym kernel), `delta_attention.output_gate`, `delta_attention.output_norm`, `delta_attention.output_proj`.
+- KDA (`KDA`), in main's op order: `delta_attention.forget`, `delta_attention.beta`, `delta_attention.qkv`, `delta_attention.inner_kda` (short convolution plus the Attention Gym kernel), `delta_attention.output_gate`, `delta_attention.output_norm`, `delta_attention.output_proj`.
 - Block (`KimiK3TransformerBlock`): `attention_res` and `ffn_res`, the two attention-residual computations. Their math upcasts the whole block stack to fp32, so leaving them out of a save policy recomputes those intermediates instead of keeping them per layer.
 - Behaviour change: the attention-residual math is now recomputed only under an enclosing RegionAC checkpoint; under selective AC or no AC it saves its fp32 intermediates as main does, since the earlier always-on checkpoint wrapper is gone.
 - The MoE needs nothing beyond core: the router's routing decision is already a saved region, and the shared experts and dense feed-forward use `FeedForward`'s `w13` / `w2` regions.
@@ -25,7 +27,7 @@ No new config field and no change to `parallelize_kimi_k3`: RegionAC applies thr
 
 ### Results
 
-Kimi K3 debug model (24 layers plus an 8-block vision tower), dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one GPU, one inductor cache shared by every cell and warmed by a 1-step run of each. The branch source measured here is `c9d8ed39e` (the second commit only adds the test).
+Kimi K3 debug model (24 layers plus an 8-block vision tower), dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one GPU, one inductor cache shared by every cell and warmed by a 1-step run of each. The source measured here is `c9d8ed39e` on `1c7ab8089`, the same diff as the branch's first commit (the second only adds the test).
 
 ```bash
 PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.train \
@@ -53,8 +55,8 @@ With activation checkpointing off the PR is bitwise with main over the ten steps
 
 ```text
 torchtitan/models/kimi_k3/model.py                    +59/-19  MLA and attention-residual regions
-torchtitan/models/kimi_k3/kda.py                      +54/-12  KDA regions
-tests/unit_tests/cpu/test_kimi_k3_remat_regions.py    +183/-0  region names, recompute counts, bitwise gradients
+torchtitan/models/kimi_k3/kda.py                      +55/-12  KDA regions
+tests/unit_tests/cpu/test_kimi_k3_remat_regions.py    +184/-0  region names, recompute counts, bitwise gradients
 ```
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
