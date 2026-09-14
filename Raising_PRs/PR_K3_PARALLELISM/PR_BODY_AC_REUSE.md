@@ -1,55 +1,50 @@
-# PR title: [Kimi K3] Declare torch_remat regions so RegionAC can keep attention and recompute the MoE
+# PR title: [Kimi K3] Recompute the attention-residual math in backward
 
-Fork branch `k3_ac_reuse_attention` = [`b4b2397cc`](https://github.com/QIU023/torchtitan/commit/b4b2397cc7dc6e280a829bbf615bd03ceaf29763) (two commits on main `b21f7d43e`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag, a private wrap of the MoE / feed-forward, a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Body in the #4577 format (2026-09-14).
-
-Notes for filing:
-- Measured on the branch as filed, `b4b2397cc` over main `b21f7d43e`; the values equal the earlier run on `1c7ab8089` (#4611 only adds vision regions, and no policy here saves them).
-- One RTX 5060 Ti of the 8-GPU box, KDA capability guard lifted locally for the run (not part of the branch). The debug flavor trains on the multimodal `cc12m-test` set: 40 of 40 micro-batches carry an image, so the tower runs in every row. Raw logs: `Raising_PRs/PR_K3_PARALLELISM/logs_acreuse_2026-09-14/`.
-- Peak memory moves with the inductor cache: main without AC read 14.61 GiB on the shared cache and 14.15 GiB on a fresh one with bitwise numerics, so memory is compared on the shared cache only.
+Fork branch `k3_ac_reuse_attention` = `a3e7d857c` (three commits on main `b21f7d43e`: the recompute, the region declarations, the tests). Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
 
 --- PASTE BEGIN ---
 
 ## Summary
 
-Declare `torch_remat` regions in Kimi K3 so [RegionAC](https://github.com/pytorch/torchtitan/blob/main/docs/remat.md) can keep the attention activations and recompute only the MoE or feed-forward; without them RegionAC recomputes every op of a block, the KDA and MLA kernels included.
-
-- `KimiMLAAttention` (`model.py`): `attention.q`, `attention.kv`, `attention.inner_attention`, `attention.gate`, `attention.wo`.
-- `KDA` (`kda.py`), in main's op order: `delta_attention.forget`, `.beta`, `.qkv`, `.inner_kda`, `.output_gate`, `.output_norm`, `.output_proj`.
-- `KimiK3TransformerBlock` (`model.py`): `attention_res` and `ffn_res`, the two attention-residual computations.
-- Add a CPU test of the region names, the recompute counts per save policy, and bitwise outputs and gradients.
+Recompute Kimi K3's attention-residual math in backward, as described in section 5.2.2 of the Kimi K3 technical report ("The AttnRes computation is entirely wrapped with checkpointing, so the activation saved for the backward pass at each layer is identical to that of the standard residual architecture").
+- Run `_apply_attention_residual` under a `torch_remat` checkpoint in `kimi_k3/model.py` whenever autograd records it, for the two residuals of every block and the output aggregation.
+- Declare `torch_remat` regions for the MLA and KDA call sites and the two block residuals, so RegionAC can keep the attention activations and recompute the MoE or feed-forward by name.
+- Add CPU tests for the recompute (bitwise gradients, no stack-shaped saved tensor) and for the regions under RegionAC.
 
 ## Design
 
-The regions are declared at the call sites with `remat.region(fn, self.remat_region_name(...), recompute=self.remat_should_recompute(...))`, the way `GQAttention` and `FeedForward` do, and `remat.recompute_needs_tensor` precedes every bare consumer of a region output, per the remat doc. The MoE needs nothing new: the router's decision is already a saved region, and the shared experts and dense feed-forward use `FeedForward`'s `w13` / `w2` regions. RegionAC applies through the existing `ac_policy.apply(model)`, so there is no new config field and no change to `parallelize_kimi_k3`; outside a `torch_remat` checkpoint the regions do not change execution.
+The residual upcasts the whole block stack and the prefix sum to fp32 and keeps the (N+1)-entry intermediates for backward, so each layer's saved activations grow with the stack. Under a checkpoint, backward recomputes them from the stack and the prefix sum, which are kept anyway, so the per-layer saved set matches a standard residual block at the cost of re-running the residual math. Values are unchanged.
 
-The attention-residual math upcasts the whole block stack to fp32, so leaving its two regions out of a save policy recomputes those intermediates instead of keeping them per layer. On the command line the policy is `activation-checkpoint:region --activation-checkpoint.save-regions '*attention.*'` (one pattern per option; `*attention.*` matches `attention.*` and `delta_attention.*` and neither residual region); a recipe can write `RegionAC.Config(save_regions=["attention.*", "delta_attention.*"])`.
+The recompute needs no activation-checkpointing mode: with AC off and under selective or full AC it is a `torch_remat` checkpoint (it nests inside the torch checkpoint those modes use). Under RegionAC the block is already a `torch_remat` checkpoint, which cannot nest another one, so a block that RegionAC configures (`configure_remat_regions`, which RegionAC calls on every block) runs its residuals as the regions `attention_res` and `ffn_res` instead, recomputed unless a save policy keeps them.
 
-The vision tower's regions come from core (`attn.qkv`, `attn.inner_attention`, `attn.wo`, `mlp.w1`, `mlp.w2`); `*attention.*` matches none of them, so under that policy the tower is recomputed whole and only the decoder's MLA and KDA activations are kept.
+The MLA regions (`attention.q`, `attention.kv`, `attention.inner_attention`, `attention.gate`, `attention.wo`) and the KDA regions (`delta_attention.forget`, `.beta`, `.qkv`, `.inner_kda`, `.output_gate`, `.output_norm`, `.output_proj`) are an optional policy on top: `activation-checkpoint:region --activation-checkpoint.save-regions '*attention.*'` keeps the attention activations, so the KDA and MLA kernels are not re-run in backward, and recomputes the rest of the block. The pattern matches neither residual region nor the vision tower's regions (`attn.*`, `mlp.*`). Everything lives in the model folder: the residual is Kimi K3's own computation, and the regions follow the call-site pattern of the core attention and feed-forward modules.
 
 ## Results
 
-Kimi K3 debug model (24 layers plus an 8-block vision tower, multimodal debug data), dp1, bf16, seed 42, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one GPU, one inductor cache shared by every cell and warmed by a one-step run of each.
+Main `b21f7d43e` against this PR, `seed=42`, deterministic, one inductor cache shared by every cell and warmed by a 1-step run of each. Debug model at dp1: 2048 tokens per step in 512-token micro-batches, 10 steps. The multimodal FSDP 2 recipe of the b200 suite (`kimi_k3_debugmodel_mm_fsdp2`, SPMD type checking on) with activation checkpointing forced off: its default 2048 tokens per rank, 3 steps. Loss and grad norm are compared at every step.
 
 ```bash
-PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic --training.steps 10 --training.num-tokens-per-train-step 2048 --training.num-tokens-per-microbatch-per-dp-rank 512 activation-checkpoint:region --activation-checkpoint.save-regions '*attention.*'
+PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.train \
+  --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic \
+  --training.steps 10 --training.num-tokens-per-train-step 2048 \
+  --training.num-tokens-per-microbatch-per-dp-rank 512 activation-checkpoint:none
 ```
 
-| tree | activation checkpointing | step 1 loss / grad norm | step 10 loss / grad norm | loss and grad norm, steps 1 to 10 | peak memory | tps (mean of steps 6 to 10) |
+| cell | activation checkpointing | main | this PR | loss and grad norm | peak memory main / PR | tps main / PR |
 | --- | --- | --- | --- | --- | ---: | ---: |
-| main `b21f7d43e` | none | `12.63048` / `20.6250` | `3.64293` / `4.9062` | reference | 14.61 GiB | 850 |
-| main `b21f7d43e`, fresh cache | none | same | same | bitwise | 14.15 GiB | 815 |
-| this PR | none | same | same | bitwise | 14.61 GiB | 822 |
-| this PR | selective (the flavor default) | same | same | bitwise | 12.72 GiB | 505 |
-| this PR | region, `save-regions '*attention.*'` | same | same | bitwise | 13.18 GiB | 640 |
-| this PR | full | same | same | bitwise | 12.52 GiB | 623 |
+| debug dp1 | none | `12.63048` / `20.6250` at step 1, `3.64293` / `4.9062` at step 10 | same | bitwise | 14.61 / 14.17 GiB | 853 / 774 |
+| debug dp1 | selective (the flavor default) | same | same | bitwise | 12.68 / 12.72 GiB | 504 / 465 |
+| debug dp1 | region, `save-regions '*attention.*'` | | same | bitwise | 13.18 GiB | 640 |
+| debug dp1 | full | | same | bitwise | 12.52 GiB | 604 |
+| mm FSDP 2, type checking on | none | `12.37844` / `24.5000` at step 1, `9.62056` / `18.0000` at step 3 | same | bitwise | 15.04 / 14.76 GiB | not measured (3 steps) |
 
-Keeping the MLA and KDA activations costs 0.46 GiB over selective AC on the same cache and runs 27% faster (640 against 505 tokens per second), because the attention kernels are no longer re-run in backward.
+With activation checkpointing off the recompute saves 0.44 GiB of peak memory at 512-token micro-batches and 0.28 GiB on the FSDP 2 recipe at 2048 tokens, and costs about 9% of throughput at dp1 for re-running the residual math. Under selective AC the residual is recomputed inside the block's own recompute, so peak memory is unchanged within 0.04 GiB and the step is about 8% slower. The FSDP 2 recipe with type checking on also confirms the `torch_remat` checkpoint runs under SPMD type checking. The `*attention.*` row is the optional region policy: it keeps the MLA and KDA activations and runs faster than selective AC for 0.46 GiB more.
+
 
 ## Test plan
-
-- `pytest tests/unit_tests/cpu/test_kimi_k3_remat_regions.py -q` (3 passed): a KDA block and an MLA block from the debug model's layer configs with CPU stand-ins for the CUDA-only kernels; every region traced under its block-relative name, each save policy recomputes exactly the regions it does not keep, outputs and every gradient bitwise equal to the blocks without activation checkpointing, the state dict unchanged by RegionAC.
-- The GPU command above, once per row.
-
---- PASTE END ---
+- `pytest tests/unit_tests/cpu/test_kimi_k3_remat_regions.py -q` (`5 passed, 5 subtests passed`)
+- Scoped pre-commit checks, including formatting and Pyrefly (`passed`)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+https://claude.ai/code/session_01WBy1d9YVu44nYCVqykRqL1
