@@ -129,7 +129,7 @@ Every other split passed because a later op consumed the input and autograd accu
 
 Three CPU unit tests (the split, the layout tables, the stage's carrier handling) run in the default suite; two integration cells in the B200 suite, beside K3's existing cell, since Attention Gym's KDA runs only on SM100/SM103: pp2 x vp2 on two GPUs on the shared debug model, the smallest shape where a rank receives a block it already holds, and pp8 x vp4 on eight, where 32 stages put a boundary between almost every pair of layers. A plain pp2 cell would exercise none of this: with one stage per rank no rank ever receives a block twice, so the delta is the whole stack and the two transports are the same code path.
 
-### Appendix: BF16 reduction numerical results
+### Appendix: BF16 reduction numerical results (without PyTorch #194033, current HEAD)
 
 The same cells with the default bf16 total grad norm. Step 1 is identical in every cell; later steps also carry the bf16 norm's dependence on how the parameters are grouped, which the fp32 tables above remove.
 
