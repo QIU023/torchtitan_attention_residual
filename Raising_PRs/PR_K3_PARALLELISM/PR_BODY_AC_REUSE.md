@@ -1,9 +1,9 @@
 # PR title: [Kimi K3] Declare torch_remat regions so RegionAC can keep attention and recompute the MoE
 
-Fork branch `k3_ac_reuse_attention` = [`bc696be15`](https://github.com/QIU023/torchtitan/commit/bc696be15eca3fc26559c9aab76f7adde8c993a1) (two commits on main `b21f7d43e`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag, a private wrap of the MoE / feed-forward, a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Body in the #4577 format (2026-09-14).
+Fork branch `k3_ac_reuse_attention` = [`b4b2397cc`](https://github.com/QIU023/torchtitan/commit/b4b2397cc7dc6e280a829bbf615bd03ceaf29763) (two commits on main `b21f7d43e`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag, a private wrap of the MoE / feed-forward, a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Body in the #4577 format (2026-09-14).
 
 Notes for filing:
-- Measured on the branch as filed, `bc696be15` over main `b21f7d43e`; the values equal the earlier run on `1c7ab8089` (#4611 only adds vision regions, and no policy here saves them).
+- Measured on the branch as filed, `b4b2397cc` over main `b21f7d43e`; the values equal the earlier run on `1c7ab8089` (#4611 only adds vision regions, and no policy here saves them).
 - One RTX 5060 Ti of the 8-GPU box, KDA capability guard lifted locally for the run (not part of the branch). The debug flavor trains on the multimodal `cc12m-test` set: 40 of 40 micro-batches carry an image, so the tower runs in every row. Raw logs: `Raising_PRs/PR_K3_PARALLELISM/logs_acreuse_2026-09-14/`.
 - Peak memory moves with the inductor cache: main without AC read 14.61 GiB on the shared cache and 14.15 GiB on a fresh one with bitwise numerics, so memory is compared on the shared cache only.
 

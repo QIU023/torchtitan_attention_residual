@@ -1,9 +1,9 @@
 # PR title: [Kimi K3] Compile the transformer blocks and the vision tower
 
-Fork branch `k3_compile_blocks` = [`7629d1c74`](https://github.com/QIU023/torchtitan/commit/7629d1c74), one commit on main `b21f7d43e`. Touches core once: `raise_dynamo_recompile_limit` moves from a private gpt_oss helper into `distributed/compile.py` (gpt_oss keeps its value). Body in the #4577 format (2026-09-14).
+Fork branch `k3_compile_blocks` = [`5247ca305`](https://github.com/QIU023/torchtitan/commit/5247ca3057096a52e1da33da4fbb31c900b41db7), one commit on main `b21f7d43e`. Touches core once: `raise_dynamo_recompile_limit` moves from a private gpt_oss helper into `distributed/compile.py` (gpt_oss keeps its value). Body in the #4577 format (2026-09-14).
 
 Notes for filing:
-- The GPU numbers were measured on `a4e6f4e3b` and `640b101e1`; `7629d1c74` changes only comments, docstrings and the test's style against `640b101e1`, and the 24-layer rows were identical with and without the helper.
+- The GPU numbers were measured on `a4e6f4e3b` and `640b101e1`; `5247ca305` changes only comments, docstrings and the test's style against `640b101e1`, and the 24-layer rows were identical with and without the helper.
 - The debug flavor trains on the multimodal `cc12m-test` set, so the vision tower runs in every row.
 - One RTX 5060 Ti, KDA capability guard lifted locally for the runs (not part of the branch). Raw logs: `Raising_PRs/PR_K3_PARALLELISM/logs_compile_2026-09-14/`.
 - Located as far as the probes go: under `aot_eager` every activation gradient of layer 23 is bitwise and only the weight gradients of `wq_a`, `wq_b`, `wkv_a`, `wkv_b` and `attention_res_proj` differ (rel 6.4e-7 to 1.6e-4; 2 of 32 micro-batches tapped), so the gap is in those weight-gradient matmuls, not in flex attention or the residual path; the kernel or layout is not located. Under inductor the step-1 shift comes from compiling `KDAKernel.forward` and the tower (with both left eager an earlier revision read eager bitwise over three steps); not located below module level.
