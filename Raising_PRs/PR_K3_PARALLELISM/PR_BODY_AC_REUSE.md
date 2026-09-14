@@ -1,6 +1,6 @@
 # PR title: [Kimi K3] Declare torch_remat regions so RegionAC can keep attention and recompute the MoE
 
-Fork branch `k3_ac_reuse_attention` = `50563873a` (two commits on main `1c7ab8089`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag plus a private wrap of the MoE / feed-forward under selective AC, and a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
+Fork branch `k3_ac_reuse_attention` = `e6e03a658` (two commits on main `1c7ab8089`, independent of the parallelism PRs). Replaces the earlier draft of this branch (a model flag plus a private wrap of the MoE / feed-forward under selective AC, and a direct `torch.utils.checkpoint` around the attention residual) with region declarations on main's RegionAC. Measured on 8 x RTX 5060 Ti with the KDA capability guard lifted locally for the run; the lift is not part of the branch.
 
 --- PASTE BEGIN ---
 
@@ -25,7 +25,7 @@ No new config field and no change to `parallelize_kimi_k3`: RegionAC applies thr
 
 ### Results
 
-Kimi K3 debug model (24 layers plus an 8-block vision tower), dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one GPU, one inductor cache warmed by a 1-step run of each cell. The branch source measured here is `e0905101f` (the second commit only adds the test).
+Kimi K3 debug model (24 layers plus an 8-block vision tower), dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one GPU, one inductor cache shared by every cell and warmed by a 1-step run of each. The branch source measured here is `c9d8ed39e` (the second commit only adds the test).
 
 ```bash
 PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.train \
@@ -35,14 +35,15 @@ PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.trai
   activation-checkpoint:region --activation-checkpoint.save-regions '*attention.*'
 ```
 
-| activation checkpointing | step 1 loss / grad norm | step 10 loss / grad norm | loss and grad norm, steps 1 to 10 | peak memory | tps (mean of steps 6 to 10) |
-| --- | --- | --- | --- | ---: | ---: |
-| none | `12.63048` / `20.6250` | `3.93499` / `4.0938` | reference | 14.61 GiB | 835 |
-| selective (the flavor default) | same | same | bitwise | 12.78 GiB | 512 |
-| region, `save-regions '*attention.*'` | same | same | bitwise | 13.18 GiB | 664 |
-| full | same | same | bitwise | 12.52 GiB | 615 |
+| tree | activation checkpointing | step 1 loss / grad norm | step 10 loss / grad norm | loss and grad norm, steps 1 to 10 | peak memory | tps (mean of steps 6 to 10) |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| main `1c7ab8089` | none | `12.63048` / `20.6250` | `3.64293` / `4.9062` | reference | 14.61 GiB | 858 |
+| this PR | none | same | same | bitwise | 14.61 GiB | 849 |
+| this PR | selective (the flavor default) | same | same | bitwise | 12.72 GiB | 505 |
+| this PR | region, `save-regions '*attention.*'` | same | same | bitwise | 13.18 GiB | 648 |
+| this PR | full | same | same | bitwise | 12.52 GiB | 637 |
 
-The log confirms RegionAC wrapped all 24 decoder blocks and the 8 vision blocks with the `*attention.*` pattern. Keeping the MLA and KDA activations and recomputing the MoE / feed-forward and the residual math costs 0.40 GiB over selective AC and runs 30% faster than it (664 against 512 tokens per second; the per-step spread within a cell is under 20 tokens per second), because the attention kernels are no longer re-run in backward. `*attention.*` matches both `attention.*` (MLA) and `delta_attention.*` (KDA) and neither residual region; the CLI takes one pattern per option, so the single glob is the command-line spelling of that policy.
+With activation checkpointing off the PR is bitwise with main over the ten steps: the KDA projections keep main's op order (forget gate, beta, then query / key / value), so the regions add no numeric change. The log confirms RegionAC wrapped all 24 decoder blocks and the 8 vision blocks with the `*attention.*` pattern. Keeping the MLA and KDA activations and recomputing the MoE / feed-forward and the residual math costs 0.46 GiB over selective AC and runs 28% faster than it (648 against 505 tokens per second), because the attention kernels are no longer re-run in backward. `*attention.*` matches both `attention.*` (MLA) and `delta_attention.*` (KDA) and neither residual region; the CLI takes one pattern per option, so the single glob is the command-line spelling of that policy.
 
 ### Tests
 
