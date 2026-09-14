@@ -1,9 +1,9 @@
 # PR title: [Kimi K3] Compile the transformer blocks and the vision tower
 
-Fork branch `k3_compile_blocks` = [`5247ca305`](https://github.com/QIU023/torchtitan/commit/5247ca3057096a52e1da33da4fbb31c900b41db7), one commit on main `b21f7d43e`. Touches core once: `raise_dynamo_recompile_limit` moves from a private gpt_oss helper into `distributed/compile.py` (gpt_oss keeps its value). Body in the #4577 format (2026-09-14). Chosen by the user over the decoder-only option (2026-09-14): the tower is compiled too, so the shared-wrapper recompile limit is raised through the helper; the probe in `logs_compile_2026-09-14/recompile_probe/` measured the real variants at 8 / 9 / 9 for 24 / 33 / 93 layers, below the bound the code computes (10 / 12 / 28).
+Fork branch `k3_compile_blocks` = [`2d7b85225`](https://github.com/QIU023/torchtitan/commit/2d7b85225b5eb1194136121cda1627655448bfa1), one commit on main `b21f7d43e`. Touches core once: `raise_dynamo_recompile_limit` moves from a private gpt_oss helper into `distributed/compile.py` (gpt_oss keeps its value). Body in the #4577 format (2026-09-14). Chosen by the user over the decoder-only option (2026-09-14): the tower is compiled too, so the shared-wrapper recompile limit is raised through the helper. The bound equals the variant count the probe measured (8 / 9 / 9 for 24 / 33 / 93 layers; `logs_compile_2026-09-14/recompile_probe/`, `exact_bound/`), so it has no headroom: a new guard variant would hit the limit again.
 
 Notes for filing:
-- The GPU numbers were measured on `a4e6f4e3b` and `640b101e1`; `5247ca305` changes only comments, docstrings and the test's style against `640b101e1`, and the 24-layer rows were identical with and without the helper.
+- The GPU numbers were measured on `a4e6f4e3b` and `640b101e1`; `2d7b85225` changes only comments, docstrings and the test's style against `640b101e1`, and the 24-layer rows were identical with and without the helper.
 - The debug flavor trains on the multimodal `cc12m-test` set, so the vision tower runs in every row.
 - One RTX 5060 Ti, KDA capability guard lifted locally for the runs (not part of the branch). Raw logs: `Raising_PRs/PR_K3_PARALLELISM/logs_compile_2026-09-14/`.
 - Located as far as the probes go: under `aot_eager` every activation gradient of layer 23 is bitwise and only the weight gradients of `wq_a`, `wq_b`, `wkv_a`, `wkv_b` and `attention_res_proj` differ (rel 6.4e-7 to 1.6e-4; 2 of 32 micro-batches tapped), so the gap is in those weight-gradient matmuls, not in flex attention or the residual path; the kernel or layout is not located. Under inductor the step-1 shift comes from compiling `KDAKernel.forward` and the tower (with both left eager an earlier revision read eager bitwise over three steps); not located below module level.
@@ -44,7 +44,7 @@ NGPU=1 CONFIG=kimi_k3_debugmodel MODULE=kimi_k3 ./run_train.sh --parallelism.dat
 | compiled (inductor) | `12.55324` / `9.86780` / `7.58297` | `15.0625` / `14.6875` / `10.6875` | 12.62 GiB | 0 / 726 |
 | compiled, `--compile.backend aot_eager` | `12.54770` / `9.88943` / `7.75367` | `15.1250` / `14.3750` / `8.6875` | 12.61 GiB | 25 / 726 |
 
-The inductor row read the same three steps twice. With 33 layers the compiled run trains (`12.54158` / `10.23301` / `7.98758`, 9 wrapper variants under a bound of 12); without the helper it stops before step 1 with `recompile limit exceeded`. The same command on main stops at `NotImplementedError: Kimi K3 does not support model compilation yet.` Compile is exercised at one data-parallel rank; TP, PP and CP under compile are not.
+The inductor row read the same three steps twice. With 33 layers the compiled run trains (`12.54158` / `10.23301` / `7.98758`, 9 wrapper variants under a bound of 9); without the helper it stops before step 1 with `recompile limit exceeded`. The same command on main stops at `NotImplementedError: Kimi K3 does not support model compilation yet.` Compile is exercised at one data-parallel rank; TP, PP and CP under compile are not.
 
 ## Test plan
 

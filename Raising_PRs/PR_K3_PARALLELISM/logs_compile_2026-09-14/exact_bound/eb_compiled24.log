@@ -1,0 +1,152 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+W0914 21:14:37.319000 2023242 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0914 21:14:37.351000 2023242 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[titan] 2026-09-14 21:14:38,012 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-14 21:14:38,605 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 21:14:38,697 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 21:14:38,702 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/out_eb_compiled24/structured_logs/training.global_rank_0.20260914-211438-JCH5AF.jsonl
+[titan] 2026-09-14 21:14:38,847 - torchtitan.distributed.utils - INFO - Enabled BF16x9 emulation for FP32 CUDA matmuls
+[titan] 2026-09-14 21:14:38,847 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-14 21:14:39,339 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-14 21:14:39,339 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-14 21:14:39,365 - torchtitan.trainer - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-14 21:14:39,575 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA GeForce RTX 5060 Ti with 15.48GiB memory
+[titan] 2026-09-14 21:14:39,579 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-14 21:14:39,579 - torchtitan.tools.utils - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5060 Ti, fallback to A100
+[titan] 2026-09-14 21:14:39,585 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-14 21:14:39,585 - torchtitan.trainer - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-14 21:14:39,585 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-14 21:14:39,610 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-14 21:14:39,655 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-14 21:14:39,658 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-14 21:14:39,665 - torchtitan.distributed.compile - INFO - Compiling each TransformerBlock with torch.compile
+[titan] 2026-09-14 21:14:39,667 - torchtitan.distributed.compile - INFO - Compiling each TransformerBlock with torch.compile
+[titan] 2026-09-14 21:14:39,886 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-14 21:14:40,816 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-14 21:14:40,816 - torchtitan.tools.utils - WARNING - Peak flops undefined for: NVIDIA GeForce RTX 5060 Ti, fallback to A100
+[titan] 2026-09-14 21:14:40,816 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 3.120e+14
+[titan] 2026-09-14 21:14:40,816 - torchtitan.trainer - INFO - CUDA memory usage for model: 3.85GiB(24.89%)
+[titan] 2026-09-14 21:14:40,821 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-14 21:14:40,824 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[titan] 2026-09-14 21:14:40,824 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-14 21:14:40,848 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-14 21:14:40,849 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-14 21:14:40,849 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 32, maximum context length 2048, total steps 3 (warmup 2)
+[titan] 2026-09-14 21:14:40,849 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles] Recompiling function create_block_mask in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/attention/flex_attention.py:1982
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles]     - 0/0: Q_LEN == 256                                             # m = torch.arange(0, Q_LEN, device=device)  # nn/attention/flex_attention.py:1872 in create_mask
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/attention/flex_attention.py", line 2078, in create_block_mask
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles]     -     mask_tensor = create_mask(mask_mod, B, H, Q_LEN, KV_LEN, device)
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/attention/flex_attention.py", line 1872, in create_mask
+[rank0]:V0914 21:14:46.649000 2023242 torch/_dynamo/guards.py:5671] [0/1] [__recompiles]     -     m = torch.arange(0, Q_LEN, device=device)
+[rank0]:W0914 21:14:48.326000 2023242 torch/_logging/_internal.py:1394] [1/0] 
+[rank0]:W0914 21:14:48.326000 2023242 torch/_logging/_internal.py:1394] [1/0] Detected that context_fn is passed to torch.utils.checkpoint under torch.compile.
+[rank0]:W0914 21:14:48.326000 2023242 torch/_logging/_internal.py:1394] [1/0] Please make sure the checkpointed region does not contain in-place ops (e.g. torch.relu_).
+[rank0]:W0914 21:14:48.326000 2023242 torch/_logging/_internal.py:1394] [1/0] 
+[rank0]:V0914 21:14:49.770000 2023242 torch/_dynamo/guards.py:5671] [1/1] [__recompiles] Recompiling function forward in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143
+[rank0]:V0914 21:14:49.770000 2023242 torch/_dynamo/guards.py:5671] [1/1] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:14:49.770000 2023242 torch/_dynamo/guards.py:5671] [1/1] [__recompiles]     - 1/0: len(args) == 1                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:14:49.770000 2023242 torch/_dynamo/guards.py:5671] [1/1] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:14:49.770000 2023242 torch/_dynamo/guards.py:5671] [1/1] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:14:49.770000 2023242 torch/_dynamo/guards.py:5671] [1/1] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[titan] 2026-09-14 21:14:51,852 - attn_gym.linear.kda.utils - INFO - Blackwell detected: registering default global_scratch allocator.
+[rank0]:V0914 21:14:52.039000 2023242 torch/_dynamo/guards.py:5671] [1/2] [__recompiles] Recompiling function forward in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143
+[rank0]:V0914 21:14:52.039000 2023242 torch/_dynamo/guards.py:5671] [1/2] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:14:52.039000 2023242 torch/_dynamo/guards.py:5671] [1/2] [__recompiles]     - 1/0: len(args) == 1                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:14:52.039000 2023242 torch/_dynamo/guards.py:5671] [1/2] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:14:52.039000 2023242 torch/_dynamo/guards.py:5671] [1/2] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:14:52.039000 2023242 torch/_dynamo/guards.py:5671] [1/2] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:14:52.039000 2023242 torch/_dynamo/guards.py:5671] [1/2] [__recompiles]     - 1/1: tensor 'args[1]' size mismatch at index 1. expected 0, actual 1
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles] Recompiling function forward in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles]     - 1/0: len(args) == 1                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles]     - 1/1: tensor 'args[1]' size mismatch at index 1. expected 0, actual 1
+[rank0]:V0914 21:14:54.815000 2023242 torch/_dynamo/guards.py:5671] [1/3] [__recompiles]     - 1/2: KeyError on self.__dict__['_modules']['_checkpoint_wrapped_module']._modules['delta_attention']
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles] Recompiling function forward in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     - 1/0: len(args) == 1                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     - 1/1: tensor 'args[1]' size mismatch at index 1. expected 0, actual 1
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     - 1/2: (self.__dict__['_modules']['_checkpoint_wrapped_module'].layer_id % 12) != 0  # if opens_block:  # mp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/compile_fix/eb24/torchtitan/models/kimi_k3/model.py:254 in forward (_dynamo/variables/tensor.py:2890 in evaluate_expr)
+[rank0]:V0914 21:14:57.298000 2023242 torch/_dynamo/guards.py:5671] [1/4] [__recompiles]     - 1/3: KeyError on self.__dict__['_modules']['_checkpoint_wrapped_module']._modules['attention']
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles] Recompiling function forward in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     - 1/0: len(args) == 1                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     - 1/1: tensor 'args[1]' size mismatch at index 1. expected 0, actual 2
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     - 1/2: tensor 'args[1]' size mismatch at index 1. expected 1, actual 2
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     - 1/3: KeyError on self.__dict__['_modules']['_checkpoint_wrapped_module']._modules['attention']
+[rank0]:V0914 21:14:59.891000 2023242 torch/_dynamo/guards.py:5671] [1/5] [__recompiles]     - 1/4: tensor 'args[1]' size mismatch at index 1. expected 1, actual 2
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles] Recompiling function forward in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     - 1/0: len(args) == 1                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     - 1/1: tensor 'args[1]' size mismatch at index 1. expected 0, actual 2
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     - 1/2: KeyError on self.__dict__['_modules']['_checkpoint_wrapped_module']._modules['delta_attention']
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     - 1/3: tensor 'args[1]' size mismatch at index 1. expected 1, actual 2
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     - 1/4: tensor 'args[1]' size mismatch at index 1. expected 1, actual 2
+[rank0]:V0914 21:15:03.004000 2023242 torch/_dynamo/guards.py:5671] [1/6] [__recompiles]     - 1/5: KeyError on self.__dict__['_modules']['_checkpoint_wrapped_module']._modules['delta_attention']
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles] Recompiling function create_block_mask in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/attention/flex_attention.py:1982
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     - 0/0: Q_LEN == 256                                             # m = torch.arange(0, Q_LEN, device=device)  # nn/attention/flex_attention.py:1872 in create_mask
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/attention/flex_attention.py", line 2078, in create_block_mask
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     -     mask_tensor = create_mask(mask_mod, B, H, Q_LEN, KV_LEN, device)
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/nn/attention/flex_attention.py", line 1872, in create_mask
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     -     m = torch.arange(0, Q_LEN, device=device)
+[rank0]:V0914 21:15:07.153000 2023242 torch/_dynamo/guards.py:5671] [0/2] [__recompiles]     - 0/1: tensor 'mask_mod.__closure__[0].cell_contents' size mismatch at index 0. expected 192, actual 160
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles] Recompiling function forward in /workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py:143
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - 1/0: tensor 'args[0]' size mismatch at index 0. expected 192, actual 160
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - 1/1: len(args) == 4                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - 1/2: len(args) == 4                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - 1/3: ___check_type_id(self, 94862568905696), type=<class 'abc.FSDPCheckpointWrapper'>  # if self.checkpoint_impl == CheckpointImpl.REENTRANT and kwargs != {}:  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:147 in forward (HINT: type FSDPCheckpointWrapper)
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 147, in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -     if self.checkpoint_impl == CheckpointImpl.REENTRANT and kwargs != {}:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - 1/4: len(args) == 4                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - 1/5: ___check_type_id(self, 94862568905696), type=<class 'abc.FSDPCheckpointWrapper'>  # if self.checkpoint_impl == CheckpointImpl.REENTRANT and kwargs != {}:  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:147 in forward (HINT: type FSDPCheckpointWrapper)
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 147, in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -     if self.checkpoint_impl == CheckpointImpl.REENTRANT and kwargs != {}:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - 1/6: len(args) == 4                                           # return self.checkpoint_fn(  # type: ignore[misc]  # distributed/algorithms/_checkpoint/checkpoint_wrapper.py:169 in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     - User stack trace:
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/algorithms/_checkpoint/checkpoint_wrapper.py", line 169, in forward
+[rank0]:V0914 21:15:08.352000 2023242 torch/_dynamo/guards.py:5671] [1/7] [__recompiles]     -     return self.checkpoint_fn(  # type: ignore[misc]
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[titan] 2026-09-14 21:15:32,839 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: 12.55324  [38;2;180;60;0mgrad_norm: 15.0625  [38;2;54;234;195mmemory: 10.28GiB(66.42%)  [34mtps: 154  [36mtflops: 0.54  [35mmfu: 0.17%[39m
+[titan] 2026-09-14 21:15:32,841 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[titan] 2026-09-14 21:15:51,515 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss:  9.86780  [38;2;180;60;0mgrad_norm: 14.6875  [38;2;54;234;195mmemory: 12.62GiB(81.55%)  [34mtps: 439  [36mtflops: 1.53  [35mmfu: 0.49%[39m
+[titan] 2026-09-14 21:16:09,611 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss:  7.58297  [38;2;180;60;0mgrad_norm: 10.6875  [38;2;54;234;195mmemory: 12.62GiB(81.55%)  [34mtps: 453  [36mtflops: 1.58  [35mmfu: 0.51%[39m
+[titan] 2026-09-14 21:16:09,613 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[titan] 2026-09-14 21:16:11,613 - torchtitan.trainer - INFO - Training completed
+[titan] 2026-09-14 21:16:11,932 - __main__ - INFO - Process group destroyed
