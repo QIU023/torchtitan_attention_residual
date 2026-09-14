@@ -89,6 +89,29 @@ Paste-ready text (PR bodies, review replies, comments) uses no dash as punctuati
 hyphen (` -- `). Write a period, comma, colon, semicolon or parentheses instead. Before a draft is handed over, grep its paste
 section for ` -- ` and the two dash characters. Hyphens inside words, flags and numbers (`pre-norm`, `--training.steps`, `-0.24%`) are fine.
 
+## Reference format: #4577 (user, 2026-09-14)
+
+The maintainers' own quantile-balancing PR (pytorch/torchtitan#4577) is the format and the code style to copy; our #4412 for the same feature was closed in its favour. Its body, in full structure:
+
+    ## Summary
+    Implement <feature> for <model> as described in <report section>.
+    - Add <reusable component> to <common module>. <one sentence on what it does>.
+    - Add <hook / coordination> next to <the existing hooks of that kind>.
+    - Wire the shared components into <model> for all registered flavors.
+    - Add a <n>-rank GPU test covering <what the real collective exercises>.
+
+    ## Design
+    <The mechanism, two or three sentences.>
+    <One paragraph: where each piece lives and why it lives there.>
+
+    ## Relation to #N          (only when it replaces or overlaps another PR)
+
+    ## Test plan
+    - `pytest <file> -q` (`1 passed`)
+    - Scoped pre-commit checks, including formatting, lint, and Pyrefly (`passed`)
+
+No changed-files block and no numbers table unless the claim is numerical (then the numerics rules in CLAUDE.md apply). The code side of the same standard (survey the module structure first, reuse titan's seams, no hooks or patches without a missing seam, one-line docstrings, comments only for invariants; #4577 has 18 comment and docstring lines per 398 code lines, #4412 had 111 per 381) is in CLAUDE.md, "#4577 is the reference for code and body".
+
 ## Applies to every kit in this folder
 
 Before filing anything from `Raising_PRs/`, cut the body to the four items above. The long

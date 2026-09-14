@@ -105,6 +105,8 @@ flavors upstream -- but each one needs that justification, not convenience.
 
 ## PR-text rule (maintainer feedback 2026-08-13, restyled by the user 2026-08-29)
 
+For new bodies the section structure below is superseded by the #4577 format (see "#4577 is the reference for code and body", user 2026-09-14); the rest of this rule (English only, one-line paragraphs, the first sentence answers the question, nothing the branch does not carry) still holds.
+
 Upstream PR bodies and review replies read as terse human engineering notes,
 English only (no Chinese, not even a preamble). Structure is the user's
 sectioned format, the same across every body in `Raising_PRs/PR_K3_PARALLELISM/`:
@@ -166,6 +168,22 @@ The abstraction rule above, applied at function level, because it keeps recurrin
 - A sibling model's function with a one-line difference is generalized into `models/common` with that difference as a parameter and called from both models; it is never copied, and never called-then-overridden.
 - When core really lacks it, the PR body says so in one line naming what was checked; the docstring does not argue it.
 - The diff audit lists every new private `def` with what was searched and what was found. A copy is a finding, not a style note.
+
+## #4577 is the reference for code and body (user, 2026-09-14)
+
+The maintainers' quantile-balancing PR (pytorch/torchtitan#4577, shuhuayu) is the standard our code and bodies are held to; ours (#4412) was closed in its favour on 2026-09-11. Added lines, measured on the two diffs: #4577 has 398 code, 8 comment and 10 docstring lines (under 5%); #4412 had 381 code, 50 comment and 61 docstring lines (29%), and four of Shuhua's eight review comments on it were "nit: remove." Structural comparison: `phase13_k3like_48b_posttrain/QB_4577_VS_4412_2026-09-10.md`.
+
+Order of work, before any code is written:
+1. Survey the current tree's module structure (`models/common`, `components`, `distributed`, the sibling models) and decide where each piece belongs. Reusable behaviour goes to the module that owns that responsibility (#4577: the router subclass and the histogram `Module` in `models/common/moe.py`, the optimizer pre-hook in `components/optimizer/optimizer.py`); the model folder keeps only its config and wiring (#4577: 6 lines in `kimi_k3/__init__.py`, 20 in `kimi_k3/moe.py`).
+2. Assemble from what exists (a subclass with a `Config`, buffers with `_init_self_buffers`, `model_registry(post_optimizer_build_fn=...)`, `register_step_pre_hook`), then write only the new maths. Never a new file in the model folder that re-implements a common responsibility (#4412's `kimi_k3/quantile_balance.py`, 299 lines).
+3. No hooks or patches unless there is no seam: no `register_forward_hook` that recomputes what the module's forward already computed (#4412 ran top-k twice), no monkeypatch, no module global or `_armed` flag, no dict keyed by `id(module)`, no call into another class's private method, no flavor-only wiring of a model-wide feature. titan's own extension points (`post_optimizer_build_fn`, `register_step_pre_hook`, `Module.Config`, `_init_self_buffers`) are the seam and are fine. When a hook really is needed, the PR body says in one line which seam was missing.
+
+Comments and docstrings, the way #4577 writes them:
+- A class or public function gets a one-line docstring saying what it does ("Top-k router that uses a biased Top-(k+1) cutoff during training."), plus a short paragraph only for a fact the code cannot show (a value range). No `Args:` block restating the signature, no docstrings on private helpers, no module docstring arguing the design, no report section numbers, memory sizes or measured values in code.
+- A comment only for a non-obvious invariant or constraint, stated as a fact ("With EP, the router is token-sharded on the dense TP axis even when model-wide sequence parallelism is disabled."). Never a comment narrating the next line, what the PR changed, or why the design was chosen (#4412's removed lines: "The report balances the router bias by solving it, not by stepping it.", a three-line mechanism summary above a class, a memory-size note in a docstring).
+- Tests live in `tests/unit_tests/{cpu,gpu}`; one GPU test that runs the real collective beats many CPU tests of an estimator.
+
+Body format (#4577): `## Summary` is one sentence of what and why, then one bullet per component naming where it lives; `## Design` is short prose, the mechanism first, then one paragraph on why each piece lives where it does; `## Relation to #N` when it replaces or overlaps another PR; `## Test plan` lists the exact commands with their pass counts. No changed-files block (GitHub shows the files). A results table only when the PR's claim is numerical, under the numerics rules above.
 
 ## What this project is
 
