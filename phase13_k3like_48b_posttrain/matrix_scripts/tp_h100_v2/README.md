@@ -1,6 +1,6 @@
 # TP/SP #4499 on 4 x H100: the run kit
 
-Round 3 (2026-09-15). Branch `QIU023:tpsp_review4` = `1dec3ee17`: the four PR commits rebased onto upstream main `d34a13fdf`, plus the four round-3 commits (unified b200 cell, K2.5 comment, names and docstrings, `routed_down` on the token shard under EP). The reference for the dp1 and K2.5 tables is main `d34a13fdf`, checked out as a second worktree.
+Round 3 (2026-09-15). Branch `QIU023:tpsp_review4` = `2b7086980`: the four PR commits rebased onto upstream main `d34a13fdf`, plus the round-3 commits (unified b200 cell, K2.5 comment, names and docstrings, `routed_down` on the token shard under EP, and `2b7086980`, which only states `enable_sequence_parallel = True` in the b200 recipe). The reference for the dp1 and K2.5 tables is main `d34a13fdf`, checked out as a second worktree.
 
 The rebase moved that reference: #4535 made the fused `w13` the default for K3's dense FFN, with its own init. On one RTX 5060 Ti, tp=1 step-1 loss went from `12.50616` (old base `56a721b64`) to `12.60343` (`d34a13fdf`), and the PR head matched the new main on 3 steps (`Raising_PRs/PR_K3_PARALLELISM/logs_tpsp_r3_2026-09-15/`). Every table in the current PR body is therefore stale and is replaced by this run. The 5060 numbers are smoke only and never go into the body.
 
@@ -11,7 +11,7 @@ The rebase moved that reference: #4535 made the fused `w13` the default for K3's
 ```bash
 export KIT=/path/to/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2
 git clone -b tpsp_review4 https://github.com/QIU023/torchtitan.git tt && cd tt
-git log --oneline -1                      # 1dec3ee17
+git log --oneline -1                      # 2b7086980
 git worktree add ../tt_parent d34a13fdf   # upstream main
 
 python -m venv .venv && . .venv/bin/activate
