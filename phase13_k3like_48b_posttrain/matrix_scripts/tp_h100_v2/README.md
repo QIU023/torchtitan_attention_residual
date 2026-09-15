@@ -56,7 +56,7 @@ Seventeen cells: five dp1 cells and five dp2 cells at 100 steps, two K2.5 cells 
 3. **`tp2_sp` and `tp2_nosp` against `tp1_parent`**, steps 1 / 10 / 20. Step 1 carries the weight.
 4. **The dp2 rows against `dp2`**, never against tp1 (a second dp rank reads other samples). `dp2_ep2_tp2_nosp` is new: it is the path the `routed_down` change touches (EP without SP).
 5. **`k27_dp2` bitwise with `k27_dp2_parent`**: the PR touches `kimi_k2_7`, and K2.5 refuses tp > 1 on main.
-6. **Smokes**: `tc_mm` is the b200 cell exactly as CI runs it (fsdp 2 x tp 2 x ep 2, type checking on, AC off); `tc_mm_nosp` the same without SP; `tc_tp2` dp1 x tp2. Each must show 3 steps on rank 0 and no traceback.
+6. **Smokes**: `tc_mm` is the b200 cell exactly as CI runs it (fsdp 2 x tp 2 x ep 2, type checking on, AC off); `tc_mm_nosp` the same without SP; `tc_tp2` dp1 x tp2. Each must show 3 distinct steps and no traceback (every rank logs each step, so a raw line count is ranks x steps).
 
 Only steps 1 / 10 / 20 go into the body: past that the debug set is memorised and a percentage divides two collapsing curves. The logs keep every step.
 

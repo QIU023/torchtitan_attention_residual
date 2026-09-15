@@ -47,5 +47,5 @@ echo
 echo '# Kimi K2.5, dp2, tp=1, 4096 tokens per step (reference: main)'
 table k27_dp2_parent k27_dp2
 echo
-for c in tc_mm tc_mm_nosp tc_tp2; do echo "$c: $(grep -a -c '\[rank0\].*step: ' $OUT/$c.log) steps on rank 0, $(grep -a -ciE 'Traceback' $OUT/$c.log) tracebacks"; done
+for c in tc_mm tc_mm_nosp tc_tp2; do echo "$c: $(grep -a -o 'step: *[0-9]*' $OUT/$c.log | sort -u | wc -l) distinct steps, $(grep -a -ciE 'Traceback' $OUT/$c.log) tracebacks"; done
 echo RUN-V3-DONE
