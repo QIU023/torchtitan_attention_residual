@@ -1,6 +1,6 @@
 # TP/SP #4499 on 4 x H100: the run kit
 
-Round 3 (2026-09-15). Branch `QIU023:tpsp_review4` = `2b7086980`: the four PR commits rebased onto upstream main `d34a13fdf`, plus the round-3 commits (unified b200 cell, K2.5 comment, names and docstrings, `routed_down` on the token shard under EP, and `2b7086980`, which only states `enable_sequence_parallel = True` in the b200 recipe). The reference for the dp1 and K2.5 tables is main `d34a13fdf`, checked out as a second worktree.
+Round 3 (2026-09-15). Branch `QIU023:tpsp_review4` = `48632ad41`: the four PR commits rebased onto upstream main `d34a13fdf`, plus the round-3 commits (unified b200 cell, K2.5 comment, names and docstrings, `routed_down` on the token shard under EP, `2b7086980` stating `enable_sequence_parallel = True` in the b200 recipe, `297993190` dropping the routed_down comment, and `48632ad41` keeping the routed path on the token shard through `routed_norm` and `routed_up` under EP). The reference for the dp1 and K2.5 tables is main `d34a13fdf`, checked out as a second worktree.
 
 The rebase moved that reference: #4535 made the fused `w13` the default for K3's dense FFN, with its own init. On one RTX 5060 Ti, tp=1 step-1 loss went from `12.50616` (old base `56a721b64`) to `12.60343` (`d34a13fdf`), and the PR head matched the new main on 3 steps (`Raising_PRs/PR_K3_PARALLELISM/logs_tpsp_r3_2026-09-15/`). Every table in the current PR body is therefore stale and is replaced by this run. The 5060 numbers are smoke only and never go into the body.
 
@@ -11,7 +11,7 @@ The rebase moved that reference: #4535 made the fused `w13` the default for K3's
 ```bash
 export KIT=/path/to/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2
 git clone -b tpsp_review4 https://github.com/QIU023/torchtitan.git tt && cd tt
-git log --oneline -1                      # 2b7086980
+git log --oneline -1                      # 48632ad41
 git worktree add ../tt_parent d34a13fdf   # upstream main
 
 python -m venv .venv && . .venv/bin/activate
@@ -54,7 +54,7 @@ Seventeen cells: five dp1 cells and five dp2 cells at 100 steps, two K2.5 cells 
 1. **`tp1` bitwise with `tp1_parent` at every step.** The PR's acceptance bar: at tp=1 the branch computes exactly what main computes. If it does not, report that first; nothing else matters.
 2. **`tp1_again` is the noise floor**: the same cell as `tp1` on a fresh inductor cache. The tp=2 rows at steps 10 and 20 are read against it, not against zero.
 3. **`tp2_sp` and `tp2_nosp` against `tp1_parent`**, steps 1 / 10 / 20. Step 1 carries the weight.
-4. **The dp2 rows against `dp2`**, never against tp1 (a second dp rank reads other samples). `dp2_ep2_tp2_nosp` is new: it is the path the `routed_down` change touches (EP without SP).
+4. **The dp2 rows against `dp2`**, never against tp1 (a second dp rank reads other samples). `dp2_ep2_tp2_nosp` is new: it is the path the round-3 routed changes touch (EP without SP).
 5. **`k27_dp2` bitwise with `k27_dp2_parent`**: the PR touches `kimi_k2_7`, and K2.5 refuses tp > 1 on main.
 6. **Smokes**: `tc_mm` is the b200 cell exactly as CI runs it (fsdp 2 x tp 2 x ep 2, type checking on, AC off); `tc_mm_nosp` the same without SP; `tc_tp2` dp1 x tp2. Each must show 3 distinct steps and no traceback (every rank logs each step, so a raw line count is ranks x steps).
 

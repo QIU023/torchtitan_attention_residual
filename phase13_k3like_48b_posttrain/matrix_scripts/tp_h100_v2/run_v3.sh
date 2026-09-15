@@ -1,5 +1,5 @@
 #!/bin/bash
-# TP/SP #4499 round 3 on 4 x H100: tpsp_review4 (2b7086980) against main d34a13fdf. Reruns the body's
+# TP/SP #4499 round 3 on 4 x H100: tpsp_review4 (48632ad41) against main d34a13fdf. Reruns the body's
 # tables after the rebase (#4535 moved the tp=1 reference), adds the routed_down path this round changed
 # (dp2 x ep2 x tp2 without SP), and smokes the b200 cell kimi_k3_debugmodel_mm through its recipe.
 # Set TT (branch tree), TT_PARENT (main tree), OUT.
