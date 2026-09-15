@@ -69,23 +69,30 @@ The same in both: every block, received or formed on the rank, is stored detache
 5. Recompute. 4312's cache work sits in the stage, outside the model, so activation checkpointing inside the stage never re-runs it. 6840 taps inside the layer loop, and full recompute is not wired.
 6. Transport switch. 4312's `attn_res_cache=False` sends the whole stack every hop from the same tables, which the tests use as the A/B. 6840 has only the full prefix at V=1 and the delta under VPP.
 
-## 3d. VPP cache items in 6840 that 4312 could add
+## 3d. VPP cache items from 6840, checked on the 4312 head
 
-Scope (user, 2026-09-15): only the VPP cache; model pieces (aggregation kernels, MLA, KDA, MTP, init, FLOPs) are out of this study.
+Scope (user, 2026-09-15): only the VPP cache. Layout coverage is not an item: the original split tables cover many layouts, and pp8 vp4 ran on the local 8 GPUs.
 
-1. No copy when assembling the stack. 6840 hands the layers references (cached leaves and tapped copies). 4312's `assemble_stack` builds a new `[T, N, D]` tensor per stage per microbatch, and it stays alive until that stage's backward as a stage input in `fwd_cache`, so every in-flight (stage, microbatch) on a rank holds one extra copy of the stored blocks. Removing it would need the K3 model to take the blocks as a list instead of one stacked tensor, a model API change; not measured.
-2. Forward-only path. 6840 frees an entry at the forward of the last chunk and asserts no stale entry, so forward-only runs clean. 4312 also frees the store at the last stage's forward, but `_order` / `_delta_in` are filled in forward and popped only in backward, so under `schedule.eval()` (the validator's PP path) they are only overwritten, never popped. Probably harmless and untested; a forward-only case in the exact-gradient harness would settle it.
-3. Reset at schedule entry. 6840 clears its cache when a schedule starts (as a safety net; the call is nested under `moe_paged_stash`). 4312 has no step-entry clear: after an aborted step, leftover blocks would trip the set-equality check at the next entry (loud, not silent). An override of the stage's runtime-state reset that clears the store and the two dicts would be the titan analogue.
-4. Test coverage of layouts. 6840 emulates pp2 vp2, pp2 vp2 with a block size that does not divide the chunk, pp4 vp2, pp2 vp4 and pp4 without VPP; 4312's real-schedule harness runs three splits on 4 ranks. More splits in the same harness (pp2 vp4, block size not dividing the stage length) are cheap.
+| item | 4312 head `de6f29514` | verdict |
+| --- | --- | --- |
+| forward-only path | `schedule.eval()` crashes: torch calls `backward_one_chunk` with `has_backward` off, the base returns at once, the override then reads `bwd_cache[mb]` it never filled (`KeyError: 0`, `pipeline_stage.py:301`). The validator runs exactly this path whenever PP and validation are on; no K3 recipe enables validation, so CI never hit it | real defect. Fixed on the integration tree since 2026-09-06 (`29477b88e`, cherry of `2830f9acd`, found through verl's forward-only log-prob pass) and never ported to 4312. Now on fork branch `pp_review4_consume6840`: `6f843fc3f` (the fix, with its unit test) and `d864e9fce` (the exact block-gradient harness runs `schedule.eval` under `no_grad` between steps: eval losses equal the step's, gradients stay bitwise, no routing state or stored block left). 18 PP CPU tests pass; the new eval case fails with `KeyError: 0` on `de6f29514` |
+| reset at schedule entry | no step-entry clear; leftovers after an aborted step would trip the entry set check (loud) | not reachable in titan: the trainer catches only `StopIteration` and `DataloaderExhaustedError`, and fault tolerance has no PP path; no patch. `clear_runtime_states` (called by every schedule step) would be the seam if it ever becomes reachable |
+| stack assembled as a copy | `assemble_stack` builds `[T, N, D]` per stage per microbatch | not a cache defect: the K3 model carries the block stack as one tensor (it concatenates at every block start), so the copy follows from the model's representation; 6840 avoids it because its layers take a tuple. No patch |
 
-## 3e. 4312 improvements 6840 could take (stored, not raised)
+Mechanism check for the other direction: 6840's `leaf.grad` slot does not fit torch pipelining. `stage_backward` reads each input's `.grad` and sets it to `None`, and the input-only backward of split schedules uses `autograd.grad` with explicit inputs (`_backward.py` `stage_backward_input`), so leaves outside the stage inputs would get nothing there. The explicit deposits stay the right mechanism for titan.
 
-Held until Tianyu's next review of 4312 (user, 2026-09-15); nothing goes to NVIDIA before 4312 merges.
-1. The deposit count check against static tables, and the no-uncollected-deposit check.
-2. Checking the store's contents at entry against the tables (set equality), not only the count.
-3. A real multi-rank interleaved schedule test with several microbatches in flight and bitwise block gradients, cache on, cache off and single device.
-4. A whole-stack switch on the same tables as the A/B for the cache.
-5. Cache operations outside the recomputed region; in Megatron that means outside `_checkpointed_forward`'s `custom_forward`, which is Megatron's design call.
+Also found while diffing: the integration tree carries two stage changes 4312 lacks. `d98653944` (2026-09-06): a payload whose blocks have nothing trainable upstream (frozen embedding under LoRA) gets no gradient and its deposits are discarded; the 4312 head raises there. `115c32f18` (2026-09-04): `attn_res_cache_offload`, the rank store parks its blocks on pinned host memory. Neither is on `pp_review4_consume6840` yet.
+
+## 3e. 4312 mechanisms 6840 could take (stored, not raised)
+
+Held until Tianyu's next review of 4312 (user, 2026-09-15); nothing goes to NVIDIA before 4312 merges. Mechanisms first, checks last.
+
+1. Routing from a one-microbatch simulation. `BlockLayoutTables` walks the stages in order, records what each rank holds at each stage's entry, and sends only `accumulated - held_by_receiver`; `cache_at_entry` and `deposits_expected` fall out of the same walk. It takes any stage-to-rank map and any split. 6840 derives the delta in closed form from layer offsets, assuming stage `s` runs on rank `s % P`.
+2. The cache outside the model. The stage owns storing, assembling and gradient routing; the model only takes and returns the block stack, so it knows nothing about PP and any activation checkpointing inside it is safe. In Megatron the analogue is a schedule-level merge (the interleaved schedule's backward helper, before `backward_step`) in place of per-source taps in `TransformerBlock`, which would also remove the full-recompute restriction.
+3. One gradient split per stage. The stage splits its input stack's gradient once: received columns go back dense in wire order with no accumulation, stored columns become deposits. 6840 adds one autograd node and one `leaf.grad` buffer per tapped source, received ones included.
+4. Offloading the store (`115c32f18`, integration only): stored blocks sit on pinned host memory between the committing stage and the rank's later readers. 6840 keeps every cached source on device.
+5. A whole-stack mode on the same tables (`attn_res_cache=False`), which is the cache's A/B in the tests.
+6. Checks: deposit count against the tables, no uncollected deposit, store contents equal to the tables at entry.
 
 ## 4. What Megatron-Core needs for this design (from the MCore PP survey, 54c62df)
 
