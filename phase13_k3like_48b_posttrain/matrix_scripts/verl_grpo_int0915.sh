@@ -2,7 +2,8 @@
 # GRPO on the 09-15 integration tree (/tmp/wt_int0915_rl = k3_on_4025 rebuild + the local rl flavor) with verl kimi_k3_integration_rebased on upstream main (/tmp/wt_verl_0915).
 # The `rl` flavor (uncommitted in the run worktree) matches the export's shape; venv_verl is the vLLM
 # source build with spmd_types 0.2.5, torch_remat and renderers 0.1.11, Attention Gym from /tmp/attn_gym_up.
-# First cell: fsdp2 only, spmd_types backend. Derived from verl_grpo_moe.sh (09-02).
+# First cell: fsdp2 only, spmd_types backend. Micro-batches and the synthetic reward follow verl_grpo_newtree_nd.sh
+# (micro-batch 8 runs the 163840-vocab entropy out of memory on a 16 GB card).
 set -uo pipefail
 source /workspace/venv_verl/bin/activate
 export PYTHONPATH=/tmp/wt_verl_0915:/tmp/wt_int0915_rl:/tmp/attn_gym_up
@@ -26,7 +27,11 @@ timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   data.trust_remote_code=True \
   actor_rollout_ref.actor.torchtitan.param_offload=True \
   actor_rollout_ref.actor.torchtitan.optimizer_offload=True \
-actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=${LOGP_MBS:-8} \
+  actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=${PPO_MBS:-1} \
+  actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=${PPO_MBS:-1} \
+  actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=${LOGP_MBS:-1} \
+  reward.custom_reward_function.path=/workspace/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/synthetic_reward.py \
+  reward.custom_reward_function.name=compute_score \
   actor_rollout_ref.rollout.enable_chunked_prefill=True \
   +actor_rollout_ref.rollout.engine_kwargs.vllm.max_num_seqs=8 \
   actor_rollout_ref.rollout.max_num_batched_tokens=512 \
