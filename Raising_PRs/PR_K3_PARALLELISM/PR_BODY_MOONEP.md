@@ -7,6 +7,7 @@ Notes for filing:
 - Commit `8fef1aa5f`'s message says two EP-group barriers per MoE layer per step; the code has three (one in prefetch, two in reduce). The body states three.
 - The 2 x RTX 5060 Ti cells were rerun on `cc46bde23` against main `b21f7d43e` (logs: `Raising_PRs/PR_K3_PARALLELISM/logs_moonep_2026-09-14/`): dp1 standard, dp1 moonep EP=1 and two fresh-cache main runs are bitwise with main; dp2 x ep2 standard is bitwise with main on the shared cache. One of four fresh-cache main dp2 x ep2 runs moved from step 2 (`9.58979` / `13.3125`, then `7.50132` / `9.8750`); a second cold cache and a warm rerun both read the reference, so no mechanism is claimed. An earlier version of the table backend passed the four H100 checks on 2026-08-28; this one is that version ported onto this base.
 - Test counts below are from `cc46bde23`.
+- 2026-09-15, vast.ai box `103.60.105.169`: 4 x H100 80GB HBM3 (SXM), every pair on 6 NVLinks with no NVSwitch (`nvidia-smi -q` Fabric State N/A). `CU_DEVICE_ATTRIBUTE_MULTICAST_SUPPORTED` reads 0 on all four and `_SymmetricMemory.has_multicast_support` is False, so MoonEP cannot run there (its buffers assert multicast). The run needs an HGX H100 with NVSwitch (8-GPU board). Building `moonep._C` also needs an nvcc matching torch's CUDA: the cu130 nightly needs a CUDA 13.0 toolkit (the box ships nvcc 12.8, and no cu128/cu129 2.15 nightlies are published).
 
 --- PASTE BEGIN ---
 
