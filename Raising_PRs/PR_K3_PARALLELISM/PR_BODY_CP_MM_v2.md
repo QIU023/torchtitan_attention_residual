@@ -1,6 +1,8 @@
 # PR title: [DRAFT] Dynamic context parallelism for the Kimi K3 vision encoder
 
-Branch `k3_cp_mm_v2` (= the published `k3_cp_text` head 61a73ca6c + one commit `121303718`). Replaces the old-tree head `k3_cp_mm` (a5339256e) of PR 4380 once the GPU cells on this branch are in (see `phase13_k3like_48b_posttrain/CPMM_NEW_TREE_2026-09-10.md`). File as DRAFT stacked on the text CP PR.
+Update 2026-09-15: the text CP side is now the maintainers' PR 4639 (it replaced 4500; 4313 is ours and will not be the base). Review branch `cpmm_review1` = `774e0b9b5`: 4639's head `e06dcbee3` plus two commits, the CP transform's `exclude_fqn_prefixes` with the two K3 mm CP recipes excluding the tower (4639's own recipes stop in the tower's flex attention without it) and the dynamic CP commit. Port notes and the seeded cut-vs-replicated cells: `phase13_k3like_48b_posttrain/REBASE_CPMM_DEP_AC_2026-09-15.md`. The body below still describes the 4313-based head and needs its Summary/Design refreshed (stacked on #4639, the transform fix, the cp group taken at parallelize time, the type-checking registrations) before filing; the 5060 numbers are smoke only.
+
+Earlier: branch `k3_cp_mm_v2` (= the published `k3_cp_text` head 61a73ca6c + one commit `121303718`). Replaces the old-tree head `k3_cp_mm` (a5339256e) of PR 4380 once the GPU cells on this branch are in (see `phase13_k3like_48b_posttrain/CPMM_NEW_TREE_2026-09-10.md`). File as DRAFT stacked on the text CP PR.
 
 --- PASTE BEGIN ---
 
