@@ -1,0 +1,131 @@
+W0915 09:00:27.653000 22304 torch/distributed/run.py:982] 
+W0915 09:00:27.653000 22304 torch/distributed/run.py:982] *****************************************
+W0915 09:00:27.653000 22304 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0915 09:00:27.653000 22304 torch/distributed/run.py:982] *****************************************
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-15 09:00:33,855 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-15 09:00:34,359 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-15 09:00:34,517 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-15 09:00:34,607 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-15 09:00:34,610 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/tp_h100_out/tc_tp2/structured_logs/training.global_rank_0.20260915-090034-TW3T65.jsonl
+[titan] 2026-09-15 09:00:35,002 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-15 09:00:35,092 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-15 09:00:35,095 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/tp_h100_out/tc_tp2/structured_logs/training.global_rank_1.20260915-090035-UWHM91.jsonl
+[titan] 2026-09-15 09:00:35,620 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-15 09:00:35,669 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-15 09:00:37,347 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-15 09:00:37,347 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-15 09:00:37,347 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-15 09:00:37,347 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-15 09:00:37,358 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=2, ep=1
+[titan] 2026-09-15 09:00:37,359 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=2, ep=1
+[titan] 2026-09-15 09:00:37,819 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['tp']
+[titan] 2026-09-15 09:00:37,819 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['tp']
+[titan] 2026-09-15 09:00:37,830 - torchtitan.trainer - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-15 09:00:37,830 - torchtitan.trainer - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-15 09:00:38,030 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.18GiB memory
+[titan] 2026-09-15 09:00:38,031 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-15 09:00:38,032 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.18GiB memory
+[titan] 2026-09-15 09:00:38,032 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-15 09:00:38,036 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-15 09:00:38,036 - torchtitan.trainer - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-15 09:00:38,037 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-15 09:00:38,038 - torchtitan.trainer - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-15 09:00:38,736 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-15 09:00:38,740 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:W0915 09:00:39.025000 22340 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank0]:W0915 09:00:39.031000 22339 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[titan] 2026-09-15 09:00:40,057 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-15 09:00:40,057 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-15 09:00:40,058 - torchtitan.trainer - INFO - CUDA memory usage for model: 1.97GiB(2.49%)
+[titan] 2026-09-15 09:00:40,058 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-15 09:00:40,058 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-15 09:00:40,058 - torchtitan.trainer - INFO - CUDA memory usage for model: 1.97GiB(2.49%)
+[titan] 2026-09-15 09:00:40,062 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-15 09:00:40,062 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-15 09:00:40,065 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[titan] 2026-09-15 09:00:40,065 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-15 09:00:40,066 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[titan] 2026-09-15 09:00:40,066 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-15 09:00:40,086 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-15 09:00:40,086 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-15 09:00:40,088 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-15 09:00:40,088 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-15 09:00:40,126 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/tp_h100_out/tc_tp2/checkpoint
+[titan] 2026-09-15 09:00:40,126 - torchtitan.trainer - INFO - Trainer is initialized with 2048 tokens per DP rank, 2048 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[titan] 2026-09-15 09:00:40,126 - torchtitan.components.checkpointer.base - INFO - No checkpoint was provided, this is a fresh start.
+[titan] 2026-09-15 09:00:40,126 - torchtitan.trainer - INFO - Training starts at step 1
+[titan] 2026-09-15 09:00:40,129 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/tp_h100_out/tc_tp2/checkpoint
+[titan] 2026-09-15 09:00:40,130 - torchtitan.trainer - INFO - Trainer is initialized with 2048 tokens per DP rank, 2048 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[titan] 2026-09-15 09:00:40,130 - torchtitan.components.checkpointer.base - INFO - No checkpoint was provided, this is a fresh start.
+[titan] 2026-09-15 09:00:40,130 - torchtitan.trainer - INFO - Training starts at step 1
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3VisionEncoder) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3VisionEncoder) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+  result = funcol.all_gather_tensor(x, gather_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+  result = funcol.all_gather_tensor(x, gather_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:633: FutureWarning: `torch.distributed._functional_collectives.reduce_scatter_tensor` is deprecated. Please use `torch.distributed._functional_collectives.reduce_scatter_single` instead.
+  result = funcol.reduce_scatter_tensor(x, "sum", scatter_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:633: FutureWarning: `torch.distributed._functional_collectives.reduce_scatter_tensor` is deprecated. Please use `torch.distributed._functional_collectives.reduce_scatter_single` instead.
+  result = funcol.reduce_scatter_tensor(x, "sum", scatter_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:633: FutureWarning: `torch.distributed._functional_collectives.reduce_scatter_tensor` is deprecated. Please use `torch.distributed._functional_collectives.reduce_scatter_single` instead.
+  result = funcol.reduce_scatter_tensor(x, "sum", scatter_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+  result = funcol.all_gather_tensor(x, gather_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:633: FutureWarning: `torch.distributed._functional_collectives.reduce_scatter_tensor` is deprecated. Please use `torch.distributed._functional_collectives.reduce_scatter_single` instead.
+  result = funcol.reduce_scatter_tensor(x, "sum", scatter_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+  result = funcol.all_gather_tensor(x, gather_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[rank1]:W0915 09:01:28.356000 22340 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_NormPartial(2.0), _NormPartial(2.0)) to (Replicate(), Replicate()), 2 sequential all_reduce operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. To optimize, flatten mesh dimensions ["dp_shard", "tp"] so DTensor can use a single operation instead.
+[rank0]:W0915 09:01:28.370000 22339 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_NormPartial(2.0), _NormPartial(2.0)) to (Replicate(), Replicate()), 2 sequential all_reduce operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. To optimize, flatten mesh dimensions ["dp_shard", "tp"] so DTensor can use a single operation instead.
+[titan] 2026-09-15 09:01:33,891 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: 12.36154  [38;2;180;60;0mgrad_norm: 28.5000  [38;2;54;234;195mmemory:  9.16GiB(11.57%)  [34mtps: 18  [36mtflops: 0.06  [35mmfu: 0.01%[39m
+[titan] 2026-09-15 09:01:33,895 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[titan] 2026-09-15 09:01:33,984 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: 12.36154  [38;2;180;60;0mgrad_norm: 28.5000  [38;2;54;234;195mmemory:  9.16GiB(11.57%)  [34mtps: 18  [36mtflops: 0.06  [35mmfu: 0.01%[39m
+[titan] 2026-09-15 09:01:33,989 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3VisionEncoder) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3VisionEncoder) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+  result = funcol.all_gather_tensor(x, gather_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+  result = funcol.all_gather_tensor(x, gather_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:633: FutureWarning: `torch.distributed._functional_collectives.reduce_scatter_tensor` is deprecated. Please use `torch.distributed._functional_collectives.reduce_scatter_single` instead.
+  result = funcol.reduce_scatter_tensor(x, "sum", scatter_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/spmd_types/_collectives.py:633: FutureWarning: `torch.distributed._functional_collectives.reduce_scatter_tensor` is deprecated. Please use `torch.distributed._functional_collectives.reduce_scatter_single` instead.
+  result = funcol.reduce_scatter_tensor(x, "sum", scatter_dim, pg)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[titan] 2026-09-15 09:01:43,294 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss: 11.53166  [38;2;180;60;0mgrad_norm: 40.7500  [38;2;54;234;195mmemory: 11.17GiB(14.11%)  [34mtps: 109  [36mtflops: 0.38  [35mmfu: 0.04%[39m
+[titan] 2026-09-15 09:01:43,296 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss: 11.53166  [38;2;180;60;0mgrad_norm: 40.7500  [38;2;54;234;195mmemory: 11.17GiB(14.11%)  [34mtps: 110  [36mtflops: 0.38  [35mmfu: 0.04%[39m
+[titan] 2026-09-15 09:01:44,884 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss:  9.68349  [38;2;180;60;0mgrad_norm: 20.6250  [38;2;54;234;195mmemory: 11.18GiB(14.11%)  [34mtps: 644  [36mtflops: 2.25  [35mmfu: 0.23%[39m
+[titan] 2026-09-15 09:01:44,887 - torchtitan.components.checkpointer.dcp - INFO - Saving the checkpoint.
+[titan] 2026-09-15 09:01:44,887 - torchtitan.components.checkpointer.dcp - INFO - Saving a full checkpoint at last step, step 3.
+[titan] 2026-09-15 09:01:44,902 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss:  9.68349  [38;2;180;60;0mgrad_norm: 20.6250  [38;2;54;234;195mmemory: 11.18GiB(14.11%)  [34mtps: 638  [36mtflops: 2.23  [35mmfu: 0.22%[39m
+[titan] 2026-09-15 09:01:44,906 - torchtitan.components.checkpointer.dcp - INFO - Saving the checkpoint.
+[titan] 2026-09-15 09:01:44,906 - torchtitan.components.checkpointer.dcp - INFO - Saving a full checkpoint at last step, step 3.
+[titan] 2026-09-15 09:01:54,053 - torchtitan.tools.utils - INFO - [GC] GC collection invoked by checkpointer. took 0.10 seconds
+[titan] 2026-09-15 09:01:54,061 - torchtitan.components.checkpointer.dcp - INFO - Last step checkpoint completed in 9.16s
+[titan] 2026-09-15 09:01:54,062 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[titan] 2026-09-15 09:01:54,191 - torchtitan.tools.utils - INFO - [GC] GC collection invoked by checkpointer. took 0.20 seconds
+[titan] 2026-09-15 09:01:54,196 - torchtitan.components.checkpointer.dcp - INFO - Last step checkpoint completed in 9.31s
+[titan] 2026-09-15 09:01:54,196 - torchtitan.trainer - INFO - Training completed
+[titan] 2026-09-15 09:01:54,197 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[titan] 2026-09-15 09:01:56,062 - torchtitan.trainer - INFO - Training completed
+[titan] 2026-09-15 09:01:56,062 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[titan] 2026-09-15 09:01:56,849 - __main__ - INFO - Process group destroyed
+[titan] 2026-09-15 09:01:57,264 - __main__ - INFO - Process group destroyed
