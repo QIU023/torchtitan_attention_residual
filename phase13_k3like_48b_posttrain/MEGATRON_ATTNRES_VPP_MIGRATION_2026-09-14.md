@@ -30,6 +30,8 @@ The design is already being implemented in Megatron-Core by NVIDIA: NVIDIA/Megat
 | multi-rank test | real pipeline stages and schedule on CPU, exact block gradients against a single-stage reference, incl. a split with a block boundary inside a stage (`test_kimi_k3_pp_exact_block_grads.py`) | single-process emulation: stages run sequentially with a per-rank dict swapped in, one microbatch (`microbatch_id=0`), backward in reverse stage order (`test_attention_residual.py:1040-1116`); the real interleaved 1F1B order with several microbatches in flight is not exercised |
 | GPU evidence | PP8xVP4 numerics and step time on the fork | none posted; GB200 PP2/EP2 proxy promised |
 
+Scope note (user, 2026-09-14): Megatron drives its own P2P calls, unlike `torch.distributed.pipelining`, so payload layout, padding and stage splits are Megatron's business and are not compared or proposed; pp8 vp4 is only this project's own setup. The comparison that matters is the cache (section 3c). The padding numbers below are background only.
+
 Padding cost of the uniform width, computed with 6840's own `attn_res_boundary_delta_slices` (slices of `[s,b,h]`; near-even layer split stubbed for `get_transformer_layer_offset`, since 93 layers need a custom layout in Megatron; script `scratchpad/slices6840.py` logic inlined in the session):
 
 | layout | exact per-hop sum | padded (max x boundaries) | overhead |
@@ -64,10 +66,23 @@ Against 4312's adapter:
 | received blocks | tapped like local ones (leaf + tap) | kept attached: the P2P recv buffer is already a leaf, so the schedule's backward send drains their grads with no bridge |
 | own-rank blocks | leaf `.grad` accumulation, drained by the tap | detached copy + `_LocalCacheCapture` depositing into a `(mb, stage, idx)` slot, producer-side grad hook sums it in |
 | lost-gradient check | none (a consumer backward that never fires leaves `leaf.grad = None` silently) | hook compares deposit count with `expected_same_rank_captures` from the layout tables and raises |
-| payload | seq-dim concat, padded to the max delta | `[T, K, D]` block axis, exact width per hop through `PipelineStage` shape inference |
 | eviction | at forward of the last chunk | step-end sweep after backward, plus slot clearing |
-| splits | even only (93 layers: pp in 3, 31, 93) | any layer count per stage |
 | extras 4312 lacks | hybrid stacks, MTP, FLA aggregation kernel, memory-lean custom Function, attention-scope offload | |
+
+## 3c. Cache only: the two designs side by side
+
+Both rest on the same ordering fact: for one microbatch, every later same-rank chunk runs backward before the chunk that produced a cached source (Megatron: reverse chunk order in backward, `schedules.py:1244-1249`; torch pipelining: the interleaved schedules' backward order). Both key the cache by the within-chunk microbatch index. The differences:
+
+1. What goes into the cache. 6840 treats every source the same: whether it arrived in the delta or was formed locally, the cache holds `detach().requires_grad_()` and the in-graph copy goes through `_AttnResGradTap`. 4312 splits by origin: blocks that arrived over P2P stay attached (slices of the recv buffer, itself a leaf, so a later chunk's backward accumulates straight into the buffer's `.grad` and the schedule sends it back), and only this rank's own commits are detached.
+2. The gradient slot for own-rank sources. 6840 uses the leaf's `.grad` (autograd's AccumulateGrad sums the later chunks, the tap's backward adds it and sets `leaf.grad = None`). 4312 keeps an explicit dict keyed `(mb, producer_stage, idx)`: `_LocalCacheCapture.backward` deposits (first deposit cloned), a `register_hook` on the producer's block pops and adds. Same maths; 6840's is shorter.
+3. Detecting a lost gradient. 6840 has none: if a consumer's backward never ran before the drain, the tap adds nothing and the late `.grad` lands on an orphaned leaf, silently. 4312 counts deposits per slot against `expected_same_rank_captures` from the layout tables and raises; commits with no grad path are marked so consumers do not deposit; a step-end sweep clears stray slots.
+4. Granularity and eviction. 6840 stores the whole source list per microbatch, overwritten on each visit and popped at the forward of the rank's last chunk (backward only uses references held by the tap contexts and the consumer graphs). 4312 appends one entry per block with producer metadata and drops at microbatch or step end; tensor lifetimes are the same either way because the graphs hold them.
+5. Where the cache boundary sits relative to recompute. 6840 taps inside the layer loop (`append_block_start` per block start), and its full-recompute path does not carry the stack, so full recompute is refused. 4312's cache reads and writes happen in the stage wrapper, outside the model, so any activation checkpointing inside the stage never re-runs a cache write.
+6. Safety asserts both have: 6840 checks the reconstructed source count against the layer index and asserts no stale or missing entry per microbatch; 4312 checks delta sizes and commit counts against the layout tables.
+
+What each side could take from the other (cache only):
+- For 6840: the deposit-count check (item 3), and optionally not tapping received sources, since Megatron's `backward_step` also reads `input_tensor.grad` after `torch.autograd.backward` (`schedules.py:556-592`), so an attached recv slice would accumulate there the same way (not tried).
+- For 4312 (only if review asks for less code): the leaf `.grad` slot could replace the captured-grad dict and `_LocalCacheCapture`, keeping a counter for the check.
 
 ## 4. What Megatron-Core needs for this design (from the MCore PP survey, 54c62df)
 
@@ -87,8 +102,8 @@ Nothing is filed before 4312 merges. After it merges, in order:
 
 1. Re-read 6840 (it may have merged or changed by then) and rerun its unit tests on the box.
 2. Real-schedule test: run 6840's cache under `forward_backward_pipelining_with_interleaving` with several microbatches (pp2 vp2 and pp4 vp2 on 2 to 4 GPUs, or gloo on CPU if the schedule allows), comparing exact source gradients against the unpipelined model, the way `test_kimi_k3_pp_exact_block_grads.py` does for titan. This is the gap in 6840's test plan and the most useful contribution.
-3. Exact per-hop widths: measure the padding overhead in step time on the box before proposing anything; if it is visible, propose per-chunk static shapes (difficulty 2, third option) as a follow-up, citing 4312's shape-inference approach.
-4. Sequence packing under PP: 6840 rejects packing and `variable_seq_lengths` with PP; K3 training packs documents. Check what `dev` needs to lift it.
+3. Offer the lost-gradient count check (section 3c item 3) as the cache-side contribution, backed by a test where a consumer chunk's backward is skipped.
+4. Payload layout, padding, stage splits and packing under PP are Megatron's P2P and schedule design and are not proposed from the titan side.
 5. Bridge: the K3 provider's own AttnRes path refuses VPP. Once 6840 is in MCore, the useful Bridge change is to build the K3 provider on MCore's AttnRes instead of its own layers (retiring the hidden-dim bank packing), which unblocks VPP there; Bridge issue 4910's VPP item is where that would be raised.
 6. Local prototype work, if any, goes on the fork submodules only and starts from the 6840 head, not from a fresh port.
 
