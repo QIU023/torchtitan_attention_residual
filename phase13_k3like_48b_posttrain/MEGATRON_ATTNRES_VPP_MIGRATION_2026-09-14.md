@@ -23,10 +23,10 @@ The design is already being implemented in Megatron-Core by NVIDIA: NVIDIA/Megat
 
 | piece | torchtitan PR 4312 (`k3_pp_text`) | MLM PR 6840 |
 | --- | --- | --- |
-| cache | `RankLocalCache` per pp rank (`pipeline_adapter.py:140`), keyed by microbatch and block commit | `_AttnResSourceCache` process singleton (`attention_residual.py:311`), keyed by within-chunk microbatch id, holds detached `requires_grad` leaves |
-| deferred gradient | `_LocalCacheCapture` autograd Function (365) plus an augment hook that adds the deposited grad | `_AttnResGradTap` (346): identity whose backward adds `leaf.grad` into the in-graph grad |
-| payload layout | blocks as a separate `[T, K, D]` axis, width exact per hop from the static layout tables; `PipelineStage` shape inference returns the per-stage delta shape (`_forward_shape_inference`, 584) | sources plus partial concatenated along the sequence dim, padded to the maximum delta over all P*V-1 boundaries (`attn_res_uniform_payload_slices`, 234; `schedules.py:1305`) because the interleaved schedule has one `tensor_shape` |
-| schedule changes | none in core; the adapter wraps the stage module | `tensor_shape[0] *= uniform_slices` in the interleaved schedule, cache reset at schedule entry |
+| cache | `PPRankLocalCache` (`pipeline_stage.py`), one per rank shared by its stages, `mb -> {block_idx: tensor}` plus gradient deposits keyed `(mb, block_idx)` | `_AttnResSourceCache` process singleton (`attention_residual.py:311`), keyed by within-chunk microbatch id, holds detached `requires_grad` leaves |
+| deferred gradient | stage level: `backward_one_chunk` splits the assembled stack's gradient into received columns and deposits; the stage that brought a block onto the rank collects them (`_retrieve_recv_grads`, `_collect_into`) | `_AttnResGradTap` (346): identity whose backward adds `leaf.grad` into the in-graph grad |
+| payload layout | `(hidden, delta)` tuple, delta `[T, N, D]` with exact width per hop; `_compute_outputs` override makes shape inference see the payload | sources plus partial concatenated along the sequence dim, padded to the maximum delta over all P*V-1 boundaries (`attn_res_uniform_payload_slices`, 234; `schedules.py:1305`) because the interleaved schedule has one `tensor_shape` |
+| schedule changes | none in core; `pipeline_kimi_k3` swaps core's stages for `AttnResPipelineStage` | `tensor_shape[0] *= uniform_slices` in the interleaved schedule, cache reset at schedule entry |
 | multi-rank test | real pipeline stages and schedule on CPU, exact block gradients against a single-stage reference, incl. a split with a block boundary inside a stage (`test_kimi_k3_pp_exact_block_grads.py`) | single-process emulation: stages run sequentially with a per-rank dict swapped in, one microbatch (`microbatch_id=0`), backward in reverse stage order (`test_attention_residual.py:1040-1116`); the real interleaved 1F1B order with several microbatches in flight is not exercised |
 | GPU evidence | PP8xVP4 numerics and step time on the fork | none posted; GB200 PP2/EP2 proxy promised |
 
@@ -56,33 +56,42 @@ Also observed (read, not run): the `_UNIFORM_SLICES_MEMO` key omits `pipeline_mo
 - Reset: `attn_res_source_cache_reset()` at the schedule entries (`schedules.py:735-737`, `1184-1186`) is nested inside `if moe_paged_stash:`, so the "safety net" runs only with paged stash; normal runs rely on the last-chunk eviction and the stale-entry asserts.
 - Refused with AttnRes (`transformer_config.py:1592-1724`): full recompute, CUDA graphs, `overlap_moe_expert_parallel_comm`, fused residual RMSNorm, fp32 residual, cpu offloading, custom pipeline layouts and first/last stage counts, variable seq lengths or packing with PP, VPP with embedding/loss split, heterogeneous block specs.
 
-Against 4312's adapter:
+## 3c. Cache only: 6840 against the 4312 head
 
-| | 6840 | 4312 |
-| --- | --- | --- |
-| where it lives | core `TransformerBlock` / `HybridStack` plus one schedule line | model folder: `CrossStageCacheAdapter` wraps the stage module, no core change |
-| mb id | existing `current_microbatch` attribute | thread-local per adapter |
-| cached per mb | whole source list, replaced each visit | appended per commit with producer metadata `(rank, stage, idx)` |
-| received blocks | tapped like local ones (leaf + tap) | kept attached: the P2P recv buffer is already a leaf, so the schedule's backward send drains their grads with no bridge |
-| own-rank blocks | leaf `.grad` accumulation, drained by the tap | detached copy + `_LocalCacheCapture` depositing into a `(mb, stage, idx)` slot, producer-side grad hook sums it in |
-| lost-gradient check | none (a consumer backward that never fires leaves `leaf.grad = None` silently) | hook compares deposit count with `expected_same_rank_captures` from the layout tables and raises |
-| eviction | at forward of the last chunk | step-end sweep after backward, plus slot clearing |
-| extras 4312 lacks | hybrid stacks, MTP, FLA aggregation kernel, memory-lean custom Function, attention-scope offload | |
+Correction (2026-09-15): an earlier revision of 3b/3c compared against the stale local `k3_pp_text` (old tree `pipeline_adapter.py`: `RankLocalCache`, attached received blocks, thread-local microbatch index, augment hooks). The 4312 head is `origin/k3_pp_text` = `de6f29514`, with `pipeline_stage.py` (`AttnResPipelineStage`, `PPRankLocalCache`) and `layout.py` (`BlockLayoutTables`). Everything below is against that head.
 
-## 3c. Cache only: the two designs side by side
+The same in both: every block, received or formed on the rank, is stored detached; the store is keyed by microbatch; a microbatch's blocks are freed at the forward of the rank's last stage (4312 `_is_last_on_rank` then `store.release`; 6840 pop at `vp_stage == V-1`); both rely on every later same-rank stage running backward for a microbatch before the stage that brought the block onto the rank.
 
-Both rest on the same ordering fact: for one microbatch, every later same-rank chunk runs backward before the chunk that produced a cached source (Megatron: reverse chunk order in backward, `schedules.py:1244-1249`; torch pipelining: the interleaved schedules' backward order). Both key the cache by the within-chunk microbatch index. The differences:
+1. What the model sees. 4312 assembles the stack as one fresh leaf `[T, N, D]` (`assemble_stack`: stack of stored and received columns, then `detach().requires_grad_()`), so the model's graph ends at that leaf and never reaches the store or the receive buffer. 6840 hands the layers a tuple of references (tapped in-graph copies for new sources, cached leaves for old ones), with no copy.
+2. Where gradients are split and merged. 4312 does it in the stage: `backward_one_chunk` splits the stack's gradient into the received columns (sent back dense, in wire order) and deposits for the stored columns; `_retrieve_recv_grads` adds the deposits for the stage's own commits into the gradient of its outgoing payload before its backward runs; the stage that received a block collects the later stages' deposits into `grad_delta`. 6840 does it inside autograd: `_AttnResGradTap` in the producing chunk's graph adds `leaf.grad`. Framework reason: torch pipelining gives every virtual stage an object with overridable forward and backward entry points and an explicit `bwd_cache`; Megatron's schedules are functions over model chunks with one `backward_step`, so an autograd Function inside the model is its only seam. Neither placement transfers to the other framework as is.
+3. Checks. 4312: the store at stage entry must equal `cache_at_entry` (set equality), each collected slot must have `deposits_expected` deposits, no deposit may be left after the rank's first stage finishes backward, and a payload carrying the stage's own blocks must receive a gradient. 6840: the reconstructed source count must match the layer index, and a microbatch entry must be absent at the first chunk and present later; there is no deposit count, so a consumer backward that never ran adds nothing, silently.
+4. Microbatch id. 4312 takes the schedule's `fwd_chunk_id` / `bwd_chunk_id` arguments. 6840 reads the `current_microbatch` attribute that `forward_step` sets for CUDA graphs.
+5. Recompute. 4312's cache work sits in the stage, outside the model, so activation checkpointing inside the stage never re-runs it. 6840 taps inside the layer loop, and full recompute is not wired.
+6. Transport switch. 4312's `attn_res_cache=False` sends the whole stack every hop from the same tables, which the tests use as the A/B. 6840 has only the full prefix at V=1 and the delta under VPP.
 
-1. What goes into the cache. 6840 treats every source the same: whether it arrived in the delta or was formed locally, the cache holds `detach().requires_grad_()` and the in-graph copy goes through `_AttnResGradTap`. 4312 splits by origin: blocks that arrived over P2P stay attached (slices of the recv buffer, itself a leaf, so a later chunk's backward accumulates straight into the buffer's `.grad` and the schedule sends it back), and only this rank's own commits are detached.
-2. The gradient slot for own-rank sources. 6840 uses the leaf's `.grad` (autograd's AccumulateGrad sums the later chunks, the tap's backward adds it and sets `leaf.grad = None`). 4312 keeps an explicit dict keyed `(mb, producer_stage, idx)`: `_LocalCacheCapture.backward` deposits (first deposit cloned), a `register_hook` on the producer's block pops and adds. Same maths; 6840's is shorter.
-3. Detecting a lost gradient. 6840 has none: if a consumer's backward never ran before the drain, the tap adds nothing and the late `.grad` lands on an orphaned leaf, silently. 4312 counts deposits per slot against `expected_same_rank_captures` from the layout tables and raises; commits with no grad path are marked so consumers do not deposit; a step-end sweep clears stray slots.
-4. Granularity and eviction. 6840 stores the whole source list per microbatch, overwritten on each visit and popped at the forward of the rank's last chunk (backward only uses references held by the tap contexts and the consumer graphs). 4312 appends one entry per block with producer metadata and drops at microbatch or step end; tensor lifetimes are the same either way because the graphs hold them.
-5. Where the cache boundary sits relative to recompute. 6840 taps inside the layer loop (`append_block_start` per block start), and its full-recompute path does not carry the stack, so full recompute is refused. 4312's cache reads and writes happen in the stage wrapper, outside the model, so any activation checkpointing inside the stage never re-runs a cache write.
-6. Safety asserts both have: 6840 checks the reconstructed source count against the layer index and asserts no stale or missing entry per microbatch; 4312 checks delta sizes and commit counts against the layout tables.
+## 3d. Whole PRs: what 6840 carries that titan K3 could add
 
-What each side could take from the other (cache only):
-- For 6840: the deposit-count check (item 3), and optionally not tapping received sources, since Megatron's `backward_step` also reads `input_tensor.grad` after `torch.autograd.backward` (`schedules.py:556-592`), so an attached recv slice would accumulate there the same way (not tried).
-- For 4312 (only if review asks for less code): the leaf `.grad` slot could replace the captured-grad dict and `_LocalCacheCapture`, keeping a counter for the check.
+Checked on the 4312 head and the integration tree `/tmp/wt_int0914` (`k3_on_4025`). Megatron-only machinery (payload packing and padding, the rotary length fix, hybrid pattern segments, fine-grained offload, TE CUDA graphs, NVML affinity) is left out. Already equal in titan: KDA short convolution uses SiLU (`kda.py:283`, 6840 fixes this in Megatron), MLA without rotation (`mla_use_nope`).
+
+| 6840 | titan K3 today | where it would go | note |
+| --- | --- | --- | --- |
+| zero-initialised pseudo-query, "required for stability" per the paper (`AttentionResidual.__init__`) | backbone `attention_res_proj`, `ffn_res_proj`, `output_res_proj` use `_LINEAR_INIT` (trunc normal, std 0.02) on upstream main and on the integration tree; only the MTP block's `ffn_res_proj` is zero (`__init__.py:74-78, 481-483, 535`). The RFC 3029 draft and the old tree zero-initialise it | model, separate from 4312 | matters for training from scratch (debug CI), not for loaded weights; measure before raising |
+| init-equivalence oracle test (zero init, tiny eps: AttnRes equals the PreNorm baseline) | none | model tests | needs the zero init first, and titan K3 has no PreNorm twin |
+| MTP with AttnRes: each depth aggregates the trunk sources plus its own partial, per-depth final aggregation, sources detached with `mtp_detach_heads` | `KimiK3MTPLayer` runs a mirrored KDA block on an empty stack, no depth mixing; the released config ships zero MTP layers, so neither reading can be checked against weights | model | open semantics question, not a PP item |
+| MTP under PP (Megatron builds an embedding on the MTP stage, `gpt_model.py:167-177`) | `_compute_mtp_logits` raises when PP separates `tok_embeddings` from `lm_head` | titan PP + model | titan has no embedding copy on the last stage; a larger change than 4312 |
+| memory-lean aggregation (custom Function saving value references and per-token fp32 statistics) and the FLA fused op (`fla.ops.attnres.fused_attnres`, FLA 0.5.1, installed in `/venv/main`) | plain fp32 autograd math under `remat.checkpoint` (`_checkpointed_attention_residual`, from the AC PR): the same memory goal through titan's remat seam | model backend | FLA would be a speed follow-up; needs parity and step time |
+| fp32 AttnRes parameters (`mark_keep_in_fp32`) | weights `.float()` inside the math, but gathered in bf16 under FSDP mixed precision, so the score weight is bf16-rounded | model / FSDP policy | minor; measure first |
+| AttnRes FLOPs in the MFU count (`training.py`) | `get_nparams_and_flops` omits them | model | 93 layers, block 12, dim 7168: 1003 source arities, 8.6e7 FLOPs per token fwd+bwd, 0.014% of 6 x 104.2B; not worth a change |
+| tests: fp64 reference fwd/bwd for 1 to 10 sources, compile and FLA parity, cache hygiene, config walls, emulated VPP over several (pp, vp, block) | 4312: 4-rank gloo `ScheduleInterleaved1F1B`, 3 splits x bf16/fp32 x cache on/off, bitwise block gradients | 4312 tests | candidates: more splits in the same harness (block size not dividing the stage length, pp2 vp4); a forward-only `schedule.eval()` case, since the validator calls it and `AttnResPipelineStage` fills `_order` / `_delta_in` in forward and pops them only in backward (untested) |
+
+## 3e. 4312 improvements 6840 could take (stored, not raised)
+
+Held until Tianyu's next review of 4312 (user, 2026-09-15); nothing goes to NVIDIA before 4312 merges.
+1. The deposit count check against static tables, and the no-uncollected-deposit check.
+2. Checking the store's contents at entry against the tables (set equality), not only the count.
+3. A real multi-rank interleaved schedule test with several microbatches in flight and bitwise block gradients, cache on, cache off and single device.
+4. A whole-stack switch on the same tables as the A/B for the cache.
+5. Cache operations outside the recomputed region; in Megatron that means outside `_checkpointed_forward`'s `custom_forward`, which is Megatron's design call.
 
 ## 4. What Megatron-Core needs for this design (from the MCore PP survey, 54c62df)
 
