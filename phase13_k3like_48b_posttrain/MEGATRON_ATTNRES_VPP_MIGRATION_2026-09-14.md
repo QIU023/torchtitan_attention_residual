@@ -81,7 +81,7 @@ Scope (user, 2026-09-15): only the VPP cache. Layout coverage is not an item: th
 
 Mechanism check for the other direction: 6840's `leaf.grad` slot does not fit torch pipelining. `stage_backward` reads each input's `.grad` and sets it to `None`, and the input-only backward of split schedules uses `autograd.grad` with explicit inputs (`_backward.py` `stage_backward_input`), so leaves outside the stage inputs would get nothing there. The explicit deposits stay the right mechanism for titan.
 
-Also found while diffing: the integration tree carries two stage changes 4312 lacks. `d98653944` (2026-09-06): a payload whose blocks have nothing trainable upstream (frozen embedding under LoRA) gets no gradient and its deposits are discarded; the 4312 head raises there. `115c32f18` (2026-09-04): `attn_res_cache_offload`, the rank store parks its blocks on pinned host memory. Neither is on `pp_review4_consume6840` yet.
+Also found while diffing: the integration tree carries two stage changes 4312 lacks. `d98653944` (2026-09-06): a payload whose blocks have nothing trainable upstream (frozen embedding under LoRA) gets no gradient and its deposits are discarded; the 4312 head raises there. `115c32f18` (2026-09-04): `attn_res_cache_offload`, the rank store parks its blocks on pinned host memory. `d98653944` is now on `pp_review4_consume6840` as `e4955d2d5` (2026-09-15, 18 PP CPU tests pass; the LoRA case has no test of its own); `115c32f18` stays integration only. None of the branch's fixes is raised before Tianyu's next review of 4312 (user, 2026-09-15).
 
 ## 3e. 4312 mechanisms 6840 could take (stored, not raised)
 
