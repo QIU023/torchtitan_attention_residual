@@ -1,8 +1,7 @@
 #!/bin/bash
 # GRPO on the 09-15 integration tree (/tmp/wt_int0915_rl = k3_on_4025 rebuild + the local rl flavor) with verl kimi_k3_integration_rebased on upstream main (/tmp/wt_verl_0915).
-# NEW tree: torchtitan = the 2026-09-06 integration branch (/tmp/wt_k3int, with the run-worktree `rl`
-# flavor that matches the export's shape), verl = kimi_k3_integration_rebased + the core-LoRA port
-# (/tmp/wt_verl_new), venv_verl (vLLM source build) with spmd_types 0.2.5 and Attention Gym b19162e.
+# The `rl` flavor (uncommitted in the run worktree) matches the export's shape; venv_verl is the vLLM
+# source build with spmd_types 0.2.5, torch_remat and renderers 0.1.11, Attention Gym from /tmp/attn_gym_up.
 # First cell: fsdp2 only, spmd_types backend. Derived from verl_grpo_moe.sh (09-02).
 set -uo pipefail
 source /workspace/venv_verl/bin/activate
@@ -19,7 +18,7 @@ export TORCHINDUCTOR_CACHE_DIR=/workspace/.inductor_verl_newtree TRITON_CACHE_DI
 # workers and every rank a compile-worker pool, so keep both small.
 export TORCHINDUCTOR_COMPILE_THREADS=1
 cd /tmp/wt_verl_0915
-NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=/root/models/kimi-k3-debug-nt TP_SIZE=1 \
+NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=${MODEL_PATH:-/root/models/kimi-k3-debug-nt-rel} TP_SIZE=1 \
 timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   data.train_batch_size=32 \
   actor_rollout_ref.actor.ppo_mini_batch_size=16 \
