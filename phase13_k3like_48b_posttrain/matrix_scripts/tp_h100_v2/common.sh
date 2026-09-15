@@ -1,5 +1,5 @@
 # Shared by the run scripts. Set TT (branch tree), TT_PARENT (main worktree), OUT.
-# Two GPUs: every cell runs to completion before the next one starts.
+# Cells on disjoint GPUs may run in parallel; each cell gets its own inductor and Triton cache.
 TT=${TT:-$PWD}; TT_PARENT=${TT_PARENT:-$PWD/../tt_parent}; OUT=${OUT:-$PWD/tp_h100_out}; mkdir -p $OUT
 CFG=${CFG:-kimi_k3_debugmodel}
 D="--parallelism.data_parallel_shard_degree"; T="--parallelism.tensor_parallel_degree"; E="--parallelism.expert_parallel_degree"

@@ -1,87 +1,68 @@
-# TP/SP #4499 on 2 x H100: the run kit
+# TP/SP #4499 on 4 x H100: the run kit
 
-Branch: `QIU023:tp_sp_on_main` (five commits on upstream main `da2f82670`). The reference for
-every table is tp=1 on that same main commit, checked out as a second worktree.
+Round 3 (2026-09-15). Branch `QIU023:tpsp_review4` = `1dec3ee17`: the four PR commits rebased onto upstream main `d34a13fdf`, plus the four round-3 commits (unified b200 cell, K2.5 comment, names and docstrings, `routed_down` on the token shard under EP). The reference for the dp1 and K2.5 tables is main `d34a13fdf`, checked out as a second worktree.
 
-Two GPUs, so every cell runs to completion before the next one. `dp2 x tp2`,
-`dp2 x ep2 x tp2` and any `tp=4` need four GPUs and are not in this kit; the tp=4 cells also
-need a vision tower whose head count 4 divides (the debug tower has 6, the released one 12).
+The rebase moved that reference: #4535 made the fused `w13` the default for K3's dense FFN, with its own init. On one RTX 5060 Ti, tp=1 step-1 loss went from `12.50616` (old base `56a721b64`) to `12.60343` (`d34a13fdf`), and the PR head matched the new main on 3 steps (`Raising_PRs/PR_K3_PARALLELISM/logs_tpsp_r3_2026-09-15/`). Every table in the current PR body is therefore stale and is replaced by this run. The 5060 numbers are smoke only and never go into the body.
+
+`run_v3.sh` runs everything on four GPUs. The `run_v2*.sh` scripts belong to the pre-rebase head `22eeec412` and are kept for the record.
 
 ## Setup
 
 ```bash
-git clone -b tp_sp_on_main https://github.com/QIU023/torchtitan.git tt && cd tt
-git worktree add ../tt_parent da2f82670
+export KIT=/path/to/torchtitan_attention_residual/phase13_k3like_48b_posttrain/matrix_scripts/tp_h100_v2
+git clone -b tpsp_review4 https://github.com/QIU023/torchtitan.git tt && cd tt
+git log --oneline -1                      # 1dec3ee17
+git worktree add ../tt_parent d34a13fdf   # upstream main
 
 python -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 pip install --force-reinstall --pre --index-url https://download.pytorch.org/whl/nightly/cu128 torch
-pip install "spmd_types==0.2.5"
+pip install -e .                          # spmd_types==0.2.5 and torch_remat come pinned from pyproject
 pip install "git+https://github.com/meta-pytorch/attention-gym@main"
-pip install "git+https://github.com/meta-pytorch/remat@$(grep -o 'remat[^"]*' pyproject.toml | head -1 | sed 's/.*@//')"
 python -c "import torch, spmd_types, attn_gym; print(torch.__version__, torch.cuda.get_device_capability())"
 ```
 
-Two local patches are needed on a Hopper box. Neither is committed:
+The previous body ran torch `2.15.0.dev20260906+cu130` and Attention Gym main `499404b`; use those, or record what was used.
+
+One local patch, never committed: main's KDA guard admits only SM 10.0 / 10.3, so widen it in BOTH trees.
 
 ```bash
-# 1. The KDA guard is main's and refuses SM 9.0. Widen it in BOTH trees.
-python phase13_k3like_48b_posttrain/matrix_scripts/tp_h100/hacks/kda_capability_hack.py "$PWD"
-python phase13_k3like_48b_posttrain/matrix_scripts/tp_h100/hacks/kda_capability_hack.py "$PWD/../tt_parent"
-
-# 2. If the chosen nightly has no torch.cuda._annotate_cuda_graph_trace, make that import lazy
-#    in torchtitan/distributed/cudagraph.py (it is only used by the profiling post-processor).
-python - <<'PY'
-import pathlib
-for t in (".", "../tt_parent"):
-    p = pathlib.Path(t) / "torchtitan/distributed/cudagraph.py"
-    s = p.read_text()
-    if "_annotate_cuda_graph_trace" in s:
-        print(t, "check this import against your nightly")
-PY
+python $KIT/hacks/kda_capability_hack.py "$PWD"
+python $KIT/hacks/kda_capability_hack.py "$PWD/../tt_parent"
 ```
+
+(The round-2 lazy-import patch for `torch.cuda._annotate_cuda_graph_trace` is no longer needed: main does not import it any more.)
 
 ## Tests first (a few minutes)
 
 ```bash
-pytest tests/unit_tests/cpu/test_integration_test_definitions.py
+pytest tests/unit_tests/cpu/test_integration_test_definitions.py tests/unit_tests/cpu/test_no_new_cli_options.py
 pytest tests/unit_tests/gpu/test_kimi_k3.py tests/unit_tests/gpu/test_kda_attention.py
 ```
 
-## The matrix
+## The run
 
 ```bash
-cd /path/to/tt
-export TT=$PWD TT_PARENT=$PWD/../tt_parent OUT=$PWD/tp_h100_out
-bash phase13_k3like_48b_posttrain/matrix_scripts/tp_h100/run_bf16_100.sh 2>&1 | tee $OUT/run.log
+export TT=$PWD TT_PARENT=$PWD/../tt_parent OUT=$PWD/tp_h100_out && mkdir -p $OUT
+bash $KIT/run_v3.sh 2>&1 | tee $OUT/run.log
 ```
 
-Nine cells, 100 steps each, serialized on two GPUs: budget two to three hours. The three tables
-are the last lines of the output; each cell's log is `$OUT/<cell>.log`.
+Seventeen cells: five dp1 cells and five dp2 cells at 100 steps, two K2.5 cells at 100 steps, three type-checking smokes at 3 steps (plus two seed builds). Budget three to four hours. The tables and the smoke summary are the last lines of the output; each cell's log is `$OUT/<cell>.log`.
 
 ## What the tables have to show
 
-1. **`tp1` bitwise with `tp1_parent`.** This is the PR's acceptance bar: with tp=1 the branch must
-   compute exactly what main computes, at every one of the 100 steps. The table prints `(bitwise)`
-   when it does. If it does not, nothing else in the run matters -- report that first.
-2. **`tp1_pd` bitwise with `tp1_parent_pd`.** Same, on the backend the branch does not touch.
-3. **`tp1_again` is the noise floor**: the same cell as `tp1`, on a fresh inductor cache. Whatever
-   it moves by at steps 10 and 20 is what this flavour does by itself; the tp=2 rows are read
-   against that, not against zero.
-4. **`tp2_sp` and `tp2_nosp` against `tp1_parent`**, steps 1 / 10 / 20. Step 1 is the one that
-   carries weight; steps 10 and 20 are shown next to the floor row.
-5. **`dp2_ep2` against `dp2`**, not against tp1 -- a second dp rank reads other samples, so those
-   two are only comparable with each other.
+1. **`tp1` bitwise with `tp1_parent` at every step.** The PR's acceptance bar: at tp=1 the branch computes exactly what main computes. If it does not, report that first; nothing else matters.
+2. **`tp1_again` is the noise floor**: the same cell as `tp1` on a fresh inductor cache. The tp=2 rows at steps 10 and 20 are read against it, not against zero.
+3. **`tp2_sp` and `tp2_nosp` against `tp1_parent`**, steps 1 / 10 / 20. Step 1 carries the weight.
+4. **The dp2 rows against `dp2`**, never against tp1 (a second dp rank reads other samples). `dp2_ep2_tp2_nosp` is new: it is the path the `routed_down` change touches (EP without SP).
+5. **`k27_dp2` bitwise with `k27_dp2_parent`**: the PR touches `kimi_k2_7`, and K2.5 refuses tp > 1 on main.
+6. **Smokes**: `tc_mm` is the b200 cell exactly as CI runs it (fsdp 2 x tp 2 x ep 2, type checking on, AC off); `tc_mm_nosp` the same without SP; `tc_tp2` dp1 x tp2. Each must show 3 steps and no traceback.
 
-Steps 50 and 100 are deliberately not in the table: by then this flavour's loss has fallen far
-enough that a percentage divides two collapsing curves. The logs keep every step if they are
-wanted.
+Only steps 1 / 10 / 20 go into the body: past that the debug set is memorised and a percentage divides two collapsing curves. The logs keep every step.
 
 ## Notes for the write-up
 
-- Report the torch build, the Attention Gym commit, spmd-types and CUDA versions with the tables;
-  the two local patches above must be named as well, since a reader cannot reproduce the run
-  without them.
+- Report the torch build, the Attention Gym commit, spmd-types and CUDA versions with the tables, and name the KDA guard patch.
 - If a cell fails, keep its log and report the failure rather than the cell's absence.
 
 ## run_pp_c4.sh (2026-09-12): the PP matrix on c4_test text-only rows
