@@ -27,3 +27,23 @@ Trees: integration `k3_on_4025` = `45ed0e3c1` (tag `k3_int_20260916c`, main `810
 | 48B graft (Kimi-Linear-48B + AttnRes at alpha 0) | outside the RFC's text; our validation anchor | `k3_linear_graft` (3 commits), design decision open | n/a | decide |
 
 Order proposed for the tree, from the table: (1) dynamic CP into the tree and the cut tower under cp x pp / cp x tp: done 09-16; (2) the seeded 3-of-4 composability matrix on this tree: done 09-16; (3) the engine's CP on 4639's API; (4) the LoRA port to the handler seam; (5) the AttnRes block-stack representation.
+
+## Audit of `RFC_BODY_2026-09-16.md` against the evening's state (2026-09-16, night)
+
+Rows checked one by one against GitHub (the user's open PRs as of 09:20 UTC: 4135, 4281, 4312, 4313, 4380, 4381, 4576, 4656, 4751) and the fork. Two rows were stale and are edited in the body file: MoonEP reads `#4751` instead of "not filed"; the 5D row names `k3_on_4025` = `k3_int_20260916c` (main `810e62786` + 72) as the current full tree instead of "pending". Everything else in the status tables matches. Rows that change as soon as the user acts, left as they are:
+
+- "PP rank store offload, PP activation balance: drafts stacked on #4312" and deliverable 1's "filed once #4312's transport is decided": the review branches are ready (`pp_offload_review1` `d49bb388b`, `pp_balance_review1` `080f44208`, bodies in `Raising_PRs/PR_K3_PARALLELISM/`); once the user files `k3_pp_offload` / `k3_pp_balance` the row takes their numbers and the deliverable line reads "filed as drafts on #4312".
+- "#4281: the pre-rebase tree": whether to refresh its branch (`k3_pr_classified_v2`) from `k3_int_20260916c` or close it in favour of the tree link is the user's call; a refresh is a force push to a published PR branch.
+- Deliverable 2, "released layout round trip on the debug downscale and on the released index": the debug half is done (`report_arch`, 0 missing / 0 extra keys, bitwise export round trip); the released-index half needs the released checkpoint on a box with the disk for it. The line can be split into two boxes with the first checked when the body is next pasted.
+
+What to push next, in the order that unblocks the most:
+
+1. File the two PP drafts (user). Then paste the RFC body with the two rows updated.
+2. LoRA on main's `LoRATransform` handler seam (#4576's deliverable): survey tonight, port next.
+3. README deliverable (RFC section 5): the parallelism list of `models/kimi_k3/README.md`; patch and body prepared tonight, a one-file PR against main once the user names the branch.
+4. The tree's numbers on `45ed0e3c1`: the seeded matrix rerun tonight (`mx4_int0916c_0916_094907`); the Elfie plan takes them.
+5. H100 tables before any draft leaves DO NOT review: #4656, #4380, the two PP drafts (and MoonEP on an NVSwitch box, per `MOONEP_TEST_PLAN_2026-09-16.md`).
+6. Compile: locate the compiled-vs-eager gap below module level (deliverable 4); a probe campaign on this box, one worktree, after the matrix.
+7. veRL engine CP on 4639's API once 4639 stops moving; #4313 close or leave, user's call.
+8. 4312: rebase only when the maintainer asks; the consume6840 fixes wait for his next round.
+
