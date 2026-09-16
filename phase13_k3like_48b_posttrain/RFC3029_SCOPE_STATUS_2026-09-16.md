@@ -2,7 +2,7 @@
 
 Scope as the RFC states it (body updated 2026-08-26): Kimi K3 support "for every component needed in the torchtitan stack with 5D parallelism and QLoRA and veRL post-training integration"; slots A (TP), B (EP), C (PP with the Block AttnRes cross-stage cache), D (CP: Ulysses for MLA, merged KCP for KDA, dynamic CP for the vision encoder); LoRA, Muon, quantile balancing and MXFP4 QAT carried but "not proposed in this pass". Maintainer steer on the thread (shuhuayu, 08-23): land one by one, test composability gradually; TP non-critical; focus on dp, ep, pp, cp (dynamic CP for the vision encoder, linear-attention CP for KDA, CP for MLA).
 
-Trees: integration `k3_on_4025` = `f61bbdb83` (tag `k3_int_20260916`, main `1949c297f` + 71 commits); veRL fork branch `kimi_k3_integration_rebased` = `a3661ae3` (upstream verl `00cd5b44` + 46 commits). No verl upstream PR exists yet.
+Trees: integration `k3_on_4025` = `8e0ae8381` (tag `k3_int_20260916b`, main `1949c297f` + 73 commits); veRL fork branch `kimi_k3_integration_rebased` = `a3661ae3` (upstream verl `00cd5b44` + 46 commits). No verl upstream PR exists yet.
 
 | scope item | upstream | integration tree | veRL branch | gap |
 | --- | --- | --- | --- | --- |
