@@ -1,0 +1,26 @@
+--- a/torchtitan/models/kimi_k3/README.md	2026-09-16 09:52:27.620882029 +0000
++++ b/torchtitan/models/kimi_k3/README.md	2026-09-16 09:52:27.656881951 +0000
+@@ -41,6 +41,10 @@
+ | Feature | Notes |
+ |---------|-------|
+ | FSDP2 / HSDP | Decoder sharded per layer; vision encoder sharded as a separate unit |
++| Tensor Parallelism (TP) | Head-parallel KDA and MLA with sequence parallel; the latent MoE uses core's expert sharding; the vision encoder uses the MoonViT plan shared with Kimi K2.5 |
++| Expert Parallelism (EP) | Grouped experts on core's token dispatcher; composes with FSDP2 and TP (the B200 CI cell `kimi_k3_debugmodel_mm` runs FSDP2 x TP2 x EP2 with sequence parallel) |
++
++Pipeline parallelism and context parallelism are not supported yet; `parallelize_kimi_k3` refuses them.
+ 
+ ## Numerical Parity
+ 
+--- a/torchtitan/models/kimi_k3/parallelize.py	2026-09-16 09:52:27.628882012 +0000
++++ b/torchtitan/models/kimi_k3/parallelize.py	2026-09-16 09:52:27.656881951 +0000
+@@ -47,8 +47,8 @@
+     ]
+     if unsupported_parallelisms:
+         raise NotImplementedError(
+-            "Kimi K3 currently supports FSDP2 data parallelism "
+-            f"only; disable {', '.join(unsupported_parallelisms)}."
++            "Kimi K3 supports FSDP2 / HSDP, tensor parallelism and expert "
++            f"parallelism; disable {', '.join(unsupported_parallelisms)}."
+         )
+     if compile_config.enable and "model" in compile_config.components:
+         raise NotImplementedError("Kimi K3 does not support model compilation yet.")
