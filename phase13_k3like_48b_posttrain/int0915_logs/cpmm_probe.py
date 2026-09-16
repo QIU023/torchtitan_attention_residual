@@ -33,3 +33,34 @@ def kimi_k3_mm_allgather_kv_cp2_min96() -> Trainer.Config:
 
 def kimi_k3_mm_ulysses_cp2_min96() -> Trainer.Config:
     return _min96(kimi_k3_debugmodel_mm_ulysses_cp2())
+
+
+def _cp2_pp2(config: Trainer.Config) -> Trainer.Config:
+    # dp1 x cp2 x pp2 on four GPUs; the K3 split places the tower with the embedding on stage 0.
+    config.parallelism.pipeline_parallel_degree = 2
+    config.parallelism.pipeline_parallel_schedule = "1F1B"
+    config.parallelism.num_pp_microbatches = 2
+    return config
+
+
+def _cp2_tp2(config: Trainer.Config) -> Trainer.Config:
+    # dp1 x cp2 x tp2 on four GPUs; CP refuses sequence parallel, so it is off.
+    config.parallelism.tensor_parallel_degree = 2
+    config.parallelism.enable_sequence_parallel = False
+    return config
+
+
+def kimi_k3_mm_allgather_kv_cp2_pp2_min96() -> Trainer.Config:
+    return _cp2_pp2(_min96(kimi_k3_debugmodel_mm_allgather_kv_cp2()))
+
+
+def kimi_k3_mm_allgather_kv_cp2_tp2_min96() -> Trainer.Config:
+    return _cp2_tp2(_min96(kimi_k3_debugmodel_mm_allgather_kv_cp2()))
+
+
+def kimi_k3_mm_ulysses_cp2_pp2_min96() -> Trainer.Config:
+    return _cp2_pp2(_min96(kimi_k3_debugmodel_mm_ulysses_cp2()))
+
+
+def kimi_k3_mm_ulysses_cp2_tp2_min96() -> Trainer.Config:
+    return _cp2_tp2(_min96(kimi_k3_debugmodel_mm_ulysses_cp2()))
