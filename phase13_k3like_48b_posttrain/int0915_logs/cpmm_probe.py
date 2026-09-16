@@ -37,6 +37,10 @@ def kimi_k3_mm_ulysses_cp2_min96() -> Trainer.Config:
 
 def _cp2_pp2(config: Trainer.Config) -> Trainer.Config:
     # dp1 x cp2 x pp2 on four GPUs; the K3 split places the tower with the embedding on stage 0.
+    # SPMD type checking refuses a pipeline, so the b200 recipe's setting is undone.
+    from torchtitan_recipes.tests.b200 import _set_spmd_typechecking
+
+    _set_spmd_typechecking(config, typechecking=False)
     config.parallelism.pipeline_parallel_degree = 2
     config.parallelism.pipeline_parallel_schedule = "1F1B"
     config.parallelism.num_pp_microbatches = 2
