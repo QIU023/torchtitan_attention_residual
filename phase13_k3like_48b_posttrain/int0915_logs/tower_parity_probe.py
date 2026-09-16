@@ -23,6 +23,11 @@ def main() -> None:
     cfg.dump_folder = os.environ["DUMP"]
     cfg.debug.seed = 42
     cfg.debug.deterministic = True
+    if os.environ.get("PROBE_FP32") == "1":
+        # fp32 compute end to end: FSDP's mixed precision casts params to bf16 in forward otherwise.
+        cfg.training.dtype = "float32"
+        cfg.training.mixed_precision_param = "float32"
+        cfg.training.mixed_precision_reduce = "float32"
     tr = Trainer(cfg)
     model = tr.model_parts[0]
     batch = next(iter(tr.dataloader))
@@ -40,7 +45,7 @@ def main() -> None:
     d = (out["cut"] - out["rep"]).abs().max().item()
     scale = out["rep"].abs().max().item()
     if rank == 0:
-        print(f"PROBE bf16-model tower: max|cut-rep|={d:.3e} scale={scale:.3e} ratio={d / scale:.3e} shape={tuple(out['rep'].shape)}", flush=True)
+        print(f"PROBE tower ({'fp32' if os.environ.get('PROBE_FP32') == '1' else 'bf16'} compute, weight dtype {next(model.vision_encoder.parameters()).dtype}): max|cut-rep|={d:.3e} scale={scale:.3e} ratio={d / scale:.3e} shape={tuple(out['rep'].shape)}", flush=True)
     dist.barrier()
 
 
