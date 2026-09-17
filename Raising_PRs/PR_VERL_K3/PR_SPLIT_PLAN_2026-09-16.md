@@ -43,7 +43,7 @@ Each engine PR's body states which torchtitan tree it was run against; the K3 PR
 Before any PR:
 1. Strip and split (this plan's stack): drop the diagnostics, park the environment hacks, rewrite the history without trailers, one model-agnostic PR per capability.
 2. Run each engine capability on an upstream model (llama3 / qwen3 debug models through the same e2e runner): PP, TP on the packed stream, CP, the LoRA sync. Nothing but Kimi K3 has been through this engine; a reviewer runs their own model first.
-3. A CP unit test (cp=2, gloo, a packed two-document micro-batch through `prepare_model_inputs`, gathered logits equal to cp=1) and a same-batch gradient check of the CP gather's scaling (today's evidence is the grad-norm class only).
+3. Done 2026-09-17 (`133e2ba8`): `tests/workers/test_torchtitan_engine_cp_gloo.py`, the gather's scaling and the model's `preprocess_inputs` shards under cp=2 on gloo.
 4. Config fields with tests: `context_parallel_backend`, `sequence_parallel`, `initial_load_path`; `VERL_PP_TOKEN_BUDGET` from the environment into the config.
 5. Locate why the colocated worker cannot compile the all-gather-KV backend's BlockMask sharding (dynamo off in the worker), or document Ulysses as the supported backend.
 
@@ -52,7 +52,7 @@ Engine coverage still missing:
 7. PP + CP and PP + EP together (the bridge's CP gather, the sync from every stage with expert stacks); three-axis cells (fsdp2 x tp2 x ep2, cp2 x pp2).
 8. QLoRA: the fused `w13` projection under the packed layout (split `w1` / `w3` serialization against `w13.*` packed keys); the packed DCP has to be written by the engine venv's torch; the adapter-only path with a fused projection.
 9. Save and resume through the engine (verl `save_freq`, titan interval 1): a resume cell.
-10. Multimodal GRPO: the engine's "multimodal not yet supported" path (pixel values through `prepare_model_inputs`, the K3 processor, a multimodal reward and data); the image-free placeholder path is fixed for TP now.
+10. Multimodal GRPO: the verl side landed 2026-09-17 (`aee5027f`: generic VL render for `kimi_k3`, `media_features`, `collapse_media_blocks`, the banned pad; `K3_INT_20260916.md`, 05:00 section); the first image cell (`verl_grpo_k3_image.sh`, dp2) is the open item.
 
 Numbers and venue:
 11. A real-weight cell (the released checkpoint or the 48B graft): the engine's rollout-vs-actor log-prob diff of 0.15 on the debug model means nothing; Miles quotes a 2e-3 KL floor at 2.8T.

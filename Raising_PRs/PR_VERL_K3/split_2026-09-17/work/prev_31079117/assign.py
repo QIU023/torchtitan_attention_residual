@@ -7,11 +7,7 @@ IMPL = "verl/workers/engine/torchtitan/transformer_impl.py"
 ASSIGN = {
     "tests/special_e2e/sft/run_sft_engine.sh": [("*", "00")],
     "verl/third_party/vllm/__init__.py": [("*", "00")],
-    "verl/workers/rollout/vllm_rollout/vllm_async_server.py": [((54, 54), "05"), ((74, 79), "00"), ((639, 639), "05")],
-    "verl/workers/rollout/utils.py": [("*", "05")],
-    "verl/experimental/agent_loop/agent_loop.py": [("*", "05")],
-    "verl/utils/tokenizer/__init__.py": [("*", "05")],
-    "tests/workers/test_torchtitan_engine_cp_gloo.py": [("*", "04")],
+    "verl/workers/rollout/vllm_rollout/vllm_async_server.py": [("*", "00")],
     "verl/workers/rollout/vllm_rollout/utils.py": [("*", "00")],
     "verl/trainer/ppo/v1/trainer_base.py": [("*", "00")],
     "verl/utils/tokenizer/continuous_token_wiring.py": [("*", "05")],
@@ -61,28 +57,27 @@ ASSIGN = {
         ((156, 163), "05"),
     ],
     IMPL: [
-        ((18, 18), "03"),
-        ((19, 19), "00"),
-        ((21, 22), "01"),
-        ((23, 23), "00"),
-        ((33, 34), "01"),
-        ((36, 37), "01"),
-        ((42, 42), "04"),
-        ((43, 43), "03"),
+        ((18, 18), "03"),            # import itertools
+        ((19, 19), "00"),            # import contextlib
+        ((21, 22), "01"),            # import inspect / math
+        ((23, 23), "00"),            # import sys
+        ((33, 34), "01"), ((36, 37), "01"),
+        ((42, 42), "04"),            # drop prepare_context_parallel_input
+        ((43, 43), "03"),            # torchtitan.config.transform import (variant at 04)
         ((44, 45), "01"),
-        ((46, 79), "00"),
-        ((80, 95), "01"),
-        ((96, 118), "03"),
-        ((119, 126), "04"),
-        ((127, 127), "05"),
+        ((46, 79), "00"),            # BFX9 opt-out
+        ((80, 95), "01"),            # _parallelism_compat_kwargs
+        ((96, 118), "03"),           # _lora_transform
+        ((119, 126), "04"),          # _context_parallel_transform
+        ((127, 127), "05"),          # its KDA docstring line
         ((128, 142), "04"),
-        ((143, 150), "05"),
+        ((143, 150), "05"),          # the kimi_k3 KDA entry of the CP backend map
         ((151, 151), "04"),
-        ((152, 153), "01"),
-        ((177, 177), "03"),
-        ((214, 265), "02"),
+        ((152, 153), "01"),          # verl.utils.ulysses import
+        ((177, 177), "03"),          # iter_per_tensor_params_ep import
+        ((214, 265), "02"),          # _PipelineLossBridge
         ((303, 307), "01"),
-        ((308, 312), "05"),
+        ((308, 312), "05"),          # kimi-named comment (variant at 01)
         ((313, 338), "01"),
         ((370, 370), "01"),
         ((372, 372), "04"),
@@ -90,7 +85,7 @@ ASSIGN = {
         ((376, 378), "04"),
         ((380, 383), "01"),
         ((385, 399), "01"),
-        ((403, 405), "03"),
+        ((403, 405), "03"),          # disable_cuda_graphs (EP)
         ((441, 441), "00"),
         ((442, 442), "03"),
         ((443, 451), "04"),
@@ -109,39 +104,40 @@ ASSIGN = {
         ((899, 910), "00"),
         ((1006, 1019), "03"),
         ((1051, 1106), "03"),
-        ((1107, 1188), "00"),
-        ((1194, 1225), "03"),
-        ((1226, 1236), "00"),
-        ((1237, 1261), "03"),
+        ((1107, 1188), "00"),        # KIMI_GRPO_* sync diagnostics
+        ((1194, 1220), "03"),
+        ((1221, 1231), "00"),
+        ((1232, 1261), "03"),
         ((1265, 1317), "03"),
-        ((1318, 1344), "02"),
+        ((1318, 1344), "02"),        # _iter_pp_gathered
         ((1345, 1374), "03"),
-        ((1375, 1411), "02"),
-        ((1412, 1441), "00"),
+        ((1375, 1411), "02"),        # _guard_fsdp_grad_upcast
+        ((1412, 1441), "00"),        # _dynamo_probe_once
         ((1442, 1443), "01"),
-        ((1444, 1445), "05"),
-        ((1446, 1449), "01"),
-        ((1450, 1470), "05"),
-        ((1471, 1501), "01"),
-        ((1502, 1686), "03"),
-        ((1687, 1687), "03"),
-        ((1688, 1729), "03"),
-        ((1780, 1784), "05"),
-        ((1836, 1836), "01"),
-        ((1837, 1872), "02"),
-        ((1873, 1873), "01"),
-        ((1875, 1886), "04"),
-        ((1887, 1894), "01"),
-        ((1896, 1898), "05"),
-        ((1899, 1925), "01"),
-        ((1926, 1927), "00"),
-        ((1928, 1942), "04"),
-        ((1943, 1946), "05"),
-        ((1947, 1953), "04"),
-        ((1954, 1969), "01"),
-        ((1970, 1971), "05"),
-        ((1973, 1973), "01"),
-        ((1984, 1989), "01"),
+        ((1444, 1445), "05"),        # _MULTIMODAL_KEY_ALIASES
+        ((1446, 1449), "01"),        # _MULTIMODAL_KEYS (needed by _squeeze_folded)
+        ((1450, 1470), "05"),        # _model_multimodal_kwargs
+        ((1471, 1501), "01"),        # _squeeze_folded, _cu_seqlens_from_positions
+        ((1502, 1686), "03"),        # LoRA sync helpers
+        ((1687, 1691), "05"),        # measured-numbers docstring paragraph (kimi-named)
+        ((1692, 1734), "03"),
+        ((1785, 1789), "05"),
+        ((1841, 1841), "01"),        # cp_pad_len = 0
+        ((1842, 1877), "02"),        # PP token-budget padding
+        ((1878, 1878), "01"),        # pad_multiple = 1
+        ((1880, 1891), "04"),        # CP: drop prepare_context_parallel_input, pad_multiple
+        ((1892, 1899), "01"),        # TP lcm + ulysses_pad  (moved after 1900)
+        # item 1900 is a context line; VARIANTS turns it into an ord-04 deletion
+        ((1901, 1903), "05"),        # old multimodal TODO  (moved after 1974)
+        ((1904, 1930), "01"),        # cp_pad_len renumber / label pad
+        ((1931, 1932), "00"),        # dynamo probe call
+        ((1933, 1947), "04"),        # CP preprocess_inputs
+        ((1948, 1951), "05"),        # multimodal through the CP preprocessing
+        ((1952, 1958), "04"),
+        ((1959, 1974), "01"),        # folded stream: cu_seqlens + model masks (1959 variant at 04)
+        ((1975, 1976), "05"),
+        ((1978, 1978), "01"),
+        ((1989, 1994), "01"),
     ],
 }
 
@@ -160,6 +156,8 @@ VARIANTS = {
         312: [("01", None)],
         794: [("01", "        # of the vocabulary (the loss-parallel layout under spmd_types) or of\n"),
               ("05", "        # of the vocabulary (loss-parallel layout, Kimi K3 under spmd_types) or of\n")],
+        1232: [("03", "        if adapter_mode and sd_adapter is None:\n"),
+               ("00", "        elif adapter_mode:\n")],
         1298: [("02", "        gen = _gen()\n"
                       "        if self.parallel_dims.pp_enabled:\n"
                       "            gen = self._iter_pp_gathered(gen, device)\n"
@@ -173,18 +171,18 @@ VARIANTS = {
                ("05", "    path is the 4-D ``A_log`` reshape, and ``apply_lora`` skips the KDA subtree\n")],
         1658: [("03", "        # every layer, and a graft-only target can have no HF\n"),
                ("05", "        # every layer, and a graft-only target (the K3 attention gate) can have no HF\n")],
-        1894: [("01", "                input_ids, position_ids, sp_size=pad_multiple, pad_value=pad_id\n"
+        1899: [("01", "                input_ids, position_ids, sp_size=pad_multiple, pad_value=pad_id\n"
                       "            )\n")],
-        1930: [("04", "            # from the positions, the shards and the layouts. Hand it\n"),
+        1935: [("04", "            # from the positions, the shards and the layouts. Hand it\n"),
                ("05", "            # from the positions, the shards, the KDA routing and the layouts. Hand it\n")],
-        1954: [("01", "        if self._folded_token_stream:\n"),
+        1959: [("01", "        if self._folded_token_stream:\n"),
                ("04", "        elif self._folded_token_stream:\n")],
-        1955: [("01", "            # A model whose forward takes the packed stream's document offsets (a\n"),
+        1960: [("01", "            # A model whose forward takes the packed stream's document offsets (a\n"),
                ("05", "            # A model whose forward takes the packed stream's document offsets (KDA's\n")],
-        1956: [("01", "            # linear-attention recurrence, which would otherwise run across the\n"),
+        1961: [("01", "            # linear-attention recurrence, which would otherwise run across the\n"),
                ("05", "            # recurrence and short convolution, which would otherwise run across the\n")],
-        1895: [("04", None)],
-        1965: [("01", "                # them by consumer (a flex BlockMask, varlen offsets, and so on).\n"),
+        1900: [("04", None)],
+        1970: [("01", "                # them by consumer (a flex BlockMask, varlen offsets, and so on).\n"),
                ("05", "                # them by consumer (a flex BlockMask for MLA, varlen offsets for KDA).\n")],
     },
     "verl/workers/engine/torchtitan/utils.py": {},
@@ -194,8 +192,8 @@ VARIANTS = {
 MOVES = {
     IMPL: [
         ((442, 459), "before", 441),      # transforms must be built before Trainer()
-        ((1887, 1894), "after", 1895),    # TP padding goes after the CP call's closing paren
-        ((1896, 1898), "after", 1969),    # old multimodal update stays at the end of the block
+        ((1892, 1899), "after", 1900),    # TP padding goes after the CP call's closing paren
+        ((1901, 1903), "after", 1974),    # old multimodal update stays at the end of the block
     ],
     "verl/workers/config/engine.py": [
         ((565, 567), "before", 564),      # the CP assert precedes the spmd assert

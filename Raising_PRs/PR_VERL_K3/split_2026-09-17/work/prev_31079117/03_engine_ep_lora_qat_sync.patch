@@ -504,7 +504,7 @@ index 00000000..b7dcfe44
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 105b923e..f2cdf7d5 100644
+index 105b923e..beb5dc18 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -16,6 +16,7 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -699,12 +699,12 @@ index 105b923e..f2cdf7d5 100644
 +            if adapter_mode:
 +                hf_names = _wrapped_hf_base_names(sd_adapter, wrappers, params)
 +            params = sd_adapter.to_hf(params)
-+        elif adapter_mode:
++
++        if adapter_mode and sd_adapter is None:
 +            raise ValueError(
 +                "adapter-only weight sync needs the state-dict adapter to name the "
 +                "wrapped projections; none is configured"
 +            )
-+
 +
 +        if adapter_mode:
 +            if base_sync_done:

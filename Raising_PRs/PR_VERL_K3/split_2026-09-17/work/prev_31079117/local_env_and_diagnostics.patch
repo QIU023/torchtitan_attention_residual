@@ -115,7 +115,7 @@ index a138a760..537c5d57 100644
          )
          assert self.activation_checkpoint in ["selective", "full", "none"], (
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 48052f70..efd8fc55 100644
+index 4cf4f359..5699872d 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -17,9 +17,11 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -289,10 +289,11 @@ index 48052f70..efd8fc55 100644
          if self._is_offload_param:
              for module in self.module:
                  offload_fsdp_model_to_cpu(module)
-@@ -1047,6 +1178,17 @@ class TorchTitanEngine(BaseEngine):
-                 "wrapped projections; none is configured"
-             )
+@@ -1042,7 +1173,18 @@ class TorchTitanEngine(BaseEngine):
+                 hf_names = _wrapped_hf_base_names(sd_adapter, wrappers, params)
+             params = sd_adapter.to_hf(params)
  
+-        if adapter_mode and sd_adapter is None:
 +        # DIAGNOSTIC (KIMI_GRPO_DUMP_SYNC): the same tensors after to_hf, as the rollout receives them.
 +        if dump_dir and not getattr(self, "_sync_dumped_hf", False):
 +            self._sync_dumped_hf = True
@@ -304,9 +305,10 @@ index 48052f70..efd8fc55 100644
 +            if torch.distributed.get_rank() == 0:
 +                torch.save(full, _os.path.join(dump_dir, "sync_step1_hf.pt"))
 +                print(f"KIMI_GRPO_DUMP_SYNC: wrote {len(full)} HF-named tensors", file=sys.stderr, flush=True)
- 
-         if adapter_mode:
-             if base_sync_done:
++        elif adapter_mode:
+             raise ValueError(
+                 "adapter-only weight sync needs the state-dict adapter to name the "
+                 "wrapped projections; none is configured"
 @@ -1206,6 +1348,36 @@ def _guard_fsdp_grad_upcast() -> None:
      FSDPParam.to_accumulated_grad_if_needed = guarded
  
@@ -344,7 +346,7 @@ index 48052f70..efd8fc55 100644
  # Processor output names that differ from the model's forward parameters.
  _MULTIMODAL_KEY_ALIASES = {"grid_thws": "grid_thw", "image_grid_thw": "grid_thw"}
  # Multimodal tensors keep their own leading dimension (images, not the folded stream).
-@@ -1678,6 +1850,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1683,6 +1855,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                          attn_type=self.engine_config.attn_type,
                      )
                      extra_kwargs["attention_masks"] = attention_mask
@@ -377,10 +379,10 @@ index 1fe02b0e..0ca715c8 100644
          """Apply buffer updates to the main model and any synced MTP drafter.
  
 diff --git a/verl/workers/rollout/vllm_rollout/vllm_async_server.py b/verl/workers/rollout/vllm_rollout/vllm_async_server.py
-index 0ef66594..e50af9a4 100644
+index 92cb6937..226e2dba 100644
 --- a/verl/workers/rollout/vllm_rollout/vllm_async_server.py
 +++ b/verl/workers/rollout/vllm_rollout/vllm_async_server.py
-@@ -72,7 +72,11 @@ from verl.workers.rollout.vllm_rollout.utils import (
+@@ -71,7 +71,11 @@ from verl.workers.rollout.vllm_rollout.utils import (
      get_vllm_max_lora_rank,
  )
  

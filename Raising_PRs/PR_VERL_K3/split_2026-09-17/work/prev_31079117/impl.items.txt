@@ -612,23 +612,23 @@
  1217 +             if adapter_mode:
  1218 +                 hf_names = _wrapped_hf_base_names(sd_adapter, wrappers, params)
  1219 +             params = sd_adapter.to_hf(params)
- 1220 +         elif adapter_mode:
- 1221 +             raise ValueError(
- 1222 +                 "adapter-only weight sync needs the state-dict adapter to name the "
- 1223 +                 "wrapped projections; none is configured"
- 1224 +             )
- 1225 + 
- 1226 +         # DIAGNOSTIC (KIMI_GRPO_DUMP_SYNC): the same tensors after to_hf, as the rollout receives them.
- 1227 +         if dump_dir and not getattr(self, "_sync_dumped_hf", False):
- 1228 +             self._sync_dumped_hf = True
- 1229 +             full = {}
- 1230 +             for k, v in params.items():
- 1231 +                 if any(t in k for t in (".layers.1.", ".layers.0.", "embed_tokens", "lm_head")):
- 1232 +                     t = v.full_tensor() if hasattr(v, "full_tensor") else v
- 1233 +                     full[k] = t.detach().to("cpu")
- 1234 +             if torch.distributed.get_rank() == 0:
- 1235 +                 torch.save(full, _os.path.join(dump_dir, "sync_step1_hf.pt"))
- 1236 +                 print(f"KIMI_GRPO_DUMP_SYNC: wrote {len(full)} HF-named tensors", file=sys.stderr, flush=True)
+ 1220 + 
+ 1221 +         # DIAGNOSTIC (KIMI_GRPO_DUMP_SYNC): the same tensors after to_hf, as the rollout receives them.
+ 1222 +         if dump_dir and not getattr(self, "_sync_dumped_hf", False):
+ 1223 +             self._sync_dumped_hf = True
+ 1224 +             full = {}
+ 1225 +             for k, v in params.items():
+ 1226 +                 if any(t in k for t in (".layers.1.", ".layers.0.", "embed_tokens", "lm_head")):
+ 1227 +                     t = v.full_tensor() if hasattr(v, "full_tensor") else v
+ 1228 +                     full[k] = t.detach().to("cpu")
+ 1229 +             if torch.distributed.get_rank() == 0:
+ 1230 +                 torch.save(full, _os.path.join(dump_dir, "sync_step1_hf.pt"))
+ 1231 +                 print(f"KIMI_GRPO_DUMP_SYNC: wrote {len(full)} HF-named tensors", file=sys.stderr, flush=True)
+ 1232 +         elif adapter_mode:
+ 1233 +             raise ValueError(
+ 1234 +                 "adapter-only weight sync needs the state-dict adapter to name the "
+ 1235 +                 "wrapped projections; none is configured"
+ 1236 +             )
  1237 + 
  1238 +         if adapter_mode:
  1239 +             if base_sync_done:
@@ -1076,191 +1076,196 @@
  1685 +     engine would then receive the same weights at every step -- indistinguishable
  1686 +     from a broken sync, and the actor would train adapters the rollout never sees.
  1687 + 
- 1688 +     Non-LoRA models take the plain path -- the import and the scan are both skipped
- 1689 +     unless a wrapper is actually present.
- 1690 +     """
- 1691 +     try:
- 1692 +         from torchtitan.config.transform.lora import LoRALinearBase
- 1693 +     except ImportError:  # pragma: no cover
- 1694 +         LoRALinearBase = ()
- 1695 +     wrappers = {name: m for name, m in module.named_modules() if _is_lora_wrapper(m)}
- 1696 +     if not wrappers:
- 1697 +         return module.state_dict(), frozenset()
- 1698 +     from torchtitan.config.transform.lora import merge_lora_state_dict
- 1699 + 
- 1700 +     # Merged because the run asked for it (model.lora.merge=True, the default). A run
- 1701 +     # with merge=False takes the adapter-only path in get_per_tensor_param instead and
- 1702 +     # never reaches here.
- 1703 +     # warning, not info: the first run of this shipped with logger.info and the line
- 1704 +     # never appeared, so "the merge ran" was inferred rather than read. Engagement has
- 1705 +     # to be assertable from the log.
- 1706 +     logger.warning(
- 1707 +         "weight sync: folding LoRA adapters into base weights before to_hf; "
- 1708 +         "shipping the raw state dict would send the frozen base only. Set "
- 1709 +         "model.lora.merge=False for the adapter-only sync instead."
- 1710 +     )
- 1711 +     merged = merge_lora_state_dict(module)
- 1712 +     # Which keys the merge produced, so the checksum probe can pick one of THEM. It
- 1713 +     # otherwise takes the first floating-point key in sorted order, which is
- 1714 +     # embed_tokens.weight -- frozen under LoRA, so its checksum is constant whether the
- 1715 +     # sync works or not. Measured: four syncs, four identical digests, proving nothing.
- 1716 +     # Core's merge keeps the base keys' names (``<fqn>.weight``, merged in place) and
- 1717 +     # drops the adapter keys, so "new keys" is empty there; the keys that MOVE are the
- 1718 +     # wrapped bases, named through the same prefix rule the merge uses.
- 1719 +     raw = module.state_dict()
- 1720 +     segments = {"_checkpoint_wrapped_module", "_fsdp_wrapped_module", "_orig_mod"}
- 1721 +     moved = set()
- 1722 +     for fqn in wrappers:
- 1723 +         stripped = ".".join(p for p in fqn.split(".") if p not in segments)
- 1724 +         for candidate in (stripped, fqn):
- 1725 +             if f"{candidate}.weight" in merged:
- 1726 +                 moved.add(f"{candidate}.weight")
- 1727 +                 break
- 1728 +     moved.update(k for k in merged if k not in raw)
- 1729 +     return merged, frozenset(moved)
- 1780 +         model_mm_kwargs = _model_multimodal_kwargs(
- 1781 +             multi_modal_inputs,
- 1782 +             self._forward_params,
- 1783 +             getattr(self.model_config.hf_config, "media_placeholder_token_id", None),
- 1784 +         )
- 1836 +         cp_pad_len = 0
- 1837 +         if self.parallel_dims.pp_enabled:
- 1838 +             # Pipeline stages size their P2P buffers once, from the first
- 1839 +             # microbatch, so every microbatch must carry the same token
- 1840 +             # count. Pad the packed stream to a fixed budget before any CP
- 1841 +             # split: positions continue the stream, the mask is rebuilt, and
- 1842 +             # the bridge cuts the logits back before the loss.
- 1843 +             budget = int(
- 1844 +                 self.engine_config.pipeline_token_budget
- 1845 +                 or os.environ.get("VERL_PP_TOKEN_BUDGET", "0")
- 1846 +             )
- 1847 +             if budget <= 0:
- 1848 +                 raise ValueError(
- 1849 +                     "pipeline parallelism needs a fixed token count per micro-batch; "
- 1850 +                     "set VERL_PP_TOKEN_BUDGET to at least the largest packed micro-batch"
- 1851 +                 )
- 1852 +             tokens = input_ids.shape[-1]
- 1853 +             if tokens > budget:
- 1854 +                 raise ValueError(
- 1855 +                     f"micro-batch of {tokens} tokens exceeds VERL_PP_TOKEN_BUDGET={budget}; "
- 1856 +                     "raise the budget or lower the micro-batch size"
- 1857 +                 )
- 1858 +             pp_pad_len = budget - tokens
- 1859 +             if pp_pad_len:
- 1860 +                 pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
- 1861 +                 input_ids = torch.nn.functional.pad(input_ids, (0, pp_pad_len), value=pad_id)
- 1862 +                 continued = torch.arange(1, pp_pad_len + 1, device=position_ids.device)
- 1863 +                 position_ids = torch.cat((position_ids, position_ids[..., -1:] + continued), dim=-1)
- 1864 +                 extra_inputs["positions"] = position_ids
- 1865 +                 if attention_mask is not None:
- 1866 +                     attention_mask = get_attention_masks(
- 1867 +                         input_batch=input_ids,
- 1868 +                         positions=position_ids,
- 1869 +                         attn_type=self.engine_config.attn_type,
- 1870 +                     )
- 1871 +                     extra_kwargs["attention_masks"] = attention_mask
- 1872 +             output_args["pp_pad_len"] = pp_pad_len
- 1873 +         pad_multiple = 1
- 1875 -             input_ids, labels, extra_kwargs = prepare_context_parallel_input(
- 1876 -                 input_ids,
- 1877 -                 labels,
- 1878 -                 extra_kwargs,
- 1879 -                 self.parallel_dims.get_mesh("cp"),
- 1880 -                 self.trainer.device,
- 1881 -                 self.trainer.config.parallelism.context_parallel_load_balancer,
- 1882 +             # Context parallel cuts the packed stream into contiguous rank-ordered shards
- 1883 +             # (_parallelism_compat_kwargs) and the flex BlockMask wants whole 128-token
- 1884 +             # blocks per shard; a packed no-padding stream is neither. ulysses_pad does
- 1885 +             # the padding, with the adjustments below.
- 1886 +             pad_multiple = self.parallel_dims.cp * 128
- 1887 +         if self.parallel_dims.tp_enabled:
- 1888 +             # Sequence parallel scatters the token dim across the TP ranks, so the
- 1889 +             # packed stream must divide by the TP degree as well.
- 1890 +             pad_multiple = math.lcm(pad_multiple, self.parallel_dims.tp)
- 1891 +         if pad_multiple > 1:
- 1892 +             pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
- 1893 +             input_ids, position_ids, cp_pad_len = ulysses_pad(
- 1894 +                 input_ids, position_ids, sp_size=pad_multiple, pad_value=pad_id
- 1896 - 
- 1897 -         # TODO(jessicazhong): multimodal is not yet supported for Torchtitan engine
- 1898 -         extra_inputs.update(multi_modal_inputs)
- 1899 +             if cp_pad_len:
- 1900 +                 # The positions: ulysses_pad numbers the padding from zero,
- 1901 +                 # which reads as the start of a new document to a mask built
- 1902 +                 # from positions -- this model's does. Renumber the padding to
- 1903 +                 # continue the stream instead.
- 1904 +                 continued = torch.arange(
- 1905 +                     1, cp_pad_len + 1, device=position_ids.device
- 1906 +                 )
- 1907 +                 if position_ids.dim() == 3:
- 1908 +                     position_ids[..., -cp_pad_len:] = (
- 1909 +                         position_ids[..., -cp_pad_len - 1 : -cp_pad_len] + continued
- 1910 +                     )
- 1911 +                 else:
- 1912 +                     position_ids[:, -cp_pad_len:] = (
- 1913 +                         position_ids[:, -cp_pad_len - 1 : -cp_pad_len] + continued
- 1914 +                     )
- 1915 +                 # Labels ride along so they stay aligned with the logits; both
- 1916 +                 # are unpadded before the loss (prepare_model_outputs).
- 1917 +                 labels = torch.nn.functional.pad(labels, (0, cp_pad_len), value=pad_id)
- 1918 +                 extra_inputs["positions"] = position_ids
- 1919 +                 if attention_mask is not None:
- 1920 +                     attention_mask = get_attention_masks(
- 1921 +                         input_batch=input_ids,
- 1922 +                         positions=position_ids,
- 1923 +                         attn_type=self.engine_config.attn_type,
- 1924 +                     )
- 1925 +                     extra_kwargs["attention_masks"] = attention_mask
- 1926 +         if self.parallel_dims.cp_enabled and os.environ.get("VERL_TORCHTITAN_DYNAMO_PROBE"):
- 1927 +             _dynamo_probe_once()
- 1928 +         if self.parallel_dims.cp_enabled:
- 1929 +             # The model owns its context-parallel preprocessing on this tree: the masks
- 1930 +             # from the positions, the shards, the KDA routing and the layouts. Hand it
- 1931 +             # the folded [T] stream with the global positions and take back this
- 1932 +             # rank's inputs and kwargs. Labels stay FULL length: verl's loss path
- 1933 +             # (nested no-padding log_prob / loss_mask handling) assumes full
- 1934 +             # sequences, so the engine all-gathers the seq-sharded logits after the
- 1935 +             # model call (_finish_pred) instead of sharding the loss side.
- 1936 +             if position_ids.dim() != 2 or position_ids.shape[0] != 1:
- 1937 +                 raise NotImplementedError("context parallel takes a [1, T] position stream")
- 1938 +             batch = {
- 1939 +                 "input": input_ids.squeeze(0),
- 1940 +                 "labels": labels.squeeze(0),
- 1941 +                 "positions": position_ids.squeeze(0),
- 1942 +             }
- 1943 +             # Images ride through the model's preprocessing, which builds their bank
- 1944 +             # indices and shards them with the stream; they are not added again below.
- 1945 +             batch.update(model_mm_kwargs)
- 1946 +             model_mm_kwargs = {}
- 1947 +             local_inputs, _labels_local, extra_kwargs = self.module[0].preprocess_inputs(
- 1948 +                 batch,
- 1949 +                 parallel_dims=self.parallel_dims,
- 1950 +                 parallelism=self.config.parallelism,
- 1951 +             )
- 1952 +             input_ids = local_inputs.unsqueeze(0)
- 1953 +             extra_inputs = {}
- 1954 +         elif self._folded_token_stream:
- 1955 +             # A model whose forward takes the packed stream's document offsets (KDA's
- 1956 +             # recurrence and short convolution, which would otherwise run across the
- 1957 +             # documents of a micro-batch) gets them explicitly; a document starts where
- 1958 +             # the positions restart at 0.
- 1959 +             if self._forward_takes_cu_seqlens:
- 1960 +                 cu_seqlens = _cu_seqlens_from_positions(extra_inputs.get("positions"))
- 1961 +                 if cu_seqlens is not None:
- 1962 +                     extra_kwargs["cu_seqlens"] = cu_seqlens
- 1963 +             if extra_kwargs.get("attention_masks") is not None and hasattr(self.module[0], "get_attention_masks"):
- 1964 +                 # The model builds its own masks from the [T] positions: current trees key
- 1965 +                 # them by consumer (a flex BlockMask for MLA, varlen offsets for KDA).
- 1966 +                 positions = extra_inputs["positions"]
- 1967 +                 if positions.dim() == 2 and positions.shape[0] == 1:
- 1968 +                     positions = positions.squeeze(0)
- 1969 +                 extra_kwargs["attention_masks"] = self.module[0].get_attention_masks(positions=positions)
- 1970 + 
- 1971 +         extra_inputs.update(model_mm_kwargs)
- 1973 +         output_args["cp_pad_len"] = cp_pad_len
- 1984 +         # Drop the rows the CP padding added, so everything below sees the
- 1985 +         # packed stream at its true length (see prepare_model_inputs).
- 1986 +         cp_pad_len = output_args.get("cp_pad_len", 0)
- 1987 +         if cp_pad_len:
- 1988 +             logits = logits[:, :-cp_pad_len]
- 1989 +             labels = labels[:, :-cp_pad_len]
+ 1688 +     Measured on kimi_k3_debugmodel_gated_lora: with lora_b at its zero init the two
+ 1689 +     paths agree (LoRA is identity at step 0, so that is correct); with lora_b set to
+ 1690 +     0.01 the merged path changes and the raw path does not. Key sets are identical
+ 1691 +     either way, 151 both, so this is a drop-in for the sync.
+ 1692 + 
+ 1693 +     Non-LoRA models take the plain path -- the import and the scan are both skipped
+ 1694 +     unless a wrapper is actually present.
+ 1695 +     """
+ 1696 +     try:
+ 1697 +         from torchtitan.config.transform.lora import LoRALinearBase
+ 1698 +     except ImportError:  # pragma: no cover
+ 1699 +         LoRALinearBase = ()
+ 1700 +     wrappers = {name: m for name, m in module.named_modules() if _is_lora_wrapper(m)}
+ 1701 +     if not wrappers:
+ 1702 +         return module.state_dict(), frozenset()
+ 1703 +     from torchtitan.config.transform.lora import merge_lora_state_dict
+ 1704 + 
+ 1705 +     # Merged because the run asked for it (model.lora.merge=True, the default). A run
+ 1706 +     # with merge=False takes the adapter-only path in get_per_tensor_param instead and
+ 1707 +     # never reaches here.
+ 1708 +     # warning, not info: the first run of this shipped with logger.info and the line
+ 1709 +     # never appeared, so "the merge ran" was inferred rather than read. Engagement has
+ 1710 +     # to be assertable from the log.
+ 1711 +     logger.warning(
+ 1712 +         "weight sync: folding LoRA adapters into base weights before to_hf; "
+ 1713 +         "shipping the raw state dict would send the frozen base only. Set "
+ 1714 +         "model.lora.merge=False for the adapter-only sync instead."
+ 1715 +     )
+ 1716 +     merged = merge_lora_state_dict(module)
+ 1717 +     # Which keys the merge produced, so the checksum probe can pick one of THEM. It
+ 1718 +     # otherwise takes the first floating-point key in sorted order, which is
+ 1719 +     # embed_tokens.weight -- frozen under LoRA, so its checksum is constant whether the
+ 1720 +     # sync works or not. Measured: four syncs, four identical digests, proving nothing.
+ 1721 +     # Core's merge keeps the base keys' names (``<fqn>.weight``, merged in place) and
+ 1722 +     # drops the adapter keys, so "new keys" is empty there; the keys that MOVE are the
+ 1723 +     # wrapped bases, named through the same prefix rule the merge uses.
+ 1724 +     raw = module.state_dict()
+ 1725 +     segments = {"_checkpoint_wrapped_module", "_fsdp_wrapped_module", "_orig_mod"}
+ 1726 +     moved = set()
+ 1727 +     for fqn in wrappers:
+ 1728 +         stripped = ".".join(p for p in fqn.split(".") if p not in segments)
+ 1729 +         for candidate in (stripped, fqn):
+ 1730 +             if f"{candidate}.weight" in merged:
+ 1731 +                 moved.add(f"{candidate}.weight")
+ 1732 +                 break
+ 1733 +     moved.update(k for k in merged if k not in raw)
+ 1734 +     return merged, frozenset(moved)
+ 1785 +         model_mm_kwargs = _model_multimodal_kwargs(
+ 1786 +             multi_modal_inputs,
+ 1787 +             self._forward_params,
+ 1788 +             getattr(self.model_config.hf_config, "media_placeholder_token_id", None),
+ 1789 +         )
+ 1841 +         cp_pad_len = 0
+ 1842 +         if self.parallel_dims.pp_enabled:
+ 1843 +             # Pipeline stages size their P2P buffers once, from the first
+ 1844 +             # microbatch, so every microbatch must carry the same token
+ 1845 +             # count. Pad the packed stream to a fixed budget before any CP
+ 1846 +             # split: positions continue the stream, the mask is rebuilt, and
+ 1847 +             # the bridge cuts the logits back before the loss.
+ 1848 +             budget = int(
+ 1849 +                 self.engine_config.pipeline_token_budget
+ 1850 +                 or os.environ.get("VERL_PP_TOKEN_BUDGET", "0")
+ 1851 +             )
+ 1852 +             if budget <= 0:
+ 1853 +                 raise ValueError(
+ 1854 +                     "pipeline parallelism needs a fixed token count per micro-batch; "
+ 1855 +                     "set VERL_PP_TOKEN_BUDGET to at least the largest packed micro-batch"
+ 1856 +                 )
+ 1857 +             tokens = input_ids.shape[-1]
+ 1858 +             if tokens > budget:
+ 1859 +                 raise ValueError(
+ 1860 +                     f"micro-batch of {tokens} tokens exceeds VERL_PP_TOKEN_BUDGET={budget}; "
+ 1861 +                     "raise the budget or lower the micro-batch size"
+ 1862 +                 )
+ 1863 +             pp_pad_len = budget - tokens
+ 1864 +             if pp_pad_len:
+ 1865 +                 pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
+ 1866 +                 input_ids = torch.nn.functional.pad(input_ids, (0, pp_pad_len), value=pad_id)
+ 1867 +                 continued = torch.arange(1, pp_pad_len + 1, device=position_ids.device)
+ 1868 +                 position_ids = torch.cat((position_ids, position_ids[..., -1:] + continued), dim=-1)
+ 1869 +                 extra_inputs["positions"] = position_ids
+ 1870 +                 if attention_mask is not None:
+ 1871 +                     attention_mask = get_attention_masks(
+ 1872 +                         input_batch=input_ids,
+ 1873 +                         positions=position_ids,
+ 1874 +                         attn_type=self.engine_config.attn_type,
+ 1875 +                     )
+ 1876 +                     extra_kwargs["attention_masks"] = attention_mask
+ 1877 +             output_args["pp_pad_len"] = pp_pad_len
+ 1878 +         pad_multiple = 1
+ 1880 -             input_ids, labels, extra_kwargs = prepare_context_parallel_input(
+ 1881 -                 input_ids,
+ 1882 -                 labels,
+ 1883 -                 extra_kwargs,
+ 1884 -                 self.parallel_dims.get_mesh("cp"),
+ 1885 -                 self.trainer.device,
+ 1886 -                 self.trainer.config.parallelism.context_parallel_load_balancer,
+ 1887 +             # Context parallel cuts the packed stream into contiguous rank-ordered shards
+ 1888 +             # (_parallelism_compat_kwargs) and the flex BlockMask wants whole 128-token
+ 1889 +             # blocks per shard; a packed no-padding stream is neither. ulysses_pad does
+ 1890 +             # the padding, with the adjustments below.
+ 1891 +             pad_multiple = self.parallel_dims.cp * 128
+ 1892 +         if self.parallel_dims.tp_enabled:
+ 1893 +             # Sequence parallel scatters the token dim across the TP ranks, so the
+ 1894 +             # packed stream must divide by the TP degree as well.
+ 1895 +             pad_multiple = math.lcm(pad_multiple, self.parallel_dims.tp)
+ 1896 +         if pad_multiple > 1:
+ 1897 +             pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
+ 1898 +             input_ids, position_ids, cp_pad_len = ulysses_pad(
+ 1899 +                 input_ids, position_ids, sp_size=pad_multiple, pad_value=pad_id
+ 1901 - 
+ 1902 -         # TODO(jessicazhong): multimodal is not yet supported for Torchtitan engine
+ 1903 -         extra_inputs.update(multi_modal_inputs)
+ 1904 +             if cp_pad_len:
+ 1905 +                 # The positions: ulysses_pad numbers the padding from zero,
+ 1906 +                 # which reads as the start of a new document to a mask built
+ 1907 +                 # from positions -- this model's does. Renumber the padding to
+ 1908 +                 # continue the stream instead.
+ 1909 +                 continued = torch.arange(
+ 1910 +                     1, cp_pad_len + 1, device=position_ids.device
+ 1911 +                 )
+ 1912 +                 if position_ids.dim() == 3:
+ 1913 +                     position_ids[..., -cp_pad_len:] = (
+ 1914 +                         position_ids[..., -cp_pad_len - 1 : -cp_pad_len] + continued
+ 1915 +                     )
+ 1916 +                 else:
+ 1917 +                     position_ids[:, -cp_pad_len:] = (
+ 1918 +                         position_ids[:, -cp_pad_len - 1 : -cp_pad_len] + continued
+ 1919 +                     )
+ 1920 +                 # Labels ride along so they stay aligned with the logits; both
+ 1921 +                 # are unpadded before the loss (prepare_model_outputs).
+ 1922 +                 labels = torch.nn.functional.pad(labels, (0, cp_pad_len), value=pad_id)
+ 1923 +                 extra_inputs["positions"] = position_ids
+ 1924 +                 if attention_mask is not None:
+ 1925 +                     attention_mask = get_attention_masks(
+ 1926 +                         input_batch=input_ids,
+ 1927 +                         positions=position_ids,
+ 1928 +                         attn_type=self.engine_config.attn_type,
+ 1929 +                     )
+ 1930 +                     extra_kwargs["attention_masks"] = attention_mask
+ 1931 +         if self.parallel_dims.cp_enabled and os.environ.get("VERL_TORCHTITAN_DYNAMO_PROBE"):
+ 1932 +             _dynamo_probe_once()
+ 1933 +         if self.parallel_dims.cp_enabled:
+ 1934 +             # The model owns its context-parallel preprocessing on this tree: the masks
+ 1935 +             # from the positions, the shards, the KDA routing and the layouts. Hand it
+ 1936 +             # the folded [T] stream with the global positions and take back this
+ 1937 +             # rank's inputs and kwargs. Labels stay FULL length: verl's loss path
+ 1938 +             # (nested no-padding log_prob / loss_mask handling) assumes full
+ 1939 +             # sequences, so the engine all-gathers the seq-sharded logits after the
+ 1940 +             # model call (_finish_pred) instead of sharding the loss side.
+ 1941 +             if position_ids.dim() != 2 or position_ids.shape[0] != 1:
+ 1942 +                 raise NotImplementedError("context parallel takes a [1, T] position stream")
+ 1943 +             batch = {
+ 1944 +                 "input": input_ids.squeeze(0),
+ 1945 +                 "labels": labels.squeeze(0),
+ 1946 +                 "positions": position_ids.squeeze(0),
+ 1947 +             }
+ 1948 +             # Images ride through the model's preprocessing, which builds their bank
+ 1949 +             # indices and shards them with the stream; they are not added again below.
+ 1950 +             batch.update(model_mm_kwargs)
+ 1951 +             model_mm_kwargs = {}
+ 1952 +             local_inputs, _labels_local, extra_kwargs = self.module[0].preprocess_inputs(
+ 1953 +                 batch,
+ 1954 +                 parallel_dims=self.parallel_dims,
+ 1955 +                 parallelism=self.config.parallelism,
+ 1956 +             )
+ 1957 +             input_ids = local_inputs.unsqueeze(0)
+ 1958 +             extra_inputs = {}
+ 1959 +         elif self._folded_token_stream:
+ 1960 +             # A model whose forward takes the packed stream's document offsets (KDA's
+ 1961 +             # recurrence and short convolution, which would otherwise run across the
+ 1962 +             # documents of a micro-batch) gets them explicitly; a document starts where
+ 1963 +             # the positions restart at 0.
+ 1964 +             if self._forward_takes_cu_seqlens:
+ 1965 +                 cu_seqlens = _cu_seqlens_from_positions(extra_inputs.get("positions"))
+ 1966 +                 if cu_seqlens is not None:
+ 1967 +                     extra_kwargs["cu_seqlens"] = cu_seqlens
+ 1968 +             if extra_kwargs.get("attention_masks") is not None and hasattr(self.module[0], "get_attention_masks"):
+ 1969 +                 # The model builds its own masks from the [T] positions: current trees key
+ 1970 +                 # them by consumer (a flex BlockMask for MLA, varlen offsets for KDA).
+ 1971 +                 positions = extra_inputs["positions"]
+ 1972 +                 if positions.dim() == 2 and positions.shape[0] == 1:
+ 1973 +                     positions = positions.squeeze(0)
+ 1974 +                 extra_kwargs["attention_masks"] = self.module[0].get_attention_masks(positions=positions)
+ 1975 + 
+ 1976 +         extra_inputs.update(model_mm_kwargs)
+ 1978 +         output_args["cp_pad_len"] = cp_pad_len
+ 1989 +         # Drop the rows the CP padding added, so everything below sees the
+ 1990 +         # packed stream at its true length (see prepare_model_inputs).
+ 1991 +         cp_pad_len = output_args.get("cp_pad_len", 0)
+ 1992 +         if cp_pad_len:
+ 1993 +             logits = logits[:, :-cp_pad_len]
+ 1994 +             labels = labels[:, :-cp_pad_len]

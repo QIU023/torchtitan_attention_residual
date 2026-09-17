@@ -34,10 +34,10 @@ index 64d7fd59..e0ac34d6 100644
 +        self.assertEqual(_model_multimodal_kwargs({}, frozenset({"special_tokens"}), 163605), {})
 diff --git a/tests/workers/test_torchtitan_engine_k3_processor.py b/tests/workers/test_torchtitan_engine_k3_processor.py
 new file mode 100644
-index 00000000..5d9d82e5
+index 00000000..c6af9a78
 --- /dev/null
 +++ b/tests/workers/test_torchtitan_engine_k3_processor.py
-@@ -0,0 +1,116 @@
+@@ -0,0 +1,68 @@
 +# Copyright 2024 Bytedance Ltd. and/or its affiliates
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,10 +65,10 @@ index 00000000..5d9d82e5
 +        from PIL import Image
 +        from transformers import AutoProcessor
 +
-+        from verl.utils.tokenizer.tokenizer import processor_takes_medias, build_multimodal_processor_inputs
++        from verl.utils.tokenizer.tokenizer import _processor_takes_medias, build_multimodal_processor_inputs
 +
 +        processor = AutoProcessor.from_pretrained(K3_EXPORT, trust_remote_code=True)
-+        self.assertTrue(processor_takes_medias(processor))
++        self.assertTrue(_processor_takes_medias(processor))
 +        image = Image.new("RGB", (64, 48), (200, 30, 30))
 +        expected = int(processor.media_processor.media_tokens_calculator({"type": "image", "image": image}))
 +        out = build_multimodal_processor_inputs(
@@ -80,54 +80,6 @@ index 00000000..5d9d82e5
 +        self.assertEqual(out["attention_mask"].shape[-1], len(ids))
 +        self.assertIn("pixel_values", out)
 +        self.assertEqual(int(out["grid_thws"][0].prod()), out["pixel_values"].shape[0])
-+
-+
-+    def test_generic_vl_builder_expands_the_pads_and_the_rollout_collapse_restores_the_placeholder(self):
-+        from PIL import Image
-+        from transformers import AutoProcessor, AutoTokenizer
-+
-+        from verl.utils.tokenizer import collapse_media_blocks, normalize_token_ids
-+        from verl.utils.tokenizer.continuous_token_wiring import create_continuous_token_builder
-+
-+        tokenizer = AutoTokenizer.from_pretrained(K3_EXPORT, trust_remote_code=True)
-+        processor = AutoProcessor.from_pretrained(K3_EXPORT, trust_remote_code=True)
-+        builder = create_continuous_token_builder(tokenizer, hf_model_type="kimi_k3", processor=processor)
-+        image = Image.new("RGB", (84, 56), (10, 200, 30))
-+        messages = [
-+            {"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": "What colour?"}]}
-+        ]
-+        ids = builder.build_initial_tokens(messages, images=[image])
-+        pad = processor.tokenizer.convert_tokens_to_ids("<|media_pad|>")
-+        expected = int(processor.media_processor.media_tokens_calculator({"type": "image", "image": image}))
-+        self.assertEqual(ids.count(pad), expected)
-+        rollout_ids = collapse_media_blocks(ids, processor)
-+        template_ids = normalize_token_ids(
-+            tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True)
-+        )
-+        self.assertEqual(rollout_ids, template_ids)
-+        self.assertNotIn(pad, rollout_ids)
-+        text_only = [{"role": "user", "content": "hello"}]
-+        self.assertEqual(
-+            builder.build_initial_tokens(text_only),
-+            normalize_token_ids(tokenizer.apply_chat_template(text_only, tokenize=True, add_generation_prompt=True)),
-+        )
-+
-+    def test_media_features_match_the_prompt_call_and_the_pad_is_banned(self):
-+        import torch
-+        from PIL import Image
-+        from transformers import AutoProcessor
-+
-+        from verl.utils.tokenizer import build_multimodal_processor_inputs, media_features, media_pad_token_id
-+        from verl.workers.rollout.utils import get_vision_placeholder_token_ids
-+
-+        processor = AutoProcessor.from_pretrained(K3_EXPORT, trust_remote_code=True)
-+        image = Image.new("RGB", (70, 42), (0, 0, 250))
-+        features = media_features(processor, [image])
-+        out = build_multimodal_processor_inputs(processor, text="<|kimi_image_placeholder|> x", images=[image])
-+        self.assertTrue(torch.equal(features["pixel_values"], out["pixel_values"]))
-+        self.assertTrue(torch.equal(features["grid_thws"], out["grid_thws"]))
-+        self.assertEqual(media_features(processor, []), {})
-+        self.assertEqual(get_vision_placeholder_token_ids(processor), [media_pad_token_id(processor)])
 +
 +
 +class TestImagesFromMessages(unittest.TestCase):
@@ -154,29 +106,6 @@ index 00000000..5d9d82e5
 +        ]
 +        images = _images_from_messages(messages)
 +        self.assertEqual([im.size for im in images], [(32, 24), (32, 24)])
-diff --git a/verl/experimental/agent_loop/agent_loop.py b/verl/experimental/agent_loop/agent_loop.py
-index d0e3038e..58cd1a04 100644
---- a/verl/experimental/agent_loop/agent_loop.py
-+++ b/verl/experimental/agent_loop/agent_loop.py
-@@ -62,6 +62,8 @@ from verl.utils.skip import SkipManager
- from verl.utils.tokenizer import (
-     build_multimodal_processor_inputs,
-     get_processor_token_id,
-+    media_features,
-+    processor_takes_medias,
- )
- from verl.utils.tokenizer.continuous_token_wiring import create_continuous_token_builder
- from verl.workers.config import (
-@@ -875,6 +877,9 @@ class AgentLoopWorker:
-         images = multi_modal_data.get("images")
-         videos = multi_modal_data.get("videos")
-         audios = multi_modal_data.get("audios")
-+        if processor_takes_medias(self.processor):
-+            # The prompt ids already carry the expanded pads; the features come from the images.
-+            return media_features(self.processor, images)
-         # Collapse expanded vision placeholder runs back to a single placeholder
-         # per media item before decoding, so the processor re-expands cleanly.
-         # ``input_ids`` already contains fully expanded image/video pad tokens; if
 diff --git a/verl/utils/dataset/multiturn_sft_dataset.py b/verl/utils/dataset/multiturn_sft_dataset.py
 index bbcfae4c..7f494192 100644
 --- a/verl/utils/dataset/multiturn_sft_dataset.py
@@ -270,67 +199,39 @@ index aad0655b..47f70735 100644
  
          # When called from an AgentLoop, many trajectory coroutines share one
          # event loop. ``process_vision_info`` does synchronous PNG decode +
-diff --git a/verl/utils/tokenizer/__init__.py b/verl/utils/tokenizer/__init__.py
-index bc4544c0..f48f1fc7 100644
---- a/verl/utils/tokenizer/__init__.py
-+++ b/verl/utils/tokenizer/__init__.py
-@@ -14,10 +14,14 @@
- 
- from .tokenizer import (
-     build_multimodal_processor_inputs,
-+    collapse_media_blocks,
-     get_processor_token_id,
-     hf_processor,
-     hf_tokenizer,
-+    media_features,
-+    media_pad_token_id,
-     normalize_token_ids,
-+    processor_takes_medias,
- )
- 
- __all__ = [
-@@ -26,4 +30,8 @@ __all__ = [
-     "normalize_token_ids",
-     "build_multimodal_processor_inputs",
-     "get_processor_token_id",
-+    "processor_takes_medias",
-+    "media_pad_token_id",
-+    "media_features",
-+    "collapse_media_blocks",
- ]
 diff --git a/verl/utils/tokenizer/continuous_token_wiring.py b/verl/utils/tokenizer/continuous_token_wiring.py
-index 446348f6..513fe00c 100644
+index 446348f6..8ec757c0 100644
 --- a/verl/utils/tokenizer/continuous_token_wiring.py
 +++ b/verl/utils/tokenizer/continuous_token_wiring.py
 @@ -136,6 +136,9 @@ _MODEL_TYPE_TO_FAMILY: dict[str, ContinuousTokenModelFamily] = {
      "qwen3_vl_moe": ContinuousTokenModelFamily.QWEN3_VL,
      "minimax_vl_01": ContinuousTokenModelFamily.MINIMAX_VL,
      "kimi_vl": ContinuousTokenModelFamily.KIMI_VL,
-+    # Kimi K3's processor takes text plus medias, which is the generic VL render;
-+    # the Kimi-VL builder's conversations call does not exist on it.
-+    "kimi_k3": ContinuousTokenModelFamily.VL_DEFAULT,
++    # Kimi K3 renders through the same MoonViT processor path; the processor call
++    # itself is K3-aware (build_multimodal_processor_inputs).
++    "kimi_k3": ContinuousTokenModelFamily.KIMI_VL,
      "glm4v": ContinuousTokenModelFamily.GLM4V,
      "glm4v_moe": ContinuousTokenModelFamily.GLM4V,
      "deepseek_vl_v2": ContinuousTokenModelFamily.DEEPSEEK_VL2,
 diff --git a/verl/utils/tokenizer/tokenizer.py b/verl/utils/tokenizer/tokenizer.py
-index 65f528bb..e1055a93 100644
+index 65f528bb..823d9df1 100644
 --- a/verl/utils/tokenizer/tokenizer.py
 +++ b/verl/utils/tokenizer/tokenizer.py
 @@ -127,6 +127,9 @@ def build_multimodal_processor_inputs(
          processor_kwargs.setdefault("video_metadata", video_metadata)
          processor_kwargs.setdefault("do_sample_frames", False)
  
-+    if images and processor_takes_medias(processor):
++    if images and _processor_takes_medias(processor):
 +        return _call_medias_processor(processor, text, images, processor_kwargs)
 +
      processor_inputs = {"text": text, "images": images, "videos": videos, **processor_kwargs}
      if audio is not None:
          processor_inputs["audio"] = audio
-@@ -134,6 +137,104 @@ def build_multimodal_processor_inputs(
+@@ -134,6 +137,56 @@ def build_multimodal_processor_inputs(
      return processor(**processor_inputs)
  
  
-+def processor_takes_medias(processor) -> bool:
++def _processor_takes_medias(processor) -> bool:
 +    """Kimi K3's processor takes its images as ``medias`` and ignores ``images``."""
 +    import inspect
 +
@@ -356,7 +257,7 @@ index 65f528bb..e1055a93 100644
 +        text = text[0]
 +    medias = [{"type": "image", "image": image} for image in images]
 +    out = processor(text=text, medias=medias, **processor_kwargs)
-+    pad_id = media_pad_token_id(processor)
++    pad_id = processor.tokenizer.convert_tokens_to_ids("<|media_pad|>")
 +    counts = [int(processor.media_processor.media_tokens_calculator(media)) for media in medias]
 +    ids = out["input_ids"]
 +    was_tensor = torch.is_tensor(ids)
@@ -380,58 +281,10 @@ index 65f528bb..e1055a93 100644
 +    return out
 +
 +
-+_MEDIA_PAD = "<|media_pad|>"
-+
-+
-+def media_pad_token_id(processor) -> int | None:
-+    """The pad a ``medias`` processor expands per image patch, None for other processors."""
-+    if not processor_takes_medias(processor):
-+        return None
-+    return int(processor.tokenizer.convert_tokens_to_ids(_MEDIA_PAD))
-+
-+
-+def media_features(processor, images) -> dict:
-+    """The vision tensors of a ``medias`` processor for ``images`` alone, without a prompt."""
-+    if not images:
-+        return {}
-+    medias = [{"type": "image", "image": image} for image in images]
-+    return dict(processor.media_processor.preprocess(medias, return_tensors="pt").data)
-+
-+
-+def collapse_media_blocks(prompt_ids: list[int], processor) -> list[int]:
-+    """Fold each expanded media block back into the image placeholder the rollout engine expands.
-+
-+    The training stream spells an image as ``<|media_begin|>`` ... ``<|media_content|>``, the pads,
-+    ``<|media_end|>``; vLLM's Kimi K3 processor writes that block itself from the placeholder, so the
-+    rollout prompt carries the placeholder in its own token spelling.
-+    """
-+    if not processor_takes_medias(processor):
-+        return prompt_ids
-+    tokenizer = processor.tokenizer
-+    begin = tokenizer.convert_tokens_to_ids("<|media_begin|>")
-+    end = tokenizer.convert_tokens_to_ids("<|media_end|>")
-+    placeholder = tokenizer.encode(processor.image_placeholder, add_special_tokens=False)
-+    out: list[int] = []
-+    i = 0
-+    while i < len(prompt_ids):
-+        if prompt_ids[i] != begin:
-+            out.append(prompt_ids[i])
-+            i += 1
-+            continue
-+        j = i + 1
-+        while j < len(prompt_ids) and prompt_ids[j] != end:
-+            j += 1
-+        if j == len(prompt_ids):
-+            raise ValueError("a media block opens without <|media_end|>")
-+        out.extend(placeholder)
-+        i = j + 1
-+    return out
-+
-+
  def set_pad_token_id(tokenizer):
      """Set pad_token_id to eos_token_id if it is None.
  
-@@ -228,6 +329,12 @@ def hf_processor(name_or_path, **kwargs):
+@@ -228,6 +281,12 @@ def hf_processor(name_or_path, **kwargs):
                  model_class = Glm46VModel
              case "MllamaProcessor":
                  pass  # MllamaProcessor and MllamaModel doesn't have get_rope_index property
@@ -445,7 +298,7 @@ index 65f528bb..e1055a93 100644
                  # Gemma4 uses standard 1D RoPE -> no get_rope_index to bind. Disable its strict
                  # per-image-token check (which Qwen's processor lacks).
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index abe77bbd..48052f70 100644
+index f079cef6..4cf4f359 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -86,6 +86,7 @@ def _context_parallel_transform(model_config, backend: str) -> ContextParallelTr
@@ -561,7 +414,19 @@ index abe77bbd..48052f70 100644
          # destination at all because to_hf drops what the original architecture has no
          # key for. Raising would break both.
          #
-@@ -1508,6 +1542,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1416,6 +1450,11 @@ def _merged_state_dict_if_lora(module):
+     engine would then receive the same weights at every step -- indistinguishable
+     from a broken sync, and the actor would train adapters the rollout never sees.
+ 
++    Measured on kimi_k3_debugmodel_gated_lora: with lora_b at its zero init the two
++    paths agree (LoRA is identity at step 0, so that is correct); with lora_b set to
++    0.01 the merged path changes and the raw path does not. Key sets are identical
++    either way, 151 both, so this is a drop-in for the sync.
++
+     Non-LoRA models take the plain path -- the import and the scan are both skipped
+     unless a wrapper is actually present.
+     """
+@@ -1508,6 +1547,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          assert pad_mode == DatasetPadMode.NO_PADDING, f"pad_mode {pad_mode} not supported"
  
          multi_modal_inputs = extract_multi_modal_inputs(micro_batch.get("multi_modal_inputs", []))
@@ -573,7 +438,7 @@ index abe77bbd..48052f70 100644
          input_ids = micro_batch["input_ids"]
          position_ids = micro_batch["position_ids"]
          output_args = {}
-@@ -1641,7 +1680,7 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1641,7 +1685,7 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                      extra_kwargs["attention_masks"] = attention_mask
          if self.parallel_dims.cp_enabled:
              # The model owns its context-parallel preprocessing on this tree: the masks
@@ -582,7 +447,7 @@ index abe77bbd..48052f70 100644
              # the folded [T] stream with the global positions and take back this
              # rank's inputs and kwargs. Labels stay FULL length: verl's loss path
              # (nested no-padding log_prob / loss_mask handling) assumes full
-@@ -1654,6 +1693,10 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1654,6 +1698,10 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                  "labels": labels.squeeze(0),
                  "positions": position_ids.squeeze(0),
              }
@@ -593,7 +458,7 @@ index abe77bbd..48052f70 100644
              local_inputs, _labels_local, extra_kwargs = self.module[0].preprocess_inputs(
                  batch,
                  parallel_dims=self.parallel_dims,
-@@ -1662,8 +1705,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1662,8 +1710,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
              input_ids = local_inputs.unsqueeze(0)
              extra_inputs = {}
          elif self._folded_token_stream:
@@ -604,7 +469,7 @@ index abe77bbd..48052f70 100644
              # documents of a micro-batch) gets them explicitly; a document starts where
              # the positions restart at 0.
              if self._forward_takes_cu_seqlens:
-@@ -1672,14 +1715,13 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1672,14 +1720,13 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                      extra_kwargs["cu_seqlens"] = cu_seqlens
              if extra_kwargs.get("attention_masks") is not None and hasattr(self.module[0], "get_attention_masks"):
                  # The model builds its own masks from the [T] positions: current trees key
@@ -666,46 +531,3 @@ index 1655133b..ce8b7202 100644
  
      for flavor_name in flavor_names:
          cfg = model_registry(flavor_name).model
-diff --git a/verl/workers/rollout/utils.py b/verl/workers/rollout/utils.py
-index 06a1daef..e7744af1 100644
---- a/verl/workers/rollout/utils.py
-+++ b/verl/workers/rollout/utils.py
-@@ -21,7 +21,7 @@ import uvicorn
- import yaml
- from fastapi import FastAPI
- 
--from verl.utils.tokenizer import get_processor_token_id
-+from verl.utils.tokenizer import get_processor_token_id, media_pad_token_id
- from verl.workers.config.rollout import PrometheusConfig
- 
- logger = logging.getLogger(__file__)
-@@ -135,6 +135,9 @@ def get_vision_placeholder_token_ids(processor) -> list[int]:
-         token_id = get_processor_token_id(processor, modality)
-         if token_id is not None:
-             token_ids.append(token_id)
-+    pad_id = media_pad_token_id(processor)
-+    if pad_id is not None:
-+        token_ids.append(pad_id)
-     return token_ids
- 
- 
-diff --git a/verl/workers/rollout/vllm_rollout/vllm_async_server.py b/verl/workers/rollout/vllm_rollout/vllm_async_server.py
-index 92cb6937..0ef66594 100644
---- a/verl/workers/rollout/vllm_rollout/vllm_async_server.py
-+++ b/verl/workers/rollout/vllm_rollout/vllm_async_server.py
-@@ -52,6 +52,7 @@ from verl.utils.profiler import (
- from verl.utils.tokenizer import normalize_token_ids
- from verl.utils.tracking import RLInsightLogger
- from verl.utils.vllm.vllm_quant_utils import apply_vllm_quant_patches
-+from verl.utils.tokenizer import collapse_media_blocks
- from verl.workers.config import HFModelConfig, RolloutConfig
- from verl.workers.rollout.replica import RolloutMode, RolloutReplica, TokenOutput
- from verl.workers.rollout.utils import (
-@@ -631,6 +632,7 @@ class vLLMHttpServer:
- 
-         sampling_params = SamplingParams(max_tokens=max_tokens, **sampling_params)
-         prompt_ids = qwen2_5_vl_dedup_image_tokens(prompt_ids, self.model_config.processor)
-+        prompt_ids = collapse_media_blocks(prompt_ids, self.model_config.processor)
-         multi_modal_data = {}
-         if image_data is not None:
-             multi_modal_data["image"] = image_data

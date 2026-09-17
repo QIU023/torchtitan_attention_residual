@@ -1,7 +1,7 @@
 # veRL fork -> upstream PR split, first cut (2026-09-17)
 
-Repo `/tmp/wt_verl_0915`, base `upstream/main` = `67858929`, head = `aee5027f`
-(`git diff upstream/main HEAD` = 27 files, +2789 / -87). First cut was on head `31079117`; regenerated on `aee5027f`, see the last section.
+Repo `/tmp/wt_verl_0915`, base `upstream/main` = `67858929`, head = `31079117`
+(`git diff upstream/main HEAD` = 23 files, +2358 / -86).
 Plan followed: `Raising_PRs/PR_VERL_K3/PR_SPLIT_PLAN_2026-09-16.md`.
 
 ## Application order (this is the documented order)
@@ -375,25 +375,3 @@ Python validity of every intermediate tree:
     work/cp_config_01.py, work/cp_config_04.py          staged versions of the cp_config test
     work/impl.items.txt                                 the line-item listing the assignment is keyed on
     work/verify.txt                                     the verification transcript
-
----
-## Regenerated 2026-09-17 04:55 on head `aee5027f`
-
-Head moved from `31079117` to `aee5027f` (three commits: the adapter-only refusal reattached to its own `if`, the gloo context-parallel tests, the Kimi K3 image path). `work/assign.py` was remapped by matching the engine file's line items between the two heads (2071 of 2081 matched; the moved `elif adapter_mode` block and the deleted measured-numbers docstring paragraph were the only differences):
-
-- the `elif adapter_mode` refusal now sits inside patch 03 with no staged variant, since it attaches to 03's own `if`;
-- the kimi-named measured-numbers paragraph is gone from 05 (deleted on the branch);
-- new whole-file assignments: `tests/workers/test_torchtitan_engine_cp_gloo.py` (04); `verl/experimental/agent_loop/agent_loop.py`, `verl/workers/rollout/utils.py`, `verl/utils/tokenizer/__init__.py` (05);
-- `verl/workers/rollout/vllm_rollout/vllm_async_server.py` splits into the version override (00, lines 74-79 of its items) and the media-block collapse (05, items 54 and 639).
-
-The first cut's patches, manifest, assignment and item listing are kept in `work/prev_31079117/`.
-
-    01_engine_tp_packed_and_compat.patch   8 files   +461 / -28
-    02_engine_pipeline.patch               2 files   +295 / -4
-    03_engine_ep_lora_qat_sync.patch       4 files   +923 / -34
-    04_engine_context_parallel.patch       7 files   +516 / -28
-    05_kimi_k3.patch                      12 files   +398 / -21
-    06_metrics_logprob_diff.patch          1 file    +6 / -0
-    local_env_and_diagnostics.patch        8 files   +223 / -5
-
-`work/verify.txt` regenerated: every patch passes `git apply --check` on the previous stage, `ast.parse` and `ruff --select F821,F811,F822` are clean on every stage (27 files at the last one), the union reproduces HEAD exactly, and none of 01-06 carries a local marker (`KIMI_GRPO_DUMP`, `VERL_VLLM_VERSION`, `_torch_accepts_bfx9`, `DYNAMO_PROBE`, `partial_dtensor`) or a logbook path. Patch 05 now carries the whole image path (generic VL render, `media_features`, `collapse_media_blocks`, the banned pad) and its tests; patch 04 carries the gloo tests.
