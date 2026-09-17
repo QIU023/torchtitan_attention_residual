@@ -1,0 +1,72 @@
+diff -ruN a/torchtitan/models/kimi_k3/__init__.py b/torchtitan/models/kimi_k3/__init__.py
+--- a/torchtitan/models/kimi_k3/__init__.py	2026-09-17 08:19:10.464865331 +0000
++++ b/torchtitan/models/kimi_k3/__init__.py	2026-09-17 08:19:10.496865595 +0000
+@@ -602,6 +602,44 @@
+     )
+ 
+ 
++
++def _debugmodel_48l(attn_backend: str, moe_comm_backend: str) -> KimiK3Model.Config:
++    dim = 1024
++    return _kimi_k3_config(
++        dim=dim,
++        moe_comm_backend=moe_comm_backend,
++        vocab_size=163840,
++        num_layers=48,
++        full_attention_layers={3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47},
++        attn_res_block_size=12,
++        num_heads=16,
++        q_lora_rank=512,
++        kv_lora_rank=256,
++        qk_nope_head_dim=64,
++        qk_rope_head_dim=32,
++        v_head_dim=64,
++        kda_head_dim=128,
++        conv_kernel_size=4,
++        dense_hidden_dim=4096,
++        latent_dim=512,
++        expert_hidden_dim=384,
++        num_experts=32,
++        top_k=4,
++        num_shared_experts=2,
++        vision_encoder=_vision_encoder_config(
++            text_dim=dim,
++            dim=512,
++            qkv_dim=768,
++            hidden_dim=2048,
++            num_layers=8,
++            num_heads=6,
++            init_pos_emb_height=32,
++            init_pos_emb_width=32,
++        ),
++        attn_backend=attn_backend,
++    )
++
++
+ def _kimi_k3(attn_backend: str, moe_comm_backend: str) -> KimiK3Model.Config:
+     dim = 7168
+     return _kimi_k3_config(
+@@ -643,6 +681,7 @@
+     "debugmodel": (_debugmodel, 16384),
+     "debugmodel_b24": (_debugmodel_b24, 16384),
+     "debugmodel_48l_b24": (_debugmodel_48l_b24, 16384),
++    "debugmodel_48l": (_debugmodel_48l, 16384),
+     "Kimi-K3": (_kimi_k3, 262144),
+ }
+ 
+diff -ruN a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+--- a/torchtitan/models/kimi_k3/config_registry.py	2026-09-17 08:19:10.472865397 +0000
++++ b/torchtitan/models/kimi_k3/config_registry.py	2026-09-17 08:19:10.496865595 +0000
+@@ -112,3 +112,12 @@
+     config = kimi_k3_debugmodel(seq_len=seq_len)
+     config.model_spec = model_registry("debugmodel_48l_b24", seq_len=seq_len)
+     return config
++
++
++def kimi_k3_debugmodel_48l(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """48 layers at the released attn_res_block_size 12 (local flavor, not for upstream)."""
++    config = kimi_k3_debugmodel(seq_len=seq_len)
++    config.model_spec = model_registry("debugmodel_48l", seq_len=seq_len)
++    return config
