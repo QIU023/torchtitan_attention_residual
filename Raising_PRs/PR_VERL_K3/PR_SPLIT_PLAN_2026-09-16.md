@@ -52,7 +52,9 @@ Engine coverage still missing:
 7. PP + CP and PP + EP together (the bridge's CP gather, the sync from every stage with expert stacks); three-axis cells (fsdp2 x tp2 x ep2, cp2 x pp2).
 8. QLoRA: the fused `w13` projection under the packed layout (split `w1` / `w3` serialization against `w13.*` packed keys); the packed DCP has to be written by the engine venv's torch; the adapter-only path with a fused projection.
 9. Save and resume through the engine (verl `save_freq`, titan interval 1): a resume cell.
-10. Multimodal GRPO: the verl side landed 2026-09-17 (`aee5027f`: generic VL render for `kimi_k3`, `media_features`, `collapse_media_blocks`, the banned pad; `K3_INT_20260916.md`, 05:00 section); the first image cell (`verl_grpo_k3_image.sh`, dp2) is the open item.
+10. Multimodal GRPO: the verl side landed 2026-09-17 (`aee5027f` + `549c1e21`: generic VL render for `kimi_k3`, `media_features`, `collapse_media_blocks`, the banned pad, the dataset fallback); the first image cell (`verl_grpo_k3_image.sh`, dp2, 3 steps, rc 0) is in `K3_INT_20260916.md`, 05:10. Open: a same-batch with/without-images log-prob check as direct evidence of the actor's vision path, and the cell under TP (the `spmd_types` annotation of the vision tensors outside CP).
+
+Note on `spmd_backend` (2026-09-17): the engine config field is upstream verl's own (12 references on `upstream/main`); `_parallelism_compat_kwargs` passes it only when the torchtitan tree's `ParallelismConfig` still has it, so it stays in patch 01 as is.
 
 Numbers and venue:
 11. A real-weight cell (the released checkpoint or the 48B graft): the engine's rollout-vs-actor log-prob diff of 0.15 on the debug model means nothing; Miles quotes a 2e-3 KL floor at 2.8T.
