@@ -47,7 +47,7 @@ def run(rank, R, mesh, params, routing, tag):
         MoonEPTokenDispatcher.Config(num_experts=E, top_k=K, hidden_dim=D, num_max_tokens_per_rank=S)
     )
     dispatcher.wire_meshes(ep_mesh=mesh)
-    experts.attach(dispatcher, MoonEPTableBackendNVLink(mesh), mesh)
+    experts.attach(dispatcher, MoonEPTableBackendNVLink(mesh, dispatcher), mesh)
     x = (torch.randn(S, D, device=dev) * 0.5).to(torch.bfloat16)
     if routing == "hot":
         ids = torch.arange(K, device=dev, dtype=torch.int64).repeat(S, 1)
