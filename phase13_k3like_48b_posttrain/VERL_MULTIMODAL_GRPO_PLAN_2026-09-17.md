@@ -157,3 +157,15 @@ Four candidates are now measured and none of them holds:
 - **Not a patched `create_block_mask`.** In this environment it is the stock `torch.nn.attention.flex_attention` function with no dynamo wrapper, and `torch.compile(create_block_mask, dynamic=False, fullgraph=True)` builds a BlockMask on CPU.
 
 The compile that fails is torch's own, `_context_parallel/_attention.py:1242`, and the message says compilation "was not attempted", which points at the eval-frame callback not being live at that moment rather than at a tracing failure. The engine's probe now also attempts a minimal `fullgraph=True` compile in place and reports `is_compiling`, so the next run measures that directly instead of inferring it.
+
+### The measurement that narrows it (2026-09-17, 15:35)
+
+The probe was extended to attempt a minimal `fullgraph=True` compile at the point in `prepare_model_inputs` just before the context-parallel branch, and the worker answered:
+
+    DYNAMO-PROBE dynamo.config.disable=False | suppress_errors=False | is_dynamo_supported=True
+                 is_compiling=False | eval_frame_callback=True | compile-here=OK(12)
+                 thread=AsyncIO Thread: default main=False | TORCHDYNAMO_DISABLE=None
+
+So at that moment, in that process and on that thread, dynamo compiles a function and runs it. The cell then fails a few frames later with the same "found no compiled frames" from torch's own `create_block_mask` compile, and it fails with the probe armed exactly as it does without it, so the probe's own successful compile does not warm anything into working. That removes a fifth candidate.
+
+What is left is specific: in this process, one callable compiles and another does not. The earlier check that `create_block_mask` is stock and compilable was run in a bare Python process, not in a worker that has imported vLLM and the engine, so the next measurement compiles `create_block_mask` itself in place and prints its identity there.
