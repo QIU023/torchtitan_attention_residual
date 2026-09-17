@@ -1,0 +1,15 @@
+--- a/torchtitan/models/kimi_k3/config_registry.py	2026-09-17 06:42:19.111600613 +0000
++++ b/torchtitan/models/kimi_k3/config_registry.py	2026-09-17 06:42:34.839427027 +0000
+@@ -94,3 +94,12 @@
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++
++
++def kimi_k3_debugmodel_moonep(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """The debug model with moe_comm_backend="moonep" (local flavor, not for upstream)."""
++    config = kimi_k3_debugmodel(seq_len=seq_len)
++    config.model_spec = model_registry("debugmodel", seq_len=seq_len, moe_comm_backend="moonep")
++    return config
