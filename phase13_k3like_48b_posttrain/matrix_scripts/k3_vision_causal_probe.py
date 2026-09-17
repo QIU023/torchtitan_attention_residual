@@ -58,15 +58,16 @@ def main() -> None:
     ids, pixel_values, grid_thw, pad_id = build_batch(args.export, device)
 
     spec = model_registry("debugmodel", seq_len=4096)
-    with torch.device(device):
-        model = spec.model.build().to(torch.bfloat16)
+    # The tree's own order: build on meta, move, then let the model seed its
+    # weights and buffers. Building straight on the device leaves them unset.
+    with torch.device("meta"):
+        model = spec.model.build()
+    model.to_empty(device=device)
+    init_weights = getattr(model, "init_weights", None)
+    if init_weights is not None:
+        init_weights(buffer_device=device)
+    model = model.to(torch.bfloat16)
     model.eval()
-    for module in model.modules():
-        if hasattr(module, "_init_self_buffers"):
-            try:
-                module._init_self_buffers(buffer_device=device)
-            except TypeError:
-                pass
 
     tokens = ids.to(torch.int64)
     positions = torch.arange(tokens.numel(), device=device, dtype=torch.int64)
@@ -78,15 +79,20 @@ def main() -> None:
     print(f"[probe] tokens {tokens.numel()}, media pads {pads.numel()} at {pads.tolist()}", flush=True)
 
     kwargs = dict(positions=positions, attention_masks=masks)
+    def logits(**extra) -> torch.Tensor:
+        out = model(tokens, **kwargs, **extra)
+        # A stage that does not own the head returns its hidden states and stack.
+        if isinstance(out, tuple):
+            raise SystemExit("the model returned stage outputs; run this without pipeline parallelism")
+        return out.float()
+
     with torch.no_grad():
-        with_images = model(
-            tokens,
+        with_images = logits(
             pixel_values=pixel_values.to(torch.bfloat16),
             grid_thw=grid_thw,
             special_tokens={"image_id": pad_id},
-            **kwargs,
-        ).float()
-        without_images = model(tokens, **kwargs).float()
+        )
+        without_images = logits()
 
     before = slice(0, first_pad)
     after = slice(first_pad, tokens.numel())
