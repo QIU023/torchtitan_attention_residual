@@ -397,3 +397,8 @@ The first cut's patches, manifest, assignment and item listing are kept in `work
     local_env_and_diagnostics.patch        8 files   +223 / -5
 
 `work/verify.txt` regenerated: every patch passes `git apply --check` on the previous stage, `ast.parse` and `ruff --select F821,F811,F822` are clean on every stage (27 files at the last one), the union reproduces HEAD exactly, and none of 01-06 carries a local marker (`KIMI_GRPO_DUMP`, `VERL_VLLM_VERSION`, `_torch_accepts_bfx9`, `DYNAMO_PROBE`, `partial_dtensor`) or a logbook path. Patch 05 now carries the whole image path (generic VL render, `media_features`, `collapse_media_blocks`, the banned pad) and its tests; patch 04 carries the gloo tests.
+
+---
+## Regenerated 2026-09-17 evening on head `2bf5fbc3` (base `1a8a0f5f`)
+
+The branch was rebased onto upstream verl main `1a8a0f5f`; per file its diff against the base is byte-identical to before, so `work/assign.py` needed no remapping. `work/splitlib.py` now pins `BASE = "1a8a0f5f"` and `HEAD = "2bf5fbc3"` instead of reading `upstream/main` and `HEAD`, so the kit describes one pair of commits rather than whatever the worktree points at. Branch against base: 27 files changed, 2817 insertions(+), 92 deletions(-). The union of the seven patches reproduces the head exactly, every stage parses and is ruff-clean, and none of 01 to 06 carries a local marker (`work/verify.txt`).

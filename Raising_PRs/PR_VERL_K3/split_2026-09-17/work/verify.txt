@@ -1,20 +1,20 @@
 apply --check OK: 01_engine_tp_packed_and_compat.patch
-  stage 01: 8 files, ast errors 0, ruff F821/F811/F822 0
+  stage 01: 8 files, ast errors 0, ruff 0
 apply --check OK: 02_engine_pipeline.patch
-  stage 02: 9 files, ast errors 0, ruff F821/F811/F822 0
+  stage 02: 9 files, ast errors 0, ruff 0
 apply --check OK: 03_engine_ep_lora_qat_sync.patch
-  stage 03: 12 files, ast errors 0, ruff F821/F811/F822 0
+  stage 03: 12 files, ast errors 0, ruff 0
 apply --check OK: 04_engine_context_parallel.patch
-  stage 04: 13 files, ast errors 0, ruff F821/F811/F822 0
+  stage 04: 13 files, ast errors 0, ruff 0
 apply --check OK: 05_kimi_k3.patch
-  stage 05: 22 files, ast errors 0, ruff F821/F811/F822 0
+  stage 05: 22 files, ast errors 0, ruff 0
 apply --check OK: 06_metrics_logprob_diff.patch
-  stage 06: 23 files, ast errors 0, ruff F821/F811/F822 0
+  stage 06: 23 files, ast errors 0, ruff 0
 apply --check OK: local_env_and_diagnostics.patch
-  stage lo: 27 files, ast errors 0, ruff F821/F811/F822 0
-$ git diff --cached HEAD --stat
-(no output above = the union reproduces HEAD exactly; line count: 0)
-$ grep -cE local markers per patch
+  stage lo: 27 files, ast errors 0, ruff 0
+$ git diff --cached 2bf5fbc3 --stat
+(no output above = the union reproduces the head exactly; line count: 0)
+$ local markers per patch
 01_engine_tp_packed_and_compat.patch:0
 02_engine_pipeline.patch:0
 03_engine_ep_lora_qat_sync.patch:0
