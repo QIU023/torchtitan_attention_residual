@@ -48,6 +48,11 @@ So no engine change is predicted for the image path under TP, PP or CP by itself
     img_ep2  fsdp 2 x ep 2    0   3      0.13499            111.0          3.82 to 4.01
     img_pp2  pp 2             0   3      0.11449            111.0          3.80 to 4.07
 
+Combinations:
+
+    cell          shape          rc  steps  logprob diff mean  prompt length  grad norm range
+    img_cp2tp2    cp 2 x tp 2    0   3      0.14940            111.0          3.85 to 4.04
+
 Every cell carried images rather than dropping them silently: `prompt_length/mean` is 111.0 in each, the same figure the dp2 image cell of the morning read and exactly what the builder produces offline for one row of this parquet (the expanded media block, four pads for a 56x56 image, plus the text); `data.image_key=images` and `return_multi_modal_inputs=True` are in both configuration dumps, and the grad norms (3.81 to 4.06) sit in the dp2 image cell's class (3.88 to 4.00). That is still indirect: the direct check is the drop-images diagnostic (`matrix_scripts/verl_drop_images.patch`, `KIMI_GRPO_DROP_IMAGES`), which runs the same batch text-only, and it waits for a free pair of GPUs.
 
 All four single-axis cells pass, which is what the code read predicted: the tensor-parallel padding and the logit gather never see a vision tensor, and under context parallel the model's own `preprocess_inputs` shards the vision bank with the stream. The `spmd.assert_type` risk the survey named for the vision tensors outside context parallel does not fire under TP.
@@ -57,3 +62,5 @@ Reporting note: the runner's error filter greps the log for "Error", which also 
 The pipeline cell is the one that could have lost the images silently, and it did not: its prompt length is the same 111, so the token-budget padding appended at the end of the packed stream left the media pads inside the stream where `get_vision_positions` counts them, and the stages that do not own `tok_embeddings` ignored the vision kwargs they were handed. Its log-prob diff (0.11449) is the lowest of the four but stays in the class the text cells read.
 
 A side result from the same cell: its configuration dump shows `pipeline_token_budget: None`, so the budget came from `VERL_PP_TOKEN_BUDGET` in the launcher. That is the environment fallback of `pipeline_token_budget()`, the function factored out of `prepare_model_inputs` this evening, exercised by a real run as well as by its unit tests.
+
+The first combination cell is the one whose padding stacks: context parallel wants whole 128-token blocks per shard and tensor parallel wants the stream to divide by the degree, so `pad_multiple` is their least common multiple and the packed stream grows the most here. Its prompt length is still 111 and its gradient norms sit with the rest, so the media pads kept their positions under the larger padding as well.
