@@ -1,0 +1,19 @@
+apply --check OK: 01_engine_tp_packed_and_compat.patch
+apply --check OK: 02_engine_pipeline.patch
+apply --check OK: 03_engine_ep_lora_qat_sync.patch
+apply --check OK: 04_engine_context_parallel.patch
+apply --check OK: 05_kimi_k3.patch
+apply --check OK: 06_metrics_logprob_diff.patch
+apply --check OK: local_env_and_diagnostics.patch
+$ git diff --cached HEAD --stat
+(no output above = the union reproduces HEAD exactly; line count: 0)
+
+$ grep -E "KIMI_GRPO_DUMP|VERL_VLLM_VERSION|_torch_accepts_bfx9|DYNAMO_PROBE|partial_dtensor" 0{1..6}*.patch
+04_engine_context_parallel.patch:0
+05_kimi_k3.patch:0
+01_engine_tp_packed_and_compat.patch:0
+02_engine_pipeline.patch:0
+03_engine_ep_lora_qat_sync.patch:0
+06_metrics_logprob_diff.patch:0
+$ grep -c ... local_env_and_diagnostics.patch
+26
