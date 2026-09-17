@@ -24,7 +24,7 @@ The tree is pushed to `k3_on_4025` at `31a1b39fa` (force-with-lease against `cf7
 
 veRL side also closed out since 12:30Z: the fork is at `e8e3ba50` with the initial checkpoint source factored into a tested function alongside the pipeline token budget, and the split kit was regenerated and verified on that head (the assignment remapped across the two new functions, union reproduces the head, every stage clean).
 
-What is left needs a GPU and is running or queued: the controlled vision probe, now on its fourth fix (parameters to bf16 with buffers left in fp32, since casting everything breaks the tower's rope and casting nothing breaks Attention Gym's convolution).
+The controlled vision probe then passed as well: the 81 positions before the first media pad are bitwise identical between a forward with images and one without, and everything from the pad onward moves by 6.8. Multimodal work across the parallelism axes is complete: ten cells, one controlled probe, and no engine change.
 
 ## Status at 12:30Z
 

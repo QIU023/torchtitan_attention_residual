@@ -114,3 +114,14 @@ Its batch construction is now smoked on CPU and is self-consistent: 107 token id
 Three defects were found and fixed before it ever reached a useful run, all of them from writing it against the APIs instead of running it: it built the model straight on the device instead of on meta followed by `to_empty` and `init_weights`; it cast the module to bf16, which also casts the vision tower's 2D rope cache and `torch.polar` takes only half, float or double, so the weights now stay fp32 and the forward runs under autocast as the trainer and the engine do; and it passed the processor's `(N, 3, 14, 14)` straight to a patch embedding that takes `(N, 588)`, the flattening the engine performs in `_model_multimodal_kwargs`.
 
 What remains unverified is the model side, which needs a GPU: the meta build, the autocast forward and the two-forward comparison. It is queued behind the integration matrix, which holds all eight cards.
+
+## The controlled probe passes: the tower's features are in the policy's logits (2026-09-17, 15:20)
+
+    [probe] tokens 107, media pads 6 at [81, 82, 83, 84, 85, 86]
+    [probe] positions before the first pad (81): bitwise equal True, max diff 0.000e+00
+    [probe] the pads and everything after (26): max diff 6.828e+00
+    [probe] PASS
+
+One process, one set of weights, one token stream, and the only difference between the two forwards is whether `pixel_values` is passed. The 81 positions ahead of the first media pad come back bitwise identical, which they must, since nothing upstream of the image can depend on it; from the first pad onward the logits move by 6.8. That is the vision tower's features reaching the policy, established by causality rather than by a tolerance, and it closes the evidence ladder that the prompt length and the drop-images pair started.
+
+The probe needed five attempts, all of them defects in the probe rather than in the model: building on the device instead of on meta with `init_weights`, casting the whole module to bf16 (the tower's rope goes through `torch.polar`, which refuses it), leaving the parameters in fp32 under autocast (Attention Gym's convolution refuses a bf16 activation against an fp32 weight), and passing the processor's `(N, 3, 14, 14)` to a patch embedding that takes `(N, 588)`. Casting parameters while leaving buffers in fp32 satisfies both kernels at once.
