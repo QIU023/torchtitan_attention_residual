@@ -46,6 +46,8 @@ So no engine change is predicted for the image path under TP, PP or CP by itself
     img_tp2  tp 2             0   3      0.14548
     img_cp2  cp 2             0   3      0.13497
 
+Both carried images rather than dropping them silently: `prompt_length/mean` is 111.0 in each, the same figure the dp2 image cell of the morning read and exactly what the builder produces offline for one row of this parquet (the expanded media block, four pads for a 56x56 image, plus the text); `data.image_key=images` and `return_multi_modal_inputs=True` are in both configuration dumps, and the grad norms (3.81 to 4.06) sit in the dp2 image cell's class (3.88 to 4.00). That is still indirect: the direct check is the drop-images diagnostic (`matrix_scripts/verl_drop_images.patch`, `KIMI_GRPO_DROP_IMAGES`), which runs the same batch text-only, and it waits for a free pair of GPUs.
+
 Both pass, which is what the code read predicted: the tensor-parallel padding and the logit gather never see a vision tensor, and under context parallel the model's own `preprocess_inputs` shards the vision bank with the stream. The `spmd.assert_type` risk the survey named for the vision tensors outside context parallel does not fire under TP.
 
 Reporting note: the runner's error filter greps the log for "Error", which also matches the trainer's configuration dump (`'truncation': 'error'`), so a passing row can carry that text; rc and the step count are the verdict. Fixed after the chains finish, since a running bash script must not be edited.
