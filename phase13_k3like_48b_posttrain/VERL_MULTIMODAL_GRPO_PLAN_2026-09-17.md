@@ -146,3 +146,14 @@ Dynamo is neither disabled nor unsupported there. The one measured difference le
 What can be stated without a mechanism is the behaviour: under the veRL engine's colocated worker, `ulysses` is the context-parallel backend that runs and `allgather_kv` does not. That is what the PR body should say.
 
 **Correction, same session:** the thread is not the cause. A minimal comparison in one process (`matrix_scripts/dynamo_thread_probe.py`, CPU only, no GPU needed) calls the same `torch.compile(fullgraph=True)` from the main thread, a plain worker thread and an asyncio event-loop thread, and all three compile and run. So running off the main thread does not by itself break `fullgraph=True`, and the cause of the `allgather_kv` failure is still open. The behavioural statement is unchanged and is the only thing the body should carry: under the colocated worker `ulysses` runs and `allgather_kv` does not.
+
+### What the `allgather_kv` failure is not (2026-09-17, 15:40)
+
+Four candidates are now measured and none of them holds:
+
+- **Not the tree or the backend.** The 21-cell integration matrix run today includes seven cells on `allgather_kv` flavors (`cp2_ag`, `cp2_tp2_ag`, `fsdp2_cp2_tp2` and the rest), and all of them pass under plain `torchrun` with step 1 identical to the previous tag.
+- **Not dynamo being off.** Measured inside the worker: `disable=False`, `is_dynamo_supported=True`, `TORCHDYNAMO_DISABLE=None`.
+- **Not the thread.** `matrix_scripts/dynamo_thread_probe.py` compiles the same `fullgraph=True` function on the main thread, a worker thread and an asyncio event-loop thread; all three succeed.
+- **Not a patched `create_block_mask`.** In this environment it is the stock `torch.nn.attention.flex_attention` function with no dynamo wrapper, and `torch.compile(create_block_mask, dynamic=False, fullgraph=True)` builds a BlockMask on CPU.
+
+The compile that fails is torch's own, `_context_parallel/_attention.py:1242`, and the message says compilation "was not attempted", which points at the eval-frame callback not being live at that moment rather than at a tracing failure. The engine's probe now also attempts a minimal `fullgraph=True` compile in place and reports `is_compiling`, so the next run measures that directly instead of inferring it.
