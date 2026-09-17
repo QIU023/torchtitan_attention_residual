@@ -1,0 +1,14 @@
+--- a/verl/workers/engine/torchtitan/transformer_impl.py
++++ b/verl/workers/engine/torchtitan/transformer_impl.py
+@@ -1392,6 +1392,11 @@
+     images are present.
+     """
+     out = {}
++    # DIAGNOSTIC (KIMI_GRPO_DROP_IMAGES): drop every vision tensor before the forward, so
++    # the same batch runs text-only. The log-prob difference against the normal run is
++    # what shows the tower's features reached the policy.
++    if os.environ.get("KIMI_GRPO_DROP_IMAGES"):
++        return {}
+     for key, value in multi_modal_inputs.items():
+         name = _MULTIMODAL_KEY_ALIASES.get(key, key)
+         if name in forward_params:
