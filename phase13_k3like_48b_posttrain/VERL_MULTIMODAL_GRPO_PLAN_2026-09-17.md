@@ -104,3 +104,13 @@ Two things this does not say: it is not a multimodal finding (no image ever reac
 With the Ray budget raised to 48 CPUs the eight-GPU cells start immediately, and the widest shape this box can hold, data-parallel sharding by context parallel by tensor parallel with expert parallelism dividing their product, passes with the same prompt length as every other cell. Four axes at once, images intact, no engine change.
 
 The second eight-GPU cell, pipeline by tensor by context parallel, closes the matrix: ten cells, every axis on its own, every pair that fits, two triples and one quadruple, all three steps, all prompt length 111. The engine carries no change for any of it; what the run changed is the harness (the error filter, the table generator and the Ray budget) and one factored function with tests.
+
+## The controlled probe: where it stands (2026-09-17, 12:30)
+
+`matrix_scripts/k3_vision_causal_probe.py` is the clean form of the drop-images check: one process, one set of weights, one token stream, and the only variable is whether `pixel_values` reaches the forward. Causality gives the verdict without any tolerance to argue about, since positions before the first media pad cannot depend on the image and must stay bitwise equal, while the pads and everything after them must move.
+
+Its batch construction is now smoked on CPU and is self-consistent: 107 token ids, `pixel_values` of `(24, 588)`, `grid_thw` `[[1, 4, 6]]` for the 84 by 56 image, and six media pads at positions 81 to 86. Two cross-checks hold: the merged vision tokens the grid implies, `(4 // 2) * (6 // 2)`, equal the pads in the stream, and the 24 patch rows equal the product of the grid.
+
+Three defects were found and fixed before it ever reached a useful run, all of them from writing it against the APIs instead of running it: it built the model straight on the device instead of on meta followed by `to_empty` and `init_weights`; it cast the module to bf16, which also casts the vision tower's 2D rope cache and `torch.polar` takes only half, float or double, so the weights now stay fp32 and the forward runs under autocast as the trainer and the engine do; and it passed the processor's `(N, 3, 14, 14)` straight to a patch embedding that takes `(N, 588)`, the flattening the engine performs in `_model_multimodal_kwargs`.
+
+What remains unverified is the model side, which needs a GPU: the meta build, the autocast forward and the two-forward comparison. It is queued behind the integration matrix, which holds all eight cards.
