@@ -44,7 +44,7 @@ Before any PR:
 1. Strip and split (this plan's stack): drop the diagnostics, park the environment hacks, rewrite the history without trailers, one model-agnostic PR per capability.
 2. Run each engine capability on an upstream model (llama3 / qwen3 debug models through the same e2e runner): PP, TP on the packed stream, CP, the LoRA sync. Nothing but Kimi K3 has been through this engine; a reviewer runs their own model first.
 3. Done 2026-09-17 (`133e2ba8`): `tests/workers/test_torchtitan_engine_cp_gloo.py`, the gather's scaling and the model's `preprocess_inputs` shards under cp=2 on gloo.
-4. Config fields with tests: `context_parallel_backend`, `sequence_parallel`, `initial_load_path`; `VERL_PP_TOKEN_BUDGET` from the environment into the config.
+4. Config fields with tests: `context_parallel_backend`, `sequence_parallel`, `initial_load_path`. The pipeline token budget is done (2026-09-17, `6f71c346`): the inline parse in `prepare_model_inputs` is now the module-level `pipeline_token_budget(configured, tokens)`, the config field takes precedence over `VERL_PP_TOKEN_BUDGET`, both refusals name the config field, and `tests/workers/test_torchtitan_engine_pp_token_budget.py` covers precedence, the fallback, an exact fit and the two refusals (5 passed). It belongs to patch 02 in the split.
 5. Locate why the colocated worker cannot compile the all-gather-KV backend's BlockMask sharding (dynamo off in the worker), or document Ulysses as the supported backend.
 
 Engine coverage still missing:
