@@ -57,7 +57,8 @@ def _install() -> None:
         tag = f"[moonep-probe rank {rank} dispatch {state['seen']}]"
         print(
             f"{tag} E={E} B={B} local={local} home rows [{home_lo},{home_hi}) "
-            f"tokens={sum(rows)} of S*K={x_TD.shape[0] * self.top_k}",
+            f"padded rows received={sum(rows)} (this rank's share of "
+            f"R x S x K, padded per VM group)",
             flush=True,
         )
         print(

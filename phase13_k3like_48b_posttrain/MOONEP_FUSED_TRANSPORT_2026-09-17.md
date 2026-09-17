@@ -129,13 +129,17 @@ and no measured numbers in code. No line exceeds 88 columns.
    and refresh the pass count in the PR body's test plan.
 3. `moonep_row_occupancy_probe.py` for one step: it is the readable form of the
    two tripwires, and it also logs slot occupancy, which cell 3 wants anyway.
-4. The blocker to expect: on cutlass-dsl 4.6.0, the version Attention Gym's KDA
-   needs, MoonEP's own `test_grad_reduce` and `test_e2e` fail inside its
-   grad-reduce DSL kernel ("An MLIR function requires a Location but none was
-   provided"); both pass on 4.4.2, which KDA cannot use. This rewrite calls that
-   kernel, so the training cells cannot run until one of two things happens:
-   MoonEP's grad-reduce DSL call is patched for 4.6, or KDA runs under 4.4.2.
-   Say which one was done before any number is reported.
-5. The prefetch half is not affected: `test_prefetch` passed on 4.6.0 (14
-   passed), so a forced-hot probe that only prefetches can run before 4 is
-   resolved.
+4. Resolved on the box the same day, so this paragraph's earlier warning is
+   retired: the cutlass-dsl 4.6.0 failure was not an MLIR location problem but
+   `cute.make_fragment` renamed to `cute.make_rmem_tensor` in 4.6, surfacing
+   through the DSL tracer as `AttributeError` on the K3 path's first backward.
+   One line in MoonEP's `grad_reduce.py:295`
+   (`matrix_scripts/moonep_onbox/h200/moonep_grad_reduce_cutlass46.patch`) makes
+   all six MoonEP suites pass on 4.6.0, the version Attention Gym's KDA needs.
+   The rename is the third upstream ask for MoonEP.
+5. Cell 9 has run on real MoonEP (dp2 x ep2, one step, `3c458bdf1`): 8 of 8
+   dispatches reported only this rank's home rows and its planned slots
+   receiving tokens, no violation, 32 of 48 rows useful at R = 2. The empty-row
+   assumption the compacted offsets rest on is therefore measured, not assumed.
+   The probe's `tokens=... of S*K=...` line counts padded VM-group rows rather
+   than tokens, which is a wording bug in the probe, now fixed.
