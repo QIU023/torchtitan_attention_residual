@@ -63,7 +63,7 @@ Note on `spmd_backend` (2026-09-17): the engine config field is upstream verl's 
 Numbers and venue:
 11. A real-weight cell (the released checkpoint or the 48B graft): the engine's rollout-vs-actor log-prob diff of 0.15 on the debug model means nothing; Miles quotes a 2e-3 KL floor at 2.8T.
 12. Throughput and memory per cell for the bodies (today's cells are 3-step smokes).
-13. The vLLM side: the engine runs on a source-built vLLM branch behind `VERL_VLLM_VERSION`; pin it against vLLM's own K3 support and document the export (`-rel`).
+13. Done 2026-09-17 (`phase13_k3like_48b_posttrain/VLLM_PIN_AND_EXPORT_2026-09-17.md`). The rollout side runs **upstream vLLM's own** K3 support, built from `6dc76a9ade` (2026-07-28), installed non editable into `venv_verl`; the checkout `/workspace/vllm_k3` is four LoRA commits ahead and those are not in the running build, which no recorded cell exercises because every LoRA cell used the merged sync. `VERL_VLLM_VERSION=0.18.0` is a parse workaround for the `0.1.dev1+g...` dev string, not a feature gate. The `-rel` export differs from the plain one in nine tensors only, the KDA `A_log` in released rank-4 spelling (`[1, 1, 16, 1]` against `[16]`); config and the other 1419 tensors are identical, and `-rel` is what every rollout bearing runner loads.
 14. The post-training venue decision (torchtitan RL #4680 or the veRL engine), the RFC's open question 2, before the K3 PR is filed on verl.
 
 ## Addendum, 2026-09-17 morning: PR 4760
