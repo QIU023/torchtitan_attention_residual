@@ -1,0 +1,32 @@
+--- a/torchtitan/models/kimi_k3/config_registry.py	2026-09-17 07:05:30.799593326 +0000
++++ b/torchtitan/models/kimi_k3/config_registry.py	2026-09-17 07:05:30.803593312 +0000
+@@ -103,3 +103,29 @@
+     config = kimi_k3_debugmodel(seq_len=seq_len)
+     config.model_spec = model_registry("debugmodel", seq_len=seq_len, moe_comm_backend="moonep")
+     return config
++
++
++def _kimi_k3_c4_dataloader() -> GrainDataLoader.Config:
++    """Packed C4 text through the plain text loader (local flavor helper, not for upstream)."""
++    from torchtitan.components.data import ConcatThenSplitPackingConfig
++    from torchtitan.hf_datasets.text_datasets import DATASETS as TEXT_DATASETS
++
++    return GrainDataLoader.Config(
++        dataset=ConcatThenSplitPackingConfig(dataset=TEXT_DATASETS["c4"]), shuffle=False
++    )
++
++
++def kimi_k3_debugmodel_c4(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    config = kimi_k3_debugmodel(seq_len=seq_len)
++    config.dataloader = _kimi_k3_c4_dataloader()
++    return config
++
++
++def kimi_k3_debugmodel_moonep_c4(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    config = kimi_k3_debugmodel_moonep(seq_len=seq_len)
++    config.dataloader = _kimi_k3_c4_dataloader()
++    return config

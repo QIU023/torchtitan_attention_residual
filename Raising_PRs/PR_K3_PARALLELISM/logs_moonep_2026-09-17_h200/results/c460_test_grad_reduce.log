@@ -1,0 +1,474 @@
+W0917 07:32:02.382000 19959 torch/distributed/run.py:982] 
+W0917 07:32:02.382000 19959 torch/distributed/run.py:982] *****************************************
+W0917 07:32:02.382000 19959 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0917 07:32:02.382000 19959 torch/distributed/run.py:982] *****************************************
+FF
+=================================== FAILURES ===================================
+______________________ test_grad_reduce_case[single_tile] ______________________
+
+dist_env = (0, 2)
+case = {'name': 'single_tile', 'epn': 4, 'H': 128, 'Hp': 128, ...}
+
+    @pytest.mark.parametrize("case", CASES, ids=[case["name"] for case in CASES])
+    def test_grad_reduce_case(dist_env, case):
+        rank, R = dist_env
+        if rank == 0:
+            print(f"[test_grad_reduce] Running case={case['name']} with R={R}")
+>       run_case(rank, R, case)
+
+tests/test_grad_reduce.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_grad_reduce.py:404: in run_case
+    launch_grad_reduce(
+moonep/grad_reduce.py:509: in launch_grad_reduce
+    compiled = _get_compiled(E, H, Hp, R, B, int(meta_stride), int(num_sms),
+moonep/grad_reduce.py:424: in _get_compiled
+    return cute.compile(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py:1250: in __call__
+    return self._compile(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py:1400: in _compile
+    return func._dsl_object._func(func, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2680: in _func
+    return self._func_impl(funcBody, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2693: in _func_impl
+    result = self.generate_mlir(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2223: in generate_mlir
+    module, module_hash, result = self.generate_original_ir(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1894: in generate_original_ir
+    module, result = build_ir_module()
+                     ^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1855: in build_ir_module
+    result = funcBody(*ir_args, **ir_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+moonep/grad_reduce.py:142: in __call__
+    rank, barrier_off).launch(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cutlass_dsl/cutlass.py:2171: in launch
+    ret, name = kernel_generator(*self.func_args, **self.func_kwargs, config=config)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:3023: in kernel_wrapper
+    kernel_ret = funcBody(*ir_args, **ir_kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <moonep.grad_reduce.GradReduceKernel object at 0x7dc5647cbef0>
+expert_grad = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7dc558213b90>
+reduce_buf = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7dc5583aaa50>
+tma_g2s_red = <cutlass.cute.atom.CopyAtom object at 0x7dc5583a9dc0>
+tma_red = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7dc5583aac90>
+experts = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7dc5583a9a30>
+meta = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7dc5583a97c0>
+bar = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7dc558213d10>
+rank = Int32(?), barrier_off = Int32(?)
+
+    def kernel(
+        self,
+        expert_grad: cute.Tensor,
+        reduce_buf: cute.Tensor,
+        tma_g2s_red: cute.CopyAtom,
+        tma_red: cute.Tensor,
+        experts: cute.Tensor,
+        meta: cute.Tensor,
+        bar: cute.Tensor,
+        rank: Int32,
+        barrier_off: Int32,
+    ):
+        E = cutlass.const_expr(self.E)
+        H = cutlass.const_expr(self.H)
+        Hp = cutlass.const_expr(self.Hp)
+        R = cutlass.const_expr(self.R)
+        B = cutlass.const_expr(self.B)
+        M_BLOCK = cutlass.const_expr(self.M_BLOCK)
+        N_BLOCK = cutlass.const_expr(self.N_BLOCK)
+        meta_stride = cutlass.const_expr(self.meta_stride)
+        num_ranks = cutlass.const_expr(self.R)
+        TILE_ELEMS = cutlass.const_expr(M_BLOCK * N_BLOCK)
+        MTILES = cutlass.const_expr(H // M_BLOCK)
+        NTILES = cutlass.const_expr(Hp // N_BLOCK)
+        TILES_PER_EXPERT = cutlass.const_expr(MTILES * NTILES)
+        EPN = cutlass.const_expr(E // R)
+    
+        STAGES = cutlass.const_expr(self.STAGES)
+        ACC_THREADS = cutlass.const_expr(self.ACC_THREADS)
+        num_threads = cutlass.const_expr(self.NUM_THREADS)
+        TILE_BYTES = cutlass.const_expr(TILE_ELEMS * 4)
+    
+        tidx, _, _ = cute.arch.thread_idx()
+        bidx, _, _ = cute.arch.block_idx()
+        warp_idx = cute.arch.make_warp_uniform(cute.arch.warp_idx())
+    
+        smem = utils.SmemAllocator()
+        load_mbar = smem.allocate_array(Int64, num_elems=2 * STAGES)
+        stage_smem = smem.allocate_tensor(
+            Float32,
+            cute.make_ordered_layout((M_BLOCK, N_BLOCK, STAGES), order=(1, 0, 2)),
+            byte_alignment=128,
+        )
+        # flat per-stage view of the same smem for the acc warps.
+        stage_flat = cute.make_tensor(
+            stage_smem.iterator,
+            cute.make_ordered_layout((TILE_ELEMS, STAGES), order=(0, 1)),
+        )
+        # prescan: cnt[le] and a per-expert-grouped slot list. cnt[EPN] holds
+        # running prefix; slist[off[le] .. off[le]+cnt[le]) are the matching rb.
+        off = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)
+        # compacted list of active local experts (off[le+1] > off[le]).
+        alist = smem.allocate_tensor(Int32, cute.make_layout((EPN,)), byte_alignment=16)
+        acnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)
+        slist = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)
+        # smem stage of experts[] (pre-biased to local ids) for the prescan.
+        sexp = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)
+        # slist fill cursors; cur[EPN] is a dummy bucket for invalid lanes.
+        cur = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)
+        # this rank's own consumed slots (experts[rank,b] >= 0) for clearing.
+        clist = smem.allocate_tensor(Int32, cute.make_layout((B,)), byte_alignment=16)
+        ccnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)
+    
+        rank_epn = rank * EPN
+    
+        # ---- prescan experts once (parallel): bucket slots per local expert.
+        # A single-thread gmem scan of all R*B entries is bottlenecked by a
+        # serial load latency chain, so it must be cooperative: stage the
+        # table to smem with all threads, count with cta atomics, then have
+        # warp 0 fill slist chunk-by-chunk with match_any so the final order
+        # stays rb-ascending (bitwise-identical to the serial scan).
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):
+            sexp[i] = experts[i] - rank_epn
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):
+            off[i] = Int32(0)
+        if tidx == 0:
+            ccnt[0] = Int32(0)
+        cute.arch.sync_threads()
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):
+            e = sexp[i]
+            if e >= Int32(0) and e < Int32(EPN):
+                cute.arch.atomic_add(off.iterator + (e + Int32(1)), Int32(1),
+                                     scope="cta")
+        # this rank's own consumed slots (experts[rank,b] >= 0), unordered.
+        for b in cutlass.range(tidx, B, self.NUM_THREADS, unroll=1):
+            if sexp[rank * B + b] >= Int32(0) - rank_epn:
+                pos = cute.arch.atomic_add(ccnt.iterator, Int32(1), scope="cta")
+                clist[pos] = Int32(b)
+        cute.arch.sync_threads()
+        # serial prefix + active-expert compaction over EPN (smem-only).
+        if tidx == 0:
+            run = Int32(0)
+            ac = Int32(0)
+            for le in cutlass.range(EPN, unroll=1):
+                c = off[le + 1]
+                if c > Int32(0):
+                    alist[ac] = Int32(le)
+                    ac = ac + Int32(1)
+                run = run + c
+                off[le + 1] = run
+            acnt[0] = ac
+        cute.arch.sync_threads()
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):
+            cur[i] = off[i]
+        cute.arch.sync_threads()
+        if warp_idx == 0:
+            lane = cute.arch.lane_idx()
+            lanes_lt = (Uint32(1) << lane) - Uint32(1)
+            NCHUNK = cutlass.const_expr((R * B + 31) // 32)
+            for c0 in cutlass.range(NCHUNK, unroll=1):
+                rb = c0 * 32 + lane
+                e = Int32(EPN)
+                if rb < Int32(R * B):
+                    ee = sexp[rb]
+                    if ee >= Int32(0) and ee < Int32(EPN):
+                        e = ee
+                peers = match_any_b32(e)
+                cell = cur.iterator + e
+                base = cute.arch.load(cell, Int32)
+                pos = base + Int32(cute.arch.popc(peers & lanes_lt))
+                cute.arch.sync_warp()
+                if (peers & lanes_lt) == Uint32(0):
+                    cute.arch.store(cell, base + Int32(cute.arch.popc(peers)))
+                cute.arch.sync_warp()
+                if e < Int32(EPN):
+                    slist[pos] = Int32(rb)
+        cute.arch.sync_threads()
+    
+        cta_tiler = (M_BLOCK, N_BLOCK)
+        smem_for_tma = cute.group_modes(stage_smem, 0, 2)
+        red_tiles = cute.zipped_divide(tma_red, cta_tiler)
+        tRsR, tRgR = cpasync.tma_partition(
+            tma_g2s_red, 0, cute.make_layout(1), smem_for_tma, red_tiles,
+        )
+        load_pipe = pipeline.PipelineTmaAsync.create(
+            barrier_storage=load_mbar, num_stages=STAGES,
+            producer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 1),
+            consumer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 4),
+            tx_count=TILE_BYTES,
+        )
+        ld_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Producer, STAGES)
+        cd_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Consumer, STAGES)
+        acc_tid = tidx - 32
+        H_PER = cutlass.const_expr(TILE_ELEMS // ACC_THREADS)
+>       acc_reg = cute.make_fragment((H_PER,), Float32)
+                  ^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'cutlass.cute' has no attribute 'make_fragment'. Did you mean: 'make_fragment_like'?
+
+moonep/grad_reduce.py:295: AttributeError
+----------------------------- Captured stdout call -----------------------------
+[test_grad_reduce] Running case=single_tile with R=2
+=========================== short test summary info ============================
+FAILED tests/test_grad_reduce.py::test_grad_reduce_case[single_tile] - Attrib...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 2.53s
+
+=================================== FAILURES ===================================
+______________________ test_grad_reduce_case[single_tile] ______________________
+
+dist_env = (1, 2)
+case = {'name': 'single_tile', 'epn': 4, 'H': 128, 'Hp': 128, ...}
+
+    @pytest.mark.parametrize("case", CASES, ids=[case["name"] for case in CASES])
+    def test_grad_reduce_case(dist_env, case):
+        rank, R = dist_env
+        if rank == 0:
+            print(f"[test_grad_reduce] Running case={case['name']} with R={R}")
+>       run_case(rank, R, case)
+
+tests/test_grad_reduce.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_grad_reduce.py:404: in run_case
+    launch_grad_reduce(
+moonep/grad_reduce.py:509: in launch_grad_reduce
+    compiled = _get_compiled(E, H, Hp, R, B, int(meta_stride), int(num_sms),
+moonep/grad_reduce.py:424: in _get_compiled
+    return cute.compile(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py:1250: in __call__
+    return self._compile(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py:1400: in _compile
+    return func._dsl_object._func(func, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2680: in _func
+    return self._func_impl(funcBody, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2693: in _func_impl
+    result = self.generate_mlir(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2223: in generate_mlir
+    module, module_hash, result = self.generate_original_ir(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1894: in generate_original_ir
+    module, result = build_ir_module()
+                     ^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1855: in build_ir_module
+    result = funcBody(*ir_args, **ir_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+moonep/grad_reduce.py:142: in __call__
+    rank, barrier_off).launch(
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cutlass_dsl/cutlass.py:2171: in launch
+    ret, name = kernel_generator(*self.func_args, **self.func_kwargs, config=config)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:3023: in kernel_wrapper
+    kernel_ret = funcBody(*ir_args, **ir_kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <moonep.grad_reduce.GradReduceKernel object at 0x7a5066186d80>
+expert_grad = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7a4de0136300>
+reduce_buf = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7a4de0136db0>
+tma_g2s_red = <cutlass.cute.atom.CopyAtom object at 0x7a4de0136ea0>
+tma_red = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7a4de0136fc0>
+experts = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7a4de0136ab0>
+meta = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7a4de0136f90>
+bar = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7a4de01370b0>
+rank = Int32(?), barrier_off = Int32(?)
+
+    def kernel(
+        self,
+        expert_grad: cute.Tensor,
+        reduce_buf: cute.Tensor,
+        tma_g2s_red: cute.CopyAtom,
+        tma_red: cute.Tensor,
+        experts: cute.Tensor,
+        meta: cute.Tensor,
+        bar: cute.Tensor,
+        rank: Int32,
+        barrier_off: Int32,
+    ):
+        E = cutlass.const_expr(self.E)
+        H = cutlass.const_expr(self.H)
+        Hp = cutlass.const_expr(self.Hp)
+        R = cutlass.const_expr(self.R)
+        B = cutlass.const_expr(self.B)
+        M_BLOCK = cutlass.const_expr(self.M_BLOCK)
+        N_BLOCK = cutlass.const_expr(self.N_BLOCK)
+        meta_stride = cutlass.const_expr(self.meta_stride)
+        num_ranks = cutlass.const_expr(self.R)
+        TILE_ELEMS = cutlass.const_expr(M_BLOCK * N_BLOCK)
+        MTILES = cutlass.const_expr(H // M_BLOCK)
+        NTILES = cutlass.const_expr(Hp // N_BLOCK)
+        TILES_PER_EXPERT = cutlass.const_expr(MTILES * NTILES)
+        EPN = cutlass.const_expr(E // R)
+    
+        STAGES = cutlass.const_expr(self.STAGES)
+        ACC_THREADS = cutlass.const_expr(self.ACC_THREADS)
+        num_threads = cutlass.const_expr(self.NUM_THREADS)
+        TILE_BYTES = cutlass.const_expr(TILE_ELEMS * 4)
+    
+        tidx, _, _ = cute.arch.thread_idx()
+        bidx, _, _ = cute.arch.block_idx()
+        warp_idx = cute.arch.make_warp_uniform(cute.arch.warp_idx())
+    
+        smem = utils.SmemAllocator()
+        load_mbar = smem.allocate_array(Int64, num_elems=2 * STAGES)
+        stage_smem = smem.allocate_tensor(
+            Float32,
+            cute.make_ordered_layout((M_BLOCK, N_BLOCK, STAGES), order=(1, 0, 2)),
+            byte_alignment=128,
+        )
+        # flat per-stage view of the same smem for the acc warps.
+        stage_flat = cute.make_tensor(
+            stage_smem.iterator,
+            cute.make_ordered_layout((TILE_ELEMS, STAGES), order=(0, 1)),
+        )
+        # prescan: cnt[le] and a per-expert-grouped slot list. cnt[EPN] holds
+        # running prefix; slist[off[le] .. off[le]+cnt[le]) are the matching rb.
+        off = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)
+        # compacted list of active local experts (off[le+1] > off[le]).
+        alist = smem.allocate_tensor(Int32, cute.make_layout((EPN,)), byte_alignment=16)
+        acnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)
+        slist = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)
+        # smem stage of experts[] (pre-biased to local ids) for the prescan.
+        sexp = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)
+        # slist fill cursors; cur[EPN] is a dummy bucket for invalid lanes.
+        cur = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)
+        # this rank's own consumed slots (experts[rank,b] >= 0) for clearing.
+        clist = smem.allocate_tensor(Int32, cute.make_layout((B,)), byte_alignment=16)
+        ccnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)
+    
+        rank_epn = rank * EPN
+    
+        # ---- prescan experts once (parallel): bucket slots per local expert.
+        # A single-thread gmem scan of all R*B entries is bottlenecked by a
+        # serial load latency chain, so it must be cooperative: stage the
+        # table to smem with all threads, count with cta atomics, then have
+        # warp 0 fill slist chunk-by-chunk with match_any so the final order
+        # stays rb-ascending (bitwise-identical to the serial scan).
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):
+            sexp[i] = experts[i] - rank_epn
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):
+            off[i] = Int32(0)
+        if tidx == 0:
+            ccnt[0] = Int32(0)
+        cute.arch.sync_threads()
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):
+            e = sexp[i]
+            if e >= Int32(0) and e < Int32(EPN):
+                cute.arch.atomic_add(off.iterator + (e + Int32(1)), Int32(1),
+                                     scope="cta")
+        # this rank's own consumed slots (experts[rank,b] >= 0), unordered.
+        for b in cutlass.range(tidx, B, self.NUM_THREADS, unroll=1):
+            if sexp[rank * B + b] >= Int32(0) - rank_epn:
+                pos = cute.arch.atomic_add(ccnt.iterator, Int32(1), scope="cta")
+                clist[pos] = Int32(b)
+        cute.arch.sync_threads()
+        # serial prefix + active-expert compaction over EPN (smem-only).
+        if tidx == 0:
+            run = Int32(0)
+            ac = Int32(0)
+            for le in cutlass.range(EPN, unroll=1):
+                c = off[le + 1]
+                if c > Int32(0):
+                    alist[ac] = Int32(le)
+                    ac = ac + Int32(1)
+                run = run + c
+                off[le + 1] = run
+            acnt[0] = ac
+        cute.arch.sync_threads()
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):
+            cur[i] = off[i]
+        cute.arch.sync_threads()
+        if warp_idx == 0:
+            lane = cute.arch.lane_idx()
+            lanes_lt = (Uint32(1) << lane) - Uint32(1)
+            NCHUNK = cutlass.const_expr((R * B + 31) // 32)
+            for c0 in cutlass.range(NCHUNK, unroll=1):
+                rb = c0 * 32 + lane
+                e = Int32(EPN)
+                if rb < Int32(R * B):
+                    ee = sexp[rb]
+                    if ee >= Int32(0) and ee < Int32(EPN):
+                        e = ee
+                peers = match_any_b32(e)
+                cell = cur.iterator + e
+                base = cute.arch.load(cell, Int32)
+                pos = base + Int32(cute.arch.popc(peers & lanes_lt))
+                cute.arch.sync_warp()
+                if (peers & lanes_lt) == Uint32(0):
+                    cute.arch.store(cell, base + Int32(cute.arch.popc(peers)))
+                cute.arch.sync_warp()
+                if e < Int32(EPN):
+                    slist[pos] = Int32(rb)
+        cute.arch.sync_threads()
+    
+        cta_tiler = (M_BLOCK, N_BLOCK)
+        smem_for_tma = cute.group_modes(stage_smem, 0, 2)
+        red_tiles = cute.zipped_divide(tma_red, cta_tiler)
+        tRsR, tRgR = cpasync.tma_partition(
+            tma_g2s_red, 0, cute.make_layout(1), smem_for_tma, red_tiles,
+        )
+        load_pipe = pipeline.PipelineTmaAsync.create(
+            barrier_storage=load_mbar, num_stages=STAGES,
+            producer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 1),
+            consumer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 4),
+            tx_count=TILE_BYTES,
+        )
+        ld_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Producer, STAGES)
+        cd_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Consumer, STAGES)
+        acc_tid = tidx - 32
+        H_PER = cutlass.const_expr(TILE_ELEMS // ACC_THREADS)
+>       acc_reg = cute.make_fragment((H_PER,), Float32)
+                  ^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'cutlass.cute' has no attribute 'make_fragment'. Did you mean: 'make_fragment_like'?
+
+moonep/grad_reduce.py:295: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_grad_reduce.py::test_grad_reduce_case[single_tile] - Attrib...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 2.53s
+W0917 07:32:08.217000 19959 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 20027 closing signal SIGTERM
+E0917 07:32:08.331000 19959 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 20026) of binary: /workspace/venv_k3/bin/python3
+Traceback (most recent call last):
+  File "/workspace/venv_k3/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+pytest FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-17_07:32:08
+  host      : af9eec59c66e
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 20027) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-17_07:32:08
+  host      : af9eec59c66e
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 20026) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

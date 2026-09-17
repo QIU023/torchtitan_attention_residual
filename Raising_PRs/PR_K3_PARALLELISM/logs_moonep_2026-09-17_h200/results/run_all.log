@@ -1,0 +1,39 @@
+== 2026-09-17T06:52:44Z cpu tests
+cpu tests rc=0 11 passed, 1 skipped in 11.72s
+== 2026-09-17T06:52:57Z selftests np2
+moonep 2bd860b Support MXFP4 expert weights in remote prefetch (#29 NP=2 handle=auto
+### test_planning
+18 passed, 1 skipped, 2 warnings in 55.50s
+18 passed, 1 skipped, 2 warnings in 55.52s
+rc=0
+### test_dispatch
+12 passed, 1 warning in 37.25s
+12 passed, 1 warning in 37.27s
+rc=0
+### test_combine
+14 passed, 1 warning in 32.97s
+14 passed, 1 warning in 32.99s
+rc=0
+### test_e2e
+1 passed, 2 warnings in 7.00s
+1 passed, 2 warnings in 7.00s
+rc=0
+### test_grad_reduce
+12 passed, 12 warnings in 7.89s
+12 passed, 12 warnings in 7.92s
+rc=0
+### test_prefetch
+14 passed in 3.94s
+14 passed in 3.95s
+rc=0
+### SELFTESTS_DONE NP=2
+== 2026-09-17T06:55:52Z hot probe np2
+HOT_PROBE E32K4 rank 0/2 routing=hot slots=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=0 out_maxdiff=0.0043 (ref max 0.622) gradx_maxdiff=0.0171 w1=0.0727 w2=0.0204 w3=0.0806
+HOT_PROBE E32K4 rank 1/2 routing=hot slots=[1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=1024 out_maxdiff=0.0043 (ref max 0.567) gradx_maxdiff=0.0143 w1=0.0000 w2=0.0000 w3=0.0000
+HOT_PROBE_RESULT routing=hot slot_populated_somewhere=True numerics_ok_all_ranks=True
+HOT_PROBE E32K4 rank 0/2 routing=uniform slots=[23, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=128 out_maxdiff=0.0022 (ref max 0.396) gradx_maxdiff=0.0078 w1=0.0242 w2=0.0064 w3=0.0213
+HOT_PROBE E32K4 rank 1/2 routing=uniform slots=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=0 out_maxdiff=0.0025 (ref max 0.433) gradx_maxdiff=0.0076 w1=0.0276 w2=0.0056 w3=0.0248
+HOT_PROBE_RESULT routing=uniform slot_populated_somewhere=True numerics_ok_all_ranks=True
+rc=0
+== 2026-09-17T06:56:08Z matrix
+dp2_std                seed-ok            rc=1   s1=          s3=          s10=         

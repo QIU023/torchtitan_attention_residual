@@ -1,0 +1,820 @@
+W0917 08:56:21.749000 44559 torch/distributed/run.py:982] 
+W0917 08:56:21.749000 44559 torch/distributed/run.py:982] *****************************************
+W0917 08:56:21.749000 44559 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0917 08:56:21.749000 44559 torch/distributed/run.py:982] *****************************************
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-17 08:56:27,808 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-17 08:56:27,979 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-17 08:56:28,033 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-17 08:56:28,064 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-17 08:56:28,067 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/rowprobe/structured_logs/training.global_rank_0.20260917-085628-ONG6DY.jsonl
+[titan] 2026-09-17 08:56:28,212 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-17 08:56:28,285 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-17 08:56:28,298 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-17 08:56:28,301 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/rowprobe/structured_logs/training.global_rank_1.20260917-085628-566URT.jsonl
+[titan] 2026-09-17 08:56:28,527 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-17 08:56:28,876 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=2, cp=1, tp=1, ep=2
+[titan] 2026-09-17 08:56:28,876 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=2, cp=1, tp=1, ep=2
+[titan] 2026-09-17 08:56:29,046 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'ep', 'dp', 'dp_shard']
+[titan] 2026-09-17 08:56:29,046 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-17 08:56:29,046 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-17 08:56:29,047 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['batch', 'loss', 'ep', 'dp', 'dp_shard']
+[titan] 2026-09-17 08:56:29,047 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-17 08:56:29,047 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-17 08:56:29,069 - torchtitan.trainer - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-17 08:56:29,070 - torchtitan.trainer - INFO - Building kimi_k3 debugmodel
+[titan] 2026-09-17 08:56:29,248 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H200 with 139.80GiB memory
+[titan] 2026-09-17 08:56:29,249 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-17 08:56:29,251 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H200 with 139.80GiB memory
+[titan] 2026-09-17 08:56:29,252 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-17 08:56:29,254 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-17 08:56:29,254 - torchtitan.trainer - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-17 08:56:29,257 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-17 08:56:29,257 - torchtitan.trainer - INFO - [34mModel kimi_k3 debugmodel [31msize: 1,119,984,672 total parameters[39m
+[titan] 2026-09-17 08:56:29,612 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:29,612 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:29,613 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:29,976 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:29,976 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:29,976 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,121 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:30,121 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,121 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,317 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,317 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:30,317 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,460 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:30,460 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,460 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,802 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:30,802 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:30,802 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,267 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:31,267 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,267 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,511 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,511 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:31,511 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,778 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:31,778 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,778 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,920 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:31,920 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:31,920 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,091 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,091 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:32,091 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,235 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,235 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:32,235 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,509 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,509 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:32,509 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,664 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:32,664 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:32,664 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,020 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:33,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,163 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:33,163 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,163 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,306 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:33,306 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,306 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,448 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,448 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:33,448 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,591 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:33,591 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,591 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,734 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:33,734 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,734 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,877 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:33,877 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:33,877 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:34,020 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:34,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:34,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:34,164 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=2, S=256, H=512, E=32, K=4, NvS=5088, NvS_padded=6144
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 6.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 12.41 KiB
+  total_size             : 8.01 MiB
+[titan] 2026-09-17 08:56:34,164 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:34,164 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 2
+[titan] 2026-09-17 08:56:34,226 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-17 08:56:34,227 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-17 08:56:34,239 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-17 08:56:34,240 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-17 08:56:34,589 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-17 08:56:34,615 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:W0917 08:56:34.935000 44629 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank0]:W0917 08:56:34.935000 44628 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[titan] 2026-09-17 08:56:35,530 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-17 08:56:35,530 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-17 08:56:35,530 - torchtitan.trainer - INFO - CUDA memory usage for model: 3.56GiB(2.55%)
+[titan] 2026-09-17 08:56:35,531 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-17 08:56:35,531 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-17 08:56:35,531 - torchtitan.trainer - INFO - CUDA memory usage for model: 3.56GiB(2.55%)
+[titan] 2026-09-17 08:56:35,534 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-17 08:56:35,535 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-17 08:56:35,538 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[titan] 2026-09-17 08:56:35,538 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[titan] 2026-09-17 08:56:35,538 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-17 08:56:35,539 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[titan] 2026-09-17 08:56:35,539 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[titan] 2026-09-17 08:56:35,539 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-17 08:56:35,562 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-17 08:56:35,562 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-17 08:56:35,562 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 16, maximum context length 2048, total steps 1 (warmup 2)
+[titan] 2026-09-17 08:56:35,562 - torchtitan.trainer - INFO - Training starts at step 1
+[titan] 2026-09-17 08:56:35,569 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-17 08:56:35,569 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-17 08:56:35,570 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 16, maximum context length 2048, total steps 1 (warmup 2)
+[titan] 2026-09-17 08:56:35,570 - torchtitan.trainer - INFO - Training starts at step 1
+[moonep-probe rank 1 dispatch 1] E=32 B=16 local=16 home rows [16,32) tokens=2304 of S*K=1024
+[moonep-probe rank 1 dispatch 1] own home rows used 16/16, slots filled by plan 0/16 [], slot rows with tokens []
+[moonep-probe rank 1 dispatch 1] experts_to_copy[1]=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+[moonep-probe rank 1 dispatch 1] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)
+[moonep-probe rank 0 dispatch 1] E=32 B=16 local=16 home rows [0,16) tokens=2432 of S*K=1024
+[moonep-probe rank 0 dispatch 1] own home rows used 16/16, slots filled by plan 1/16 [0], slot rows with tokens [0]
+[moonep-probe rank 0 dispatch 1] experts_to_copy[0]=[17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+[moonep-probe rank 0 dispatch 1] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[moonep-probe rank 0 dispatch 2] E=32 B=16 local=16 home rows [0,16) tokens=2304 of S*K=1024
+[moonep-probe rank 0 dispatch 2] own home rows used 16/16, slots filled by plan 1/16 [0], slot rows with tokens [0]
+[moonep-probe rank 0 dispatch 2] experts_to_copy[0]=[20, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+[moonep-probe rank 0 dispatch 2] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)
+[moonep-probe rank 1 dispatch 2] E=32 B=16 local=16 home rows [16,32) tokens=2432 of S*K=1024
+[moonep-probe rank 1 dispatch 2] own home rows used 16/16, slots filled by plan 0/16 [], slot rows with tokens []
+[moonep-probe rank 1 dispatch 2] experts_to_copy[1]=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+[moonep-probe rank 1 dispatch 2] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)
+[moonep-probe rank 1 dispatch 3] E=32 B=16 local=16 home rows [16,32) tokens=2176 of S*K=1024[moonep-probe rank 0 dispatch 3] E=32 B=16 local=16 home rows [0,16) tokens=2560 of S*K=1024
+
+[moonep-probe rank 1 dispatch 3] own home rows used 15/16, slots filled by plan 0/16 [], slot rows with tokens [][moonep-probe rank 0 dispatch 3] own home rows used 16/16, slots filled by plan 2/16 [0, 1], slot rows with tokens [0, 1]
+
+[moonep-probe rank 1 dispatch 3] experts_to_copy[1]=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1][moonep-probe rank 0 dispatch 3] experts_to_copy[0]=[20, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+
+[moonep-probe rank 1 dispatch 3] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)[moonep-probe rank 0 dispatch 3] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)
+
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[moonep-probe rank 1 dispatch 4] E=32 B=16 local=16 home rows [16,32) tokens=2176 of S*K=1024
+[moonep-probe rank 1 dispatch 4] own home rows used 15/16, slots filled by plan 0/16 [], slot rows with tokens []
+[moonep-probe rank 1 dispatch 4] experts_to_copy[1]=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+[moonep-probe rank 1 dispatch 4] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)
+[moonep-probe rank 0 dispatch 4] E=32 B=16 local=16 home rows [0,16) tokens=2560 of S*K=1024
+[moonep-probe rank 0 dispatch 4] own home rows used 16/16, slots filled by plan 2/16 [0, 1], slot rows with tokens [0, 1]
+[moonep-probe rank 0 dispatch 4] experts_to_copy[0]=[31, 19, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+[moonep-probe rank 0 dispatch 4] OK only own 16 home rows and planned slots receive tokens: 32 of 48 rows are useful (1.5x table)
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/workspace/kit/h200/moonep_row_occupancy_probe.py", line 98, in <module>
+[rank1]:     runpy.run_module("torchtitan.train", run_name="__main__")
+[rank1]:   File "<frozen runpy>", line 229, in run_module
+[rank1]:   File "<frozen runpy>", line 88, in _run_code
+[rank1]:   File "/workspace/tt_moonep/torchtitan/train.py", line 76, in <module>
+[rank1]:     main()
+[rank1]:   File "/workspace/tt_moonep/torchtitan/train.py", line 62, in main
+[rank1]:     trainer.train()
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank1]:     result = f(*args, **kwargs)
+[rank1]:              ^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 1091, in train
+[rank1]:     self.train_step(data_iterator)
+[rank1]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 961, in train_step
+[rank1]:     loss = fwd_bwd()
+[rank1]:            ^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 935, in fwd_bwd
+[rank1]:     return self.forward_backward_step(
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank1]:     return func(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 815, in forward_backward_step
+[rank1]:     return self.fwd_bwd_fn(inputs, labels, global_valid_tokens, extra_kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 839, in _forward_backward_body
+[rank1]:     loss.backward()
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+[rank1]:     torch.autograd.backward(
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+[rank1]:     _engine_run_backward(
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/graph.py", line 1095, in _engine_run_backward
+[rank1]:     return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1369, in unpack_hook
+[rank1]:     _run_fn_with_dynamo_disabled(frame.recompute_fn, *args)
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+[rank1]:     return disable_fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+[rank1]:     return fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1336, in _run_fn_with_dynamo_disabled
+[rank1]:     return fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1985, in recompute_fn
+[rank1]:     fn(*args, **kwargs)
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank1]:     outputs = fn(*args, **kwargs)
+[rank1]:               ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/model.py", line 282, in forward
+[rank1]:     h_TD = self.moe(h_TD, padding_mask_T=padding_mask)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank1]:     outputs = fn(*args, **kwargs)
+[rank1]:               ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moe.py", line 92, in forward
+[rank1]:     routed_TD = self.routed_experts(
+[rank1]:                 ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank1]:     outputs = fn(*args, **kwargs)
+[rank1]:               ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/spmd_types/runtime.py", line 1193, in wrapper
+[rank1]:     return fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/common/moe.py", line 163, in forward
+[rank1]:     routed_output_RD = self.inner_experts(
+[rank1]:                        ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank1]:     outputs = fn(*args, **kwargs)
+[rank1]:               ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 192, in forward
+[rank1]:     out_RD = _MoonEPExpertFunction.apply(
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 57, in forward
+[rank1]:     out_RD = experts._compute(x_RD, experts._tables, offsets)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 175, in _compute
+[rank1]:     h_RF = self.activation_fn(gate_RF, up_RF)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/common/activation.py", line 153, in __call__
+[rank1]:     return (gate * up).to(input_dtype)
+[rank1]:             ~~~~~^~~~
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+[rank1]:     return disable_fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+[rank1]:     return fn(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1696, in __torch_dispatch__
+[rank1]:     return func(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+[rank1]:     return self._op(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: RuntimeError: The size of tensor a (48) must match the size of tensor b (16) at non-singleton dimension 0
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/workspace/kit/h200/moonep_row_occupancy_probe.py", line 98, in <module>
+[rank0]:     runpy.run_module("torchtitan.train", run_name="__main__")
+[rank0]:   File "<frozen runpy>", line 229, in run_module
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/workspace/tt_moonep/torchtitan/train.py", line 76, in <module>
+[rank0]:     main()
+[rank0]:   File "/workspace/tt_moonep/torchtitan/train.py", line 62, in main
+[rank0]:     trainer.train()
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank0]:     result = f(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 1091, in train
+[rank0]:     self.train_step(data_iterator)
+[rank0]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 961, in train_step
+[rank0]:     loss = fwd_bwd()
+[rank0]:            ^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 935, in fwd_bwd
+[rank0]:     return self.forward_backward_step(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 815, in forward_backward_step
+[rank0]:     return self.fwd_bwd_fn(inputs, labels, global_valid_tokens, extra_kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/trainer.py", line 839, in _forward_backward_body
+[rank0]:     loss.backward()
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+[rank0]:     torch.autograd.backward(
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+[rank0]:     _engine_run_backward(
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/graph.py", line 1095, in _engine_run_backward
+[rank0]:     return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1369, in unpack_hook
+[rank0]:     _run_fn_with_dynamo_disabled(frame.recompute_fn, *args)
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+[rank0]:     return disable_fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1336, in _run_fn_with_dynamo_disabled
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1985, in recompute_fn
+[rank0]:     fn(*args, **kwargs)
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/model.py", line 282, in forward
+[rank0]:     h_TD = self.moe(h_TD, padding_mask_T=padding_mask)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moe.py", line 92, in forward
+[rank0]:     routed_TD = self.routed_experts(
+[rank0]:                 ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/spmd_types/runtime.py", line 1193, in wrapper
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/common/moe.py", line 163, in forward
+[rank0]:     routed_output_RD = self.inner_experts(
+[rank0]:                        ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 192, in forward
+[rank0]:     out_RD = _MoonEPExpertFunction.apply(
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 57, in forward
+[rank0]:     out_RD = experts._compute(x_RD, experts._tables, offsets)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 175, in _compute
+[rank0]:     h_RF = self.activation_fn(gate_RF, up_RF)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/common/activation.py", line 153, in __call__
+[rank0]:     return (gate * up).to(input_dtype)
+[rank0]:             ~~~~~^~~~
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+[rank0]:     return disable_fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1696, in __torch_dispatch__
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+[rank0]:     return self._op(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: RuntimeError: The size of tensor a (48) must match the size of tensor b (16) at non-singleton dimension 0
+W0917 08:57:16.356000 44559 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 44628 closing signal SIGTERM
+E0917 08:57:17.122000 44559 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 1 (pid: 44629) of binary: /workspace/venv_k3/bin/python3
+E0917 08:57:17.123000 44559 torch/distributed/elastic/multiprocessing/errors/error_handler.py:194] no error file defined for parent, to copy child error file (/tmp/torchelastic_d1_1mzxm/none_gntgs5u9/attempt_0/1/error.json)
+Traceback (most recent call last):
+  File "/workspace/venv_k3/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/workspace/kit/h200/moonep_row_occupancy_probe.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-17_08:57:14
+  host      : af9eec59c66e
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 44628) 
+  error_file: /tmp/torchelastic_d1_1mzxm/none_gntgs5u9/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 1091, in train
+      self.train_step(data_iterator)
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 961, in train_step
+      loss = fwd_bwd()
+             ^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 935, in fwd_bwd
+      return self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 815, in forward_backward_step
+      return self.fwd_bwd_fn(inputs, labels, global_valid_tokens, extra_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 839, in _forward_backward_body
+      loss.backward()
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+      torch.autograd.backward(
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+      _engine_run_backward(
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/graph.py", line 1095, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1369, in unpack_hook
+      _run_fn_with_dynamo_disabled(frame.recompute_fn, *args)
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+      return disable_fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1336, in _run_fn_with_dynamo_disabled
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1985, in recompute_fn
+      fn(*args, **kwargs)
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/model.py", line 282, in forward
+      h_TD = self.moe(h_TD, padding_mask_T=padding_mask)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moe.py", line 92, in forward
+      routed_TD = self.routed_experts(
+                  ^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/spmd_types/runtime.py", line 1193, in wrapper
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/common/moe.py", line 163, in forward
+      routed_output_RD = self.inner_experts(
+                         ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 192, in forward
+      out_RD = _MoonEPExpertFunction.apply(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 57, in forward
+      out_RD = experts._compute(x_RD, experts._tables, offsets)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 175, in _compute
+      h_RF = self.activation_fn(gate_RF, up_RF)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/common/activation.py", line 153, in __call__
+      return (gate * up).to(input_dtype)
+              ~~~~~^~~~
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+      return disable_fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1696, in __torch_dispatch__
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+      return self._op(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  RuntimeError: The size of tensor a (48) must match the size of tensor b (16) at non-singleton dimension 0
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-17_08:57:14
+  host      : af9eec59c66e
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 44629) 
+  error_file: /tmp/torchelastic_d1_1mzxm/none_gntgs5u9/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 1091, in train
+      self.train_step(data_iterator)
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 961, in train_step
+      loss = fwd_bwd()
+             ^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 935, in fwd_bwd
+      return self.forward_backward_step(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 815, in forward_backward_step
+      return self.fwd_bwd_fn(inputs, labels, global_valid_tokens, extra_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/trainer.py", line 839, in _forward_backward_body
+      loss.backward()
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+      torch.autograd.backward(
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+      _engine_run_backward(
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/autograd/graph.py", line 1095, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1369, in unpack_hook
+      _run_fn_with_dynamo_disabled(frame.recompute_fn, *args)
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+      return disable_fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1336, in _run_fn_with_dynamo_disabled
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1985, in recompute_fn
+      fn(*args, **kwargs)
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/model.py", line 282, in forward
+      h_TD = self.moe(h_TD, padding_mask_T=padding_mask)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moe.py", line 92, in forward
+      routed_TD = self.routed_experts(
+                  ^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/spmd_types/runtime.py", line 1193, in wrapper
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/common/moe.py", line 163, in forward
+      routed_output_RD = self.inner_experts(
+                         ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/protocols/module.py", line 290, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 192, in forward
+      out_RD = _MoonEPExpertFunction.apply(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 57, in forward
+      out_RD = experts._compute(x_RD, experts._tables, offsets)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_experts.py", line 175, in _compute
+      h_RF = self.activation_fn(gate_RF, up_RF)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_moonep/torchtitan/models/common/activation.py", line 153, in __call__
+      return (gate * up).to(input_dtype)
+              ~~~~~^~~~
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+      return disable_fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1696, in __torch_dispatch__
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/venv_k3/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+      return self._op(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  RuntimeError: The size of tensor a (48) must match the size of tensor b (16) at non-singleton dimension 0
+  
+============================================================

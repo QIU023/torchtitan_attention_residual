@@ -1,0 +1,281 @@
+== 2026-09-17T06:52:44Z cpu tests
+cpu tests rc=0 11 passed, 1 skipped in 11.72s
+== 2026-09-17T06:52:57Z selftests np2
+moonep 2bd860b Support MXFP4 expert weights in remote prefetch (#29 NP=2 handle=auto
+### test_planning
+18 passed, 1 skipped, 2 warnings in 55.50s
+18 passed, 1 skipped, 2 warnings in 55.52s
+rc=0
+### test_dispatch
+12 passed, 1 warning in 37.25s
+12 passed, 1 warning in 37.27s
+rc=0
+### test_combine
+14 passed, 1 warning in 32.97s
+14 passed, 1 warning in 32.99s
+rc=0
+### test_e2e
+1 passed, 2 warnings in 7.00s
+1 passed, 2 warnings in 7.00s
+rc=0
+### test_grad_reduce
+12 passed, 12 warnings in 7.89s
+12 passed, 12 warnings in 7.92s
+rc=0
+### test_prefetch
+14 passed in 3.94s
+14 passed in 3.95s
+rc=0
+### SELFTESTS_DONE NP=2
+== 2026-09-17T06:55:52Z hot probe np2
+HOT_PROBE E32K4 rank 0/2 routing=hot slots=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=0 out_maxdiff=0.0043 (ref max 0.622) gradx_maxdiff=0.0171 w1=0.0727 w2=0.0204 w3=0.0806
+HOT_PROBE E32K4 rank 1/2 routing=hot slots=[1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=1024 out_maxdiff=0.0043 (ref max 0.567) gradx_maxdiff=0.0143 w1=0.0000 w2=0.0000 w3=0.0000
+HOT_PROBE_RESULT routing=hot slot_populated_somewhere=True numerics_ok_all_ranks=True
+HOT_PROBE E32K4 rank 0/2 routing=uniform slots=[23, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=128 out_maxdiff=0.0022 (ref max 0.396) gradx_maxdiff=0.0078 w1=0.0242 w2=0.0064 w3=0.0213
+HOT_PROBE E32K4 rank 1/2 routing=uniform slots=[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=0 out_maxdiff=0.0025 (ref max 0.433) gradx_maxdiff=0.0076 w1=0.0276 w2=0.0056 w3=0.0248
+HOT_PROBE_RESULT routing=uniform slot_populated_somewhere=True numerics_ok_all_ranks=True
+rc=0
+== 2026-09-17T06:56:08Z matrix
+dp2_std                seed-ok            rc=1   s1=          s3=          s10=         
+== 2026-09-17T06:59:16Z matrix dp2
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp2_std                seed-ok            rc=1   s1=          s3=          s10=         
+dp2_moonep_ep1         seed-ok            rc=1   s1=          s3=          s10=         
+dp2ep2_std             seed-ok            rc=1   s1=          s3=          s10=         
+dp2ep2_moonep          seed-ok            rc=1   s1=          s3=          s10=         
+DONE /workspace/mx3_moonep_dp2_0917_065916
+== 2026-09-17T07:03:51Z matrix dp2floor
+== 2026-09-17T07:06:04Z matrix dp2
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp2_std                seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+dp2_moonep_ep1         seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+dp2ep2_std             seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+dp2ep2_moonep          seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+DONE /workspace/mx3_moonep_dp2_0917_070604
+== 2026-09-17T07:11:57Z matrix dp2floor
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp2ep2_std_fresh       seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+DONE /workspace/mx3_moonep_dp2floor_0917_071157
+== 2026-09-17T07:14:46Z grad probe np2
+### PROBE kimi_k3_debugmodel NP=2
+rc=1
+ModuleNotFoundError: No module named 'torchtitan.tools.logging'
+### PROBE kimi_k3_debugmodel_moonep NP=2
+rc=1
+ModuleNotFoundError: No module named 'torchtitan.tools.logging'
+### PROBE_DONE NP=2
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_kimi_k3_debugmodel_np2.json'
+== 2026-09-17T07:14:59Z matrix dp4
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp4_std                seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+dp4ep4_std             seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+dp4ep4_moonep          seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+DONE /workspace/mx3_moonep_dp4_0917_071459
+== 2026-09-17T07:20:17Z matrix dp4floor
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp4ep4_std_fresh       seed-ok            rc=1   s1=/                  s3=/                  s10=/                  s10=/                 
+DONE /workspace/mx3_moonep_dp4floor_0917_072017
+== 2026-09-17T07:23:11Z selftests np4
+moonep 2bd860b Support MXFP4 expert weights in remote prefetch (#29 NP=4 handle=auto
+### test_planning
+18 passed, 1 skipped in 76.02s (0:01:16)
+18 passed, 1 skipped in 76.04s (0:01:16)
+rc=0
+### test_dispatch
+12 passed, 1 warning in 43.91s
+12 passed, 1 warning in 44.00s
+rc=0
+### test_combine
+14 passed, 1 warning in 35.43s
+14 passed, 1 warning in 35.42s
+rc=0
+### test_e2e
+1 passed, 2 warnings in 7.89s
+1 passed, 2 warnings in 8.88s
+rc=0
+### test_grad_reduce
+12 passed, 12 warnings in 9.95s
+12 passed, 12 warnings in 10.44s
+rc=0
+### test_prefetch
+14 passed in 5.44s
+14 passed in 5.44s
+rc=0
+### SELFTESTS_DONE NP=4
+== 2026-09-17T07:26:42Z hot probe np4
+HOT_PROBE E32K4 rank 3/4 routing=hot slots=[2, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=1024 out_maxdiff=0.0042 (ref max 0.606) gradx_maxdiff=0.0121 w1=0.0000 w2=0.0000 w3=0.0000
+HOT_PROBE E32K4 rank 1/4 routing=hot slots=[0, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=1024 out_maxdiff=0.0043 (ref max 0.567) gradx_maxdiff=0.0107 w1=0.0000 w2=0.0000 w3=0.0000
+HOT_PROBE E32K4 rank 0/4 routing=hot slots=[-1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=0 out_maxdiff=0.0032 (ref max 0.622) gradx_maxdiff=0.0096 w1=0.1085 w2=0.0232 w3=0.1271
+HOT_PROBE E32K4 rank 2/4 routing=hot slots=[1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=1024 out_maxdiff=0.0039 (ref max 0.698) gradx_maxdiff=0.0098 w1=0.0000 w2=0.0000 w3=0.0000
+HOT_PROBE_RESULT routing=hot slot_populated_somewhere=True numerics_ok_all_ranks=True
+HOT_PROBE E32K4 rank 3/4 routing=uniform slots=[23, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=128 out_maxdiff=0.0023 (ref max 0.432) gradx_maxdiff=0.0080 w1=0.0392 w2=0.0091 w3=0.0312
+HOT_PROBE E32K4 rank 0/4 routing=uniform slots=[25, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=128 out_maxdiff=0.0020 (ref max 0.396) gradx_maxdiff=0.0074 w1=0.0253 w2=0.0082 w3=0.0269HOT_PROBE E32K4 rank 1/4 routing=uniform slots=[21, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=128 out_maxdiff=0.0025 (ref max 0.433) gradx_maxdiff=0.0076 w1=0.0278 w2=0.0081 w3=0.0272
+HOT_PROBE E32K4 rank 2/4 routing=uniform slots=[-1, -1, -1, -1, -1, -1, -1, -1] rows_in_slots=0 out_maxdiff=0.0023 (ref max 0.399) gradx_maxdiff=0.0065 w1=0.0415 w2=0.0094 w3=0.0362
+HOT_PROBE_RESULT routing=uniform slot_populated_somewhere=True numerics_ok_all_ranks=True
+rc=0
+== 2026-09-17T07:26:58Z grad probe np4
+### PROBE kimi_k3_debugmodel NP=4
+rc=1
+ModuleNotFoundError: No module named 'torchtitan.tools.logging'
+### PROBE kimi_k3_debugmodel_moonep NP=4
+rc=1
+ModuleNotFoundError: No module named 'torchtitan.tools.logging'
+### PROBE_DONE NP=4
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_kimi_k3_debugmodel_np4.json'
+== 2026-09-17T07:27:12Z ALL_DONE
+== 2026-09-17T07:27:34Z matrix c4dp2
+== 2026-09-17T07:36:37Z RESTART on rebased head 9e71d1073, cutlass-dsl 4.6.0
+== 2026-09-17T07:36:37Z matrix dp2
+== 2026-09-17T07:36:37Z matrix c4dp2
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=1
+seed files=0
+dp2_std                ABORT              SEED-COPY-FAIL(warm)
+dp2_moonep_ep1         ABORT              SEED-COPY-FAIL(warm)
+dp2ep2_std             ABORT              SEED-COPY-FAIL(warm)
+dp2ep2_moonep          ABORT              SEED-COPY-FAIL(warm)
+DONE /workspace/mx3_moonep_dp2_0917_073637
+== 2026-09-17T07:36:44Z matrix dp2floor
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel_c4 batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=1
+seed files=0
+dp2_std_c4             ABORT              SEED-COPY-FAIL(warm)
+dp2ep2_std_c4          ABORT              SEED-COPY-FAIL(warm)
+dp2ep2_moonep_c4       ABORT              SEED-COPY-FAIL(warm)
+DONE /workspace/mx3_moonep_c4dp2_0917_073637
+== 2026-09-17T07:36:44Z matrix c4dp2floor
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel_c4 batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=1
+seed files=0
+dp2ep2_std_c4_fresh    ABORT              SEED-COPY-FAIL(warm)
+DONE /workspace/mx3_moonep_c4dp2floor_0917_073644
+== 2026-09-17T07:36:50Z matrix c4dp4
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=1
+seed files=0
+dp2ep2_std_fresh       ABORT              SEED-COPY-FAIL(warm)
+DONE /workspace/mx3_moonep_dp2floor_0917_073644
+== 2026-09-17T07:36:50Z grad probe np2
+cp: cannot stat '/workspace/mx3_moonep_dp2_0917_073637/seed/checkpoint': No such file or directory
+### PROBE kimi_k3_debugmodel NP=2
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel_c4 batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=1
+seed files=0
+dp4_std_c4             ABORT              SEED-COPY-FAIL(warm)
+dp4ep4_std_c4          ABORT              SEED-COPY-FAIL(warm)
+dp4ep4_moonep_c4       ABORT              SEED-COPY-FAIL(warm)
+DONE /workspace/mx3_moonep_c4dp4_0917_073650
+== 2026-09-17T07:36:56Z matrix c4dp4floor
+Terminated
+rc=143
+    raise ImportError(
+cp: cannot stat '/workspace/mx3_moonep_dp2_0917_073637/seed/checkpoint': No such file or directory
+### PROBE kimi_k3_debugmodel_moonep NP=2
+rc=1
+    raise ImportError(
+### PROBE_DONE NP=2
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_kimi_k3_debugmodel_np2.json'
+== 2026-09-17T07:37:39Z RESTART on rebased head 9e71d1073, cutlass-dsl 4.6.0, renderers 0.1.11
+== 2026-09-17T07:37:39Z matrix dp2
+== 2026-09-17T07:37:39Z matrix c4dp2
+== 2026-09-17T07:41:56Z matrix c4dp2 (GPUs 2,3)
+== 2026-09-17T08:56:20Z FUSED head 3c458bdf1, cutlass-dsl 4.6.0 + moonep_grad_reduce_cutlass46.patch
+== 2026-09-17T08:56:20Z row occupancy probe dp2 x ep2, 1 step
+row probe rc=1 OK=7 VIOLATION=0 
+== 2026-09-17T08:57:17Z hot probe np2
+rc=1
+[rank0]:     raise ValueError(
+[rank0]: ValueError: MoonEPTokenDispatcher.Config needs expert_hidden_dim to derive the prefetch slot count: the slots are cut on the VMM granularity of a reduce-buffer row, which is the expert shape.
+== 2026-09-17T08:57:25Z selftests np2 (4.6.0 + patch)
+moonep 2bd860b Support MXFP4 expert weights in remote prefetch (#29 NP=2 handle=auto
+### test_planning
+18 passed, 1 skipped, 2 warnings in 54.92s
+18 passed, 1 skipped, 2 warnings in 54.91s
+rc=0
+### test_dispatch
+12 passed, 1 warning in 37.21s
+12 passed, 1 warning in 37.26s
+rc=0
+### test_combine
+14 passed, 1 warning in 32.10s
+14 passed, 1 warning in 32.11s
+rc=0
+### test_e2e
+1 passed, 1 warning in 6.97s
+1 passed, 1 warning in 7.00s
+rc=0
+### test_grad_reduce
+12 passed, 6 warnings in 8.57s
+12 passed, 6 warnings in 8.57s
+rc=0
+### test_prefetch
+14 passed in 4.06s
+14 passed in 4.06s
+rc=0
+### SELFTESTS_DONE NP=2
+== 2026-09-17T09:00:18Z matrix dp2
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp2_std                seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63234/9.5000     s10=3.31938/1.8672     s10=3.31938/1.8672    
+dp2_moonep_ep1         seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63234/9.5000     s10=3.31938/1.8672     s10=3.31938/1.8672    
+dp2ep2_std             seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63684/9.1875     s10=3.30242/2.1094     s10=3.30242/2.1094    
+dp2ep2_moonep          seed-ok            rc=0   s1=12.52362/13.6250   s3=7.74856/9.5625     s10=3.25931/1.9766     s10=3.25931/1.9766    
+DONE /workspace/mx3_moonep_dp2_0917_090018
+== 2026-09-17T09:24:47Z matrix dp2floor
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp2ep2_std_fresh       seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63684/9.1875     s10=3.30242/2.1094     s10=3.30242/2.1094    
+DONE /workspace/mx3_moonep_dp2floor_0917_092447
+== 2026-09-17T09:32:58Z grad probe np2
+### PROBE std (kimi_k3_debugmodel) NP=2 cache=gp_cache_np2
+rc=1
+### PROBE moonep (kimi_k3_debugmodel_moonep) NP=2 cache=gp_cache_np2
+rc=1
+### PROBE std_fresh (kimi_k3_debugmodel) NP=2 cache=gp_cache_fresh_np2_093258
+rc=1
+### PROBE_DONE NP=2
+### grad diff std vs moonep (shared cache)
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_std_np2.json'
+### grad diff std vs std_fresh (floor)
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_std_np2.json'
+== 2026-09-17T09:33:58Z matrix dp4
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp4_std                seed-ok            rc=0   s1=12.54318/13.3750   s3=7.74812/11.2500    s10=3.09282/1.7812     s10=3.09282/1.7812    
+dp4ep4_std             seed-ok            rc=0   s1=12.54318/13.3125   s3=7.75488/10.6875    s10=3.10483/1.7266     s10=3.10483/1.7266    
+dp4ep4_moonep          seed-ok            rc=0   s1=12.56253/13.2500   s3=7.56468/11.0000    s10=3.14839/2.8594     s10=3.14839/2.8594    
+DONE /workspace/mx3_moonep_dp4_0917_093358
+== 2026-09-17T09:47:24Z matrix dp4floor

@@ -1,0 +1,103 @@
++ cd /workspace
++ grep -q SETUP_STAGE1_DONE /workspace/setup_env.log
++ sleep 15
++ grep -q SETUP_STAGE1_DONE /workspace/setup_env.log
++ sleep 15
++ grep -q SETUP_STAGE1_DONE /workspace/setup_env.log
++ export PATH=/root/miniconda3/bin:/root/miniconda3/envs/py3.10/bin:/root/miniconda3/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++ PATH=/root/miniconda3/bin:/root/miniconda3/envs/py3.10/bin:/root/miniconda3/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++ source /root/miniconda3/bin/activate k3
+++ _CONDA_ROOT=/root/miniconda3
+++ . /root/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/root/miniconda3/bin/conda
++++ CONDA_EXE=/root/miniconda3/bin/conda
++++ export _CONDA_EXE=/root/miniconda3/bin/conda
++++ _CONDA_EXE=/root/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/root/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/root/miniconda3/bin/python
++++ export _CONDA_ROOT=/root/miniconda3
++++ _CONDA_ROOT=/root/miniconda3
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /root/miniconda3/bin/conda
+++++ dirname /root/miniconda3/bin
++++ PATH=/root/miniconda3/condabin:/root/miniconda3/bin:/root/miniconda3/envs/py3.10/bin:/root/miniconda3/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate k3
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate k3
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate k3
++++ '[' -n '' ']'
++++ /root/miniconda3/bin/conda shell.posix activate k3
+
+EnvironmentNameNotFound: Could not find conda environment: k3
+You can list all discoverable environments with `conda info --envs`.
+
+
+++ ask_conda=
+++ return
++ pip install --no-cache-dir grain==0.2.18 'datasets>=3.6.0,<4.8.0' tensorboard wandb 'tyro>=1.0.5' 'tokenizers>=0.15.0' safetensors einops pillow spmd_types==0.2.5 av 'torch_remat @ git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335' nvidia-cutlass-dsl==4.4.2 ninja pytest
++ echo DEPS_RC=0
+DEPS_RC=0
++ pip install --no-cache-dir --no-deps -e '/workspace/attn_gym[linear]'
++ echo AG_RC=0
+AG_RC=0
++ pip install --no-cache-dir triton
++ tail -1
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ python -c 'import torch, attn_gym, spmd_types, torch_remat, grain, tyro; print(IMPORTS_OK, torch.__version__)'
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import torch, attn_gym, spmd_types, torch_remat, grain, tyro; print(IMPORTS_OK, torch.__version__)
+                                                                        ^^^^^^^^^^
+NameError: name 'IMPORTS_OK' is not defined
++ python /workspace/moonep_multicast_probe.py
+cuda:0 NVIDIA H200 sm90 multicast_attr=1 torch_symm_mem_multicast=True
+cuda:1 NVIDIA H200 sm90 multicast_attr=1 torch_symm_mem_multicast=True
+cuda:2 NVIDIA H200 sm90 multicast_attr=1 torch_symm_mem_multicast=True
+cuda:3 NVIDIA H200 sm90 multicast_attr=1 torch_symm_mem_multicast=True
++ echo PROBE_RC=0
+PROBE_RC=0
++ cd /workspace/moonep
++ git log --oneline -1
+2bd860b Support MXFP4 expert weights in remote prefetch (#29)
++ export CUDA_HOME=/usr/local/cuda-12.6 PATH=/usr/local/cuda-12.6/bin:/root/miniconda3/condabin:/root/miniconda3/bin:/root/miniconda3/envs/py3.10/bin:/root/miniconda3/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TORCH_CUDA_ARCH_LIST=9.0 MAX_JOBS=48
++ CUDA_HOME=/usr/local/cuda-12.6
++ PATH=/usr/local/cuda-12.6/bin:/root/miniconda3/condabin:/root/miniconda3/bin:/root/miniconda3/envs/py3.10/bin:/root/miniconda3/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++ TORCH_CUDA_ARCH_LIST=9.0
++ MAX_JOBS=48
++ pip install --no-build-isolation --no-deps -e .
+
+real	0m5.889s
+user	0m19.885s
+sys	0m2.734s
++ echo MOONEP_BUILD_RC=1
+MOONEP_BUILD_RC=1
++ tail -3 /workspace/moonep_build.log
+
+× Failed to build installable wheels for some pyproject.toml based projects
+╰─> moonep
++ cd /
++ python -c 'import moonep, torch; from moonep import Buffer, MoonEPCommPlan; print(MOONEP_OK, moonep.__file__)'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import moonep, torch; from moonep import Buffer, MoonEPCommPlan; print(MOONEP_OK, moonep.__file__)
+    ^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'moonep'
++ echo MOONEP_IMPORT_RC=1
+MOONEP_IMPORT_RC=1
++ echo SETUP_STAGE2_DONE
+SETUP_STAGE2_DONE

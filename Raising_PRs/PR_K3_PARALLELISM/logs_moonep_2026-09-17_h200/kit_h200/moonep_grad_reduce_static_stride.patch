@@ -1,0 +1,16 @@
+--- moonep/grad_reduce.py.orig	2026-09-17 08:52:15.640227019 +0000
++++ moonep/grad_reduce.py	2026-09-17 08:52:15.663226696 +0000
+@@ -116,11 +116,11 @@
+ 
+         expert_grad = cute.make_tensor(
+             expert_grad_ptr,
+-            cute.make_layout((E * H, Hp), stride=(Hp64, cutlass.Int64(1))),
++            cute.make_layout((E * H, Hp), stride=(Hp, 1)),
+         )
+         reduce_buf = cute.make_tensor(
+             reduce_buf_ptr,
+-            cute.make_layout((R * B * H, Hp), stride=(Hp64, cutlass.Int64(1))),
++            cute.make_layout((R * B * H, Hp), stride=(Hp, 1)),
+         )
+         experts = cute.make_tensor(experts_ptr, cute.make_layout((R * B,)))
+         meta = cute.make_tensor(meta_ptr, cute.make_layout((R * meta_stride,)))

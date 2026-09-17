@@ -10,6 +10,8 @@ import torch.distributed as dist
 from torch import nn
 from torch.distributed.device_mesh import init_device_mesh
 
+from torchtitan.models.common.moe import GroupedExperts
+from torchtitan.models.common.token_dispatcher import AllToAllTokenDispatcher
 from torchtitan.models.kimi_k3.moon_ep_dispatcher import MoonEPTokenDispatcher
 from torchtitan.models.kimi_k3.moon_ep_experts import MoonEPGroupedExperts, MoonEPTableBackendNVLink
 
@@ -44,7 +46,7 @@ def run(rank, R, mesh, params, routing, tag):
     experts.w2_EDF = nn.Parameter(params["w2"][lo:hi].to(dev, torch.bfloat16))
     experts.w3_EFD = nn.Parameter(params["w3"][lo:hi].to(dev, torch.bfloat16))
     dispatcher = MoonEPTokenDispatcher(
-        MoonEPTokenDispatcher.Config(num_experts=E, top_k=K, hidden_dim=D, num_max_tokens_per_rank=S)
+        MoonEPTokenDispatcher.Config(num_experts=E, top_k=K, hidden_dim=D, num_max_tokens_per_rank=S, expert_hidden_dim=F)
     )
     dispatcher.wire_meshes(ep_mesh=mesh)
     experts.attach(dispatcher, MoonEPTableBackendNVLink(mesh, dispatcher), mesh)
@@ -74,9 +76,22 @@ def run(rank, R, mesh, params, routing, tag):
     ref.sum().backward()
     my = slice(rank * S, (rank + 1) * S)
     d_out = (out.float() - ref[my]).abs().max().item()
+    scale = ref[my].abs().max().item()
+    # The standard all-to-all dispatcher and core's experts on the same inputs.
+    try:
+        std = AllToAllTokenDispatcher(AllToAllTokenDispatcher.Config(num_experts=E, top_k=K))
+        std.wire_meshes(ep_mesh=mesh)
+        core = GroupedExperts(GroupedExperts.Config(dim=D, hidden_dim=F, num_experts=E // R, activation_fn=SiTUGLU.Config(beta=BETA, linear_beta=LBETA))).to(dev)
+        core.w1_EFD = nn.Parameter(params["w1"][lo:hi].to(dev, torch.bfloat16)); core.w2_EDF = nn.Parameter(params["w2"][lo:hi].to(dev, torch.bfloat16)); core.w3_EFD = nn.Parameter(params["w3"][lo:hi].to(dev, torch.bfloat16))
+        x_std = x.clone().requires_grad_(True)
+        r_std, n_std, m_std = std.dispatch(x_std, weights, ids, counts)
+        out_std = std.combine(core(r_std, n_std), m_std, x_std)
+        d_std_ref = (out_std.float() - ref[my]).abs().max().item(); d_std_moon = (out_std.float() - out.float()).abs().max().item()
+        print(f"STD_PATH rank {rank}: std_vs_ref={d_std_ref:.4f} moonep_vs_ref={d_out:.4f} std_vs_moonep={d_std_moon:.4f} (ref max {scale:.3f})", flush=True)
+    except Exception as exc:  # noqa: BLE001
+        print(f"STD_PATH rank {rank}: failed: {type(exc).__name__}: {str(exc)[:160]}", flush=True)
     d_gx = (x_in.grad.float() - x_all.grad[my]).abs().max().item()
     d_w = {n: (getattr(experts, a).grad.float() - p[n].grad[lo:hi]).abs().max().item() for n, a in (("w1", "w1_EFD"), ("w2", "w2_EDF"), ("w3", "w3_EFD"))}
-    scale = ref[my].abs().max().item()
     line = (f"HOT_PROBE {tag} rank {rank}/{R} routing={routing} slots={slots} rows_in_slots={rows_in_slots} "
             f"out_maxdiff={d_out:.4f} (ref max {scale:.3f}) gradx_maxdiff={d_gx:.4f} "
             f"w1={d_w['w1']:.4f} w2={d_w['w2']:.4f} w3={d_w['w3']:.4f}")

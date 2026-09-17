@@ -16,16 +16,19 @@ def main():
     trainer = config.build()
     trainer.checkpointer.load(step=config.checkpoint.load_step)
     it = trainer.batch_generator(trainer.dataloader)
-    input_dict, labels = next(it)
+    input_dict = next(it)
     for k, v in list(input_dict.items()):
         if isinstance(v, torch.Tensor):
             input_dict[k] = v.to(trainer.device)
-    labels = labels.to(trainer.device)
-    local_valid = (labels != IGNORE_INDEX).sum().to(trainer.device)
+    labels = input_dict["labels"]
+    if "num_valid_tokens" in input_dict:  # the trainer pops it before the forward
+        local_valid = input_dict.pop("num_valid_tokens").to(trainer.device)
+    else:
+        local_valid = (labels != IGNORE_INDEX).sum().to(trainer.device)
     pd = trainer.parallel_dims
     gvt = dist_utils.dist_sum_tensor(local_valid, pd.get_mesh("batch")) if pd.dp_enabled else local_valid
     trainer.optimizers.zero_grad(set_to_none=True)
-    loss = trainer.forward_backward_step(input_dict=input_dict, labels=labels, global_valid_tokens=gvt)
+    loss = trainer.forward_backward_step(input_dict=input_dict, global_valid_tokens=gvt)
     names, vals = [], []
     for name, p in trainer.model_parts[0].named_parameters():
         g = p.grad

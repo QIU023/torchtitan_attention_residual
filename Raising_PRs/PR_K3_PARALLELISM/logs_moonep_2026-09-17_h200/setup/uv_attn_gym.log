@@ -1,0 +1,63 @@
+Using Python 3.12.13 environment at: venv_k3
+  × Failed to build `attn-gym @ file:///workspace/attn_gym_src`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `hatchling.build.prepare_metadata_for_build_editable` failed
+      (exit status: 1)
+
+      [stderr]
+      Traceback (most recent call last):
+        File "<string>", line 14, in <module>
+        File
+      "/home/.cache/uv/builds-v0/.tmpU8ayas/lib/python3.12/site-packages/hatchling/build.py",
+      line 133, in prepare_metadata_for_build_editable
+          directory = os.path.join(metadata_directory,
+      f"{builder.artifact_project_id}.dist-info")
+      
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/home/.cache/uv/builds-v0/.tmpU8ayas/lib/python3.12/site-packages/hatchling/builders/wheel.py",
+      line 894, in artifact_project_id
+          self.project_id
+        File
+      "/home/.cache/uv/builds-v0/.tmpU8ayas/lib/python3.12/site-packages/hatchling/builders/plugin/interface.py",
+      line 376, in project_id
+          self.__project_id =
+      f"{self.normalize_file_name_component(self.metadata.core.name)}-{self.metadata.version}"
+      
+      ^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/home/.cache/uv/builds-v0/.tmpU8ayas/lib/python3.12/site-packages/hatchling/metadata/core.py",
+      line 150, in version
+          self._version = self._get_version()
+                          ^^^^^^^^^^^^^^^^^^^
+        File
+      "/home/.cache/uv/builds-v0/.tmpU8ayas/lib/python3.12/site-packages/hatchling/metadata/core.py",
+      line 249, in _get_version
+          version = self.hatch.version.cached
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/home/.cache/uv/builds-v0/.tmpU8ayas/lib/python3.12/site-packages/hatchling/metadata/core.py",
+      line 1534, in cached
+          raise type(e)(message) from None
+      LookupError: Error getting the version from source `vcs`: setuptools-scm
+      was unable to detect version for /workspace/attn_gym_src.
+
+      Make sure you're either building from a fully intact git repository
+      or PyPI tarballs. Most other sources (such as GitHub's tarballs, a git
+      checkout without the .git folder) don't contain the necessary metadata
+      and will not work.
+
+      For example, if you're using pip, instead of
+      https://github.com/user/proj/archive/master.zip use
+      git+https://github.com/user/proj.git#egg=proj
+
+      Alternatively, set the version in the environment with
+      SETUPTOOLS_SCM_PRETEND_VERSION or VCS_VERSIONING_PRETEND_VERSION, as
+      described in https://setuptools-scm.readthedocs.io/en/latest/config/
+
+      No distribution name is known here, so the per-distribution
+      SETUPTOOLS_SCM_PRETEND_VERSION_FOR_<DIST> form cannot match; pass a dist
+      name to use it.
+
+      hint: This usually indicates a problem with the package or the build
+      environment.

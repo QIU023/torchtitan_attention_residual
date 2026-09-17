@@ -1,0 +1,78 @@
+== 2026-09-17T08:56:20Z FUSED head 3c458bdf1, cutlass-dsl 4.6.0 + moonep_grad_reduce_cutlass46.patch
+== 2026-09-17T08:56:20Z row occupancy probe dp2 x ep2, 1 step
+row probe rc=1 OK=7 VIOLATION=0 
+== 2026-09-17T08:57:17Z hot probe np2
+rc=1
+[rank0]:     raise ValueError(
+[rank0]: ValueError: MoonEPTokenDispatcher.Config needs expert_hidden_dim to derive the prefetch slot count: the slots are cut on the VMM granularity of a reduce-buffer row, which is the expert shape.
+== 2026-09-17T08:57:25Z selftests np2 (4.6.0 + patch)
+moonep 2bd860b Support MXFP4 expert weights in remote prefetch (#29 NP=2 handle=auto
+### test_planning
+18 passed, 1 skipped, 2 warnings in 54.92s
+18 passed, 1 skipped, 2 warnings in 54.91s
+rc=0
+### test_dispatch
+12 passed, 1 warning in 37.21s
+12 passed, 1 warning in 37.26s
+rc=0
+### test_combine
+14 passed, 1 warning in 32.10s
+14 passed, 1 warning in 32.11s
+rc=0
+### test_e2e
+1 passed, 1 warning in 6.97s
+1 passed, 1 warning in 7.00s
+rc=0
+### test_grad_reduce
+12 passed, 6 warnings in 8.57s
+12 passed, 6 warnings in 8.57s
+rc=0
+### test_prefetch
+14 passed in 4.06s
+14 passed in 4.06s
+rc=0
+### SELFTESTS_DONE NP=2
+== 2026-09-17T09:00:18Z matrix dp2
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp2_std                seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63234/9.5000     s10=3.31938/1.8672     s10=3.31938/1.8672    
+dp2_moonep_ep1         seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63234/9.5000     s10=3.31938/1.8672     s10=3.31938/1.8672    
+dp2ep2_std             seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63684/9.1875     s10=3.30242/2.1094     s10=3.30242/2.1094    
+dp2ep2_moonep          seed-ok            rc=0   s1=12.52362/13.6250   s3=7.74856/9.5625     s10=3.25931/1.9766     s10=3.25931/1.9766    
+DONE /workspace/mx3_moonep_dp2_0917_090018
+== 2026-09-17T09:24:47Z matrix dp2floor
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp2ep2_std_fresh       seed-ok            rc=0   s1=12.52567/13.5000   s3=7.63684/9.1875     s10=3.30242/2.1094     s10=3.30242/2.1094    
+DONE /workspace/mx3_moonep_dp2floor_0917_092447
+== 2026-09-17T09:32:58Z grad probe np2
+### PROBE std (kimi_k3_debugmodel) NP=2 cache=gp_cache_np2
+rc=1
+### PROBE moonep (kimi_k3_debugmodel_moonep) NP=2 cache=gp_cache_np2
+rc=1
+### PROBE std_fresh (kimi_k3_debugmodel) NP=2 cache=gp_cache_fresh_np2_093258
+rc=1
+### PROBE_DONE NP=2
+### grad diff std vs moonep (shared cache)
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_std_np2.json'
+### grad diff std vs std_fresh (floor)
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_std_np2.json'
+== 2026-09-17T09:33:58Z matrix dp4
+tree=/workspace/tt_moonep seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed rc=0
+seed files=2
+dp4_std                seed-ok            rc=0   s1=12.54318/13.3750   s3=7.74812/11.2500    s10=3.09282/1.7812     s10=3.09282/1.7812    
+dp4ep4_std             seed-ok            rc=0   s1=12.54318/13.3125   s3=7.75488/10.6875    s10=3.10483/1.7266     s10=3.10483/1.7266    
+dp4ep4_moonep          seed-ok            rc=0   s1=12.56253/13.2500   s3=7.56468/11.0000    s10=3.14839/2.8594     s10=3.14839/2.8594    
+DONE /workspace/mx3_moonep_dp4_0917_093358
+== 2026-09-17T09:47:24Z matrix dp4floor

@@ -1,0 +1,70 @@
+W0917 08:57:18.790000 44857 torch/distributed/run.py:982] 
+W0917 08:57:18.790000 44857 torch/distributed/run.py:982] *****************************************
+W0917 08:57:18.790000 44857 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0917 08:57:18.790000 44857 torch/distributed/run.py:982] *****************************************
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/workspace/kit/h200/moonep_hot_probe.py", line 110, in <module>
+[rank0]:     main()
+[rank0]:   File "/workspace/kit/h200/moonep_hot_probe.py", line 101, in main
+[rank0]:     d = run(rank, R, mesh, params, routing, f"E{E}K{K}")
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/kit/h200/moonep_hot_probe.py", line 49, in run
+[rank0]:     dispatcher.wire_meshes(ep_mesh=mesh)
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/common/token_dispatcher.py", line 189, in wire_meshes
+[rank0]:     self.init_buffer()
+[rank0]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_dispatcher.py", line 177, in init_buffer
+[rank0]:     raise ValueError(
+[rank0]: ValueError: MoonEPTokenDispatcher.Config needs expert_hidden_dim to derive the prefetch slot count: the slots are cut on the VMM granularity of a reduce-buffer row, which is the expert shape.
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/workspace/kit/h200/moonep_hot_probe.py", line 110, in <module>
+[rank1]:     main()
+[rank1]:   File "/workspace/kit/h200/moonep_hot_probe.py", line 101, in main
+[rank1]:     d = run(rank, R, mesh, params, routing, f"E{E}K{K}")
+[rank1]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/kit/h200/moonep_hot_probe.py", line 49, in run
+[rank1]:     dispatcher.wire_meshes(ep_mesh=mesh)
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/common/token_dispatcher.py", line 189, in wire_meshes
+[rank1]:     self.init_buffer()
+[rank1]:   File "/workspace/tt_moonep/torchtitan/models/kimi_k3/moon_ep_dispatcher.py", line 177, in init_buffer
+[rank1]:     raise ValueError(
+[rank1]: ValueError: MoonEPTokenDispatcher.Config needs expert_hidden_dim to derive the prefetch slot count: the slots are cut on the VMM granularity of a reduce-buffer row, which is the expert shape.
+W0917 08:57:25.263000 44857 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 44925 closing signal SIGTERM
+E0917 08:57:25.528000 44857 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 44924) of binary: /workspace/venv_k3/bin/python3
+Traceback (most recent call last):
+  File "/workspace/venv_k3/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/workspace/kit/h200/moonep_hot_probe.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-17_08:57:25
+  host      : af9eec59c66e
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 44925) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-17_08:57:25
+  host      : af9eec59c66e
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 44924) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

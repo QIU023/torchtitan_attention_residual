@@ -1,0 +1,2110 @@
+W0917 08:49:39.327000 43362 torch/distributed/run.py:982] 
+W0917 08:49:39.327000 43362 torch/distributed/run.py:982] *****************************************
+W0917 08:49:39.327000 43362 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0917 08:49:39.327000 43362 torch/distributed/run.py:982] *****************************************
+FF
+=================================== FAILURES ===================================
+______________________ test_grad_reduce_case[single_tile] ______________________
+
+dist_env = (0, 2)
+case = {'name': 'single_tile', 'epn': 4, 'H': 128, 'Hp': 128, ...}
+
+    @pytest.mark.parametrize("case", CASES, ids=[case["name"] for case in CASES])
+    def test_grad_reduce_case(dist_env, case):
+        rank, R = dist_env
+        if rank == 0:
+            print(f"[test_grad_reduce] Running case={case['name']} with R={R}")
+>       run_case(rank, R, case)
+
+tests/test_grad_reduce.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+rank = 0, R = 2
+case = {'name': 'single_tile', 'epn': 4, 'H': 128, 'Hp': 128, ...}
+
+    def run_case(rank, R, case):
+        dev = "cuda"
+        epn = case["epn"]
+        E = R * epn
+        H = case["H"]
+        Hp = case["Hp"]
+        B = pad_dim0_for_alignment([case["base_B"], H, Hp], torch.float32)
+        num_sms = case["num_sms"]
+        seed = case.get("seed", 0)
+    
+        reduce_full = create_nvl_dist_tensor([B, H, Hp], torch.float32, rank, R)
+        reduce_buffers = reduce_full.view(R, B, H, Hp)
+        plan = PLAN_BUILDERS[case.get("plan", "ring")](R, B, epn, dev, seed)
+        grads_fn, slot_fn = _make_data_fns(
+            case.get("data", "affine"), rank, R, E, B, H, Hp, dev, seed)
+    
+        buffer = Buffer(S=128, H=H, K=1, E=E, num_ep_ranks=R, num_sms=num_sms, B=B)
+        try:
+            # standalone launch_grad_reduce needs the cross-rank barrier handles
+            # built by Buffer; the production path passes them in from inside
+            # Buffer.reduce_grad.
+            ctx = buffer._require_ctx()
+    
+            remote_expert_grads = grads_fn().contiguous()
+            reduce_buffers[rank].copy_(slot_fn(rank))
+            torch.cuda.synchronize()
+            dist.barrier(device_ids=[local_device_index()])
+    
+>           launch_grad_reduce(
+                remote_expert_grads,
+                reduce_buffers,
+                plan,
+                rank=rank,
+                num_sms=num_sms,
+                meta_buf=ctx['meta_buf'],
+                meta_stride=ctx['meta_chunk_padded'],
+                barrier_off=ctx['BARRIER_OFF'],
+                grid_sync_bar=ctx['grid_sync_bar'],
+            )
+
+tests/test_grad_reduce.py:404: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+remote_expert_grads = tensor([[[0.0000e+00, 7.8125e-03, 1.5625e-02,  ..., 9.7656e-01,
+          9.8438e-01, 9.9219e-01],
+         [1.2500e-0...,
+         [1.3488e+02, 1.3488e+02, 1.3489e+02,  ..., 1.3585e+02,
+          1.3586e+02, 1.3587e+02]]], device='cuda:0')
+remote_reduce_buffers = tensor([[[[101.0000, 101.0039, 101.0078,  ..., 101.4883, 101.4922, 101.4961],
+          [101.0312, 101.0352, 101.0391,...97, 547.4336],
+          [546.9688, 546.9727, 546.9766,  ..., 547.4570, 547.4609, 547.4648]]]],
+       device='cuda:0')
+experts_to_copy = tensor([[ 4,  1,  6,  7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+         -1, -1, -1, -1, -1, -1, -1, ..., -1, -1,
+         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]],
+       device='cuda:0', dtype=torch.int32)
+rank = 0, num_sms = 8
+meta_buf = tensor([0, 0, 0,  ..., 0, 0, 0], device='cuda:0', dtype=torch.int32)
+meta_stride = 524288, barrier_off = 1900
+grid_sync_bar = tensor([0], device='cuda:0', dtype=torch.int32)
+
+    def launch_grad_reduce(
+        remote_expert_grads: torch.Tensor,
+        remote_reduce_buffers: torch.Tensor,
+        experts_to_copy: torch.Tensor,
+        rank: int,
+        num_sms: int,
+        meta_buf: torch.Tensor,
+        meta_stride: int,
+        barrier_off: int,
+        grid_sync_bar: torch.Tensor,
+    ) -> None:
+        """Launch remote expert grad reduction.
+    
+        Args:
+            remote_expert_grads: contiguous fp32 tensor shaped [E, H, H'].
+                The current rank owns expert ids
+                ``rank * (E // R) : (rank + 1) * (E // R)``; only that range is
+                updated.
+            remote_reduce_buffers: contiguous fp32 tensor shaped [R, B, H, H'].
+                Slots whose ``experts_to_copy[r, b]`` belongs to this rank's owner
+                range are accumulated into ``remote_expert_grads``; afterwards a
+                cross-rank barrier fences peers and each rank clears its own
+                consumed slots locally.
+            experts_to_copy: contiguous int32 tensor shaped [R, B].
+            rank: current EP rank.
+            num_sms: number of persistent CTAs to launch.
+            meta_buf: int32 NVL-distributed meta buffer holding the barrier slots.
+            meta_stride: per-rank stride (meta_chunk_padded) into ``meta_buf``.
+            barrier_off: offset of the barrier slots within each rank's chunk.
+            grid_sync_bar: int32 [1] grid-barrier counter.
+    
+        The caller must ensure all ranks have finished writing
+        ``remote_reduce_buffers`` before launching this kernel on any rank.
+        """
+        if remote_reduce_buffers.numel() == 0 or experts_to_copy.numel() == 0:
+            return
+    
+        assert remote_expert_grads.dtype == torch.float32 and remote_expert_grads.is_contiguous(), \
+            "remote_expert_grads must be contiguous fp32 [E, H, H']"
+        assert remote_reduce_buffers.dtype == torch.float32 and remote_reduce_buffers.is_contiguous(), \
+            "remote_reduce_buffers must be contiguous fp32 [R, B, H, H']"
+        assert experts_to_copy.dtype == torch.int32 and experts_to_copy.is_contiguous(), \
+            "experts_to_copy must be contiguous int32 [R, B]"
+        assert remote_expert_grads.ndim == 3, \
+            f"remote_expert_grads must have rank 3, got shape={tuple(remote_expert_grads.shape)}"
+        assert remote_reduce_buffers.ndim == 4, \
+            f"remote_reduce_buffers must have rank 4, got shape={tuple(remote_reduce_buffers.shape)}"
+        assert experts_to_copy.ndim == 2, \
+            f"experts_to_copy must have rank 2, got shape={tuple(experts_to_copy.shape)}"
+    
+        E, H, Hp = (int(x) for x in remote_expert_grads.shape)
+        R, B, buf_H, buf_Hp = (int(x) for x in remote_reduce_buffers.shape)
+        assert tuple(experts_to_copy.shape) == (R, B), \
+            f"experts_to_copy shape {tuple(experts_to_copy.shape)} must match [R, B]=[{R}, {B}]"
+        assert buf_H == H and buf_Hp == Hp, (
+            f"remote_reduce_buffers shape {tuple(remote_reduce_buffers.shape)} "
+            f"incompatible with remote_expert_grads {tuple(remote_expert_grads.shape)}"
+        )
+        assert E % R == 0, f"E ({E}) must be divisible by R ({R})"
+        assert 0 <= int(rank) < R, f"rank must be in [0, {R}), got {rank}"
+        assert H % GradReduceKernel.M_BLOCK == 0 and Hp % GradReduceKernel.N_BLOCK == 0, \
+            f"H and H' must be multiples of ({GradReduceKernel.M_BLOCK}, {GradReduceKernel.N_BLOCK}), got ({H}, {Hp})"
+        assert isinstance(num_sms, int) and num_sms > 0, \
+            f"num_sms must be a positive int, got {num_sms}"
+    
+        device_index = remote_expert_grads.device.index
+        assert device_index is not None, "remote_expert_grads must be a CUDA tensor"
+        assert remote_reduce_buffers.device.index == device_index, \
+            "remote_reduce_buffers must be on the same CUDA device as remote_expert_grads"
+        assert experts_to_copy.device.index == device_index, \
+            "experts_to_copy must be on the same CUDA device as remote_expert_grads"
+    
+>       compiled = _get_compiled(E, H, Hp, R, B, int(meta_stride), int(num_sms),
+                                 int(device_index))
+
+moonep/grad_reduce.py:509: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+E = 8, H = 128, Hp = 128, R = 2, B = 32, meta_stride = 524288, num_sms = 8
+device_index = 0
+
+    @functools.lru_cache(maxsize=None)
+    def _get_compiled(
+        E: int,
+        H: int,
+        Hp: int,
+        R: int,
+        B: int,
+        meta_stride: int,
+        num_sms: int,
+        device_index: int,
+    ):
+        smem_budget = _max_smem_per_block_optin(device_index) - 1024
+        kernel = GradReduceKernel(
+            E=E,
+            H=H,
+            Hp=Hp,
+            R=R,
+            B=B,
+            meta_stride=meta_stride,
+            num_sms=num_sms,
+            smem_budget=smem_budget,
+        )
+    
+        f32_ptr = make_ptr(Float32, 0, cute.AddressSpace.gmem, assumed_align=16)
+        i32_ptr = make_ptr(Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+        stream_arg = cuda.CUstream(0)
+    
+>       return cute.compile(
+            kernel,
+            f32_ptr,
+            f32_ptr,
+            i32_ptr,
+            i32_ptr,
+            i32_ptr,
+            Int32(0),
+            Int32(0),
+            stream_arg,
+        )
+
+moonep/grad_reduce.py:424: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.base_dsl.compiler.CompileCallable object at 0x745960878c20>
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwargs = {}
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Compile ``func`` for the signature described by ``args``.
+    
+        :param args: ``func`` followed by representative compile-time
+            arguments. Tensor arguments are typically fake tensors;
+            scalar arguments may be Python literals or SymInt-backed
+            symbolic values.
+        :param kwargs: Optional compile controls such as ``options=...``.
+            See ``references/compiler-options.md`` for option tokens.
+        :return: A compiled callable that accepts real runtime arguments
+            matching the supplied signature.
+        """
+>       return self._compile(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py:1250: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.base_dsl.compiler.CompileCallable object at 0x745960878c20>
+func = <function GradReduceKernel.__call__ at 0x74595820b240>
+args = [<moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...]
+kwargs = {'compile_only': True, 'no_cache': True}
+
+    def _compile(self, func: Any, *args: Any, **kwargs: Any) -> Any:
+        """
+        Compile a ``@cute.jit`` function and return its executable wrapper.
+    
+        ``func`` may be a regular function, bound method, or callable
+        instance, but it must ultimately resolve to a ``@cute.jit``
+        definition. ``args`` describe the runtime signature seen by the
+        compiled wrapper; for tensor arguments, prefer fake tensors over
+        ad-hoc real tensors so shape / stride / SymInt constraints remain
+        explicit and reproducible.
+    
+        ``kwargs`` may contain ``is_experimental: bool`` to assert that
+        the function was decorated through the experimental DSL path
+        (``@cute.jit(is_experimental=True)`` /
+        ``@cute.kernel(is_experimental=True)``). This kwarg is consumed
+        at the call site rather than forwarded into the executor: the
+        actual DSL routing for the compile is already determined by the
+        function's decorator (via ``func._dsl_object``). The kwarg
+        exists as a migration aid away from
+        ``cute.experimental.compile``: when set to True the call
+        validates that the function is indeed routed through an
+        experimental DSL (``BaseDSL._is_experimental_dsl is True``) and
+        raises if not, so that mixing experimental host launchers with
+        non-experimental compile entry points (or vice versa) fails
+        loudly at the call site instead of producing a preprocessor
+        free-vars mismatch deep inside ``_preprocess_and_replace_code``.
+    
+        :param func: The ``@cute.jit`` callable to compile.
+        :param args: Representative compile-time arguments describing the
+            callable's runtime signature.
+        :param kwargs: Optional compile controls. ``options=...`` accepts
+            the same token string as ``CUTE_DSL_COMPILER_OPT``. For the
+            full option catalog, see
+            ``write-kernel/references/compiler-options.md``.
+        :return: A compiled callable.
+        :raises DSLRuntimeError: If ``func`` is not callable or not
+            decorated with ``@cute.jit``.
+        """
+        if func is None:
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_FUNCTION_NOT_PROVIDED)
+    
+        if not callable(func):
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_NOT_CALLABLE)
+    
+        # Pop the migration-aid kwarg before it leaks into the executor
+        # call: the rest of the pipeline does not know about it.
+        is_experimental_requested = kwargs.pop("is_experimental", False)
+        finalize_hook = kwargs.pop("trace_finalize_hooks", None)
+    
+        kwargs["compile_only"] = True
+        kwargs["no_cache"] = True
+    
+        if inspect.isfunction(func):
+            # regular function
+            pass
+        elif inspect.ismethod(func):
+            # if it's a method, add the instance to the first argument
+            args = [func.__self__] + list(args)  # type: ignore[assignment]
+            func = func.__func__
+        elif (
+            inspect.isclass(type(func))
+            and hasattr(func, "__call__")
+            and hasattr(func.__call__, "__func__")
+        ):
+            # If it's a class instance, get the class's __call__ method
+            args = [func] + list(args)  # type: ignore[assignment]
+            # Get the actual function from the class definition
+            func = func.__call__.__func__
+        else:
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_UNSUPPORTED_CALLABLE_TYPE)
+    
+        func_name_prefix = getattr(func, "_name_prefix", None)
+        if func_name_prefix:
+            kwargs["_name_prefix"] = func_name_prefix
+    
+        # If it's a wrapped function created by decorators, get the original function
+        while hasattr(func, "__wrapped__"):
+            func = func.__wrapped__
+    
+        from .dsl import BaseDSL
+    
+        BaseDSL._lazy_initialize_dsl(func)
+    
+        if not hasattr(func, "_dsl_object"):
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_MISSING_JIT_DECORATOR)
+    
+        # Validate the migration-aid ``is_experimental`` kwarg against
+        # the routing already baked into the function by its jit/kernel
+        # decorator. This is *not* a behavior switch: both
+        # ``cute.compile`` and ``cute.experimental.compile`` are
+        # functionally identical ``CompileCallable`` instances; the
+        # actual experimental dispatch is driven by ``func._dsl_object``
+        # (set by ``@cute.jit(is_experimental=True)``). Validating here
+        # turns a silent mismatch (which would only manifest later as a
+        # "code object with N free vars" preprocessor error) into a
+        # clear call-site diagnostic.
+        if is_experimental_requested and not getattr(
+            func._dsl_object, "_is_experimental_dsl", False
+        ):
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_EXPERIMENTAL_MISMATCH)
+    
+        # process compile options, extract the options and remove them from the kwargs
+        options = kwargs.pop("options", None)
+        if isinstance(options, str) and len(options) == 0:
+            options = None
+    
+        if options is not None and isinstance(options, str):
+            compile_options = _parse_compile_options_from_str(options)
+        else:
+            compile_options = self._compile_options
+        func._dsl_object.compile_options = compile_options
+    
+        if finalize_hook is None:
+            hook_context = contextlib.nullcontext()
+        else:
+            hook_context = func._dsl_object.trace_finalize_hooks(finalize_hook)
+    
+        with hook_context:
+            # Preprocess the function if not already preprocessed
+            func._dsl_object._preprocess_and_replace_code(func)
+    
+            # Route based on DeviceTarget option: compiles as __device__ function.
+            if compile_options.options[DeviceTarget].value:
+                # Device functions are always relocatable objects.
+                compile_options.options[RDC].value = True
+                # Force artifact dumping so .o and .ptx are available after compilation.
+                compile_options.options[KeepPTX].value = True
+                compile_options.options[KeepCUBIN].value = True
+                return func._dsl_object._device_func(func, *args, **kwargs)
+    
+            # Default: host wrapper + kernel
+>           return func._dsl_object._func(func, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py:1400: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x74596045ba10>
+funcBody = <function GradReduceKernel.__call__ at 0x74595820b240>
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwargs = {'compile_only': True, 'no_cache': True}
+
+    def _func(self, funcBody: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Decorator for MLIR functions.
+        It cuts the boilerplate code, does the following:
+            1. Generates `func.func`
+            2. Types translation (numpy arrays -> cute.memref, float -> <f32>, etc.)
+            3. Compiles and JITs the MLIR module
+            4. Invokes the generated function
+            5. Operator overloading (a + b --> arith.addi a, b)
+            6. Generates GPU kernel function with GPU module and kernel attributes baked
+        """
+        # Keep this guard even though jit_wrapper also enters the env context:
+        # compile/device paths may call _func directly.
+        with active_env_manager(self.envar):
+>           return self._func_impl(funcBody, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2680: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x74596045ba10>
+funcBody = <function GradReduceKernel.__call__ at 0x74595820b240>
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwargs = {'compile_only': True, 'no_cache': True}
+
+    def _func_impl(
+        self, funcBody: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
+        if ir.Context.current is None:
+            pass
+        elif ir.InsertionPoint.current is not None:
+            return funcBody(*args, **kwargs)
+    
+        setup = self._prepare_compilation(funcBody, *args, **kwargs)
+    
+        log().debug(f"Generating MLIR for function '{setup.function_name}'")
+>       result = self.generate_mlir(
+            funcBody,
+            setup.function_name,
+            setup.gpu_module_attrs,
+            setup.canonicalized_args,
+            setup.canonicalized_kwargs,
+            setup.sig,
+            setup.pipeline,
+            setup.no_cache,
+            setup.no_jit_engine,
+            setup.compile_only,
+            location=setup.location,
+            compile_to_precompiled_mlir=setup.compile_to_precompiled_mlir,
+        )
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2693: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x74596045ba10>
+funcBody = <function GradReduceKernel.__call__ at 0x74595820b240>
+function_name = 'cutlass___call___moonepgrad_reduceGradReduceKernel_object_at__Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem___CUstream0x0'
+gpu_module_attrs = {}
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwonlyargs = {}
+sig = <Signature (self, expert_grad_ptr: cutlass.cute.typing.Pointer, reduce_buf_ptr: cutlass.cute.typing.Pointer, experts_p...ank: cutlass.base_dsl.typing.Int32, barrier_off: cutlass.base_dsl.typing.Int32, stream: cuda.bindings.driver.CUstream)>
+pipeline = None, no_cache = True, no_jit_engine = False, compile_only = True
+location = None, compile_to_precompiled_mlir = False
+
+    def generate_mlir(
+        self,
+        funcBody: Callable[..., Any],
+        function_name: str,
+        gpu_module_attrs: dict[str, Any],
+        args: tuple[Any, ...],
+        kwonlyargs: dict[str, Any],
+        sig: inspect.Signature,
+        pipeline: str | None,
+        no_cache: bool,
+        no_jit_engine: bool,
+        compile_only: bool,
+        location: DSLLocation | None = None,
+        compile_to_precompiled_mlir: bool = False,
+    ) -> Any:
+        """Generate MLIR module and compile iself.T_provider."""
+        with ir.Context() as ctx, self.get_ir_location(location):
+            # If threading is enabled, each MLIR context will keep alive a thread pool.
+            # When we cache MLIR compilation results, we also cache its context thus accumulating #(compilations) * thread_pool_size threads.
+            # Disable threading to avoid such excessive number of threads.
+            ctx.enable_multithreading(False)
+            # Optional: capture full Python call stacks on every MLIR op.
+            # Enable via CUTE_DSL_LOC_TRACEBACKS=N (e.g. 128 for full stacks).
+            # Default OFF — deep tracebacks + LINEINFO causes segfault.
+            _loc_tb_depth = self.envar.loc_tracebacks
+            _loc_tb_ctx = None
+            if _loc_tb_depth > 0:
+                try:
+                    # New LLVM (>= upstream PR #192310 cherry-pick): NAMELOC_WRAP
+                    # preserves Scope/WarpScope NameLocs around the generated
+                    # traceback chain so profiling annotations survive to PTX/SASS.
+                    _loc_tb_ctx = ir.loc_tracebacks(
+                        max_depth=_loc_tb_depth,
+                        current_loc_actn=ir.CurrentLocAction.NAMELOC_WRAP,
+                    )
+                except (TypeError, AttributeError):
+                    # Older LLVM without the composition kwargs / enums:
+                    # still give the user basic tracebacks.
+                    try:
+                        _loc_tb_ctx = ir.loc_tracebacks(max_depth=_loc_tb_depth)
+                    except (ValueError, TypeError, AttributeError):
+                        _loc_tb_ctx = None
+                if _loc_tb_ctx is not None:
+                    _loc_tb_ctx.__enter__()
+    
+            try:
+                # Convert input arguments to MLIR arguments
+                exe_args, func_types, adapted_args = self.generate_mlir_function_types(
+                    funcBody, function_name, args, kwonlyargs, sig, compile_only
+                )
+                dynamic_args, dynamic_kwargs = self.extract_dynamic_args(
+                    funcBody, args, kwonlyargs, sig
+                )
+                original_function_name = funcBody.__name__
+    
+                # Generate original ir module and its hash value.
+>               module, module_hash, result = self.generate_original_ir(
+                    ir,
+                    func,
+                    funcBody,
+                    function_name,
+                    func_types,
+                    gpu_module_attrs,
+                    args,
+                    kwonlyargs,
+                    sig,
+                    location=location,
+                )
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x74596045ba10>
+ir = <module 'cutlass._mlir.ir' from '/workspace/venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/_mlir/ir.py'>
+func = <module 'cutlass._mlir.dialects.func' from '/workspace/venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/_mlir/dialects/func.py'>
+funcBody = <function GradReduceKernel.__call__ at 0x74595820b240>
+function_name = 'cutlass___call___moonepgrad_reduceGradReduceKernel_object_at__Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem___CUstream0x0'
+func_types = [PtrType(!cute.ptr<f32, gmem, align<16>>), PtrType(!cute.ptr<f32, gmem, align<16>>), PtrType(!cute.ptr<i32, gmem, align<16>>), PtrType(!cute.ptr<i32, gmem, align<16>>), PtrType(!cute.ptr<i32, gmem, align<16>>), IntegerType(i32), ...]
+gpu_module_attrs = {}
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwonlyargs = {}
+sig = <Signature (self, expert_grad_ptr: cutlass.cute.typing.Pointer, reduce_buf_ptr: cutlass.cute.typing.Pointer, experts_p...ank: cutlass.base_dsl.typing.Int32, barrier_off: cutlass.base_dsl.typing.Int32, stream: cuda.bindings.driver.CUstream)>
+location = None
+
+    def generate_original_ir(
+        self,
+        ir: Any,
+        func: Any,
+        funcBody: Callable[..., Any],
+        function_name: str,
+        func_types: list[Any],
+        gpu_module_attrs: dict[str, Any],
+        args: tuple[Any, ...],
+        kwonlyargs: dict[str, Any],
+        sig: inspect.Signature,
+        location: DSLLocation | None = None,
+    ) -> tuple[ir.Module, str, Any]:
+        def build_ir_module() -> tuple[ir.Module, Any]:
+            loc = self.get_ir_location(location)
+            module = ir.Module.create(loc=loc)
+            unit_attr = ir.UnitAttr.get()
+            module.operation.attributes["gpu.container_module"] = unit_attr
+    
+            with ir.InsertionPoint(module.body):
+                # Always generate gpu module. We will remove it later if it is empty.
+                self._build_gpu_module(gpu_module_attrs, loc=loc)
+    
+                ret_types = self.get_return_types()
+                fop = func.FuncOp(function_name, (func_types, ret_types), loc=loc)
+                fop.attributes["llvm.emit_c_interface"] = ir.UnitAttr.get()
+                log().debug("Generated Function OP [%s]", fop)
+                # Attach per-argument source locations if supported by the FuncOp binding.
+                arg_locs = [loc for _ in range(len(func_types))]
+                entry_block = fop.add_entry_block(arg_locs=arg_locs)
+                with ir.InsertionPoint(entry_block):
+                    ir_args, ir_kwargs = self.generate_execution_arguments(
+                        args, kwonlyargs, fop, sig
+                    )
+                    # Call user function body
+                    try:
+                        result = funcBody(*ir_args, **ir_kwargs)
+                        default_ret_values = self.generate_default_return_values(
+                            ir.InsertionPoint.current
+                        )
+                        func.ReturnOp(default_ret_values, loc=loc)
+                    except NameError as name_error:
+                        # Extract the actual variable name and source
+                        # location from the NameError traceback.
+                        tb = name_error.__traceback__
+                        err_filename = None
+                        err_lineno = None
+                        while tb is not None:
+                            err_filename = tb.tb_frame.f_code.co_filename
+                            err_lineno = tb.tb_lineno
+                            tb = tb.tb_next
+                        raise DSLUserCodeError(
+                            f"NameError in `{funcBody.__name__}`: {name_error}",
+                            filename=err_filename,
+                            lineno=err_lineno,
+                            cause=name_error,
+                            suggestion=(
+                                "Variables used inside staged control flow "
+                                "(for/if/while) must be defined before the "
+                                "control flow region. Give the variable an "
+                                "initial value before the loop or branch."
+                            ),
+                        ) from name_error
+                    except (DSLRuntimeError, DSLUserCodeError):
+                        raise
+    
+                if self._should_remove_empty_gpu_modules():
+                    BaseDSL.__remove_empty_gpu_modules(module)
+    
+            return module, result
+    
+        # Build IR module
+        if self.envar.jit_time_profiling:
+            module, result = self.profiler(build_ir_module)()
+        else:
+>           module, result = build_ir_module()
+                             ^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1894: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def build_ir_module() -> tuple[ir.Module, Any]:
+        loc = self.get_ir_location(location)
+        module = ir.Module.create(loc=loc)
+        unit_attr = ir.UnitAttr.get()
+        module.operation.attributes["gpu.container_module"] = unit_attr
+    
+        with ir.InsertionPoint(module.body):
+            # Always generate gpu module. We will remove it later if it is empty.
+            self._build_gpu_module(gpu_module_attrs, loc=loc)
+    
+            ret_types = self.get_return_types()
+            fop = func.FuncOp(function_name, (func_types, ret_types), loc=loc)
+            fop.attributes["llvm.emit_c_interface"] = ir.UnitAttr.get()
+            log().debug("Generated Function OP [%s]", fop)
+            # Attach per-argument source locations if supported by the FuncOp binding.
+            arg_locs = [loc for _ in range(len(func_types))]
+            entry_block = fop.add_entry_block(arg_locs=arg_locs)
+            with ir.InsertionPoint(entry_block):
+                ir_args, ir_kwargs = self.generate_execution_arguments(
+                    args, kwonlyargs, fop, sig
+                )
+                # Call user function body
+                try:
+>                   result = funcBody(*ir_args, **ir_kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1855: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>
+expert_grad_ptr = <cutlass.cute.core._Pointer object at 0x7459582385f0>
+reduce_buf_ptr = <cutlass.cute.core._Pointer object at 0x74595821a060>
+experts_ptr = <cutlass.cute.core._Pointer object at 0x745958319e80>
+meta_ptr = <cutlass.cute.core._Pointer object at 0x745958238cb0>
+bar_ptr = <cutlass.cute.core._Pointer object at 0x745958238d40>, rank = Int32(?)
+barrier_off = Int32(?)
+stream = <cutlass._mlir._mlir_libs._cutlass_ir._mlir.ir.BlockArgument object at 0x745960470630>
+
+    def __call__(
+        self,
+        expert_grad_ptr: cute.Pointer,    # fp32 [E, H, H']
+        reduce_buf_ptr: cute.Pointer,     # fp32 [R, B, H, H']
+        experts_ptr: cute.Pointer,        # int32 [R, B]
+        meta_ptr: cute.Pointer,           # int32 [R*meta_stride] (barrier)
+        bar_ptr: cute.Pointer,            # int32 [1] grid barrier counter
+        rank: Int32,
+        barrier_off: Int32,
+        stream: cuda.CUstream,
+    ):
+        E = cutlass.const_expr(self.E)
+        H = cutlass.const_expr(self.H)
+        Hp = cutlass.const_expr(self.Hp)
+        R = cutlass.const_expr(self.R)
+        B = cutlass.const_expr(self.B)
+        meta_stride = cutlass.const_expr(self.meta_stride)
+        M_BLOCK = cutlass.const_expr(self.M_BLOCK)
+        N_BLOCK = cutlass.const_expr(self.N_BLOCK)
+        Hp64 = cutlass.Int64(Hp)
+    
+        expert_grad = cute.make_tensor(
+            expert_grad_ptr,
+            cute.make_layout((E * H, Hp), stride=(Hp64, cutlass.Int64(1))),
+        )
+        reduce_buf = cute.make_tensor(
+            reduce_buf_ptr,
+            cute.make_layout((R * B * H, Hp), stride=(Hp64, cutlass.Int64(1))),
+        )
+        experts = cute.make_tensor(experts_ptr, cute.make_layout((R * B,)))
+        meta = cute.make_tensor(meta_ptr, cute.make_layout((R * meta_stride,)))
+        bar = cute.make_tensor(bar_ptr, cute.make_layout((1,)))
+    
+        # 2D TMA atom for the remote reduce tiles; the local grad tile is
+        # loaded by the acc warps with vectorized 16B reads.
+        smem_tile_layout = cute.make_ordered_layout((M_BLOCK, N_BLOCK), order=(1, 0))
+        cta_tiler = (M_BLOCK, N_BLOCK)
+        tma_g2s_red, tma_red = cpasync.make_tiled_tma_atom(
+            cpasync.CopyBulkTensorTileG2SOp(),
+            reduce_buf,
+            smem_tile_layout,
+            cta_tiler,
+        )
+    
+        self.kernel(expert_grad, reduce_buf,
+                    tma_g2s_red, tma_red, experts, meta, bar,
+>                   rank, barrier_off).launch(
+            grid=(self.num_sms, 1, 1),
+            block=(self.NUM_THREADS, 1, 1),
+            smem=self._smem_bytes(),
+            stream=stream,
+            cooperative=True,
+        )
+
+moonep/grad_reduce.py:142: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.KernelLauncher object at 0x7459581b7410>
+args = ()
+kwargs = {'grid': (8, 1, 1), 'block': (160, 1, 1), 'smem': 197680, 'cooperative': True, ...}
+
+    def launch(self, *args: Any, **kwargs: Any) -> Any:
+        self.dsl._preprocess_launch_config_args(args, kwargs)
+        config = self.dsl.LaunchConfig(*args, **kwargs)
+        kernel_attrs = _build_kernel_attrs(config)
+        value_attrs = self.dsl._generate_kernel_attrs(config)
+        collector = getattr(self.dsl, "_collect_extra_kernel_value_attrs", None)
+        if callable(collector):
+            value_attrs.update(
+                collector(self.funcBody, self.func_args, self.func_kwargs)
+            )
+    
+        if hasattr(self, "_name_prefix") and self._name_prefix:
+            self.dsl._name_prefix = self._name_prefix  # type: ignore[attr-defined]
+    
+        kernel_generator = self.dsl.kernel_launcher(
+            requiredArgs=["config"],
+            unitAttrNames=["gpu.kernel", "cute.kernel"],
+            valueAttrDict=value_attrs,
+            kernelGenHelper=self.kernelGenHelper,
+        )(self.funcBody)
+    
+>       ret, name = kernel_generator(*self.func_args, **self.func_kwargs, config=config)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cutlass_dsl/cutlass.py:2171: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>, <[RuntimeError("An MLIR function requires a Location ... a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7459581b5610>, ...)
+kwargs = {}
+
+
+    @wraps(funcBody)
+    def kernel_wrapper(*args: Any, **kwargs: Any) -> Any:
+        """
+        Base decorator for generating kernel function
+    
+        This decorator provides a template for kernel function generation
+        including kernel function header/body and kernel launch op at call site
+    
+=================================== FAILURES ===================================        Optional arguments (with default value in <>):
+
+          - requiredArgs <[]>:      specifies the mandatory arguments that must present in kernel function signature
+                                    the args will be validated and collected as a namedtuple
+          - optionalArgs <[]>:      specifies the optional arguments that might present in kernel function signature
+                                    the args will be collected (if present) as a namedtuple
+          - unitAttrNames <[]>:     specifies the name(s) of ir.UnitAttr to be set for kernel function op
+          - valueAttrDict <{}>:     specifies the name(s) and value(s) of ir.Attribute to be set for kernel function op______________________ test_grad_reduce_case[single_tile] ______________________
+
+          - kernelGenHelper <None>: specifies the mandatory customized kernel generation helper class (derived from _KernelGenHelper)
+    
+        Return value:
+          A namedtuple "KernelReturns" is returned with following fields:
+          - kernel_func_ret: the return of the kernel function
+          - launch_op_ret:   the return of the launch op
+
+        """
+    
+        requiredArgs = dkwargs.get("requiredArgs", [])
+        optionalArgs = dkwargs.get("optionalArgs", [])
+        unitAttrNames = dkwargs.get("unitAttrNames", [])dist_env = (1, 2)
+
+        valueAttrDict = dkwargs.get("valueAttrDict", {})case = {'name': 'single_tile', 'epn': 4, 'H': 128, 'Hp': 128, ...}
+
+        kernelGenHelper = dkwargs.get("kernelGenHelper", None)
+
+    
+        kernel_name = funcBody.__name__
+        signature = self._get_signature(funcBody)
+        self.funcBody = funcBody
+    
+    @pytest.mark.parametrize("case", CASES, ids=[case["name"] for case in CASES])        # Give each kernel a unique name. (The same kernel may be
+
+    def test_grad_reduce_case(dist_env, case):        # called multiple times, resulting in multiple kernel traces.)
+
+        rank, R = dist_env        # The mangled name of Python function is part of the name to
+
+        if rank == 0:        # improve readability.
+
+            print(f"[test_grad_reduce] Running case={case['name']} with R={R}")        kernel_name = f"kernel_{self.mangle_name(kernel_name, args, signature)}_{self.num_kernels}"
+
+>       run_case(rank, R, case)        if hasattr(self, "_name_prefix") and self._name_prefix:
+
+            kernel_name = f"{self._name_prefix}_{kernel_name}"
+
+        self.num_kernels += 1
+tests/test_grad_reduce.py    
+:438:         # Step 0. Preprocess the arguments
+
+        def extract_args(
+            argNames: list[str], assertIfNone: bool = False
+        ) -> list[Any]:_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+            extracted = []
+
+            for name in argNames:
+                value = kwargs.pop(name, None)
+                if assertIfNone and value is None:
+                    raise DSLUserCodeError(
+                        DiagId.LAUNCH_MISSING_ARG,rank = 1, R = 2
+
+                        name=name,case = {'name': 'single_tile', 'epn': 4, 'H': 128, 'Hp': 128, ...}
+
+                        kernel_name=kernel_name,
+
+                    )
+                extracted.append(value)
+    
+            return extracted
+    
+        RequiredArgs = namedtuple("RequiredArgs", requiredArgs)  # type: ignore[misc]    def run_case(rank, R, case):
+
+        req_args = (        dev = "cuda"
+
+            RequiredArgs._make(extract_args(requiredArgs, assertIfNone=True))        epn = case["epn"]
+
+            if requiredArgs        E = R * epn
+
+            else None        H = case["H"]
+
+        )        Hp = case["Hp"]
+
+        OptionalArgs = namedtuple("OptionalArgs", optionalArgs)  # type: ignore[misc]        B = pad_dim0_for_alignment([case["base_B"], H, Hp], torch.float32)
+
+        opt_args = (        num_sms = case["num_sms"]
+
+            OptionalArgs._make(extract_args(optionalArgs))        seed = case.get("seed", 0)
+
+            if optionalArgs    
+
+            else None        reduce_full = create_nvl_dist_tensor([B, H, Hp], torch.float32, rank, R)
+
+        )        reduce_buffers = reduce_full.view(R, B, H, Hp)
+
+        assert kernelGenHelper is not None, (        plan = PLAN_BUILDERS[case.get("plan", "ring")](R, B, epn, dev, seed)
+
+            "kernelGenHelper should be explicitly specified!"        grads_fn, slot_fn = _make_data_fns(
+
+        )            case.get("data", "affine"), rank, R, E, B, H, Hp, dev, seed)
+
+        
+
+        # Get bound arguments        buffer = Buffer(S=128, H=H, K=1, E=E, num_ep_ranks=R, num_sms=num_sms, B=B)
+
+        bound_args = self._get_function_bound_args(        try:
+
+            signature, kernel_name, *args, **kwargs            # standalone launch_grad_reduce needs the cross-rank barrier handles
+
+        )            # built by Buffer; the production path passes them in from inside
+
+                # Buffer.reduce_grad.
+
+        # check arguments            ctx = buffer._require_ctx()
+
+        self._check_arg_count(signature, bound_args, kernel_name)    
+
+                remote_expert_grads = grads_fn().contiguous()
+
+        # Canonicalize the input arguments            reduce_buffers[rank].copy_(slot_fn(rank))
+
+        canonicalized_args, canonicalized_kwargs = self._canonicalize_args(            torch.cuda.synchronize()
+
+            bound_args            dist.barrier(device_ids=[local_device_index()])
+
+        )    
+
+    >           launch_grad_reduce(
+
+        kernel_operands, kernel_types, kernel_arg_attrs = (                remote_expert_grads,
+
+            self.generate_kernel_operands_and_types(                reduce_buffers,
+
+                funcBody,                plan,
+
+                kernel_name,                rank=rank,
+
+                signature,                num_sms=num_sms,
+
+                canonicalized_args,                meta_buf=ctx['meta_buf'],
+
+                canonicalized_kwargs,                meta_stride=ctx['meta_chunk_padded'],
+
+            )                barrier_off=ctx['BARRIER_OFF'],
+
+        )                grid_sync_bar=ctx['grid_sync_bar'],
+
+                )
+
+        loc = self.get_ir_location()
+        with self._enter_gpu_module():
+
+            log().debug("Generating device kernel")tests/test_grad_reduce.py
+            if self.device_compilation_only::404: 
+
+                log().debug("Generating cuda-python arguments")
+                # Convert input arguments to MLIR arguments
+                self.exe_args, kernel_types, _ = (_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+                    self.generate_mlir_function_types(
+
+                        funcBody,
+                        kernel_name,
+                        canonicalized_args,
+remote_expert_grads = tensor([[[0.0000e+00, 7.8125e-03, 1.5625e-02,  ..., 9.7656e-01,
+          9.8438e-01, 9.9219e-01],
+         [1.2500e-0...,
+         [1.3488e+02, 1.3488e+02, 1.3489e+02,  ..., 1.3585e+02,
+          1.3586e+02, 1.3587e+02]]], device='cuda:1')                        canonicalized_kwargs,
+
+                        signature,
+remote_reduce_buffers = tensor([[[[101.0000, 101.0039, 101.0078,  ..., 101.4883, 101.4922, 101.4961],
+          [101.0312, 101.0352, 101.0391,...97, 547.4336],
+          [546.9688, 546.9727, 546.9766,  ..., 547.4570, 547.4609, 547.4648]]]],
+       device='cuda:1')                    )
+
+                )
+experts_to_copy = tensor([[ 4,  1,  6,  7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+         -1, -1, -1, -1, -1, -1, -1, ..., -1, -1,
+         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]],
+       device='cuda:1', dtype=torch.int32)    
+
+            helper = kernelGenHelper()
+            fop = helper.generate_func_op(
+                kernel_types, kernel_arg_attrs, kernel_name, locrank = 1, num_sms = 8
+
+            )
+            log().debug(f"Kernel function op: {fop}")meta_buf = tensor([0, 0, 0,  ..., 0, 0, 0], device='cuda:1', dtype=torch.int32)
+
+            for attr in unitAttrNames:
+                fop.attributes[attr] = ir.UnitAttr.get()
+            for key, val in valueAttrDict.items():meta_stride = 524288, barrier_off = 1900
+
+                fop.attributes[key] = valgrid_sync_bar = tensor([0], device='cuda:1', dtype=torch.int32)
+
+    
+
+            fop.sym_visibility = ir.StringAttr.get("public")
+            with ir.InsertionPoint(helper.get_func_body_start()):
+                ir_args, ir_kwargs = self.generate_execution_arguments(
+                    canonicalized_args, canonicalized_kwargs, fop, signature
+                )
+                log().debug(
+                    f"IR arguments - args: {ir_args} ; kwargs: {ir_kwargs}"
+                )    def launch_grad_reduce(
+
+            remote_expert_grads: torch.Tensor,
+
+>               kernel_ret = funcBody(*ir_args, **ir_kwargs)        remote_reduce_buffers: torch.Tensor,
+
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        experts_to_copy: torch.Tensor,
+
+        rank: int,
+        num_sms: int,
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py        meta_buf: torch.Tensor,:3023: 
+
+        meta_stride: int,
+        barrier_off: int,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _         grid_sync_bar: torch.Tensor,
+
+
+    ) -> None:
+        """Launch remote expert grad reduction.
+    self = <moonep.grad_reduce.GradReduceKernel object at 0x74595821b980>
+
+        Args:
+            remote_expert_grads: contiguous fp32 tensor shaped [E, H, H'].expert_grad = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x745744166150>
+
+                The current rank owns expert ids
+                ``rank * (E // R) : (rank + 1) * (E // R)``; only that range isreduce_buf = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x745744166de0>
+
+                updated.
+            remote_reduce_buffers: contiguous fp32 tensor shaped [R, B, H, H'].tma_g2s_red = <cutlass.cute.atom.CopyAtom object at 0x745744166ed0>
+
+                Slots whose ``experts_to_copy[r, b]`` belongs to this rank's owner
+                range are accumulated into ``remote_expert_grads``; afterwards atma_red = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x745744166ff0>
+
+                cross-rank barrier fences peers and each rank clears its own
+                consumed slots locally.experts = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x745744166bd0>
+
+            experts_to_copy: contiguous int32 tensor shaped [R, B].
+            rank: current EP rank.meta = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x745744166fc0>
+
+            num_sms: number of persistent CTAs to launch.
+            meta_buf: int32 NVL-distributed meta buffer holding the barrier slots.bar = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7459581b7170>
+
+            meta_stride: per-rank stride (meta_chunk_padded) into ``meta_buf``.
+            barrier_off: offset of the barrier slots within each rank's chunk.rank = Int32(?), barrier_off = Int32(?)
+
+            grid_sync_bar: int32 [1] grid-barrier counter.
+
+    
+        The caller must ensure all ranks have finished writing
+        ``remote_reduce_buffers`` before launching this kernel on any rank.
+        """
+        if remote_reduce_buffers.numel() == 0 or experts_to_copy.numel() == 0:
+            return
+    
+        assert remote_expert_grads.dtype == torch.float32 and remote_expert_grads.is_contiguous(), \
+            "remote_expert_grads must be contiguous fp32 [E, H, H']"
+        assert remote_reduce_buffers.dtype == torch.float32 and remote_reduce_buffers.is_contiguous(), \
+            "remote_reduce_buffers must be contiguous fp32 [R, B, H, H']"
+        assert experts_to_copy.dtype == torch.int32 and experts_to_copy.is_contiguous(), \    def kernel(
+
+            "experts_to_copy must be contiguous int32 [R, B]"        self,
+
+        assert remote_expert_grads.ndim == 3, \        expert_grad: cute.Tensor,
+
+            f"remote_expert_grads must have rank 3, got shape={tuple(remote_expert_grads.shape)}"        reduce_buf: cute.Tensor,
+
+        assert remote_reduce_buffers.ndim == 4, \        tma_g2s_red: cute.CopyAtom,
+
+            f"remote_reduce_buffers must have rank 4, got shape={tuple(remote_reduce_buffers.shape)}"        tma_red: cute.Tensor,
+
+        assert experts_to_copy.ndim == 2, \        experts: cute.Tensor,
+
+            f"experts_to_copy must have rank 2, got shape={tuple(experts_to_copy.shape)}"        meta: cute.Tensor,
+
+            bar: cute.Tensor,
+
+        E, H, Hp = (int(x) for x in remote_expert_grads.shape)        rank: Int32,
+
+        R, B, buf_H, buf_Hp = (int(x) for x in remote_reduce_buffers.shape)        barrier_off: Int32,
+
+        assert tuple(experts_to_copy.shape) == (R, B), \    ):
+
+            f"experts_to_copy shape {tuple(experts_to_copy.shape)} must match [R, B]=[{R}, {B}]"        E = cutlass.const_expr(self.E)
+
+        assert buf_H == H and buf_Hp == Hp, (        H = cutlass.const_expr(self.H)
+
+            f"remote_reduce_buffers shape {tuple(remote_reduce_buffers.shape)} "        Hp = cutlass.const_expr(self.Hp)
+
+            f"incompatible with remote_expert_grads {tuple(remote_expert_grads.shape)}"        R = cutlass.const_expr(self.R)
+
+        )        B = cutlass.const_expr(self.B)
+
+        assert E % R == 0, f"E ({E}) must be divisible by R ({R})"        M_BLOCK = cutlass.const_expr(self.M_BLOCK)
+
+        assert 0 <= int(rank) < R, f"rank must be in [0, {R}), got {rank}"        N_BLOCK = cutlass.const_expr(self.N_BLOCK)
+
+        assert H % GradReduceKernel.M_BLOCK == 0 and Hp % GradReduceKernel.N_BLOCK == 0, \        meta_stride = cutlass.const_expr(self.meta_stride)
+
+            f"H and H' must be multiples of ({GradReduceKernel.M_BLOCK}, {GradReduceKernel.N_BLOCK}), got ({H}, {Hp})"
+        num_ranks = cutlass.const_expr(self.R)        assert isinstance(num_sms, int) and num_sms > 0, \
+
+        TILE_ELEMS = cutlass.const_expr(M_BLOCK * N_BLOCK)            f"num_sms must be a positive int, got {num_sms}"
+
+        MTILES = cutlass.const_expr(H // M_BLOCK)    
+
+        NTILES = cutlass.const_expr(Hp // N_BLOCK)        device_index = remote_expert_grads.device.index
+
+        TILES_PER_EXPERT = cutlass.const_expr(MTILES * NTILES)        assert device_index is not None, "remote_expert_grads must be a CUDA tensor"
+
+        EPN = cutlass.const_expr(E // R)        assert remote_reduce_buffers.device.index == device_index, \
+
+                "remote_reduce_buffers must be on the same CUDA device as remote_expert_grads"
+
+        STAGES = cutlass.const_expr(self.STAGES)        assert experts_to_copy.device.index == device_index, \
+
+        ACC_THREADS = cutlass.const_expr(self.ACC_THREADS)            "experts_to_copy must be on the same CUDA device as remote_expert_grads"
+
+        num_threads = cutlass.const_expr(self.NUM_THREADS)    
+
+        TILE_BYTES = cutlass.const_expr(TILE_ELEMS * 4)>       compiled = _get_compiled(E, H, Hp, R, B, int(meta_stride), int(num_sms),
+
+                                     int(device_index))
+
+        tidx, _, _ = cute.arch.thread_idx()
+        bidx, _, _ = cute.arch.block_idx()
+
+        warp_idx = cute.arch.make_warp_uniform(cute.arch.warp_idx())moonep/grad_reduce.py
+:509:     
+
+        smem = utils.SmemAllocator()
+        load_mbar = smem.allocate_array(Int64, num_elems=2 * STAGES)_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+        stage_smem = smem.allocate_tensor(
+
+            Float32,
+            cute.make_ordered_layout((M_BLOCK, N_BLOCK, STAGES), order=(1, 0, 2)),
+            byte_alignment=128,
+        )
+        # flat per-stage view of the same smem for the acc warps.
+        stage_flat = cute.make_tensor(
+            stage_smem.iterator,
+            cute.make_ordered_layout((TILE_ELEMS, STAGES), order=(0, 1)),
+        )E = 8, H = 128, Hp = 128, R = 2, B = 32, meta_stride = 524288, num_sms = 8
+
+        # prescan: cnt[le] and a per-expert-grouped slot list. cnt[EPN] holdsdevice_index = 1
+
+        # running prefix; slist[off[le] .. off[le]+cnt[le]) are the matching rb.
+
+        off = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)
+        # compacted list of active local experts (off[le+1] > off[le]).
+        alist = smem.allocate_tensor(Int32, cute.make_layout((EPN,)), byte_alignment=16)
+        acnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)
+        slist = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)    @functools.lru_cache(maxsize=None)
+
+        # smem stage of experts[] (pre-biased to local ids) for the prescan.    def _get_compiled(
+
+        sexp = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)        E: int,
+
+        # slist fill cursors; cur[EPN] is a dummy bucket for invalid lanes.        H: int,
+
+        cur = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)        Hp: int,
+
+        # this rank's own consumed slots (experts[rank,b] >= 0) for clearing.        R: int,
+
+        clist = smem.allocate_tensor(Int32, cute.make_layout((B,)), byte_alignment=16)        B: int,
+
+        ccnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)        meta_stride: int,
+
+            num_sms: int,
+
+        rank_epn = rank * EPN        device_index: int,
+
+        ):
+
+        # ---- prescan experts once (parallel): bucket slots per local expert.        smem_budget = _max_smem_per_block_optin(device_index) - 1024
+
+        # A single-thread gmem scan of all R*B entries is bottlenecked by a        kernel = GradReduceKernel(
+
+        # serial load latency chain, so it must be cooperative: stage the            E=E,
+
+        # table to smem with all threads, count with cta atomics, then have            H=H,
+
+        # warp 0 fill slist chunk-by-chunk with match_any so the final order            Hp=Hp,
+
+        # stays rb-ascending (bitwise-identical to the serial scan).            R=R,
+
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):            B=B,
+
+            sexp[i] = experts[i] - rank_epn            meta_stride=meta_stride,
+
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):            num_sms=num_sms,
+
+            off[i] = Int32(0)            smem_budget=smem_budget,
+
+        if tidx == 0:        )
+
+            ccnt[0] = Int32(0)    
+
+        cute.arch.sync_threads()        f32_ptr = make_ptr(Float32, 0, cute.AddressSpace.gmem, assumed_align=16)
+
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):        i32_ptr = make_ptr(Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+
+            e = sexp[i]        stream_arg = cuda.CUstream(0)
+
+            if e >= Int32(0) and e < Int32(EPN):    
+
+                cute.arch.atomic_add(off.iterator + (e + Int32(1)), Int32(1),>       return cute.compile(
+
+                                     scope="cta")            kernel,
+
+        # this rank's own consumed slots (experts[rank,b] >= 0), unordered.            f32_ptr,
+
+        for b in cutlass.range(tidx, B, self.NUM_THREADS, unroll=1):            f32_ptr,
+
+            if sexp[rank * B + b] >= Int32(0) - rank_epn:            i32_ptr,
+
+                pos = cute.arch.atomic_add(ccnt.iterator, Int32(1), scope="cta")            i32_ptr,
+
+                clist[pos] = Int32(b)            i32_ptr,
+
+        cute.arch.sync_threads()            Int32(0),
+
+        # serial prefix + active-expert compaction over EPN (smem-only).            Int32(0),
+
+        if tidx == 0:            stream_arg,
+
+            run = Int32(0)        )
+
+            ac = Int32(0)
+
+            for le in cutlass.range(EPN, unroll=1):
+moonep/grad_reduce.py                c = off[le + 1]:424: 
+
+                if c > Int32(0):
+                    alist[ac] = Int32(le)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _                     ac = ac + Int32(1)
+
+
+                run = run + c
+                off[le + 1] = run
+            acnt[0] = ac
+self = <cutlass.base_dsl.compiler.CompileCallable object at 0x7fdd48bee9c0>        cute.arch.sync_threads()
+
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)            cur[i] = off[i]
+
+kwargs = {}        cute.arch.sync_threads()
+
+
+        if warp_idx == 0:
+            lane = cute.arch.lane_idx()
+            lanes_lt = (Uint32(1) << lane) - Uint32(1)
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:            NCHUNK = cutlass.const_expr((R * B + 31) // 32)
+
+        """Compile ``func`` for the signature described by ``args``.            for c0 in cutlass.range(NCHUNK, unroll=1):
+
+                    rb = c0 * 32 + lane
+
+        :param args: ``func`` followed by representative compile-time                e = Int32(EPN)
+
+            arguments. Tensor arguments are typically fake tensors;                if rb < Int32(R * B):
+
+            scalar arguments may be Python literals or SymInt-backed                    ee = sexp[rb]
+
+            symbolic values.                    if ee >= Int32(0) and ee < Int32(EPN):
+
+        :param kwargs: Optional compile controls such as ``options=...``.                        e = ee
+
+            See ``references/compiler-options.md`` for option tokens.                peers = match_any_b32(e)
+
+        :return: A compiled callable that accepts real runtime arguments                cell = cur.iterator + e
+
+            matching the supplied signature.                base = cute.arch.load(cell, Int32)
+
+        """                pos = base + Int32(cute.arch.popc(peers & lanes_lt))
+
+>       return self._compile(*args, **kwargs)                cute.arch.sync_warp()
+
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                if (peers & lanes_lt) == Uint32(0):
+
+                    cute.arch.store(cell, base + Int32(cute.arch.popc(peers)))
+
+                cute.arch.sync_warp()../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py
+                if e < Int32(EPN)::1250: 
+
+                    slist[pos] = Int32(rb)
+        cute.arch.sync_threads()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _     
+
+
+        cta_tiler = (M_BLOCK, N_BLOCK)
+        smem_for_tma = cute.group_modes(stage_smem, 0, 2)
+        red_tiles = cute.zipped_divide(tma_red, cta_tiler)self = <cutlass.base_dsl.compiler.CompileCallable object at 0x7fdd48bee9c0>
+
+        tRsR, tRgR = cpasync.tma_partition(
+            tma_g2s_red, 0, cute.make_layout(1), smem_for_tma, red_tiles,func = <function GradReduceKernel.__call__ at 0x7fdb36d03240>
+
+        )
+        load_pipe = pipeline.PipelineTmaAsync.create(args = [<moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...]
+
+            barrier_storage=load_mbar, num_stages=STAGES,kwargs = {'compile_only': True, 'no_cache': True}
+
+            producer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 1),
+
+            consumer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 4),
+            tx_count=TILE_BYTES,
+        )
+        ld_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Producer, STAGES)
+        cd_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Consumer, STAGES)
+        acc_tid = tidx - 32
+        H_PER = cutlass.const_expr(TILE_ELEMS // ACC_THREADS)
+>       acc_reg = cute.make_fragment((H_PER,), Float32)
+                  ^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'cutlass.cute' has no attribute 'make_fragment'. Did you mean: 'make_fragment_like'?
+    def _compile(self, func: Any, *args: Any, **kwargs: Any) -> Any:
+
+        """
+moonep/grad_reduce.py        Compile a ``@cute.jit`` function and return its executable wrapper.:295: AttributeError
+
+    
+        ``func`` may be a regular function, bound method, or callable
+        instance, but it must ultimately resolve to a ``@cute.jit``
+        definition. ``args`` describe the runtime signature seen by the
+----------------------------- Captured stdout call -----------------------------        compiled wrapper; for tensor arguments, prefer fake tensors over
+
+[test_grad_reduce] Running case=single_tile with R=2        ad-hoc real tensors so shape / stride / SymInt constraints remain
+
+        explicit and reproducible.
+    
+        ``kwargs`` may contain ``is_experimental: bool`` to assert that
+        the function was decorated through the experimental DSL path
+        (``@cute.jit(is_experimental=True)`` /
+        ``@cute.kernel(is_experimental=True)``). This kwarg is consumed
+        at the call site rather than forwarded into the executor: the
+        actual DSL routing for the compile is already determined by the
+        function's decorator (via ``func._dsl_object``). The kwarg
+        exists as a migration aid away from
+        ``cute.experimental.compile``: when set to True the call
+        validates that the function is indeed routed through an
+        experimental DSL (``BaseDSL._is_experimental_dsl is True``) and
+        raises if not, so that mixing experimental host launchers with
+        non-experimental compile entry points (or vice versa) fails
+        loudly at the call site instead of producing a preprocessor
+        free-vars mismatch deep inside ``_preprocess_and_replace_code``.
+    
+        :param func: The ``@cute.jit`` callable to compile.
+        :param args: Representative compile-time arguments describing the
+            callable's runtime signature.
+        :param kwargs: Optional compile controls. ``options=...`` accepts
+            the same token string as ``CUTE_DSL_COMPILER_OPT``. For the
+            full option catalog, see
+            ``write-kernel/references/compiler-options.md``.
+        :return: A compiled callable.
+        :raises DSLRuntimeError: If ``func`` is not callable or not
+            decorated with ``@cute.jit``.
+        """
+        if func is None:
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_FUNCTION_NOT_PROVIDED)
+    
+        if not callable(func):
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_NOT_CALLABLE)
+    
+        # Pop the migration-aid kwarg before it leaks into the executor
+        # call: the rest of the pipeline does not know about it.
+        is_experimental_requested = kwargs.pop("is_experimental", False)
+        finalize_hook = kwargs.pop("trace_finalize_hooks", None)
+    
+        kwargs["compile_only"] = True
+        kwargs["no_cache"] = True
+    
+        if inspect.isfunction(func):
+            # regular function
+            pass
+        elif inspect.ismethod(func):
+            # if it's a method, add the instance to the first argument
+            args = [func.__self__] + list(args)  # type: ignore[assignment]
+            func = func.__func__
+        elif (
+            inspect.isclass(type(func))
+            and hasattr(func, "__call__")
+            and hasattr(func.__call__, "__func__")
+        ):
+            # If it's a class instance, get the class's __call__ method
+            args = [func] + list(args)  # type: ignore[assignment]
+=========================== short test summary info ============================            # Get the actual function from the class definition
+
+            func = func.__call__.__func__
+        else:FAILED tests/test_grad_reduce.py::test_grad_reduce_case[single_tile] - Attrib...
+
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_UNSUPPORTED_CALLABLE_TYPE)
+    
+        func_name_prefix = getattr(func, "_name_prefix", None)
+        if func_name_prefix:
+            kwargs["_name_prefix"] = func_name_prefix
+    
+        # If it's a wrapped function created by decorators, get the original function
+        while hasattr(func, "__wrapped__"):!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            func = func.__wrapped__
+    
+        from .dsl import BaseDSL
+    
+        BaseDSL._lazy_initialize_dsl(func)
+    
+        if not hasattr(func, "_dsl_object"):
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_MISSING_JIT_DECORATOR)
+    
+        # Validate the migration-aid ``is_experimental`` kwarg against
+        # the routing already baked into the function by its jit/kernel
+        # decorator. This is *not* a behavior switch: both
+        # ``cute.compile`` and ``cute.experimental.compile`` are
+        # functionally identical ``CompileCallable`` instances; the
+        # actual experimental dispatch is driven by ``func._dsl_object``
+        # (set by ``@cute.jit(is_experimental=True)``). Validating here1 failed in 2.55s
+
+        # turns a silent mismatch (which would only manifest later as a
+        # "code object with N free vars" preprocessor error) into a
+        # clear call-site diagnostic.
+        if is_experimental_requested and not getattr(
+            func._dsl_object, "_is_experimental_dsl", False
+        ):
+            raise DSLUserCodeError(_diagnostics.DiagId.CALL_EXPERIMENTAL_MISMATCH)
+    
+        # process compile options, extract the options and remove them from the kwargs
+        options = kwargs.pop("options", None)
+        if isinstance(options, str) and len(options) == 0:
+            options = None
+    
+        if options is not None and isinstance(options, str):
+            compile_options = _parse_compile_options_from_str(options)
+        else:
+            compile_options = self._compile_options
+        func._dsl_object.compile_options = compile_options
+    
+        if finalize_hook is None:
+            hook_context = contextlib.nullcontext()
+        else:
+            hook_context = func._dsl_object.trace_finalize_hooks(finalize_hook)
+    
+        with hook_context:
+            # Preprocess the function if not already preprocessed
+            func._dsl_object._preprocess_and_replace_code(func)
+    
+            # Route based on DeviceTarget option: compiles as __device__ function.
+            if compile_options.options[DeviceTarget].value:
+                # Device functions are always relocatable objects.
+                compile_options.options[RDC].value = True
+                # Force artifact dumping so .o and .ptx are available after compilation.
+                compile_options.options[KeepPTX].value = True
+                compile_options.options[KeepCUBIN].value = True
+                return func._dsl_object._device_func(func, *args, **kwargs)
+    
+            # Default: host wrapper + kernel
+>           return func._dsl_object._func(func, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py:1400: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x7fdd4825b950>
+funcBody = <function GradReduceKernel.__call__ at 0x7fdb36d03240>
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwargs = {'compile_only': True, 'no_cache': True}
+
+    def _func(self, funcBody: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Decorator for MLIR functions.
+        It cuts the boilerplate code, does the following:
+            1. Generates `func.func`
+            2. Types translation (numpy arrays -> cute.memref, float -> <f32>, etc.)
+            3. Compiles and JITs the MLIR module
+            4. Invokes the generated function
+            5. Operator overloading (a + b --> arith.addi a, b)
+            6. Generates GPU kernel function with GPU module and kernel attributes baked
+        """
+        # Keep this guard even though jit_wrapper also enters the env context:
+        # compile/device paths may call _func directly.
+        with active_env_manager(self.envar):
+>           return self._func_impl(funcBody, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2680: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x7fdd4825b950>
+funcBody = <function GradReduceKernel.__call__ at 0x7fdb36d03240>
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwargs = {'compile_only': True, 'no_cache': True}
+
+    def _func_impl(
+        self, funcBody: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
+        if ir.Context.current is None:
+            pass
+        elif ir.InsertionPoint.current is not None:
+            return funcBody(*args, **kwargs)
+    
+        setup = self._prepare_compilation(funcBody, *args, **kwargs)
+    
+        log().debug(f"Generating MLIR for function '{setup.function_name}'")
+>       result = self.generate_mlir(
+            funcBody,
+            setup.function_name,
+            setup.gpu_module_attrs,
+            setup.canonicalized_args,
+            setup.canonicalized_kwargs,
+            setup.sig,
+            setup.pipeline,
+            setup.no_cache,
+            setup.no_jit_engine,
+            setup.compile_only,
+            location=setup.location,
+            compile_to_precompiled_mlir=setup.compile_to_precompiled_mlir,
+        )
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2693: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x7fdd4825b950>
+funcBody = <function GradReduceKernel.__call__ at 0x7fdb36d03240>
+function_name = 'cutlass___call___moonepgrad_reduceGradReduceKernel_object_at__Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem___CUstream0x0'
+gpu_module_attrs = {}
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwonlyargs = {}
+sig = <Signature (self, expert_grad_ptr: cutlass.cute.typing.Pointer, reduce_buf_ptr: cutlass.cute.typing.Pointer, experts_p...ank: cutlass.base_dsl.typing.Int32, barrier_off: cutlass.base_dsl.typing.Int32, stream: cuda.bindings.driver.CUstream)>
+pipeline = None, no_cache = True, no_jit_engine = False, compile_only = True
+location = None, compile_to_precompiled_mlir = False
+
+    def generate_mlir(
+        self,
+        funcBody: Callable[..., Any],
+        function_name: str,
+        gpu_module_attrs: dict[str, Any],
+        args: tuple[Any, ...],
+        kwonlyargs: dict[str, Any],
+        sig: inspect.Signature,
+        pipeline: str | None,
+        no_cache: bool,
+        no_jit_engine: bool,
+        compile_only: bool,
+        location: DSLLocation | None = None,
+        compile_to_precompiled_mlir: bool = False,
+    ) -> Any:
+        """Generate MLIR module and compile iself.T_provider."""
+        with ir.Context() as ctx, self.get_ir_location(location):
+            # If threading is enabled, each MLIR context will keep alive a thread pool.
+            # When we cache MLIR compilation results, we also cache its context thus accumulating #(compilations) * thread_pool_size threads.
+            # Disable threading to avoid such excessive number of threads.
+            ctx.enable_multithreading(False)
+            # Optional: capture full Python call stacks on every MLIR op.
+            # Enable via CUTE_DSL_LOC_TRACEBACKS=N (e.g. 128 for full stacks).
+            # Default OFF — deep tracebacks + LINEINFO causes segfault.
+            _loc_tb_depth = self.envar.loc_tracebacks
+            _loc_tb_ctx = None
+            if _loc_tb_depth > 0:
+                try:
+                    # New LLVM (>= upstream PR #192310 cherry-pick): NAMELOC_WRAP
+                    # preserves Scope/WarpScope NameLocs around the generated
+                    # traceback chain so profiling annotations survive to PTX/SASS.
+                    _loc_tb_ctx = ir.loc_tracebacks(
+                        max_depth=_loc_tb_depth,
+                        current_loc_actn=ir.CurrentLocAction.NAMELOC_WRAP,
+                    )
+                except (TypeError, AttributeError):
+                    # Older LLVM without the composition kwargs / enums:
+                    # still give the user basic tracebacks.
+                    try:
+                        _loc_tb_ctx = ir.loc_tracebacks(max_depth=_loc_tb_depth)
+                    except (ValueError, TypeError, AttributeError):
+                        _loc_tb_ctx = None
+                if _loc_tb_ctx is not None:
+                    _loc_tb_ctx.__enter__()
+    
+            try:
+                # Convert input arguments to MLIR arguments
+                exe_args, func_types, adapted_args = self.generate_mlir_function_types(
+                    funcBody, function_name, args, kwonlyargs, sig, compile_only
+                )
+                dynamic_args, dynamic_kwargs = self.extract_dynamic_args(
+                    funcBody, args, kwonlyargs, sig
+                )
+                original_function_name = funcBody.__name__
+    
+                # Generate original ir module and its hash value.
+>               module, module_hash, result = self.generate_original_ir(
+                    ir,
+                    func,
+                    funcBody,
+                    function_name,
+                    func_types,
+                    gpu_module_attrs,
+                    args,
+                    kwonlyargs,
+                    sig,
+                    location=location,
+                )
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:2223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.CuTeDSL object at 0x7fdd4825b950>
+ir = <module 'cutlass._mlir.ir' from '/workspace/venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/_mlir/ir.py'>
+func = <module 'cutlass._mlir.dialects.func' from '/workspace/venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/_mlir/dialects/func.py'>
+funcBody = <function GradReduceKernel.__call__ at 0x7fdb36d03240>
+function_name = 'cutlass___call___moonepgrad_reduceGradReduceKernel_object_at__Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem_Ptrgmem___CUstream0x0'
+func_types = [PtrType(!cute.ptr<f32, gmem, align<16>>), PtrType(!cute.ptr<f32, gmem, align<16>>), PtrType(!cute.ptr<i32, gmem, align<16>>), PtrType(!cute.ptr<i32, gmem, align<16>>), PtrType(!cute.ptr<i32, gmem, align<16>>), IntegerType(i32), ...]
+gpu_module_attrs = {}
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, Ptr<0x0000000000000000@gmem>, ...)
+kwonlyargs = {}
+sig = <Signature (self, expert_grad_ptr: cutlass.cute.typing.Pointer, reduce_buf_ptr: cutlass.cute.typing.Pointer, experts_p...ank: cutlass.base_dsl.typing.Int32, barrier_off: cutlass.base_dsl.typing.Int32, stream: cuda.bindings.driver.CUstream)>
+location = None
+
+    def generate_original_ir(
+        self,
+        ir: Any,
+        func: Any,
+        funcBody: Callable[..., Any],
+        function_name: str,
+        func_types: list[Any],
+        gpu_module_attrs: dict[str, Any],
+        args: tuple[Any, ...],
+        kwonlyargs: dict[str, Any],
+        sig: inspect.Signature,
+        location: DSLLocation | None = None,
+    ) -> tuple[ir.Module, str, Any]:
+        def build_ir_module() -> tuple[ir.Module, Any]:
+            loc = self.get_ir_location(location)
+            module = ir.Module.create(loc=loc)
+            unit_attr = ir.UnitAttr.get()
+            module.operation.attributes["gpu.container_module"] = unit_attr
+    
+            with ir.InsertionPoint(module.body):
+                # Always generate gpu module. We will remove it later if it is empty.
+                self._build_gpu_module(gpu_module_attrs, loc=loc)
+    
+                ret_types = self.get_return_types()
+                fop = func.FuncOp(function_name, (func_types, ret_types), loc=loc)
+                fop.attributes["llvm.emit_c_interface"] = ir.UnitAttr.get()
+                log().debug("Generated Function OP [%s]", fop)
+                # Attach per-argument source locations if supported by the FuncOp binding.
+                arg_locs = [loc for _ in range(len(func_types))]
+                entry_block = fop.add_entry_block(arg_locs=arg_locs)
+                with ir.InsertionPoint(entry_block):
+                    ir_args, ir_kwargs = self.generate_execution_arguments(
+                        args, kwonlyargs, fop, sig
+                    )
+                    # Call user function body
+                    try:
+                        result = funcBody(*ir_args, **ir_kwargs)
+                        default_ret_values = self.generate_default_return_values(
+                            ir.InsertionPoint.current
+                        )
+                        func.ReturnOp(default_ret_values, loc=loc)
+                    except NameError as name_error:
+                        # Extract the actual variable name and source
+                        # location from the NameError traceback.
+                        tb = name_error.__traceback__
+                        err_filename = None
+                        err_lineno = None
+                        while tb is not None:
+                            err_filename = tb.tb_frame.f_code.co_filename
+                            err_lineno = tb.tb_lineno
+                            tb = tb.tb_next
+                        raise DSLUserCodeError(
+                            f"NameError in `{funcBody.__name__}`: {name_error}",
+                            filename=err_filename,
+                            lineno=err_lineno,
+                            cause=name_error,
+                            suggestion=(
+                                "Variables used inside staged control flow "
+                                "(for/if/while) must be defined before the "
+                                "control flow region. Give the variable an "
+                                "initial value before the loop or branch."
+                            ),
+                        ) from name_error
+                    except (DSLRuntimeError, DSLUserCodeError):
+                        raise
+    
+                if self._should_remove_empty_gpu_modules():
+                    BaseDSL.__remove_empty_gpu_modules(module)
+    
+            return module, result
+    
+        # Build IR module
+        if self.envar.jit_time_profiling:
+            module, result = self.profiler(build_ir_module)()
+        else:
+>           module, result = build_ir_module()
+                             ^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1894: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def build_ir_module() -> tuple[ir.Module, Any]:
+        loc = self.get_ir_location(location)
+        module = ir.Module.create(loc=loc)
+        unit_attr = ir.UnitAttr.get()
+        module.operation.attributes["gpu.container_module"] = unit_attr
+    
+        with ir.InsertionPoint(module.body):
+            # Always generate gpu module. We will remove it later if it is empty.
+            self._build_gpu_module(gpu_module_attrs, loc=loc)
+    
+            ret_types = self.get_return_types()
+            fop = func.FuncOp(function_name, (func_types, ret_types), loc=loc)
+            fop.attributes["llvm.emit_c_interface"] = ir.UnitAttr.get()
+            log().debug("Generated Function OP [%s]", fop)
+            # Attach per-argument source locations if supported by the FuncOp binding.
+            arg_locs = [loc for _ in range(len(func_types))]
+            entry_block = fop.add_entry_block(arg_locs=arg_locs)
+            with ir.InsertionPoint(entry_block):
+                ir_args, ir_kwargs = self.generate_execution_arguments(
+                    args, kwonlyargs, fop, sig
+                )
+                # Call user function body
+                try:
+>                   result = funcBody(*ir_args, **ir_kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:1855: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>
+expert_grad_ptr = <cutlass.cute.core._Pointer object at 0x7fdb36d30dd0>
+reduce_buf_ptr = <cutlass.cute.core._Pointer object at 0x7fdd4013e0f0>
+experts_ptr = <cutlass.cute.core._Pointer object at 0x7fdd485f8560>
+meta_ptr = <cutlass.cute.core._Pointer object at 0x7fdb36d30b60>
+bar_ptr = <cutlass.cute.core._Pointer object at 0x7fdb36d30bf0>, rank = Int32(?)
+barrier_off = Int32(?)
+stream = <cutlass._mlir._mlir_libs._cutlass_ir._mlir.ir.BlockArgument object at 0x7fdd482022b0>
+
+    def __call__(
+        self,
+        expert_grad_ptr: cute.Pointer,    # fp32 [E, H, H']
+        reduce_buf_ptr: cute.Pointer,     # fp32 [R, B, H, H']
+        experts_ptr: cute.Pointer,        # int32 [R, B]
+        meta_ptr: cute.Pointer,           # int32 [R*meta_stride] (barrier)
+        bar_ptr: cute.Pointer,            # int32 [1] grid barrier counter
+        rank: Int32,
+        barrier_off: Int32,
+        stream: cuda.CUstream,
+    ):
+        E = cutlass.const_expr(self.E)
+        H = cutlass.const_expr(self.H)
+        Hp = cutlass.const_expr(self.Hp)
+        R = cutlass.const_expr(self.R)
+        B = cutlass.const_expr(self.B)
+        meta_stride = cutlass.const_expr(self.meta_stride)
+        M_BLOCK = cutlass.const_expr(self.M_BLOCK)
+        N_BLOCK = cutlass.const_expr(self.N_BLOCK)
+        Hp64 = cutlass.Int64(Hp)
+    
+        expert_grad = cute.make_tensor(
+            expert_grad_ptr,
+            cute.make_layout((E * H, Hp), stride=(Hp64, cutlass.Int64(1))),
+        )
+        reduce_buf = cute.make_tensor(
+            reduce_buf_ptr,
+            cute.make_layout((R * B * H, Hp), stride=(Hp64, cutlass.Int64(1))),
+        )
+        experts = cute.make_tensor(experts_ptr, cute.make_layout((R * B,)))
+        meta = cute.make_tensor(meta_ptr, cute.make_layout((R * meta_stride,)))
+        bar = cute.make_tensor(bar_ptr, cute.make_layout((1,)))
+    
+        # 2D TMA atom for the remote reduce tiles; the local grad tile is
+        # loaded by the acc warps with vectorized 16B reads.
+        smem_tile_layout = cute.make_ordered_layout((M_BLOCK, N_BLOCK), order=(1, 0))
+        cta_tiler = (M_BLOCK, N_BLOCK)
+        tma_g2s_red, tma_red = cpasync.make_tiled_tma_atom(
+            cpasync.CopyBulkTensorTileG2SOp(),
+            reduce_buf,
+            smem_tile_layout,
+            cta_tiler,
+        )
+    
+        self.kernel(expert_grad, reduce_buf,
+                    tma_g2s_red, tma_red, experts, meta, bar,
+>                   rank, barrier_off).launch(
+            grid=(self.num_sms, 1, 1),
+            block=(self.NUM_THREADS, 1, 1),
+            smem=self._smem_bytes(),
+            stream=stream,
+            cooperative=True,
+        )
+
+moonep/grad_reduce.py:142: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cutlass.cutlass_dsl.cutlass.KernelLauncher object at 0x7fdb36cad940>
+args = ()
+kwargs = {'grid': (8, 1, 1), 'block': (160, 1, 1), 'smem': 197680, 'cooperative': True, ...}
+
+    def launch(self, *args: Any, **kwargs: Any) -> Any:
+        self.dsl._preprocess_launch_config_args(args, kwargs)
+        config = self.dsl.LaunchConfig(*args, **kwargs)
+        kernel_attrs = _build_kernel_attrs(config)
+        value_attrs = self.dsl._generate_kernel_attrs(config)
+        collector = getattr(self.dsl, "_collect_extra_kernel_value_attrs", None)
+        if callable(collector):
+            value_attrs.update(
+                collector(self.funcBody, self.func_args, self.func_kwargs)
+            )
+    
+        if hasattr(self, "_name_prefix") and self._name_prefix:
+            self.dsl._name_prefix = self._name_prefix  # type: ignore[attr-defined]
+    
+        kernel_generator = self.dsl.kernel_launcher(
+            requiredArgs=["config"],
+            unitAttrNames=["gpu.kernel", "cute.kernel"],
+            valueAttrDict=value_attrs,
+            kernelGenHelper=self.kernelGenHelper,
+        )(self.funcBody)
+    
+>       ret, name = kernel_generator(*self.func_args, **self.func_kwargs, config=config)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cutlass_dsl/cutlass.py:2171: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (<moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>, <[RuntimeError("An MLIR function requires a Location ... a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7fdb36cad970>, ...)
+kwargs = {}
+
+    @wraps(funcBody)
+    def kernel_wrapper(*args: Any, **kwargs: Any) -> Any:
+        """
+        Base decorator for generating kernel function
+    
+        This decorator provides a template for kernel function generation
+        including kernel function header/body and kernel launch op at call site
+    
+        Optional arguments (with default value in <>):
+          - requiredArgs <[]>:      specifies the mandatory arguments that must present in kernel function signature
+                                    the args will be validated and collected as a namedtuple
+          - optionalArgs <[]>:      specifies the optional arguments that might present in kernel function signature
+                                    the args will be collected (if present) as a namedtuple
+          - unitAttrNames <[]>:     specifies the name(s) of ir.UnitAttr to be set for kernel function op
+          - valueAttrDict <{}>:     specifies the name(s) and value(s) of ir.Attribute to be set for kernel function op
+          - kernelGenHelper <None>: specifies the mandatory customized kernel generation helper class (derived from _KernelGenHelper)
+    
+        Return value:
+          A namedtuple "KernelReturns" is returned with following fields:
+          - kernel_func_ret: the return of the kernel function
+          - launch_op_ret:   the return of the launch op
+        """
+    
+        requiredArgs = dkwargs.get("requiredArgs", [])
+        optionalArgs = dkwargs.get("optionalArgs", [])
+        unitAttrNames = dkwargs.get("unitAttrNames", [])
+        valueAttrDict = dkwargs.get("valueAttrDict", {})
+        kernelGenHelper = dkwargs.get("kernelGenHelper", None)
+    
+        kernel_name = funcBody.__name__
+        signature = self._get_signature(funcBody)
+        self.funcBody = funcBody
+    
+        # Give each kernel a unique name. (The same kernel may be
+        # called multiple times, resulting in multiple kernel traces.)
+        # The mangled name of Python function is part of the name to
+        # improve readability.
+        kernel_name = f"kernel_{self.mangle_name(kernel_name, args, signature)}_{self.num_kernels}"
+        if hasattr(self, "_name_prefix") and self._name_prefix:
+            kernel_name = f"{self._name_prefix}_{kernel_name}"
+        self.num_kernels += 1
+    
+        # Step 0. Preprocess the arguments
+        def extract_args(
+            argNames: list[str], assertIfNone: bool = False
+        ) -> list[Any]:
+            extracted = []
+            for name in argNames:
+                value = kwargs.pop(name, None)
+                if assertIfNone and value is None:
+                    raise DSLUserCodeError(
+                        DiagId.LAUNCH_MISSING_ARG,
+                        name=name,
+                        kernel_name=kernel_name,
+                    )
+                extracted.append(value)
+    
+            return extracted
+    
+        RequiredArgs = namedtuple("RequiredArgs", requiredArgs)  # type: ignore[misc]
+        req_args = (
+            RequiredArgs._make(extract_args(requiredArgs, assertIfNone=True))
+            if requiredArgs
+            else None
+        )
+        OptionalArgs = namedtuple("OptionalArgs", optionalArgs)  # type: ignore[misc]
+        opt_args = (
+            OptionalArgs._make(extract_args(optionalArgs))
+            if optionalArgs
+            else None
+        )
+        assert kernelGenHelper is not None, (
+            "kernelGenHelper should be explicitly specified!"
+        )
+    
+        # Get bound arguments
+        bound_args = self._get_function_bound_args(
+            signature, kernel_name, *args, **kwargs
+        )
+    
+        # check arguments
+        self._check_arg_count(signature, bound_args, kernel_name)
+    
+        # Canonicalize the input arguments
+        canonicalized_args, canonicalized_kwargs = self._canonicalize_args(
+            bound_args
+        )
+    
+        kernel_operands, kernel_types, kernel_arg_attrs = (
+            self.generate_kernel_operands_and_types(
+                funcBody,
+                kernel_name,
+                signature,
+                canonicalized_args,
+                canonicalized_kwargs,
+            )
+        )
+    
+        loc = self.get_ir_location()
+        with self._enter_gpu_module():
+            log().debug("Generating device kernel")
+            if self.device_compilation_only:
+                log().debug("Generating cuda-python arguments")
+                # Convert input arguments to MLIR arguments
+                self.exe_args, kernel_types, _ = (
+                    self.generate_mlir_function_types(
+                        funcBody,
+                        kernel_name,
+                        canonicalized_args,
+                        canonicalized_kwargs,
+                        signature,
+                    )
+                )
+    
+            helper = kernelGenHelper()
+            fop = helper.generate_func_op(
+                kernel_types, kernel_arg_attrs, kernel_name, loc
+            )
+            log().debug(f"Kernel function op: {fop}")
+            for attr in unitAttrNames:
+                fop.attributes[attr] = ir.UnitAttr.get()
+            for key, val in valueAttrDict.items():
+                fop.attributes[key] = val
+    
+            fop.sym_visibility = ir.StringAttr.get("public")
+            with ir.InsertionPoint(helper.get_func_body_start()):
+                ir_args, ir_kwargs = self.generate_execution_arguments(
+                    canonicalized_args, canonicalized_kwargs, fop, signature
+                )
+                log().debug(
+                    f"IR arguments - args: {ir_args} ; kwargs: {ir_kwargs}"
+                )
+    
+>               kernel_ret = funcBody(*ir_args, **ir_kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../venv_k3/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/dsl.py:3023: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <moonep.grad_reduce.GradReduceKernel object at 0x7fdb36cf7500>
+expert_grad = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7fdb36cad820>
+reduce_buf = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7fdb30316ae0>
+tma_g2s_red = <cutlass.cute.atom.CopyAtom object at 0x7fdb30316ba0>
+tma_red = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7fdb30316b40>
+experts = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7fdb30316c60>
+meta = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7fdb30316bd0>
+bar = <[RuntimeError("An MLIR function requires a Location but none was provided in the call or from the surrounding environ...n with a 'loc=' argument or establish a default using 'with loc:'") raised in repr()] _Tensor object at 0x7fdb30316d80>
+rank = Int32(?), barrier_off = Int32(?)
+
+    def kernel(
+        self,
+        expert_grad: cute.Tensor,
+        reduce_buf: cute.Tensor,
+        tma_g2s_red: cute.CopyAtom,
+        tma_red: cute.Tensor,
+        experts: cute.Tensor,
+        meta: cute.Tensor,
+        bar: cute.Tensor,
+        rank: Int32,
+        barrier_off: Int32,
+    ):
+        E = cutlass.const_expr(self.E)
+        H = cutlass.const_expr(self.H)
+        Hp = cutlass.const_expr(self.Hp)
+        R = cutlass.const_expr(self.R)
+        B = cutlass.const_expr(self.B)
+        M_BLOCK = cutlass.const_expr(self.M_BLOCK)
+        N_BLOCK = cutlass.const_expr(self.N_BLOCK)
+        meta_stride = cutlass.const_expr(self.meta_stride)
+        num_ranks = cutlass.const_expr(self.R)
+        TILE_ELEMS = cutlass.const_expr(M_BLOCK * N_BLOCK)
+        MTILES = cutlass.const_expr(H // M_BLOCK)
+        NTILES = cutlass.const_expr(Hp // N_BLOCK)
+        TILES_PER_EXPERT = cutlass.const_expr(MTILES * NTILES)
+        EPN = cutlass.const_expr(E // R)
+    
+        STAGES = cutlass.const_expr(self.STAGES)
+        ACC_THREADS = cutlass.const_expr(self.ACC_THREADS)
+        num_threads = cutlass.const_expr(self.NUM_THREADS)
+        TILE_BYTES = cutlass.const_expr(TILE_ELEMS * 4)
+    
+        tidx, _, _ = cute.arch.thread_idx()
+        bidx, _, _ = cute.arch.block_idx()
+        warp_idx = cute.arch.make_warp_uniform(cute.arch.warp_idx())
+    
+        smem = utils.SmemAllocator()
+        load_mbar = smem.allocate_array(Int64, num_elems=2 * STAGES)
+        stage_smem = smem.allocate_tensor(
+            Float32,
+            cute.make_ordered_layout((M_BLOCK, N_BLOCK, STAGES), order=(1, 0, 2)),
+            byte_alignment=128,
+        )
+        # flat per-stage view of the same smem for the acc warps.
+        stage_flat = cute.make_tensor(
+            stage_smem.iterator,
+            cute.make_ordered_layout((TILE_ELEMS, STAGES), order=(0, 1)),
+        )
+        # prescan: cnt[le] and a per-expert-grouped slot list. cnt[EPN] holds
+        # running prefix; slist[off[le] .. off[le]+cnt[le]) are the matching rb.
+        off = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)
+        # compacted list of active local experts (off[le+1] > off[le]).
+        alist = smem.allocate_tensor(Int32, cute.make_layout((EPN,)), byte_alignment=16)
+        acnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)
+        slist = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)
+        # smem stage of experts[] (pre-biased to local ids) for the prescan.
+        sexp = smem.allocate_tensor(Int32, cute.make_layout((R * B,)), byte_alignment=16)
+        # slist fill cursors; cur[EPN] is a dummy bucket for invalid lanes.
+        cur = smem.allocate_tensor(Int32, cute.make_layout((EPN + 1,)), byte_alignment=16)
+        # this rank's own consumed slots (experts[rank,b] >= 0) for clearing.
+        clist = smem.allocate_tensor(Int32, cute.make_layout((B,)), byte_alignment=16)
+        ccnt = smem.allocate_tensor(Int32, cute.make_layout((1,)), byte_alignment=16)
+    
+        rank_epn = rank * EPN
+    
+        # ---- prescan experts once (parallel): bucket slots per local expert.
+        # A single-thread gmem scan of all R*B entries is bottlenecked by a
+        # serial load latency chain, so it must be cooperative: stage the
+        # table to smem with all threads, count with cta atomics, then have
+        # warp 0 fill slist chunk-by-chunk with match_any so the final order
+        # stays rb-ascending (bitwise-identical to the serial scan).
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):
+            sexp[i] = experts[i] - rank_epn
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):
+            off[i] = Int32(0)
+        if tidx == 0:
+            ccnt[0] = Int32(0)
+        cute.arch.sync_threads()
+        for i in cutlass.range(tidx, R * B, self.NUM_THREADS, unroll=1):
+            e = sexp[i]
+            if e >= Int32(0) and e < Int32(EPN):
+                cute.arch.atomic_add(off.iterator + (e + Int32(1)), Int32(1),
+                                     scope="cta")
+        # this rank's own consumed slots (experts[rank,b] >= 0), unordered.
+        for b in cutlass.range(tidx, B, self.NUM_THREADS, unroll=1):
+            if sexp[rank * B + b] >= Int32(0) - rank_epn:
+                pos = cute.arch.atomic_add(ccnt.iterator, Int32(1), scope="cta")
+                clist[pos] = Int32(b)
+        cute.arch.sync_threads()
+        # serial prefix + active-expert compaction over EPN (smem-only).
+        if tidx == 0:
+            run = Int32(0)
+            ac = Int32(0)
+            for le in cutlass.range(EPN, unroll=1):
+                c = off[le + 1]
+                if c > Int32(0):
+                    alist[ac] = Int32(le)
+                    ac = ac + Int32(1)
+                run = run + c
+                off[le + 1] = run
+            acnt[0] = ac
+        cute.arch.sync_threads()
+        for i in cutlass.range(tidx, EPN + 1, self.NUM_THREADS, unroll=1):
+            cur[i] = off[i]
+        cute.arch.sync_threads()
+        if warp_idx == 0:
+            lane = cute.arch.lane_idx()
+            lanes_lt = (Uint32(1) << lane) - Uint32(1)
+            NCHUNK = cutlass.const_expr((R * B + 31) // 32)
+            for c0 in cutlass.range(NCHUNK, unroll=1):
+                rb = c0 * 32 + lane
+                e = Int32(EPN)
+                if rb < Int32(R * B):
+                    ee = sexp[rb]
+                    if ee >= Int32(0) and ee < Int32(EPN):
+                        e = ee
+                peers = match_any_b32(e)
+                cell = cur.iterator + e
+                base = cute.arch.load(cell, Int32)
+                pos = base + Int32(cute.arch.popc(peers & lanes_lt))
+                cute.arch.sync_warp()
+                if (peers & lanes_lt) == Uint32(0):
+                    cute.arch.store(cell, base + Int32(cute.arch.popc(peers)))
+                cute.arch.sync_warp()
+                if e < Int32(EPN):
+                    slist[pos] = Int32(rb)
+        cute.arch.sync_threads()
+    
+        cta_tiler = (M_BLOCK, N_BLOCK)
+        smem_for_tma = cute.group_modes(stage_smem, 0, 2)
+        red_tiles = cute.zipped_divide(tma_red, cta_tiler)
+        tRsR, tRgR = cpasync.tma_partition(
+            tma_g2s_red, 0, cute.make_layout(1), smem_for_tma, red_tiles,
+        )
+        load_pipe = pipeline.PipelineTmaAsync.create(
+            barrier_storage=load_mbar, num_stages=STAGES,
+            producer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 1),
+            consumer_group=pipeline.CooperativeGroup(pipeline.Agent.Thread, 4),
+            tx_count=TILE_BYTES,
+        )
+        ld_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Producer, STAGES)
+        cd_state = pipeline.make_pipeline_state(pipeline.PipelineUserType.Consumer, STAGES)
+        acc_tid = tidx - 32
+        H_PER = cutlass.const_expr(TILE_ELEMS // ACC_THREADS)
+>       acc_reg = cute.make_fragment((H_PER,), Float32)
+                  ^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'cutlass.cute' has no attribute 'make_fragment'. Did you mean: 'make_fragment_like'?
+
+moonep/grad_reduce.py:295: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_grad_reduce.py::test_grad_reduce_case[single_tile] - Attrib...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 2.56s
+W0917 08:49:44.993000 43362 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 43430 closing signal SIGTERM
+E0917 08:49:45.058000 43362 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 43429) of binary: /workspace/venv_k3/bin/python3
+Traceback (most recent call last):
+  File "/workspace/venv_k3/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+pytest FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-17_08:49:45
+  host      : af9eec59c66e
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 43430) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-17_08:49:44
+  host      : af9eec59c66e
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 43429) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
