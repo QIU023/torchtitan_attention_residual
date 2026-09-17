@@ -7,7 +7,7 @@
 set -uo pipefail
 TAG=$1
 OUT=/workspace/mx3_${TAG}_$(date +%m%d_%H%M%S); mkdir -p "$OUT"
-export TORCHINDUCTOR_CACHE_DIR=$OUT/inductor
+export TORCHINDUCTOR_CACHE_DIR=$OUT/inductor TRITON_CACHE_DIR=$OUT/triton
 R=$OUT/results.txt; : > $R
 SEED_CFG=${SEED_CFG:-kimi_k3_debugmodel}
 echo "tree=$TITAN seed_cfg=$SEED_CFG batch=$BATCH" >> $R
@@ -21,6 +21,8 @@ SEED_FILES=$(find "$S/checkpoint" -type f 2>/dev/null | wc -l)
 echo "seed files=$SEED_FILES" >> $R
 
 loss_at(){ grep -oE "step: *$2 .*loss: *[0-9.]+" "$1" | head -1 | grep -oE 'loss: *[0-9.]+' | grep -oE '[0-9.]+'; }
+gn_at(){ grep -oE "step: *$2 .*grad_norm: *[0-9.]+" "$1" | head -1 | grep -oE 'grad_norm: *[0-9.]+' | grep -oE '[0-9.]+'; }
+lg(){ echo "$(loss_at "$1" $2)/$(gn_at "$1" $2)"; }
 
 stage_seed(){ local d=$1
   rm -rf "$d"; mkdir -p "$d"
@@ -43,14 +45,14 @@ cell(){ local nm=$1 np=$2 cfg=$3 envs=$4; shift 4
     ( source /workspace/kit/h200/env.sh && cd "$TITAN" && env $envs PYTHONPATH=$TITAN timeout 2400 torchrun \
       --nproc_per_node=$np --master_port=$((30000+RANDOM%20000)) -m torchtitan.train \
       --module kimi_k3 --config $cfg --debug.seed 42 --debug.deterministic \
-      --metrics.log_freq 1 --training.steps 10 $BATCH --checkpoint.enable \
+      --metrics.log_freq 1 --training.steps $( [ "$pass" = measure ] && echo ${STEPS:-10} || echo 10 ) $BATCH --checkpoint.enable \
       --checkpoint.interval 100000 --dump-folder "$d" "$@" > "$OUT/${nm}_$pass.log" 2>&1 ); rc=$?
     rm -rf "$d/checkpoint"
   done
   local L="$OUT/${nm}_measure.log" ok="seed-ok"
   grep -q "Loading the checkpoint from" "$L" || ok="ASSERT-SEED-FAIL"
-  printf "%-22s %-18s rc=%-3s s1=%-9s s3=%-9s s10=%-9s\n" "$nm" "$ok" "$rc" \
-    "$(loss_at "$L" 1)" "$(loss_at "$L" 3)" "$(loss_at "$L" 10)" >> $R; tail -1 $R; }
+  printf "%-22s %-18s rc=%-3s s1=%-18s s3=%-18s s10=%-18s s%s=%-18s\n" "$nm" "$ok" "$rc" \
+    "$(lg "$L" 1)" "$(lg "$L" 3)" "$(lg "$L" 10)" "${STEPS:-10}" "$(lg "$L" ${STEPS:-10})" >> $R; tail -1 $R; }
 
 while IFS='|' read -r nm np cfg envs flags; do
   [ -z "${nm// }" ] && continue

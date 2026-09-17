@@ -5,3 +5,4 @@ export CUDA_HOME=/usr/local/cuda-12.6
 export NCCL_NVLS_ENABLE=0 MOONEP_MEM_HANDLE_TYPE=${MOONEP_MEM_HANDLE_TYPE:-auto}
 export TITAN=/workspace/tt_moonep PYTHONPATH=/workspace/tt_moonep
 export TORCHINDUCTOR_COMPILE_THREADS=1
+export HF_HOME=/workspace/.hf_home
