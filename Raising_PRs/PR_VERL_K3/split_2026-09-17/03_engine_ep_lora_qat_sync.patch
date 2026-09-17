@@ -504,7 +504,7 @@ index 00000000..b7dcfe44
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 105b923e..f2cdf7d5 100644
+index d30386a4..e89ba90a 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -16,6 +16,7 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -828,7 +828,7 @@ index 105b923e..f2cdf7d5 100644
  
  _FSDP_GRAD_UPCAST_GUARDED = False
  
-@@ -1015,6 +1189,234 @@ def _cu_seqlens_from_positions(positions):
+@@ -1046,6 +1220,234 @@ def _cu_seqlens_from_positions(positions):
      return torch.cat((starts, starts.new_full((1,), num_tokens))).to(torch.int32)
  
  

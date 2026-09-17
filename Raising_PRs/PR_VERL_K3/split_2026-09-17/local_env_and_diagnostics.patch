@@ -115,7 +115,7 @@ index a138a760..537c5d57 100644
          )
          assert self.activation_checkpoint in ["selective", "full", "none"], (
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 48052f70..efd8fc55 100644
+index af53508a..85c4266a 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -17,9 +17,11 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -344,7 +344,7 @@ index 48052f70..efd8fc55 100644
  # Processor output names that differ from the model's forward parameters.
  _MULTIMODAL_KEY_ALIASES = {"grid_thws": "grid_thw", "image_grid_thw": "grid_thw"}
  # Multimodal tensors keep their own leading dimension (images, not the folded stream).
-@@ -1678,6 +1850,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1696,6 +1868,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                          attn_type=self.engine_config.attn_type,
                      )
                      extra_kwargs["attention_masks"] = attention_mask

@@ -1,3 +1,67 @@
+diff --git a/tests/workers/test_torchtitan_engine_config_fields.py b/tests/workers/test_torchtitan_engine_config_fields.py
+new file mode 100644
+index 00000000..669de523
+--- /dev/null
++++ b/tests/workers/test_torchtitan_engine_config_fields.py
+@@ -0,0 +1,58 @@
++# Copyright 2024 Bytedance Ltd. and/or its affiliates
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++"""Engine config fields the trainer cannot be built without: where the first load comes
++from, and the context-parallel backend the config itself refuses."""
++
++import unittest
++
++from verl.workers.config import TorchtitanEngineConfig
++from verl.workers.engine.torchtitan.transformer_impl import initial_checkpoint_source
++
++
++class TestInitialCheckpointSource(unittest.TestCase):
++    def test_a_dcp_path_takes_precedence_over_the_hf_weights(self):
++        load_in_hf, path = initial_checkpoint_source("/data/packed_dcp", "/models/kimi-k3")
++        self.assertFalse(load_in_hf)
++        self.assertEqual(path, "/data/packed_dcp")
++
++    def test_without_a_dcp_path_the_hf_weights_are_loaded(self):
++        load_in_hf, path = initial_checkpoint_source(None, "/models/kimi-k3")
++        self.assertTrue(load_in_hf)
++        self.assertEqual(path, "/models/kimi-k3")
++
++    def test_an_empty_path_is_not_a_dcp_path(self):
++        load_in_hf, path = initial_checkpoint_source("", "/models/kimi-k3")
++        self.assertEqual(path, "/models/kimi-k3")
++        self.assertIs(load_in_hf, False)
++
++
++class TestContextParallelBackendIsCheckedByTheConfig(unittest.TestCase):
++    """The engine's transform refuses an unknown backend too; this is the earlier gate."""
++
++    def test_the_two_backends_are_accepted(self):
++        for backend in ("ulysses", "allgather_kv"):
++            self.assertEqual(
++                TorchtitanEngineConfig(context_parallel_backend=backend).context_parallel_backend,
++                backend,
++            )
++
++    def test_an_unknown_backend_is_refused_with_its_name(self):
++        with self.assertRaises(AssertionError) as caught:
++            TorchtitanEngineConfig(context_parallel_backend="ring")
++        self.assertIn("ring", str(caught.exception))
++
++
++if __name__ == "__main__":
++    unittest.main()
 diff --git a/tests/workers/test_torchtitan_engine_cp_config.py b/tests/workers/test_torchtitan_engine_cp_config.py
 new file mode 100644
 index 00000000..6f074924
@@ -281,7 +345,7 @@ index 63783752..928daa74 100644
      spmd_backend: str = "spmd_types"
      activation_checkpoint: str = "selective"
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 6a4fd3c7..7cc1fd9f 100644
+index 6a4fd3c7..052e3178 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -17,6 +17,8 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -383,17 +447,17 @@ index 6a4fd3c7..7cc1fd9f 100644
 +            **_parallelism_compat_kwargs(
 +                self.engine_config.spmd_backend, self.engine_config.context_parallel_size > 1
 +            ),
++        )
++        load_in_hf, load_path = initial_checkpoint_source(
++            self.engine_config.initial_load_path, model_config.path
          )
-+        # A torchtitan DCP checkpoint takes precedence over the HF weights at model.path: a
-+        # model whose frozen bases are packed (QLoRA) has no HF spelling for them.
-+        dcp_path = self.engine_config.initial_load_path
          checkpoint = CheckpointManager.Config(
              enable=True,
 -            initial_load_in_hf=True,
-+            initial_load_in_hf=dcp_path is None,
++            initial_load_in_hf=load_in_hf,
              initial_load_model_only=True,
 -            initial_load_path=model_config.path,
-+            initial_load_path=dcp_path or model_config.path,
++            initial_load_path=load_path,
 +            # verl's trainer.save_freq is the cadence authority and save() is
 +            # only called on those steps; defer torchtitan's own interval to 1
 +            # so every requested save writes (default 500 silently drops all
@@ -491,9 +555,9 @@ index 6a4fd3c7..7cc1fd9f 100644
 +                    pred = pred.unsqueeze(0)
 +            else:
 +                pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
-+
-+        return self._finish_pred(pred)
  
++        return self._finish_pred(pred)
++
 +    def _finish_pred(self, pred: torch.Tensor) -> torch.Tensor:
 +        """Bring a stage's logits to the layout the loss side expects."""
 +        parallel_dims = self.parallel_dims
@@ -519,12 +583,21 @@ index 6a4fd3c7..7cc1fd9f 100644
          return pred
  
      def forward_step(self, micro_batch: TensorDict, loss_function, forward_only):
-@@ -674,6 +785,43 @@ class TorchTitanEngine(BaseEngine):
+@@ -674,6 +785,52 @@ class TorchTitanEngine(BaseEngine):
          return _gen(), None
  
  
 +# Multimodal tensors keep their own leading dimension (images, not the folded stream).
 +_MULTIMODAL_KEYS = ("pixel_values", "grid_thw", "pixel_values_videos", "grid_thw_videos", "special_tokens")
++
++
++def initial_checkpoint_source(initial_load_path: str | None, model_path: str) -> tuple[bool, str]:
++    """Where the first load comes from: ``(load_in_hf, path)``.
++
++    A torchtitan DCP checkpoint takes precedence over the HF weights at ``model.path``,
++    since a model whose frozen bases are packed (QLoRA) has no HF spelling for them.
++    """
++    return initial_load_path is None, initial_load_path or model_path
 +
 +
 +def _squeeze_folded(extra: dict) -> dict:
@@ -563,7 +636,7 @@ index 6a4fd3c7..7cc1fd9f 100644
  class EngineEvalModeCtx(BaseEngineCtx):
      def __init__(self, engine: TorchTitanEngine, **kwargs):
          super().__init__(engine=engine, mode="eval", **kwargs)
-@@ -773,6 +921,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -773,6 +930,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          # dict as extra_inputs are not forwarded to other stages in PP, but
          # extra_kwargs are.
          extra_kwargs: dict[str, Any] = {"attention_masks": attention_mask}
@@ -572,7 +645,7 @@ index 6a4fd3c7..7cc1fd9f 100644
          if self.parallel_dims.cp_enabled:
              input_ids, labels, extra_kwargs = prepare_context_parallel_input(
                  input_ids,
-@@ -782,10 +932,63 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -782,10 +941,63 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                  self.trainer.device,
                  self.trainer.config.parallelism.context_parallel_load_balancer,
              )
@@ -636,7 +709,7 @@ index 6a4fd3c7..7cc1fd9f 100644
          return input_ids, extra_inputs, extra_kwargs, output_args
  
      def prepare_model_outputs(self, logits, output_args, micro_batch: TensorDict):
-@@ -796,6 +999,12 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -796,6 +1008,12 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          temperature = micro_batch["temperature"]
          calculate_entropy = tu.get_non_tensor_data(data=micro_batch, key="calculate_entropy", default=False)
          labels = output_args["labels"]

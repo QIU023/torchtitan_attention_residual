@@ -402,3 +402,10 @@ The first cut's patches, manifest, assignment and item listing are kept in `work
 ## Regenerated 2026-09-17 evening on head `2bf5fbc3` (base `1a8a0f5f`)
 
 The branch was rebased onto upstream verl main `1a8a0f5f`; per file its diff against the base is byte-identical to before, so `work/assign.py` needed no remapping. `work/splitlib.py` now pins `BASE = "1a8a0f5f"` and `HEAD = "2bf5fbc3"` instead of reading `upstream/main` and `HEAD`, so the kit describes one pair of commits rather than whatever the worktree points at. Branch against base: 27 files changed, 2817 insertions(+), 92 deletions(-). The union of the seven patches reproduces the head exactly, every stage parses and is ruff-clean, and none of 01 to 06 carries a local marker (`work/verify.txt`).
+
+---
+## Regenerated 2026-09-17 evening on head `e8e3ba50`
+
+Two commits were added to the branch after the previous regeneration: the pipeline token budget factored into `pipeline_token_budget()` with its tests, and the initial checkpoint source factored into `initial_checkpoint_source()` with its tests and the config-level check of `context_parallel_backend`. Inserting two functions near the top of the engine file shifted every later line item, so `work/assign.py` was remapped by matching items between `2bf5fbc3` and `e8e3ba50` (2055 of 2094 matched) and the 39 genuinely new items were assigned by hand: the checkpoint source and its call site to patch 01, the token budget and its call site to patch 02, and one delete-insert pair that is only diff alignment noise follows its neighbour. The two new test files go whole to 01 and 02. Branch against base: 29 files changed, 2943 insertions(+), 92 deletions(-).
+
+`work/verify.txt` regenerated: each patch applies on the previous stage, `ast.parse` and `ruff --select F821,F811,F822` are clean at every stage, the union reproduces the head exactly, and none of 01 to 06 carries a local marker or a logbook path.

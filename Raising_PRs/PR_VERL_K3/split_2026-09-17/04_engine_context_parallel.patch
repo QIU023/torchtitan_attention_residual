@@ -591,7 +591,7 @@ index 928daa74..a138a760 100644
              f"spmd_backend {self.spmd_backend} not supported"
          )
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index f2cdf7d5..abe77bbd 100644
+index e89ba90a..4c5270a2 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -36,8 +36,7 @@ from torchtitan.components.optimizer import OptimizersContainer, ParamGroupConfi
@@ -679,7 +679,7 @@ index f2cdf7d5..abe77bbd 100644
          return pred
  
      def forward_step(self, micro_batch: TensorDict, loss_function, forward_only):
-@@ -1557,14 +1598,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1575,14 +1616,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
              output_args["pp_pad_len"] = pp_pad_len
          pad_multiple = 1
          if self.parallel_dims.cp_enabled:
@@ -699,7 +699,7 @@ index f2cdf7d5..abe77bbd 100644
          if self.parallel_dims.tp_enabled:
              # Sequence parallel scatters the token dim across the TP ranks, so the
              # packed stream must divide by the TP degree as well.
-@@ -1601,7 +1639,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1619,7 +1657,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                          attn_type=self.engine_config.attn_type,
                      )
                      extra_kwargs["attention_masks"] = attention_mask
