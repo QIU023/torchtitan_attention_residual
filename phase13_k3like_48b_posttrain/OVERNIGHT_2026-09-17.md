@@ -28,6 +28,8 @@ The controlled vision probe then passed as well: the 81 positions before the fir
 
 One coverage gap surfaced afterwards and was chased down. All ten cells ran on the default context-parallel backend `ulysses`; the other value, `allgather_kv`, fails before step 1 with `torch.compile with fullgraph=True found no compiled frames` inside the BlockMask sharding it alone performs. The engine's dynamo probe, armed inside the worker, contradicts the guess the plan had carried for weeks: dynamo is not disabled there (`disable=False`, `is_dynamo_supported=True`, `TORCHDYNAMO_DISABLE=None`). The one measured difference is the thread, `AsyncIO Thread, main=False`, since the colocated worker runs its forward on Ray's async actor thread. No mechanism is claimed from that single observation; the behaviour that can be stated is that under the colocated worker `ulysses` runs and `allgather_kv` does not.
 
+**Correction, same session:** the thread is not the cause. A minimal comparison in one process (`matrix_scripts/dynamo_thread_probe.py`, CPU only, no GPU needed) calls the same `torch.compile(fullgraph=True)` from the main thread, a plain worker thread and an asyncio event-loop thread, and all three compile and run. So running off the main thread does not by itself break `fullgraph=True`, and the cause of the `allgather_kv` failure is still open. The behavioural statement is unchanged and is the only thing the body should carry: under the colocated worker `ulysses` runs and `allgather_kv` does not.
+
 ## Status at 12:30Z
 
 ### veRL multimodal: the matrix is complete, ten cells, engine unchanged
