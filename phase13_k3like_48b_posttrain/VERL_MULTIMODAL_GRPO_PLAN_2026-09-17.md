@@ -90,3 +90,11 @@ The relaunched `img_tp2ep2` on its correct two-GPU shape passes as well, so ever
 The column that carries the argument is the third one. The rollout engine always has the images (vLLM builds its own features from the placeholder), so dropping them on the actor side alone should widen the actor-to-rollout log-prob gap, and it does, from 0.17050 to 0.18142. The size is the size to expect: four of the 111 prompt tokens are media pads, so a little under four percent of the positions change their embedding, and the mean gap moves six percent.
 
 What this is not: a controlled pair. The two runs are separate GRPO runs whose rollouts sample independently, so part of every difference above is sampling, and none of it is bitwise. The clean form of the check is one process, one micro-batch, two forwards, comparing the log-probs at the media-pad positions only; that needs a probe rather than a cell and is the next step for this line. Until then the drop-images pair is supporting evidence with the right sign and magnitude, and the prompt-length agreement remains the load-bearing fact that the images reach the batch at all.
+
+## The eight-GPU cells stall in Ray's placement, not in the model (2026-09-17, 11:55)
+
+Chain C's first cell (`img_dp2cp2tp2ep2`, fsdp 2 x cp 2 x tp 2 with ep 2) wrote its last line at 10:57:31, `worker group kwargs: {'device_name': 'cuda'}`, and then nothing for 58 minutes: no placement group, no `actor_rollout_init_model`, no vLLM server, and every GPU at 18 MiB and zero utilisation while the driver sat in its timeout. Nothing in the model or the engine ran at all.
+
+The cause is the Ray CPU budget, the failure mode already recorded for this box: the cell script passes `ray_kwargs.ray_init.num_cpus=24`, which was enough for the one, two and four-GPU cells but not for eight colocated workers, so the placement group is never satisfied and Ray waits instead of failing. The host has 64 cores, so the fix is to raise `RAY_CPUS` for the eight-GPU cells rather than to change anything in the engine.
+
+Two things this does not say: it is not a multimodal finding (no image ever reached a forward), and it leaves the four-axis shapes unverified. They are rerun with a larger budget.
