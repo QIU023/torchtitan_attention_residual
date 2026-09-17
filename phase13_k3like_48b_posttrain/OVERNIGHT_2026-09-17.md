@@ -26,6 +26,8 @@ veRL side also closed out since 12:30Z: the fork is at `e8e3ba50` with the initi
 
 The controlled vision probe then passed as well: the 81 positions before the first media pad are bitwise identical between a forward with images and one without, and everything from the pad onward moves by 6.8. Multimodal work across the parallelism axes is complete: ten cells, one controlled probe, and no engine change.
 
+One coverage gap surfaced afterwards and was chased down. All ten cells ran on the default context-parallel backend `ulysses`; the other value, `allgather_kv`, fails before step 1 with `torch.compile with fullgraph=True found no compiled frames` inside the BlockMask sharding it alone performs. The engine's dynamo probe, armed inside the worker, contradicts the guess the plan had carried for weeks: dynamo is not disabled there (`disable=False`, `is_dynamo_supported=True`, `TORCHDYNAMO_DISABLE=None`). The one measured difference is the thread, `AsyncIO Thread, main=False`, since the colocated worker runs its forward on Ray's async actor thread. No mechanism is claimed from that single observation; the behaviour that can be stated is that under the colocated worker `ulysses` runs and `allgather_kv` does not.
+
 ## Status at 12:30Z
 
 ### veRL multimodal: the matrix is complete, ten cells, engine unchanged
