@@ -169,3 +169,17 @@ The probe was extended to attempt a minimal `fullgraph=True` compile at the poin
 So at that moment, in that process and on that thread, dynamo compiles a function and runs it. The cell then fails a few frames later with the same "found no compiled frames" from torch's own `create_block_mask` compile, and it fails with the probe armed exactly as it does without it, so the probe's own successful compile does not warm anything into working. That removes a fifth candidate.
 
 What is left is specific: in this process, one callable compiles and another does not. The earlier check that `create_block_mask` is stock and compilable was run in a bare Python process, not in a worker that has imported vLLM and the engine, so the next measurement compiles `create_block_mask` itself in place and prints its identity there.
+
+### The decisive measurement (2026-09-17, 15:45)
+
+The probe was pointed at `create_block_mask` itself, compiled with the very arguments torch's context-parallel sharding uses, at the same point in the same worker:
+
+    lambda=OK(12) | create_block_mask=OK(BlockMask)
+    cbm.module=torch.nn.attention.flex_attention wrapped=False dynamo_disable=False
+    is_compiling=False | eval_frame_callback=True | thread=AsyncIO Thread, main=False
+
+So in that process, on that thread, at that moment, `torch.compile(create_block_mask, dynamic=False, fullgraph=True)` builds a BlockMask and returns it. The object is the stock one, unwrapped and not dynamo-disabled. The cell still fails a few frames later inside torch's own compile of the same function.
+
+Six candidates have now been measured and excluded: the tree, the backend, dynamo being disabled, the thread, a patched `create_block_mask`, and the possibility that a first successful compile warms the rest. What remains is narrow and does not need another GPU run to state: a compile of this function succeeds here while torch's own compile of it fails, so the difference lies in the context torch builds its wrapper in or in the arguments it passes, not in the environment, the object or the thread. The next step is reading `_context_parallel/_attention.py` around line 1242 rather than measuring again.
+
+For the PR body none of this changes the sentence to write: under the veRL colocated worker, `ulysses` is the context-parallel backend that runs and `allgather_kv` does not.
