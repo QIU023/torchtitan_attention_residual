@@ -16,6 +16,36 @@ State at logoff: MoonEP PR 4751 head `84f2704ce` (fused transport + lint + the o
 3. When torchtitan PR 4760 merges: add `MLAFlexInnerAttention.Config` to the engine's CP transform mapping (patch 04).
 4. No Qwen or upstream-model cells unless asked; at most two Ray clusters.
 
+## Status at 12:30Z
+
+### veRL multimodal: the matrix is complete, ten cells, engine unchanged
+
+    cell              shape                         steps  logprob diff  prompt length
+    img_tp2           tp 2                          3      0.14548       111.0
+    img_cp2           cp 2                          3      0.13497       111.0
+    img_ep2           fsdp 2 x ep 2                 3      0.13499       111.0
+    img_pp2           pp 2                          3      0.11449       111.0
+    img_tp2ep2        tp 2 x ep 2                   3      0.13816       111.0
+    img_cp2tp2        cp 2 x tp 2                   3      0.14940       111.0
+    img_pp2cp2        pp 2 x cp 2                   3      0.10457       111.0
+    img_fsdp2pp2ep2   fsdp 2 x pp 2 x ep 2          3      0.11079       111.0
+    img_pp2tp2cp2     pp 2 x tp 2 x cp 2            3      0.11032       111.0
+    img_dp2cp2tp2ep2  fsdp 2 x cp 2 x tp 2 x ep 2   3      0.15061       111.0
+
+Every axis alone, every pair that fits on eight cards, two triples and one quadruple. Prompt length 111 everywhere, which is the expanded media block, so each cell carried its images. Four axes at once is this box's ceiling: `dp x cp x tp x pp` must equal the device count and expert parallelism divides `dp x cp x tp`, so five at once needs sixteen cards.
+
+### What actually needed fixing
+
+Nothing in the engine. The changes of the night are one factored function with tests (`pipeline_token_budget`, whose environment fallback a real pipeline cell then exercised), and the harness: the runner's error filter matched the trainer's own configuration dump, its exit code is always zero so the step count is the verdict, the table generator now merges a hand rerun over the void row it replaces, and the Ray CPU budget now scales with the GPU count. That last one cost an hour: the first eight-GPU attempt sat in Ray's placement for 58 minutes on a 24-CPU budget with every GPU idle, which is not a multimodal finding at all.
+
+### Direct evidence for the vision path
+
+The drop-images pair widens the actor-to-rollout log-prob gap in the right direction and by a plausible size, but the two runs sample independently so it is supporting evidence, not a controlled check. The controlled probe (`k3_vision_causal_probe.py`) is written and its batch construction is smoked on CPU; three defects were fixed along the way (meta build and `init_weights`, fp32 weights under autocast since casting the module breaks the tower's rope cache, and the `(N, 588)` flattening the engine performs). Its model side is queued behind the matrix.
+
+### Running
+
+The 21-cell integration matrix on the rebased tree, then the probe.
+
 ## Status at 11:00Z
 
 ### veRL multimodal across the parallelism axes: seven cells green, engine unchanged
