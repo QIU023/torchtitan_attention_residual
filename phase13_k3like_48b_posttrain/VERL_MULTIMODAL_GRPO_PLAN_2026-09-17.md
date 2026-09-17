@@ -183,3 +183,17 @@ So in that process, on that thread, at that moment, `torch.compile(create_block_
 Six candidates have now been measured and excluded: the tree, the backend, dynamo being disabled, the thread, a patched `create_block_mask`, and the possibility that a first successful compile warms the rest. What remains is narrow and does not need another GPU run to state: a compile of this function succeeds here while torch's own compile of it fails, so the difference lies in the context torch builds its wrapper in or in the arguments it passes, not in the environment, the object or the thread. The next step is reading `_context_parallel/_attention.py` around line 1242 rather than measuring again.
 
 For the PR body none of this changes the sentence to write: under the veRL colocated worker, `ulysses` is the context-parallel backend that runs and `allgather_kv` does not.
+
+### Where the `allgather_kv` line stops, and why (2026-09-17, 15:50)
+
+Reading `_context_parallel/_attention.py` settles what the measurements had cornered. The wrapper is a module-level cache built once and reused:
+
+    global _compiled_create_block_mask
+    if _compiled_create_block_mask is None:
+        _compiled_create_block_mask = torch.compile(create_block_mask, dynamic=False, fullgraph=True)
+
+`_compiled_create_block_mask` starts as `None` at import and is filled by whichever call reaches `_create_cp_block_mask` first. So its state is fixed by the context of that first call, not by the context of the call that fails, which is exactly the asymmetry the probe measured: a wrapper built at the failing moment works, the cached one does not.
+
+A seventh candidate was checked and excluded with the other six: nothing on the preprocessing path disables dynamo. `torch_remat`, `spmd_types` and `vllm` carry no `compiler.disable`, no `_dynamo.disable` and no assignment to `dynamo.config.disable`.
+
+The line stops here on purpose. Pinning which earlier call fills that global, most likely somewhere in the rollout engine's own generation path, means instrumenting a torch internal across a phase boundary, and it would not change anything on this side: the backend is a torch context-parallel implementation detail, our code neither builds nor owns that wrapper. What the work needed is settled, and it is one sentence for the PR body: under the veRL colocated worker `ulysses` is the context-parallel backend that runs and `allgather_kv` does not. Every image cell of the matrix ran on `ulysses`, which is the supported path.
