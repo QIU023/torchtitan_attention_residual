@@ -54,6 +54,7 @@ Combinations:
     img_cp2tp2    cp 2 x tp 2    0   3      0.14940            111.0          3.85 to 4.04
     img_pp2cp2    pp 2 x cp 2    0   3      0.10457            111.0          3.89 to 4.09
     img_fsdp2pp2ep2  fsdp 2 x pp 2 x ep 2  0  3  0.11079          111.0          3.87 to 4.11
+    img_dp2cp2tp2ep2  fsdp 2 x cp 2 x tp 2 x ep 2  0  3  0.15061   111.0   3.78 to 4.07
     img_tp2ep2    tp 2 x ep 2    0   3      0.13816            111.0          3.91 to 4.02
 
 Every cell carried images rather than dropping them silently: `prompt_length/mean` is 111.0 in each, the same figure the dp2 image cell of the morning read and exactly what the builder produces offline for one row of this parquet (the expanded media block, four pads for a 56x56 image, plus the text); `data.image_key=images` and `return_multi_modal_inputs=True` are in both configuration dumps, and the grad norms (3.81 to 4.06) sit in the dp2 image cell's class (3.88 to 4.00). That is still indirect: the direct check is the drop-images diagnostic (`matrix_scripts/verl_drop_images.patch`, `KIMI_GRPO_DROP_IMAGES`), which runs the same batch text-only, and it waits for a free pair of GPUs.
@@ -98,3 +99,5 @@ Chain C's first cell (`img_dp2cp2tp2ep2`, fsdp 2 x cp 2 x tp 2 with ep 2) wrote 
 The cause is the Ray CPU budget, the failure mode already recorded for this box: the cell script passes `ray_kwargs.ray_init.num_cpus=24`, which was enough for the one, two and four-GPU cells but not for eight colocated workers, so the placement group is never satisfied and Ray waits instead of failing. The host has 64 cores, so the fix is to raise `RAY_CPUS` for the eight-GPU cells rather than to change anything in the engine.
 
 Two things this does not say: it is not a multimodal finding (no image ever reached a forward), and it leaves the four-axis shapes unverified. They are rerun with a larger budget.
+
+With the Ray budget raised to 48 CPUs the eight-GPU cells start immediately, and the widest shape this box can hold, data-parallel sharding by context parallel by tensor parallel with expert parallelism dividing their product, passes with the same prompt length as every other cell. Four axes at once, images intact, no engine change.
