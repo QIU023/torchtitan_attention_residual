@@ -38,3 +38,25 @@ Each engine PR's body states which torchtitan tree it was run against; the K3 PR
 - The engine cells that pass on the ported engine: cp2, fsdp2 x pp2, tp2 x ep2, cp2 x tp2 (all 3 steps, rc 0, fsdp2 grad-norm class); the QLoRA packed-base sync needs `initial_load_path` (a packed DCP from `scripts/quantize_lora_dcp.py`) and the merged sync, and the tree's merge had to learn a locally sharded packed base (`K3_INT_20260916.md`, the 09-17 section).
 - Two findings that belong to the K3 PR, not the engine PRs: the image-free placeholder path (`add_zero_valued_dependency`, tree `43ad3bfc2`) and the fused `w13` LoRA target (`0be1fee6f`).
 
+## What remains on the veRL side (2026-09-17)
+
+Before any PR:
+1. Strip and split (this plan's stack): drop the diagnostics, park the environment hacks, rewrite the history without trailers, one model-agnostic PR per capability.
+2. Run each engine capability on an upstream model (llama3 / qwen3 debug models through the same e2e runner): PP, TP on the packed stream, CP, the LoRA sync. Nothing but Kimi K3 has been through this engine; a reviewer runs their own model first.
+3. A CP unit test (cp=2, gloo, a packed two-document micro-batch through `prepare_model_inputs`, gathered logits equal to cp=1) and a same-batch gradient check of the CP gather's scaling (today's evidence is the grad-norm class only).
+4. Config fields with tests: `context_parallel_backend`, `sequence_parallel`, `initial_load_path`; `VERL_PP_TOKEN_BUDGET` from the environment into the config.
+5. Locate why the colocated worker cannot compile the all-gather-KV backend's BlockMask sharding (dynamo off in the worker), or document Ulysses as the supported backend.
+
+Engine coverage still missing:
+6. LoRA + CP (transform ordering: the flavor's `LoRAConverter` runs before the engine's `ContextParallelTransform`); untested, likely broken.
+7. PP + CP and PP + EP together (the bridge's CP gather, the sync from every stage with expert stacks); three-axis cells (fsdp2 x tp2 x ep2, cp2 x pp2).
+8. QLoRA: the fused `w13` projection under the packed layout (split `w1` / `w3` serialization against `w13.*` packed keys); the packed DCP has to be written by the engine venv's torch; the adapter-only path with a fused projection.
+9. Save and resume through the engine (verl `save_freq`, titan interval 1): a resume cell.
+10. Multimodal GRPO: the engine's "multimodal not yet supported" path (pixel values through `prepare_model_inputs`, the K3 processor, a multimodal reward and data); the image-free placeholder path is fixed for TP now.
+
+Numbers and venue:
+11. A real-weight cell (the released checkpoint or the 48B graft): the engine's rollout-vs-actor log-prob diff of 0.15 on the debug model means nothing; Miles quotes a 2e-3 KL floor at 2.8T.
+12. Throughput and memory per cell for the bodies (today's cells are 3-step smokes).
+13. The vLLM side: the engine runs on a source-built vLLM branch behind `VERL_VLLM_VERSION`; pin it against vLLM's own K3 support and document the export (`-rel`).
+14. The post-training venue decision (torchtitan RL #4680 or the veRL engine), the RFC's open question 2, before the K3 PR is filed on verl.
+
