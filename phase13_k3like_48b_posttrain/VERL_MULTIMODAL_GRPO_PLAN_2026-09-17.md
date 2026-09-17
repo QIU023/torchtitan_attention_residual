@@ -37,3 +37,15 @@ Two interactions that looked like they could break the placeholder alignment, bo
 - The tensor-parallel padding (`pad_multiple = lcm(cp * 128, tp)`) pads the same way and `_finish_pred` gathers only the vocabulary or sequence shard of the logits; no vision tensor passes through either.
 
 So no engine change is predicted for the image path under TP, PP or CP by itself. The open risk stays the one the survey named: `spmd.assert_type` on the vision tensors outside CP (the model declares the token layout replicated on TP for the scatter), which only a run can settle. The cells of `matrix_scripts/verl_img5d.sh` are what settles it.
+
+## Image cells across the parallelism axes (2026-09-17 evening, 8 x RTX 5060 Ti)
+
+`matrix_scripts/verl_img5d.sh`, two chains on disjoint GPU sets (two Ray clusters, the box's limit): the colour parquet, 8 prompts at n=2, 3 steps, the `rl` flavor on tree `/tmp/wt_int0916_rl`, engine `549c1e21`. Each cell is the image GRPO run under one parallelism shape; a cell counts as passing when its three steps complete (rc 0) and its rollout-vs-actor log-prob diff stays in the class the text cells read on this debug model (0.13 to 0.16).
+
+    cell     shape            rc  steps  logprob diff mean
+    img_tp2  tp 2             0   3      0.14548
+    img_cp2  cp 2             0   3      0.13497
+
+Both pass, which is what the code read predicted: the tensor-parallel padding and the logit gather never see a vision tensor, and under context parallel the model's own `preprocess_inputs` shards the vision bank with the stream. The `spmd.assert_type` risk the survey named for the vision tensors outside context parallel does not fire under TP.
+
+Reporting note: the runner's error filter greps the log for "Error", which also matches the trainer's configuration dump (`'truncation': 'error'`), so a passing row can carry that text; rc and the step count are the verdict. Fixed after the chains finish, since a running bash script must not be edited.
