@@ -46,7 +46,7 @@ timeout ${CELL_TIMEOUT:-7200} bash tests/special_e2e/run_ppo_trainer_torchtitan.
   +actor_rollout_ref.rollout.engine_kwargs.vllm.max_num_seqs=8 \
   actor_rollout_ref.rollout.max_num_batched_tokens=512 \
   actor_rollout_ref.rollout.max_model_len=1024 \
-  ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-24} \
+  ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-$(( ${NUM_GPUS:-2} * 6 < 24 ? 24 : ${NUM_GPUS:-2} * 6 ))} \
   actor_rollout_ref.rollout.gpu_memory_utilization=0.35 \
   "$@" > /workspace/${VERL_EXP_NAME:-grpo-k3-image}.log 2>&1
 rc=$?
