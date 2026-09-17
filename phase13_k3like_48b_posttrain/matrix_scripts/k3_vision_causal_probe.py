@@ -66,7 +66,9 @@ def main() -> None:
     init_weights = getattr(model, "init_weights", None)
     if init_weights is not None:
         init_weights(buffer_device=device)
-    model = model.to(torch.bfloat16)
+    # The weights stay in fp32 and the forward runs under autocast, which is what the
+    # trainer and the veRL engine do. Casting the module itself would also cast the
+    # vision tower's rope cache, and torch.polar refuses bf16.
     model.eval()
 
     tokens = ids.to(torch.int64)
@@ -80,19 +82,19 @@ def main() -> None:
 
     kwargs = dict(positions=positions, attention_masks=masks)
     def logits(**extra) -> torch.Tensor:
-        out = model(tokens, **kwargs, **extra)
+        with torch.no_grad(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+            out = model(tokens, **kwargs, **extra)
         # A stage that does not own the head returns its hidden states and stack.
         if isinstance(out, tuple):
             raise SystemExit("the model returned stage outputs; run this without pipeline parallelism")
         return out.float()
 
-    with torch.no_grad():
-        with_images = logits(
-            pixel_values=pixel_values.to(torch.bfloat16),
-            grid_thw=grid_thw,
-            special_tokens={"image_id": pad_id},
-        )
-        without_images = logits()
+    with_images = logits(
+        pixel_values=pixel_values,
+        grid_thw=grid_thw,
+        special_tokens={"image_id": pad_id},
+    )
+    without_images = logits()
 
     before = slice(0, first_pad)
     after = slice(first_pad, tokens.numel())
