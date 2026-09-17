@@ -22,7 +22,7 @@ def main():
             input_dict[k] = v.to(trainer.device)
     labels = input_dict["labels"]
     if "num_valid_tokens" in input_dict:  # the trainer pops it before the forward
-        local_valid = input_dict.pop("num_valid_tokens").to(trainer.device)
+        local_valid = torch.as_tensor(input_dict.pop("num_valid_tokens"), device=trainer.device)
     else:
         local_valid = (labels != IGNORE_INDEX).sum().to(trainer.device)
     pd = trainer.parallel_dims

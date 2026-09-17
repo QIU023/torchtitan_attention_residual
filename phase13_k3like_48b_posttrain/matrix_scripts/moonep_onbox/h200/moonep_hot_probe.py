@@ -10,6 +10,7 @@ import torch.distributed as dist
 from torch import nn
 from torch.distributed.device_mesh import init_device_mesh
 
+from torchtitan.distributed.spmd_types import set_current_spmd_mesh
 from torchtitan.models.common.moe import GroupedExperts
 from torchtitan.models.common.token_dispatcher import AllToAllTokenDispatcher
 from torchtitan.models.kimi_k3.moon_ep_dispatcher import MoonEPTokenDispatcher
@@ -84,8 +85,11 @@ def run(rank, R, mesh, params, routing, tag):
         core = GroupedExperts(GroupedExperts.Config(dim=D, hidden_dim=F, num_experts=E // R, activation_fn=SiTUGLU.Config(beta=BETA, linear_beta=LBETA))).to(dev)
         core.w1_EFD = nn.Parameter(params["w1"][lo:hi].to(dev, torch.bfloat16)); core.w2_EDF = nn.Parameter(params["w2"][lo:hi].to(dev, torch.bfloat16)); core.w3_EFD = nn.Parameter(params["w3"][lo:hi].to(dev, torch.bfloat16))
         x_std = x.clone().requires_grad_(True)
-        r_std, n_std, m_std = std.dispatch(x_std, weights, ids, counts)
-        out_std = std.combine(core(r_std, n_std), m_std, x_std)
+        # Core's dispatcher names its axis, which needs the ambient mesh the
+        # trainer would have entered.
+        with set_current_spmd_mesh(mesh):
+            r_std, n_std, m_std = std.dispatch(x_std, weights, ids, counts)
+            out_std = std.combine(core(r_std, n_std), m_std, x_std)
         d_std_ref = (out_std.float() - ref[my]).abs().max().item(); d_std_moon = (out_std.float() - out.float()).abs().max().item()
         print(f"STD_PATH rank {rank}: std_vs_ref={d_std_ref:.4f} moonep_vs_ref={d_out:.4f} std_vs_moonep={d_std_moon:.4f} (ref max {scale:.3f})", flush=True)
     except Exception as exc:  # noqa: BLE001
