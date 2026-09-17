@@ -16,6 +16,36 @@ State at logoff: MoonEP PR 4751 head `84f2704ce` (fused transport + lint + the o
 3. When torchtitan PR 4760 merges: add `MLAFlexInnerAttention.Config` to the engine's CP transform mapping (patch 04).
 4. No Qwen or upstream-model cells unless asked; at most two Ray clusters.
 
+## Status at 11:00Z
+
+### veRL multimodal across the parallelism axes: seven cells green, engine unchanged
+
+    cell             shape                  steps  logprob diff  prompt length
+    img_tp2          tp 2                   3      0.14548       111.0
+    img_cp2          cp 2                   3      0.13497       111.0
+    img_ep2          fsdp 2 x ep 2          3      0.13499       111.0
+    img_pp2          pp 2                   3      0.11449       111.0
+    img_cp2tp2       cp 2 x tp 2            3      0.14940       111.0
+    img_pp2cp2       pp 2 x cp 2            3      0.10457       111.0
+    img_fsdp2pp2ep2  fsdp 2 x pp 2 x ep 2   3      0.11079       111.0
+
+Every cell reads the same prompt length, 111, which is the expanded media block the builder produces offline for one row of this parquet, so each one carried its images into the policy instead of dropping them. The log-prob diffs stay in the class the text cells read on this debug model, and the gradient norms in 3.80 to 4.11. No engine change was needed for any of them, which is what the code read of the three vision routes predicted.
+
+Two findings about the harness rather than the engine: the cell script ends with an echo so its exit code is always zero and the step count is the only verdict; and `img_tp2ep2` as first written asked for four GPUs with `dp_shard 1, tp 2`, which torchtitan refuses because expert parallelism divides `dp_shard * cp * tp` instead of being a world dimension. That row is void and the cell is being rerun on two GPUs.
+
+### Also done since 10:30Z
+
+- The gradient probe and the gradient comparison both proven on this box: two ranks on the standard dispatcher from the cached seed, `GRAD_PROBE_OK loss=7.762686 n_params=726 total_norm=25.40821`, and the comparison resolving all 726 parameters into its eight groups with zero difference against itself. The `num_valid_tokens` fix holds, so the next H200 session starts from working scripts.
+- The matrix runner's error filter fixed (it was matching the trainer's own configuration dump) and the table generator rewritten to drop the meaningless exit code and pick up hand-relaunched cells.
+
+### Running now
+
+The relaunched `img_tp2ep2` on two GPUs, and the drop-images comparison on two more: the same batch twice, once normally and once with every vision tensor dropped before the forward, which is the direct evidence that the tower reaches the policy.
+
+### Next, when those two free the GPUs
+
+The 21-cell integration matrix on the rebased tree (`run_mx4_int0917.sh`), step-1 of every cell against `mx4_int0916c`.
+
 ## Status at 10:30Z
 
 Done and pushed:
