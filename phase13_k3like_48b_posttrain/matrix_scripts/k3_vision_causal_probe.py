@@ -43,7 +43,12 @@ def build_batch(export: str, device: torch.device):
     out = build_multimodal_processor_inputs(processor, text=text, images=[image])
     ids = out["input_ids"][0].to(device)
     pad_id = int(processor.tokenizer.convert_tokens_to_ids("<|media_pad|>"))
-    return ids, out["pixel_values"].to(device), out["grid_thws"].to(device), pad_id
+    pixel_values = out["pixel_values"].to(device)
+    # The processor emits (N, 3, 14, 14) and the patch embedding takes (N, 588); the
+    # engine flattens it in _model_multimodal_kwargs and so does this probe.
+    if pixel_values.dim() == 4:
+        pixel_values = pixel_values.flatten(1)
+    return ids, pixel_values, out["grid_thws"].to(device), pad_id
 
 
 def main() -> None:
