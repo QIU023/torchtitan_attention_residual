@@ -6,7 +6,7 @@ For PR 4656, repurposed (user, 2026-09-15, option a): retitle 4656 to the line a
 
 2026-09-16 audit of `7ec30e5a9`: the rebase's import hunk re-added `from spmd_types import SpmdType` to `model.py`, which nothing in the file uses since the TP merge dropped it (flake8 F401, so pre-commit and the lint job would fail). Removed on `ac_review3` = `37d595a47` (recompute `cc2031a37`, test `37d595a47`; the diff against main `810e62786` is otherwise the same: `model.py` +38/-3, `parallelize.py` +12/-2, test +171; no trailers). `k3_ac_reuse_attention` (PR 4656) still points at `7ec30e5a9` until the user syncs it; the smoke and the CPU tests below ran on `7ec30e5a9`, whose code differs from `37d595a47` by that one import line only.
 
-Numbers: the table below was measured on the pre-rebase head (main `b21f7d43e`) on one RTX 5060 Ti; the recompute commit is unchanged by the rebase, but per the H100 rule the body's table is rerun on H100 on `7ec30e5a9` before filing, and the 5060 only smokes (`int0915_logs/run_ac4656r.sh`: dp1 with AC none / selective / full, seeded, 3 steps). Smoke on `7ec30e5a9` (2026-09-16): rc 0 in all three modes, loss `12.62200` / `10.81623` / `8.22700` identical across none, selective and full (the step-1 value moved from `12.63048` with the base, main now carries quantile balancing), peak memory 14.17 / 12.68 / 12.53 GiB. `ac_review3` and `k3_ac_reuse_attention` both at `7ec30e5a9` (force-with-lease from `ea1316606`, the user's standing word for the draft). The RegionAC row of the old table is gone with the regions. Test plan names the new test file. Not run on this head: the 33-layer and pipeline cells.
+Current state (2026-09-17 audit, Windows side): PR 4656 head is `7e9622a22` on `k3_ac_reuse_attention` = `ac_review3`, two commits on current main `a3a819c67` (recompute `2e93aa4ae`, test `7e9622a22`), mergeable, no trailers and no cross-repo reference forms in either message. Every number in the paste section comes from `logs_acreuse_2026-09-17_h200/` on the H200 box and was re-read cell by cell against `results.txt` and the per-cell `steps.txt`; the 5060 table and its smoke are gone. The earlier heads named in the notes above (`37d595a47`, `7ec30e5a9`) are superseded by that rebase. Not run on this head: the 33-layer and pipeline cells, and the block-size-24 sensitivity pair stays in the logbook only.
 
 2026-09-17 (GPU box): rebased onto `a3a819c67` (no conflict) and pushed to both `k3_ac_reuse_attention` and `ac_review3`; then the scoped pre-commit run found flake8 F401 in the test file (`import torch_remat as remat`, unused since the re-authoring), removed by amending the test commit (author kept): PR 4656 head `7e9622a22` (recompute `2e93aa4ae`, test `7e9622a22`), mergeable. The H200 tables ran on `aded4756d`, whose training code is byte-identical to `7e9622a22` (the amend touched only the test file's import). Pyrefly's hook reports only `torch_checkpointing` missing-import errors here, an environment gap on the GPU box, none in the PR's files. Diff audited (`phase13_k3like_48b_posttrain/AC_REUSE_H200_2026-09-17.md`), nothing to strip. The Results table is being rerun on one H200 (`aded4756d` against `a3a819c67`, the protocol below plus the fresh-cache row and the b200 CI cell); the 5060 numbers stay only until that table lands.
 Table source (2026-09-17): the dp1 table is `logs_acreuse_2026-09-17_h200/dp1/` (`results.txt`, per-cell `steps.txt` and `log.txt`, `table.md` from `matrix_scripts/ac_h200/ac_table_md.py`); the CI-cell paragraph is `logs_acreuse_2026-09-17_h200/ci/` (four H200s, 10 steps); the scaling table is `logs_acreuse_2026-09-17_h200/scale/` (`results.txt`, per-cell `steps.txt` and `log.txt`; the block-size-24 sensitivity pair is there too and stays out of the body).
@@ -17,6 +17,7 @@ Table source (2026-09-16 audit): every cell is read from `logs_acreuse_2026-09-1
 ## Summary
 
 Wrap Kimi K3's attention-residual computation in checkpointing, so backward recomputes it, as described in section 5.2.2 of the Kimi K3 technical report ("The AttnRes computation is entirely wrapped with checkpointing, so the activation saved for the backward pass at each layer is identical to that of the standard residual architecture").
+
 - Run `_apply_attention_residual` under a `torch_remat` checkpoint in `kimi_k3/model.py` whenever autograd records it and no activation-checkpointing policy already covers the block, for the two residuals of every block, and always for the output aggregation.
 - Mark the blocks in `parallelize_kimi_k3` when selective, full or region AC checkpoints them, so their residuals run as plain calls inside that checkpoint.
 - Add a CPU test of the recompute: gradients bitwise against the unwrapped residual, the residual math run once more in backward, no stack-shaped saved tensor.
@@ -27,16 +28,17 @@ The residual upcasts the whole block stack and the prefix sum to fp32 and keeps 
 
 The saved set matches a standard residual block in every mode. With activation checkpointing off, the model guarantees it: each residual is a `torch_remat` checkpoint. Selective and full AC wrap the whole block in a torch checkpoint, which already keeps these intermediates out of the saved set, so `parallelize_kimi_k3` marks the block (`checkpoint_residual = False`) and its residuals run as plain calls; a second checkpoint inside would only recompute them again. Under RegionAC the block is a `torch_remat` checkpoint too, so the same flag applies. The output aggregation on the head stage sits outside every block checkpoint and always takes its own.
 
-
 ## Results
 
 One H200 (143 GB), this PR `aded4756d` against its base, main `a3a819c67`: the debug model, dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one inductor cache shared by every cell and warmed by a 1-step run of each; the fresh-cache row is main with activation checkpointing off, warmed and measured again on a cache of its own. Loss and grad norm are compared at all ten steps; peak memory is the max reserved figure the trainer logs; tps is the mean over steps 6 to 10.
+
 ```bash
 PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.train \
   --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic \
   --training.steps 10 --training.num-tokens-per-train-step 2048 \
   --training.num-tokens-per-microbatch-per-dp-rank 512 activation-checkpoint:none
 ```
+
 | tree | activation checkpointing | step 1 loss / grad norm | step 10 loss / grad norm | steps equal to main (loss and grad norm) | peak memory | tps (steps 6 to 10) |
 | --- | --- | --- | --- | ---: | ---: | ---: |
 | main | none | `12.31340` / `18.6250` | `3.68097` / `4.7188` | reference | 14.61 GiB | 1317 |
@@ -46,22 +48,27 @@ PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.trai
 | this PR | selective (the flavor default) | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 12.68 GiB | 692 |
 | main | full | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 12.52 GiB | 905 |
 | this PR | full | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 12.53 GiB | 918 |
+
 With activation checkpointing off the recompute saves 0.44 GiB of peak memory (14.61 to 14.17 GiB) for about 10% of throughput (1317 to 1186 tps; the fresh-cache row puts the spread of the cache alone at 3%). Under selective and full AC the residual runs as a plain call inside the block's own checkpoint, main's code path, so those rows sit inside that spread (selective 699 against 692 tps, full 905 against 918; memory 12.68 against 12.68 GiB and 12.52 against 12.53 GiB).
 
 How the saving scales (one H200, activation checkpointing off, dp1, bf16, seed 42, deterministic, 3 steps, one micro-batch per step, `activation-checkpoint:none`; 48 layers is the debug model doubled with full attention every fourth layer, the released `attn_res_block_size` 12 in both; peak memory is the max reserved figure at step 3; the four runs of a wave share the host, so tps is indicative):
-| layers | tokens per micro-batch | peak memory main | peak memory this PR | saved | step 3 loss / grad norm | tps main / this PR |
+
+| layers | tokens per micro-batch | peak memory main | peak memory this PR | saved | step 3 loss / grad norm, main and this PR | tps main / this PR |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: |
-| 24 | 512 | 13.95 GiB | 13.54 GiB | 0.41 GiB (3%) | equal | 1241 / 1163 |
-| 24 | 4096 | 30.23 GiB | 26.94 GiB | 3.29 GiB (11%) | equal | 8433 / 8234 |
-| 24 | 8192 | 48.48 GiB | 41.89 GiB | 6.59 GiB (14%) | equal | 15909 / 13880 |
-| 24 | 16384 | 86.50 GiB | 73.18 GiB | 13.32 GiB (15%) | equal | 25600 / 25992 |
-| 48 | 4096 | 56.37 GiB | 46.78 GiB | 9.59 GiB (17%) | equal | 5573 / 5123 |
-| 48 | 8192 | 94.84 GiB | 75.61 GiB | 19.23 GiB (20%) | equal | 10003 / 9716 |
-| 48 | 16384 | out of memory | 134.20 GiB | fits | (main has no step) | . / 13386 |
-The saved set is the fp32 attention-residual intermediates, tokens times (stack entries plus one) times the model width per layer, so it grows with the tokens per micro-batch and with depth: 0.4 GiB at 512 tokens, 13.3 GiB at 16384 tokens on 24 layers, 19.2 GiB on 48 layers at 8192 tokens; at 48 layers and 16384 tokens main runs out of memory on the 143 GB card and this PR trains at 134 GiB.
+| 24 | 512 | 13.95 GiB | 13.54 GiB | 0.41 GiB (3%) | `9.47477` / `25.2500` | 1241 / 1163 |
+| 24 | 4096 | 30.23 GiB | 26.94 GiB | 3.29 GiB (11%) | `9.44756` / `24.1250` | 8433 / 8234 |
+| 24 | 8192 | 48.48 GiB | 41.89 GiB | 6.59 GiB (14%) | `9.26737` / `23.3750` | 15909 / 13880 |
+| 24 | 16384 | 86.50 GiB | 73.18 GiB | 13.32 GiB (15%) | `9.52586` / `24.1250` | 25600 / 25992 |
+| 48 | 4096 | 56.37 GiB | 46.78 GiB | 9.59 GiB (17%) | `10.38442` / `29.5000` | 5573 / 5123 |
+| 48 | 8192 | 94.84 GiB | 75.61 GiB | 19.23 GiB (20%) | `10.36013` / `30.5000` | 10003 / 9716 |
+| 48 | 16384 | out of memory | 134.20 GiB | fits | this PR `10.44579` / `31.2500` | no step / 13386 |
+
+Loss and grad norm are equal between main and this PR at every step of every pair that ran. The saved set is the fp32 attention-residual intermediates, tokens times (stack entries plus one) times the model width per layer, so it grows with the tokens per micro-batch and with depth: 0.4 GiB at 512 tokens, 13.3 GiB at 16384 tokens on 24 layers, 19.2 GiB on 48 layers at 8192 tokens; at 48 layers and 16384 tokens main runs out of memory on the 143 GB card and this PR trains at 134 GiB.
+
 The b200 CI cell (`torchtitan_recipes.tests.b200:kimi_k3_debugmodel_mm` on `a3a819c67`: fsdp 2 x tp 2 with sequence parallel x ep 2, SPMD type checking on, which forces activation checkpointing off), 10 steps on four H200s, one shared warm cache: loss and grad norm equal on all ten steps on main and on this PR (`12.47494` / `25.2500` at step 1, `4.34180` / `4.9688` at step 10); rank 0 peak reserved memory 8.68 GiB on main, 7.85 GiB with this PR (0.83 GiB, at 8192 tokens per rank per micro-batch); tps over steps 6 to 10 438 against 424. Passing `activation-checkpoint:none` explicitly gives the same figures on both trees.
 
 ## Test plan
+
 - `pytest tests/unit_tests/cpu/test_kimi_k3_attention_residual_recompute.py -q` (`3 passed`)
 - Scoped pre-commit checks, including formatting and Pyrefly (`passed`)
 
