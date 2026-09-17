@@ -15,3 +15,15 @@ State at logoff: MoonEP PR 4751 head `84f2704ce` (fused transport + lint + the o
 2. Rebase the fork onto upstream verl main, regenerate the split patches (`Raising_PRs/PR_VERL_K3/split_2026-09-17/work/build.py`), rerun the CPU/gloo tests.
 3. When torchtitan PR 4760 merges: add `MLAFlexInnerAttention.Config` to the engine's CP transform mapping (patch 04).
 4. No Qwen or upstream-model cells unless asked; at most two Ray clusters.
+
+## Status at 10:30Z
+
+Done and pushed:
+
+- veRL fork rebased onto upstream verl main `1a8a0f5f` (64 commits, no conflict, per-file diffs unchanged, 26 CPU tests pass), then the pipeline token budget factored into `pipeline_token_budget()` with five CPU tests. Head `6f71c346`.
+- The split kit regenerated and verified on that head (`split_2026-09-17/`, base `1a8a0f5f`): the union reproduces the head, every stage parses and is ruff-clean, no local marker in patches 01 to 06.
+- The integration tree rebased onto torchtitan main `a3a819c67` (81 commits, one conflict in `config/transform/context_parallel.py` resolved to the tree's loop with main's typing), head `31a1b39fa` in `/tmp/wt_int0917`; 153 CPU tests pass, the one failure and the five uncollectable files are this box's missing packages and fail the same way on pristine main. Launcher `run_mx4_int0917.sh` ready, every flavor it names verified present.
+- MoonEP: body requirements, limitations and the H200 test plan; the next-session order (`MOONEP_NEXT_H200_2026-09-17.md`); the hot probe's standard-path branch wrapped in the ambient mesh; the gradient probe's token-count fix. RFC 3029's MoonEP, AC and 5D rows refreshed.
+- The image path read against TP, PP and CP before running anything, and the first two cells (tp 2, cp 2) pass with images actually carried.
+
+Running: the image cells across the axes, two chains. Waiting on GPUs: the 21-cell integration matrix, the drop-images diagnostic, the MoonEP gradient probe.
