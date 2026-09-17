@@ -60,3 +60,7 @@ Numbers and venue:
 13. The vLLM side: the engine runs on a source-built vLLM branch behind `VERL_VLLM_VERSION`; pin it against vLLM's own K3 support and document the export (`-rel`).
 14. The post-training venue decision (torchtitan RL #4680 or the veRL engine), the RFC's open question 2, before the K3 PR is filed on verl.
 
+## Addendum, 2026-09-17 morning: PR 4760
+
+pytorch/torchtitan#4760 (acisseJZhong, draft, "Optimize Ulysses Comm for MLA", 1/3 of a stack on `kda_cp`) is the maintainers' version of #4313's packed Ulysses for MLA: a new `MLAFlexInnerAttention` whose forward takes MLA's packed per-head K/V channels and the head-shared rope key (`q_THK, kv_THP, k_rope_TR`), `UlyssesCPMLAFlexInnerAttention` with one all-to-all of `cat(q, kv_packed)` and one all-gather of the shared key, materialising K/V after the exchange, and an all-gather-KV twin. Same communication as #4313's kernel, without the expand-then-split copy the unified `(q, k, v)` interface cost there. When it merges, the MLA inner attention's config type changes, and the engine's `_context_parallel_transform` mapping needs the entry `MLAFlexInnerAttention.Config` to `UlyssesCPMLAFlexInnerAttention` (and the all-gather twin under `allgather_kv`); patch 04 carries it.
+
