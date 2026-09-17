@@ -1,21 +1,3 @@
-# AC reuse (PR 4656) results on 4 x H200, 2026-09-17
-
-The user's order after the MoonEP stop: run every AC-reuse result and make the PR ready.
-
-## Branch
-
-`k3_ac_reuse_attention` rebased from main `810e62786` onto `a3a819c67` (8 commits, no conflict) in `/tmp/wt_ac_rb`: `2e93aa4ae` (recompute) + `aded4756d` (its CPU test), per-file diffs identical to `cc2031a37` + `37d595a47`, no trailers, `test_kimi_k3_attention_residual_recompute.py` 3 passed. Force-pushed with leases to `k3_ac_reuse_attention` and `ac_review3` (08:10Z); PR 4656 head `aded4756d`, base `a3a819c67`, mergeable.
-
-Diff audit (`git diff a3a819c67 aded4756d`, 3 files, +221/-5): `model.py` adds `_checkpointed_attention_residual` (a `torch_remat` checkpoint when autograd records the residual), the block's `checkpoint_residual` flag and `_attention_residual`, and routes the two block residuals and the head's output residual through them; `parallelize.py` clears the flag under selective, full and region AC; the test file has 9 comment lines and 4 docstring lines out of 171, no logbook path, no measured value, no first person. Nothing to strip.
-
-## Protocol on the box
-
-`matrix_scripts/ac_h200/run_ac_table.sh`: `tt_main` = upstream `a3a819c67`, `tt_ac` = `aded4756d`, both with the KDA guard lift (Hopper); the debug model, dp1, one H200, bf16, seed 42, deterministic, 2048 tokens per step in 512-token micro-batches; for each of main and PR and each of `activation-checkpoint:none`, the flavor default (selective) and `activation-checkpoint:full`: a 1-step warm run on one shared inductor cache, then the 10-step measured run on it; the floor row is main/none warmed and measured again on a fresh cache. Per step the log's loss, grad norm, `memory` (max reserved) and `tps` are kept (`<cell>/steps.txt`).
-
-## Results
-
-### dp1 table (08:25Z), `logs_acreuse_2026-09-17_h200/dp1/`
-
 | cell | step 1 loss / grad norm | step 10 loss / grad norm | steps equal to main_none (loss and grad norm) | peak memory (rank 0, max reserved) | tps (steps 6 to 10) |
 | --- | --- | --- | ---: | ---: | ---: |
 | floor_main_none | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 14.61 GiB | 1281 |
@@ -34,9 +16,3 @@ per step (loss/grad norm; memory; tps):
   pr_full: 1:12.31340/18.6250;10.27;119  2:10.75460/18.3750;12.53;902  3:8.11280/12.2500;12.53;899  4:7.07008/11.2500;12.53;886  5:6.72171/8.6875;12.53;928  6:5.40681/5.4375;12.53;930  7:4.96128/4.7500;12.53;911  8:4.01646/4.2812;12.53;922  9:3.99876/5.2500;12.53;920  10:3.68097/4.7188;12.53;908
   pr_none: 1:12.31340/18.6250;10.34;123  2:10.75460/18.3750;14.17;1153  3:8.11280/12.2500;14.17;1196  4:7.07008/11.2500;14.17;1216  5:6.72171/8.6875;14.17;1150  6:5.40681/5.4375;14.17;1179  7:4.96128/4.7500;14.17;1186  8:4.01646/4.2812;14.17;1202  9:3.99876/5.2500;14.17;1161  10:3.68097/4.7188;14.17;1201
   pr_selective: 1:12.31340/18.6250;10.27;113  2:10.75460/18.3750;12.68;686  3:8.11280/12.2500;12.68;685  4:7.07008/11.2500;12.68;682  5:6.72171/8.6875;12.68;692  6:5.40681/5.4375;12.68;702  7:4.96128/4.7500;12.68;689  8:4.01646/4.2812;12.68;673  9:3.99876/5.2500;12.68;688  10:3.68097/4.7188;12.68;709
-
-Every cell equals main at all ten steps in loss and grad norm (the recompute changes no value). Activation checkpointing off: 0.44 GiB saved (14.61 to 14.17 GiB) for 10% tps (1317 to 1186); the fresh-cache floor row moves tps by 3% (1317 to 1281) and memory by nothing. Selective and full AC: main's code path, rows inside the floor. The same 0.44 GiB the 5060 measured.
-
-### CI cell, 4 GPUs
-
-(pending)

@@ -9,6 +9,7 @@ For PR 4656, repurposed (user, 2026-09-15, option a): retitle 4656 to the line a
 Numbers: the table below was measured on the pre-rebase head (main `b21f7d43e`) on one RTX 5060 Ti; the recompute commit is unchanged by the rebase, but per the H100 rule the body's table is rerun on H100 on `7ec30e5a9` before filing, and the 5060 only smokes (`int0915_logs/run_ac4656r.sh`: dp1 with AC none / selective / full, seeded, 3 steps). Smoke on `7ec30e5a9` (2026-09-16): rc 0 in all three modes, loss `12.62200` / `10.81623` / `8.22700` identical across none, selective and full (the step-1 value moved from `12.63048` with the base, main now carries quantile balancing), peak memory 14.17 / 12.68 / 12.53 GiB. `ac_review3` and `k3_ac_reuse_attention` both at `7ec30e5a9` (force-with-lease from `ea1316606`, the user's standing word for the draft). The RegionAC row of the old table is gone with the regions. Test plan names the new test file. Not run on this head: the 33-layer and pipeline cells.
 
 2026-09-17 (GPU box): rebased onto `a3a819c67` (no conflict) and pushed to both `k3_ac_reuse_attention` and `ac_review3`; PR 4656 head `aded4756d`, mergeable. Diff audited (`phase13_k3like_48b_posttrain/AC_REUSE_H200_2026-09-17.md`), nothing to strip. The Results table is being rerun on one H200 (`aded4756d` against `a3a819c67`, the protocol below plus the fresh-cache row and the b200 CI cell); the 5060 numbers stay only until that table lands.
+Table source (2026-09-17): the dp1 table is `logs_acreuse_2026-09-17_h200/dp1/` (`results.txt`, per-cell `steps.txt` and `log.txt`, `table.md` from `matrix_scripts/ac_h200/ac_table_md.py`); the CI-cell paragraph still carries the 09-16 numbers until the 4-GPU H200 rerun (`logs_acreuse_2026-09-17_h200/ci/`) lands.
 Table source (2026-09-16 audit): every cell is read from `logs_acreuse_2026-09-14/report_item/` (`results.txt`, branch `a3e7d857c` = the same recompute over the same main; `tps_last5` there is the tps column) except the fresh-cache row, which is `logs_acreuse_2026-09-14/main_none_freshcache.log` (same main, same command, its own inductor cache). The earlier tps figures (838 / 788, 501 / 501, 608 / 616, from the `362b6cc70` run in `K3_INT_20260914.md`) have no logs in the logbook and are dropped; `main, full` was not run in `report_item/` and has no row. The b200 cell paragraph reads `mmfsdp2_{main,branch}_none` there (3 steps, cold caches per cell, so its tps is not quoted). The H100 rerun replaces all of it.
 
 --- PASTE BEGIN ---
@@ -29,25 +30,23 @@ The saved set matches a standard residual block in every mode. With activation c
 
 ## Results
 
-Pending rerun on H100 against current main; the table below is from one RTX 5060 Ti against main `b21f7d43e`, the base before the rebase. Debug model, dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one inductor cache shared by every cell and warmed by a 1-step run of each. Loss and grad norm are compared at all ten steps.
-
+One H200 (143 GB), this PR `aded4756d` against its base, main `a3a819c67`: the debug model, dp1, bf16, `seed=42`, deterministic, 2048 tokens per step in 512-token micro-batches, 10 steps, one inductor cache shared by every cell and warmed by a 1-step run of each; the fresh-cache row is main with activation checkpointing off, warmed and measured again on a cache of its own. Loss and grad norm are compared at all ten steps; peak memory is the max reserved figure the trainer logs; tps is the mean over steps 6 to 10.
 ```bash
 PYTHONPATH=<attention-gym main>:. torchrun --nproc_per_node=1 -m torchtitan.train \
   --module kimi_k3 --config kimi_k3_debugmodel --debug.seed 42 --debug.deterministic \
   --training.steps 10 --training.num-tokens-per-train-step 2048 \
   --training.num-tokens-per-microbatch-per-dp-rank 512 activation-checkpoint:none
 ```
-
 | tree | activation checkpointing | step 1 loss / grad norm | step 10 loss / grad norm | steps equal to main (loss and grad norm) | peak memory | tps (steps 6 to 10) |
 | --- | --- | --- | --- | ---: | ---: | ---: |
-| main | none | `12.63048` / `20.6250` | `3.64293` / `4.9062` | reference | 14.61 GiB | 853 |
-| main, fresh inductor cache | none | `12.63048` / `20.6250` | `3.64293` / `4.9062` | 10 / 10 | 14.15 GiB | 815 |
-| this PR | none | `12.63048` / `20.6250` | `3.64293` / `4.9062` | 10 / 10 | 14.17 GiB | 774 |
-| main | selective (the flavor default) | `12.63048` / `20.6250` | `3.64293` / `4.9062` | 10 / 10 | 12.68 GiB | 504 |
-| this PR | selective (the flavor default) | `12.63048` / `20.6250` | `3.64293` / `4.9062` | 10 / 10 | 12.72 GiB | 465 |
-| this PR | full | `12.63048` / `20.6250` | `3.64293` / `4.9062` | 10 / 10 | 12.52 GiB | 604 |
-
-With activation checkpointing off the recompute saves 0.44 GiB of peak memory (the fresh-cache row sizes what the inductor cache alone moves) for about 9% of throughput. Under selective and full AC the residual runs as a plain call inside the block's own checkpoint, main's code path, so those rows can only differ from main by the run-to-run spread of this box.
+| main | none | `12.31340` / `18.6250` | `3.68097` / `4.7188` | reference | 14.61 GiB | 1317 |
+| main, fresh inductor cache | none | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 14.61 GiB | 1281 |
+| this PR | none | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 14.17 GiB | 1186 |
+| main | selective (the flavor default) | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 12.68 GiB | 699 |
+| this PR | selective (the flavor default) | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 12.68 GiB | 692 |
+| main | full | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 12.52 GiB | 905 |
+| this PR | full | `12.31340` / `18.6250` | `3.68097` / `4.7188` | 10 / 10 | 12.53 GiB | 918 |
+With activation checkpointing off the recompute saves 0.44 GiB of peak memory (14.61 to 14.17 GiB) for about 10% of throughput (1317 to 1186 tps; the fresh-cache row puts the spread of the cache alone at 3%). Under selective and full AC the residual runs as a plain call inside the block's own checkpoint, main's code path, so those rows sit inside that spread (selective 699 against 692 tps, full 905 against 918; memory 12.68 against 12.68 GiB and 12.52 against 12.53 GiB).
 
 The b200 CI cell (`kimi_k3_debugmodel_mm_fsdp2` on that main: fsdp 2, SPMD type checking on, activation checkpointing off), 3 steps on 2 GPUs: loss `12.37844` / `11.15655` / `9.62056` and grad norm `24.5000` / `28.2500` / `18.0000` on main and on this PR; peak memory over the two ranks 15.04 GiB on main, 14.76 GiB with this PR.
 
