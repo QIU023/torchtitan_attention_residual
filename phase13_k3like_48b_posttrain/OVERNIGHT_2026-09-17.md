@@ -16,6 +16,16 @@ State at logoff: MoonEP PR 4751 head `84f2704ce` (fused transport + lint + the o
 3. When torchtitan PR 4760 merges: add `MLAFlexInnerAttention.Config` to the engine's CP transform mapping (patch 04).
 4. No Qwen or upstream-model cells unless asked; at most two Ray clusters.
 
+## Status at 15:10Z: T1 is done
+
+The 21-cell matrix on the rebased tree finished and **step 1 is identical to `mx4_int0916c` in all 21 cells**, so the rebase onto `a3a819c67` moves no numerics and the locate-before-writing rule never fired. Two cells move at steps 3 and 10 (`fsdp2_tp2_pp2`, `tp2_pp2`); the 09-16 record already shows the same pair moving between two runs of the same tree by the same amount, so it is their own behaviour rather than anything the rebase did.
+
+The tree is pushed to `k3_on_4025` at `31a1b39fa` (force-with-lease against `cf7418637`) and tagged `k3_int_20260917`. The full comparison table is in `K3_INT_20260917.md`.
+
+veRL side also closed out since 12:30Z: the fork is at `e8e3ba50` with the initial checkpoint source factored into a tested function alongside the pipeline token budget, and the split kit was regenerated and verified on that head (the assignment remapped across the two new functions, union reproduces the head, every stage clean).
+
+What is left needs a GPU and is running or queued: the controlled vision probe, now on its fourth fix (parameters to bf16 with buffers left in fp32, since casting everything breaks the tower's rope and casting nothing breaks Attention Gym's convolution).
+
 ## Status at 12:30Z
 
 ### veRL multimodal: the matrix is complete, ten cells, engine unchanged

@@ -71,9 +71,12 @@ def main() -> None:
     init_weights = getattr(model, "init_weights", None)
     if init_weights is not None:
         init_weights(buffer_device=device)
-    # The weights stay in fp32 and the forward runs under autocast, which is what the
-    # trainer and the veRL engine do. Casting the module itself would also cast the
-    # vision tower's rope cache, and torch.polar refuses bf16.
+    # Parameters to bf16, buffers left in fp32. Casting the whole module also casts the
+    # vision tower's rope inputs and torch.polar refuses bf16; leaving the parameters in
+    # fp32 makes Attention Gym's convolution reject a bf16 activation against an fp32
+    # weight. Casting only the parameters satisfies both.
+    for param in model.parameters():
+        param.data = param.data.to(torch.bfloat16)
     model.eval()
 
     tokens = ids.to(torch.int64)
@@ -95,7 +98,7 @@ def main() -> None:
         return out.float()
 
     with_images = logits(
-        pixel_values=pixel_values,
+        pixel_values=pixel_values.to(torch.bfloat16),
         grid_thw=grid_thw,
         special_tokens={"image_id": pad_id},
     )
