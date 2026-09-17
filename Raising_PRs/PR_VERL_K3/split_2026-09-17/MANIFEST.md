@@ -409,3 +409,12 @@ The branch was rebased onto upstream verl main `1a8a0f5f`; per file its diff aga
 Two commits were added to the branch after the previous regeneration: the pipeline token budget factored into `pipeline_token_budget()` with its tests, and the initial checkpoint source factored into `initial_checkpoint_source()` with its tests and the config-level check of `context_parallel_backend`. Inserting two functions near the top of the engine file shifted every later line item, so `work/assign.py` was remapped by matching items between `2bf5fbc3` and `e8e3ba50` (2055 of 2094 matched) and the 39 genuinely new items were assigned by hand: the checkpoint source and its call site to patch 01, the token budget and its call site to patch 02, and one delete-insert pair that is only diff alignment noise follows its neighbour. The two new test files go whole to 01 and 02. Branch against base: 29 files changed, 2943 insertions(+), 92 deletions(-).
 
 `work/verify.txt` regenerated: each patch applies on the previous stage, `ast.parse` and `ruff --select F821,F811,F822` are clean at every stage, the union reproduces the head exactly, and none of 01 to 06 carries a local marker or a logbook path.
+
+---
+## Regenerated on head `7db90d7a`
+
+The branch gained one more commit, the dynamo diagnostic that compiles `create_block_mask` in place (the probe that separated the environment from torch's cached wrapper while chasing the `allgather_kv` failure). It is diagnostic code, so all 31 of its new line items go to `local_env_and_diagnostics.patch`; two further new items at 785 and 786 are diff alignment noise over existing code and follow their neighbour into patch 01 rather than the diagnostic group. Branch against base: 29 files changed, 2974 insertions(+), 92 deletions(-).
+
+One trap worth recording, since it cost a rebuild: the remapping must start from the assignment as committed for the previous head. Running it twice over an already-remapped table shifts every index a second time and the builder then reports several dozen unassigned items. `git checkout` the table first and check that it succeeded.
+
+`work/verify.txt` regenerated: each patch applies on the previous stage, `ast.parse` and `ruff --select F821,F811,F822` are clean at every stage, the union reproduces `7db90d7a` exactly, and none of 01 to 06 carries a local marker or a logbook path.
