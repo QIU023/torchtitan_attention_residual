@@ -4,6 +4,13 @@ Draft stacked on PR 4312 (user, 2026-09-16). Review branch `pp_balance_review1` 
 
 To file: fork branch `k3_pp_balance` from `pp_balance_review1`, PR against `main`, title as above, body from the paste section. Independent of the offload draft; both stack on 4312.
 
+2026-09-17 audit (Windows side), verdict: not yet, two structural problems first. Re-read `git diff de6f29514 080f44208` line by line, including `pp_balance.py` in full: 3 files, +427/-1 (`pp_balance.py` 345 new, `parallelize.py` +19/-1, the pool test +64). The branch is one commit on `de6f29514`, 0 behind it, 62 behind `upstream/main`. `test_kimi_k3_pp_balance_pool.py` 5 passed here.
+
+- Blocking: `install_pp_balance` monkeypatches instances, `stage.forward_one_chunk = hooked` (`pp_balance.py:329`), and hangs the engine off the schedule as a private attribute, `pp_schedule._pp_balance_engine` with a `pyrefly: ignore[missing-attribute]` (`parallelize.py`). That is the pattern #4577 exists to refuse and the same finding that blocks the DEP draft. The seam is already there: `AttnResPipelineStage` overrides `forward_one_chunk` itself (`pipeline_stage.py:202`), so the hooks belong inside that override, gated by a field the stage carries, and the engine belongs on the stage or in the routing the stages already share.
+- Blocking: `atexit.register` prints the engine's counters to stdout on interpreter exit (`pp_balance.py:190-194`). Counters belong in the logger, at the point the run can use them.
+- Worth fixing before review: the engine hardcodes `127.0.0.1:{17000 + rank}` as its own address, which contradicts the Design paragraph's claim that the same wiring runs on a workstation and on a cluster (a multi-host job cannot resolve a peer at 127.0.0.1); `park()` calls `torch.cuda.current_stream().synchronize()` once per parked tensor, a full-stream sync on the hot path that the body does not mention; `_stats["skip_small"]` also counts non-CUDA, non-contiguous and oversized tensors, so the name misreports what the counter holds; comment plus docstring is 25.4% of the new lines (345 total, 222 code, 17 comment, 57 docstring) against #4577's 4.3%; and the message carries two `(cherry picked from commit ...)` lines.
+- Both drafts change the same part of `pipeline_kimi_k3`'s signature, so whichever lands second needs a rebase; as two separate drafts stacked on 4312 that is not a conflict, since each shows only its own diff against its base.
+
 --- PASTE BEGIN ---
 
 ## Summary

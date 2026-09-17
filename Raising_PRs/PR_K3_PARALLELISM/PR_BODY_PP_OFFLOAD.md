@@ -4,6 +4,11 @@ Draft stacked on PR 4312 (user, 2026-09-16: 4312 has been pending, the follow-up
 
 To file: create the fork branch `k3_pp_offload` from `pp_offload_review1` and open the PR against `main` with base commits showing 4312's diff too (as 4380 and 4381 do), title as above, body from the paste section.
 
+2026-09-17 audit (Windows side), verdict: ready to open as a draft once one line of the commit message goes. Re-read `git diff de6f29514 d49bb388b` line by line: 3 files, +58/-7 (`pipeline_stage.py` +28/-4, `parallelize.py` +18/-3, the store test +19); no hook, no monkeypatch, no module global, no environment switch, no logbook path and no measured value in source (swept). Branch is one commit on 4312's head `de6f29514` (= `k3_pp_text`), 0 behind it, 62 behind `upstream/main`, which is 4312's own distance. The CPU tests run here: `test_kimi_k3_pp_stage.py` 5 passed on this head (the new offload case takes its CPU pass-through branch; the CUDA half needs a GPU).
+
+- Blocking for filing: the commit message ends with `(cherry picked from commit 240c3205b...)`, a fork-private hash that means nothing upstream. Amend it away (the user re-authors, as on the AC branch) before the fork branch is cut.
+- Worth fixing, not blocking: `blocks()` moves every held tensor whose device is CPU once `self._device` has been set by any CUDA `put`, so the field is a store-wide device rather than per tensor. On the offload path every block comes from a CUDA stage, so a real run cannot hit it, but a store that mixes a genuine CPU tensor with CUDA blocks would migrate the CPU one; the new test only escapes it because it checks the CPU block before the CUDA `put`. Recording the device per stored block (or keeping the origin next to the tensor) removes the case.
+
 --- PASTE BEGIN ---
 
 ## Summary
