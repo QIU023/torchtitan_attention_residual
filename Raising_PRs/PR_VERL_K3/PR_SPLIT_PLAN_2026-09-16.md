@@ -34,7 +34,7 @@ Each engine PR's body states which torchtitan tree it was run against; the K3 PR
 
 ## Addendum, 2026-09-17
 
-- The engine commits of the night (`7b78ad99` CP port, `bfb5a5e6` DCP initial load, `dd292978` / `2e3b127f` / `a2ef3b93` the sequence_parallel, context_parallel_backend and initial_load_path fields, `580b2ef0` adapter-only naming through `to_hf`) carry no trailers; the 46 older commits of the branch carry `Co-Authored-By` / `Claude-Session` lines from earlier sessions. The split rewrites every commit anyway (step 2 of "Before a draft PR"), which is where those lines go.
+- The engine commits of the night (`7b78ad99` CP port, `bfb5a5e6` DCP initial load, `dd292978` / `2e3b127f` / `a2ef3b93` the sequence_parallel, context_parallel_backend and initial_load_path fields, `580b2ef0` adapter-only naming through `to_hf`) carry no trailers; 32 of the 46 older commits of the branch carry `Co-Authored-By` / `Claude-Session` lines from earlier sessions. The split rewrites every commit anyway (step 2 of "Before a draft PR"), which is where those lines go.
 - The engine cells that pass on the ported engine: cp2, fsdp2 x pp2, tp2 x ep2, cp2 x tp2 (all 3 steps, rc 0, fsdp2 grad-norm class); the QLoRA packed-base sync needs `initial_load_path` (a packed DCP from `scripts/quantize_lora_dcp.py`) and the merged sync, and the tree's merge had to learn a locally sharded packed base (`K3_INT_20260916.md`, the 09-17 section).
 - Two findings that belong to the K3 PR, not the engine PRs: the image-free placeholder path (`add_zero_valued_dependency`, tree `43ad3bfc2`) and the fused `w13` LoRA target (`0be1fee6f`).
 
