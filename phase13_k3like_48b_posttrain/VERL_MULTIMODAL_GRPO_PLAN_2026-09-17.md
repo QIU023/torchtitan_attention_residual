@@ -42,12 +42,13 @@ So no engine change is predicted for the image path under TP, PP or CP by itself
 
 `matrix_scripts/verl_img5d.sh`, two chains on disjoint GPU sets (two Ray clusters, the box's limit): the colour parquet, 8 prompts at n=2, 3 steps, the `rl` flavor on tree `/tmp/wt_int0916_rl`, engine `549c1e21`. Each cell is the image GRPO run under one parallelism shape; a cell counts as passing when its three steps complete (rc 0) and its rollout-vs-actor log-prob diff stays in the class the text cells read on this debug model (0.13 to 0.16).
 
-    cell     shape            rc  steps  logprob diff mean
-    img_tp2  tp 2             0   3      0.14548
-    img_cp2  cp 2             0   3      0.13497
+    cell     shape            rc  steps  logprob diff mean  prompt length  grad norm range
+    img_tp2  tp 2             0   3      0.14548            111.0          3.84 to 4.06
+    img_cp2  cp 2             0   3      0.13497            111.0          3.81 to 3.99
+    img_ep2  fsdp 2 x ep 2    0   3      0.13499            111.0          3.82 to 4.01
 
-Both carried images rather than dropping them silently: `prompt_length/mean` is 111.0 in each, the same figure the dp2 image cell of the morning read and exactly what the builder produces offline for one row of this parquet (the expanded media block, four pads for a 56x56 image, plus the text); `data.image_key=images` and `return_multi_modal_inputs=True` are in both configuration dumps, and the grad norms (3.81 to 4.06) sit in the dp2 image cell's class (3.88 to 4.00). That is still indirect: the direct check is the drop-images diagnostic (`matrix_scripts/verl_drop_images.patch`, `KIMI_GRPO_DROP_IMAGES`), which runs the same batch text-only, and it waits for a free pair of GPUs.
+Every cell carried images rather than dropping them silently: `prompt_length/mean` is 111.0 in each, the same figure the dp2 image cell of the morning read and exactly what the builder produces offline for one row of this parquet (the expanded media block, four pads for a 56x56 image, plus the text); `data.image_key=images` and `return_multi_modal_inputs=True` are in both configuration dumps, and the grad norms (3.81 to 4.06) sit in the dp2 image cell's class (3.88 to 4.00). That is still indirect: the direct check is the drop-images diagnostic (`matrix_scripts/verl_drop_images.patch`, `KIMI_GRPO_DROP_IMAGES`), which runs the same batch text-only, and it waits for a free pair of GPUs.
 
-Both pass, which is what the code read predicted: the tensor-parallel padding and the logit gather never see a vision tensor, and under context parallel the model's own `preprocess_inputs` shards the vision bank with the stream. The `spmd.assert_type` risk the survey named for the vision tensors outside context parallel does not fire under TP.
+All three pass, which is what the code read predicted: the tensor-parallel padding and the logit gather never see a vision tensor, and under context parallel the model's own `preprocess_inputs` shards the vision bank with the stream. The `spmd.assert_type` risk the survey named for the vision tensors outside context parallel does not fire under TP.
 
 Reporting note: the runner's error filter greps the log for "Error", which also matches the trainer's configuration dump (`'truncation': 'error'`), so a passing row can carry that text; rc and the step count are the verdict. Fixed after the chains finish, since a running bash script must not be edited.
