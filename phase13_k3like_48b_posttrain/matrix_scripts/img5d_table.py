@@ -60,9 +60,22 @@ def main() -> None:
             continue
         steps, diff, plen = from_log(cell)
         rows.append((cell, "(relaunched by hand)", steps, diff, plen))
+    # A cell rerun by hand carries a "_fix" suffix and supersedes the row it replaces,
+    # whose shape was wrong: report it under the original name and drop the void row.
+    fixed = {c[: -len("_fix")] for c, *_ in rows if c.endswith("_fix")}
+    shapes = {c: sh for c, sh, *_ in rows}
+    merged = []
+    for cell, shape, steps, diff, plen in rows:
+        if cell in fixed:
+            continue
+        if cell.endswith("_fix"):
+            base = cell[: -len("_fix")]
+            merged.append((base, shapes.get(base, shape), steps, diff, plen))
+            continue
+        merged.append((cell, shape, steps, diff, plen))
     print("| cell | shape | steps | log-prob diff mean | prompt length |")
     print("| --- | --- | ---: | ---: | ---: |")
-    for cell, shape, steps, diff, plen in rows:
+    for cell, shape, steps, diff, plen in sorted(merged):
         print(f"| {cell} | {shape} | {steps} | {diff} | {plen} |")
 
 
