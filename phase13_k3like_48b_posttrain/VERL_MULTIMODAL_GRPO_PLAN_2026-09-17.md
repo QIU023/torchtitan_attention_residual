@@ -22,3 +22,18 @@ Survey by a read-only subagent on 2026-09-17 (veRL fork `kimi_k3_integration_reb
 - `spmd_types` on un-annotated vision tensors outside CP (the engine annotates only through `preprocess_inputs`, only under CP): whether `spmd.assert_type` at `model.py:1013-1023` accepts them under TP needs a run.
 - vLLM's `PromptReplacement` on pre-tokenised ids, `qwen2_5_vl_dedup_image_tokens` on a K3 processor (`vllm_async_server.py:637`), and which `config.json` is live in the `-rel` export (three variants on disk; `media_placeholder_token_id` 163605 must equal `<|media_pad|>`).
 - GPU budget: the text cells run two 16 GB cards at `gpu_memory_utilization` 0.35; the tower and image activations on top are untested.
+
+## Addendum, 2026-09-17 evening: the image path read against every parallelism axis
+
+Code read before the cells, so a failure can be told from a design gap. The engine has three routes for the vision tensors and each one was followed to the model:
+
+- **No context parallel**: `_model_multimodal_kwargs` renames the processor's keys, keeps what the forward takes, adds `special_tokens={"image_id": ...}`, and the dict joins `extra_inputs` at the end of `prepare_model_inputs`. The model's `_prepare_multimodal_embeds` then runs the tower and scatters its features at the placeholder positions `get_vision_positions` finds.
+- **Context parallel**: the same dict goes into the batch handed to the model's `preprocess_inputs`, which builds `vision_bank_indices_T` and shards it with the stream; the engine clears its own copy so the tensors are not passed twice. The model takes the bank-index path (`gather_vision_embeds`) instead of the scatter.
+- **Pipeline**: `prepared.append((index, input_ids, {**extra_inputs, **extra_kwargs}))`, so every stage's forward receives the vision kwargs and only the stage that owns `tok_embeddings` acts on them; the others accept and ignore them.
+
+Two interactions that looked like they could break the placeholder alignment, both read and found sound:
+
+- The pipeline's token-budget padding appends `pad_token_id` tokens at the **end** of the packed stream and continues the positions; the media placeholders sit inside the stream and their count is unchanged, and the pad id (0) is not the media pad (163605), so `get_vision_positions` counts the same positions. The bridge cuts the logits back before the loss.
+- The tensor-parallel padding (`pad_multiple = lcm(cp * 128, tp)`) pads the same way and `_finish_pred` gathers only the vocabulary or sequence shard of the logits; no vision tensor passes through either.
+
+So no engine change is predicted for the image path under TP, PP or CP by itself. The open risk stays the one the survey named: `spmd.assert_type` on the vision tensors outside CP (the model declares the token layout replicated on TP for the scatter), which only a run can settle. The cells of `matrix_scripts/verl_img5d.sh` are what settles it.
