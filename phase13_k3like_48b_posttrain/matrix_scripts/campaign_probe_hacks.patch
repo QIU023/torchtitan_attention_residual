@@ -1,0 +1,340 @@
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index e2fe219b9..5af08bd6c 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -94,3 +94,75 @@ def kimi_k3_debugmodel(
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++
++
++def kimi_k3_debugmodel_33() -> Trainer.Config:  # LOCAL PROBE ALIAS (not committed)
++    """The 33-layer stress shape, for the depth comparison only."""
++    from . import model_registry
++
++    config = kimi_k3_debugmodel()
++    config.model_spec = model_registry("debugmodel_33_layers")
++    return config
++
++
++def _kimi_k3_pinned_split(num_layers: int, cut: int):  # LOCAL PROBE (not committed)
++    """A two-stage split with the boundary pinned at `cut`.
++
++    Spelled out by hand on purpose, to move the boundary on and off a block
++    start. The vision tower is placed explicitly because an explicit split
++    bypasses the entry that would otherwise pin it.
++    """
++    stage0 = ["vision_encoder", "tok_embeddings"] + [
++        f"layers.{i}" for i in range(cut)
++    ]
++    stage1 = [f"layers.{i}" for i in range(cut, num_layers)] + [
++        "norm",
++        "lm_head",
++        "output_res_proj",
++        "output_res_norm",
++    ]
++    return [stage0, stage1]
++
++
++def kimi_k3_debugmodel_33_cut24() -> Trainer.Config:  # LOCAL PROBE (not committed)
++    """33 layers, boundary moved ONTO a block start: no partial block crosses."""
++    from . import model_registry
++
++    config = kimi_k3_debugmodel()
++    config.model_spec = model_registry("debugmodel_33_layers")
++    config.parallelism.module_fqns_per_model_part = _kimi_k3_pinned_split(33, 24)
++    return config
++
++
++def kimi_k3_debugmodel_24_cut13() -> Trainer.Config:  # LOCAL PROBE (not committed)
++    """24 layers, boundary moved OFF a block start: a partial block crosses."""
++    config = kimi_k3_debugmodel()
++    config.parallelism.module_fqns_per_model_part = _kimi_k3_pinned_split(24, 13)
++    return config
++
++
++def kimi_k3_debugmodel_deep() -> Trainer.Config:  # LOCAL PROBE ALIAS (not committed)
++    """The 33-layer shape under the name the other session's seed cache is keyed on.
++
++    Same configuration as kimi_k3_debugmodel_33; the name exists so mx3's seed
++    key -- sha1(SEED_CFG|BATCH) -- resolves to the checkpoint that session
++    already built, rather than building a second copy of the same weights.
++    """
++    from . import model_registry
++
++    config = kimi_k3_debugmodel()
++    config.model_spec = model_registry("debugmodel_33_layers")
++    return config
++
++
++def kimi_k3_debugmodel_ppnaive() -> Trainer.Config:  # LOCAL PROBE (not committed)
++    """The debug model with the whole-stack pipeline transport."""
++    import functools
++
++    from .parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel()
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
+diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
+index 321450858..353097ce2 100644
+--- a/torchtitan/models/kimi_k3/kda.py
++++ b/torchtitan/models/kimi_k3/kda.py
+@@ -83,7 +83,7 @@ class KDAKernel(Module):
+         if not q_1THK.is_cuda:
+             raise RuntimeError("Attention Gym KDA requires CUDA tensors.")
+         capability = torch.cuda.get_device_capability(q_1THK.device)
+-        if capability not in {(10, 0), (10, 3)}:
++        if capability < (8, 0):  # local guard lift, uncommitted
+             raise RuntimeError(
+                 "Attention Gym KDA requires Blackwell SM100/SM103; "
+                 f"got CUDA capability {capability}."
+diff --git a/torchtitan/models/kimi_k3/model.py b/torchtitan/models/kimi_k3/model.py
+index b0588dc04..80f970d94 100644
+--- a/torchtitan/models/kimi_k3/model.py
++++ b/torchtitan/models/kimi_k3/model.py
+@@ -147,6 +147,10 @@ class KimiMLAAttention(BaseAttention):
+         return self.wo(out_TD)
+ 
+ 
++_PROBE_LID = [None]
++_PROBE_CALLS: dict = {}
++
++
+ def _apply_attention_residual(
+     partial_block_TD: torch.Tensor | None,
+     block_residual_TND: torch.Tensor,
+@@ -171,6 +175,34 @@ def _apply_attention_residual(
+     scores_TN = (keys_TND * score_weight_D).sum(dim=-1)
+     probs_T1N = torch.softmax(scores_TN, dim=-1).unsqueeze(1)
+     output_TD = torch.matmul(probs_T1N, values_float).squeeze(1)
++    _fd = __import__("os").environ.get("FWD_DUMP")  # LOCAL PROBE HACK (not committed)
++    if _fd:
++        import torch.distributed as _dist
++
++        _ws = _dist.get_world_size() if _dist.is_initialized() else 1
++        _rk = _dist.get_rank() if _dist.is_initialized() else 0
++        _lid = _PROBE_LID[0]
++        _k = (_rk, _lid)
++        _c = _PROBE_CALLS.get(_k, 0)
++        _PROBE_CALLS[_k] = _c + 1
++        __import__("torch").save(
++            {
++                "layer": _lid,
++                "call": _c,
++                "values_float": values_float.detach().cpu(),
++                "values_stride": tuple(values_TND.stride()),
++                "values_contig": bool(values_TND.is_contiguous()),
++                "values_dtype": str(values_TND.dtype),
++                "values_shape": tuple(values_TND.shape),
++                "block_stride": tuple(block_residual_TND.stride()),
++                "block_contig": bool(block_residual_TND.is_contiguous()),
++                "block_shape": tuple(block_residual_TND.shape),
++                "has_partial": partial_block_TD is not None,
++                "probs": probs_T1N.detach().cpu(),
++                "out": output_TD.detach().cpu(),
++            },
++            f"{_fd}.ws{_ws}.rank{_rk}.l{_lid}.c{_c}.pt",
++        )
+     return output_TD.to(values_TND.dtype)
+ 
+ 
+@@ -256,6 +288,7 @@ class KimiK3TransformerBlock(Module):
+             h_TD = x_TD
+         else:
+             assert self.attention_res_norm is not None
++            _PROBE_LID[0] = self.layer_id  # LOCAL PROBE HACK (not committed)
+             h_TD = _apply_attention_residual(
+                 partial_block_TD,
+                 block_residual_TND,
+diff --git a/torchtitan/models/llama3/__init__.py b/torchtitan/models/llama3/__init__.py
+index 30d74d323..20382db9c 100644
+--- a/torchtitan/models/llama3/__init__.py
++++ b/torchtitan/models/llama3/__init__.py
+@@ -374,8 +374,50 @@ def _405b(
+     )
+ 
+ 
++
++def _debugmodel_k3sized(  # LOCAL PROBE (not committed)
++    attn_backend: str,
++    tp_gemm_backend: TpGemmBackend = "default",
++    *,
++    seq_len: int,
++) -> Llama3Model.Config:
++    """The debug model at Kimi K3's debug depth and width, for a size-matched
++    comparison: 24 layers of width 1024 instead of 6 of width 256. Everything
++    else -- vocabulary, head count, FFN rule, RoPE -- is llama3's own."""
++    dim = 1024
++    n_heads = 16
++    n_layers = 24
++    return Llama3Model.Config(
++        dim=dim,
++        vocab_size=2048,
++        tok_embeddings=Embedding.Config(
++            num_embeddings=2048, embedding_dim=dim, param_init=_EMBEDDING_INIT
++        ),
++        norm=RMSNorm.Config(normalized_shape=dim, param_init=_NORM_INIT),
++        lm_head=Linear.Config(
++            in_features=dim, out_features=2048, param_init=_output_linear_init(dim)
++        ),
++        layers=_build_llama3_layers(
++            fuse_qkv=True,
++            n_layers=n_layers,
++            dim=dim,
++            n_heads=n_heads,
++            hidden_dim=compute_ffn_hidden_dim(dim, multiple_of=256),
++            rope=ComplexRoPE.Config(
++                dim=dim // n_heads,
++                max_context_length=seq_len,
++                theta=500000,
++                scaling="llama",
++            ),
++            attn_backend=attn_backend,
++            tp_gemm_backend=tp_gemm_backend,
++        ),
++    )
++
++
+ llama3_configs = {
+     "debugmodel": (_debugmodel, 131072),
++    "debugmodel_k3sized": (_debugmodel_k3sized, 131072),
+     "1B": (_1b, 131072),
+     "3B": (_3b, 131072),
+     "8B": (_8b, 131072),
+diff --git a/torchtitan/models/llama3/config_registry.py b/torchtitan/models/llama3/config_registry.py
+index 169376bae..a5b0c5382 100644
+--- a/torchtitan/models/llama3/config_registry.py
++++ b/torchtitan/models/llama3/config_registry.py
+@@ -477,3 +477,12 @@ def sft_debugmodel(
+         ),
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++
++
++def llama3_debugmodel_k3sized(  # LOCAL PROBE (not committed)
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """llama3_debugmodel at Kimi K3's debug depth and width."""
++    config = llama3_debugmodel(seq_len=seq_len)
++    config.model_spec = model_registry("debugmodel_k3sized", seq_len=seq_len)
++    return config
+diff --git a/torchtitan/trainer.py b/torchtitan/trainer.py
+index 516e11e9b..c22bebf76 100644
+--- a/torchtitan/trainer.py
++++ b/torchtitan/trainer.py
+@@ -896,6 +896,58 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                 local_valid_tokens += input_dict.pop("num_valid_tokens")
+                 microbatches.append(input_dict)
+             microbatch_groups.append(microbatches)
++        # LOCAL PROBE HACK (not committed): accumulation order only, with a log
++        # of the order actually applied so a null result can be told apart from
++        # an inert hook. Each group's forward and backward is unchanged.
++        _mb_order = os.environ.get("MB_ORDER")
++        _mb_rev = os.environ.get("MB_REVERSE") == "1"
++        _perm = list(range(len(microbatch_groups)))
++        if _mb_order:
++            _perm = [int(i) for i in _mb_order.split(",")]
++            assert sorted(_perm) == list(range(len(microbatch_groups)))
++        elif _mb_rev:
++            _perm = _perm[::-1]
++        if os.environ.get("MB_LOG") and self.step <= 1:
++            import torch.distributed as _d
++
++            if not _d.is_initialized() or _d.get_rank() == 0:
++                _ids = []
++                for _g in microbatch_groups:
++                    _d0 = _g[0]
++                    _t = None
++                    if isinstance(_d0, dict):
++                        for _k in ("input_ids", "tokens", "input"):
++                            if isinstance(_d0.get(_k), torch.Tensor):
++                                _t = _d0[_k]
++                                break
++                        if _t is None:
++                            for _v in _d0.values():
++                                if isinstance(_v, torch.Tensor) and _v.numel():
++                                    _t = _v
++                                    break
++                    _ids.append(
++                        [str(sorted(_d0.keys())) if isinstance(_d0, dict) else "?"]
++                        if _t is None
++                        else [int(_t.reshape(-1)[0]), float(_t.float().sum())]
++                    )
++                with open(os.environ["MB_LOG"], "a") as _f:
++                    _f.write(
++                        f"step={self.step} groups={len(microbatch_groups)} "
++                        f"perm={_perm} first_token_per_group_before={_ids} "
++                        f"after={[_ids[i] for i in _perm]}\n"
++                    )
++        if _perm != list(range(len(microbatch_groups))):
++            microbatch_groups = [microbatch_groups[i] for i in _perm]
++            # Unconditional, so a null result can never be mistaken for an
++            # inert hook: if this line is absent, no reordering happened.
++            import sys as _sys
++
++            print(
++                f"MB_REORDER_APPLIED step={self.step} perm={_perm} "
++                f"groups={len(microbatch_groups)}",
++                file=_sys.stderr,
++                flush=True,
++            )
+         sl.log_trace_scalar({"local_valid_tokens": local_valid_tokens})
+ 
+         # Keep the global token count on device so loss normalization does not
+@@ -979,6 +1031,21 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+                     accumulated_loss.add_(detached_loss)
+ 
+         with sl.log_trace_span("optim"):
++            if os.environ.get("GRAD_DUMP") and self.step == 1:  # LOCAL PROBE HACK (not committed)
++                import torch.distributed as _dist
++
++                _d = {}
++                for _m in self.model_parts:
++                    for _n, _p in _m.named_parameters():
++                        if _p.grad is None:
++                            continue
++                        _g = _p.grad
++                        _g = _g.full_tensor() if hasattr(_g, "full_tensor") else _g
++                        _d[_n] = _g.detach().float().cpu()
++                torch.save(
++                    _d,
++                    f"{os.environ['GRAD_DUMP']}.ws{_dist.get_world_size()}.rank{_dist.get_rank()}.pt",
++                )
+             grad_norm = dist_utils.clip_grad_norm_(
+                 [p for m in self.model_parts for p in m.parameters()],
+                 self.config.training.max_norm,
+@@ -1062,6 +1129,31 @@ class Trainer(torch.distributed.checkpoint.stateful.Stateful, Configurable):
+             **lr_metrics,
+             **collect_aux_loss_metrics(parallel_dims),
+         }
++        # LOCAL PROBE HACK (not committed): every rank writes its own file, so a
++        # non-last pipeline stage's -1.0 sentinel can never be mistaken for the
++        # loss. The reader takes the non-sentinel value.
++        _sd = os.environ.get("STEPS_DUMP")
++        if _sd and str(self.step) in _sd.split(","):
++            import torch.distributed as _d2
++
++            if not _d2.is_initialized() or _d2.get_rank() == _d2.get_world_size() - 1:
++                with open(os.environ["STEPS_FILE"], "a") as _f2:
++                    _f2.write(
++                        f"step={self.step} loss={float(global_avg_loss)!r} "
++                        f"grad_norm={float(grad_norm.item())!r}\n"
++                    )
++
++        _s1 = os.environ.get("STEP1_DUMP")
++        if _s1 and self.step == 1:
++            import torch.distributed as _d
++
++            _rk = _d.get_rank() if _d.is_initialized() else 0
++            with open(f"{_s1}.rank{_rk}", "w") as _f:
++                _f.write(
++                    f"rank={_rk} loss={float(global_avg_loss)!r} "
++                    f"grad_norm={float(grad_norm.item())!r}\n"
++                )
++
+         self.metrics_processor.log(
+             self.step,
+             global_avg_loss,

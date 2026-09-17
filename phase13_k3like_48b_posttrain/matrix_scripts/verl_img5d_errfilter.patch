@@ -1,7 +1,0 @@
---- a/verl_img5d.sh
-+++ b/verl_img5d.sh
-@@
--  err=$(grep -aiE "Error|Traceback" $L 2>/dev/null | grep -v "initial_load\|deprecat\|select_algorithm\|triton_bundler\|lspci\|not available\|jax profiler" | head -1 | cut -c1-150)
-+  # "Error" also appears in the trainer's configuration dump ('truncation': 'error'),
-+  # so only a traceback or a raised exception counts as a failure line.
-+  err=$(grep -aE "^Traceback|Error: |Error\)|raise [A-Z]" $L 2>/dev/null | grep -v "initial_load\|deprecat\|select_algorithm\|triton_bundler\|lspci\|not available\|jax profiler" | head -1 | cut -c1-150)

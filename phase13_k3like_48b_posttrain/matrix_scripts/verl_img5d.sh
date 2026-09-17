@@ -28,7 +28,10 @@ while IFS='|' read -r nm ngpu envs; do
   rc=$?
   steps=$(grep -aoE "step:[0-9]+ - " $L 2>/dev/null | wc -l)
   d=$(grep -ao "rollout_logprobs_diff_mean:[0-9.]*" $L 2>/dev/null | tail -1)
-  err=$(grep -aiE "Error|Traceback" $L 2>/dev/null | grep -v "initial_load\|deprecat\|select_algorithm\|triton_bundler\|lspci\|not available\|jax profiler" | head -1 | cut -c1-150)
+  # "Error" also appears in the trainer's configuration dump ('truncation': 'error'), so
+  # only a traceback or a raised exception counts. The cell script ends with an echo, so
+  # rc is always 0: the step count is the verdict.
+  err=$(grep -aE "^Traceback|AssertionError|ValueError|RuntimeError:|NotImplementedError" $L 2>/dev/null | grep -v "initial_load\|deprecat\|select_algorithm\|triton_bundler\|lspci\|not available\|jax profiler\|truncation" | head -1 | cut -c1-150)
   printf "%-18s %-26s rc=%-3s steps=%-3s %s %s\n" "$nm" "$envs" "$rc" "$steps" "$d" "$err" >> $R
   tail -1 $R
 done <<< "$CELLS"
