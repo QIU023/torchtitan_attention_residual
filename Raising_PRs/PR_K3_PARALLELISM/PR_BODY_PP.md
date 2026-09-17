@@ -26,11 +26,11 @@ Step 1 is identical to the single-GPU reference in every cell. With the total gr
 
 What forces the protocol: every layer attends over all earlier blocks plus the running partial block, so (R1) the block stack must cross every stage boundary with the hidden state, (R2) the final aggregation runs only on the stage that owns `lm_head`, and (R3) the stack grows with depth, with a boundary inside a block putting a partial block on the wire. Sending the whole stack every hop satisfies all three and costs bytes that grow with the stage index; the delta transport sends only what the receiver lacks, which needs the routing tables, a micro-batch key that survives P2P, and a way home for a cached block's gradient.
 
-![UPLOAD-SVG-1: the stack across stages, partial blocks on the wire, aggregation on the head stage](UPLOAD-SVG-1)
+<img width="1080" height="540" alt="pp_dual_gradient_bridge_v2" src="https://github.com/user-attachments/assets/743ff96c-a9a9-410f-9c9e-c351bde73c70" />
 
 Why the rank store is enough: the schedule assigns stages $S = v \cdot P + R$, so a micro-batch returns to the same rank every $P$ stages and that rank already holds every block committed at stages $\le S-P$. A freshly committed block is therefore new on the wire for $P-1$ hops and no longer, the same-rank consumers of a block are exactly the stages congruent to its producer modulo $P$, and their number is what the tables expect as gradient deposits.
 
-![UPLOAD-SVG-2: the looped stage grid, rows are ranks and columns virtual stages, one store per row](UPLOAD-SVG-2)
+<img width="1100" height="408" alt="pp_stage_grid" src="https://github.com/user-attachments/assets/ea5bccc6-3be8-4a08-9278-c976848e655b" />
 
 - The stage protocol, in the subclass (`pipeline_stage.py`)
   - `forward_one_chunk` assembles the full block stack the model expects from the rank's store plus the received *delta*, runs the stage, keeps the blocks the stage committed, and sends on only what the next rank lacks. The model takes and returns the whole stack and knows nothing of the transport; the chunk id comes with the call.
