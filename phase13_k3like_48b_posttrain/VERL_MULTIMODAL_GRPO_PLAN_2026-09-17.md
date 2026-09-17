@@ -125,3 +125,22 @@ What remains unverified is the model side, which needs a GPU: the meta build, th
 One process, one set of weights, one token stream, and the only difference between the two forwards is whether `pixel_values` is passed. The 81 positions ahead of the first media pad come back bitwise identical, which they must, since nothing upstream of the image can depend on it; from the first pad onward the logits move by 6.8. That is the vision tower's features reaching the policy, established by causality rather than by a tolerance, and it closes the evidence ladder that the prompt length and the drop-images pair started.
 
 The probe needed five attempts, all of them defects in the probe rather than in the model: building on the device instead of on meta with `init_weights`, casting the whole module to bf16 (the tower's rope goes through `torch.polar`, which refuses it), leaving the parameters in fp32 under autocast (Attention Gym's convolution refuses a bf16 activation against an fp32 weight), and passing the processor's `(N, 3, 14, 14)` to a patch embedding that takes `(N, 588)`. Casting parameters while leaving buffers in fp32 satisfies both kernels at once.
+
+## The one axis value the matrix never exercised: `allgather_kv` (2026-09-17, 15:25)
+
+Every one of the ten cells ran on the default context-parallel backend, `ulysses`. The other value, `allgather_kv`, was then run on the same image cell at cp 2 and fails before step 1:
+
+    RuntimeError: torch.compile with fullgraph=True found no compiled frames.
+      prepare_model_inputs -> preprocess_inputs -> _prepare_context_parallel_metadata
+      -> cp_shard_metadata -> distributed/context_parallel/api.py:197 shard
+
+`allgather_kv` shards the flex BlockMask and that sharding is compiled with `fullgraph=True`; `ulysses` keeps the mask global and never enters that path, which is why the ten cells are unaffected.
+
+The engine's dynamo probe (`VERL_TORCHTITAN_DYNAMO_PROBE`) was then armed and measured inside the worker, and it contradicts the guess the plan carried:
+
+    DYNAMO-PROBE dynamo.config.disable=False | suppress_errors=False | is_dynamo_supported=True
+                 thread=AsyncIO Thread: default main=False | TORCHDYNAMO_DISABLE=None
+
+Dynamo is neither disabled nor unsupported there. The one measured difference left is the thread: the colocated worker runs its forward on Ray's async actor thread, not the main thread. No mechanism is claimed from that, since nothing here separates "dynamo's eval-frame hook does not take on this thread" from another cause; the next step for this line is a minimal comparison inside one worker, the same `torch.compile(fullgraph=True)` called from the main thread and from the async thread.
+
+What can be stated without a mechanism is the behaviour: under the veRL engine's colocated worker, `ulysses` is the context-parallel backend that runs and `allgather_kv` does not. That is what the PR body should say.
