@@ -5,7 +5,7 @@ source /workspace/kit/h200/env.sh; NP=${NP:-2}; SEED=${SEED:?seed dir}; S=/works
 for cfg in kimi_k3_debugmodel kimi_k3_debugmodel_moonep; do
   D=/workspace/gp_${cfg}_np$NP; rm -rf $D; mkdir -p $D; cp -r $SEED/checkpoint $D/checkpoint
   echo "### PROBE $cfg NP=$NP"
-  GRAD_PROBE_OUT=$S/grads_${cfg}_np$NP.json timeout 1500 torchrun --nproc_per_node=$NP --master_port=$((41500+NP)) /workspace/kit/grad_probe.py \
+  GRAD_PROBE_OUT=$S/grads_${cfg}_np$NP.json timeout 1500 torchrun --nproc_per_node=$NP --master_port=$((41500+NP)) /workspace/kit/h200/grad_probe.py \
     --module kimi_k3 --config $cfg --debug.seed 42 --debug.deterministic --training.steps 10 --metrics.log_freq 1 \
     --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 \
     --checkpoint.enable --checkpoint.interval 100000 --parallelism.data_parallel_shard_degree $NP --parallelism.expert_parallel_degree $NP \
