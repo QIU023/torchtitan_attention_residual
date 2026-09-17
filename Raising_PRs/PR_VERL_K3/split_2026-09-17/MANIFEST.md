@@ -1,7 +1,7 @@
 # veRL fork -> upstream PR split, first cut (2026-09-17)
 
-Repo `/tmp/wt_verl_0915`, base `upstream/main` = `67858929`, head = `aee5027f`
-(`git diff upstream/main HEAD` = 27 files, +2789 / -87). First cut was on head `31079117`; regenerated on `aee5027f`, see the last section.
+Repo `/tmp/wt_verl_0915`, base `upstream/main` = `67858929`, head = `549c1e21`
+(`git diff upstream/main HEAD` = 27 files, +2817 / -92). First cut was on head `31079117`; regenerated on `549c1e21`, see the last section.
 Plan followed: `Raising_PRs/PR_VERL_K3/PR_SPLIT_PLAN_2026-09-16.md`.
 
 ## Application order (this is the documented order)
@@ -377,9 +377,9 @@ Python validity of every intermediate tree:
     work/verify.txt                                     the verification transcript
 
 ---
-## Regenerated 2026-09-17 04:55 on head `aee5027f`
+## Regenerated 2026-09-17 05:05 on head `549c1e21`
 
-Head moved from `31079117` to `aee5027f` (three commits: the adapter-only refusal reattached to its own `if`, the gloo context-parallel tests, the Kimi K3 image path). `work/assign.py` was remapped by matching the engine file's line items between the two heads (2071 of 2081 matched; the moved `elif adapter_mode` block and the deleted measured-numbers docstring paragraph were the only differences):
+Head moved from `31079117` to `549c1e21` (four commits: the adapter-only refusal reattached to its own `if`, the gloo context-parallel tests, the Kimi K3 image path, the dataset fallback without qwen_vl_utils). `work/assign.py` was remapped by matching the engine file's line items between the two heads (2071 of 2081 matched; the moved `elif adapter_mode` block and the deleted measured-numbers docstring paragraph were the only differences):
 
 - the `elif adapter_mode` refusal now sits inside patch 03 with no staged variant, since it attaches to 03's own `if`;
 - the kimi-named measured-numbers paragraph is gone from 05 (deleted on the branch);
@@ -392,7 +392,7 @@ The first cut's patches, manifest, assignment and item listing are kept in `work
     02_engine_pipeline.patch               2 files   +295 / -4
     03_engine_ep_lora_qat_sync.patch       4 files   +923 / -34
     04_engine_context_parallel.patch       7 files   +516 / -28
-    05_kimi_k3.patch                      12 files   +398 / -21
+    05_kimi_k3.patch                      12 files   +426 / -26
     06_metrics_logprob_diff.patch          1 file    +6 / -0
     local_env_and_diagnostics.patch        8 files   +223 / -5
 

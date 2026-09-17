@@ -34,10 +34,10 @@ index 64d7fd59..e0ac34d6 100644
 +        self.assertEqual(_model_multimodal_kwargs({}, frozenset({"special_tokens"}), 163605), {})
 diff --git a/tests/workers/test_torchtitan_engine_k3_processor.py b/tests/workers/test_torchtitan_engine_k3_processor.py
 new file mode 100644
-index 00000000..5d9d82e5
+index 00000000..a1704776
 --- /dev/null
 +++ b/tests/workers/test_torchtitan_engine_k3_processor.py
-@@ -0,0 +1,116 @@
+@@ -0,0 +1,132 @@
 +# Copyright 2024 Bytedance Ltd. and/or its affiliates
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -154,6 +154,22 @@ index 00000000..5d9d82e5
 +        ]
 +        images = _images_from_messages(messages)
 +        self.assertEqual([im.size for im in images], [(32, 24), (32, 24)])
++
++    def test_multi_modal_info_falls_back_without_qwen_vl_utils(self):
++        import sys
++        from unittest import mock
++
++        from PIL import Image
++
++        from verl.utils.dataset.rl_dataset import RLHFDataset
++
++        image = Image.new("RGB", (28, 14), (9, 9, 9))
++        messages = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": "?"}]}]
++        with mock.patch.dict(sys.modules, {"qwen_vl_utils": None}):
++            images, videos, audios = RLHFDataset._process_multi_modal_info(messages, image_patch_size=14, config=None)
++        self.assertEqual([im.size for im in images], [(28, 14)])
++        self.assertIsNone(videos)
++        self.assertIsNone(audios)
 diff --git a/verl/experimental/agent_loop/agent_loop.py b/verl/experimental/agent_loop/agent_loop.py
 index d0e3038e..58cd1a04 100644
 --- a/verl/experimental/agent_loop/agent_loop.py
@@ -221,7 +237,7 @@ index bbcfae4c..7f494192 100644
          self.tools_key = config.get("tools_key", "tools")
          self.enable_thinking_key = config.get("enable_thinking_key", "enable_thinking")
 diff --git a/verl/utils/dataset/rl_dataset.py b/verl/utils/dataset/rl_dataset.py
-index aad0655b..47f70735 100644
+index aad0655b..110f0263 100644
 --- a/verl/utils/dataset/rl_dataset.py
 +++ b/verl/utils/dataset/rl_dataset.py
 @@ -69,6 +69,31 @@ def collate_fn(data_list: list[dict]) -> dict:
@@ -270,6 +286,30 @@ index aad0655b..47f70735 100644
  
          # When called from an AgentLoop, many trajectory coroutines share one
          # event loop. ``process_vision_info`` does synchronous PNG decode +
+@@ -488,11 +518,18 @@ class RLHFDataset(Dataset):
+             for message in messages
+         )
+         if has_visual:
+-            from qwen_vl_utils import process_vision_info
+-
+-            images, videos = process_vision_info(
+-                messages, image_patch_size=image_patch_size, return_video_metadata=True
+-            )
++            try:
++                from qwen_vl_utils import process_vision_info
++            except ImportError:
++                # Without qwen_vl_utils the images in the messages are taken as they are
++                # (PIL, a path, or bytes); the model's own processor resizes them.
++                process_vision_info = None
++            if process_vision_info is None:
++                images, videos = _images_from_messages(messages) or None, None
++            else:
++                images, videos = process_vision_info(
++                    messages, image_patch_size=image_patch_size, return_video_metadata=True
++                )
+         else:
+             images, videos = None, None
+         audios = cls._extract_audio_info(messages)
 diff --git a/verl/utils/tokenizer/__init__.py b/verl/utils/tokenizer/__init__.py
 index bc4544c0..f48f1fc7 100644
 --- a/verl/utils/tokenizer/__init__.py
