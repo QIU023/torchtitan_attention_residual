@@ -42,9 +42,12 @@ Two findings about the harness rather than the engine: the cell script ends with
 
 The relaunched `img_tp2ep2` on two GPUs, and the drop-images comparison on two more: the same batch twice, once normally and once with every vision tensor dropped before the forward, which is the direct evidence that the tower reaches the policy.
 
-### Next, when those two free the GPUs
+### Next, when those two free the GPUs, in this order
 
-The 21-cell integration matrix on the rebased tree (`run_mx4_int0917.sh`), step-1 of every cell against `mx4_int0916c`.
+1. **The two eight-GPU cells of the image matrix, which have not run yet** (`CHAIN=C bash verl_img5d.sh`): `img_dp2cp2tp2ep2` (fsdp 2 x cp 2 x tp 2, with ep 2 dividing that product) and `img_pp2tp2cp2` (pp 2 x tp 2 x cp 2). They are the widest shapes this box can hold and they close the axis coverage: every pair of axes and, between the two of them, all five at once across the matrix. Eight GPUs is the physical ceiling here, since `dp x cp x tp x pp` must equal the device count and expert parallelism divides `dp x cp x tp`; five axes simultaneously would need sixteen.
+2. The 21-cell integration matrix on the rebased tree (`run_mx4_int0917.sh`), step-1 of every cell against `mx4_int0916c`.
+
+The user's order was veRL multimodal first, then the integration tree, so chain C goes ahead of the matrix.
 
 ## Status at 10:30Z
 
