@@ -197,3 +197,12 @@ Reading `_context_parallel/_attention.py` settles what the measurements had corn
 A seventh candidate was checked and excluded with the other six: nothing on the preprocessing path disables dynamo. `torch_remat`, `spmd_types` and `vllm` carry no `compiler.disable`, no `_dynamo.disable` and no assignment to `dynamo.config.disable`.
 
 The line stops here on purpose. Pinning which earlier call fills that global, most likely somewhere in the rollout engine's own generation path, means instrumenting a torch internal across a phase boundary, and it would not change anything on this side: the backend is a torch context-parallel implementation detail, our code neither builds nor owns that wrapper. What the work needed is settled, and it is one sentence for the PR body: under the veRL colocated worker `ulysses` is the context-parallel backend that runs and `allgather_kv` does not. Every image cell of the matrix ran on `ulysses`, which is the supported path.
+
+## Patch order parity, settled (2026-09-17)
+
+The risk named in the survey ("a wrong order gives plausible numbers and a wrong policy") is now closed by measurement rather than by reading the two implementations. `tests/unit_tests/cpu/test_kimi_k3_vision_preprocess_parity.py` feeds one counting image, every element distinct so any reordering shows, to both layouts: the released `navit_patchify` loaded from the checkpoint directory, and `vision_to_patches(..., patch_order="raster")`. The two agree element for element on five patch grids (1x1, 2x3, 4x2, 4x4 and 5x3 patches), and `grid_thw` agrees with them. The block layout, which is the collator's own default, is provably different on the 4x4 grid, so the parameter is load bearing: a regression fails the test instead of passing quietly.
+
+Two facts the parity rests on, both pinned by the test rather than assumed. `kimi_k3` declares `temporal_patch_size=1` in `_kimi_k3_multimodal_dataloader` while the collator's default is 2; at 2 the raster vector would be `(c, 2, ph, pw)` and the frame count would be padded, so dropping that override would silently change every patch. And the released patch vector is channel first, `(C, ph, pw)`, which is exactly what the engine's flatten of `[patches, C, p, p]` to `[patches, 588]` produces.
+
+So the ten image cells now rest on a checked patch order, not only on `prompt_length` being 111. Commit `caa7c014a` on `k3_on_4025`, 16 tests in the file pass.
+

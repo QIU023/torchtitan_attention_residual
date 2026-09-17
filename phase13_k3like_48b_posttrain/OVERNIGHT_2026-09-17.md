@@ -108,3 +108,10 @@ Done and pushed:
 - The image path read against TP, PP and CP before running anything, and the first two cells (tp 2, cp 2) pass with images actually carried.
 
 Running: the image cells across the axes, two chains. Waiting on GPUs: the 21-cell integration matrix, the drop-images diagnostic, the MoonEP gradient probe.
+
+## Closing status
+
+Every line the sections above left open is closed. The controlled vision probe is no longer queued: it ran and passed (the 81 positions before the first media pad bitwise identical with and without images, everything from the pad onward moving by 6.8). The drop-images diagnostic ran. The 21-cell integration matrix ran, 21 of 21 identical at step 1 to `mx4_int0916c`. What the earlier "Running" and "Waiting on GPUs" lines describe is the state during the night, not the state now.
+
+One gate that those sections did not name was still open at the end of the multimodal work: whether the patch order the released processor produces is the order the tower expects. It is, and a test now holds it (see `VERL_MULTIMODAL_GRPO_PLAN_2026-09-17.md`). With that, nothing on the veRL multimodal line is open that this box can settle.
+
