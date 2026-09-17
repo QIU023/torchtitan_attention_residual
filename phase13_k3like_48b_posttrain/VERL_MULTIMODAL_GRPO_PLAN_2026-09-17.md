@@ -78,3 +78,15 @@ Pipeline by context parallel is the longest path the vision tensors take: the pi
 The three-axis cell (data-parallel sharding by pipeline by expert parallelism) passes with the same prompt length, so the vision kwargs survive a stage split and an expert split at once. Seven cells of the matrix are now green and the engine carries no change for any of them.
 
 The relaunched `img_tp2ep2` on its correct two-GPU shape passes as well, so every combination this box can hold is green: the four axes on their own, three pairs, and one triple. Eight cells, one prompt length, no engine change.
+
+## The drop-images comparison, and what it does and does not show (2026-09-17)
+
+`matrix_scripts/verl_img_dropcheck.sh` runs the same image cell twice on two GPUs, the second time with `KIMI_GRPO_DROP_IMAGES=1`, which makes `_model_multimodal_kwargs` return an empty dict so the forward gets no vision tensor at all (`matrix_scripts/verl_drop_images.patch`, applied for the pair and reverted after). The token stream is untouched either way, so the model still sees the expanded media pads and simply embeds them from the token table when the tower's features are missing.
+
+    run             pg_loss      rollout-vs-actor logprob diff  grad norm  prompt length
+    with images     0.04584863   0.17050                        3.79165    111.0
+    without images  0.05104822   0.18142                        3.86080    111.0
+
+The column that carries the argument is the third one. The rollout engine always has the images (vLLM builds its own features from the placeholder), so dropping them on the actor side alone should widen the actor-to-rollout log-prob gap, and it does, from 0.17050 to 0.18142. The size is the size to expect: four of the 111 prompt tokens are media pads, so a little under four percent of the positions change their embedding, and the mean gap moves six percent.
+
+What this is not: a controlled pair. The two runs are separate GRPO runs whose rollouts sample independently, so part of every difference above is sampling, and none of it is bitwise. The clean form of the check is one process, one micro-batch, two forwards, comparing the log-probs at the media-pad positions only; that needs a probe rather than a cell and is the next step for this line. Until then the drop-images pair is supporting evidence with the right sign and magnitude, and the prompt-length agreement remains the load-bearing fact that the images reach the batch at all.
