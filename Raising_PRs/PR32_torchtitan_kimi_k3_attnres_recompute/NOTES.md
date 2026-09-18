@@ -5,7 +5,7 @@ Branch `k3_attnres_recompute` = `9f6bae06f`, two commits on `upstream/main` `68c
     1436053ea  aggregate the block residual without retaining FP32 copies
     9f6bae06f  zero initialise the attention residual projections
 
-The second commit is the initialisation correction. The residual projections were drawn from `trunc_normal_` with std 0.02, so the initial depth weights were arbitrary; the report requires them uniform at initialisation. Three facts were measured rather than assumed: at zero the aggregation returns the mean of its sources exactly, the projection still receives a gradient, and the norm weight does not, because it reaches the loss only through its product with the projection. It gains one as soon as the projection leaves zero. All three are asserted by tests.
+The second commit is the initialisation correction. The residual projections were drawn from `trunc_normal_` with std 0.02, so the initial depth weights were arbitrary; the report requires them uniform at initialisation. It is a correctness fix against a stated requirement, so it carries no performance evidence and none is owed. Its behaviour is pinned by tests: at zero the aggregation returns the mean of its sources exactly, the projection still receives a gradient, and the norm weight does not until the projection leaves zero.
 
 ## Why this is not part of PR 4312
 

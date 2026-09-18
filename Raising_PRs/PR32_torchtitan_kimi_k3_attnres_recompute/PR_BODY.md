@@ -5,51 +5,68 @@ Branch `k3_attnres_recompute` = `9f6bae06f`, two commits on `upstream/main` `68c
     1436053ea  aggregate the block residual without retaining FP32 copies
     9f6bae06f  zero initialise the attention residual projections
 
-Context (not for pasting): this is deliberately separate from PR 4312. The aggregation came in with #4025 and sits on main today; its three call sites carry no pipeline guard, so both the retained tensors and the initialisation apply at dp1 on a single card. 4312's change to `model.py` is a contract adaptation that leaves the arithmetic untouched. Filing this inside a pipeline PR that is waiting for review would move that diff and add an argument unrelated to pipelining. Results below are from the H100 box; the 5060 numbers agree in direction and are not quoted.
+Context (not for pasting): deliberately separate from PR 4312. The aggregation came in with #4025 and sits on main today; its three call sites carry no pipeline guard, so both problems apply at dp1 on a single card. Filing this inside a pipeline PR that is waiting for review would move that diff and add an argument unrelated to pipelining.
 
-History of the initialisation half (not for pasting): the zero init was added on 2026-08-24 as `d54d327a9` and reverted the same day as `53b613d80`. The revert was not a reviewer rejection. Its reasoning was that the modules and their construction are upstream's, so whether they start at zero is upstream's call and a pipeline or context parallel branch had no business moving it, and that the observation should go to the maintainers as a question rather than into that branch as a patch. This PR is that occasion. The requirement itself is first hand, quoted in the logbook from the Kimi Linear tech report section 5: "Crucially, all pseudo-query vectors must be initialized to zero."
+Two things are kept apart on purpose. The initialisation is a correctness fix against a stated requirement and carries no measurement, because none is owed. Every number below is about the aggregation.
+
+History of the initialisation half (not for pasting): added 2026-08-24 as `d54d327a9`, reverted the same day as `53b613d80`. The revert was on scope, not merit: a pipeline branch had no business changing how upstream's modules initialise, and the revert message says the observation should reach the maintainers as a question instead. This PR is that occasion.
 
 --- PASTE BEGIN ---
 
 ## Summary
 
-Two corrections to Kimi K3's attention residual, both in the aggregation that #4025 introduced and both independent of any parallelism.
+Two independent corrections to Kimi K3's attention residual, both in the aggregation that #4025 introduced and both unrelated to parallelism.
 
-The initialisation is wrong. The depth weights come from a softmax over per-source scores, and the score weight is the product of the norm weight and the residual projection. The projection is drawn from `trunc_normal_` with std 0.02, so the initial depth weights are arbitrary, where the report requires them uniform at initialisation for training stability.
+The pseudo-query initialisation does not match the report. Section 5 of the Kimi Linear tech report states that all pseudo-query vectors must be initialised to zero, which is what makes the depth softmax start uniform and the residual reduce to a standard residual at step 0. The three residual projections are built with `trunc_normal_` at std 0.02 instead.
 
-The aggregation retains more than it needs. `_apply_attention_residual` keeps two FP32 `[T, N + 1, D]` intermediates alive until backward, the upcast values and the normalized keys, which at the released model's shape is 1008 MiB for a single call and 15.75 GiB at a long context.
+The aggregation retains more than it needs. `_apply_attention_residual` keeps two FP32 `[T, N + 1, D]` intermediates alive until backward, the upcast values and the normalized keys. With activation checkpointing on, which is the default, they are rebuilt during recompute as well, so they set the backward peak.
 
 - `torchtitan/models/kimi_k3/__init__.py`: the three residual projections initialise to zero.
 - `torchtitan/models/kimi_k3/model.py`: `_AttentionResidualAggregation`, registered as a local autograd Function for SPMD type checking; `_apply_attention_residual` keeps its signature and becomes a thin call into it.
-- `tests/unit_tests/cpu/test_kimi_k3_attention_residual.py`: the aggregation against a plain autograd reference, a bfloat16 precision case, the registration, and three cases for the initialisation.
+- `tests/unit_tests/cpu/test_kimi_k3_attention_residual.py`: the aggregation against a plain autograd reference, a bfloat16 precision case, the registration, and the initialisation.
 
 ## Design
 
-### Initialisation
-
-Zero initialising the projection makes every score zero, so the depth softmax is uniform and the aggregation returns the mean of its sources exactly. Three consequences were measured rather than assumed, and all three are asserted by tests. The output equals the mean of the sources with no tolerance. The projection still receives a gradient, so it moves off zero on the first step. The norm weight receives none, because it reaches the loss only through its product with the projection, and it gains one as soon as the projection is nonzero.
-
-### Aggregation
-
-The forward unbinds the block stack into per-source views, computes each source's inverse RMS and its score against the query, and forms the depth softmax from those. It saves the score weight, the norm weight, the softmax weights, the scores, the inverse RMS and references to the two inputs. None of the saved statistics carries a hidden-size factor, and the two inputs are already live, so the call retains essentially nothing. The backward recomputes one FP32 upcast per source and applies the softmax Jacobian, the score path and the variance path explicitly, accumulating the query gradient as a GEMV per source so the reduction order is fixed.
+The forward unbinds the block stack into per-source views, computes each source's inverse RMS and its score against the query, and forms the depth softmax from those. It saves the score weight, the norm weight, the softmax weights, the scores, the inverse RMS and references to the two inputs. None of the saved statistics carries a hidden-size factor. The backward recomputes one FP32 upcast per source and applies the softmax Jacobian, the score path and the variance path explicitly, accumulating the query gradient as a GEMV per source so the reduction order is fixed.
 
 Both factors of the score weight are upcast before multiplying. Multiplying them in bfloat16 and upcasting the product moves the output by about half a percent at a realistic logit scale, which is larger than the reordering this change introduces.
 
 The Function is registered with `register_local_autograd_function`. It runs no collective, leaves the token dimension alone, and reduces over the stack and hidden axes, neither of which is sharded; the two parameters are declared TP unsharded. Without the registration the type checker raises in strict mode, which the multimodal cell runs under.
 
+At zero initialisation the scores are zero, the depth softmax is uniform, and the aggregation returns the mean of its sources. The projection still receives a gradient and moves off zero on the first step; the norm weight reaches the loss only through its product with the projection, so it gains one once the projection is nonzero.
+
 ## Relation to #4656
 
 The two touch the same function from opposite sides and compose. #4656 wraps `_apply_attention_residual` in a checkpoint or, under RegionAC, declares it as a named region whose output the save policy may keep instead of replaying. This change rewrites the body of that function. All four combinations run.
 
-They are complementary rather than alternative. Keeping the region saved costs whatever the region retains, and this change is what makes that cheap: measured on one aggregation at 2048 tokens and `D` 7168, a saved region costs 1036.2 MiB without this change and 28.2 MiB with it.
+They are complementary rather than alternative. Keeping the region saved costs whatever the region retains, and this change is what makes that cheap: on one aggregation at 2048 tokens and `D` 7168, a saved region costs 1036.2 MiB without this change and 28.2 MiB with it.
 
 ## Results
 
-Three layers of evidence at different scales and under different activation checkpointing, kept apart because they answer different questions.
+One aggregation, bfloat16, H100 80GB, one shape per process, 10 warmups and the median of 7. Shapes run from the debug flavor up to the released model's hidden size and block count, `dim` 7168 with a stack of 8, at three context lengths. `kept` counts the storages autograd holds that are not already live as inputs.
 
-### One aggregation, no activation checkpointing
+### With activation checkpointing, which is the default
 
-One aggregation, bfloat16, H100 80GB, one shape per process, 10 warmups and the median of 7. `kept` counts the storages autograd holds that are not already live as inputs. `dev` is the maximum absolute difference from the current form relative to its own maximum. The shapes run from the debug flavor up to the released model's hidden size and block count, `dim` 7168 with a stack of 8, at four context lengths.
+The block checkpoint discards the saved tensors, so neither form retains anything and the difference is entirely in peak. The naive form still builds both FP32 tensors in forward, and builds them a second time during recompute.
+
+| tokens | dim | stack | form | kept MiB | fwd peak MiB | bwd peak MiB | fwd ms | bwd ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2048 | 1024 | 2 | main | 0.0 | 100.0 | 144.1 | 0.52 | 1.27 |
+| 2048 | 1024 | 2 | this | 0.0 | 40.1 | 68.2 | 0.63 | 1.46 |
+| 2048 | 4096 | 4 | main | 0.0 | 560.1 | 960.0 | 1.00 | 2.88 |
+| 2048 | 4096 | 4 | this | 0.0 | 160.2 | 256.3 | 1.16 | 2.87 |
+| 2048 | 7168 | 8 | main | 0.0 | 1764.1 | 3024.0 | 2.51 | 7.99 |
+| 2048 | 7168 | 8 | this | 0.0 | 280.4 | 644.6 | 2.99 | 7.92 |
+| 8192 | 7168 | 8 | main | 0.0 | 7056.3 | 12096.0 | 9.26 | 30.39 |
+| 8192 | 7168 | 8 | this | 0.0 | 1121.4 | 2578.1 | 10.02 | 27.52 |
+| 32768 | 7168 | 8 | main | 0.0 | 28225.2 | 48384.0 | 36.50 | 120.83 |
+| 32768 | 7168 | 8 | this | 0.0 | 4485.7 | 10312.0 | 37.85 | 106.06 |
+
+Forward peak falls 6.3x and backward peak 4.7x once the stack reaches 8, and both ratios hold as the context grows. At the widest shape a single aggregation's backward peak is 47.25 GiB against 10.07 GiB, a difference of 37.2 GiB on one call.
+
+### Without activation checkpointing
+
+Here the retained bytes are the visible difference, and they stop growing with the shape.
 
 | tokens | dim | stack | form | kept MiB | fwd peak MiB | bwd peak MiB | fwd ms | bwd ms | dev |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -64,46 +81,30 @@ One aggregation, bfloat16, H100 80GB, one shape per process, 10 warmups and the 
 | 32768 | 7168 | 8 | main | 16130.3 | 28226.3 | 32253.7 | 36.34 | 89.06 | |
 | 32768 | 7168 | 8 | this | 3.4 | 4485.7 | 10308.6 | 37.69 | 68.25 | 0.355% |
 
-Retained bytes stop growing with the shape: 48.1, 320.1, 1008.2, 4032.6 and 16130.3 MiB become 0.1, 0.1, 0.2, 0.8 and 3.4. Forward peak falls 6.3x and backward peak 3.1x once the stack reaches 8, since the FP32 tensors are never built rather than built and discarded.
+48.1, 320.1, 1008.2, 4032.6 and 16130.3 MiB become 0.1, 0.1, 0.2, 0.8 and 3.4.
 
-Forward is consistently slower, between 3% and 16%, because a few large operations become `N + 1` smaller ones. Backward is faster everywhere except the smallest shape: 1.19x, 1.18x, 1.27x and 1.30x against 0.93x at `dim` 1024 with a stack of 2.
+Forward is consistently slower, between 3% and 21%, because a few large operations become `N + 1` smaller ones. Backward is slower at the smallest shape and faster from `dim` 4096 upward, reaching 1.14x with checkpointing on at the widest shape.
 
 The result is not bitwise. The reordering takes the dot product first and scales by the inverse RMS where the current form normalizes and then contracts, which lands at about one bfloat16 ulp. In FP32 the two agree exactly, forward and every gradient, which the CPU test asserts at the default tolerance.
 
-### One training step, activation checkpointing on
+### The released model, computed rather than measured
 
-The default for this model is SelectiveAC, so the block is already checkpointed and most of the residency above is absorbed by it. What remains is the forward peak. Same cell, same seed, same compile cache, one H100, five steps, with the KDA capability guard relaxed identically on all three trees so they are comparable to each other.
+93 layers at block size 12 gives 8 blocks and 186 aggregations, and an aggregation inside block `b` runs over `b + 2` values. Each call retains two FP32 `[T, b + 2, D]` tensors today against three FP32 `[b + 2, T]` statistics after, so the ratio is the hidden size. Computed from that structure at `dim` 7168 with pipeline degree 8, with no block level checkpointing, where retained bytes are what the change removes:
 
-| tree | peak GiB | step 5 loss |
-| --- | --- | --- |
-| `upstream/main` | 12.96 | 8.05773 |
-| the aggregation only | 12.56 | 8.74362 |
-| the aggregation and the zero init | 12.56 | 7.97537 |
+| tokens | aggregations per rank | retained today | retained after |
+| --- | --- | --- | --- |
+| 4096 | 23 | 27.6 GiB | 0.006 GiB |
+| 8192 | 23 | 55.2 GiB | 0.012 GiB |
+| 32768 | 23 | 220.7 GiB | 0.046 GiB |
 
-The peak gain is 0.40 GiB and all of it comes from the aggregation. The zero initialisation moves no memory at all, which the last two rows show directly rather than by argument.
-
-The three losses differ and none of them says anything about training quality. The aggregation is not bitwise, the zero initialisation changes the starting point by design, and five steps of a debug model sits far below the bar this repository holds numerical claims to.
-
-This cell is the debug flavor, `dim` 1024 with a stack of 2, because the model dimensions come from the flavor and cannot be raised in an end to end run. It does not scale to the released model, which is why the next section is an estimate and is labelled as one.
-
-### The released model, estimated rather than measured
-
-93 layers at block size 12 gives 8 blocks of 12, 12, 12, 12, 12, 12, 12 and 9, so 186 aggregations, and an aggregation inside block `b` runs over `b + 2` values. Each call retains two FP32 `[T, b + 2, D]` tensors today against three FP32 `[b + 2, T]` statistics after, so the ratio is the hidden size. Computed from that structure at `dim` 7168, not measured:
-
-| tokens | PP | aggregations per rank | retained today | retained after |
-| --- | --- | --- | --- | --- |
-| 4096 | 8 | 23 | 27.6 GiB | 0.006 GiB |
-| 8192 | 8 | 23 | 55.2 GiB | 0.012 GiB |
-| 32768 | 8 | 23 | 220.7 GiB | 0.046 GiB |
-
-That is the ceiling with no block level checkpointing, and it is not what a default run would recover. With SelectiveAC the block checkpoint already absorbs the residency, and what this change removes there is the forward peak of a single aggregation, which does not accumulate across layers: at the widest aggregation 4.92 GiB becomes about 0.88 GiB at 8192 tokens, and 19.69 GiB becomes about 3.50 GiB at 32768.
+Under the default checkpointing that residency is already absorbed by the block checkpoint, and what the change removes instead is the peak of a single aggregation, which does not accumulate across layers. The measured peaks in the first table are the relevant figures there.
 
 ## Test plan
 
     pytest tests/unit_tests/cpu/test_kimi_k3_attention_residual.py -q
     6 passed, 2 subtests passed
 
-The six cases are the aggregation against a plain autograd reference in FP32 at stack widths 1 and 3, a bfloat16 case that fails if the score weight is rounded before the upcast, a check that the Function is registered for SPMD type checking, and three for the initialisation: the uniform depth weights, the gradient asymmetry between the two parameters, and that all three residual projections carry a zero initialiser.
+The cases are the aggregation against a plain autograd reference in FP32 at stack widths 1 and 3, a bfloat16 case that fails if the score weight is rounded before the upcast, a check that the Function is registered for SPMD type checking, and three for the initialisation: the uniform depth weights, the gradient behaviour of the two parameters, and that all three residual projections carry a zero initialiser.
 
 The whole CPU suite was also run against a worktree at unmodified `upstream/main`, since a count from any other tree is not a baseline. Failures and errors are identical on both sides, 19 and 7, the same files in both cases and none of them a Kimi K3 test; the seven errors are missing packages in that environment. Passed differs only by the tests this PR adds, and the new file was confirmed present in the collection list rather than inferred from the counts.
 
@@ -111,10 +112,10 @@ The whole CPU suite was also run against a worktree at unmodified `upstream/main
 
 ## Limitations
 
-The initialisation change alters training behaviour from step zero for a model initialised from scratch. It does not affect a run that loads a checkpoint. An eight step smoke on one H100 after the change reads loss 12.50, 11.16, 9.32, 9.97, 8.11, 6.13, 5.03, 4.80 with the gradient norm falling from 23.88 to 7.59 and no NaN, which shows training is not broken. It is not evidence that the new initialisation trains better, and none is offered: the change is made because the report requires it, not because a run was compared.
+The initialisation change alters training behaviour from step zero for a model initialised from scratch. It does not affect a run that loads a checkpoint.
 
 `@once_differentiable` on the backward removes double backward, which the plain autograd form supported. Nothing in the tree uses `create_graph`, and `models/common/linear.py`, `overrides/fused_mla.py` and the MXFP8 linear already use the decorator.
 
-A step 1 gradient comparison at model level is not included. The Attention Gym KDA kernel the model uses accepts only CUDA capability 10.0 and 10.3, so a full Kimi K3 step does not run on either an H100 or an SM120 card without relaxing that guard, and a number produced under a relaxed guard is not reproducible from an unmodified tree. The smoke above was run that way and is quoted as a smoke, not as a measurement. The operator level comparison stands in its place: exact in FP32 and one ulp in bfloat16.
+A step 1 gradient comparison at model level is not included. The Attention Gym KDA kernel accepts only CUDA capability 10.0 and 10.3, so a full Kimi K3 step runs on neither an H100 nor an SM120 card without relaxing that guard, and a number produced under a relaxed guard is not reproducible from an unmodified tree. The operator level comparison stands in its place: exact in FP32 and one ulp in bfloat16.
 
 --- PASTE END ---
