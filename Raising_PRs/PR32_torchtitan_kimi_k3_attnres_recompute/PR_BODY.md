@@ -35,6 +35,14 @@ The Function is registered with `register_local_autograd_function`. It runs no c
 
 At zero initialisation the scores are zero, the depth softmax is uniform, and the aggregation returns the mean of its sources. The projection still receives a gradient and moves off zero on the first step; the norm weight reaches the loss only through its product with the projection, so it gains one once the projection is nonzero.
 
+## Compilation
+
+Nothing here interacts with `torch.compile`, and the custom Function does not stand in its way.
+
+`parallelize_kimi_k3` calls `torch.compile` nowhere today, so this path does not exist for Kimi K3 as the tree stands. The change touches `model.py`, the model's `__init__.py` and one test file, none of which is compile related. The Kimi K3 model carries no `compile_with_inductor` annotation either, so the regional inductor backend in `distributed/compile.py` has no region near the aggregation to lower.
+
+If per-block compilation is turned on later it arrives as `transformer_block.compile(backend=backend, fullgraph=True)`, where a graph break is an error rather than a fallback. Checked with `torch._dynamo.explain` on the aggregation itself, the Function traces into one graph with no break, and the op count drops from 8 to 2. That is the aggregation in isolation rather than a whole block under `fullgraph=True`, which cannot be run here while the model does not compile.
+
 ## Relation to #4656
 
 The two touch the same function from opposite sides and compose. #4656 wraps `_apply_attention_residual` in a checkpoint or, under RegionAC, declares it as a named region whose output the save policy may keep instead of replaying. This change rewrites the body of that function. All four combinations run.
