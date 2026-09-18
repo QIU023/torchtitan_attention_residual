@@ -1,5 +1,15 @@
 # pp_review5 against PR 4312's head, and the 6840 audit re-checked (2026-09-18, Windows side)
 
+Superseded the same evening: `pp_review5` was reset on the fork to `3f6f35127`,
+which is the PR head replayed onto main `a3a819c67` (`ab8ea5f61`, 37 commits)
+plus the two commits that ship the recomputing aggregation, and the objects this
+note called missing now all fetch. Everything below about the old
+`6042863a4` tip is history. The audit of what actually shipped is in
+`MEGATRON6840_VS_4312_GAPS_2026-09-18.md`, section "Windows-side audit of the
+shipped form". What survives from this note is the discipline it was written
+for: read the fork's refs before auditing a branch by name, because the names
+here get reused.
+
 Asked for while the GPU box re-implements and smokes: the commit diff between
 `pp_review5` and 4312's head restricted to what touches Kimi K3 and the
 pipeline, and a re-check of the conclusions already written down.
