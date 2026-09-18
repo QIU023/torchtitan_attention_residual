@@ -1,3 +1,46 @@
+diff --git a/tests/workers/test_torchtitan_engine_checkpoint_step.py b/tests/workers/test_torchtitan_engine_checkpoint_step.py
+new file mode 100644
+index 00000000..4078106a
+--- /dev/null
++++ b/tests/workers/test_torchtitan_engine_checkpoint_step.py
+@@ -0,0 +1,37 @@
++# Copyright 2024 Bytedance Ltd. and/or its affiliates
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++"""verl names a checkpoint step in the path; the engine has to read it out."""
++
++import unittest
++
++from verl.workers.engine.torchtitan.transformer_impl import checkpoint_step_from_path
++
++
++class TestCheckpointStepFromPath(unittest.TestCase):
++    def test_reads_the_step_verl_names(self):
++        self.assertEqual(7, checkpoint_step_from_path("/ckpt/global_step_7/actor"))
++        self.assertEqual(120, checkpoint_step_from_path("/ckpt/global_step_120"))
++
++    def test_a_path_without_a_step_means_the_latest(self):
++        self.assertEqual(-1, checkpoint_step_from_path("/ckpt/actor"))
++        self.assertEqual(-1, checkpoint_step_from_path(""))
++
++    def test_the_step_is_read_not_guessed_from_other_digits(self):
++        # A run directory carrying its own digits must not be mistaken for one.
++        self.assertEqual(3, checkpoint_step_from_path("/runs/exp_2026/global_step_3"))
++        self.assertEqual(-1, checkpoint_step_from_path("/runs/exp_2026/latest"))
++
++
++if __name__ == "__main__":
++    unittest.main()
 diff --git a/tests/workers/test_torchtitan_engine_config_fields.py b/tests/workers/test_torchtitan_engine_config_fields.py
 new file mode 100644
 index 00000000..669de523
@@ -345,7 +388,7 @@ index 63783752..928daa74 100644
      spmd_backend: str = "spmd_types"
      activation_checkpoint: str = "selective"
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 6a4fd3c7..052e3178 100644
+index 6a4fd3c7..e950d809 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -17,6 +17,8 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -583,7 +626,23 @@ index 6a4fd3c7..052e3178 100644
          return pred
  
      def forward_step(self, micro_batch: TensorDict, loss_function, forward_only):
-@@ -674,6 +785,52 @@ class TorchTitanEngine(BaseEngine):
+@@ -513,14 +624,7 @@ class TorchTitanEngine(BaseEngine):
+         parent_dir = os.path.dirname(local_path)
+         self.checkpointer.folder = parent_dir
+ 
+-        # Extract step number from path (verl uses global_step_N format)
+-        match = re.search(r"global_step_(\d+)", local_path)
+-        if match:
+-            step = int(match.group(1))
+-            self.checkpointer.load(step=step)
+-        else:
+-            # Fallback to latest
+-            self.checkpointer.load(step=-1)
++        self.checkpointer.load(step=checkpoint_step_from_path(local_path))
+ 
+         torch.distributed.barrier()
+         if self._is_offload_param:
+@@ -674,6 +778,62 @@ class TorchTitanEngine(BaseEngine):
          return _gen(), None
  
  
@@ -598,6 +657,16 @@ index 6a4fd3c7..052e3178 100644
 +    since a model whose frozen bases are packed (QLoRA) has no HF spelling for them.
 +    """
 +    return initial_load_path is None, initial_load_path or model_path
++
++
++def checkpoint_step_from_path(local_path: str) -> int:
++    """The step verl's ``global_step_N`` path names, or -1 for the latest.
++
++    verl hands the engine a path whose last component carries the step; the
++    checkpointer wants the number. A path without one means load the latest.
++    """
++    match = re.search(r"global_step_(\d+)", local_path)
++    return int(match.group(1)) if match else -1
 +
 +
 +def _squeeze_folded(extra: dict) -> dict:
@@ -636,7 +705,7 @@ index 6a4fd3c7..052e3178 100644
  class EngineEvalModeCtx(BaseEngineCtx):
      def __init__(self, engine: TorchTitanEngine, **kwargs):
          super().__init__(engine=engine, mode="eval", **kwargs)
-@@ -773,6 +930,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -773,6 +933,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          # dict as extra_inputs are not forwarded to other stages in PP, but
          # extra_kwargs are.
          extra_kwargs: dict[str, Any] = {"attention_masks": attention_mask}
@@ -645,7 +714,7 @@ index 6a4fd3c7..052e3178 100644
          if self.parallel_dims.cp_enabled:
              input_ids, labels, extra_kwargs = prepare_context_parallel_input(
                  input_ids,
-@@ -782,10 +941,63 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -782,10 +944,63 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                  self.trainer.device,
                  self.trainer.config.parallelism.context_parallel_load_balancer,
              )
@@ -709,7 +778,7 @@ index 6a4fd3c7..052e3178 100644
          return input_ids, extra_inputs, extra_kwargs, output_args
  
      def prepare_model_outputs(self, logits, output_args, micro_batch: TensorDict):
-@@ -796,6 +1008,12 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -796,6 +1011,12 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          temperature = micro_batch["temperature"]
          calculate_entropy = tu.get_non_tensor_data(data=micro_batch, key="calculate_entropy", default=False)
          labels = output_args["labels"]

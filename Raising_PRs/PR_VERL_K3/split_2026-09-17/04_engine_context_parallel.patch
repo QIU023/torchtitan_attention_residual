@@ -505,6 +505,63 @@ index 00000000..d0277047
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/tests/workers/test_torchtitan_engine_transform_order.py b/tests/workers/test_torchtitan_engine_transform_order.py
+new file mode 100644
+index 00000000..4e837f42
+--- /dev/null
++++ b/tests/workers/test_torchtitan_engine_transform_order.py
+@@ -0,0 +1,51 @@
++# Copyright 2024 Bytedance Ltd. and/or its affiliates
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++"""The engine appends CP and LoRA in that order, but apply_transforms reorders.
++
++The engine builds its transform list with the context-parallel transform first
++and the LoRA transform second, then hands both to ``apply_transforms``. The
++resulting order is not the append order: ``apply_transforms`` sorts by each
++transform's ``run_after`` declaration. This pins the declaration the engine
++relies on, so a change to it fails here rather than silently swapping the order
++a LoRA-plus-context-parallel run sees.
++"""
++
++import unittest
++
++
++class TestTransformOrder(unittest.TestCase):
++    def test_lora_declares_it_runs_after_context_parallel(self):
++        from torchtitan.config.transform import ContextParallelTransform
++        from torchtitan.config.transform.lora import LoRATransform
++
++        self.assertIn(ContextParallelTransform, tuple(LoRATransform.run_after))
++        self.assertEqual((), tuple(ContextParallelTransform.run_after))
++
++    def test_apply_transforms_orders_context_parallel_first(self):
++        from torchtitan.config.transform import ContextParallelTransform
++        from torchtitan.config.transform.apply import _ordered
++        from torchtitan.config.transform.lora import LoRATransform
++
++        cp = ContextParallelTransform.__new__(ContextParallelTransform)
++        lora = LoRATransform.__new__(LoRATransform)
++        # Appended the way the engine appends them, and the reverse.
++        for appended in ([cp, lora], [lora, cp]):
++            with self.subTest(appended=[type(t).__qualname__ for t in appended]):
++                ordered = _ordered(list(appended))
++                self.assertIs(ordered[0], cp)
++                self.assertIs(ordered[1], lora)
++
++
++if __name__ == "__main__":
++    unittest.main()
 diff --git a/verl/trainer/config/_generated_ppo_torchtitan_trainer.yaml b/verl/trainer/config/_generated_ppo_torchtitan_trainer.yaml
 index 3252449d..7339660b 100644
 --- a/verl/trainer/config/_generated_ppo_torchtitan_trainer.yaml
@@ -591,7 +648,7 @@ index 928daa74..a138a760 100644
              f"spmd_backend {self.spmd_backend} not supported"
          )
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index e89ba90a..4c5270a2 100644
+index b164adb1..225cd688 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -36,8 +36,7 @@ from torchtitan.components.optimizer import OptimizersContainer, ParamGroupConfi
@@ -679,7 +736,7 @@ index e89ba90a..4c5270a2 100644
          return pred
  
      def forward_step(self, micro_batch: TensorDict, loss_function, forward_only):
-@@ -1575,14 +1616,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1578,14 +1619,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
              output_args["pp_pad_len"] = pp_pad_len
          pad_multiple = 1
          if self.parallel_dims.cp_enabled:
@@ -699,7 +756,7 @@ index e89ba90a..4c5270a2 100644
          if self.parallel_dims.tp_enabled:
              # Sequence parallel scatters the token dim across the TP ranks, so the
              # packed stream must divide by the TP degree as well.
-@@ -1619,7 +1657,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1622,7 +1660,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                          attn_type=self.engine_config.attn_type,
                      )
                      extra_kwargs["attention_masks"] = attention_mask

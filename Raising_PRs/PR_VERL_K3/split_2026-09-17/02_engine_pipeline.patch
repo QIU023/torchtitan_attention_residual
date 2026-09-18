@@ -121,7 +121,7 @@ index 00000000..6f8cd340
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 052e3178..d30386a4 100644
+index e950d809..22c6b981 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -115,6 +115,58 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
@@ -300,7 +300,7 @@ index 052e3178..d30386a4 100644
              )
          else:
              # Non-PP forward. train_context (SPMD mesh) is set by the caller.
-@@ -782,7 +910,74 @@ class TorchTitanEngine(BaseEngine):
+@@ -775,7 +903,74 @@ class TorchTitanEngine(BaseEngine):
                  del full
  
          # TODO: support Torchtitan PEFT
@@ -376,8 +376,8 @@ index 052e3178..d30386a4 100644
  
  
  # Multimodal tensors keep their own leading dimension (images, not the folded stream).
-@@ -798,6 +993,28 @@ def initial_checkpoint_source(initial_load_path: str | None, model_path: str) ->
-     return initial_load_path is None, initial_load_path or model_path
+@@ -801,6 +996,28 @@ def checkpoint_step_from_path(local_path: str) -> int:
+     return int(match.group(1)) if match else -1
  
  
 +def pipeline_token_budget(configured: int | None, tokens: int) -> int:
@@ -405,7 +405,7 @@ index 052e3178..d30386a4 100644
  def _squeeze_folded(extra: dict) -> dict:
      """Fold ``[1, T]`` stream tensors to ``[T]``; multimodal tensors keep their batch axis."""
      return {
-@@ -931,6 +1148,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -934,6 +1151,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          # extra_kwargs are.
          extra_kwargs: dict[str, Any] = {"attention_masks": attention_mask}
          cp_pad_len = 0

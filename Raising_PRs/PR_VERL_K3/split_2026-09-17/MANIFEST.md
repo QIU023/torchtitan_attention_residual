@@ -418,3 +418,19 @@ The branch gained one more commit, the dynamo diagnostic that compiles `create_b
 One trap worth recording, since it cost a rebuild: the remapping must start from the assignment as committed for the previous head. Running it twice over an already-remapped table shifts every index a second time and the builder then reports several dozen unassigned items. `git checkout` the table first and check that it succeeded.
 
 `work/verify.txt` regenerated: each patch applies on the previous stage, `ast.parse` and `ruff --select F821,F811,F822` are clean at every stage, the union reproduces `7db90d7a` exactly, and none of 01 to 06 carries a local marker or a logbook path.
+
+---
+## Regenerated on head `409d059a`
+
+Three commits since the previous head: the transform-order test, the checkpoint step factored into `checkpoint_step_from_path` with its tests, and the tokenizer fix below. Branch against base `1a8a0f5f`: 31 files changed, 3073 insertions(+), 100 deletions(-).
+
+`work/splitlib.py` now reads `REPO = "/tmp/wt_verl_new"` and `HEAD = "409d059a"`. The old pin pointed at `/tmp/wt_verl_0915`, a worktree the branch leads by 73 commits; it still resolved because worktrees share one object store, which is precisely why it went unnoticed.
+
+Remapping `work/assign.py`: 2115 of 2125 items matched between the two heads, and the engine file grew from 2125 items to 2136. The 19 genuinely new items are one change, the inline `global_step_N` parse lifted out of `load_checkpoint`: eight deletions and the call that replaces them (items 925 to 933) and the function itself (items 1489 to 1498). All 19 go to patch 01, next to `initial_checkpoint_source`, which patch 01 already carries. The two test files added whole: `test_torchtitan_engine_checkpoint_step.py` to 01, `test_torchtitan_engine_transform_order.py` to 04. One further item, `return self._finish_pred(pred)` at index 786, sits at the same index with the same text on both heads and is only difflib pairing noise.
+
+A trap that a range-level remap walks straight into, and this one avoided: the new function's items land between old item 1488 and old item 1489, and old item 1489 is the last of `((1477, 1489), "01")` while old 1490 opens `((1490, 1511), "02")`. Mapping only the endpoints turns the first into `(1477, 1499)` and silently swallows ten items that need their own assignment. The remap therefore maps every old index to its new index one at a time, builds a per-item table, adds the new items explicitly, and compresses back into ranges. `work/remap_table.py` holds the result, next to `remap_e8e3ba50.json` from the earlier remap.
+
+Two findings about the verification itself:
+
+- It had never run `ruff` on this box at all. `venv_verl` carries no ruff module, so a check invoked as `python3 -m ruff` printed an import error that reads as output rather than as a failure. The run above uses `/venv/main/bin/ruff` 0.16.5 and every stage passes.
+- It had never run a test. The defect fixed in `409d059a` lived in the group that becomes patch 05 and turned four of seven tests red in an upstream test file that no patch touches but patch 05 drives. Running that file is now part of the transcript. It needs one file from patch 00 overlaid first, since the box's vLLM is a dev build whose version string only patch 00 teaches verl to accept; without it the module does not collect, so no test importing vllm can run against 01 to 06 alone on this machine.

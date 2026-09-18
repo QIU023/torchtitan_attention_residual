@@ -115,7 +115,7 @@ index a138a760..537c5d57 100644
          )
          assert self.activation_checkpoint in ["selective", "full", "none"], (
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index af53508a..68f424dc 100644
+index 04994495..83919b8c 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -17,9 +17,11 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -200,7 +200,7 @@ index af53508a..68f424dc 100644
                  offload_fsdp_model_to_cpu(module)
  
      def load_checkpoint(
-@@ -1020,6 +1069,88 @@ class TorchTitanEngine(BaseEngine):
+@@ -1013,6 +1062,88 @@ class TorchTitanEngine(BaseEngine):
                  params.update(module_params)
                  merged_lora_keys.update(module_merged)
  
@@ -289,7 +289,7 @@ index af53508a..68f424dc 100644
          if self._is_offload_param:
              for module in self.module:
                  offload_fsdp_model_to_cpu(module)
-@@ -1047,6 +1178,17 @@ class TorchTitanEngine(BaseEngine):
+@@ -1040,6 +1171,17 @@ class TorchTitanEngine(BaseEngine):
                  "wrapped projections; none is configured"
              )
  
@@ -307,7 +307,7 @@ index af53508a..68f424dc 100644
  
          if adapter_mode:
              if base_sync_done:
-@@ -1206,6 +1348,67 @@ def _guard_fsdp_grad_upcast() -> None:
+@@ -1199,6 +1341,67 @@ def _guard_fsdp_grad_upcast() -> None:
      FSDPParam.to_accumulated_grad_if_needed = guarded
  
  
@@ -375,7 +375,7 @@ index af53508a..68f424dc 100644
  # Processor output names that differ from the model's forward parameters.
  _MULTIMODAL_KEY_ALIASES = {"grid_thws": "grid_thw", "image_grid_thw": "grid_thw"}
  # Multimodal tensors keep their own leading dimension (images, not the folded stream).
-@@ -1696,6 +1899,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1699,6 +1902,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                          attn_type=self.engine_config.attn_type,
                      )
                      extra_kwargs["attention_masks"] = attention_mask

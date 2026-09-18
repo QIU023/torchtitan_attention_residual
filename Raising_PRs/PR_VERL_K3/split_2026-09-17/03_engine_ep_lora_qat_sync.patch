@@ -504,7 +504,7 @@ index 00000000..b7dcfe44
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index d30386a4..e89ba90a 100644
+index 22c6b981..b164adb1 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -16,6 +16,7 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -587,7 +587,7 @@ index d30386a4..e89ba90a 100644
          self.trainer = Trainer(self.config)
          # Decoders on torchtitan main take a folded [T] token stream and own their input
          # preprocessing (masks, CP shards, layouts); probed on the model, not on its name.
-@@ -833,9 +871,19 @@ class TorchTitanEngine(BaseEngine):
+@@ -826,9 +864,19 @@ class TorchTitanEngine(BaseEngine):
      def get_per_tensor_param_shard(self, **kwargs):
          """Yield this rank's *local* shard ``(hf_name, local_flat_bf16, ShardSpec)`` instead of the full tensor."""
          self._assert_shard_export_supported()
@@ -608,7 +608,7 @@ index d30386a4..e89ba90a 100644
  
          # Expert stacks go WHOLE with a slot table; to_hf would name only the local experts, breaking lockstep.
          stacks = {}
-@@ -867,53 +915,149 @@ class TorchTitanEngine(BaseEngine):
+@@ -860,53 +908,149 @@ class TorchTitanEngine(BaseEngine):
  
          return _gen(), None
  
@@ -791,7 +791,7 @@ index d30386a4..e89ba90a 100644
  
      def _iter_pp_gathered(self, gen, device):
          """Stream the stages in order: the owning rank yields its own tensors and broadcasts them, the
-@@ -942,6 +1086,36 @@ class TorchTitanEngine(BaseEngine):
+@@ -935,6 +1079,36 @@ class TorchTitanEngine(BaseEngine):
                      torch.distributed.broadcast(t, src=src, group=group)
                      yield name, t
  
@@ -828,7 +828,7 @@ index d30386a4..e89ba90a 100644
  
  _FSDP_GRAD_UPCAST_GUARDED = False
  
-@@ -1046,6 +1220,234 @@ def _cu_seqlens_from_positions(positions):
+@@ -1049,6 +1223,234 @@ def _cu_seqlens_from_positions(positions):
      return torch.cat((starts, starts.new_full((1,), num_tokens))).to(torch.int32)
  
  
