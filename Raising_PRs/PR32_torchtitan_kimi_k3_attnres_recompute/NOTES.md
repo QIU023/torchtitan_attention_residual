@@ -40,6 +40,16 @@ The nineteen failures are the same files on both sides (varlen attention, qwen3_
 
 Added 2026-08-24 as `d54d327a9`, reverted the same day as `53b613d80`. The revert was on scope, not on merit: the modules are upstream's, so a pipeline or context parallel branch had no business changing how they initialise, and the revert message says the observation should reach the maintainers as a question instead. This PR is that occasion. `d54d327a9` now survives only on `k3_on_4025_pre_rebase_0824`.
 
+## The context ceiling, and what it does not say
+
+On one H100 of 79.18 GiB, `dim` 7168 with a stack of 8, one process per point: the naive form completes at 32768 tokens with a 52.06 GiB process peak and runs out of memory at 65536; this change completes at 65536 with 29.77 GiB and at 131072 with 59.53 GiB, and runs out at 262144. So the reachable context per rank goes up four times.
+
+Two things that must not be claimed from it. The released default is 262144 tokens per micro-batch per dp rank and neither form reaches it on one card, so this is not "the real context now fits"; that configuration is sharded by context, tensor and pipeline parallelism and `tokens` is counted before any of it. And these peaks are process totals, unlike the increment-over-baseline peaks in the two sweep tables, so the same shape reads 52.06 GiB here and 48384 MiB there. Both are correct and they are not interchangeable.
+
+## Step counts
+
+Earlier runs in this work used 3, 5, 8 and 10 steps with no reason for any of them. The repository rule is steps 1, 10 and 20, and no step past the point where the reference starts memorising the debug set. Nothing in the body reports a step count now; if one is ever needed it follows that rule.
+
 ## Open
 
 - A model level step 1 gradient comparison. The Attention Gym KDA kernel accepts only CUDA capability 10.0 and 10.3, so a full Kimi K3 step runs on neither the H100 (SM90) nor the 5060 Ti (SM120) without relaxing that guard, and a number produced under a relaxed guard is not reproducible from an unmodified tree. The body says so rather than omitting it.

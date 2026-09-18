@@ -43,7 +43,9 @@ They are complementary rather than alternative. Keeping the region saved costs w
 
 ## Results
 
-One aggregation, bfloat16, H100 80GB, one shape per process, 10 warmups and the median of 7. Shapes run from the debug flavor up to the released model's hidden size and block count, `dim` 7168 with a stack of 8, at three context lengths. `kept` counts the storages autograd holds that are not already live as inputs.
+One aggregation, bfloat16, H100 80GB, one shape per process, 10 warmups and the median of 7. Shapes run from the debug flavor up to the released model's hidden size and block count, `dim` 7168 with a stack of 8. `kept` counts the storages autograd holds that are not already live as inputs, and the two peak columns are increments over the allocation already standing when the call begins.
+
+`tokens` is `training.num_tokens_per_microbatch_per_dp_rank`, described in the config as the number of input-token slots processed per data-parallel rank in one model forward, before context or tensor parallel sharding. Kimi K3's hidden states are token-major `[T, D]`, so it is the leading dimension of every tensor below. For reference the released flavor sets it to one times `max_context_length`, which is 262144, so even the widest row here is an eighth of that default.
 
 ### With activation checkpointing, which is the default
 
@@ -98,6 +100,19 @@ The result is not bitwise. The reordering takes the dot product first and scales
 | 32768 | 23 | 220.7 GiB | 0.046 GiB |
 
 Under the default checkpointing that residency is already absorbed by the block checkpoint, and what the change removes instead is the peak of a single aggregation, which does not accumulate across layers. The measured peaks in the first table are the relevant figures there.
+
+### Where the naive form stops fitting
+
+Same hidden size and stack, one process per point, peak reported as the process total rather than as an increment, so these numbers are larger than the two tables above and are not comparable to them.
+
+| tokens | main | this change |
+| --- | --- | --- |
+| 32768 | 52.06 GiB | 14.88 GiB |
+| 65536 | out of memory | 29.77 GiB |
+| 131072 | out of memory | 59.53 GiB |
+| 262144 | out of memory | out of memory |
+
+On a 79.18 GiB card the naive form stops at 32768 tokens and this change reaches 131072, four times further. Neither reaches 262144, so this raises the context a single rank can carry through one aggregation and does not make the released default fit on one card; that configuration is sharded by context, tensor and pipeline parallelism, and `tokens` here is counted before any of that sharding.
 
 ## Test plan
 
