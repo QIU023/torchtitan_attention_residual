@@ -1,5 +1,5 @@
 #!/bin/bash
-# Multi-axis GRPO cells on the 09-16 integration tree (/tmp/wt_int0916_rl, verl /tmp/wt_verl_0915, export -rel) with the synthetic reward as the sync instrument (the actor must move
+# Multi-axis GRPO cells on the 09-16 integration tree (/tmp/wt_int0916_rl, verl ${VERL_TREE}, /tmp/wt_verl_new by default, /tmp/wt_verl_0915 for the cells recorded before 2026-09-18, export -rel) with the synthetic reward as the sync instrument (the actor must move
 # for steps 2-3 to test the sync of updated weights). Every parallel size comes from the environment:
 #   NUM_GPUS FSDP_SIZE EP_SIZE CP_SIZE PP_SIZE TP_SIZE, flavor via VERL_TORCHTITAN_FLAVOR
 #   (kimi_k3_rl_cp2 / kimi_k3_rl_cp2_mx_qat for CP cells; rl / kimi_k3_rl_mx_qat otherwise; all run-worktree aliases).
@@ -7,7 +7,8 @@
 # (2048 with micro-batch 1-2), offload off under PP. Judged by training/rollout_logprobs_diff_mean at steps 1 and 3.
 set -uo pipefail
 source /workspace/venv_verl/bin/activate
-export PYTHONPATH=/tmp/wt_verl_0915:/tmp/wt_int0916_rl:/tmp/attn_gym_up
+export VERL_TREE=${VERL_TREE:-/tmp/wt_verl_new}
+export PYTHONPATH=${VERL_TREE}:/tmp/wt_int0916_rl:/tmp/attn_gym_up
 export VERL_TORCHTITAN_FLAVOR=${VERL_TORCHTITAN_FLAVOR:-rl}
 export HF_HOME=/workspace/.hf_home
 export FLASHINFER_DISABLE_VERSION_CHECK=1
@@ -18,7 +19,7 @@ export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1}
 export TORCHINDUCTOR_CACHE_DIR=${TORCHINDUCTOR_CACHE_DIR:-/workspace/.inductor_verl_int0916_nd} TRITON_CACHE_DIR=${TRITON_CACHE_DIR:-/workspace/.triton_verl_int0916_nd}
 export ATTN_GYM_CUTE_CACHE_DIR=${ATTN_GYM_CUTE_CACHE_DIR:-/workspace/.cute_verl_int0916_nd}
 export TORCHINDUCTOR_COMPILE_THREADS=1
-cd /tmp/wt_verl_0915
+cd "${VERL_TREE}"
 TRAIN_FILES=${TRAIN_FILES:-/workspace/.k3_image_data/train.parquet} VAL_FILES=${VAL_FILES:-/workspace/.k3_image_data/train.parquet} MAX_PROMPT_LENGTH=${MAX_PROMPT_LENGTH:-256} MAX_RESPONSE_LENGTH=${MAX_RESPONSE_LENGTH:-64} TOTAL_TRAIN_STEPS=${TOTAL_TRAIN_STEPS:-3} NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} EP_SIZE=${EP_SIZE:-1} TP_SIZE=${TP_SIZE:-1} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=${MODEL_PATH:-/root/models/kimi-k3-debug-nt-rel} \
 timeout ${CELL_TIMEOUT:-7200} bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   data.train_batch_size=${TRAIN_BS:-8} \

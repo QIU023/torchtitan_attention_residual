@@ -6,7 +6,8 @@
 # (micro-batch 8 runs the 163840-vocab entropy out of memory on a 16 GB card).
 set -uo pipefail
 source /workspace/venv_verl/bin/activate
-export PYTHONPATH=/tmp/wt_verl_0915:/tmp/wt_int0916_rl:/tmp/attn_gym_up
+export VERL_TREE=${VERL_TREE:-/tmp/wt_verl_new}
+export PYTHONPATH=${VERL_TREE}:/tmp/wt_int0916_rl:/tmp/attn_gym_up
 export VERL_TORCHTITAN_FLAVOR=${VERL_TORCHTITAN_FLAVOR:-rl}
 export HF_HOME=/workspace/.hf_home
 export FLASHINFER_DISABLE_VERSION_CHECK=1
@@ -18,7 +19,7 @@ export TORCHINDUCTOR_CACHE_DIR=/workspace/.inductor_verl_int0916 TRITON_CACHE_DI
 # The container caps pids at 15616 (threads count): one Ray instance per cell pre-starts num_cpus idle
 # workers and every rank a compile-worker pool, so keep both small.
 export TORCHINDUCTOR_COMPILE_THREADS=1
-cd /tmp/wt_verl_0915
+cd "${VERL_TREE}"
 NUM_GPUS=${NUM_GPUS:-2} FSDP_SIZE=${FSDP_SIZE:-2} SPMD_BACKEND=${SPMD_BACKEND:-spmd_types} MODEL_ID=kimi-k3-debug-nt MODEL_PATH=${MODEL_PATH:-/root/models/kimi-k3-debug-nt-rel} TP_SIZE=1 \
 timeout 5400 bash tests/special_e2e/run_ppo_trainer_torchtitan.sh \
   data.train_batch_size=32 \
