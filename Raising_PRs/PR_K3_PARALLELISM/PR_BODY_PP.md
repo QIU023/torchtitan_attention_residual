@@ -14,6 +14,10 @@ TODO before pasting: upload svg-1 `pp_attnres_dependencies.svg` and svg-2 `pp_st
 
 --- PASTE BEGIN ---
 
+Rebase note, 2026-09-18 (not for pasting): the PR head `de6f29514` now replays onto torchtitan main `a3a819c67` as `ab8ea5f61`, 37 commits, in `/tmp/wt_pr4312_plain`. Nothing here is edited from that, because every number below is an H100 measurement and a rebase can move the reference itself. The rows that need an H100 rerun against the new base before this body is reposted are all of them, in all four tables: dp1, pp2, pp2 x vp2 naive, pp4 x vp4 naive, pp2 x vp2 cached and pp4 x vp4 cached, at steps 1, 10, 50 and 100 for both loss and grad norm, in the 09-13 c4 table, the appendix c4 table and the 09-12 debug-set table.
+
+The two cells run on 2026-09-18 are smoke only and never go into this body: `kimi_k3_debugmodel_pp2_vp2` on 2 GPUs and `kimi_k3_debugmodel_pp8_vp4` on 8, both rc 0 over three steps on an RTX 5060 Ti box, loss 12.34963 / 10.93338 / 8.04338 and 12.59161 / 11.15744 / 8.35423. They say the pipeline runs on the new base; they say nothing about the numbers above.
+
 ### Summary
 
 Adds pipeline parallelism to the Kimi K3 text decoder. Before this change `parallelize.py` rejects `pipeline_parallel_degree > 1`; core's `pipeline_llm` would split the model at layer boundaries and carry one hidden-state tensor per hop, which cannot express Block Attention Residuals: every later stage needs every earlier block's residual, and the final aggregation (`output_res_proj`, then `output_res_norm`) must run only on the stage that owns `lm_head`.
