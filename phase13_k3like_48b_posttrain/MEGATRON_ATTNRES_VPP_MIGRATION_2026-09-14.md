@@ -94,6 +94,30 @@ Held until Tianyu's next review of 4312 (user, 2026-09-15); nothing goes to NVID
 5. A whole-stack mode on the same tables (`attn_res_cache=False`), which is the cache's A/B in the tests.
 6. Checks: deposit count against the tables, no uncollected deposit, store contents equal to the tables at entry.
 
+## 3f. Verified on the box (2026-09-18)
+
+Scope for this pass (user, 2026-09-18): only what 4312 can adopt from 6840 on the cache side. The model-layer findings about the aggregation belong to upstream's own code and are out of scope here; they are in `MEGATRON6840_VS_4312_GAPS_2026-09-18.md` under the heading that says so.
+
+Of the three cache items in 3d, one is a real defect on the 4312 head and it is now reproduced in both directions, on CPU, with no GPU involved.
+
+    tree                                    test                                 result
+    de6f29514, the 4312 head, unpatched     test_forward_only_eval_between_steps 1 failed, 1 passed
+    e4955d2d5, pp_review4_consume6840       the four K3 PP CPU test files        18 passed
+
+The failing case is the one 3d describes: with PP and validation on, torch calls `backward_one_chunk` with `has_backward` off, the base class returns immediately, and the override then reads a `bwd_cache[mb]` entry it never filled. The test that exposes it is taken from `8ebd7ea39` and run unchanged against the unpatched head, so the failure is the head's, not the test's.
+
+The branch that carries the fix sits exactly where it should: `pp_review4_consume6840` is three commits on top of `de6f29514`, and they touch `pipeline_stage.py` (+20/-2) and two test files, nothing else.
+
+    6f843fc3f   the pipeline stage's backward honours has_backward          pipeline_stage.py +7, test +16
+    8ebd7ea39   the exact block-gradient test runs schedule.eval            test +49/-1
+    e4955d2d5   a payload with nothing trainable upstream gets no gradient  pipeline_stage.py +13/-2
+
+The first two are the forward-only item from 3d. The third is the separate defect found while diffing (a frozen embedding under LoRA leaves a payload with no gradient, and the 4312 head raises there).
+
+The other two cache items in 3d stay as they were, and one of them now reads differently in light of the scope correction. Reset at schedule entry is unreachable in titan and needs no patch. The stack assembled as a copy is not a cache defect at all: it follows from the model carrying the block stack as one tensor, which is upstream's representation and not something 4312 introduced, so it is a model-layer question and not an item for this PR.
+
+What this leaves for 4312: adopt the three commits above, which are cache and stage only, sit on the PR's own base, and come with their tests. Nothing else from 6840's cache is portable, for the `stage_backward` reason in 3d.
+
 ## 4. What Megatron-Core needs for this design (from the MCore PP survey, 54c62df)
 
 Ranked by difficulty; all paths under `megatron/core/`.
