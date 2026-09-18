@@ -1,3 +1,5 @@
+Filed as #4780 on 2026-09-18, branch `k3_attnres_recompute` at `9f6bae06f`, two commits on upstream main `68c97b0c5`. It sits next to #4656, which the Relation section below addresses.
+
 # PR body draft: correct the attention residual initialisation and stop retaining its FP32 copies
 
 Branch `k3_attnres_recompute` = `9f6bae06f`, two commits on `upstream/main` `68c97b0c5`. Fork: `origin/k3_attnres_recompute`.

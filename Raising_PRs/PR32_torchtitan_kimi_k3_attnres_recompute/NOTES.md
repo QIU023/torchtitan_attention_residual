@@ -54,3 +54,7 @@ Earlier runs in this work used 3, 5, 8 and 10 steps with no reason for any of th
 
 - A model level step 1 gradient comparison. The Attention Gym KDA kernel accepts only CUDA capability 10.0 and 10.3, so a full Kimi K3 step runs on neither the H100 (SM90) nor the 5060 Ti (SM120) without relaxing that guard, and a number produced under a relaxed guard is not reproducible from an unmodified tree. The body says so rather than omitting it.
 - The full CPU suite on this branch, for the test plan.
+
+## Filed
+
+#4780, 2026-09-18. Branch `k3_attnres_recompute` at `9f6bae06f`; the two commits are the aggregation and the zero initialisation. Numbers in the body are the H100 ones, per the rule that the 5060 only smokes.
