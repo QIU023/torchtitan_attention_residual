@@ -812,523 +812,557 @@
  1413 + 
  1414 + 
  1415 + _DYNAMO_PROBED = False
- 1416 + 
+ 1416 + _RECOMPILE_LIMIT_RAISED = False
  1417 + 
- 1418 + def _probe_compile_here() -> str:
- 1419 +     """Can dynamo compile at this exact point in the worker, and can it compile the
- 1420 +     function torch's context-parallel sharding compiles?"""
- 1421 +     import torch
- 1422 + 
- 1423 +     try:
- 1424 +         compiled = torch.compile(lambda t: t * 2 + 1, fullgraph=True)
- 1425 +         out = compiled(torch.ones(4, device=get_device_id()))
- 1426 +         lam = f"lambda=OK({out.sum().item():.0f})"
- 1427 +     except Exception as exc:  # noqa: BLE001
- 1428 +         lam = f"lambda={type(exc).__name__}: {str(exc).splitlines()[0][:60]}"
- 1429 +     ident = "cbm.module=?"
- 1430 +     try:
- 1431 +         from torch.nn.attention import flex_attention as _fa
- 1432 + 
- 1433 +         ident = (
- 1434 +             f"cbm.module={getattr(_fa.create_block_mask, '__module__', '?')}"
- 1435 +             f" wrapped={hasattr(_fa.create_block_mask, '__wrapped__')}"
- 1436 +             f" dynamo_disable={hasattr(_fa.create_block_mask, '_torchdynamo_disable')}"
- 1437 +         )
- 1438 +         cbm = torch.compile(_fa.create_block_mask, dynamic=False, fullgraph=True)
- 1439 +         mask = cbm(lambda b, h, q, kv: q >= kv, 1, 1, 128, 128, device=get_device_id())
- 1440 +         cb = f"create_block_mask=OK({type(mask).__name__})"
- 1441 +     except Exception as exc:  # noqa: BLE001
- 1442 +         cb = f"create_block_mask={type(exc).__name__}: {str(exc).splitlines()[0][:70]}"
- 1443 +     return f"{lam} | {cb} | {ident}"
- 1444 + 
+ 1418 + 
+ 1419 + def _probe_compile_here() -> str:
+ 1420 +     """Can dynamo compile at this exact point in the worker, and can it compile the
+ 1421 +     function torch's context-parallel sharding compiles?"""
+ 1422 +     import torch
+ 1423 + 
+ 1424 +     try:
+ 1425 +         compiled = torch.compile(lambda t: t * 2 + 1, fullgraph=True)
+ 1426 +         out = compiled(torch.ones(4, device=get_device_id()))
+ 1427 +         lam = f"lambda=OK({out.sum().item():.0f})"
+ 1428 +     except Exception as exc:  # noqa: BLE001
+ 1429 +         lam = f"lambda={type(exc).__name__}: {str(exc).splitlines()[0][:60]}"
+ 1430 +     ident = "cbm.module=?"
+ 1431 +     try:
+ 1432 +         from torch.nn.attention import flex_attention as _fa
+ 1433 + 
+ 1434 +         ident = (
+ 1435 +             f"cbm.module={getattr(_fa.create_block_mask, '__module__', '?')}"
+ 1436 +             f" wrapped={hasattr(_fa.create_block_mask, '__wrapped__')}"
+ 1437 +             f" dynamo_disable={hasattr(_fa.create_block_mask, '_torchdynamo_disable')}"
+ 1438 +         )
+ 1439 +         cbm = torch.compile(_fa.create_block_mask, dynamic=False, fullgraph=True)
+ 1440 +         mask = cbm(lambda b, h, q, kv: q >= kv, 1, 1, 128, 128, device=get_device_id())
+ 1441 +         cb = f"create_block_mask=OK({type(mask).__name__})"
+ 1442 +     except Exception as exc:  # noqa: BLE001
+ 1443 +         cb = f"create_block_mask={type(exc).__name__}: {str(exc).splitlines()[0][:70]}"
+ 1444 +     return f"{lam} | {cb} | {ident}"
  1445 + 
- 1446 + def _dynamo_probe_once() -> None:
- 1447 +     """DIAGNOSTIC (VERL_TORCHTITAN_DYNAMO_PROBE): why the worker cannot torch.compile."""
- 1448 +     global _DYNAMO_PROBED
- 1449 +     if _DYNAMO_PROBED:
- 1450 +         return
- 1451 +     _DYNAMO_PROBED = True
- 1452 +     import sys
- 1453 +     import threading
- 1454 + 
- 1455 +     import torch._dynamo
- 1456 + 
- 1457 +     lines = [
- 1458 +         f"dynamo.config.disable={torch._dynamo.config.disable}",
- 1459 +         f"suppress_errors={torch._dynamo.config.suppress_errors}",
- 1460 +         f"is_dynamo_supported={getattr(torch._dynamo, 'is_dynamo_supported', lambda: 'n/a')()}",
- 1461 +         f"is_compiling={torch.compiler.is_compiling()}",
- 1462 +         f"eval_frame_callback={getattr(torch._dynamo.eval_frame, 'set_eval_frame', None) is not None}",
- 1463 +         _probe_compile_here(),
- 1464 +         f"thread={threading.current_thread().name} main={threading.current_thread() is threading.main_thread()}",
- 1465 +         f"TORCHDYNAMO_DISABLE={os.environ.get('TORCHDYNAMO_DISABLE')} TORCH_COMPILE_DISABLE={os.environ.get('TORCH_COMPILE_DISABLE')}",
- 1466 +     ]
- 1467 +     try:
- 1468 +         fn = torch.compile(lambda x: x + 1, fullgraph=True)
- 1469 +         fn(torch.ones(1, device=torch.cuda.current_device() if torch.cuda.is_available() else "cpu"))
- 1470 +         lines.append("trivial fullgraph compile: ok")
- 1471 +     except Exception as err:  # noqa: BLE001
- 1472 +         lines.append(f"trivial fullgraph compile FAILED: {type(err).__name__}: {str(err)[:200]}")
- 1473 +     print("DYNAMO-PROBE " + " | ".join(lines), file=sys.stderr, flush=True)
- 1474 + 
- 1475 + 
- 1476 + # Processor output names that differ from the model's forward parameters.
- 1477 + _MULTIMODAL_KEY_ALIASES = {"grid_thws": "grid_thw", "image_grid_thw": "grid_thw"}
- 1478 + # Multimodal tensors keep their own leading dimension (images, not the folded stream).
- 1479 + _MULTIMODAL_KEYS = ("pixel_values", "grid_thw", "pixel_values_videos", "grid_thw_videos", "special_tokens")
- 1480 + 
- 1481 + 
- 1482 + def initial_checkpoint_source(initial_load_path: str | None, model_path: str) -> tuple[bool, str]:
- 1483 +     """Where the first load comes from: ``(load_in_hf, path)``.
- 1484 + 
- 1485 +     A torchtitan DCP checkpoint takes precedence over the HF weights at ``model.path``,
- 1486 +     since a model whose frozen bases are packed (QLoRA) has no HF spelling for them.
- 1487 +     """
- 1488 +     return initial_load_path is None, initial_load_path or model_path
- 1489 + 
- 1490 + 
- 1491 + def checkpoint_step_from_path(local_path: str) -> int:
- 1492 +     """The step verl's ``global_step_N`` path names, or -1 for the latest.
- 1493 + 
- 1494 +     verl hands the engine a path whose last component carries the step; the
- 1495 +     checkpointer wants the number. A path without one means load the latest.
- 1496 +     """
- 1497 +     match = re.search(r"global_step_(\d+)", local_path)
- 1498 +     return int(match.group(1)) if match else -1
- 1499 + 
- 1500 + 
- 1501 + def pipeline_token_budget(configured: int | None, tokens: int) -> int:
- 1502 +     """The fixed per-micro-batch token count pipeline parallelism pads to.
- 1503 + 
- 1504 +     The config field wins; ``VERL_PP_TOKEN_BUDGET`` is the fallback, so a run can set it
- 1505 +     without a config edit. Both refusals name the knob, since a stage sizes its P2P
- 1506 +     buffers from the first micro-batch and a later one of another length deadlocks.
- 1507 +     """
- 1508 +     budget = int(configured or os.environ.get("VERL_PP_TOKEN_BUDGET", "0"))
- 1509 +     if budget <= 0:
- 1510 +         raise ValueError(
- 1511 +             "pipeline parallelism needs a fixed token count per micro-batch; set "
- 1512 +             "torchtitan.pipeline_token_budget (or VERL_PP_TOKEN_BUDGET) to at least "
- 1513 +             "the largest packed micro-batch"
- 1514 +         )
- 1515 +     if tokens > budget:
- 1516 +         raise ValueError(
- 1517 +             f"micro-batch of {tokens} tokens exceeds the pipeline token budget {budget}; "
- 1518 +             "raise the budget or lower the micro-batch size"
- 1519 +         )
- 1520 +     return budget
+ 1446 + 
+ 1447 + def _raise_recompile_limit() -> None:
+ 1448 +     """DIAGNOSTIC (VERL_TORCHTITAN_RECOMPILE_LIMIT): give create_block_mask a bigger budget.
+ 1449 + 
+ 1450 +     torchtitan compiles ``create_block_mask`` twice without ``fullgraph``, and torch's
+ 1451 +     context-parallel path compiles the same code object with it; past the default of 8
+ 1452 +     dynamo stops compiling that frame and the fullgraph call reports no compiled frames.
+ 1453 + 
+ 1454 +     Set on every call, not once per process: a dynamo config value lives in a
+ 1455 +     ``ContextVar``, and Ray runs each async actor method in its own task, so a write
+ 1456 +     made in one task is already gone by the next.
+ 1457 +     """
+ 1458 +     global _RECOMPILE_LIMIT_RAISED
+ 1459 +     import sys
+ 1460 + 
+ 1461 +     import torch._dynamo
+ 1462 + 
+ 1463 +     limit = int(os.environ["VERL_TORCHTITAN_RECOMPILE_LIMIT"])
+ 1464 +     torch._dynamo.config.recompile_limit = limit
+ 1465 +     torch._dynamo.config.accumulated_recompile_limit = max(
+ 1466 +         torch._dynamo.config.accumulated_recompile_limit, limit * 32
+ 1467 +     )
+ 1468 +     if not _RECOMPILE_LIMIT_RAISED:
+ 1469 +         _RECOMPILE_LIMIT_RAISED = True
+ 1470 +         print(
+ 1471 +             f"RECOMPILE-LIMIT raised to {torch._dynamo.config.recompile_limit} "
+ 1472 +             f"(accumulated {torch._dynamo.config.accumulated_recompile_limit})",
+ 1473 +             file=sys.stderr,
+ 1474 +             flush=True,
+ 1475 +         )
+ 1476 + 
+ 1477 + 
+ 1478 + def _dynamo_probe_once() -> None:
+ 1479 +     """DIAGNOSTIC (VERL_TORCHTITAN_DYNAMO_PROBE): why the worker cannot torch.compile."""
+ 1480 +     global _DYNAMO_PROBED
+ 1481 +     if _DYNAMO_PROBED:
+ 1482 +         return
+ 1483 +     _DYNAMO_PROBED = True
+ 1484 +     import sys
+ 1485 +     import threading
+ 1486 + 
+ 1487 +     import torch._dynamo
+ 1488 + 
+ 1489 +     lines = [
+ 1490 +         f"dynamo.config.disable={torch._dynamo.config.disable}",
+ 1491 +         f"suppress_errors={torch._dynamo.config.suppress_errors}",
+ 1492 +         f"is_dynamo_supported={getattr(torch._dynamo, 'is_dynamo_supported', lambda: 'n/a')()}",
+ 1493 +         f"is_compiling={torch.compiler.is_compiling()}",
+ 1494 +         f"eval_frame_callback={getattr(torch._dynamo.eval_frame, 'set_eval_frame', None) is not None}",
+ 1495 +         _probe_compile_here(),
+ 1496 +         f"thread={threading.current_thread().name} main={threading.current_thread() is threading.main_thread()}",
+ 1497 +         f"TORCHDYNAMO_DISABLE={os.environ.get('TORCHDYNAMO_DISABLE')} TORCH_COMPILE_DISABLE={os.environ.get('TORCH_COMPILE_DISABLE')}",
+ 1498 +     ]
+ 1499 +     try:
+ 1500 +         fn = torch.compile(lambda x: x + 1, fullgraph=True)
+ 1501 +         fn(torch.ones(1, device=torch.cuda.current_device() if torch.cuda.is_available() else "cpu"))
+ 1502 +         lines.append("trivial fullgraph compile: ok")
+ 1503 +     except Exception as err:  # noqa: BLE001
+ 1504 +         lines.append(f"trivial fullgraph compile FAILED: {type(err).__name__}: {str(err)[:200]}")
+ 1505 +     print("DYNAMO-PROBE " + " | ".join(lines), file=sys.stderr, flush=True)
+ 1506 + 
+ 1507 + 
+ 1508 + # Processor output names that differ from the model's forward parameters.
+ 1509 + _MULTIMODAL_KEY_ALIASES = {"grid_thws": "grid_thw", "image_grid_thw": "grid_thw"}
+ 1510 + # Multimodal tensors keep their own leading dimension (images, not the folded stream).
+ 1511 + _MULTIMODAL_KEYS = ("pixel_values", "grid_thw", "pixel_values_videos", "grid_thw_videos", "special_tokens")
+ 1512 + 
+ 1513 + 
+ 1514 + def initial_checkpoint_source(initial_load_path: str | None, model_path: str) -> tuple[bool, str]:
+ 1515 +     """Where the first load comes from: ``(load_in_hf, path)``.
+ 1516 + 
+ 1517 +     A torchtitan DCP checkpoint takes precedence over the HF weights at ``model.path``,
+ 1518 +     since a model whose frozen bases are packed (QLoRA) has no HF spelling for them.
+ 1519 +     """
+ 1520 +     return initial_load_path is None, initial_load_path or model_path
  1521 + 
  1522 + 
- 1523 + def _model_multimodal_kwargs(multi_modal_inputs: dict, forward_params, placeholder_id) -> dict:
- 1524 +     """The processor's multimodal outputs as the model's forward keyword arguments.
+ 1523 + def checkpoint_step_from_path(local_path: str) -> int:
+ 1524 +     """The step verl's ``global_step_N`` path names, or -1 for the latest.
  1525 + 
- 1526 +     Renames the processor's spellings, keeps only what the forward takes, and adds the
- 1527 +     placeholder token the model looks for (``special_tokens={"image_id": ...}``) when
- 1528 +     images are present.
- 1529 +     """
- 1530 +     out = {}
- 1531 +     for key, value in multi_modal_inputs.items():
- 1532 +         name = _MULTIMODAL_KEY_ALIASES.get(key, key)
- 1533 +         if name in forward_params:
- 1534 +             out[name] = value
- 1535 +     pixel_values = out.get("pixel_values")
- 1536 +     if torch.is_tensor(pixel_values) and pixel_values.dim() == 4:
- 1537 +         # the processor's [patches, C, p, p]; the model takes [patches, C * p * p]
- 1538 +         out["pixel_values"] = pixel_values.flatten(1)
- 1539 +     if "pixel_values" in out and "special_tokens" in forward_params and placeholder_id is not None:
- 1540 +         out["special_tokens"] = {"image_id": int(placeholder_id)}
- 1541 +     return out
- 1542 + 
- 1543 + 
- 1544 + def _squeeze_folded(extra: dict) -> dict:
- 1545 +     """Fold ``[1, T]`` stream tensors to ``[T]``; multimodal tensors keep their batch axis."""
- 1546 +     return {
- 1547 +         k: (
- 1548 +             v.squeeze(0)
- 1549 +             if k not in _MULTIMODAL_KEYS and torch.is_tensor(v) and v.dim() >= 1 and v.shape[0] == 1
- 1550 +             else v
+ 1526 +     verl hands the engine a path whose last component carries the step; the
+ 1527 +     checkpointer wants the number. A path without one means load the latest.
+ 1528 +     """
+ 1529 +     match = re.search(r"global_step_(\d+)", local_path)
+ 1530 +     return int(match.group(1)) if match else -1
+ 1531 + 
+ 1532 + 
+ 1533 + def pipeline_token_budget(configured: int | None, tokens: int) -> int:
+ 1534 +     """The fixed per-micro-batch token count pipeline parallelism pads to.
+ 1535 + 
+ 1536 +     The config field wins; ``VERL_PP_TOKEN_BUDGET`` is the fallback, so a run can set it
+ 1537 +     without a config edit. Both refusals name the knob, since a stage sizes its P2P
+ 1538 +     buffers from the first micro-batch and a later one of another length deadlocks.
+ 1539 +     """
+ 1540 +     budget = int(configured or os.environ.get("VERL_PP_TOKEN_BUDGET", "0"))
+ 1541 +     if budget <= 0:
+ 1542 +         raise ValueError(
+ 1543 +             "pipeline parallelism needs a fixed token count per micro-batch; set "
+ 1544 +             "torchtitan.pipeline_token_budget (or VERL_PP_TOKEN_BUDGET) to at least "
+ 1545 +             "the largest packed micro-batch"
+ 1546 +         )
+ 1547 +     if tokens > budget:
+ 1548 +         raise ValueError(
+ 1549 +             f"micro-batch of {tokens} tokens exceeds the pipeline token budget {budget}; "
+ 1550 +             "raise the budget or lower the micro-batch size"
  1551 +         )
- 1552 +         for k, v in extra.items()
- 1553 +     }
+ 1552 +     return budget
+ 1553 + 
  1554 + 
- 1555 + 
- 1556 + def _cu_seqlens_from_positions(positions):
- 1557 +     """Packed offsets ``[0, ..., T]`` of a folded ``[T]`` (or ``[1, T]``) stream from its
- 1558 +     positions: a document starts where the position restarts at 0. ``None`` without an
- 1559 +     interior restart, so a single sequence keeps the single-sequence kernels."""
- 1560 +     if positions is None:
- 1561 +         return None
- 1562 +     if positions.dim() == 2 and positions.shape[0] == 1:
- 1563 +         positions = positions[0]
- 1564 +     if positions.dim() != 1:
- 1565 +         return None
- 1566 +     num_tokens = positions.shape[0]
- 1567 +     starts = torch.nonzero(positions == 0).flatten()
- 1568 +     if starts.numel() == 0 or int(starts[0]) != 0:
- 1569 +         starts = torch.cat((starts.new_zeros(1), starts))
- 1570 +     if starts.numel() == 1:
- 1571 +         return None
- 1572 +     return torch.cat((starts, starts.new_full((1,), num_tokens))).to(torch.int32)
- 1573 + 
+ 1555 + def _model_multimodal_kwargs(multi_modal_inputs: dict, forward_params, placeholder_id) -> dict:
+ 1556 +     """The processor's multimodal outputs as the model's forward keyword arguments.
+ 1557 + 
+ 1558 +     Renames the processor's spellings, keeps only what the forward takes, and adds the
+ 1559 +     placeholder token the model looks for (``special_tokens={"image_id": ...}``) when
+ 1560 +     images are present.
+ 1561 +     """
+ 1562 +     out = {}
+ 1563 +     for key, value in multi_modal_inputs.items():
+ 1564 +         name = _MULTIMODAL_KEY_ALIASES.get(key, key)
+ 1565 +         if name in forward_params:
+ 1566 +             out[name] = value
+ 1567 +     pixel_values = out.get("pixel_values")
+ 1568 +     if torch.is_tensor(pixel_values) and pixel_values.dim() == 4:
+ 1569 +         # the processor's [patches, C, p, p]; the model takes [patches, C * p * p]
+ 1570 +         out["pixel_values"] = pixel_values.flatten(1)
+ 1571 +     if "pixel_values" in out and "special_tokens" in forward_params and placeholder_id is not None:
+ 1572 +         out["special_tokens"] = {"image_id": int(placeholder_id)}
+ 1573 +     return out
  1574 + 
- 1575 + def _titan_lora_wrappers(module):
- 1576 +     """``{fqn: wrapper}`` for every KimiLoRALinear in the module.
- 1577 + 
- 1578 +     Discovered from the module rather than from the config, because ``apply_lora``
- 1579 +     decides what actually got wrapped (its target list matches leaf names AND
- 1580 +     qualified suffixes, and it skips the KDA subtree structurally). A config-derived
- 1581 +     list would claim targets that were never wrapped.
- 1582 +     """
- 1583 +     found = {}
- 1584 +     for name, sub in module.named_modules():
- 1585 +         if _is_lora_wrapper(sub):
- 1586 +             found[name] = sub
- 1587 +     return found
- 1588 + 
- 1589 + 
- 1590 + def _is_lora_wrapper(sub) -> bool:
- 1591 +     """A LoRA linear: torchtitan main's ``_LoRALinearMixin`` (``specialize_lora_linear``),
- 1592 +     the fork's ``LoRALinearBase`` (the base ``weight`` on the module, ``lora_a`` /
- 1593 +     ``lora_b`` as Linear submodules, optionally a packed base), or the earlier
- 1594 +     model-local wrapper (``base`` submodule, adapter tensors as parameters)."""
- 1595 +     markers: tuple = ()
- 1596 +     try:
- 1597 +         from torchtitan.config.transform.lora import LoRALinearBase
- 1598 + 
- 1599 +         markers += (LoRALinearBase,)
- 1600 +     except ImportError:  # pragma: no cover - trees without the fork's LoRA
- 1601 +         pass
- 1602 +     try:
- 1603 +         from torchtitan.models.common.lora import _LoRALinearMixin
- 1604 + 
- 1605 +         markers += (_LoRALinearMixin,)
- 1606 +     except ImportError:  # pragma: no cover - trees before main's LoRA transform
- 1607 +         pass
- 1608 +     if markers and isinstance(sub, markers):
- 1609 +         return True
- 1610 +     return hasattr(sub, "lora_a") and hasattr(sub, "lora_b") and hasattr(sub, "base")
- 1611 + 
- 1612 + 
- 1613 + def _lora_prefix(mod_name: str, sd: dict) -> str:
- 1614 +     """The state-dict prefix of a LoRA wrapper reached at ``mod_name``.
- 1615 + 
- 1616 +     Wrapper segments (activation checkpointing, FSDP, compile) appear in
- 1617 +     ``named_modules()`` paths but not in ``state_dict()`` keys. Core keys the
- 1618 +     adapters ``<prefix>.lora_a.weight`` (a Linear), the earlier wrapper
- 1619 +     ``<prefix>.lora_a``; both are accepted, and an unknown wrapper raises rather
- 1620 +     than guessing a name nothing downstream would load.
- 1621 +     """
- 1622 +     segments = {"_checkpoint_wrapped_module", "_fsdp_wrapped_module", "_orig_mod"}
- 1623 +     stripped = ".".join(p for p in mod_name.split(".") if p not in segments)
- 1624 +     for candidate in (stripped, mod_name):
- 1625 +         if f"{candidate}.lora_a.weight" in sd or f"{candidate}.lora_a" in sd:
- 1626 +             return candidate
- 1627 +     raise KeyError(
- 1628 +         f"LoRA module at {mod_name!r} has no matching state_dict entry (tried "
- 1629 +         f"{stripped!r}); an unrecognised module wrapper is in the path"
- 1630 +     )
- 1631 + 
- 1632 + 
- 1633 + def _lora_factor(wrapper, name: str) -> torch.Tensor:
- 1634 +     """The adapter factor ``lora_a`` / ``lora_b`` as a tensor, whether the wrapper
- 1635 +     keeps it as a Linear submodule (core) or as a parameter (the earlier wrapper)."""
- 1636 +     factor = getattr(wrapper, name)
- 1637 +     return factor.weight if hasattr(factor, "weight") else factor
- 1638 + 
- 1639 + 
- 1640 + def _peft_config_from_wrappers(wrappers):
- 1641 +     """A vLLM PEFTHelper-compatible dict, or None when there is nothing to describe.
- 1642 + 
- 1643 +     ``target_modules`` is the set of leaf names actually wrapped. Our LoRA targets are
- 1644 +     already HF-style leaf names (``q_proj``, ``o_proj``, ``gate_proj``, ...), so unlike
- 1645 +     the megatron path there is no megatron-to-HF target rename to do.
- 1646 + 
- 1647 +     rank and alpha come off a wrapper instead of the config: the wrapper stores
- 1648 +     ``alpha / rank`` as ``_lora_scaling`` and its shapes carry the rank, so the values
- 1649 +     reported are the ones the adapters were actually built with.
- 1650 +     """
- 1651 +     if not wrappers:
- 1652 +         return None
- 1653 +     from peft import TaskType
- 1654 + 
- 1655 +     any_wrapper = next(iter(wrappers.values()))
- 1656 +     rank = int(_lora_factor(any_wrapper, "lora_a").shape[0])
- 1657 +     alpha = float(getattr(any_wrapper, "_lora_scaling", 1.0)) * rank
- 1658 +     ranks = {int(_lora_factor(w, "lora_a").shape[0]) for w in wrappers.values()}
- 1659 +     if len(ranks) > 1:
- 1660 +         raise ValueError(
- 1661 +             f"adapter-only sync needs one rank for all wrappers, got {sorted(ranks)}"
- 1662 +         )
- 1663 +     return {
- 1664 +         "task_type": TaskType.CAUSAL_LM,
- 1665 +         "r": rank,
- 1666 +         "lora_alpha": alpha,
- 1667 +         "target_modules": sorted({fqn.rsplit(".", 1)[-1] for fqn in wrappers}),
- 1668 +         "exclude_modules": [],
- 1669 +         "bias": "none",
- 1670 +         "lora_dropout": 0.0,
- 1671 +     }
- 1672 + 
- 1673 + 
- 1674 + def _wrapped_hf_base_names(sd_adapter, wrappers, full_state_dict):
- 1675 +     """``{fqn: hf_name}`` for each wrapped projection's BASE weight.
- 1676 + 
- 1677 +     Uses the adapter's own ``to_hf`` on the base key alone rather than reimplementing
- 1678 +     its mapping (the official-export renames live there). ``to_hf`` drops every
- 1679 +     ``lora_a`` / ``lora_b`` key by design, so the adapters cannot ride through it.
- 1680 + 
- 1681 +     The fqns come from named_modules(), which KEEPS wrapper segments that state_dict()
- 1682 +     strips (``layers.0._checkpoint_wrapped_module.ffn.gate_proj`` under activation
- 1683 +     checkpointing); _lora_prefix validates the stripped name against the state dict.
- 1684 +     A packed (QLoRA) base has no ``.weight`` and no HF key: adapter-only sync needs the
- 1685 +     merged path there (model.lora.merge=True).
- 1686 +     """
- 1687 +     names = {}
- 1688 +     for fqn in wrappers:
- 1689 +         key = f"{_lora_prefix(fqn, full_state_dict)}.weight"
- 1690 +         if key not in full_state_dict:
- 1691 +             raise ValueError(
- 1692 +                 f"{fqn}: no base weight {key!r} in the state dict; a packed base takes the "
- 1693 +                 "merged sync (model.lora.merge=True)"
- 1694 +             )
- 1695 +         mapped = sd_adapter.to_hf({key: full_state_dict[key]})
- 1696 +         if len(mapped) != 1:
- 1697 +             raise ValueError(
- 1698 +                 f"{key} maps to {sorted(mapped)} in the HF key space; the adapter-only "
- 1699 +                 "sync needs one base key per wrapped projection"
- 1700 +             )
- 1701 +         names[fqn] = next(iter(mapped))
- 1702 +     return names
- 1703 + 
+ 1575 + 
+ 1576 + def _squeeze_folded(extra: dict) -> dict:
+ 1577 +     """Fold ``[1, T]`` stream tensors to ``[T]``; multimodal tensors keep their batch axis."""
+ 1578 +     return {
+ 1579 +         k: (
+ 1580 +             v.squeeze(0)
+ 1581 +             if k not in _MULTIMODAL_KEYS and torch.is_tensor(v) and v.dim() >= 1 and v.shape[0] == 1
+ 1582 +             else v
+ 1583 +         )
+ 1584 +         for k, v in extra.items()
+ 1585 +     }
+ 1586 + 
+ 1587 + 
+ 1588 + def _cu_seqlens_from_positions(positions):
+ 1589 +     """Packed offsets ``[0, ..., T]`` of a folded ``[T]`` (or ``[1, T]``) stream from its
+ 1590 +     positions: a document starts where the position restarts at 0. ``None`` without an
+ 1591 +     interior restart, so a single sequence keeps the single-sequence kernels."""
+ 1592 +     if positions is None:
+ 1593 +         return None
+ 1594 +     if positions.dim() == 2 and positions.shape[0] == 1:
+ 1595 +         positions = positions[0]
+ 1596 +     if positions.dim() != 1:
+ 1597 +         return None
+ 1598 +     num_tokens = positions.shape[0]
+ 1599 +     starts = torch.nonzero(positions == 0).flatten()
+ 1600 +     if starts.numel() == 0 or int(starts[0]) != 0:
+ 1601 +         starts = torch.cat((starts.new_zeros(1), starts))
+ 1602 +     if starts.numel() == 1:
+ 1603 +         return None
+ 1604 +     return torch.cat((starts, starts.new_full((1,), num_tokens))).to(torch.int32)
+ 1605 + 
+ 1606 + 
+ 1607 + def _titan_lora_wrappers(module):
+ 1608 +     """``{fqn: wrapper}`` for every KimiLoRALinear in the module.
+ 1609 + 
+ 1610 +     Discovered from the module rather than from the config, because ``apply_lora``
+ 1611 +     decides what actually got wrapped (its target list matches leaf names AND
+ 1612 +     qualified suffixes, and it skips the KDA subtree structurally). A config-derived
+ 1613 +     list would claim targets that were never wrapped.
+ 1614 +     """
+ 1615 +     found = {}
+ 1616 +     for name, sub in module.named_modules():
+ 1617 +         if _is_lora_wrapper(sub):
+ 1618 +             found[name] = sub
+ 1619 +     return found
+ 1620 + 
+ 1621 + 
+ 1622 + def _is_lora_wrapper(sub) -> bool:
+ 1623 +     """A LoRA linear: torchtitan main's ``_LoRALinearMixin`` (``specialize_lora_linear``),
+ 1624 +     the fork's ``LoRALinearBase`` (the base ``weight`` on the module, ``lora_a`` /
+ 1625 +     ``lora_b`` as Linear submodules, optionally a packed base), or the earlier
+ 1626 +     model-local wrapper (``base`` submodule, adapter tensors as parameters)."""
+ 1627 +     markers: tuple = ()
+ 1628 +     try:
+ 1629 +         from torchtitan.config.transform.lora import LoRALinearBase
+ 1630 + 
+ 1631 +         markers += (LoRALinearBase,)
+ 1632 +     except ImportError:  # pragma: no cover - trees without the fork's LoRA
+ 1633 +         pass
+ 1634 +     try:
+ 1635 +         from torchtitan.models.common.lora import _LoRALinearMixin
+ 1636 + 
+ 1637 +         markers += (_LoRALinearMixin,)
+ 1638 +     except ImportError:  # pragma: no cover - trees before main's LoRA transform
+ 1639 +         pass
+ 1640 +     if markers and isinstance(sub, markers):
+ 1641 +         return True
+ 1642 +     return hasattr(sub, "lora_a") and hasattr(sub, "lora_b") and hasattr(sub, "base")
+ 1643 + 
+ 1644 + 
+ 1645 + def _lora_prefix(mod_name: str, sd: dict) -> str:
+ 1646 +     """The state-dict prefix of a LoRA wrapper reached at ``mod_name``.
+ 1647 + 
+ 1648 +     Wrapper segments (activation checkpointing, FSDP, compile) appear in
+ 1649 +     ``named_modules()`` paths but not in ``state_dict()`` keys. Core keys the
+ 1650 +     adapters ``<prefix>.lora_a.weight`` (a Linear), the earlier wrapper
+ 1651 +     ``<prefix>.lora_a``; both are accepted, and an unknown wrapper raises rather
+ 1652 +     than guessing a name nothing downstream would load.
+ 1653 +     """
+ 1654 +     segments = {"_checkpoint_wrapped_module", "_fsdp_wrapped_module", "_orig_mod"}
+ 1655 +     stripped = ".".join(p for p in mod_name.split(".") if p not in segments)
+ 1656 +     for candidate in (stripped, mod_name):
+ 1657 +         if f"{candidate}.lora_a.weight" in sd or f"{candidate}.lora_a" in sd:
+ 1658 +             return candidate
+ 1659 +     raise KeyError(
+ 1660 +         f"LoRA module at {mod_name!r} has no matching state_dict entry (tried "
+ 1661 +         f"{stripped!r}); an unrecognised module wrapper is in the path"
+ 1662 +     )
+ 1663 + 
+ 1664 + 
+ 1665 + def _lora_factor(wrapper, name: str) -> torch.Tensor:
+ 1666 +     """The adapter factor ``lora_a`` / ``lora_b`` as a tensor, whether the wrapper
+ 1667 +     keeps it as a Linear submodule (core) or as a parameter (the earlier wrapper)."""
+ 1668 +     factor = getattr(wrapper, name)
+ 1669 +     return factor.weight if hasattr(factor, "weight") else factor
+ 1670 + 
+ 1671 + 
+ 1672 + def _peft_config_from_wrappers(wrappers):
+ 1673 +     """A vLLM PEFTHelper-compatible dict, or None when there is nothing to describe.
+ 1674 + 
+ 1675 +     ``target_modules`` is the set of leaf names actually wrapped. Our LoRA targets are
+ 1676 +     already HF-style leaf names (``q_proj``, ``o_proj``, ``gate_proj``, ...), so unlike
+ 1677 +     the megatron path there is no megatron-to-HF target rename to do.
+ 1678 + 
+ 1679 +     rank and alpha come off a wrapper instead of the config: the wrapper stores
+ 1680 +     ``alpha / rank`` as ``_lora_scaling`` and its shapes carry the rank, so the values
+ 1681 +     reported are the ones the adapters were actually built with.
+ 1682 +     """
+ 1683 +     if not wrappers:
+ 1684 +         return None
+ 1685 +     from peft import TaskType
+ 1686 + 
+ 1687 +     any_wrapper = next(iter(wrappers.values()))
+ 1688 +     rank = int(_lora_factor(any_wrapper, "lora_a").shape[0])
+ 1689 +     alpha = float(getattr(any_wrapper, "_lora_scaling", 1.0)) * rank
+ 1690 +     ranks = {int(_lora_factor(w, "lora_a").shape[0]) for w in wrappers.values()}
+ 1691 +     if len(ranks) > 1:
+ 1692 +         raise ValueError(
+ 1693 +             f"adapter-only sync needs one rank for all wrappers, got {sorted(ranks)}"
+ 1694 +         )
+ 1695 +     return {
+ 1696 +         "task_type": TaskType.CAUSAL_LM,
+ 1697 +         "r": rank,
+ 1698 +         "lora_alpha": alpha,
+ 1699 +         "target_modules": sorted({fqn.rsplit(".", 1)[-1] for fqn in wrappers}),
+ 1700 +         "exclude_modules": [],
+ 1701 +         "bias": "none",
+ 1702 +         "lora_dropout": 0.0,
+ 1703 +     }
  1704 + 
- 1705 + def _adapter_state_dict(wrappers, hf_names):
- 1706 +     """PEFT-named adapter tensors for the wrapped projections.
- 1707 + 
- 1708 +     Exported UNSCALED: PEFT applies ``lora_alpha / r`` from the config it is handed, so
- 1709 +     pre-multiplying by the wrapper's ``_lora_scaling`` would apply the scale twice.
- 1710 + 
- 1711 +     Safe to ship the raw factors because the base mapping this borrows names from is a
- 1712 +     pure RENAME for every LoRA target. The only value transform on the single-tensor
- 1713 +     path is the 4-D ``A_log`` reshape, and ``apply_lora`` skips the KDA subtree
- 1714 +     structurally, so no wrapped module is ever reshaped. Routed experts are likewise
- 1715 +     out of reach -- they are 3-D GroupedExperts parameters, not ``nn.Linear``.
- 1716 +     """
- 1717 +     out = {}
- 1718 +     for fqn, wrapper in wrappers.items():
- 1719 +         stem = hf_names[fqn].removesuffix(".weight")
- 1720 +         out[f"{stem}.lora_A.weight"] = _lora_factor(wrapper, "lora_a")
- 1721 +         out[f"{stem}.lora_B.weight"] = _lora_factor(wrapper, "lora_b")
- 1722 +     return out
- 1723 + 
- 1724 + 
- 1725 + def _warn_wrapped_bases_missing(params, hf_names) -> None:
- 1726 +     """Name every wrapped projection whose HF base key is absent from the base half."""
- 1727 +     missing = [(fqn, hf_name) for fqn, hf_name in hf_names.items() if hf_name not in params]
- 1728 +     if missing:
- 1729 +         # Reported, not silent -- and a warning rather than a raise, which is a real
- 1730 +         # distinction here. Two absences are legitimate: under PP a rank does not own
- 1731 +         # every layer, and a graft-only target (the K3 attention gate) can have no HF
- 1732 +         # destination at all because to_hf drops what the original architecture has no
- 1733 +         # key for. Raising would break both.
- 1734 +         #
- 1735 +         # But a silent skip is what produced
- 1736 +         #   KeyError: 'layers.0.self_attn.q_proj.weight'
- 1737 +         # from deep inside vLLM's loader: the plain name shipped for a projection the
- 1738 +         # rollout had LoRA-wrapped, whose params_dict holds q_proj.base_layer.weight.
- 1739 +         # Naming both sides here is what makes that diagnosable at all.
- 1740 +         shown = ", ".join(f"{fqn} -> {hf}" for fqn, hf in missing[:5])
- 1741 +         logger.warning(
- 1742 +             "weight sync: %d wrapped projection(s) have no matching key in the "
- 1743 +             "converted state dict, so their bases do not ship. Legitimate under "
- 1744 +             "PP or for graft-only targets; otherwise the rollout keeps a stale base. %s%s",
- 1745 +             len(missing),
- 1746 +             shown,
- 1747 +             " ..." if len(missing) > 5 else "",
- 1748 +         )
- 1749 + 
- 1750 + 
- 1751 + def _merged_state_dict_if_lora(module):
- 1752 +     """``module.state_dict()``, with LoRA adapters folded into the base weights.
- 1753 + 
- 1754 +     A LoRA-wrapped projection stores ``base.weight``, ``lora_a`` and ``lora_b``. The
- 1755 +     state-dict adapter maps ``base.weight`` to the plain HF name and has no mapping
- 1756 +     for the adapter tensors, so a raw state_dict ships the UNMERGED base and silently
- 1757 +     drops everything LoRA learned. Under LoRA the base is frozen, so the rollout
- 1758 +     engine would then receive the same weights at every step -- indistinguishable
- 1759 +     from a broken sync, and the actor would train adapters the rollout never sees.
- 1760 + 
- 1761 +     Non-LoRA models take the plain path -- the import and the scan are both skipped
- 1762 +     unless a wrapper is actually present.
- 1763 +     """
- 1764 +     try:
- 1765 +         from torchtitan.config.transform.lora import LoRALinearBase
- 1766 +     except ImportError:  # pragma: no cover
- 1767 +         LoRALinearBase = ()
- 1768 +     wrappers = {name: m for name, m in module.named_modules() if _is_lora_wrapper(m)}
- 1769 +     if not wrappers:
- 1770 +         return module.state_dict(), frozenset()
- 1771 +     from torchtitan.config.transform.lora import merge_lora_state_dict
- 1772 + 
- 1773 +     # Merged because the run asked for it (model.lora.merge=True, the default). A run
- 1774 +     # with merge=False takes the adapter-only path in get_per_tensor_param instead and
- 1775 +     # never reaches here.
- 1776 +     # warning, not info: the first run of this shipped with logger.info and the line
- 1777 +     # never appeared, so "the merge ran" was inferred rather than read. Engagement has
- 1778 +     # to be assertable from the log.
- 1779 +     logger.warning(
- 1780 +         "weight sync: folding LoRA adapters into base weights before to_hf; "
- 1781 +         "shipping the raw state dict would send the frozen base only. Set "
- 1782 +         "model.lora.merge=False for the adapter-only sync instead."
- 1783 +     )
- 1784 +     merged = merge_lora_state_dict(module)
- 1785 +     # Which keys the merge produced, so the checksum probe can pick one of THEM. It
- 1786 +     # otherwise takes the first floating-point key in sorted order, which is
- 1787 +     # embed_tokens.weight -- frozen under LoRA, so its checksum is constant whether the
- 1788 +     # sync works or not. Measured: four syncs, four identical digests, proving nothing.
- 1789 +     # Core's merge keeps the base keys' names (``<fqn>.weight``, merged in place) and
- 1790 +     # drops the adapter keys, so "new keys" is empty there; the keys that MOVE are the
- 1791 +     # wrapped bases, named through the same prefix rule the merge uses.
- 1792 +     raw = module.state_dict()
- 1793 +     segments = {"_checkpoint_wrapped_module", "_fsdp_wrapped_module", "_orig_mod"}
- 1794 +     moved = set()
- 1795 +     for fqn in wrappers:
- 1796 +         stripped = ".".join(p for p in fqn.split(".") if p not in segments)
- 1797 +         for candidate in (stripped, fqn):
- 1798 +             if f"{candidate}.weight" in merged:
- 1799 +                 moved.add(f"{candidate}.weight")
- 1800 +                 break
- 1801 +     moved.update(k for k in merged if k not in raw)
- 1802 +     return merged, frozenset(moved)
- 1853 +         model_mm_kwargs = _model_multimodal_kwargs(
- 1854 +             multi_modal_inputs,
- 1855 +             self._forward_params,
- 1856 +             getattr(self.model_config.hf_config, "media_placeholder_token_id", None),
- 1857 +         )
- 1909 +         cp_pad_len = 0
- 1910 +         if self.parallel_dims.pp_enabled:
- 1911 +             # Pipeline stages size their P2P buffers once, from the first
- 1912 +             # microbatch, so every microbatch must carry the same token
- 1913 +             # count. Pad the packed stream to a fixed budget before any CP
- 1914 +             # split: positions continue the stream, the mask is rebuilt, and
- 1915 +             # the bridge cuts the logits back before the loss.
- 1916 +             tokens = input_ids.shape[-1]
- 1917 +             budget = pipeline_token_budget(self.engine_config.pipeline_token_budget, tokens)
- 1918 +             pp_pad_len = budget - tokens
- 1919 +             if pp_pad_len:
- 1920 +                 pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
- 1921 +                 input_ids = torch.nn.functional.pad(input_ids, (0, pp_pad_len), value=pad_id)
- 1922 +                 continued = torch.arange(1, pp_pad_len + 1, device=position_ids.device)
- 1923 +                 position_ids = torch.cat((position_ids, position_ids[..., -1:] + continued), dim=-1)
- 1924 +                 extra_inputs["positions"] = position_ids
- 1925 +                 if attention_mask is not None:
- 1926 +                     attention_mask = get_attention_masks(
- 1927 +                         input_batch=input_ids,
- 1928 +                         positions=position_ids,
- 1929 +                         attn_type=self.engine_config.attn_type,
- 1930 +                     )
- 1931 +                     extra_kwargs["attention_masks"] = attention_mask
- 1932 +             output_args["pp_pad_len"] = pp_pad_len
- 1933 +         pad_multiple = 1
- 1935 -             input_ids, labels, extra_kwargs = prepare_context_parallel_input(
- 1936 -                 input_ids,
- 1937 -                 labels,
- 1938 -                 extra_kwargs,
- 1939 -                 self.parallel_dims.get_mesh("cp"),
- 1940 -                 self.trainer.device,
- 1941 -                 self.trainer.config.parallelism.context_parallel_load_balancer,
- 1942 +             # Context parallel cuts the packed stream into contiguous rank-ordered shards
- 1943 +             # (_parallelism_compat_kwargs) and the flex BlockMask wants whole 128-token
- 1944 +             # blocks per shard; a packed no-padding stream is neither. ulysses_pad does
- 1945 +             # the padding, with the adjustments below.
- 1946 +             pad_multiple = self.parallel_dims.cp * 128
- 1947 +         if self.parallel_dims.tp_enabled:
- 1948 +             # Sequence parallel scatters the token dim across the TP ranks, so the
- 1949 +             # packed stream must divide by the TP degree as well.
- 1950 +             pad_multiple = math.lcm(pad_multiple, self.parallel_dims.tp)
- 1951 +         if pad_multiple > 1:
- 1952 +             pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
- 1953 +             input_ids, position_ids, cp_pad_len = ulysses_pad(
- 1954 +                 input_ids, position_ids, sp_size=pad_multiple, pad_value=pad_id
- 1956 - 
- 1957 -         # TODO(jessicazhong): multimodal is not yet supported for Torchtitan engine
- 1958 -         extra_inputs.update(multi_modal_inputs)
- 1959 +             if cp_pad_len:
- 1960 +                 # The positions: ulysses_pad numbers the padding from zero,
- 1961 +                 # which reads as the start of a new document to a mask built
- 1962 +                 # from positions -- this model's does. Renumber the padding to
- 1963 +                 # continue the stream instead.
- 1964 +                 continued = torch.arange(
- 1965 +                     1, cp_pad_len + 1, device=position_ids.device
- 1966 +                 )
- 1967 +                 if position_ids.dim() == 3:
- 1968 +                     position_ids[..., -cp_pad_len:] = (
- 1969 +                         position_ids[..., -cp_pad_len - 1 : -cp_pad_len] + continued
- 1970 +                     )
- 1971 +                 else:
- 1972 +                     position_ids[:, -cp_pad_len:] = (
- 1973 +                         position_ids[:, -cp_pad_len - 1 : -cp_pad_len] + continued
- 1974 +                     )
- 1975 +                 # Labels ride along so they stay aligned with the logits; both
- 1976 +                 # are unpadded before the loss (prepare_model_outputs).
- 1977 +                 labels = torch.nn.functional.pad(labels, (0, cp_pad_len), value=pad_id)
- 1978 +                 extra_inputs["positions"] = position_ids
- 1979 +                 if attention_mask is not None:
- 1980 +                     attention_mask = get_attention_masks(
- 1981 +                         input_batch=input_ids,
- 1982 +                         positions=position_ids,
- 1983 +                         attn_type=self.engine_config.attn_type,
- 1984 +                     )
- 1985 +                     extra_kwargs["attention_masks"] = attention_mask
- 1986 +         if self.parallel_dims.cp_enabled and os.environ.get("VERL_TORCHTITAN_DYNAMO_PROBE"):
- 1987 +             _dynamo_probe_once()
- 1988 +         if self.parallel_dims.cp_enabled:
- 1989 +             # The model owns its context-parallel preprocessing on this tree: the masks
- 1990 +             # from the positions, the shards, the KDA routing and the layouts. Hand it
- 1991 +             # the folded [T] stream with the global positions and take back this
- 1992 +             # rank's inputs and kwargs. Labels stay FULL length: verl's loss path
- 1993 +             # (nested no-padding log_prob / loss_mask handling) assumes full
- 1994 +             # sequences, so the engine all-gathers the seq-sharded logits after the
- 1995 +             # model call (_finish_pred) instead of sharding the loss side.
- 1996 +             if position_ids.dim() != 2 or position_ids.shape[0] != 1:
- 1997 +                 raise NotImplementedError("context parallel takes a [1, T] position stream")
- 1998 +             batch = {
- 1999 +                 "input": input_ids.squeeze(0),
- 2000 +                 "labels": labels.squeeze(0),
- 2001 +                 "positions": position_ids.squeeze(0),
- 2002 +             }
- 2003 +             # Images ride through the model's preprocessing, which builds their bank
- 2004 +             # indices and shards them with the stream; they are not added again below.
- 2005 +             batch.update(model_mm_kwargs)
- 2006 +             model_mm_kwargs = {}
- 2007 +             local_inputs, _labels_local, extra_kwargs = self.module[0].preprocess_inputs(
- 2008 +                 batch,
- 2009 +                 parallel_dims=self.parallel_dims,
- 2010 +                 parallelism=self.config.parallelism,
- 2011 +             )
- 2012 +             input_ids = local_inputs.unsqueeze(0)
- 2013 +             extra_inputs = {}
- 2014 +         elif self._folded_token_stream:
- 2015 +             # A model whose forward takes the packed stream's document offsets (KDA's
- 2016 +             # recurrence and short convolution, which would otherwise run across the
- 2017 +             # documents of a micro-batch) gets them explicitly; a document starts where
- 2018 +             # the positions restart at 0.
- 2019 +             if self._forward_takes_cu_seqlens:
- 2020 +                 cu_seqlens = _cu_seqlens_from_positions(extra_inputs.get("positions"))
- 2021 +                 if cu_seqlens is not None:
- 2022 +                     extra_kwargs["cu_seqlens"] = cu_seqlens
- 2023 +             if extra_kwargs.get("attention_masks") is not None and hasattr(self.module[0], "get_attention_masks"):
- 2024 +                 # The model builds its own masks from the [T] positions: current trees key
- 2025 +                 # them by consumer (a flex BlockMask for MLA, varlen offsets for KDA).
- 2026 +                 positions = extra_inputs["positions"]
- 2027 +                 if positions.dim() == 2 and positions.shape[0] == 1:
- 2028 +                     positions = positions.squeeze(0)
- 2029 +                 extra_kwargs["attention_masks"] = self.module[0].get_attention_masks(positions=positions)
- 2030 + 
- 2031 +         extra_inputs.update(model_mm_kwargs)
- 2033 +         output_args["cp_pad_len"] = cp_pad_len
- 2044 +         # Drop the rows the CP padding added, so everything below sees the
- 2045 +         # packed stream at its true length (see prepare_model_inputs).
- 2046 +         cp_pad_len = output_args.get("cp_pad_len", 0)
- 2047 +         if cp_pad_len:
- 2048 +             logits = logits[:, :-cp_pad_len]
- 2049 +             labels = labels[:, :-cp_pad_len]
+ 1705 + 
+ 1706 + def _wrapped_hf_base_names(sd_adapter, wrappers, full_state_dict):
+ 1707 +     """``{fqn: hf_name}`` for each wrapped projection's BASE weight.
+ 1708 + 
+ 1709 +     Uses the adapter's own ``to_hf`` on the base key alone rather than reimplementing
+ 1710 +     its mapping (the official-export renames live there). ``to_hf`` drops every
+ 1711 +     ``lora_a`` / ``lora_b`` key by design, so the adapters cannot ride through it.
+ 1712 + 
+ 1713 +     The fqns come from named_modules(), which KEEPS wrapper segments that state_dict()
+ 1714 +     strips (``layers.0._checkpoint_wrapped_module.ffn.gate_proj`` under activation
+ 1715 +     checkpointing); _lora_prefix validates the stripped name against the state dict.
+ 1716 +     A packed (QLoRA) base has no ``.weight`` and no HF key: adapter-only sync needs the
+ 1717 +     merged path there (model.lora.merge=True).
+ 1718 +     """
+ 1719 +     names = {}
+ 1720 +     for fqn in wrappers:
+ 1721 +         key = f"{_lora_prefix(fqn, full_state_dict)}.weight"
+ 1722 +         if key not in full_state_dict:
+ 1723 +             raise ValueError(
+ 1724 +                 f"{fqn}: no base weight {key!r} in the state dict; a packed base takes the "
+ 1725 +                 "merged sync (model.lora.merge=True)"
+ 1726 +             )
+ 1727 +         mapped = sd_adapter.to_hf({key: full_state_dict[key]})
+ 1728 +         if len(mapped) != 1:
+ 1729 +             raise ValueError(
+ 1730 +                 f"{key} maps to {sorted(mapped)} in the HF key space; the adapter-only "
+ 1731 +                 "sync needs one base key per wrapped projection"
+ 1732 +             )
+ 1733 +         names[fqn] = next(iter(mapped))
+ 1734 +     return names
+ 1735 + 
+ 1736 + 
+ 1737 + def _adapter_state_dict(wrappers, hf_names):
+ 1738 +     """PEFT-named adapter tensors for the wrapped projections.
+ 1739 + 
+ 1740 +     Exported UNSCALED: PEFT applies ``lora_alpha / r`` from the config it is handed, so
+ 1741 +     pre-multiplying by the wrapper's ``_lora_scaling`` would apply the scale twice.
+ 1742 + 
+ 1743 +     Safe to ship the raw factors because the base mapping this borrows names from is a
+ 1744 +     pure RENAME for every LoRA target. The only value transform on the single-tensor
+ 1745 +     path is the 4-D ``A_log`` reshape, and ``apply_lora`` skips the KDA subtree
+ 1746 +     structurally, so no wrapped module is ever reshaped. Routed experts are likewise
+ 1747 +     out of reach -- they are 3-D GroupedExperts parameters, not ``nn.Linear``.
+ 1748 +     """
+ 1749 +     out = {}
+ 1750 +     for fqn, wrapper in wrappers.items():
+ 1751 +         stem = hf_names[fqn].removesuffix(".weight")
+ 1752 +         out[f"{stem}.lora_A.weight"] = _lora_factor(wrapper, "lora_a")
+ 1753 +         out[f"{stem}.lora_B.weight"] = _lora_factor(wrapper, "lora_b")
+ 1754 +     return out
+ 1755 + 
+ 1756 + 
+ 1757 + def _warn_wrapped_bases_missing(params, hf_names) -> None:
+ 1758 +     """Name every wrapped projection whose HF base key is absent from the base half."""
+ 1759 +     missing = [(fqn, hf_name) for fqn, hf_name in hf_names.items() if hf_name not in params]
+ 1760 +     if missing:
+ 1761 +         # Reported, not silent -- and a warning rather than a raise, which is a real
+ 1762 +         # distinction here. Two absences are legitimate: under PP a rank does not own
+ 1763 +         # every layer, and a graft-only target (the K3 attention gate) can have no HF
+ 1764 +         # destination at all because to_hf drops what the original architecture has no
+ 1765 +         # key for. Raising would break both.
+ 1766 +         #
+ 1767 +         # But a silent skip is what produced
+ 1768 +         #   KeyError: 'layers.0.self_attn.q_proj.weight'
+ 1769 +         # from deep inside vLLM's loader: the plain name shipped for a projection the
+ 1770 +         # rollout had LoRA-wrapped, whose params_dict holds q_proj.base_layer.weight.
+ 1771 +         # Naming both sides here is what makes that diagnosable at all.
+ 1772 +         shown = ", ".join(f"{fqn} -> {hf}" for fqn, hf in missing[:5])
+ 1773 +         logger.warning(
+ 1774 +             "weight sync: %d wrapped projection(s) have no matching key in the "
+ 1775 +             "converted state dict, so their bases do not ship. Legitimate under "
+ 1776 +             "PP or for graft-only targets; otherwise the rollout keeps a stale base. %s%s",
+ 1777 +             len(missing),
+ 1778 +             shown,
+ 1779 +             " ..." if len(missing) > 5 else "",
+ 1780 +         )
+ 1781 + 
+ 1782 + 
+ 1783 + def _merged_state_dict_if_lora(module):
+ 1784 +     """``module.state_dict()``, with LoRA adapters folded into the base weights.
+ 1785 + 
+ 1786 +     A LoRA-wrapped projection stores ``base.weight``, ``lora_a`` and ``lora_b``. The
+ 1787 +     state-dict adapter maps ``base.weight`` to the plain HF name and has no mapping
+ 1788 +     for the adapter tensors, so a raw state_dict ships the UNMERGED base and silently
+ 1789 +     drops everything LoRA learned. Under LoRA the base is frozen, so the rollout
+ 1790 +     engine would then receive the same weights at every step -- indistinguishable
+ 1791 +     from a broken sync, and the actor would train adapters the rollout never sees.
+ 1792 + 
+ 1793 +     Non-LoRA models take the plain path -- the import and the scan are both skipped
+ 1794 +     unless a wrapper is actually present.
+ 1795 +     """
+ 1796 +     try:
+ 1797 +         from torchtitan.config.transform.lora import LoRALinearBase
+ 1798 +     except ImportError:  # pragma: no cover
+ 1799 +         LoRALinearBase = ()
+ 1800 +     wrappers = {name: m for name, m in module.named_modules() if _is_lora_wrapper(m)}
+ 1801 +     if not wrappers:
+ 1802 +         return module.state_dict(), frozenset()
+ 1803 +     from torchtitan.config.transform.lora import merge_lora_state_dict
+ 1804 + 
+ 1805 +     # Merged because the run asked for it (model.lora.merge=True, the default). A run
+ 1806 +     # with merge=False takes the adapter-only path in get_per_tensor_param instead and
+ 1807 +     # never reaches here.
+ 1808 +     # warning, not info: the first run of this shipped with logger.info and the line
+ 1809 +     # never appeared, so "the merge ran" was inferred rather than read. Engagement has
+ 1810 +     # to be assertable from the log.
+ 1811 +     logger.warning(
+ 1812 +         "weight sync: folding LoRA adapters into base weights before to_hf; "
+ 1813 +         "shipping the raw state dict would send the frozen base only. Set "
+ 1814 +         "model.lora.merge=False for the adapter-only sync instead."
+ 1815 +     )
+ 1816 +     merged = merge_lora_state_dict(module)
+ 1817 +     # Which keys the merge produced, so the checksum probe can pick one of THEM. It
+ 1818 +     # otherwise takes the first floating-point key in sorted order, which is
+ 1819 +     # embed_tokens.weight -- frozen under LoRA, so its checksum is constant whether the
+ 1820 +     # sync works or not. Measured: four syncs, four identical digests, proving nothing.
+ 1821 +     # Core's merge keeps the base keys' names (``<fqn>.weight``, merged in place) and
+ 1822 +     # drops the adapter keys, so "new keys" is empty there; the keys that MOVE are the
+ 1823 +     # wrapped bases, named through the same prefix rule the merge uses.
+ 1824 +     raw = module.state_dict()
+ 1825 +     segments = {"_checkpoint_wrapped_module", "_fsdp_wrapped_module", "_orig_mod"}
+ 1826 +     moved = set()
+ 1827 +     for fqn in wrappers:
+ 1828 +         stripped = ".".join(p for p in fqn.split(".") if p not in segments)
+ 1829 +         for candidate in (stripped, fqn):
+ 1830 +             if f"{candidate}.weight" in merged:
+ 1831 +                 moved.add(f"{candidate}.weight")
+ 1832 +                 break
+ 1833 +     moved.update(k for k in merged if k not in raw)
+ 1834 +     return merged, frozenset(moved)
+ 1885 +         model_mm_kwargs = _model_multimodal_kwargs(
+ 1886 +             multi_modal_inputs,
+ 1887 +             self._forward_params,
+ 1888 +             getattr(self.model_config.hf_config, "media_placeholder_token_id", None),
+ 1889 +         )
+ 1941 +         cp_pad_len = 0
+ 1942 +         if self.parallel_dims.pp_enabled:
+ 1943 +             # Pipeline stages size their P2P buffers once, from the first
+ 1944 +             # microbatch, so every microbatch must carry the same token
+ 1945 +             # count. Pad the packed stream to a fixed budget before any CP
+ 1946 +             # split: positions continue the stream, the mask is rebuilt, and
+ 1947 +             # the bridge cuts the logits back before the loss.
+ 1948 +             tokens = input_ids.shape[-1]
+ 1949 +             budget = pipeline_token_budget(self.engine_config.pipeline_token_budget, tokens)
+ 1950 +             pp_pad_len = budget - tokens
+ 1951 +             if pp_pad_len:
+ 1952 +                 pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
+ 1953 +                 input_ids = torch.nn.functional.pad(input_ids, (0, pp_pad_len), value=pad_id)
+ 1954 +                 continued = torch.arange(1, pp_pad_len + 1, device=position_ids.device)
+ 1955 +                 position_ids = torch.cat((position_ids, position_ids[..., -1:] + continued), dim=-1)
+ 1956 +                 extra_inputs["positions"] = position_ids
+ 1957 +                 if attention_mask is not None:
+ 1958 +                     attention_mask = get_attention_masks(
+ 1959 +                         input_batch=input_ids,
+ 1960 +                         positions=position_ids,
+ 1961 +                         attn_type=self.engine_config.attn_type,
+ 1962 +                     )
+ 1963 +                     extra_kwargs["attention_masks"] = attention_mask
+ 1964 +             output_args["pp_pad_len"] = pp_pad_len
+ 1965 +         pad_multiple = 1
+ 1967 -             input_ids, labels, extra_kwargs = prepare_context_parallel_input(
+ 1968 -                 input_ids,
+ 1969 -                 labels,
+ 1970 -                 extra_kwargs,
+ 1971 -                 self.parallel_dims.get_mesh("cp"),
+ 1972 -                 self.trainer.device,
+ 1973 -                 self.trainer.config.parallelism.context_parallel_load_balancer,
+ 1974 +             # Context parallel cuts the packed stream into contiguous rank-ordered shards
+ 1975 +             # (_parallelism_compat_kwargs) and the flex BlockMask wants whole 128-token
+ 1976 +             # blocks per shard; a packed no-padding stream is neither. ulysses_pad does
+ 1977 +             # the padding, with the adjustments below.
+ 1978 +             pad_multiple = self.parallel_dims.cp * 128
+ 1979 +         if self.parallel_dims.tp_enabled:
+ 1980 +             # Sequence parallel scatters the token dim across the TP ranks, so the
+ 1981 +             # packed stream must divide by the TP degree as well.
+ 1982 +             pad_multiple = math.lcm(pad_multiple, self.parallel_dims.tp)
+ 1983 +         if pad_multiple > 1:
+ 1984 +             pad_id = tu.get_non_tensor_data(data=micro_batch, key="pad_token_id", default=0)
+ 1985 +             input_ids, position_ids, cp_pad_len = ulysses_pad(
+ 1986 +                 input_ids, position_ids, sp_size=pad_multiple, pad_value=pad_id
+ 1988 - 
+ 1989 -         # TODO(jessicazhong): multimodal is not yet supported for Torchtitan engine
+ 1990 -         extra_inputs.update(multi_modal_inputs)
+ 1991 +             if cp_pad_len:
+ 1992 +                 # The positions: ulysses_pad numbers the padding from zero,
+ 1993 +                 # which reads as the start of a new document to a mask built
+ 1994 +                 # from positions -- this model's does. Renumber the padding to
+ 1995 +                 # continue the stream instead.
+ 1996 +                 continued = torch.arange(
+ 1997 +                     1, cp_pad_len + 1, device=position_ids.device
+ 1998 +                 )
+ 1999 +                 if position_ids.dim() == 3:
+ 2000 +                     position_ids[..., -cp_pad_len:] = (
+ 2001 +                         position_ids[..., -cp_pad_len - 1 : -cp_pad_len] + continued
+ 2002 +                     )
+ 2003 +                 else:
+ 2004 +                     position_ids[:, -cp_pad_len:] = (
+ 2005 +                         position_ids[:, -cp_pad_len - 1 : -cp_pad_len] + continued
+ 2006 +                     )
+ 2007 +                 # Labels ride along so they stay aligned with the logits; both
+ 2008 +                 # are unpadded before the loss (prepare_model_outputs).
+ 2009 +                 labels = torch.nn.functional.pad(labels, (0, cp_pad_len), value=pad_id)
+ 2010 +                 extra_inputs["positions"] = position_ids
+ 2011 +                 if attention_mask is not None:
+ 2012 +                     attention_mask = get_attention_masks(
+ 2013 +                         input_batch=input_ids,
+ 2014 +                         positions=position_ids,
+ 2015 +                         attn_type=self.engine_config.attn_type,
+ 2016 +                     )
+ 2017 +                     extra_kwargs["attention_masks"] = attention_mask
+ 2018 +         if self.parallel_dims.cp_enabled and os.environ.get("VERL_TORCHTITAN_DYNAMO_PROBE"):
+ 2019 +             _dynamo_probe_once()
+ 2020 +         if self.parallel_dims.cp_enabled and os.environ.get("VERL_TORCHTITAN_RECOMPILE_LIMIT"):
+ 2021 +             _raise_recompile_limit()
+ 2022 +         if self.parallel_dims.cp_enabled:
+ 2023 +             # The model owns its context-parallel preprocessing on this tree: the masks
+ 2024 +             # from the positions, the shards, the KDA routing and the layouts. Hand it
+ 2025 +             # the folded [T] stream with the global positions and take back this
+ 2026 +             # rank's inputs and kwargs. Labels stay FULL length: verl's loss path
+ 2027 +             # (nested no-padding log_prob / loss_mask handling) assumes full
+ 2028 +             # sequences, so the engine all-gathers the seq-sharded logits after the
+ 2029 +             # model call (_finish_pred) instead of sharding the loss side.
+ 2030 +             if position_ids.dim() != 2 or position_ids.shape[0] != 1:
+ 2031 +                 raise NotImplementedError("context parallel takes a [1, T] position stream")
+ 2032 +             batch = {
+ 2033 +                 "input": input_ids.squeeze(0),
+ 2034 +                 "labels": labels.squeeze(0),
+ 2035 +                 "positions": position_ids.squeeze(0),
+ 2036 +             }
+ 2037 +             # Images ride through the model's preprocessing, which builds their bank
+ 2038 +             # indices and shards them with the stream; they are not added again below.
+ 2039 +             batch.update(model_mm_kwargs)
+ 2040 +             model_mm_kwargs = {}
+ 2041 +             local_inputs, _labels_local, extra_kwargs = self.module[0].preprocess_inputs(
+ 2042 +                 batch,
+ 2043 +                 parallel_dims=self.parallel_dims,
+ 2044 +                 parallelism=self.config.parallelism,
+ 2045 +             )
+ 2046 +             input_ids = local_inputs.unsqueeze(0)
+ 2047 +             extra_inputs = {}
+ 2048 +         elif self._folded_token_stream:
+ 2049 +             # A model whose forward takes the packed stream's document offsets (KDA's
+ 2050 +             # recurrence and short convolution, which would otherwise run across the
+ 2051 +             # documents of a micro-batch) gets them explicitly; a document starts where
+ 2052 +             # the positions restart at 0.
+ 2053 +             if self._forward_takes_cu_seqlens:
+ 2054 +                 cu_seqlens = _cu_seqlens_from_positions(extra_inputs.get("positions"))
+ 2055 +                 if cu_seqlens is not None:
+ 2056 +                     extra_kwargs["cu_seqlens"] = cu_seqlens
+ 2057 +             if extra_kwargs.get("attention_masks") is not None and hasattr(self.module[0], "get_attention_masks"):
+ 2058 +                 # The model builds its own masks from the [T] positions: current trees key
+ 2059 +                 # them by consumer (a flex BlockMask for MLA, varlen offsets for KDA).
+ 2060 +                 positions = extra_inputs["positions"]
+ 2061 +                 if positions.dim() == 2 and positions.shape[0] == 1:
+ 2062 +                     positions = positions.squeeze(0)
+ 2063 +                 extra_kwargs["attention_masks"] = self.module[0].get_attention_masks(positions=positions)
+ 2064 + 
+ 2065 +         extra_inputs.update(model_mm_kwargs)
+ 2067 +         output_args["cp_pad_len"] = cp_pad_len
+ 2078 +         # Drop the rows the CP padding added, so everything below sees the
+ 2079 +         # packed stream at its true length (see prepare_model_inputs).
+ 2080 +         cp_pad_len = output_args.get("cp_pad_len", 0)
+ 2081 +         if cp_pad_len:
+ 2082 +             logits = logits[:, :-cp_pad_len]
+ 2083 +             labels = labels[:, :-cp_pad_len]

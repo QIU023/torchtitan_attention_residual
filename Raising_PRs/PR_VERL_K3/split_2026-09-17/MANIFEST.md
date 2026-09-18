@@ -434,3 +434,14 @@ Two findings about the verification itself:
 
 - It had never run `ruff` on this box at all. `venv_verl` carries no ruff module, so a check invoked as `python3 -m ruff` printed an import error that reads as output rather than as a failure. The run above uses `/venv/main/bin/ruff` 0.16.5 and every stage passes.
 - It had never run a test. The defect fixed in `409d059a` lived in the group that becomes patch 05 and turned four of seven tests red in an upstream test file that no patch touches but patch 05 drives. Running that file is now part of the transcript. It needs one file from patch 00 overlaid first, since the box's vLLM is a dev build whose version string only patch 00 teaches verl to accept; without it the module does not collect, so no test importing vllm can run against 01 to 06 alone on this machine.
+
+---
+## Regenerated on head `447f07c3`
+
+Two commits since `409d059a`, both touching only the engine file: the recompile-limit diagnostic and then the one-line correction that sets its value on every call instead of once per process. Branch against base `1a8a0f5f`: 31 files changed, 3107 insertions(+), 100 deletions(-).
+
+The remap is the narrowest kind. `work/assign.py` was remapped from the table as committed, engine items went from 2136 to 2170 with every old changed item matched, and the 34 genuinely new ones are one contiguous block plus the module flag and the gated call site: item 1416, items 1445 to 1475 and items 2020 to 2021. All of them go to `local_env_and_diagnostics`, which the neighbouring range `(1413, 1473)` already owned, so the range count stays at 71 and no file needed a new assignment.
+
+Two independent signs that the assignment is right, rather than only the builder's own assertion: patches 01 to 06 come out byte-identical to the previous regeneration and git reports them unmodified on disk, and the marker grep over 01 to 06, widened to cover `VERL_TORCHTITAN_RECOMPILE_LIMIT`, `RECOMPILE-LIMIT` and `_raise_recompile_limit`, still reads 0 for each.
+
+Why the correction was needed at all is worth carrying here, since it is the kind of thing a reviewer of patch 00 would ask. A dynamo config value lives in a `ContextVar` and Ray runs each async actor method in its own task, so a value set once per process lands in the first task's context and is gone by the next call. The diagnostic announced a raised limit truthfully and the check read the default 8 three minutes later in the same process. It now sets the value on the call that is about to use it, and the flag survives only to keep the log to one line.
