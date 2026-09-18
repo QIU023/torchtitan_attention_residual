@@ -1,0 +1,35 @@
+diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
+index fe5dfcf94..23a31313f 100644
+--- a/torchtitan/models/kimi_k3/kda.py
++++ b/torchtitan/models/kimi_k3/kda.py
+@@ -83,7 +83,7 @@ class KDAKernel(Module):
+         if not q_1THK.is_cuda:
+             raise RuntimeError("Attention Gym KDA requires CUDA tensors.")
+         capability = torch.cuda.get_device_capability(q_1THK.device)
+-        if capability not in {(10, 0), (10, 3)}:
++        if capability < (8, 0):  # LOCAL: guard lifted for the SM120 box (not committed)
+             raise RuntimeError(
+                 "Attention Gym KDA requires Blackwell SM100/SM103; "
+                 f"got CUDA capability {capability}."
+diff --git a/torchtitan_recipes/tests/features.py b/torchtitan_recipes/tests/features.py
+index f8f4171be..70b79b2ac 100644
+--- a/torchtitan_recipes/tests/features.py
++++ b/torchtitan_recipes/tests/features.py
+@@ -543,3 +543,17 @@ def kimi_k3_debugmodel_pp8_vp4() -> Trainer.Config:
+         last_stage_modules=("output_res_proj", "output_res_norm"),
+     )
+     return config
++
++
++def kimi_k3_debugmodel_pp_nocache() -> Trainer.Config:
++    # LOCAL alias (not committed): the whole-stack transport for the A/B.
++    import functools
++
++    from torchtitan.models.kimi_k3.config_registry import kimi_k3_debugmodel
++    from torchtitan.models.kimi_k3.parallelize import pipeline_kimi_k3
++
++    config = kimi_k3_debugmodel()
++    config.model_spec.pipelining_fn = functools.partial(
++        pipeline_kimi_k3, attn_res_cache=False
++    )
++    return config
