@@ -36,6 +36,10 @@ The same CPU suite was run on a detached worktree at `upstream/main` with no cha
 
 The nineteen failures are the same files on both sides (varlen attention, qwen3_5 mrope, quantization, model td layout, config manager, aux loss, rope, embedding, cp attention) and none is a Kimi K3 test. The seven errors are the same on both sides and are missing packages in this environment, six for `transformers` and one for `torch_checkpointing`. Collection was confirmed directly rather than inferred from counts: the baseline collects 1041 and the branch 1044, and the branch's new file is named in the collection list while the baseline's is not.
 
+## Where the zero init has been before
+
+Added 2026-08-24 as `d54d327a9`, reverted the same day as `53b613d80`. The revert was on scope, not on merit: the modules are upstream's, so a pipeline or context parallel branch had no business changing how they initialise, and the revert message says the observation should reach the maintainers as a question instead. This PR is that occasion. `d54d327a9` now survives only on `k3_on_4025_pre_rebase_0824`.
+
 ## Open
 
 - A model level step 1 gradient comparison. The Attention Gym KDA kernel accepts only CUDA capability 10.0 and 10.3, so a full Kimi K3 step runs on neither the H100 (SM90) nor the 5060 Ti (SM120) without relaxing that guard, and a number produced under a relaxed guard is not reproducible from an unmodified tree. The body says so rather than omitting it.

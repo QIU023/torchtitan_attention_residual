@@ -7,6 +7,8 @@ Branch `k3_attnres_recompute` = `9f6bae06f`, two commits on `upstream/main` `68c
 
 Context (not for pasting): this is deliberately separate from PR 4312. The aggregation came in with #4025 and sits on main today; its three call sites carry no pipeline guard, so both the retained tensors and the initialisation apply at dp1 on a single card. 4312's change to `model.py` is a contract adaptation that leaves the arithmetic untouched. Filing this inside a pipeline PR that is waiting for review would move that diff and add an argument unrelated to pipelining. Results below are from the H100 box; the 5060 numbers agree in direction and are not quoted.
 
+History of the initialisation half (not for pasting): the zero init was added on 2026-08-24 as `d54d327a9` and reverted the same day as `53b613d80`. The revert was not a reviewer rejection. Its reasoning was that the modules and their construction are upstream's, so whether they start at zero is upstream's call and a pipeline or context parallel branch had no business moving it, and that the observation should go to the maintainers as a question rather than into that branch as a patch. This PR is that occasion. The requirement itself is first hand, quoted in the logbook from the Kimi Linear tech report section 5: "Crucially, all pseudo-query vectors must be initialized to zero."
+
 --- PASTE BEGIN ---
 
 ## Summary
@@ -43,6 +45,10 @@ They are complementary rather than alternative. Keeping the region saved costs w
 
 ## Results
 
+Three layers of evidence at different scales and under different activation checkpointing, kept apart because they answer different questions.
+
+### One aggregation, no activation checkpointing
+
 One aggregation, bfloat16, H100 80GB, one shape per process, 10 warmups and the median of 7. `kept` counts the storages autograd holds that are not already live as inputs. `dev` is the maximum absolute difference from the current form relative to its own maximum. The shapes run from the debug flavor up to the released model's hidden size and block count, `dim` 7168 with a stack of 8, at four context lengths.
 
 | tokens | dim | stack | form | kept MiB | fwd peak MiB | bwd peak MiB | fwd ms | bwd ms | dev |
@@ -64,6 +70,34 @@ Forward is consistently slower, between 3% and 16%, because a few large operatio
 
 The result is not bitwise. The reordering takes the dot product first and scales by the inverse RMS where the current form normalizes and then contracts, which lands at about one bfloat16 ulp. In FP32 the two agree exactly, forward and every gradient, which the CPU test asserts at the default tolerance.
 
+### One training step, activation checkpointing on
+
+The default for this model is SelectiveAC, so the block is already checkpointed and most of the residency above is absorbed by it. What remains is the forward peak. Same cell, same seed, same compile cache, one H100, five steps, with the KDA capability guard relaxed identically on all three trees so they are comparable to each other.
+
+| tree | peak GiB | step 5 loss |
+| --- | --- | --- |
+| `upstream/main` | 12.96 | 8.05773 |
+| the aggregation only | 12.56 | 8.74362 |
+| the aggregation and the zero init | 12.56 | 7.97537 |
+
+The peak gain is 0.40 GiB and all of it comes from the aggregation. The zero initialisation moves no memory at all, which the last two rows show directly rather than by argument.
+
+The three losses differ and none of them says anything about training quality. The aggregation is not bitwise, the zero initialisation changes the starting point by design, and five steps of a debug model sits far below the bar this repository holds numerical claims to.
+
+This cell is the debug flavor, `dim` 1024 with a stack of 2, because the model dimensions come from the flavor and cannot be raised in an end to end run. It does not scale to the released model, which is why the next section is an estimate and is labelled as one.
+
+### The released model, estimated rather than measured
+
+93 layers at block size 12 gives 8 blocks of 12, 12, 12, 12, 12, 12, 12 and 9, so 186 aggregations, and an aggregation inside block `b` runs over `b + 2` values. Each call retains two FP32 `[T, b + 2, D]` tensors today against three FP32 `[b + 2, T]` statistics after, so the ratio is the hidden size. Computed from that structure at `dim` 7168, not measured:
+
+| tokens | PP | aggregations per rank | retained today | retained after |
+| --- | --- | --- | --- | --- |
+| 4096 | 8 | 23 | 27.6 GiB | 0.006 GiB |
+| 8192 | 8 | 23 | 55.2 GiB | 0.012 GiB |
+| 32768 | 8 | 23 | 220.7 GiB | 0.046 GiB |
+
+That is the ceiling with no block level checkpointing, and it is not what a default run would recover. With SelectiveAC the block checkpoint already absorbs the residency, and what this change removes there is the forward peak of a single aggregation, which does not accumulate across layers: at the widest aggregation 4.92 GiB becomes about 0.88 GiB at 8192 tokens, and 19.69 GiB becomes about 3.50 GiB at 32768.
+
 ## Test plan
 
     pytest tests/unit_tests/cpu/test_kimi_k3_attention_residual.py -q
@@ -77,7 +111,7 @@ The whole CPU suite was also run against a worktree at unmodified `upstream/main
 
 ## Limitations
 
-The initialisation change alters training behaviour from step zero for a model initialised from scratch. It does not affect a run that loads a checkpoint. An eight step smoke on one H100 after the change reads loss 12.50, 11.16, 9.32, 9.97, 8.11, 6.13, 5.03, 4.80 with the gradient norm falling from 23.88 to 7.59 and no NaN, which shows training is not broken. It is not evidence that the new initialisation trains better, and no paired comparison against the old one was run.
+The initialisation change alters training behaviour from step zero for a model initialised from scratch. It does not affect a run that loads a checkpoint. An eight step smoke on one H100 after the change reads loss 12.50, 11.16, 9.32, 9.97, 8.11, 6.13, 5.03, 4.80 with the gradient norm falling from 23.88 to 7.59 and no NaN, which shows training is not broken. It is not evidence that the new initialisation trains better, and none is offered: the change is made because the report requires it, not because a run was compared.
 
 `@once_differentiable` on the backward removes double backward, which the plain autograd form supported. Nothing in the tree uses `create_graph`, and `models/common/linear.py`, `overrides/fused_mla.py` and the MXFP8 linear already use the decorator.
 
