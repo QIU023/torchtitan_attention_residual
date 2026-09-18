@@ -8,6 +8,14 @@ Everything below was read from refs that exist on the fork or from the installed
 torch. Where a document's figure could not be reproduced from those, it is named
 as such rather than repeated.
 
+Corrected the same day (user, 2026-09-18): the first version of this note read
+the core transport on `pp_review5` as a re-proposal of the mechanism the
+maintainer refused in April. It is Elfie's multi-node hang fix, opt-in behind an
+environment switch, on the branch built for her two-node test, and it was
+dropped after she re-ran multi-node on the 4312 tree without a hang. The
+provenance paragraph below carries the reading that holds, and the reason to
+work on the PR's line instead is the branch's age.
+
 ## The refs, as they actually are
 
     origin/pp_review5   6042863a4   author date 2026-09-09, 19 commits over base d398a8fb9 (main of 2026-09-10)
@@ -54,11 +62,23 @@ transport: `_PipelineTransportGroups`, `_NeighborP2PTransportMixin` overriding
 `_neighbor_p2p_stage_class`, `_configure_neighbor_p2p_schedule` and
 `_warmup_pp_edge_communicators`.
 
-That is the shape the maintainer already refused once (CLAUDE.md, Tianyu on the
-generic cross-stage PP mechanism, about 2026-04: the adapter lives as private
-implementation inside the model folder). The PR head carries none of it and does
-the same work inside `kimi_k3/` through `AttnResPipelineStage`, `layout.py` and
-`parallelize.py`.
+Provenance, corrected after the first version of this note read that code as a
+re-proposal of the generic cross-stage mechanism. It is not. `pp_review4` plus
+two commits is what `PP_TRANSPORT_NOTE_FOR_ELFIE.md` describes: the edge
+communicator warm-up (`fd7ff7400`) and Elfie's multi-node NCCL hang fix composed
+onto `AttnResPipelineStage`, with the transport behind
+`TORCHTITAN_PIPELINE_NEIGHBOR_P2P=1` so a two-node run could tell the two
+remedies apart. `pp_review5` is that line rebased onto main `d398a8fb9` on
+2026-09-10 and handed to her to test on two GB200 nodes. The branch
+`k3_pp_transport` (`8126172f8`) carries the original port, 407 lines in the same
+file.
+
+She then re-ran multi-node on the 4312 tree and saw no hang, so the whole core
+change was dropped: the PR head defines none of those identifiers, and the
+pipeline work lives inside `kimi_k3/` through `AttnResPipelineStage`,
+`layout.py` and `parallelize.py`. The 314 lines on `pp_review5` are therefore a
+record of a finished experiment, not a live proposal, and they are evidence that
+the branch predates the decision rather than a reason to avoid it.
 
 Identifier presence, both lines, `torchtitan/` only:
 
@@ -136,8 +156,12 @@ Not checkable here:
   backs 4312 is `k3_pp_text` = `pp_review4` = `de6f29514`; `PR_BODY_PP.md` has
   said so since 2026-09-11 and the rebase note repeats it as the lesson of the
   day.
-- If any of the three items were written on the fork's `pp_review5`, they sit on
-  top of the core transport fork and cannot be filed as they are.
+- The reason not to build on the fork's `pp_review5` is its age, not its
+  transport: it predates 50 commits of the PR's own line, so it lacks the
+  exact-block-gradient and stage-swap tests, the two b200 pipeline cells, the
+  `RankStore` to `PPRankLocalCache` rename and `layer_to_stage_from_split`,
+  `_kimi_k3_num_stages`, `_as_attn_res_stage` and `_swap_in_attn_res_stages`. Work
+  ported there would have to be replayed onto the PR line anyway.
 - Item 1 narrow form is the one to take: `_apply_attention_residual` takes a
   sequence and its three call sites pass the stored sources plus the partial,
   which removes the per-sub-layer concatenation inside `model.py` only, with no
