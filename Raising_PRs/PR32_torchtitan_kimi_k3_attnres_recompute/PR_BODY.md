@@ -1,6 +1,6 @@
 # PR body draft: recompute the Kimi K3 attention residual in backward
 
-Branch `k3_attnres_recompute` = `cf4067f19`, one commit on `upstream/main` `68c97b0c5`. Fork: `origin/k3_attnres_recompute`.
+Branch `k3_attnres_recompute` = `1436053ea`, one commit on `upstream/main` `68c97b0c5`. Fork: `origin/k3_attnres_recompute`.
 
 Context (not for pasting): this is deliberately separate from PR 4312. The aggregation came in with #4025 and sits on main today; its three call sites carry no pipeline guard, so the two retained FP32 tensors exist at dp1 on a single card. 4312's change to `model.py` is a contract adaptation that leaves the arithmetic untouched. Filing this inside a pipeline PR that is waiting for review would move that diff and add an argument unrelated to pipelining. Results below are from the H100 box; the 5060 numbers agree in direction and are not quoted.
 
