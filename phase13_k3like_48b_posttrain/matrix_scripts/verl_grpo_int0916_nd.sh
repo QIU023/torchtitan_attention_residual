@@ -8,7 +8,7 @@
 set -uo pipefail
 source /workspace/venv_verl/bin/activate
 export VERL_TREE=${VERL_TREE:-/tmp/wt_verl_new}
-export PYTHONPATH=${VERL_TREE}:/tmp/wt_int0916_rl:/tmp/attn_gym_up
+export PYTHONPATH=${VERL_TREE}:/tmp/wt_int0916_rl:/tmp/attn_gym_up${VERL_PYTHONPATH_EXTRA:+:${VERL_PYTHONPATH_EXTRA}}
 export VERL_TORCHTITAN_FLAVOR=${VERL_TORCHTITAN_FLAVOR:-rl}
 export HF_HOME=/workspace/.hf_home
 export FLASHINFER_DISABLE_VERSION_CHECK=1
