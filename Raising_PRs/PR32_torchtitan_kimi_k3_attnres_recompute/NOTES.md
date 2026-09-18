@@ -1,6 +1,11 @@
 # Filing notes: attention residual recompute (PR 32)
 
-Branch `k3_attnres_recompute` = `1436053ea`, one commit on `upstream/main` `68c97b0c5`. Fork remote `origin`. Not filed yet.
+Branch `k3_attnres_recompute` = `9f6bae06f`, two commits on `upstream/main` `68c97b0c5`. Fork remote `origin`. Not filed yet.
+
+    1436053ea  aggregate the block residual without retaining FP32 copies
+    9f6bae06f  zero initialise the attention residual projections
+
+The second commit is the initialisation correction. The residual projections were drawn from `trunc_normal_` with std 0.02, so the initial depth weights were arbitrary; the report requires them uniform at initialisation. Three facts were measured rather than assumed: at zero the aggregation returns the mean of its sources exactly, the projection still receives a gradient, and the norm weight does not, because it reaches the loss only through its product with the projection. It gains one as soon as the projection leaves zero. All three are asserted by tests.
 
 ## Why this is not part of PR 4312
 
@@ -22,6 +27,14 @@ Searched `models/common`, `components`, `distributed`, `quantization` and the si
 ## Evidence
 
 Results in the body are the H100 sweep, one shape per process, 10 warmups and the median of 7, from the debug flavor's shape up to the released model's hidden size and block count at four context lengths. The 5060 was used for development and agrees in direction; none of its numbers are quoted, per the rule that body numbers come from the H100.
+
+## No regression against unmodified main
+
+The same CPU suite was run on a detached worktree at `upstream/main` with no changes, as the only honest baseline. Numbers on the left are that baseline and on the right the branch as it stood with three tests added:
+
+    passed 1012 against 1015, failed 19 against 19, errors 7 against 7, subtests 83 against 85
+
+The nineteen failures are the same files on both sides (varlen attention, qwen3_5 mrope, quantization, model td layout, config manager, aux loss, rope, embedding, cp attention) and none is a Kimi K3 test. The seven errors are the same on both sides and are missing packages in this environment, six for `transformers` and one for `torch_checkpointing`. Collection was confirmed directly rather than inferred from counts: the baseline collects 1041 and the branch 1044, and the branch's new file is named in the collection list while the baseline's is not.
 
 ## Open
 
