@@ -52,6 +52,8 @@ Requirements and cost:
 
 ## Results
 
+Three things, in order: the training result does not change, the balance contract holds, and on this flavor the transport costs 1.6 percent of step time for a balance it has no use for.
+
 4 x H100 80GB SXM on an NVSwitch fabric, Kimi K3 debug flavor, seed 42, deterministic, MoonEP `2bd860b` with the cutlass line above, torch 2.15 nightly cu126. Every cell starts from one seed checkpoint, each family shares one warm inductor cache, and each floor row is the same cell again on its own fresh cache.
 
 ```
@@ -77,13 +79,9 @@ Loss and grad norm at steps 1, 3 and 10.
 
 Both floor rows are bitwise with their reference at every step, so the noise floor here is zero rather than small, and `moe_comm_backend="moonep"` at EP=1 is bitwise with the standard dispatcher, which is what that fallback claims to be.
 
-The step-1 difference in the EP rows is therefore real, and it is located.
+The step-1 difference in the EP rows is therefore real, and it is located. A per-layer trace puts the origin in the first MoE layer, which takes a bitwise identical input and makes bitwise identical routing decisions and whose routed-expert output still differs by a median 2.6e-3 per token with no token dropped; the next layer's router then flips 6 of its 1024 top-k slots. The operation that differs is the sum of a token's top-k expert copies, which core sums with `deterministic_scatter_add` into a bf16 accumulator and MoonEP in its combine kernel.
 
-A step-1 per-parameter comparison at `dp 4 x ep 4` reproduces both cells exactly and is bitwise on all 726 parameters for the floor row. The routed expert weights are the least affected of the eight parameter groups, 2.65e-2 against 3.14e-1 for attention.
-
-A per-layer trace puts the origin in the first MoE layer. It receives a bitwise identical input and makes bitwise identical routing decisions, and its routed-expert output still differs by a median 2.6e-3 per token with no token dropped; the next layer's router then flips 6 of 1024 top-k slots.
-
-The operation that differs is the sum of a token's top-k expert copies: core sums them with `deterministic_scatter_add` into a bf16 accumulator, MoonEP in its combine kernel. Against one fp32 dense reference on the same tokens and weights:
+Against one fp32 dense reference on the same tokens and weights:
 
 | pair | median rel | max rel |
 | --- | ---: | ---: |
@@ -103,7 +101,7 @@ The table below checks that this integration preserves it, on the same tokens an
 | 1.0 | 25.38 | 1.29 | 1.00 | 131072 | 145920 |
 | 2.0 | 32.00 | 1.52 | 1.01 | 131072 | 153984 |
 
-MoonEP holds the per-rank load at 1.00 to 1.02 while the standard path climbs to 1.52. At the extreme, every token routed to one rank's experts, the standard path reads 4.00 with three ranks idle and MoonEP reads 1.00. The same sweep at 8192 tokens per rank reads the same.
+MoonEP holds the per-rank load at 1.00 to 1.02 while the standard path climbs to 1.52. The same sweep carries a fully hot row, every token routed to the experts homed on one rank, where the standard path reads 4.00 with the other three ranks receiving nothing and MoonEP reads 1.00. At 8192 tokens per rank it reads the same.
 
 The cost is the static layout: rows are padded to a multiple of 128 tokens, 12.6 percent more rows at 512 tokens per expert and 5.8 percent at 1024, and 56 percent on the debug flavor whose mean expert receives exactly 128.
 
@@ -123,7 +121,7 @@ End to end on the debug flavor, median forward plus backward per step over steps
 
 MoonEP is 1.6 percent slower at `dp 4 x ep 4` and 0.6 percent at `dp 2 x ep 2`. The EP=1 fallback matches the standard path to 0.3 ms, on the same code path.
 
-That is the expected sign here. This flavor's routing is near uniform, so the balancing has nothing to balance while the barriers and the prefetch copies still cost, and the imbalance it removes at four ranks is only 1.5x, growing to 6.9x at 64 ranks with 4 experts each.
+That is the expected sign here. This flavor's routing is near uniform, so the balancing has nothing to balance while the barriers and the prefetch copies still cost, and the imbalance it removes at four ranks is only 1.5x. The same sweep run over rank counts, which is arithmetic on the routing with no transport in it, reads 8.3x at 64 ranks with 4 experts each, the regime a K3-shaped expert count runs in.
 
 The comparison the report makes is against DeepEP, whose time is set by the hottest rank, and it is not in this PR: DeepEP v2 asserts NCCL GIN at construction, and GIN needs an RDMA device the box does not have. So this PR claims correctness, wiring and the balance mechanism, not a speedup.
 
@@ -134,6 +132,8 @@ The gradient table is one fp32 `[E, in, out]` tensor per projection per rank, si
 Interleaved pipeline schedules are out of scope: the expert tables are per-module state that the forward refreshes and the backward's recompute reads again, so a later micro-batch's forward must not run before an earlier one's backward on the same module.
 
 Expert parallelism must cover a rank's whole expert chunk (`efsdp == 1`) and `dp_replicate` is not wired, both refused with a message.
+
+How much imbalance is left to absorb depends on the configuration, and at this one it is little. On C4 rather than the repeating debug set, with the router bias given a hundred steps to converge, routing reaches a maxvio of 0.31 and the standard dispatcher's rank imbalance is 1.04. The balance the transport guarantees is worth its cost where experts per rank is small, which is the released configuration rather than this one.
 
 ## Test plan
 
