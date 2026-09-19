@@ -1,0 +1,24 @@
+loss: grads_std_np4.json=12.543177  grads_moonep_np4.json=12.562533
+total grad norm: 13.38306 vs 13.28477
+group                   n   max rel  median rel     norm A     norm B
+attention             370  3.14e-01    1.09e-02     0.5952     0.5986
+embed/output/res       51  1.91e-01    4.50e-02     2.8114     2.7729
+experts(w1/w2/w3)      69  2.65e-02    7.51e-03     8.4477     8.3923
+latent proj/norm       69  5.70e-02    1.08e-02     8.4523     8.3943
+other                  28  4.12e-02    1.04e-02     4.5903     4.5485
+router                 23  1.09e-01    2.08e-02     0.7042     0.6905
+shared_experts         46  2.09e-02    8.94e-03     2.5170     2.4968
+vision                 70  9.07e-02    1.05e-02     0.3760     0.3767
+--- top 12 per-parameter relative differences ---
+ 3.14e-01      0.00020     0.00014  layers.1._checkpoint_wrapped_module.delta_attention.A_log
+ 2.88e-01      0.00004     0.00003  layers.18._checkpoint_wrapped_module.delta_attention.A_log
+ 2.88e-01      0.00005     0.00003  layers.16._checkpoint_wrapped_module.delta_attention.A_log
+ 2.31e-01      0.00012     0.00016  layers.2._checkpoint_wrapped_module.delta_attention.A_log
+ 2.04e-01      0.00006     0.00005  layers.5._checkpoint_wrapped_module.delta_attention.A_log
+ 1.91e-01      0.64042     0.79124  layers.1._checkpoint_wrapped_module.ffn_res_proj.weight
+ 1.73e-01      0.01263     0.01527  layers.1._checkpoint_wrapped_module.ffn_res_norm.weight
+ 1.72e-01      0.30024     0.36274  layers.11._checkpoint_wrapped_module.ffn_res_proj.weight
+ 1.72e-01      0.00599     0.00724  layers.11._checkpoint_wrapped_module.ffn_res_norm.weight
+ 1.63e-01      0.03748     0.04480  layers.7._checkpoint_wrapped_module.attention_res_proj.weight
+ 1.61e-01      0.00072     0.00085  layers.7._checkpoint_wrapped_module.attention_res_norm.weight
+ 1.59e-01      0.00496     0.00590  layers.21._checkpoint_wrapped_module.attention_res_proj.weight

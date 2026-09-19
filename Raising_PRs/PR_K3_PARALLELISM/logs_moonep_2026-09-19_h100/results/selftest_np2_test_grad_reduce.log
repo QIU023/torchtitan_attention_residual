@@ -1,0 +1,30 @@
+W0919 00:58:11.157000 11181 torch/distributed/run.py:982] 
+W0919 00:58:11.157000 11181 torch/distributed/run.py:982] *****************************************
+W0919 00:58:11.157000 11181 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0919 00:58:11.157000 11181 torch/distributed/run.py:982] *****************************************
+........................                                                             [100%]                                                             [100%]
+=============================== warnings summary ===============================
+tests/test_grad_reduce.py::test_grad_reduce_case[single_tile]
+tests/test_grad_reduce.py::test_grad_reduce_case[multi_tile]
+tests/test_grad_reduce.py::test_grad_reduce_case[i64_offset_7168x3072]
+tests/test_grad_reduce.py::test_grad_reduce_case[fan_in_gt_stages]
+tests/test_grad_reduce.py::test_grad_reduce_case[epn1_num_sms1]
+tests/test_grad_reduce.py::test_grad_reduce_case[random_plan_s1]
+  /workspace/src/moonep/moonep/grad_reduce.py:352: DSLOptimizationWarning: This static loop has 128 iterations, which may be very slow to compile, consider using `cutlass.range(..., unroll_full=True)` instead.
+    for j in cutlass.range_constexpr(H_PER):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+12 passed, 6 warnings in 10.41s
+
+=============================== warnings summary ===============================
+tests/test_grad_reduce.py::test_grad_reduce_case[single_tile]
+tests/test_grad_reduce.py::test_grad_reduce_case[multi_tile]
+tests/test_grad_reduce.py::test_grad_reduce_case[i64_offset_7168x3072]
+tests/test_grad_reduce.py::test_grad_reduce_case[fan_in_gt_stages]
+tests/test_grad_reduce.py::test_grad_reduce_case[epn1_num_sms1]
+tests/test_grad_reduce.py::test_grad_reduce_case[random_plan_s1]
+  /workspace/src/moonep/moonep/grad_reduce.py:352: DSLOptimizationWarning: This static loop has 128 iterations, which may be very slow to compile, consider using `cutlass.range(..., unroll_full=True)` instead.
+    for j in cutlass.range_constexpr(H_PER):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+12 passed, 6 warnings in 10.41s

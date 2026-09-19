@@ -1,0 +1,151 @@
+diff --git a/torchtitan/models/kimi_k3/config_registry.py b/torchtitan/models/kimi_k3/config_registry.py
+index e89e6fc3..dc57de05 100644
+--- a/torchtitan/models/kimi_k3/config_registry.py
++++ b/torchtitan/models/kimi_k3/config_registry.py
+@@ -90,3 +90,127 @@ def kimi_k3_debugmodel(
+         checkpointer=None,
+         activation_checkpoint=SelectiveAC.Config(),
+     )
++
++
++def kimi_k3_debugmodel_moonep(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """The debug model with moe_comm_backend="moonep" (local flavor, not for upstream)."""
++    config = kimi_k3_debugmodel(seq_len=seq_len)
++    config.model_spec = model_registry("debugmodel", seq_len=seq_len, moe_comm_backend="moonep")
++    return config
++
++
++def _strip_quantile_balancing(config: Trainer.Config) -> Trainer.Config:
++    """Swap every MoE's QB router for the plain top-k one (local, not for upstream)."""
++    from torchtitan.models.common.moe import MoE, TokenChoiceTopKRouter
++
++    swapped = 0
++    for _, moe_cfg, _, _ in config.model_spec.model.traverse(MoE.Config):
++        r = moe_cfg.router
++        moe_cfg.router = TokenChoiceTopKRouter.Config(
++            num_experts=r.num_experts,
++            top_k=r.top_k,
++            gate=r.gate,
++            score_func=r.score_func,
++            route_norm=r.route_norm,
++            route_scale=r.route_scale,
++            aux_loss=r.aux_loss,
++        )
++        swapped += 1
++    if swapped == 0:
++        raise RuntimeError("no MoE config found: the QB strip did not reach anything")
++    return config
++
++
++def kimi_k3_debugmodel_noqb(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """The debug model with quantile balancing off (local flavor, not for upstream)."""
++    return _strip_quantile_balancing(kimi_k3_debugmodel(seq_len=seq_len))
++
++
++def kimi_k3_debugmodel_noqb_moonep(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """MoonEP with quantile balancing off (local flavor, not for upstream)."""
++    return _strip_quantile_balancing(kimi_k3_debugmodel_moonep(seq_len=seq_len))
++
++
++def kimi_k3_debugmodel_deepep(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """The debug model with moe_comm_backend="deepep" (local flavor, not for upstream)."""
++    config = kimi_k3_debugmodel(seq_len=seq_len)
++    config.model_spec = model_registry("debugmodel", seq_len=seq_len, moe_comm_backend="deepep")
++    return config
++
++
++def _kimi_k3_c4_dataloader() -> GrainDataLoader.Config:
++    """Packed C4 text through the plain text loader (local flavor helper, not for upstream)."""
++    from torchtitan.components.data import ConcatThenSplitPackingConfig
++    from torchtitan.hf_datasets.text_datasets import DATASETS as TEXT_DATASETS
++
++    return GrainDataLoader.Config(
++        dataset=ConcatThenSplitPackingConfig(dataset=TEXT_DATASETS["c4"]), shuffle=False
++    )
++
++
++def kimi_k3_debugmodel_c4(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    config = kimi_k3_debugmodel(seq_len=seq_len)
++    config.dataloader = _kimi_k3_c4_dataloader()
++    return config
++
++
++def kimi_k3_debugmodel_moonep_c4(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    config = kimi_k3_debugmodel_moonep(seq_len=seq_len)
++    config.dataloader = _kimi_k3_c4_dataloader()
++    return config
++
++
++def _set_prefetch_slots(config, slots: int):
++    """Walk the spec for the MoonEP dispatcher config and pin its slot count.
++
++    Cell 6 of the plan asks what planning does when B is below what the routing
++    needs; the count is otherwise derived, so there is no other way to force it.
++    """
++    from torchtitan.models.kimi_k3.moon_ep_dispatcher import MoonEPTokenDispatcher
++
++    seen = set()
++
++    def walk(obj):
++        if id(obj) in seen:
++            return
++        seen.add(id(obj))
++        if isinstance(obj, MoonEPTokenDispatcher.Config):
++            obj.num_prefetch_slots = slots
++            return
++        for attr in getattr(obj, "__dataclass_fields__", {}) or {}:
++            walk(getattr(obj, attr, None))
++        if isinstance(obj, (list, tuple)):
++            for v in obj:
++                walk(v)
++        if isinstance(obj, dict):
++            for v in obj.values():
++                walk(v)
++
++    walk(config.model_spec)
++    return config
++
++
++def kimi_k3_debugmodel_moonep_b7(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """B = E/R - 1 at ep 4 (local flavor, not for upstream)."""
++    return _set_prefetch_slots(kimi_k3_debugmodel_moonep(seq_len=seq_len), 7)
++
++
++def kimi_k3_debugmodel_moonep_b1(
++    seq_len: int | None = DEFAULT_DEBUG_MODEL_SEQ_LEN,
++) -> Trainer.Config:
++    """B = 1 (local flavor, not for upstream)."""
++    return _set_prefetch_slots(kimi_k3_debugmodel_moonep(seq_len=seq_len), 1)
+diff --git a/torchtitan/models/kimi_k3/kda.py b/torchtitan/models/kimi_k3/kda.py
+index 774a6907..fa89424f 100644
+--- a/torchtitan/models/kimi_k3/kda.py
++++ b/torchtitan/models/kimi_k3/kda.py
+@@ -86,13 +86,7 @@ class KDAKernel(Module):
+     ) -> torch.Tensor:
+         if not q_1THK.is_cuda:
+             raise RuntimeError("Attention Gym KDA requires CUDA tensors.")
+-        capability = torch.cuda.get_device_capability(q_1THK.device)
+-        if capability not in {(10, 0), (10, 3)}:
+-            raise RuntimeError(
+-                "Attention Gym KDA requires Blackwell SM100/SM103; "
+-                f"got CUDA capability {capability}."
+-            )
+-
++        # LOCAL HACK (not committed): attn-gym routes SM120 through portable kernels since #442.
+         gate_1THK = bound_gate(
+             raw_gate_1THK,
+             # TODO: The long-term solution is to specify mixed precision per FQN

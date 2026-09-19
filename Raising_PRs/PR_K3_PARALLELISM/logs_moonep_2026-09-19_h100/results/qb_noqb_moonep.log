@@ -1,0 +1,399 @@
+probe cmd: torchrun --nproc_per_node=4 --master_port=44200 /workspace/kit/qb_balance_probe.py --module _torchtitan_checkpoint_test_config --config checkpoint_test_config --dump-folder /workspace/qb_noqb_moonep --debug.seed 42 --debug.deterministic --training.steps 30 --metrics.log_freq 1 --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 --parallelism.data_parallel_shard_degree 4 --parallelism.expert_parallel_degree 4
+W0919 04:20:54.095000 41280 torch/distributed/run.py:982] 
+W0919 04:20:54.095000 41280 torch/distributed/run.py:982] *****************************************
+W0919 04:20:54.095000 41280 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0919 04:20:54.095000 41280 torch/distributed/run.py:982] *****************************************
+[titan] 2026-09-19 04:20:59,369 - absl - WARNING - Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-19 04:20:59,620 - absl - WARNING - Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-19 04:20:59,643 - absl - WARNING - Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-19 04:20:59,848 - absl - WARNING - Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-19 04:21:00,808 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:00,865 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:00,881 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:00,884 - torchtitan.observability.structured_logger.structured_logging - INFO - Structured logging disabled via DebugConfig.enable_structured_logging=False
+[titan] 2026-09-19 04:21:00,938 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:00,940 - torchtitan.observability.structured_logger.structured_logging - INFO - Structured logging disabled via DebugConfig.enable_structured_logging=False
+[titan] 2026-09-19 04:21:01,071 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:01,145 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:01,148 - torchtitan.observability.structured_logger.structured_logging - INFO - Structured logging disabled via DebugConfig.enable_structured_logging=False
+[titan] 2026-09-19 04:21:01,219 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:01,294 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:01,297 - torchtitan.observability.structured_logger.structured_logging - INFO - Structured logging disabled via DebugConfig.enable_structured_logging=False
+[titan] 2026-09-19 04:21:01,325 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-19 04:21:01,530 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-19 04:21:01,690 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-19 04:21:01,780 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-19 04:21:02,494 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-19 04:21:02,495 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-19 04:21:02,495 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-19 04:21:02,495 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-19 04:21:02,496 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-19 04:21:02,496 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-19 04:21:02,496 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-19 04:21:02,496 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-19 04:21:02,506 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=4, cp=1, tp=1, ep=4
+[titan] 2026-09-19 04:21:02,507 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=4, cp=1, tp=1, ep=4
+[titan] 2026-09-19 04:21:02,511 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=4, cp=1, tp=1, ep=4
+[titan] 2026-09-19 04:21:02,512 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=4, cp=1, tp=1, ep=4
+[titan] 2026-09-19 04:21:03,286 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'ep', 'dp', 'dp_shard']
+[titan] 2026-09-19 04:21:03,287 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'ep', 'dp', 'dp_shard']
+[titan] 2026-09-19 04:21:03,288 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[titan] 2026-09-19 04:21:03,289 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'ep', 'dp', 'dp_shard']
+[titan] 2026-09-19 04:21:03,292 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[titan] 2026-09-19 04:21:03,292 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[titan] 2026-09-19 04:21:03,293 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'ep', 'dp', 'dp_shard']
+[titan] 2026-09-19 04:21:03,296 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[titan] 2026-09-19 04:21:03,305 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-19 04:21:03,305 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-19 04:21:03,309 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-19 04:21:03,309 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-19 04:21:03,311 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-19 04:21:03,311 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-19 04:21:03,313 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-19 04:21:03,314 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-19 04:21:03,326 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-19 04:21:03,328 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-19 04:21:03,336 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-19 04:21:03,343 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-19 04:21:03,378 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-19 04:21:03,379 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-19 04:21:03,390 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-19 04:21:03,400 - torchtitan.models.utils - INFO - Total parameter count: 1,119,984,672, active parameters: 535,879,200
+[titan] 2026-09-19 04:21:04,563 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:04,563 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:04,563 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:04,563 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:04,563 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,119 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:05,119 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,119 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,119 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,119 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,391 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:05,391 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,391 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,391 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,391 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,629 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:05,629 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,629 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,629 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,629 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,866 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,866 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,866 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:05,866 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:05,867 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,120 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:06,120 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,120 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,120 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,120 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,379 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:06,379 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,379 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,379 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,379 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,671 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,671 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:06,671 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,671 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,671 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,944 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,944 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,944 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:06,944 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:06,944 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,211 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:07,211 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,211 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,211 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,211 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,477 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,477 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:07,477 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,477 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,477 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,752 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,752 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,753 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:07,753 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:07,753 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,020 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:08,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,020 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,347 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,347 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:08,347 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,347 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:08,347 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,609 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,609 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,609 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:10,609 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,609 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,975 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,975 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,975 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:10,975 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:10,975 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,259 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,259 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,259 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,259 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:11,259 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,536 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,536 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,536 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,536 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:11,537 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,813 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,813 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,813 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:11,813 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:11,813 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,124 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,124 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:12,124 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,124 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,124 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,451 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,451 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:12,452 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,452 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,452 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,741 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,741 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,741 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:12,741 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:12,741 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:13,021 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:13,021 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:13,021 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:13,021 - moonep.api - INFO - MoonEP comm buffer sizes:
+  config                 : R=4, S=256, H=512, E=32, K=4, NvS=3056, NvS_padded=4096
+  sm_count               : num_sms=32, num_sms_dedup=132
+  hidden_buffer_size     : 4.00 MiB
+  meta_buffer_size       : 2.00 MiB
+  local_temp_buffer_size : 24.71 KiB
+  total_size             : 6.02 MiB
+[titan] 2026-09-19 04:21:13,021 - torchtitan.models.kimi_k3.moon_ep_dispatcher - INFO - MoonEP dispatcher: buffer S=256 H=512 K=4 E=32 on an ep group of 4
+[titan] 2026-09-19 04:21:13,186 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,186 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,187 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,187 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,188 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,189 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,190 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,191 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-19 04:21:13,516 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-19 04:21:13,516 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-19 04:21:13,522 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-19 04:21:13,523 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank3]:W0919 04:21:13.805000 41350 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=4), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank2]:W0919 04:21:13.805000 41349 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=4), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank1]:W0919 04:21:13.805000 41348 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=4), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank0]:W0919 04:21:13.806000 41347 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=4), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[titan] 2026-09-19 04:21:14,308 - torchtitan.training_engine - INFO - Model kimi_k3 debugmodel size: 1,119,984,672 total parameters
+[titan] 2026-09-19 04:21:14,308 - torchtitan.training_engine - INFO - Model kimi_k3 debugmodel size: 1,119,984,672 total parameters
+[titan] 2026-09-19 04:21:14,309 - torchtitan.training_engine - INFO - Model kimi_k3 debugmodel size: 1,119,984,672 total parameters
+[titan] 2026-09-19 04:21:14,309 - torchtitan.training_engine - INFO - Model kimi_k3 debugmodel size: 1,119,984,672 total parameters
+[titan] 2026-09-19 04:21:14,312 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-19 04:21:14,313 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-19 04:21:14,313 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-19 04:21:14,313 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 726 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-19 04:21:14,315 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:14,316 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:14,316 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:14,316 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-19 04:21:14,347 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/qb_noqb_moonep/checkpoint
+[titan] 2026-09-19 04:21:14,347 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-19 04:21:14,347 - torchtitan.trainer - INFO - CUDA memory usage for model: 2.62GiB(3.30%)
+[titan] 2026-09-19 04:21:14,347 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 8, maximum context length 2048, total steps 30 (warmup 2)
+[titan] 2026-09-19 04:21:14,348 - torchtitan.components.checkpointer.base - INFO - Loading the checkpoint from /workspace/qb_noqb_moonep/checkpoint/step-0.
+[titan] 2026-09-19 04:21:14,348 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/qb_noqb_moonep/checkpoint
+[titan] 2026-09-19 04:21:14,349 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-19 04:21:14,349 - torchtitan.trainer - INFO - CUDA memory usage for model: 2.62GiB(3.30%)
+[titan] 2026-09-19 04:21:14,349 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 8, maximum context length 2048, total steps 30 (warmup 2)
+[titan] 2026-09-19 04:21:14,349 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/qb_noqb_moonep/checkpoint
+[titan] 2026-09-19 04:21:14,349 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-19 04:21:14,349 - torchtitan.components.checkpointer.base - INFO - Loading the checkpoint from /workspace/qb_noqb_moonep/checkpoint/step-0.
+[titan] 2026-09-19 04:21:14,349 - torchtitan.trainer - INFO - CUDA memory usage for model: 2.62GiB(3.30%)
+[titan] 2026-09-19 04:21:14,349 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 8, maximum context length 2048, total steps 30 (warmup 2)
+[titan] 2026-09-19 04:21:14,350 - torchtitan.components.checkpointer.base - INFO - Loading the checkpoint from /workspace/qb_noqb_moonep/checkpoint/step-0.
+[titan] 2026-09-19 04:21:14,352 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/qb_noqb_moonep/checkpoint
+[titan] 2026-09-19 04:21:14,352 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-19 04:21:14,352 - torchtitan.trainer - INFO - CUDA memory usage for model: 2.62GiB(3.30%)
+[titan] 2026-09-19 04:21:14,352 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 8, maximum context length 2048, total steps 30 (warmup 2)
+[titan] 2026-09-19 04:21:14,353 - torchtitan.components.checkpointer.base - INFO - Loading the checkpoint from /workspace/qb_noqb_moonep/checkpoint/step-0.
+[titan] 2026-09-19 04:21:19,043 - torchtitan.tools.utils - INFO - [GC] GC collection for checkpoint loading. took 0.02 seconds
+[titan] 2026-09-19 04:21:19,044 - torchtitan.components.checkpointer.base - INFO - Finished loading the checkpoint in 4.70 seconds.
+[titan] 2026-09-19 04:21:19,045 - torchtitan.tools.utils - INFO - [GC] GC collection for checkpoint loading. took 0.02 seconds
+[titan] 2026-09-19 04:21:19,045 - torchtitan.components.checkpointer.base - INFO - Finished loading the checkpoint in 4.70 seconds.
+[titan] 2026-09-19 04:21:19,049 - torchtitan.tools.utils - INFO - [GC] GC collection for checkpoint loading. took 0.03 seconds
+[titan] 2026-09-19 04:21:19,049 - torchtitan.tools.utils - INFO - [GC] GC collection for checkpoint loading. took 0.02 seconds
+[titan] 2026-09-19 04:21:19,049 - torchtitan.components.checkpointer.base - INFO - Finished loading the checkpoint in 4.70 seconds.
+[titan] 2026-09-19 04:21:19,050 - torchtitan.components.checkpointer.base - INFO - Finished loading the checkpoint in 4.70 seconds.
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+QB_PROBE_OK steps=20 layers=23 maxvio_mean=4.801 maxvio_max=6.578 rank_imb_mean=1.0610 rank_imb_max=1.1636
+[titan] 2026-09-19 04:23:38,267 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[titan] 2026-09-19 04:23:38,268 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[titan] 2026-09-19 04:23:38,268 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[titan] 2026-09-19 04:23:38,268 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.

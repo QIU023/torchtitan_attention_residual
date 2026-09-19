@@ -1,0 +1,183 @@
+Build summary:
+ > Sources: ['csrc/python_api.cpp', 'csrc/kernels/legacy/layout.cu', 'csrc/kernels/legacy/intranode.cu', 'csrc/kernels/legacy/internode.cu', 'csrc/kernels/legacy/internode_ll.cu', 'csrc/kernels/backend/nvshmem.cu', 'csrc/kernels/backend/nccl.cu', 'csrc/kernels/backend/cuda_driver.cu']
+ > Includes: ['/workspace/src/DeepEP/deep_ep/include', '/workspace/src/DeepEP/third-party/fmt/include', '/usr/local/cuda/include/cccl', '/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include', '/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include']
+ > Libraries: ['/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib']
+ > Compilation flags: {'cxx': ['-O3', '-Wno-deprecated-declarations', '-Wno-unused-variable', '-Wno-sign-compare', '-Wno-reorder', '-Wno-attributes', '-DDISABLE_AGGRESSIVE_PTX_INSTRS'], 'nvcc': ['-O3', '-Xcompiler', '-O3', '--extended-lambda', '--diag-suppress=128,2417', '-rdc=true', '--ptxas-options=--register-usage-level=10', '-DDISABLE_AGGRESSIVE_PTX_INSTRS'], 'nvcc_dlink': ['-dlink', '-L/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib', '-lnvshmem_device']}
+ > Link flags: ['-lcuda', '-l:libnvshmem_host.so.3', '-l:libnvshmem_device.a', '-Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib', '-l:libnccl.so.2', '-Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/lib']
+ > Arch list: 9.0
+ > NVSHMEM path: /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem
+ > NCCL path: /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl
+
+running build
+running build_py
+copying deep_ep/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep
+creating build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/buffers/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/buffers/elastic.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/buffers/legacy.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+creating build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/comm.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/envs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/event.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/find_pkgs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/gate.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/math.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/refs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/semantic.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/testing.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+creating build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/comm.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/compiled.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/exception.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/handle.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/layout.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/math.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/ptx.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+creating build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/barrier.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine_reduce_epilogue.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine_utils.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/dispatch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/dispatch_copy_epilogue.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/engram_fetch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/engram_fetch_wait.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/hybrid_combine.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/hybrid_dispatch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/pp_send_recv.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+running build_ext
+W0919 03:54:30.551000 38177 torch/utils/cpp_extension.py:681] The detected CUDA version (12.8) has a minor version mismatch with the version that was used to compile PyTorch (12.6). Most likely this shouldn't be a problem.
+building 'deep_ep._C' extension
+creating /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend
+creating /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy
+[1/9] /usr/local/cuda-12.8/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/layout.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/layout.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/layout.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+[2/9] /usr/local/cuda-12.8/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/intranode.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/intranode.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/intranode.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+[3/9] /usr/local/cuda-12.8/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nvshmem.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/backend/nvshmem.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nvshmem.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/wait/nvshmemi_wait_until_apis.cuh(53): warning #3013-D: a volatile function parameter is deprecated
+      volatile T *addr, T val, int caller) {
+                        ^
+          detected during:
+            instantiation of "nvshmemi_wait_until_greater_than_equals" based on template argument <volatile long> at line 63 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(70): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(174): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void sync_dissem_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 222
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(123): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void sync_dissem_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 222
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/reduce.cuh(1142): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void nvshmemi_gpu_rdxn_threadgroup<TYPE,OP,SCOPE>(nvshmem_team_t, TYPE *, const TYPE *, size_t) [with TYPE=unsigned char, OP=RDXN_OPS_and, SCOPE=nvshmemi_threadgroup_thread]" at line 1659
+            instantiation of "void nvshmemi_reduce_threadgroup<TYPE,OP,SCOPE>(nvshmem_team_t, TYPE *, const TYPE *, size_t) [with TYPE=unsigned char, OP=RDXN_OPS_and, SCOPE=nvshmemi_threadgroup_thread]" at line 114 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+[4/9] /usr/local/cuda-12.8/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/cuda_driver.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/backend/cuda_driver.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/cuda_driver.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+[5/9] /usr/local/cuda-12.8/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nccl.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/backend/nccl.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nccl.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+[6/9] /usr/local/cuda-12.8/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/internode_ll.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/wait/nvshmemi_wait_until_apis.cuh(53): warning #3013-D: a volatile function parameter is deprecated
+      volatile T *addr, T val, int caller) {
+                        ^
+          detected during:
+            instantiation of "nvshmemi_wait_until_greater_than_equals" based on template argument <volatile long> at line 63 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(70): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(174): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void sync_dissem_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 222
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(123): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void sync_dissem_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 222
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/reduce.cuh(1142): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void nvshmemi_gpu_rdxn_threadgroup<TYPE,OP,SCOPE>(nvshmem_team_t, TYPE *, const TYPE *, size_t) [with TYPE=unsigned char, OP=RDXN_OPS_and, SCOPE=nvshmemi_threadgroup_thread]" at line 1659
+            instantiation of "void nvshmemi_reduce_threadgroup<TYPE,OP,SCOPE>(nvshmem_team_t, TYPE *, const TYPE *, size_t) [with TYPE=unsigned char, OP=RDXN_OPS_and, SCOPE=nvshmemi_threadgroup_thread]" at line 114 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+[7/9] /usr/local/cuda-12.8/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/internode.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/wait/nvshmemi_wait_until_apis.cuh(53): warning #3013-D: a volatile function parameter is deprecated
+      volatile T *addr, T val, int caller) {
+                        ^
+          detected during:
+            instantiation of "nvshmemi_wait_until_greater_than_equals" based on template argument <volatile long> at line 63 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(70): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(174): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void sync_dissem_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 222
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/barrier.cuh(123): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void sync_dissem_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 222
+            instantiation of "void nvshmemi_sync_algo_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 244
+            instantiation of "void nvshmemi_barrier_threadgroup<SCOPE>(nvshmem_team_t) [with SCOPE=nvshmemi_threadgroup_thread]" at line 38 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/non_abi/device/coll/reduce.cuh(1142): warning #3012-D: a volatile destination type for a compound assignment expression is deprecated
+      if (!myIdx) sync_counter[0] += 1;
+                  ^
+          detected during:
+            instantiation of "void nvshmemi_gpu_rdxn_threadgroup<TYPE,OP,SCOPE>(nvshmem_team_t, TYPE *, const TYPE *, size_t) [with TYPE=unsigned char, OP=RDXN_OPS_and, SCOPE=nvshmemi_threadgroup_thread]" at line 1659
+            instantiation of "void nvshmemi_reduce_threadgroup<TYPE,OP,SCOPE>(nvshmem_team_t, TYPE *, const TYPE *, size_t) [with TYPE=unsigned char, OP=RDXN_OPS_and, SCOPE=nvshmemi_threadgroup_thread]" at line 114 of /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device/nvshmem_coll_defines.cuh
+
+[8/9] c++ -MMD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o.d -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.8/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/python_api.cpp -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o -O3 -Wno-deprecated-declarations -Wno-unused-variable -Wno-sign-compare -Wno-reorder -Wno-attributes -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -std=c++20
+[9/9] /usr/local/cuda-12.8/bin/nvcc /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/cuda_driver.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nccl.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nvshmem.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/intranode.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/layout.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/dlink.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -dlink -L/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib -lnvshmem_device -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90
+x86_64-linux-gnu-g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -shared -Wl,-O1 -Wl,-Bsymbolic-functions /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/cuda_driver.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nccl.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nvshmem.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/intranode.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/layout.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/dlink.o -L/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib -L/workspace/venv_k3/lib/python3.12/site-packages/torch/lib -L/usr/local/cuda-12.8/lib64 -L/usr/lib/x86_64-linux-gnu -lc10 -ltorch -ltorch_cpu -ltorch_python -lcudart -lc10_cuda -ltorch_cuda -o build/lib.linux-x86_64-cpython-312/deep_ep/_C.cpython-312-x86_64-linux-gnu.so -lcuda -l:libnvshmem_host.so.3 -l:libnvshmem_device.a -Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib -l:libnccl.so.2 -Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/lib

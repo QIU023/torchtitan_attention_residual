@@ -1,0 +1,164 @@
+Build summary:
+ > Sources: ['csrc/python_api.cpp', 'csrc/kernels/legacy/layout.cu', 'csrc/kernels/legacy/intranode.cu', 'csrc/kernels/legacy/internode.cu', 'csrc/kernels/legacy/internode_ll.cu', 'csrc/kernels/backend/nvshmem.cu', 'csrc/kernels/backend/nccl.cu', 'csrc/kernels/backend/cuda_driver.cu']
+ > Includes: ['/workspace/src/DeepEP/deep_ep/include', '/workspace/src/DeepEP/third-party/fmt/include', '/usr/local/cuda/include/cccl', '/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include', '/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include']
+ > Libraries: ['/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib']
+ > Compilation flags: {'cxx': ['-O3', '-Wno-deprecated-declarations', '-Wno-unused-variable', '-Wno-sign-compare', '-Wno-reorder', '-Wno-attributes', '-DDISABLE_AGGRESSIVE_PTX_INSTRS'], 'nvcc': ['-O3', '-Xcompiler', '-O3', '--extended-lambda', '--diag-suppress=128,2417', '-rdc=true', '--ptxas-options=--register-usage-level=10', '-DDISABLE_AGGRESSIVE_PTX_INSTRS'], 'nvcc_dlink': ['-dlink', '-L/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib', '-lnvshmem_device']}
+ > Link flags: ['-lcuda', '-l:libnvshmem_host.so.3', '-l:libnvshmem_device.a', '-Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib', '-l:libnccl.so.2', '-Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/lib']
+ > Arch list: 9.0
+ > NVSHMEM path: /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem
+ > NCCL path: /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl
+
+running install
+/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/cmd.py:90: SetuptoolsDeprecationWarning: setup.py install is deprecated.
+!!
+
+        ********************************************************************************
+        Please avoid running ``setup.py`` directly.
+        Instead, use pypa/build, pypa/installer or other
+        standards-based tools.
+
+        See https://blog.ganssle.io/articles/2021/10/setup-py-deprecated.html for details.
+        ********************************************************************************
+
+!!
+  self.initialize_options()
+/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/cmd.py:90: EasyInstallDeprecationWarning: easy_install command is deprecated.
+!!
+
+        ********************************************************************************
+        Please avoid running ``setup.py`` and ``easy_install``.
+        Instead, use pypa/build, pypa/installer or other
+        standards-based tools.
+
+        See https://github.com/pypa/setuptools/issues/917 for details.
+        ********************************************************************************
+
+!!
+  self.initialize_options()
+running bdist_egg
+running egg_info
+writing deep_ep.egg-info/PKG-INFO
+writing dependency_links to deep_ep.egg-info/dependency_links.txt
+writing top-level names to deep_ep.egg-info/top_level.txt
+reading manifest file 'deep_ep.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file 'deep_ep.egg-info/SOURCES.txt'
+installing library code to build/bdist.linux-x86_64/egg
+running install_lib
+running build_py
+copying deep_ep/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep
+copying deep_ep/buffers/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/buffers/elastic.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/buffers/legacy.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/utils/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/comm.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/envs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/event.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/find_pkgs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/gate.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/math.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/refs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/semantic.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/testing.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/include/deep_ep/common/comm.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/compiled.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/exception.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/handle.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/layout.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/math.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/ptx.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/impls/barrier.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine_reduce_epilogue.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine_utils.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/dispatch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/dispatch_copy_epilogue.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/engram_fetch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/engram_fetch_wait.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/hybrid_combine.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/hybrid_dispatch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/pp_send_recv.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+running build_ext
+W0919 03:55:42.113000 38440 torch/utils/cpp_extension.py:681] The detected CUDA version (12.8) has a minor version mismatch with the version that was used to compile PyTorch (12.6). Most likely this shouldn't be a problem.
+building 'deep_ep._C' extension
+ninja: no work to do.
+x86_64-linux-gnu-g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -shared -Wl,-O1 -Wl,-Bsymbolic-functions /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/cuda_driver.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nccl.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/nvshmem.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/intranode.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/layout.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/backend/dlink.o -L/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib -L/workspace/venv_k3/lib/python3.12/site-packages/torch/lib -L/usr/local/cuda-12.8/lib64 -L/usr/lib/x86_64-linux-gnu -lc10 -ltorch -ltorch_cpu -ltorch_python -lcudart -lc10_cuda -ltorch_cuda -o build/lib.linux-x86_64-cpython-312/deep_ep/_C.cpython-312-x86_64-linux-gnu.so -lcuda -l:libnvshmem_host.so.3 -l:libnvshmem_device.a -Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib -l:libnccl.so.2 -Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/lib
+creating build/bdist.linux-x86_64/egg
+creating build/bdist.linux-x86_64/egg/deep_ep
+copying build/lib.linux-x86_64-cpython-312/deep_ep/envs.py -> build/bdist.linux-x86_64/egg/deep_ep
+creating build/bdist.linux-x86_64/egg/deep_ep/buffers
+copying build/lib.linux-x86_64-cpython-312/deep_ep/buffers/__init__.py -> build/bdist.linux-x86_64/egg/deep_ep/buffers
+copying build/lib.linux-x86_64-cpython-312/deep_ep/buffers/elastic.py -> build/bdist.linux-x86_64/egg/deep_ep/buffers
+copying build/lib.linux-x86_64-cpython-312/deep_ep/buffers/legacy.py -> build/bdist.linux-x86_64/egg/deep_ep/buffers
+creating build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/__init__.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/comm.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/envs.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/event.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/find_pkgs.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/gate.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/math.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/refs.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/semantic.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+copying build/lib.linux-x86_64-cpython-312/deep_ep/utils/testing.py -> build/bdist.linux-x86_64/egg/deep_ep/utils
+creating build/bdist.linux-x86_64/egg/deep_ep/include
+creating build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep
+creating build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common/comm.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common/compiled.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common/exception.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common/handle.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common/layout.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common/math.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common/ptx.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/common
+creating build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/barrier.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/combine.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/combine_reduce_epilogue.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/combine_utils.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/dispatch.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/dispatch_copy_epilogue.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/engram_fetch.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/engram_fetch_wait.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/hybrid_combine.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/hybrid_dispatch.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls/pp_send_recv.cuh -> build/bdist.linux-x86_64/egg/deep_ep/include/deep_ep/impls
+copying build/lib.linux-x86_64-cpython-312/deep_ep/__init__.py -> build/bdist.linux-x86_64/egg/deep_ep
+copying build/lib.linux-x86_64-cpython-312/deep_ep/_C.cpython-312-x86_64-linux-gnu.so -> build/bdist.linux-x86_64/egg/deep_ep
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/envs.py to envs.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/buffers/__init__.py to __init__.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/buffers/elastic.py to elastic.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/buffers/legacy.py to legacy.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/__init__.py to __init__.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/comm.py to comm.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/envs.py to envs.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/event.py to event.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/find_pkgs.py to find_pkgs.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/gate.py to gate.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/math.py to math.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/refs.py to refs.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/semantic.py to semantic.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/utils/testing.py to testing.cpython-312.pyc
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/__init__.py to __init__.cpython-312.pyc
+creating stub loader for deep_ep/_C.cpython-312-x86_64-linux-gnu.so
+byte-compiling build/bdist.linux-x86_64/egg/deep_ep/_C.py to _C.cpython-312.pyc
+creating build/bdist.linux-x86_64/egg/EGG-INFO
+copying deep_ep.egg-info/PKG-INFO -> build/bdist.linux-x86_64/egg/EGG-INFO
+copying deep_ep.egg-info/SOURCES.txt -> build/bdist.linux-x86_64/egg/EGG-INFO
+copying deep_ep.egg-info/dependency_links.txt -> build/bdist.linux-x86_64/egg/EGG-INFO
+copying deep_ep.egg-info/top_level.txt -> build/bdist.linux-x86_64/egg/EGG-INFO
+writing build/bdist.linux-x86_64/egg/EGG-INFO/native_libs.txt
+zip_safe flag not set; analyzing archive contents...
+deep_ep.__pycache__._C.cpython-312: module references __file__
+deep_ep.__pycache__.__init__.cpython-312: module references __file__
+creating dist
+creating 'dist/deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg' and adding 'build/bdist.linux-x86_64/egg' to it
+removing 'build/bdist.linux-x86_64/egg' (and everything under it)
+Processing deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg
+creating /workspace/venv_k3/lib/python3.12/site-packages/deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg
+Extracting deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg to /workspace/venv_k3/lib/python3.12/site-packages
+Adding deep-ep 2.1.0+a56d615 to easy-install.pth file
+
+Installed /workspace/venv_k3/lib/python3.12/site-packages/deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg
+Processing dependencies for deep-ep==2.1.0+a56d615
+Finished processing dependencies for deep-ep==2.1.0+a56d615

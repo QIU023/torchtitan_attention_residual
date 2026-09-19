@@ -1,0 +1,145 @@
+Build summary:
+ > Sources: ['csrc/python_api.cpp', 'csrc/kernels/legacy/layout.cu', 'csrc/kernels/legacy/intranode.cu', 'csrc/kernels/legacy/internode.cu', 'csrc/kernels/legacy/internode_ll.cu', 'csrc/kernels/backend/nvshmem.cu', 'csrc/kernels/backend/nccl.cu', 'csrc/kernels/backend/cuda_driver.cu']
+ > Includes: ['/workspace/src/DeepEP/deep_ep/include', '/workspace/src/DeepEP/third-party/fmt/include', '/usr/local/cuda/include/cccl', '/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include', '/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include']
+ > Libraries: ['/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib']
+ > Compilation flags: {'cxx': ['-O3', '-Wno-deprecated-declarations', '-Wno-unused-variable', '-Wno-sign-compare', '-Wno-reorder', '-Wno-attributes', '-DDISABLE_AGGRESSIVE_PTX_INSTRS'], 'nvcc': ['-O3', '-Xcompiler', '-O3', '--extended-lambda', '--diag-suppress=128,2417', '-rdc=true', '--ptxas-options=--register-usage-level=10', '-DDISABLE_AGGRESSIVE_PTX_INSTRS'], 'nvcc_dlink': ['-dlink', '-L/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib', '-lnvshmem_device']}
+ > Link flags: ['-lcuda', '-l:libnvshmem_host.so.3', '-l:libnvshmem_device.a', '-Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/lib', '-l:libnccl.so.2', '-Wl,-rpath,/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/lib']
+ > Arch list: 9.0
+ > NVSHMEM path: /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem
+ > NCCL path: /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl
+
+running build
+running build_py
+copying deep_ep/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep
+copying deep_ep/buffers/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/buffers/elastic.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/buffers/legacy.py -> build/lib.linux-x86_64-cpython-312/deep_ep/buffers
+copying deep_ep/utils/__init__.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/comm.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/envs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/event.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/find_pkgs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/gate.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/math.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/refs.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/semantic.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/utils/testing.py -> build/lib.linux-x86_64-cpython-312/deep_ep/utils
+copying deep_ep/include/deep_ep/common/comm.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/compiled.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/exception.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/handle.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/layout.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/math.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/common/ptx.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/common
+copying deep_ep/include/deep_ep/impls/barrier.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine_reduce_epilogue.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/combine_utils.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/dispatch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/dispatch_copy_epilogue.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/engram_fetch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/engram_fetch_wait.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/hybrid_combine.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/hybrid_dispatch.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+copying deep_ep/include/deep_ep/impls/pp_send_recv.cuh -> build/lib.linux-x86_64-cpython-312/deep_ep/include/deep_ep/impls
+running build_ext
+building 'deep_ep._C' extension
+[1/4] /usr/local/cuda-12.6/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.6/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/internode.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+FAILED: [code=1] /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o 
+/usr/local/cuda-12.6/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.6/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/internode.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+In file included from /workspace/src/DeepEP/csrc/kernels/legacy/ibgda_device.cuh:12,
+                 from /workspace/src/DeepEP/csrc/kernels/legacy/internode.cu:6:
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device_host_transport/nvshmem_common_ibgda.h:18:10: fatal error: infiniband/mlx5dv.h: No such file or directory
+   18 | #include <infiniband/mlx5dv.h>  // for mlx5_wqe_av
+      |          ^~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+[2/4] /usr/local/cuda-12.6/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.6/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/internode_ll.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+FAILED: [code=1] /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o 
+/usr/local/cuda-12.6/bin/nvcc -MD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o.d -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.6/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/kernels/legacy/internode_ll.cu -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/kernels/legacy/internode_ll.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -Xcompiler -O3 --extended-lambda --diag-suppress=128,2417 -rdc=true --ptxas-options=--register-usage-level=10 -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -gencode=arch=compute_90,code=sm_90 -std=c++20
+In file included from /workspace/src/DeepEP/csrc/kernels/legacy/ibgda_device.cuh:12,
+                 from /workspace/src/DeepEP/csrc/kernels/legacy/internode_ll.cu:2:
+/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include/device_host_transport/nvshmem_common_ibgda.h:18:10: fatal error: infiniband/mlx5dv.h: No such file or directory
+   18 | #include <infiniband/mlx5dv.h>  // for mlx5_wqe_av
+      |          ^~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+[3/4] c++ -MMD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o.d -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.6/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/python_api.cpp -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o -O3 -Wno-deprecated-declarations -Wno-unused-variable -Wno-sign-compare -Wno-reorder -Wno-attributes -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -std=c++20
+FAILED: [code=1] /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o 
+c++ -MMD -MF /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o.d -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -I/workspace/src/DeepEP/deep_ep/include -I/workspace/src/DeepEP/third-party/fmt/include -I/usr/local/cuda/include/cccl -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nvshmem/include -I/workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include -I/workspace/venv_k3/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda-12.6/include -I/workspace/venv_k3/include -I/usr/include/python3.12 -c -c /workspace/src/DeepEP/csrc/python_api.cpp -o /workspace/src/DeepEP/build/temp.linux-x86_64-cpython-312/csrc/python_api.o -O3 -Wno-deprecated-declarations -Wno-unused-variable -Wno-sign-compare -Wno-reorder -Wno-attributes -DDISABLE_AGGRESSIVE_PTX_INSTRS -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -std=c++20
+In file included from /workspace/src/DeepEP/csrc/python_api.cpp:7:
+/workspace/src/DeepEP/csrc/elastic/buffer.hpp: In member function ‘std::pair<std::vector<at::Tensor>, std::function<void()> > deep_ep::elastic::ElasticBuffer::all_gather(const std::vector<at::Tensor>&)’:
+/workspace/src/DeepEP/csrc/elastic/buffer.hpp:484:9: error: ‘cudaMemcpyAttributes’ was not declared in this scope; did you mean ‘cudaFuncAttributes’?
+  484 |         cudaMemcpyAttributes attrs = {
+      |         ^~~~~~~~~~~~~~~~~~~~
+      |         cudaFuncAttributes
+In file included from /workspace/src/DeepEP/csrc/jit/compiler.hpp:11,
+                 from /workspace/src/DeepEP/csrc/jit/api.hpp:3,
+                 from /workspace/src/DeepEP/csrc/python_api.cpp:6:
+/workspace/src/DeepEP/csrc/elastic/buffer.hpp:491:109: error: ‘attrs’ was not declared in this scope
+  491 |         CUDA_RUNTIME_CHECK(cudaMemcpyBatchAsync(dst_ptrs.data(), src_ptrs.data(), sizes.data(), num_copies, attrs, nullptr, comm_stream));
+      |                                                                                                             ^~~~~
+/workspace/src/DeepEP/deep_ep/include/deep_ep/common/exception.cuh:61:21: note: in definition of macro ‘CUDA_RUNTIME_CHECK’
+   61 |     const auto e = (cmd); \
+      |                     ^~~
+/workspace/src/DeepEP/csrc/elastic/buffer.hpp:491:28: error: ‘cudaMemcpyBatchAsync’ was not declared in this scope; did you mean ‘cudaMemcpyPeerAsync’?
+  491 |         CUDA_RUNTIME_CHECK(cudaMemcpyBatchAsync(dst_ptrs.data(), src_ptrs.data(), sizes.data(), num_copies, attrs, nullptr, comm_stream));
+      |                            ^~~~~~~~~~~~~~~~~~~~
+/workspace/src/DeepEP/deep_ep/include/deep_ep/common/exception.cuh:61:21: note: in definition of macro ‘CUDA_RUNTIME_CHECK’
+   61 |     const auto e = (cmd); \
+      |                     ^~~
+ninja: build stopped: subcommand failed.
+Traceback (most recent call last):
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 2938, in _run_ninja_build
+    subprocess.run(
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['ninja', '-v']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/workspace/src/DeepEP/setup.py", line 197, in <module>
+    setuptools.setup(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/__init__.py", line 117, in setup
+    return distutils.core.setup(**attrs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/core.py", line 186, in setup
+    return run_commands(dist)
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/core.py", line 202, in run_commands
+    dist.run_commands()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/dist.py", line 1002, in run_commands
+    self.run_command(cmd)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/dist.py", line 1104, in run_command
+    super().run_command(command)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+    cmd_obj.run()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build.py", line 135, in run
+    self.run_command(cmd_name)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/cmd.py", line 357, in run_command
+    self.distribution.run_command(command)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/dist.py", line 1104, in run_command
+    super().run_command(command)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+    cmd_obj.run()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/command/build_ext.py", line 99, in run
+    _build_ext.run(self)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 368, in run
+    self.build_extensions()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 1323, in build_extensions
+    super().build_extensions()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 484, in build_extensions
+    self._build_extensions_serial()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 510, in _build_extensions_serial
+    self.build_extension(ext)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/command/build_ext.py", line 264, in build_extension
+    _build_ext.build_extension(self, ext)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 565, in build_extension
+    objects = self.compiler.compile(
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 1061, in unix_wrap_ninja_compile
+    _write_ninja_file_and_compile_objects(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 2518, in _write_ninja_file_and_compile_objects
+    _run_ninja_build(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 2955, in _run_ninja_build
+    raise RuntimeError(message) from e
+RuntimeError: Error compiling objects for extension

@@ -1,0 +1,145 @@
+++ date
++ echo '=== Sat Sep 19 03:49:30 UTC 2026 install_deepep start ==='
+=== Sat Sep 19 03:49:30 UTC 2026 install_deepep start ===
+++ python -c 'import torch;print('\''.'\''.join(map(str,torch.cuda.nccl.version())))'
++ OLD_NCCL=2.29.3
++ echo 'NCCL before: 2.29.3'
+NCCL before: 2.29.3
++ uv pip install --python /workspace/venv_k3/bin/python nvidia-nccl-cu12==2.31.2
+Using Python 3.12.3 environment at: /workspace/venv_k3
+Resolved 1 package in 104ms
+Downloading nvidia-nccl-cu12 (326.3MiB)
+ Downloaded nvidia-nccl-cu12
+Prepared 1 package in 10.45s
+Uninstalled 1 package in 11ms
+Installed 1 package in 84ms
+ - nvidia-nccl-cu12==2.29.3
+ + nvidia-nccl-cu12==2.31.2
++ python -
+NCCL after: 2.29.3
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+AssertionError: 2.29.3
++ echo DEEPEP_STAGE_NCCL_FAILED
+DEEPEP_STAGE_NCCL_FAILED
++ exit 1
+++ date
++ echo '=== Sat Sep 19 03:50:54 UTC 2026 install_deepep start ==='
+=== Sat Sep 19 03:50:54 UTC 2026 install_deepep start ===
+++ python -c 'import torch;print('\''.'\''.join(map(str,torch.cuda.nccl.version())))'
++ OLD_NCCL=2.29.3
++ echo 'NCCL before: 2.29.3'
+NCCL before: 2.29.3
++ uv pip install --python /workspace/venv_k3/bin/python nvidia-nccl-cu12==2.31.2
+Using Python 3.12.3 environment at: /workspace/venv_k3
+Checked 1 package in 43ms
++ python -
+runtime NCCL 2.31.2 at /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/lib/libnccl.so.2
++ echo DEEPEP_STAGE_NCCL_OK
+DEEPEP_STAGE_NCCL_OK
++ torchrun --nproc_per_node=4 --master_port=44010 -c '
+import torch, torch.distributed as dist
+dist.init_process_group('\''nccl'\''); r=dist.get_rank(); torch.cuda.set_device(r)
+t=torch.ones(1024, device='\''cuda'\'')*r; dist.all_reduce(t)
+assert int(t[0])==sum(range(dist.get_world_size())), t[0]
+if r==0: print('\''ALLREDUCE_OK'\'', int(t[0]))
+dist.destroy_process_group()
+'
+usage: torchrun [-h] [--nnodes NNODES] [--nproc-per-node NPROC_PER_NODE]
+                [--rdzv-backend RDZV_BACKEND] [--rdzv-endpoint RDZV_ENDPOINT]
+                [--rdzv-id RDZV_ID] [--rdzv-conf RDZV_CONF] [--standalone]
+                [--max-restarts MAX_RESTARTS]
+                [--monitor-interval MONITOR_INTERVAL]
+                [--start-method {spawn,fork,forkserver}]
+                [--event-log-handler EVENT_LOG_HANDLER] [--role ROLE] [-m]
+                [--no-python] [--run-path] [--log-dir LOG_DIR] [-r REDIRECTS]
+                [-t TEE] [--log-line-prefix-template LOG_LINE_PREFIX_TEMPLATE]
+                [--local-ranks-filter LOCAL_RANKS_FILTER]
+                [--duplicate-stdout-filters DUPLICATE_STDOUT_FILTERS]
+                [--duplicate-stderr-filters DUPLICATE_STDERR_FILTERS]
+                [--node-rank NODE_RANK] [--master-addr MASTER_ADDR]
+                [--master-port MASTER_PORT] [--local-addr LOCAL_ADDR]
+                [--logs-specs LOGS_SPECS]
+                [--numa-binding {node,socket,exclusive,core-complex}]
+                [--signals-to-handle SIGNALS_TO_HANDLE]
+                [--shutdown-timeout SHUTDOWN_TIMEOUT] [--virtual-local-rank]
+                [--print-completion {bash,zsh,tcsh}]
+                training_script ...
+torchrun: error: unrecognized arguments: -c
++ echo DEEPEP_STAGE_TORCH_FAILED
+DEEPEP_STAGE_TORCH_FAILED
++ exit 1
+++ date
++ echo '=== Sat Sep 19 03:51:30 UTC 2026 install_deepep start ==='
+=== Sat Sep 19 03:51:30 UTC 2026 install_deepep start ===
+++ python -c 'import torch;print('\''.'\''.join(map(str,torch.cuda.nccl.version())))'
++ OLD_NCCL=2.29.3
++ echo 'NCCL before: 2.29.3'
+NCCL before: 2.29.3
++ uv pip install --python /workspace/venv_k3/bin/python nvidia-nccl-cu12==2.31.2
+Using Python 3.12.3 environment at: /workspace/venv_k3
+Checked 1 package in 43ms
++ python -
+runtime NCCL 2.31.2 at /workspace/venv_k3/lib/python3.12/site-packages/nvidia/nccl/lib/libnccl.so.2
++ echo DEEPEP_STAGE_NCCL_OK
+DEEPEP_STAGE_NCCL_OK
++ torchrun --nproc_per_node=4 --master_port=44010 /workspace/kit/_nccl_smoke.py
+W0919 03:51:34.503000 37286 torch/distributed/run.py:982] 
+W0919 03:51:34.503000 37286 torch/distributed/run.py:982] *****************************************
+W0919 03:51:34.503000 37286 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0919 03:51:34.503000 37286 torch/distributed/run.py:982] *****************************************
+ALLREDUCE_OK 6
++ echo DEEPEP_STAGE_TORCH_OK
+DEEPEP_STAGE_TORCH_OK
++ cd /workspace/src/DeepEP
++ TORCH_CUDA_ARCH_LIST=9.0
++ python setup.py install
++ tail -30
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/install_lib.py", line 113, in build
+    self.run_command('build_ext')
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/cmd.py", line 357, in run_command
+    self.distribution.run_command(command)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/dist.py", line 1104, in run_command
+    super().run_command(command)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+    cmd_obj.run()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/command/build_ext.py", line 99, in run
+    _build_ext.run(self)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 368, in run
+    self.build_extensions()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 1323, in build_extensions
+    super().build_extensions()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 484, in build_extensions
+    self._build_extensions_serial()
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 510, in _build_extensions_serial
+    self.build_extension(ext)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/command/build_ext.py", line 264, in build_extension
+    _build_ext.build_extension(self, ext)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 565, in build_extension
+    objects = self.compiler.compile(
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 1061, in unix_wrap_ninja_compile
+    _write_ninja_file_and_compile_objects(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 2518, in _write_ninja_file_and_compile_objects
+    _run_ninja_build(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 2955, in _run_ninja_build
+    raise RuntimeError(message) from e
+RuntimeError: Error compiling objects for extension
++ python -c '
+from deep_ep import ElasticBuffer
+import deep_ep, os
+print('\''deep_ep at'\'', os.path.dirname(deep_ep.__file__))
+print('\''ElasticBuffer'\'', ElasticBuffer)
+'
+Traceback (most recent call last):
+  File "<string>", line 2, in <module>
+  File "/workspace/src/DeepEP/deep_ep/__init__.py", line 8, in <module>
+    from .utils.find_pkgs import find_nccl_root
+  File "/workspace/src/DeepEP/deep_ep/utils/__init__.py", line 3, in <module>
+    from .event import EventHandle
+  File "/workspace/src/DeepEP/deep_ep/utils/event.py", line 5, in <module>
+    from deep_ep._C import EventHandle
+ModuleNotFoundError: No module named 'deep_ep._C'
++ echo DEEPEP_STAGE_BUILD_FAILED
+DEEPEP_STAGE_BUILD_FAILED
++ exit 1

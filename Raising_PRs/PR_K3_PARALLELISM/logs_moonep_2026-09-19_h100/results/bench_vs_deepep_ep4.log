@@ -1,0 +1,132 @@
+W0919 04:00:20.413000 40098 torch/distributed/run.py:982] 
+W0919 04:00:20.413000 40098 torch/distributed/run.py:982] *****************************************
+W0919 04:00:20.413000 40098 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0919 04:00:20.413000 40098 torch/distributed/run.py:982] *****************************************
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank2]:   File "<frozen runpy>", line 88, in _run_code
+[rank2]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 631, in <module>
+[rank2]:     main()
+[rank2]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 405, in main
+[rank2]:     runners = {lib: make_runner(lib) for lib in args.libs}
+[rank2]:                     ^^^^^^^^^^^^^^^^
+[rank2]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 400, in make_runner
+[rank2]:     return RUNNERS[lib](group, R, S, K, E, H, args.num_sms)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 299, in __init__
+[rank2]:     self.buffer = deep_ep.ElasticBuffer(
+[rank2]:                   ^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/workspace/venv_k3/lib/python3.12/site-packages/deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg/deep_ep/buffers/elastic.py", line 346, in __init__
+[rank2]:     self.runtime = _C.ElasticBuffer(group.rank(), group.size(),
+[rank2]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]: RuntimeError: Assertion exception (/workspace/src/DeepEP/csrc/kernels/backend/nccl.cu:87): (allow_hybrid_mode ? props.railedGinType : props.ginType) != NCCL_GIN_TYPE_NONE and "NCCL GIN is unavailable. This is usually due to a network configuration issue, " "such as `allow_hybrid_mode=0` (disable direct RDMA kernels) in multi-plane network."
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 631, in <module>
+[rank0]:     main()
+[rank0]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 405, in main
+[rank0]:     runners = {lib: make_runner(lib) for lib in args.libs}
+[rank0]:                     ^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 400, in make_runner
+[rank0]:     return RUNNERS[lib](group, R, S, K, E, H, args.num_sms)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 299, in __init__
+[rank0]:     self.buffer = deep_ep.ElasticBuffer(
+[rank0]:                   ^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_k3/lib/python3.12/site-packages/deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg/deep_ep/buffers/elastic.py", line 346, in __init__
+[rank0]:     self.runtime = _C.ElasticBuffer(group.rank(), group.size(),
+[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: RuntimeError: Assertion exception (/workspace/src/DeepEP/csrc/kernels/backend/nccl.cu:87): (allow_hybrid_mode ? props.railedGinType : props.ginType) != NCCL_GIN_TYPE_NONE and "NCCL GIN is unavailable. This is usually due to a network configuration issue, " "such as `allow_hybrid_mode=0` (disable direct RDMA kernels) in multi-plane network."
+[rank3]: Traceback (most recent call last):
+[rank3]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank3]:   File "<frozen runpy>", line 88, in _run_code
+[rank3]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 631, in <module>
+[rank3]:     main()
+[rank3]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 405, in main
+[rank3]:     runners = {lib: make_runner(lib) for lib in args.libs}
+[rank3]:                     ^^^^^^^^^^^^^^^^
+[rank3]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 400, in make_runner
+[rank3]:     return RUNNERS[lib](group, R, S, K, E, H, args.num_sms)
+[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 299, in __init__
+[rank3]:     self.buffer = deep_ep.ElasticBuffer(
+[rank3]:                   ^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/workspace/venv_k3/lib/python3.12/site-packages/deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg/deep_ep/buffers/elastic.py", line 346, in __init__
+[rank3]:     self.runtime = _C.ElasticBuffer(group.rank(), group.size(),
+[rank3]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]: RuntimeError: Assertion exception (/workspace/src/DeepEP/csrc/kernels/backend/nccl.cu:87): (allow_hybrid_mode ? props.railedGinType : props.ginType) != NCCL_GIN_TYPE_NONE and "NCCL GIN is unavailable. This is usually due to a network configuration issue, " "such as `allow_hybrid_mode=0` (disable direct RDMA kernels) in multi-plane network."
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank1]:   File "<frozen runpy>", line 88, in _run_code
+[rank1]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 631, in <module>
+[rank1]:     main()
+[rank1]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 405, in main
+[rank1]:     runners = {lib: make_runner(lib) for lib in args.libs}
+[rank1]:                     ^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 400, in make_runner
+[rank1]:     return RUNNERS[lib](group, R, S, K, E, H, args.num_sms)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/src/moonep/benchmarks/bench_vs_deepep.py", line 299, in __init__
+[rank1]:     self.buffer = deep_ep.ElasticBuffer(
+[rank1]:                   ^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_k3/lib/python3.12/site-packages/deep_ep-2.1.0+a56d615-py3.12-linux-x86_64.egg/deep_ep/buffers/elastic.py", line 346, in __init__
+[rank1]:     self.runtime = _C.ElasticBuffer(group.rank(), group.size(),
+[rank1]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: RuntimeError: Assertion exception (/workspace/src/DeepEP/csrc/kernels/backend/nccl.cu:87): (allow_hybrid_mode ? props.railedGinType : props.ginType) != NCCL_GIN_TYPE_NONE and "NCCL GIN is unavailable. This is usually due to a network configuration issue, " "such as `allow_hybrid_mode=0` (disable direct RDMA kernels) in multi-plane network."
+W0919 04:00:30.517000 40098 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 40166 closing signal SIGTERM
+W0919 04:00:30.518000 40098 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 40167 closing signal SIGTERM
+W0919 04:00:30.519000 40098 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 40168 closing signal SIGTERM
+E0919 04:00:31.034000 40098 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 40165) of binary: /workspace/venv_k3/bin/python3
+Traceback (most recent call last):
+  File "/workspace/venv_k3/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+benchmarks.bench_vs_deepep FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-19_04:00:31
+  host      : 802caec716dc
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 40166) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2026-09-19_04:00:31
+  host      : 802caec716dc
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 40167) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[3]:
+  time      : 2026-09-19_04:00:31
+  host      : 802caec716dc
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 40168) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-19_04:00:30
+  host      : 802caec716dc
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 40165) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

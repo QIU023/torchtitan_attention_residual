@@ -1,0 +1,19 @@
+### PROBE std (kimi_k3_debugmodel) NP=4 cache=gp_cache_np4
+rc=1
+### PROBE moonep (kimi_k3_debugmodel_moonep) NP=4 cache=gp_cache_np4
+rc=1
+### PROBE std_fresh (kimi_k3_debugmodel) NP=4 cache=gp_cache_fresh_np4_020551
+rc=1
+### PROBE_DONE NP=4
+### grad diff std vs moonep (shared cache)
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_std_np4.json'
+### grad diff std vs std_fresh (floor)
+Traceback (most recent call last):
+  File "/workspace/kit/grad_diff.py", line 2, in <module>
+    a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2]))
+                  ^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/results/grads_std_np4.json'

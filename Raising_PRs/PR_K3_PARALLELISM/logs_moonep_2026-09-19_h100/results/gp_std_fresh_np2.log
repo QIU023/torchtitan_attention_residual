@@ -1,0 +1,64 @@
+W0919 01:45:32.777000 21334 torch/distributed/run.py:982] 
+W0919 01:45:32.777000 21334 torch/distributed/run.py:982] *****************************************
+W0919 01:45:32.777000 21334 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0919 01:45:32.777000 21334 torch/distributed/run.py:982] *****************************************
+[titan] 2026-09-19 01:45:38,058 - absl - WARNING - Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-19 01:45:38,215 - absl - WARNING - Failed to load jax profiler: No module named 'jax'
+╭─ Unrecognized options ───────────────────────────────────────────────────────╮
+│ Unrecognized options: --checkpoint.enable, --checkpoint.interval, 100000     │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ Available subcommands: activation-checkpoint:selective,                      │
+│ activation-checkpoint:region, activation-checkpoint:full,                    │
+│ activation-checkpoint:memory-budget, activation-checkpoint:none              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ For full helptext, run /workspace/kit/h200/grad_probe.py --help              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Unrecognized options ───────────────────────────────────────────────────────╮
+│ Unrecognized options: --checkpoint.enable, --checkpoint.interval, 100000     │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ Available subcommands: activation-checkpoint:selective,                      │
+│ activation-checkpoint:region, activation-checkpoint:full,                    │
+│ activation-checkpoint:memory-budget, activation-checkpoint:none              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ For full helptext, run /workspace/kit/h200/grad_probe.py --help              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+W0919 01:45:40.990000 21334 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 21402 closing signal SIGTERM
+E0919 01:45:41.106000 21334 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 2) local_rank: 0 (pid: 21401) of binary: /workspace/venv_k3/bin/python3
+Traceback (most recent call last):
+  File "/workspace/venv_k3/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/workspace/kit/h200/grad_probe.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-19_01:45:41
+  host      : 802caec716dc
+  rank      : 1 (local_rank: 1)
+  exitcode  : 2 (pid: 21402) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-19_01:45:40
+  host      : 802caec716dc
+  rank      : 0 (local_rank: 0)
+  exitcode  : 2 (pid: 21401) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
