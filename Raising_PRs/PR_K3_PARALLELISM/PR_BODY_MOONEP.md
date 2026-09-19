@@ -35,6 +35,45 @@ The transport stays in the model folder, like fla, and the package is imported o
 
 Requirements and cost: Hopper or newer with NVSwitch. The kernels are CuTeDSL: MoonEP pins `nvidia-cutlass-dsl==4.4.2`, and on 4.6 (the version Attention Gym's KDA kernels need) its grad-reduce kernel calls `cute.make_fragment`, removed in that release; one line of `moonep/grad_reduce.py` (`cute.make_rmem_tensor`) makes every MoonEP suite pass there, which is how the runs below were taken. Every MoonEP buffer builds a multicast tensor ([`moonep/api.py#L362`](https://github.com/MoonshotAI/MoonEP/blob/2bd860b4dd083df62b79d5e916fca71ec5742228/moonep/api.py#L362)) and asserts multicast support ([`moonep/buffer.py#L299`](https://github.com/MoonshotAI/MoonEP/blob/2bd860b4dd083df62b79d5e916fca71ec5742228/moonep/buffer.py#L299)), the planner writes with `multimem.st` ([`moonep/planning.py#L149-L156`](https://github.com/MoonshotAI/MoonEP/blob/2bd860b4dd083df62b79d5e916fca71ec5742228/moonep/planning.py#L149-L156)), and prefetch and the dispatch epilogue use TMA ([`moonep/prefetch.py#L129-L208`](https://github.com/MoonshotAI/MoonEP/blob/2bd860b4dd083df62b79d5e916fca71ec5742228/moonep/prefetch.py#L129-L208), [`moonep/dispatch_epilogue.py#L197-L227`](https://github.com/MoonshotAI/MoonEP/blob/2bd860b4dd083df62b79d5e916fca71ec5742228/moonep/dispatch_epilogue.py#L197-L227)), so A100, H100 NVL pairs and PCIe cards cannot run it. Its prefetch kernel tiles 128 by 128, so both expert dimensions have to be multiples of 128. Every rank holds `[E / R + B, in, out]` bf16 rows per projection, and one fp32 `[E, in, out]` gradient table per projection of which it writes only its own span, because `launch_grad_reduce` addresses gradient rows by global expert id. Each MoE layer costs one EP-group barrier before the prefetch and one before the reduce, and no host sync. `Buffer.prefetch_weight` and `Buffer.reduce_grad` take each projection as one contiguous VMM range of `E + B` rows, which `moonep.buffer` ships no allocator for (MoonEP's own end-to-end test builds that range as a local tensor), so the two kernels are called directly, as MoonEP's `test_grad_reduce` does, and the reduce's barrier handles come from the Buffer's context. Dispatch and combine are not `torch.library` ops like core's DeepEP / HybridEP, so model compile breaks the graph at every dispatch.
 
+## Results
+
+4 x H100 80GB SXM on an NVSwitch fabric (NV18 between every pair, multicast on all four), Kimi K3 debug flavor, seed 42, deterministic, MoonEP `2bd860b` with the cutlass 4.6 line above, torch 2.15 nightly cu126.
+
+```
+torchrun --nproc_per_node=4 -m torchtitan.train --module kimi_k3 --config kimi_k3_debugmodel_moonep \
+  --debug.seed 42 --debug.deterministic --training.steps 10 --metrics.log_freq 1 \
+  --training.num-tokens-per-train-step 8192 --training.num-tokens-per-microbatch-per-dp-rank 256 \
+  --parallelism.data_parallel_shard_degree 4 --parallelism.expert_parallel_degree 4
+```
+
+Loss and grad norm at steps 1, 3 and 10. Every cell starts from one seed checkpoint, each family shares one warm inductor cache, and each floor row is the same cell again on its own fresh cache.
+
+    cell                  step 1             step 3             step 10
+    dp2_std               12.52567/13.5000   7.62942/9.4375     3.33602/2.1719
+    dp2_moonep_ep1        12.52567/13.5000   7.62942/9.4375     3.33602/2.1719
+    dp2ep2_std            12.52567/13.5000   7.61268/9.3125     3.28545/2.1719
+    dp2ep2_moonep         12.52362/13.6250   7.76788/9.8750     3.27265/2.0312
+    dp2ep2_std_fresh      12.52567/13.5000   7.61268/9.3125     3.28545/2.1719
+    dp4_std               12.54318/13.3750   7.79811/10.8750    3.09682/1.8359
+    dp4ep4_std            12.54318/13.3125   7.77723/11.3125    3.17123/2.2969
+    dp4ep4_moonep         12.56253/13.2500   7.69331/11.3750    3.17237/2.0625
+    dp4ep4_std_fresh      12.54318/13.3125   7.77723/11.3125    3.17123/2.2969
+
+Both floor rows are bitwise with their reference at every step, so the noise floor for these cells is zero rather than small, and `moe_comm_backend="moonep"` at EP=1 is bitwise with the standard dispatcher, which is what that fallback claims to be.
+
+With a zero floor the MoonEP rows differ from the standard ones at step 1, so that difference is real and it is located rather than attributed. A step-1 per-parameter gradient comparison at `dp 4 x ep 4` (726 parameters, the same seed checkpoint, one shared warm cache) reproduces both cells exactly, `12.543177` and `12.562533`, and its floor row, the standard cell against itself on a fresh cache, is bitwise on all 726 parameters, the loss and the total gradient norm. The routed expert weights are the least affected of the eight parameter groups (2.65e-2 maximum relative difference against 3.14e-1 for attention, whose largest entries carry gradient norms of 1e-4).
+
+A per-layer trace of both runs puts the origin in one place. The first MoE layer receives a bitwise identical input and makes bitwise identical routing decisions (zero top-k flips, scores identical), and its routed-expert output differs, with no token dropped and a per-token relative difference of median 2.6e-3. The next layer's router then flips 6 of its 1024 top-k slots, and from there the runs route different tokens to different experts.
+
+The operation that differs is the sum of a token's top-k expert copies. Both paths apply the routing weights identically (`routed_output.to(float32) * weights`, rounded back to bf16); core then sums the copies with `deterministic_scatter_add` into a bf16 accumulator, while MoonEP hands them to its own combine kernel. Two controls size that. The standard path is bitwise invariant to a layout change that reorders the same arithmetic: at `ep 1` instead of `ep 4`, with a different dispatcher, different grouping and different grouped-GEMM offsets, the first MoE layer's output is identical on all 131072 elements. And both dispatchers, run on the same tokens and expert weights against one fp32 dense reference at the on-device test's shapes (2 ranks, 256 tokens, $D = 512$, 32 experts, top-k 4), sit the same distance from it:
+
+    pair                          median rel   max rel
+    standard vs fp32 reference     4.649e-03   5.648e-03
+    moonep vs fp32 reference       4.458e-03   5.478e-03
+    standard vs moonep             2.913e-03   3.904e-03
+
+The disagreement between the two dispatchers is smaller than either one's distance to the reference, so neither output is the more correct one and the difference is which of two bf16 roundings of the same sum each path takes. It becomes visible downstream because a router is a comparison: a perturbation below the layer's own bf16 floor still flips a near-tie, and the flip is discrete.
+
 ## Limitations
 
 The gradient table is one fp32 `[E, in, out]` tensor per projection per rank, since `launch_grad_reduce` addresses grad rows by global expert id and writes only this rank's span; at the released expert shape that is a physical row per expert on every rank. An allocation whose other spans are not physical (MoonEP's own distributed tensor) or a kernel entry that takes the span would remove it.
@@ -47,11 +86,11 @@ Expert parallelism must cover the whole expert chunk of a rank (`efsdp == 1`) an
 
 - `pytest tests/unit_tests/cpu/test_kimi_k3_moon_ep_dispatcher.py tests/unit_tests/cpu/test_ep_token_dispatcher_capacity.py -q` (11 passed): spec selection and latent sizing, the EP=1 local fallback, the import guard, the mesh check against an `efsdp` axis sized the way core sizes it; the capacity fill after CP and TP, the EP=1 refusal, the divisibility check, the local fallback, a backend without a static capacity. The comparison against a dense reference lives in the on-device test below, where it runs with the real package instead of a double.
 - `pytest tests/unit_tests/cpu/test_kimi_k3_moon_ep_dispatcher.py tests/unit_tests/cpu/test_ep_token_dispatcher_capacity.py tests/unit_tests/cpu/test_inference_moe.py -q` (16 passed); the scoped pre-commit hooks (flake8, ufmt, end-of-file, codespell, pydoclint) pass on the changed files, and `pyrefly` reports the same errors on the branch and on main, none in these files.
-- 2 x RTX 5060 Ti, Kimi K3 debug model, seed 42, deterministic, 3 steps, one warmed inductor cache per mesh (no NVSwitch, so the transport itself does not run): with the standard backend, dp1 and dp2 x ep2 are bitwise with main; moonep at EP=1 (the local fallback) is bitwise with the standard backend.
-- 2 x H100 SXM (NV18 fabric), moonep `2bd860b`, on the integration tree of 2026-08-28 that carried this dispatcher and expert module before their refactor onto core's seams: moonep's own tests pass on 2 ranks (planning 18, dispatch 12, combine 14, grad_reduce 12, prefetch 14, e2e through `torchrun`); ep2 x fsdp2 with MoonEP trains (loss `12.47486` then `9.19460` at steps 1 and 2); step-1 per-parameter gradients against the standard dispatcher put no routed-expert parameter among the differences, the largest relative difference 2.6e-1 on parameters of magnitude 1e-4. No noise-floor row was run, so that comparison is repeated with one in the cells below.
+- 4 x H100 80GB SXM (NV18, NVSwitch, multicast on every GPU), moonep `2bd860b` with the cutlass 4.6 line above, torch 2.15 nightly cu126: moonep's own suites pass on 2 and on 4 ranks (planning, dispatch, combine, grad_reduce, prefetch, e2e), and the cells of the Results section run from one seed checkpoint on this box.
+- Forced-hot routing (every token to one rank's experts) at `dp 4 x ep 4`: the run trains and the other ranks' prefetch slots fill. With the slot count set below the bound, planning refuses it at model build time and names the bound, `MoonEP needs at least E / R = 8 prefetch slots to place every duplicated expert, got B=7` and the same for `B=1`, rather than hanging.
 - 4 x H200 (NV18, NVSwitch, multicast on every GPU), moonep `2bd860b` with the cutlass-4.6 line above, torch 2.15 nightly cu126: moonep's own suites on two ranks all pass (planning 18 passed 1 skipped, dispatch 12, combine 14, e2e 1, grad_reduce 12, prefetch 14).
-- `pytest tests/unit_tests/gpu/test_kimi_k3_moon_ep.py -q` on two H200s (2 passed): the dispatcher and the expert tables with the real package, forced-hot routing (every token to the experts homed on one rank, so the other rank's prefetch slots fill) and uniform routing, outputs, input gradients and expert-row gradients against an fp32 reference on the gathered tokens; skipped where the package or multicast is missing.
-- Table occupancy on two H200s, `dp 2 x ep 2`, one step: every dispatch puts tokens only in this rank's home rows and in the slots the plan filled, 8 of 8 checks, so the `[E / R + B]` rows are the whole working set.
+- `pytest tests/unit_tests/gpu/test_kimi_k3_moon_ep.py -q` (2 passed on two H200s, 2 passed on the 4 x H100 box): the dispatcher and the expert tables with the real package, forced-hot routing (every token to the experts homed on one rank, so the other rank's prefetch slots fill) and uniform routing, outputs, input gradients and expert-row gradients against an fp32 reference on the gathered tokens; skipped where the package or multicast is missing.
+- Table occupancy at `dp 4 x ep 4` on the debug model, all 23 MoE layers of one step: no layer puts a token in a row belonging to an expert homed on another rank (0 of 23), this rank's own expert rows carry 1024 to 1664 tokens per layer, and 19 of the 23 layers place tokens in a prefetch slot. So 16 of the 40 physical rows, `E / R` experts plus `B` slots, are the whole working set.
 
 --- PASTE END ---
 
