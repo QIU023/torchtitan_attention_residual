@@ -75,35 +75,38 @@ The operation that differs is the sum of a token's top-k expert copies. Both pat
 
 The disagreement between the two dispatchers is smaller than either one's distance to the reference, so neither output is the more correct one and the difference is which of two bf16 roundings of the same sum each path takes. It becomes visible downstream because a router is a comparison: a perturbation below the layer's own bf16 floor still flips a near-tie, and the flip is discrete.
 
-The tables above establish that MoonEP does not change the result. What it is for is the load the standard dispatcher leaves on one rank, so both dispatchers were run on the same tokens with the same expert weights, at K3-like width rather than the debug flavor's, under routing drawn from a Zipf distribution over experts with the same hot experts on every rank. 256 experts, top-k 8, $D = 1024$, four ranks, 64 own experts and 64 prefetch slots each:
+The tables above establish that MoonEP does not change the result. What it is for is stated in the Kimi K3 report as a contract rather than a result: every rank receives exactly `S x K` tokens whatever the routing does, guaranteed by reserving `E / R` redundant-expert slots per rank. So the table below is not a measurement of benefit, it is the check that this integration preserves that contract, taken on the same tokens and expert weights with only the dispatcher changed, at 256 experts, top-k 8, $D = 1024$, four ranks, under Zipf routing with the same hot experts on every rank:
 
     4096 tokens per rank, 512 per expert
      alpha  route max/mean  standard max/mean  moonep max/mean  standard rows  moonep rows
        0.0           1.22               1.01             1.01         131072       147584
-       0.5           7.38               1.11             1.02         131072       146816
        1.0          25.38               1.29             1.00         131072       145920
-       1.5          31.80               1.45             1.00         131072       150016
        2.0          32.00               1.52             1.01         131072       153984
 
     8192 tokens per rank, 1024 per expert
        0.0           1.17               1.01             1.00         262144       277248
-       1.0          25.13               1.29             1.01         262144       278016
        2.0          32.00               1.53             1.00         262144       283136
 
-MoonEP holds the per-rank load at 1.00 to 1.02 across the sweep while the standard path climbs to 1.52. At the extreme, every token routed to the experts homed on one rank, the standard path reads 4.00 with three of four ranks idle and MoonEP reads 1.00 with the same total row count.
+MoonEP holds the per-rank load at 1.00 to 1.02 across the sweep while the standard path climbs to 1.52, and at the extreme, every token routed to the experts homed on one rank, the standard path reads 4.00 with three of four ranks idle and MoonEP reads 1.00 with the same total row count.
 
-The cost is the static layout: MoonEP pads every row's token count to a multiple of 128, which is 12.6 percent more rows at 512 tokens per expert and 5.8 percent at 1024. On the debug flavor, where the mean expert receives exactly 128 tokens, the same figure is 56 percent, so it is a function of how many padding units a row carries rather than a property of the transport.
+The cost is the static layout: MoonEP pads every row's token count to a multiple of 128, which is 12.6 percent more rows at 512 tokens per expert and 5.8 percent at 1024. On the debug flavor, whose mean expert receives exactly 128 tokens, the same figure is 56 percent, so it is a function of how many padding units a row carries rather than a property of the transport.
 
-Four ranks understate what this removes. The standard path's rank-level imbalance is damped by the experts that share a rank, since the hot ones average out inside the rank before loads are compared across ranks. That damping is arithmetic on the routing alone, with no transport involved, and for the same routing above it reads:
+Two more of the transport's stated properties are checkable here. Its communication time is flat under imbalance: its own benchmark, run at the report's shapes (`E = 384`, `H = 7168`, `K = 8`, `S = 8192`) on four ranks rather than the eight it asserts, reads
+
+    maxvio    planning   dispatch fwd   combine fwd   prefetch
+      0.20    104.3 us      2041.0 us     1426.3 us    499.7 us
+      1.01    104.0 us      2042.2 us     1411.9 us    501.7 us
+     10.04    105.4 us      2034.0 us     1420.1 us    500.0 us
+     19.79    101.9 us      2039.0 us     1449.0 us    501.1 us
+
+so across a hundredfold change in maxvio the dispatch moves 0.4 percent and the combine 3 percent, with planning at 5 percent of the dispatch and the weight prefetch at 24.6, both constant. And the shapes being static removes a per-layer host synchronization: `AllToAllTokenDispatcher.dispatch` calls `.tolist()` on both split vectors, two device-to-host transfers per MoE layer, and the MoonEP path has none in the per-layer forward.
+
+What none of this shows is that the insensitivity is worth anything, because that claim is comparative. The report and MoonEP's own benchmark both make it against DeepEP, whose time is set by the hottest rank, and that comparison is not in this PR: DeepEP v2's `ElasticBuffer` asserts NCCL GIN at construction, GIN needs an RDMA device, and the box these numbers come from has none. Against the dispatcher this repo ships, the rank-level imbalance MoonEP removes at four ranks is 1.5x, and that figure grows as experts per rank falls, which is arithmetic on the routing with no transport involved:
 
      ranks   experts/rank   alpha=1.0   alpha=2.0
          4             64        1.29        1.53
-         8             32        1.43        2.00
         16             16        2.30        2.39
-        32              8        3.71        4.40
         64              4        6.93        8.28
-
-So the 1.5x this PR measures is the small end of the curve, and whether `B` slots still absorb the load where a K3-shaped expert count actually runs is a multi-node question this cannot answer.
 
 
 End to end on the debug flavor, median forward plus backward per step over steps 2 to 10 on the shared warm cache:
