@@ -220,12 +220,15 @@ Three adoption surfaces, in priority order:
 
 ## Repo map
 
-- Submodule `torchtitan/` (fork QIU023/torchtitan, branch `main` = the
-  integration tree, alias `k3_on_4025`; `attention_residual_dev` is retired):
-  the real implementation —
-  `torchtitan/experiments/kimi_k3/` (attn_res.py, model.py,
-  pipeline_adapter.py ~1143 lines, kimi_linear/ with parallelize.py ~1077
-  lines: FSDP2/HSDP+TP+EP complete, CP blocked on fla-core, PP via adapter).
+- Submodule `torchtitan/` (fork QIU023/torchtitan). Branch `main` is a plain
+  mirror of upstream `pytorch/torchtitan` main and tracks it (reset there
+  2026-09-19; what it used to hold, the pre-rebuild integration alias, is kept
+  by the tag `k3_int_20260902_pre_rebuild`). The integration tree is
+  **`k3_on_4025`**, and PR branches are cut from upstream main, not from it;
+  `attention_residual_dev` is retired. The model lives at
+  `torchtitan/models/kimi_k3/` (it moved out of `experiments/` during the
+  09-12/09-16 rebuilds): FSDP2/HSDP + TP + EP + CP + PP all run, CP through
+  the maintainers' #4639 stack, PP through the model-local adapter.
 - Submodule `sglang/` (fork QIU023/sglang, branch
   `attention_residual_inference`): Block AttnRes two-phase inference overlay +
   VLM serving + PR branches (pr1/pr7/pr8/pr15 pushed).
