@@ -31,7 +31,13 @@ Add MoonEP (MoonshotAI/MoonEP, the balanced EP transport of the Kimi K3 report) 
 
 ## Design
 
-The buffer is sized by the latent width, since the routed experts consume the stream after `routed_down`, and by the static per-rank token count that core now fills after CP and TP have sharded the token axis. Dispatch and combine are autograd Functions whose backward is the other kernel on the same plan, and routing weights are applied on the torchtitan side, so the router trains through the same path as with the standard dispatcher. MoonEP's planner picks the experts to copy (`plan.experts_to_copy`, recomputed per dispatch); each rank publishes its own expert rows through `create_nvl_single_owner_tensor` and its slot gradients through `create_nvl_dist_tensor`, and MoonEP's `launch_prefetch` and `launch_grad_reduce` do the two moves, the second fencing the ranks inside the kernel. A rank computes on its own experts followed by its slots, so the grouped GEMM takes the plan's `cu_seqlens` with the rows of experts homed elsewhere dropped, which are empty because a token reaches either its expert's home rank or a rank holding a slot copy.
+The buffer is sized by the latent width, since the routed experts consume the stream after `routed_down`, and by the static per-rank token count that core now fills after CP and TP have sharded the token axis.
+
+Dispatch and combine are autograd Functions whose backward is the other kernel on the same plan. Routing weights are applied on the torchtitan side, so the router trains through the same path as with the standard dispatcher.
+
+MoonEP's planner picks the experts to copy, recomputed per dispatch. Each rank publishes its own expert rows through `create_nvl_single_owner_tensor` and its slot gradients through `create_nvl_dist_tensor`, and `launch_prefetch` and `launch_grad_reduce` do the two moves, the second fencing the ranks inside the kernel.
+
+A rank computes on its own experts followed by its slots. The grouped GEMM therefore takes the plan's `cu_seqlens` with the rows of experts homed elsewhere dropped, which are empty because a token reaches either its expert's home rank or a rank holding a slot copy.
 
 The transport stays in the model folder, like fla, and the package is imported only when an EP mesh exists; with no EP mesh both classes are their parents, so a flavor carrying the config still runs unsharded. The first version keeps expert parameters whole per EP rank, so `efsdp == 1`, and refuses `dp_replicate`.
 
@@ -70,7 +76,13 @@ Loss and grad norm at steps 1, 3 and 10.
 
 Both floor rows are bitwise with their reference at every step, so the noise floor here is zero rather than small, and `moe_comm_backend="moonep"` at EP=1 is bitwise with the standard dispatcher, which is what that fallback claims to be.
 
-The step-1 difference in the EP rows is therefore real, and it is located. A step-1 per-parameter comparison at `dp 4 x ep 4` reproduces both cells exactly and is bitwise on all 726 parameters for the floor row, and the routed expert weights are the least affected of the eight parameter groups, 2.65e-2 against 3.14e-1 for attention. A per-layer trace puts the origin in the first MoE layer, which receives a bitwise identical input and makes bitwise identical routing decisions and whose routed-expert output still differs by a median 2.6e-3 per token with no token dropped; the next layer's router then flips 6 of 1024 top-k slots. The operation that differs is the sum of a token's top-k expert copies: core sums them with `deterministic_scatter_add` into a bf16 accumulator, MoonEP in its combine kernel. Against one fp32 dense reference on the same tokens and weights:
+The step-1 difference in the EP rows is therefore real, and it is located.
+
+A step-1 per-parameter comparison at `dp 4 x ep 4` reproduces both cells exactly and is bitwise on all 726 parameters for the floor row. The routed expert weights are the least affected of the eight parameter groups, 2.65e-2 against 3.14e-1 for attention.
+
+A per-layer trace puts the origin in the first MoE layer. It receives a bitwise identical input and makes bitwise identical routing decisions, and its routed-expert output still differs by a median 2.6e-3 per token with no token dropped; the next layer's router then flips 6 of 1024 top-k slots.
+
+The operation that differs is the sum of a token's top-k expert copies: core sums them with `deterministic_scatter_add` into a bf16 accumulator, MoonEP in its combine kernel. Against one fp32 dense reference on the same tokens and weights:
 
     pair                          median rel   max rel
     standard vs fp32 reference     4.649e-03   5.648e-03
@@ -79,16 +91,22 @@ The step-1 difference in the EP rows is therefore real, and it is located. A ste
 
 The two dispatchers disagree by less than either one's distance to the reference, so neither is the more correct and the difference is which bf16 rounding of the same sum each takes. It becomes visible downstream because a router is a comparison, and a perturbation below the layer's own bf16 floor still flips a near-tie.
 
-So the tables above say MoonEP does not change the result. What it is for is a contract rather than a speedup: every rank receives exactly `S x K` tokens whatever the routing does, guaranteed by reserving `E / R` redundant-expert slots per rank. The table below checks that this integration preserves it, on the same tokens and weights with only the dispatcher changed, at 256 experts, top-k 8, `D` 1024, four ranks, 4096 tokens per rank, under Zipf routing with the same hot experts on every rank:
+So the tables above say MoonEP does not change the result. What it is for is a contract rather than a speedup: every rank receives exactly `S x K` tokens whatever the routing does, guaranteed by reserving `E / R` redundant-expert slots per rank.
+
+The table below checks that this integration preserves it, on the same tokens and weights with only the dispatcher changed, at 256 experts, top-k 8, `D` 1024, four ranks, 4096 tokens per rank, under Zipf routing with the same hot experts on every rank:
 
     alpha  route max/mean  standard max/mean  moonep max/mean  standard rows  moonep rows
       0.0           1.22               1.01             1.01         131072       147584
       1.0          25.38               1.29             1.00         131072       145920
       2.0          32.00               1.52             1.01         131072       153984
 
-MoonEP holds the per-rank load at 1.00 to 1.02 while the standard path climbs to 1.52, and at the extreme, every token routed to one rank's experts, the standard path reads 4.00 with three ranks idle and MoonEP reads 1.00. The same sweep at 8192 tokens per rank reads the same. The cost is the static layout: rows are padded to a multiple of 128 tokens, 12.6 percent more rows at 512 tokens per expert and 5.8 percent at 1024, and 56 percent on the debug flavor whose mean expert receives exactly 128.
+MoonEP holds the per-rank load at 1.00 to 1.02 while the standard path climbs to 1.52. At the extreme, every token routed to one rank's experts, the standard path reads 4.00 with three ranks idle and MoonEP reads 1.00. The same sweep at 8192 tokens per rank reads the same.
 
-Two further properties hold here. MoonEP's own benchmark at the report's shapes (`E` 384, `H` 7168, `K` 8, `S` 8192) on four ranks moves the dispatch by 0.4 percent and the combine by 3 percent across a hundredfold change in maxvio, so its communication time is flat under imbalance. And the static shapes remove a per-layer host synchronization: `AllToAllTokenDispatcher.dispatch` calls `.tolist()` on both split vectors, two device-to-host transfers per MoE layer, and the MoonEP path has none in the per-layer forward.
+The cost is the static layout: rows are padded to a multiple of 128 tokens, 12.6 percent more rows at 512 tokens per expert and 5.8 percent at 1024, and 56 percent on the debug flavor whose mean expert receives exactly 128.
+
+Its communication time is flat under imbalance. MoonEP's own benchmark at the report's shapes (`E` 384, `H` 7168, `K` 8, `S` 8192) on four ranks moves the dispatch by 0.4 percent and the combine by 3 percent across a hundredfold change in maxvio.
+
+The static shapes also remove a per-layer host synchronization. `AllToAllTokenDispatcher.dispatch` calls `.tolist()` on both split vectors, two device-to-host transfers per MoE layer, and the MoonEP path has none in the per-layer forward.
 
 End to end on the debug flavor, median forward plus backward per step over steps 2 to 10 on the shared warm cache:
 
@@ -99,7 +117,11 @@ End to end on the debug flavor, median forward plus backward per step over steps
     dp2ep2_moonep                  5194.6 ms
     dp2_moonep_ep1                 4286.3 ms
 
-MoonEP is 1.6 percent slower at `dp 4 x ep 4` and 0.6 percent at `dp 2 x ep 2`, and the EP=1 fallback matches the standard path to 0.3 ms on the same code path. That is the expected sign here: this flavor's routing is near uniform, so the balancing has nothing to balance while the barriers and the prefetch copies still cost, and the rank-level imbalance it removes at four ranks is only 1.5x, growing to 6.9x at 64 ranks with 4 experts each. The comparison the report makes is against DeepEP, whose time is set by the hottest rank, and it is not in this PR: DeepEP v2 asserts NCCL GIN at construction and GIN needs an RDMA device the box does not have. So this PR claims correctness, wiring and the balance mechanism, not a speedup.
+MoonEP is 1.6 percent slower at `dp 4 x ep 4` and 0.6 percent at `dp 2 x ep 2`. The EP=1 fallback matches the standard path to 0.3 ms, on the same code path.
+
+That is the expected sign here. This flavor's routing is near uniform, so the balancing has nothing to balance while the barriers and the prefetch copies still cost, and the imbalance it removes at four ranks is only 1.5x, growing to 6.9x at 64 ranks with 4 experts each.
+
+The comparison the report makes is against DeepEP, whose time is set by the hottest rank, and it is not in this PR: DeepEP v2 asserts NCCL GIN at construction, and GIN needs an RDMA device the box does not have. So this PR claims correctness, wiring and the balance mechanism, not a speedup.
 
 ## Limitations
 
