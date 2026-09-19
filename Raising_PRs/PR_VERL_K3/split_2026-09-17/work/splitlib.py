@@ -3,7 +3,7 @@ import subprocess, os, sys
 
 REPO = "/tmp/wt_verl_new"
 BASE = "1a8a0f5f"
-HEAD = "b5a79e15"
+HEAD = "515b162c"
 # order in which the patches are applied; index in this list is the "ordinal"
 ORDER = ["01", "02", "03", "04", "05", "06", "00"]
 OIDX = {name: i for i, name in enumerate(ORDER)}

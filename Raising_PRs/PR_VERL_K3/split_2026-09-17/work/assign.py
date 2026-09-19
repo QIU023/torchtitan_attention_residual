@@ -35,6 +35,8 @@ ASSIGN = {
     "tests/workers/test_torchtitan_engine_lora_sync.py": [("*", "03")],
     "tests/workers/test_torchtitan_engine_peft_config.py": [("*", "03")],
     "tests/workers/test_torchtitan_engine_k3_processor.py": [("*", "05")],
+    # the K3 FLOPs estimator: model-specific, so it rides with the K3 patch
+    "verl/utils/flops_counter.py": [("*", "05")],
 
     "verl/utils/debug/metrics.py": [
         ((84, 91), "00"),
