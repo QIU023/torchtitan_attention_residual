@@ -33,3 +33,15 @@ Done in that order, so the box was never left with neither working: upstream ins
 Two checks before the removal. `/venv/vllm_k3`, the veRL environment, has no `attn_gym` at all, so nothing there depended on the path. And the branch the checkout sat on existed **only locally**: the fork carried `main` and `kda-fla-backend` and not `pr453`, so it was pushed to the fork first. It turns out not to be this line's work at all, `7c83f6c` is authored by drisspg and `git cherry` puts it outside upstream main, so `pr453` is an unmerged upstream PR branch that had been checked out and left there.
 
 After the removal the suites still read 14 passed, 2 skipped. `.git/modules/attention-gym` is deliberately left on disk: it costs a little space and holds the clone, and deleting it buys nothing.
+
+## The whole CPU suite on the integration tree
+
+With the two gates above cleared, the full suite runs for the first time on this box: **1211 passed, 18 failed, 34 skipped** in 16.5 minutes on `k3_on_4025` at `42691735c`.
+
+Getting it to collect at all took two more environment fixes, both the same shape as the first two.
+
+`verl` was editable-installed into `/venv/main`, and `verl/scripts/__init__.py` makes it a regular package, so `import scripts` resolved to veRL's rather than torchtitan's and `test_download_hf_assets.py` and `test_tokenizer.py` could not import. veRL's own work lives in `/venv/vllm_k3` and `/workspace/venv_verl`, so the install in `/venv/main` was a leftover and was removed.
+
+`torch_checkpointing` is pinned in `pyproject.toml` and was not installed. Installing it is not enough: the tree imports `torch_checkpointing.default_resharder`, and PyPI's only release, 0.1.0, does not have it, so `test_torch_checkpointing.py` is excluded from the run. That dependency is also absent from `requirements.txt` and from `.ci/docker/requirements.txt`, so the same file would fail in CI unless CI takes it from somewhere else.
+
+The 18 failures are all optional dependencies or access, not the tree: `flash_attn` is not installed and accounts for 31 of the import errors in the log, `torchao` is 0.17.0 and lacks the 32x32 swizzle cast kernels the MXFP8 tests import, and one tokenizer test needs the gated `meta-llama/Llama-3.1-8B` repo.
