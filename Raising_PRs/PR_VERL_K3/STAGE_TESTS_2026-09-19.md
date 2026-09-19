@@ -72,3 +72,22 @@ The three behaviours are each probed now:
 - the contiguous rank-ordered CP shards, through `_parallelism_compat_kwargs` pinning the balancer off whenever CP is on, for any model.
 
 Three mentions of `kimi_k3` remain in the engine file and none is a branch on the name: two are imports of the KDA classes inside the CP-KDA backend, and one is a comment. So the plan's item is stale rather than outstanding, and patch 05 is already only the model map, the processor and the patch-size read.
+
+## The six branches are cut
+
+Item 1 of the remaining-work list, the part that survives after the diagnostics question: the split is now six stacked branches on the fork, each on upstream veRL main `3efe38c7`, in application order.
+
+    verl_engine_tp_packed          ac6dd230   tensor parallel on the packed stream, plus the compat pieces
+    verl_engine_pp                 f0e9dff3   pipeline parallelism
+    verl_engine_sync_ep_lora_qat   8b7c95cb   expert stacks, LoRA and QAT in the weight sync
+    verl_engine_cp                 f26c72d1   context parallel over the packed stream
+    verl_kimi_k3                   5e7d4497   the Kimi K3 and Kimi Linear surface
+    verl_metrics_logprob_diff      4f0a255b   the rollout log-probability difference metric
+
+Stripping the diagnostics needed no separate step. They live entirely in patch 00, which is applied last precisely so that 01 to 06 never carry them, and each of the six greps zero for the local markers (`VERL_LOCAL`, `partial_dtensor`, `BFX9`). Building the branches from the patches therefore produces trees that are clean by construction rather than by removal, which is also why the integration branch can keep carrying them.
+
+Every commit message is written fresh and none carries a trailer, checked by grep over the whole range.
+
+The stack top was tested the same way the stages were, with the vllm shim overlaid for the run and then reverted so the branch stays clean: 24 passed, 6 skipped, the same as stage 06 through the patch path.
+
+What is deliberately not done here: nothing is filed. The branches exist on the fork and the PR bodies are not written.
