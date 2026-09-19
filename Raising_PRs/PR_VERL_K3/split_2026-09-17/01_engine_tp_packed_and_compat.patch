@@ -43,10 +43,10 @@ index 00000000..4078106a
 +    unittest.main()
 diff --git a/tests/workers/test_torchtitan_engine_config_fields.py b/tests/workers/test_torchtitan_engine_config_fields.py
 new file mode 100644
-index 00000000..669de523
+index 00000000..eff83bad
 --- /dev/null
 +++ b/tests/workers/test_torchtitan_engine_config_fields.py
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,44 @@
 +# Copyright 2024 Bytedance Ltd. and/or its affiliates
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,30 +87,16 @@ index 00000000..669de523
 +        self.assertIs(load_in_hf, False)
 +
 +
-+class TestContextParallelBackendIsCheckedByTheConfig(unittest.TestCase):
-+    """The engine's transform refuses an unknown backend too; this is the earlier gate."""
-+
-+    def test_the_two_backends_are_accepted(self):
-+        for backend in ("ulysses", "allgather_kv"):
-+            self.assertEqual(
-+                TorchtitanEngineConfig(context_parallel_backend=backend).context_parallel_backend,
-+                backend,
-+            )
-+
-+    def test_an_unknown_backend_is_refused_with_its_name(self):
-+        with self.assertRaises(AssertionError) as caught:
-+            TorchtitanEngineConfig(context_parallel_backend="ring")
-+        self.assertIn("ring", str(caught.exception))
 +
 +
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/tests/workers/test_torchtitan_engine_cp_config.py b/tests/workers/test_torchtitan_engine_cp_config.py
 new file mode 100644
-index 00000000..6f074924
+index 00000000..117ee83e
 --- /dev/null
 +++ b/tests/workers/test_torchtitan_engine_cp_config.py
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,123 @@
 +# Copyright 2025 Bytedance Ltd. and/or its affiliates
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -146,7 +132,12 @@ index 00000000..6f074924
 +# torchtitan is not on the path -- same guard as the sibling engine tests.
 +pytest.importorskip("torchtitan")
 +
-+from torchtitan.config import ContextParallelLoadBalancerConfig  # noqa: E402
++# torchtitan models context_parallel_load_balancer two ways: a dataclass on trees
++# that define ContextParallelLoadBalancerConfig, and a plain str | None elsewhere.
++try:  # noqa: E402
++    from torchtitan.config import ContextParallelLoadBalancerConfig  # noqa: E402
++except ImportError:  # noqa: E402
++    ContextParallelLoadBalancerConfig = None  # noqa: E402
 +from torchtitan.models.llama3.config_registry import llama3_debugmodel  # noqa: E402
 +from torchtitan.protocols.model import BaseModel  # noqa: E402
 +
@@ -161,8 +152,11 @@ index 00000000..6f074924
 +    def test_cp_pins_the_load_balancer_to_none(self):
 +        compat = _compat()
 +        balancer = compat("spmd_types", True)["context_parallel_load_balancer"]
-+        self.assertIsInstance(balancer, ContextParallelLoadBalancerConfig)
-+        self.assertIsNone(balancer.load_balancer_type)
++        if ContextParallelLoadBalancerConfig is None:
++            self.assertIsNone(balancer)
++        else:
++            self.assertIsInstance(balancer, ContextParallelLoadBalancerConfig)
++            self.assertIsNone(balancer.load_balancer_type)
 +
 +    def test_no_balancer_key_without_cp(self):
 +        compat = _compat()
@@ -388,7 +382,7 @@ index 63783752..928daa74 100644
      spmd_backend: str = "spmd_types"
      activation_checkpoint: str = "selective"
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 6a4fd3c7..e950d809 100644
+index 6a4fd3c7..9e61d037 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -17,6 +17,8 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -400,7 +394,7 @@ index 6a4fd3c7..e950d809 100644
  import os
  import re
  from contextlib import nullcontext
-@@ -26,14 +28,34 @@ import torch
+@@ -26,14 +28,42 @@ import torch
  import torch.distributed
  from tensordict import TensorDict
  from torch.distributed.tensor import DTensor
@@ -428,16 +422,24 @@ index 6a4fd3c7..e950d809 100644
 +    if "spmd_backend" in fields:
 +        kwargs["spmd_backend"] = spmd_backend
 +    if cp_enabled:
-+        from torchtitan.config import ContextParallelLoadBalancerConfig
-+
-+        kwargs["context_parallel_load_balancer"] = ContextParallelLoadBalancerConfig(load_balancer_type=None)
++        # torchtitan models this field two ways: a ContextParallelLoadBalancerConfig on
++        # trees that define it, and a plain str | None elsewhere. Pin the balancer off in
++        # whichever shape the tree exposes.
++        try:
++            from torchtitan.config import ContextParallelLoadBalancerConfig
++        except ImportError:
++            kwargs["context_parallel_load_balancer"] = None
++        else:
++            kwargs["context_parallel_load_balancer"] = ContextParallelLoadBalancerConfig(
++                load_balancer_type=None
++            )
 +    return kwargs
 +
 +from verl.utils.ulysses import gather_outputs_and_unpad, ulysses_pad
  from torchtitan.distributed.parallel_dims import ParallelDims
  from torchtitan.train import Trainer
  
-@@ -130,8 +152,38 @@ class TorchTitanEngine(BaseEngine):
+@@ -130,8 +160,38 @@ class TorchTitanEngine(BaseEngine):
          torchtitan_name, torchtitan_flavor = derive_torchtitan_name_and_flavor(self.model_config.hf_config)
  
          # Get ModelSpec from model registry
@@ -478,7 +480,7 @@ index 6a4fd3c7..e950d809 100644
  
          optimizer = OptimizersContainer.Config(
              param_groups=[
-@@ -163,16 +215,27 @@ class TorchTitanEngine(BaseEngine):
+@@ -163,16 +223,27 @@ class TorchTitanEngine(BaseEngine):
              data_parallel_shard_degree=self.engine_config.data_parallel_shard_size,
              fsdp_reshard_after_forward=self.engine_config.reshard_after_forward,
              tensor_parallel_degree=self.engine_config.tensor_parallel_size,
@@ -509,7 +511,7 @@ index 6a4fd3c7..e950d809 100644
          )
          compile_config = CompileConfig(enable=self.engine_config.use_torch_compile)
          training_kwargs = {}
-@@ -212,6 +275,17 @@ class TorchTitanEngine(BaseEngine):
+@@ -212,6 +283,17 @@ class TorchTitanEngine(BaseEngine):
              loss=CrossEntropyLoss.Config(),
          )
          self.trainer = Trainer(self.config)
@@ -527,7 +529,7 @@ index 6a4fd3c7..e950d809 100644
  
          self._init_device_mesh()
  
-@@ -298,17 +372,10 @@ class TorchTitanEngine(BaseEngine):
+@@ -298,17 +380,10 @@ class TorchTitanEngine(BaseEngine):
  
      def _init_device_mesh(self):
          """Initialize the device mesh for TorchTitan style parallelism."""
@@ -549,7 +551,7 @@ index 6a4fd3c7..e950d809 100644
  
          # Mirror torchtitan's init_distributed (which verl bypasses): disable autograd
          # multithreading so backward-thread activation-checkpoint recompute can access the
-@@ -349,13 +416,25 @@ class TorchTitanEngine(BaseEngine):
+@@ -349,13 +424,25 @@ class TorchTitanEngine(BaseEngine):
          raise NotImplementedError
  
      def _get_data_parallel_mesh(self):
@@ -582,7 +584,7 @@ index 6a4fd3c7..e950d809 100644
  
      def forward_backward_batch(self, data: TensorDict, loss_function: Callable, forward_only=False):
          """Perform forward and optionally backward pass on a batch."""
-@@ -413,10 +492,42 @@ class TorchTitanEngine(BaseEngine):
+@@ -413,10 +500,42 @@ class TorchTitanEngine(BaseEngine):
          else:
              # Non-PP forward. train_context (SPMD mesh) is set by the caller.
              assert len(model_parts) == 1
@@ -598,9 +600,9 @@ index 6a4fd3c7..e950d809 100644
 +                    pred = pred.unsqueeze(0)
 +            else:
 +                pred = model_parts[0](inputs, **extra_inputs, **extra_kwargs)
- 
-+        return self._finish_pred(pred)
 +
++        return self._finish_pred(pred)
+ 
 +    def _finish_pred(self, pred: torch.Tensor) -> torch.Tensor:
 +        """Bring a stage's logits to the layout the loss side expects."""
 +        parallel_dims = self.parallel_dims
@@ -626,7 +628,7 @@ index 6a4fd3c7..e950d809 100644
          return pred
  
      def forward_step(self, micro_batch: TensorDict, loss_function, forward_only):
-@@ -513,14 +624,7 @@ class TorchTitanEngine(BaseEngine):
+@@ -513,14 +632,7 @@ class TorchTitanEngine(BaseEngine):
          parent_dir = os.path.dirname(local_path)
          self.checkpointer.folder = parent_dir
  
@@ -642,7 +644,7 @@ index 6a4fd3c7..e950d809 100644
  
          torch.distributed.barrier()
          if self._is_offload_param:
-@@ -674,6 +778,62 @@ class TorchTitanEngine(BaseEngine):
+@@ -674,6 +786,62 @@ class TorchTitanEngine(BaseEngine):
          return _gen(), None
  
  
@@ -705,7 +707,7 @@ index 6a4fd3c7..e950d809 100644
  class EngineEvalModeCtx(BaseEngineCtx):
      def __init__(self, engine: TorchTitanEngine, **kwargs):
          super().__init__(engine=engine, mode="eval", **kwargs)
-@@ -773,6 +933,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -773,6 +941,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          # dict as extra_inputs are not forwarded to other stages in PP, but
          # extra_kwargs are.
          extra_kwargs: dict[str, Any] = {"attention_masks": attention_mask}
@@ -714,7 +716,7 @@ index 6a4fd3c7..e950d809 100644
          if self.parallel_dims.cp_enabled:
              input_ids, labels, extra_kwargs = prepare_context_parallel_input(
                  input_ids,
-@@ -782,10 +944,63 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -782,10 +952,63 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                  self.trainer.device,
                  self.trainer.config.parallelism.context_parallel_load_balancer,
              )
@@ -778,7 +780,7 @@ index 6a4fd3c7..e950d809 100644
          return input_ids, extra_inputs, extra_kwargs, output_args
  
      def prepare_model_outputs(self, logits, output_args, micro_batch: TensorDict):
-@@ -796,6 +1011,12 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -796,6 +1019,12 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          temperature = micro_batch["temperature"]
          calculate_entropy = tu.get_non_tensor_data(data=micro_batch, key="calculate_entropy", default=False)
          labels = output_args["labels"]

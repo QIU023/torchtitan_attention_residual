@@ -485,10 +485,10 @@ index 65f528bb..8c447197 100644
                  # Gemma4 uses standard 1D RoPE -> no get_rope_index to bind. Disable its strict
                  # per-image-token check (which Qwen's processor lacks).
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 225cd688..04994495 100644
+index 6d32f5d1..a2c10fd7 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
-@@ -86,6 +86,7 @@ def _context_parallel_transform(model_config, backend: str) -> ContextParallelTr
+@@ -94,6 +94,7 @@ def _context_parallel_transform(model_config, backend: str) -> ContextParallelTr
      Flex attention takes the Ulysses backend by default: it keeps the attention masks
      global, whereas the all-gather-KV backend shards the flex BlockMask through torch's
      compiled ``create_block_mask``, which the colocated worker process cannot compile.
@@ -496,7 +496,7 @@ index 225cd688..04994495 100644
      Subtrees whose tokens are not sharded on the cp axis (a vision tower) keep their
      local attention.
      """
-@@ -101,6 +102,14 @@ def _context_parallel_transform(model_config, backend: str) -> ContextParallelTr
+@@ -109,6 +110,14 @@ def _context_parallel_transform(model_config, backend: str) -> ContextParallelTr
      if not any(True for _ in model_config.traverse(FlexInnerAttention.Config)):
          raise ValueError("context parallel needs attn_type 'flex': the CP backends are flex based")
      mapping: dict = {FlexInnerAttention.Config: flex_backends[backend]}
@@ -511,7 +511,7 @@ index 225cd688..04994495 100644
      return ContextParallelTransform(inner_attention=mapping, exclude_fqn_prefixes=("vision_encoder",))
  
  from verl.utils.ulysses import gather_outputs_and_unpad, ulysses_pad
-@@ -256,9 +265,11 @@ class TorchTitanEngine(BaseEngine):
+@@ -264,9 +273,11 @@ class TorchTitanEngine(BaseEngine):
          from .utils import _import_torchtitan_model_module
  
          model_module = _import_torchtitan_model_module(torchtitan_name)
@@ -526,7 +526,7 @@ index 225cd688..04994495 100644
          try:
              model_spec = model_module.model_registry(
                  torchtitan_flavor, attn_backend=self.engine_config.attn_type
-@@ -712,7 +723,7 @@ class TorchTitanEngine(BaseEngine):
+@@ -720,7 +731,7 @@ class TorchTitanEngine(BaseEngine):
          if isinstance(pred, DTensor):
              pred = pred.full_tensor()
          # Under tensor parallel the head's logits come back as this rank's shard:
@@ -535,7 +535,7 @@ index 225cd688..04994495 100644
          # the sequence (a replicated head on a sequence-parallel stream). The loss
          # side works on full [T, V] logits, so gather the sharded dim over the tp
          # group -- before the CP gather below, tp being the inner split.
-@@ -1188,6 +1199,8 @@ def _guard_fsdp_grad_upcast() -> None:
+@@ -1196,6 +1207,8 @@ def _guard_fsdp_grad_upcast() -> None:
      FSDPParam.to_accumulated_grad_if_needed = guarded
  
  
@@ -544,7 +544,7 @@ index 225cd688..04994495 100644
  # Multimodal tensors keep their own leading dimension (images, not the folded stream).
  _MULTIMODAL_KEYS = ("pixel_values", "grid_thw", "pixel_values_videos", "grid_thw_videos", "special_tokens")
  
-@@ -1233,6 +1246,27 @@ def pipeline_token_budget(configured: int | None, tokens: int) -> int:
+@@ -1241,6 +1254,27 @@ def pipeline_token_budget(configured: int | None, tokens: int) -> int:
      return budget
  
  
@@ -572,7 +572,7 @@ index 225cd688..04994495 100644
  def _squeeze_folded(extra: dict) -> dict:
      """Fold ``[1, T]`` stream tensors to ``[T]``; multimodal tensors keep their batch axis."""
      return {
-@@ -1265,11 +1299,11 @@ def _cu_seqlens_from_positions(positions):
+@@ -1273,11 +1307,11 @@ def _cu_seqlens_from_positions(positions):
  
  
  def _titan_lora_wrappers(module):
@@ -586,7 +586,7 @@ index 225cd688..04994495 100644
      list would claim targets that were never wrapped.
      """
      found = {}
-@@ -1402,7 +1436,7 @@ def _adapter_state_dict(wrappers, hf_names):
+@@ -1410,7 +1444,7 @@ def _adapter_state_dict(wrappers, hf_names):
  
      Safe to ship the raw factors because the base mapping this borrows names from is a
      pure RENAME for every LoRA target. The only value transform on the single-tensor
@@ -595,7 +595,7 @@ index 225cd688..04994495 100644
      structurally, so no wrapped module is ever reshaped. Routed experts are likewise
      out of reach -- they are 3-D GroupedExperts parameters, not ``nn.Linear``.
      """
-@@ -1420,7 +1454,7 @@ def _warn_wrapped_bases_missing(params, hf_names) -> None:
+@@ -1428,7 +1462,7 @@ def _warn_wrapped_bases_missing(params, hf_names) -> None:
      if missing:
          # Reported, not silent -- and a warning rather than a raise, which is a real
          # distinction here. Two absences are legitimate: under PP a rank does not own
@@ -604,7 +604,7 @@ index 225cd688..04994495 100644
          # destination at all because to_hf drops what the original architecture has no
          # key for. Raising would break both.
          #
-@@ -1542,6 +1576,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1550,6 +1584,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
          assert pad_mode == DatasetPadMode.NO_PADDING, f"pad_mode {pad_mode} not supported"
  
          multi_modal_inputs = extract_multi_modal_inputs(micro_batch.get("multi_modal_inputs", []))
@@ -616,7 +616,7 @@ index 225cd688..04994495 100644
          input_ids = micro_batch["input_ids"]
          position_ids = micro_batch["position_ids"]
          output_args = {}
-@@ -1662,7 +1701,7 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1670,7 +1709,7 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                      extra_kwargs["attention_masks"] = attention_mask
          if self.parallel_dims.cp_enabled:
              # The model owns its context-parallel preprocessing on this tree: the masks
@@ -625,7 +625,7 @@ index 225cd688..04994495 100644
              # the folded [T] stream with the global positions and take back this
              # rank's inputs and kwargs. Labels stay FULL length: verl's loss path
              # (nested no-padding log_prob / loss_mask handling) assumes full
-@@ -1675,6 +1714,10 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1683,6 +1722,10 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                  "labels": labels.squeeze(0),
                  "positions": position_ids.squeeze(0),
              }
@@ -636,7 +636,7 @@ index 225cd688..04994495 100644
              local_inputs, _labels_local, extra_kwargs = self.module[0].preprocess_inputs(
                  batch,
                  parallel_dims=self.parallel_dims,
-@@ -1683,8 +1726,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1691,8 +1734,8 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
              input_ids = local_inputs.unsqueeze(0)
              extra_inputs = {}
          elif self._folded_token_stream:
@@ -647,7 +647,7 @@ index 225cd688..04994495 100644
              # documents of a micro-batch) gets them explicitly; a document starts where
              # the positions restart at 0.
              if self._forward_takes_cu_seqlens:
-@@ -1693,14 +1736,13 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1701,14 +1744,13 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                      extra_kwargs["cu_seqlens"] = cu_seqlens
              if extra_kwargs.get("attention_masks") is not None and hasattr(self.module[0], "get_attention_masks"):
                  # The model builds its own masks from the [T] positions: current trees key

@@ -33,7 +33,12 @@ yaml = pytest.importorskip("yaml")
 # torchtitan is not on the path -- same guard as the sibling engine tests.
 pytest.importorskip("torchtitan")
 
-from torchtitan.config import ContextParallelLoadBalancerConfig  # noqa: E402
+# torchtitan models context_parallel_load_balancer two ways: a dataclass on trees
+# that define ContextParallelLoadBalancerConfig, and a plain str | None elsewhere.
+try:  # noqa: E402
+    from torchtitan.config import ContextParallelLoadBalancerConfig  # noqa: E402
+except ImportError:  # noqa: E402
+    ContextParallelLoadBalancerConfig = None  # noqa: E402
 from torchtitan.models.llama3.config_registry import llama3_debugmodel  # noqa: E402
 from torchtitan.protocols.model import BaseModel  # noqa: E402
 
@@ -48,8 +53,11 @@ class TestParallelismCompatKwargs(unittest.TestCase):
     def test_cp_pins_the_load_balancer_to_none(self):
         compat = _compat()
         balancer = compat("spmd_types", True)["context_parallel_load_balancer"]
-        self.assertIsInstance(balancer, ContextParallelLoadBalancerConfig)
-        self.assertIsNone(balancer.load_balancer_type)
+        if ContextParallelLoadBalancerConfig is None:
+            self.assertIsNone(balancer)
+        else:
+            self.assertIsInstance(balancer, ContextParallelLoadBalancerConfig)
+            self.assertIsNone(balancer.load_balancer_type)
 
     def test_no_balancer_key_without_cp(self):
         compat = _compat()

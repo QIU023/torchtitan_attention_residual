@@ -38,3 +38,25 @@ So the first upstream-bound PR, as the split stands, ships context-parallel test
 ## What it does not mean
 
 The split is not wrong about where the *code* goes. Patches 04 and 05 hold the CP implementation, and the full stack is green at 24 passed. What is misassigned is test content: a line-level split put an early form of two CP test files into the first patch. The fix is a reassignment inside the kit, moving those test lines from patch 01 to patch 04, not a change to the implementation.
+
+## Fixed, and every stage is green
+
+Two changes, one to the engine and one to the split's assignment.
+
+**The engine change.** `_parallelism_compat_kwargs` built `ContextParallelLoadBalancerConfig(load_balancer_type=None)` unconditionally under CP. The two torchtitans model that field differently: upstream `torchtitan/config/configs.py:243` has `context_parallel_load_balancer: str | None = "headtail"`, while the fork defines a dataclass for it at `configs.py:130`. The import was already function-local, so importing the engine on upstream worked and only the CP path would have raised; it now pins the balancer off in whichever shape the tree exposes, which is the same defensive pattern the function already used for `spmd_backend`. Committed to `kimi_k3_integration_rebased` as `b5a79e15`.
+
+**The assignment change.** `TestContextParallelBackendIsCheckedByTheConfig` exercises `TorchtitanEngineConfig(context_parallel_backend=...)`, a field patch 04 adds, and it sat in patch 01. It is now split out of the whole-file assignment: items 40 to 53 of `test_torchtitan_engine_config_fields.py` travel with 04, the rest stays in 01, with the file's trailing blanks and `if __name__` footer kept in 01 so stage 01's file is still valid.
+
+Regenerating the kit on the new head needed a remap, which is the step the manifest describes for every head move. The engine file's item list went from 2170 to 2178; a full alignment including context items, so that `MOVES` anchors map too, carried 2165 of them, the eleven new items are the compat rewrite and take patch 01's ordinal from the lines they replace, and `VARIANTS` and `MOVES` were remapped with the same table. The builder's own check is what makes this safe to do mechanically: it reconstructs the final stage and compares it to HEAD, and a first attempt that remapped only `ASSIGN` and left `MOVES` on the old indices was caught by exactly that, 31 lines out of place.
+
+Patch sizes move the way conservation says they should: patch 01 went 858 to 868 with the engine change, then 868 to 854 when the test class left; patch 04 went 801 to 826 taking it. Every other patch is byte-identical in size to the pre-change build.
+
+    stage                          result
+    01_engine_tp_packed_and_compat   17 passed
+    02_engine_pipeline               22 passed, 1 skipped
+    03_engine_ep_lora_qat_sync       22 passed, 4 skipped
+    04_engine_context_parallel       19 passed, 6 skipped
+    05_kimi_k3                       24 passed, 6 skipped
+    06_metrics_logprob_diff          24 passed, 6 skipped
+
+So each upstream-bound patch now passes its own tests standing alone on upstream torchtitan, which is the tree a reviewer runs them against.

@@ -504,7 +504,7 @@ index 00000000..b7dcfe44
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 22c6b981..b164adb1 100644
+index ad574a3d..6ff67f34 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -16,6 +16,7 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -523,8 +523,8 @@ index 22c6b981..b164adb1 100644
  
  
  def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
-@@ -55,6 +57,29 @@ def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
-         kwargs["context_parallel_load_balancer"] = ContextParallelLoadBalancerConfig(load_balancer_type=None)
+@@ -63,6 +65,29 @@ def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
+             )
      return kwargs
  
 +
@@ -553,7 +553,7 @@ index 22c6b981..b164adb1 100644
  from verl.utils.ulysses import gather_outputs_and_unpad, ulysses_pad
  from torchtitan.distributed.parallel_dims import ParallelDims
  from torchtitan.train import Trainer
-@@ -79,6 +104,7 @@ from verl.workers.engine.torchtitan.utils import (
+@@ -87,6 +112,7 @@ from verl.workers.engine.torchtitan.utils import (
      derive_torchtitan_name_and_flavor,
      enable_fsdp_gradient_division,
      get_attention_masks,
@@ -561,7 +561,7 @@ index 22c6b981..b164adb1 100644
  )
  
  from ..base import BaseEngine, BaseEngineCtx, EngineRegistry
-@@ -294,6 +320,9 @@ class TorchTitanEngine(BaseEngine):
+@@ -302,6 +328,9 @@ class TorchTitanEngine(BaseEngine):
          )
          compile_config = CompileConfig(enable=self.engine_config.use_torch_compile)
          training_kwargs = {}
@@ -571,7 +571,7 @@ index 22c6b981..b164adb1 100644
          if self.engine_config.max_seq_len is not None:
              training_kwargs["seq_len"] = self.engine_config.max_seq_len
          if self.engine_config.offload_policy or self.engine_config.forward_only:
-@@ -329,6 +358,15 @@ class TorchTitanEngine(BaseEngine):
+@@ -337,6 +366,15 @@ class TorchTitanEngine(BaseEngine):
              # verl uses its own loss function and ignores this one.
              loss=CrossEntropyLoss.Config(),
          )
@@ -587,7 +587,7 @@ index 22c6b981..b164adb1 100644
          self.trainer = Trainer(self.config)
          # Decoders on torchtitan main take a folded [T] token stream and own their input
          # preprocessing (masks, CP shards, layouts); probed on the model, not on its name.
-@@ -826,9 +864,19 @@ class TorchTitanEngine(BaseEngine):
+@@ -834,9 +872,19 @@ class TorchTitanEngine(BaseEngine):
      def get_per_tensor_param_shard(self, **kwargs):
          """Yield this rank's *local* shard ``(hf_name, local_flat_bf16, ShardSpec)`` instead of the full tensor."""
          self._assert_shard_export_supported()
@@ -608,7 +608,7 @@ index 22c6b981..b164adb1 100644
  
          # Expert stacks go WHOLE with a slot table; to_hf would name only the local experts, breaking lockstep.
          stacks = {}
-@@ -860,53 +908,149 @@ class TorchTitanEngine(BaseEngine):
+@@ -868,53 +916,149 @@ class TorchTitanEngine(BaseEngine):
  
          return _gen(), None
  
@@ -791,7 +791,7 @@ index 22c6b981..b164adb1 100644
  
      def _iter_pp_gathered(self, gen, device):
          """Stream the stages in order: the owning rank yields its own tensors and broadcasts them, the
-@@ -935,6 +1079,36 @@ class TorchTitanEngine(BaseEngine):
+@@ -943,6 +1087,36 @@ class TorchTitanEngine(BaseEngine):
                      torch.distributed.broadcast(t, src=src, group=group)
                      yield name, t
  
@@ -828,7 +828,7 @@ index 22c6b981..b164adb1 100644
  
  _FSDP_GRAD_UPCAST_GUARDED = False
  
-@@ -1049,6 +1223,234 @@ def _cu_seqlens_from_positions(positions):
+@@ -1057,6 +1231,234 @@ def _cu_seqlens_from_positions(positions):
      return torch.cat((starts, starts.new_full((1,), num_tokens))).to(torch.int32)
  
  
