@@ -229,6 +229,14 @@ Three adoption surfaces, in priority order:
   `torchtitan/models/kimi_k3/` (it moved out of `experiments/` during the
   09-12/09-16 rebuilds): FSDP2/HSDP + TP + EP + CP + PP all run, CP through
   the maintainers' #4639 stack, PP through the model-local adapter.
+- **attention-gym is not a submodule.** It was removed 2026-09-19: the checkout
+  sat on `pr453`, an unmerged upstream PR branch of drisspg's from 09-02, while
+  `torchtitan/pyproject.toml` pins `attn-gym[linear] @
+  git+https://github.com/meta-pytorch/attention-gym.git@main`, and the older
+  checkout lacked `ContextParallelRouting`, which stopped the tree's K3 GPU
+  tests from even collecting. It is now an ordinary venv package installed from
+  that pin; reinstall with the same line rather than re-adding a submodule. The
+  old branch is preserved as `pr453` on the fork.
 - Submodule `sglang/` (fork QIU023/sglang, branch
   `attention_residual_inference`): Block AttnRes two-phase inference overlay +
   VLM serving + PR branches (pr1/pr7/pr8/pr15 pushed).

@@ -23,3 +23,13 @@ With upstream attention-gym on the path and `renderers==0.1.11` installed:
 So the K3 GPU surface of the current integration tree passes here, and until tonight nothing on this box could have told anyone that, because the suite stopped at import.
 
 The verification used `git archive upstream/main` into `/tmp/ag_up` and `PYTHONPATH`, deliberately, so that no submodule pointer or branch state changed while the diagnosis was still open. Making it permanent is a separate decision: the fork's `attention-gym` checkout is on `pr453`, the superproject records a different commit again, and moving either is state the user tracks.
+
+## Resolved by removing the submodule
+
+The user's call: drop attention-gym from this repo entirely and take upstream from the venv, which is what `torchtitan/pyproject.toml` asks for in the first place.
+
+Done in that order, so the box was never left with neither working: upstream installed first (`pip install "attn-gym[linear] @ git+https://github.com/meta-pytorch/attention-gym.git@main"`, which replaced the editable `.pth` that pointed into the submodule), the K3 GPU tests re-run against it with no `PYTHONPATH` at 14 passed and 2 skipped, and only then `git submodule deinit` plus `git rm` and the `.gitmodules` section.
+
+Two checks before the removal. `/venv/vllm_k3`, the veRL environment, has no `attn_gym` at all, so nothing there depended on the path. And the branch the checkout sat on existed **only locally**: the fork carried `main` and `kda-fla-backend` and not `pr453`, so it was pushed to the fork first. It turns out not to be this line's work at all, `7c83f6c` is authored by drisspg and `git cherry` puts it outside upstream main, so `pr453` is an unmerged upstream PR branch that had been checked out and left there.
+
+After the removal the suites still read 14 passed, 2 skipped. `.git/modules/attention-gym` is deliberately left on disk: it costs a little space and holds the clone, and deleting it buys nothing.
