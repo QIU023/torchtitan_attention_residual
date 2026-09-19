@@ -75,6 +75,28 @@ The operation that differs is the sum of a token's top-k expert copies. Both pat
 
 The disagreement between the two dispatchers is smaller than either one's distance to the reference, so neither output is the more correct one and the difference is which of two bf16 roundings of the same sum each path takes. It becomes visible downstream because a router is a comparison: a perturbation below the layer's own bf16 floor still flips a near-tie, and the flip is discrete.
 
+The tables above establish that MoonEP does not change the result. What it is for is the load the standard dispatcher leaves on one rank, so both dispatchers were run on the same tokens with the same expert weights under two routings (4 ranks, 256 tokens per rank, top-k 4, 32 experts, `B = 8`):
+
+    routing    path                     max/mean   rows computed per rank        total rows
+    hot        standard all-to-all          4.00   4096, 0, 0, 0                       4096
+    hot        moonep (own + slots)         1.00   1024, 1024, 1024, 1024              4096
+    uniform    standard all-to-all          1.04   970, 1007, 1054, 1065               4096
+    uniform    moonep (own + slots)         1.12   1536, 1536, 1536, 1792              6400
+
+Under routing that sends every token to the experts homed on one rank, the standard path leaves three of four ranks idle while MoonEP is exactly even, with 3072 of the 4096 rows computed in other ranks' prefetch slots and the same total work. Under uniform routing MoonEP computes 6400 rows against 4096, because its static layout pads every row's token count to a multiple of 128 and this flavor averages 32 tokens per expert; at the released expert shape a row carries thousands of tokens and that granularity costs a fraction of a percent, so the figure is this flavor's rather than the transport's.
+
+End to end on the debug flavor, median forward plus backward per step over steps 2 to 10 on the shared warm cache:
+
+    cell              median fwd+bwd per step
+    dp4ep4_std                     5227.1 ms
+    dp4ep4_moonep                  5310.5 ms
+    dp2ep2_std                     5162.5 ms
+    dp2ep2_moonep                  5194.6 ms
+    dp2_std                        4286.0 ms
+    dp2_moonep_ep1                 4286.3 ms
+
+MoonEP is 1.6 percent slower at `dp 4 x ep 4` and 0.6 percent at `dp 2 x ep 2`, and the EP=1 fallback matches the standard path to 0.3 ms, which is the same code path. That is the expected sign here: this flavor's routing is near uniform, so the balancing has nothing to balance while the two EP-group barriers and the prefetch copies still cost. A size where routing is genuinely imbalanced is not something one node can show, so this PR claims correctness, wiring and the balance mechanism, not a speedup.
+
 ## Limitations
 
 The gradient table is one fp32 `[E, in, out]` tensor per projection per rank, since `launch_grad_reduce` addresses grad rows by global expert id and writes only this rank's span; at the released expert shape that is a physical row per expert on every rank. An allocation whose other spans are not physical (MoonEP's own distributed tensor) or a kernel entry that takes the span would remove it.
