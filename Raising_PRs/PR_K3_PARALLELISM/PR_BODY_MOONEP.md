@@ -75,15 +75,36 @@ The operation that differs is the sum of a token's top-k expert copies. Both pat
 
 The disagreement between the two dispatchers is smaller than either one's distance to the reference, so neither output is the more correct one and the difference is which of two bf16 roundings of the same sum each path takes. It becomes visible downstream because a router is a comparison: a perturbation below the layer's own bf16 floor still flips a near-tie, and the flip is discrete.
 
-The tables above establish that MoonEP does not change the result. What it is for is the load the standard dispatcher leaves on one rank, so both dispatchers were run on the same tokens with the same expert weights under two routings (4 ranks, 256 tokens per rank, top-k 4, 32 experts, `B = 8`):
+The tables above establish that MoonEP does not change the result. What it is for is the load the standard dispatcher leaves on one rank, so both dispatchers were run on the same tokens with the same expert weights, at K3-like width rather than the debug flavor's, under routing drawn from a Zipf distribution over experts with the same hot experts on every rank. 256 experts, top-k 8, $D = 1024$, four ranks, 64 own experts and 64 prefetch slots each:
 
-    routing    path                     max/mean   rows computed per rank        total rows
-    hot        standard all-to-all          4.00   4096, 0, 0, 0                       4096
-    hot        moonep (own + slots)         1.00   1024, 1024, 1024, 1024              4096
-    uniform    standard all-to-all          1.04   970, 1007, 1054, 1065               4096
-    uniform    moonep (own + slots)         1.12   1536, 1536, 1536, 1792              6400
+    4096 tokens per rank, 512 per expert
+     alpha  route max/mean  standard max/mean  moonep max/mean  standard rows  moonep rows
+       0.0           1.22               1.01             1.01         131072       147584
+       0.5           7.38               1.11             1.02         131072       146816
+       1.0          25.38               1.29             1.00         131072       145920
+       1.5          31.80               1.45             1.00         131072       150016
+       2.0          32.00               1.52             1.01         131072       153984
 
-Under routing that sends every token to the experts homed on one rank, the standard path leaves three of four ranks idle while MoonEP is exactly even, with 3072 of the 4096 rows computed in other ranks' prefetch slots and the same total work. Under uniform routing MoonEP computes 6400 rows against 4096, because its static layout pads every row's token count to a multiple of 128 and this flavor averages 32 tokens per expert; at the released expert shape a row carries thousands of tokens and that granularity costs a fraction of a percent, so the figure is this flavor's rather than the transport's.
+    8192 tokens per rank, 1024 per expert
+       0.0           1.17               1.01             1.00         262144       277248
+       1.0          25.13               1.29             1.01         262144       278016
+       2.0          32.00               1.53             1.00         262144       283136
+
+MoonEP holds the per-rank load at 1.00 to 1.02 across the sweep while the standard path climbs to 1.52. At the extreme, every token routed to the experts homed on one rank, the standard path reads 4.00 with three of four ranks idle and MoonEP reads 1.00 with the same total row count.
+
+The cost is the static layout: MoonEP pads every row's token count to a multiple of 128, which is 12.6 percent more rows at 512 tokens per expert and 5.8 percent at 1024. On the debug flavor, where the mean expert receives exactly 128 tokens, the same figure is 56 percent, so it is a function of how many padding units a row carries rather than a property of the transport.
+
+Four ranks understate what this removes. The standard path's rank-level imbalance is damped by the experts that share a rank, since the hot ones average out inside the rank before loads are compared across ranks. That damping is arithmetic on the routing alone, with no transport involved, and for the same routing above it reads:
+
+     ranks   experts/rank   alpha=1.0   alpha=2.0
+         4             64        1.29        1.53
+         8             32        1.43        2.00
+        16             16        2.30        2.39
+        32              8        3.71        4.40
+        64              4        6.93        8.28
+
+So the 1.5x this PR measures is the small end of the curve, and whether `B` slots still absorb the load where a K3-shaped expert count actually runs is a multi-node question this cannot answer.
+
 
 End to end on the debug flavor, median forward plus backward per step over steps 2 to 10 on the shared warm cache:
 
