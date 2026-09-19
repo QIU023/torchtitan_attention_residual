@@ -60,3 +60,15 @@ Patch sizes move the way conservation says they should: patch 01 went 858 to 868
     06_metrics_logprob_diff          24 passed, 6 skipped
 
 So each upstream-bound patch now passes its own tests standing alone on upstream torchtitan, which is the tree a reviewer runs them against.
+
+## The capability-probe item is already done
+
+The plan lists, as a step before any draft PR, replacing three flags keyed on `torchtitan_name == "kimi_k3"` with capability probes. Nothing records it as done, so it was on tonight's list. It is done, and has been for some time: the branch carries no `torchtitan_name == "kimi_k3"` anywhere, and `torchtitan_name` survives only to pick the model module.
+
+The three behaviours are each probed now:
+
+- the folded `[T]` token stream, at `transformer_impl.py:461-466`, as `type(model_parts[0]).preprocess_inputs is not BaseModel.preprocess_inputs`, with the comment saying in as many words that it is "probed on the model, not on its name", and read back at the two use sites through `getattr(module, "folded_token_stream", False)`;
+- the context-parallel transform, chosen by `_context_parallel_transform(model_config, backend)` from the configured backend string;
+- the contiguous rank-ordered CP shards, through `_parallelism_compat_kwargs` pinning the balancer off whenever CP is on, for any model.
+
+Three mentions of `kimi_k3` remain in the engine file and none is a branch on the name: two are imports of the KDA classes inside the CP-KDA backend, and one is a comment. So the plan's item is stale rather than outstanding, and patch 05 is already only the model map, the processor and the patch-size read.
