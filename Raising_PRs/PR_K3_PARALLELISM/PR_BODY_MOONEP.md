@@ -63,16 +63,17 @@ torchrun --nproc_per_node=4 -m torchtitan.train --module kimi_k3 --config kimi_k
 
 Loss and grad norm at steps 1, 3 and 10.
 
-    cell                  step 1             step 3             step 10
-    dp2_std               12.52567/13.5000   7.62942/9.4375     3.33602/2.1719
-    dp2_moonep_ep1        12.52567/13.5000   7.62942/9.4375     3.33602/2.1719
-    dp2ep2_std            12.52567/13.5000   7.61268/9.3125     3.28545/2.1719
-    dp2ep2_moonep         12.52362/13.6250   7.76788/9.8750     3.27265/2.0312
-    dp2ep2_std_fresh      12.52567/13.5000   7.61268/9.3125     3.28545/2.1719
-    dp4_std               12.54318/13.3750   7.79811/10.8750    3.09682/1.8359
-    dp4ep4_std            12.54318/13.3125   7.77723/11.3125    3.17123/2.2969
-    dp4ep4_moonep         12.56253/13.2500   7.69331/11.3750    3.17237/2.0625
-    dp4ep4_std_fresh      12.54318/13.3125   7.77723/11.3125    3.17123/2.2969
+| cell | step 1 | step 3 | step 10 |
+| --- | --- | --- | --- |
+| `dp2_std` | `12.52567` / `13.5000` | `7.62942` / `9.4375` | `3.33602` / `2.1719` |
+| `dp2_moonep_ep1` | `12.52567` / `13.5000` | `7.62942` / `9.4375` | `3.33602` / `2.1719` |
+| `dp2ep2_std` | `12.52567` / `13.5000` | `7.61268` / `9.3125` | `3.28545` / `2.1719` |
+| `dp2ep2_moonep` | `12.52362` / `13.6250` | `7.76788` / `9.8750` | `3.27265` / `2.0312` |
+| `dp2ep2_std_fresh` | `12.52567` / `13.5000` | `7.61268` / `9.3125` | `3.28545` / `2.1719` |
+| `dp4_std` | `12.54318` / `13.3750` | `7.79811` / `10.8750` | `3.09682` / `1.8359` |
+| `dp4ep4_std` | `12.54318` / `13.3125` | `7.77723` / `11.3125` | `3.17123` / `2.2969` |
+| `dp4ep4_moonep` | `12.56253` / `13.2500` | `7.69331` / `11.3750` | `3.17237` / `2.0625` |
+| `dp4ep4_std_fresh` | `12.54318` / `13.3125` | `7.77723` / `11.3125` | `3.17123` / `2.2969` |
 
 Both floor rows are bitwise with their reference at every step, so the noise floor here is zero rather than small, and `moe_comm_backend="moonep"` at EP=1 is bitwise with the standard dispatcher, which is what that fallback claims to be.
 
@@ -84,10 +85,11 @@ A per-layer trace puts the origin in the first MoE layer. It receives a bitwise 
 
 The operation that differs is the sum of a token's top-k expert copies: core sums them with `deterministic_scatter_add` into a bf16 accumulator, MoonEP in its combine kernel. Against one fp32 dense reference on the same tokens and weights:
 
-    pair                          median rel   max rel
-    standard vs fp32 reference     4.649e-03   5.648e-03
-    moonep vs fp32 reference       4.458e-03   5.478e-03
-    standard vs moonep             2.913e-03   3.904e-03
+| pair | median rel | max rel |
+| --- | ---: | ---: |
+| standard against the fp32 reference | `4.649e-03` | `5.648e-03` |
+| moonep against the fp32 reference | `4.458e-03` | `5.478e-03` |
+| standard against moonep | `2.913e-03` | `3.904e-03` |
 
 The two dispatchers disagree by less than either one's distance to the reference, so neither is the more correct and the difference is which bf16 rounding of the same sum each takes. It becomes visible downstream because a router is a comparison, and a perturbation below the layer's own bf16 floor still flips a near-tie.
 
@@ -95,10 +97,11 @@ So the tables above say MoonEP does not change the result. What it is for is a c
 
 The table below checks that this integration preserves it, on the same tokens and weights with only the dispatcher changed, at 256 experts, top-k 8, `D` 1024, four ranks, 4096 tokens per rank, under Zipf routing with the same hot experts on every rank:
 
-    alpha  route max/mean  standard max/mean  moonep max/mean  standard rows  moonep rows
-      0.0           1.22               1.01             1.01         131072       147584
-      1.0          25.38               1.29             1.00         131072       145920
-      2.0          32.00               1.52             1.01         131072       153984
+| alpha | route max/mean | standard max/mean | moonep max/mean | standard rows | moonep rows |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.0 | 1.22 | 1.01 | 1.01 | 131072 | 147584 |
+| 1.0 | 25.38 | 1.29 | 1.00 | 131072 | 145920 |
+| 2.0 | 32.00 | 1.52 | 1.01 | 131072 | 153984 |
 
 MoonEP holds the per-rank load at 1.00 to 1.02 while the standard path climbs to 1.52. At the extreme, every token routed to one rank's experts, the standard path reads 4.00 with three ranks idle and MoonEP reads 1.00. The same sweep at 8192 tokens per rank reads the same.
 
@@ -110,12 +113,13 @@ The static shapes also remove a per-layer host synchronization. `AllToAllTokenDi
 
 End to end on the debug flavor, median forward plus backward per step over steps 2 to 10 on the shared warm cache:
 
-    cell              median fwd+bwd per step
-    dp4ep4_std                     5227.1 ms
-    dp4ep4_moonep                  5310.5 ms
-    dp2ep2_std                     5162.5 ms
-    dp2ep2_moonep                  5194.6 ms
-    dp2_moonep_ep1                 4286.3 ms
+| cell | median fwd+bwd per step |
+| --- | ---: |
+| `dp4ep4_std` | 5227.1 ms |
+| `dp4ep4_moonep` | 5310.5 ms |
+| `dp2ep2_std` | 5162.5 ms |
+| `dp2ep2_moonep` | 5194.6 ms |
+| `dp2_moonep_ep1` | 4286.3 ms |
 
 MoonEP is 1.6 percent slower at `dp 4 x ep 4` and 0.6 percent at `dp 2 x ep 2`. The EP=1 fallback matches the standard path to 0.3 ms, on the same code path.
 
@@ -133,10 +137,19 @@ Expert parallelism must cover a rank's whole expert chunk (`efsdp == 1`) and `dp
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_moon_ep_dispatcher.py tests/unit_tests/cpu/test_ep_token_dispatcher_capacity.py -q` (11 passed; the import-guard case skips where the package is installed): spec selection and latent sizing, the EP=1 fallback, the import guard, the mesh precondition against real `ParallelDims` meshes on four ranks covering the accepted case and both refusals, and the capacity fill after CP and TP with its refusals. Adding `tests/unit_tests/cpu/test_inference_moe.py` reads 16 passed. The scoped pre-commit hooks pass on the changed files and `pyrefly` reports the same errors on the branch and on main, none in these files.
-- `pytest tests/unit_tests/gpu/test_kimi_k3_moon_ep.py -q` (2 passed on two H200s and on the 4 x H100 box): the dispatcher and the expert tables with the real package, forced-hot and uniform routing, outputs, input gradients and expert-row gradients against an fp32 reference; skipped where the package or multicast is missing.
-- 4 x H100 80GB SXM and 4 x H200, both NVSwitch with multicast on every GPU, moonep `2bd860b` with the cutlass line above: moonep's own suites pass on 2 and 4 ranks (planning, dispatch, combine, grad_reduce, prefetch, e2e), and the cells above run from one seed checkpoint.
-- Forced-hot routing at `dp 4 x ep 4` trains and fills the other ranks' prefetch slots; with the slot count below the bound, model build refuses it and names the bound (`MoonEP needs at least E / R = 8 prefetch slots to place every duplicated expert, got B=7`) rather than hanging. Table occupancy over all 23 MoE layers of one step: no layer puts a token in a row homed on another rank, and 19 of 23 place tokens in a prefetch slot.
+```
+pytest tests/unit_tests/cpu/test_kimi_k3_moon_ep_dispatcher.py \
+       tests/unit_tests/cpu/test_ep_token_dispatcher_capacity.py -q     11 passed
+pytest tests/unit_tests/gpu/test_kimi_k3_moon_ep.py -q                   2 passed
+```
+
+The CPU file covers what the spec selects, the EP=1 fallback, the import guard, the mesh precondition on real `ParallelDims` meshes with both refusals, and the capacity fill. The import-guard case skips where the package is installed.
+
+The on-device file runs the dispatcher and the expert tables with the real package under forced-hot and uniform routing, checking outputs, input gradients and expert-row gradients against an fp32 reference. It passed on two H200s and on the 4 x H100 box, and skips where the package or multicast is missing.
+
+MoonEP's own suites pass on 2 and 4 ranks on both boxes. The scoped pre-commit hooks pass on the changed files, and `pyrefly` reports the same errors on the branch and on main.
+
+Below the slot bound the model build refuses and names it, `MoonEP needs at least E / R = 8 prefetch slots to place every duplicated expert, got B=7`, rather than hanging. Over one step's 23 MoE layers no layer puts a token in a row homed on another rank, and 19 of them place tokens in a prefetch slot.
 
 --- PASTE END ---
 
