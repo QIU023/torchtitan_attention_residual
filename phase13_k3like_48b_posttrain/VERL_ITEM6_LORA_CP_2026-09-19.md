@@ -24,3 +24,19 @@ Worth recording separately: the chain reported `rc=0` for both cells and both ha
 ## Before that, the run did not start at all
 
 The first launch sat thirty minutes after "worker group kwargs" with every GPU at zero percent and no error. `matrix_scripts/verl_grpo_int0916_nd.sh:47` passes `ray_kwargs.ray_init.num_cpus=${RAY_CPUS:-24}` on a 64-core box, and `ray.available_resources()` showed all eight GPUs still available, which is the signature of a placement group that never formed. `RAY_CPUS=48` gets past it.
+
+## Item 8 re-run: the split lands, the export mapping does not
+
+With the parallel dims corrected to `FSDP_SIZE=8`, item 8 starts and then fails in the weight sync:
+
+    ValueError: KimiK3StateDictAdapter found TorchTitan keys without a mapping:
+      ['layers.0.feed_forward.w2.base_qdata', 'layers.0.feed_forward.w2.base_scale',
+       'layers.0.feed_forward.w1.base_qdata', 'layers.0.feed_forward.w3.base_qdata', ...]
+
+The half that 2026-09-17 closed is working. `FeedForward._FUSED_ENTRIES` is `("weight", "bias", "base_qdata", "base_scale")` and `_split_w13_on_save` splits the fused `w13.base_qdata` into `w1.base_qdata` and `w3.base_qdata` exactly as it splits the fused weight, which is why those two keys exist at all to be complained about.
+
+What is missing is the next step. `KimiK3StateDictAdapter` mentions `base_qdata` and `base_scale` zero times; its map carries only `.weight` keys, so the packed companions the split produces have nowhere to go. `w2` shows the same gap from the other direction: it is not fused, its packed keys never pass through the split, and they are equally unmapped.
+
+So item 8 is closed on the serialization and open on the export: a QLoRA model with packed weights cannot be synced to the rollout engine through this adapter, on this tree, today. That is a mapping to add rather than a design question, and it is not what the item's 09-17 note claims to have finished.
+
+Both re-runs therefore land the same way: the capability worked on the tree it was measured on, and does not work on the tree the branch now sits on. That is the whole reason the plan carries the caveat, and neither result was visible without re-running.
