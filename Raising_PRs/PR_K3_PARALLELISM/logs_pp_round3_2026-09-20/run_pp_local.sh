@@ -3,7 +3,8 @@
 # 8 x RTX 5060 Ti. Reference only (functional, structure of the comparison), never for the body.
 # Tree = pp_review4 worktree with probe_apply.py applied. Protocol as the body's: seed 42, deterministic,
 # one seed checkpoint per batch shape, fp32 total grad norm (GN_FP32), the reference accumulating like
-# the pipeline (NOSYNC_GA) and every other cell on a copy of the reference's warm compile cache.
+# the pipeline (NOSYNC_GA); a first reference run fills the compile cache and is discarded, the reference and
+# every other cell then run on copies of that finished cache (a cold compile is not the warm kernels here).
 set -u
 TT=/tmp/wt_pp4312
 S=/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad
@@ -75,7 +76,8 @@ PY
 seed c4_1024 $B4
 seed c4_2048 $B8
 echo "# 1024 tokens per step"
-( export NOSYNC_GA=1; cell dp1_ns 0 1 c4_1024 - $C4 $B4 $D 1 )               # the reference, and the warm cache
+( export NOSYNC_GA=1; cell dp1_ns_cold 0 1 c4_1024 - $C4 $B4 $D 1 )          # fills the cache; not the reference
+( export NOSYNC_GA=1; cell dp1_ns 0 1 c4_1024 dp1_ns_cold $C4 $B4 $D 1 )     # the reference: the same run on a copy of its own finished cache
 cell dp1 1 1 c4_1024 dp1_ns $C4 $B4 $D 1 &
 ( export MB_REVERSE=1; cell dp1_rev 2 1 c4_1024 dp1_ns $C4 $B4 $D 1 ) &
 cell pp2 3,4 2 c4_1024 dp1_ns $C4 $B4 $D 1 $P &
@@ -89,7 +91,8 @@ cell pp4vp2c 2,3,4,5 4 c4_1024 dp1_ns $C48 $B4 $D 1 $P4 &
 wait
 cell pp4vp2n 0,1,2,3 4 c4_1024 dp1_ns $C48N $B4 $D 1 $P4
 echo "# 2048 tokens per step, dp2"
-( export NOSYNC_GA=1; cell d2_dp2_ns 0,1 2 c4_2048 - $C4 $B8 $D 2 )
+( export NOSYNC_GA=1; cell d2_dp2_ns_cold 0,1 2 c4_2048 - $C4 $B8 $D 2 )
+( export NOSYNC_GA=1; cell d2_dp2_ns 0,1 2 c4_2048 d2_dp2_ns_cold $C4 $B8 $D 2 )
 cell d2_dp2 0,1 2 c4_2048 d2_dp2_ns $C4 $B8 $D 2 &
 cell d2_ep2 2,3 2 c4_2048 d2_dp2_ns $C4 $B8 $D 2 $E 2 &
 cell d2_pp2 4,5,6,7 4 c4_2048 d2_dp2_ns $C4 $B8 $D 2 $P &
