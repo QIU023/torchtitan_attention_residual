@@ -1,0 +1,21 @@
+seed_c4_2048 rc=0
+# 1024 tokens per step
+dp1_ns rc=0 steps=100 seed_loaded=1
+pp2 rc=0 steps=200 seed_loaded=2
+dp1 rc=0 steps=100 seed_loaded=1
+dp1_rev rc=0 steps=100 seed_loaded=1
+vp2c rc=0 steps=200 seed_loaded=2
+vp2n rc=0 steps=200 seed_loaded=2
+pp2vp4c rc=0 steps=200 seed_loaded=2
+pp4vp2c rc=0 steps=400 seed_loaded=4
+pp2vp4n rc=0 steps=200 seed_loaded=2
+pp4vp2n rc=0 steps=400 seed_loaded=4
+# 2048 tokens per step, dp2
+d2_dp2_ns rc=0 steps=200 seed_loaded=2
+d2_pp2 rc=0 steps=400 seed_loaded=4
+d2_dp2 rc=0 steps=200 seed_loaded=2
+d2_ep2 rc=0 steps=200 seed_loaded=2
+d2_vp2c rc=0 steps=400 seed_loaded=4
+d2_vp2n rc=0 steps=400 seed_loaded=4
+# c4, 1024 tokens per step (4 x 256), reference dp1 with matched accumulation
+# c4, 2048 tokens per step (4 x 256 per rank), reference dp2 with matched accumulation
