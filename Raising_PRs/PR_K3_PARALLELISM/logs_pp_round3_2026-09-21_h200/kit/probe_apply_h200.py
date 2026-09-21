@@ -25,11 +25,14 @@ if "kimi_k3_debugmodel_c4_16stages" not in s:
     s += '''
 
 def _sixteen_stages(config: Trainer.Config) -> Trainer.Config:  # PROBE ONLY (not committed)
-    from torchtitan_recipes.tests.b200 import kimi_k3_debugmodel_pp4_vp4
-
-    config.parallelism.pipeline_parallel_module_fqns_per_model_part = (
-        kimi_k3_debugmodel_pp4_vp4().parallelism.pipeline_parallel_module_fqns_per_model_part
-    )
+    # pp4 x vp4: one layer per stage from layer 5 on, the head alone on the last stage
+    config.parallelism.pipeline_parallel_module_fqns_per_model_part = [
+        ["vision_encoder", "tok_embeddings", "layers.0"],
+        ["layers.1", "layers.2"],
+        ["layers.3", "layers.4"],
+        *[[f"layers.{i}"] for i in range(5, 17)],
+        ["norm", "lm_head", "output_res_proj", "output_res_norm"],
+    ]
     return config
 
 

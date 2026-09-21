@@ -69,11 +69,17 @@ def _naive(config: Trainer.Config) -> Trainer.Config:  # PROBE ONLY (not committ
 
 
 def _eight_stages(config: Trainer.Config) -> Trainer.Config:  # PROBE ONLY (not committed)
-    from torchtitan_recipes.tests.b200 import kimi_k3_debugmodel_pp2_vp4
-
-    config.parallelism.pipeline_parallel_module_fqns_per_model_part = (
-        kimi_k3_debugmodel_pp2_vp4().parallelism.pipeline_parallel_module_fqns_per_model_part
-    )
+    # pp2 x vp4: no layers_per_stage reaches 8 stages for 19 units, so the split is spelled out
+    config.parallelism.pipeline_parallel_module_fqns_per_model_part = [
+        ["vision_encoder", "tok_embeddings", "layers.0", "layers.1"],
+        ["layers.2", "layers.3", "layers.4"],
+        ["layers.5", "layers.6", "layers.7"],
+        ["layers.8", "layers.9"],
+        ["layers.10", "layers.11"],
+        ["layers.12", "layers.13"],
+        ["layers.14", "layers.15"],
+        ["layers.16", "norm", "lm_head", "output_res_proj", "output_res_norm"],
+    ]
     return config
 
 
