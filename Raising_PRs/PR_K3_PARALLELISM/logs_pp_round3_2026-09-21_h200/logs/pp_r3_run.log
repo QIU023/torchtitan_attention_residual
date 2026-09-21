@@ -126,3 +126,16 @@ f32_vp2n_ra rc=0 steps=200 seed_loaded=2 08:31:25
 f32_pp2_ra rc=0 steps=200 seed_loaded=2 08:31:49
 f32_vp2n_ra_xn rc=0 steps=200 seed_loaded=2 08:35:58
 RF-DONE 08:35:58
+== BD: bf16 master parameters at step 20, reference vs pp2 x vp2 cache off 09:16:39
+vp2n rc=0 steps=40 params=2 09:17:19
+ref rc=0 steps=20 params=1 09:17:32
+fp32 master parameters at step 20: 0/481 tensors differ, 0/25776880 elements, max distance 0 fp32 units; bf16 copies differing: 0 elements
+total norm bits differ on steps [2, 7, 8, 9, 10, 12, 16] of 20; e.g. step 2: ('7.5774097443e+00', '0x1.e4f4480000000p+2') vs ('7.5774092674e+00', '0x1.e4f4460000000p+2')
+printed loss identical on 20 of 20 steps
+BD-DONE 09:17:34
+== BC: bf16 step 2, gradients after the clip and the parameters after the update 09:20:05
+ref rc=0 steps=2 dumps=2 09:20:30
+vp2n rc=0 steps=4 dumps=4 09:20:31
+gradsclipped at step 2: 0/459 tensors differ, 0/22479088 elements, max 0 fp32 units; grads that are exactly bf16 values: 459/459
+params at step 2: 0/481 tensors differ, 0/25776880 elements, max 0 fp32 units
+BC-DONE 09:20:34

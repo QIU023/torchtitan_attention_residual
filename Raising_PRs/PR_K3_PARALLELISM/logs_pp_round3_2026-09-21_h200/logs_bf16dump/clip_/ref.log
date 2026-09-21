@@ -1,0 +1,48 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-21 09:20:12,344 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-21 09:20:12,900 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-21 09:20:12,990 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-21 09:20:12,992 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/results/pp_r3_bf16clip/ref/structured_logs/training.global_rank_0.20260921-092012-4XXVAA.jsonl
+[titan] 2026-09-21 09:20:13,193 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-21 09:20:14,026 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-21 09:20:14,026 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-21 09:20:14,040 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H200 with 139.80GiB memory
+[titan] 2026-09-21 09:20:14,052 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-21 09:20:14,052 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-21 09:20:14,796 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[titan] 2026-09-21 09:20:14,804 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-21 09:20:14,924 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[titan] 2026-09-21 09:20:14,924 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-21 09:20:14,931 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-21 09:20:14,995 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-21 09:20:14,995 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[titan] 2026-09-21 09:20:15,119 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-21 09:20:15,678 - torchtitan.training_engine - INFO - Model kimi_k3 debugmodel size: 25,776,880 total parameters
+[titan] 2026-09-21 09:20:15,681 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 481 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-21 09:20:15,684 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (2). Adjusting decay steps to 0.
+[titan] 2026-09-21 09:20:15,684 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-21 09:20:15,710 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/results/pp_r3_bf16clip/ref/checkpoint
+[titan] 2026-09-21 09:20:15,710 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-21 09:20:15,710 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.07GiB(0.05%)
+[titan] 2026-09-21 09:20:15,710 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 1024 tokens per train step, gradient accumulation steps 4, maximum context length 2048, total steps 2 (warmup 2)
+[titan] 2026-09-21 09:20:15,711 - torchtitan.components.checkpointer.base - INFO - Loading the checkpoint from /workspace/results/pp_r3_bf16clip/ref/checkpoint/step-0.
+[titan] 2026-09-21 09:20:17,111 - torchtitan.tools.utils - INFO - [GC] GC collection for checkpoint loading. took 0.02 seconds
+[titan] 2026-09-21 09:20:17,111 - torchtitan.components.checkpointer.base - INFO - Finished loading the checkpoint in 1.40 seconds.
+[titan] 2026-09-21 09:20:17,111 - torchtitan.trainer - INFO - Training starts at step 1
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/workspace/venv_k3/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+GNREPR r0 1 2.1450016499e+00 0x1.128f6a0000000p+1
+[titan] 2026-09-21 09:20:23,868 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss:  8.05550  [38;2;180;60;0mgrad_norm:  2.1450  [38;2;54;234;195mmemory:  0.30GiB(0.22%)  [34mtps: 104  [36mtflops: 0.02  [35mmfu: 0.00%[39m
+[titan] 2026-09-21 09:20:23,869 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+GNREPR r0 2 7.5774097443e+00 0x1.e4f4480000000p+2
+[titan] 2026-09-21 09:20:25,748 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss:  6.91989  [38;2;180;60;0mgrad_norm:  7.5774  [38;2;54;234;195mmemory:  0.38GiB(0.28%)  [34mtps: 545  [36mtflops: 0.09  [35mmfu: 0.01%[39m
+[titan] 2026-09-21 09:20:25,748 - torchtitan.components.checkpointer.dcp - INFO - Saving the checkpointer.
+[titan] 2026-09-21 09:20:25,775 - torchtitan.components.checkpointer.dcp - INFO - Saving a model only checkpoint in torch.float32 at last step, step 2.
+[titan] 2026-09-21 09:20:26,136 - torchtitan.tools.utils - INFO - [GC] GC collection invoked by checkpointer. took 0.03 seconds
+[titan] 2026-09-21 09:20:26,138 - torchtitan.components.checkpointer.dcp - INFO - Last step checkpoint completed in 0.39s
+[titan] 2026-09-21 09:20:26,138 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[titan] 2026-09-21 09:20:28,139 - torchtitan.trainer - INFO - Training completed
+[titan] 2026-09-21 09:20:28,145 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[titan] 2026-09-21 09:20:28,248 - __main__ - INFO - Process group destroyed
