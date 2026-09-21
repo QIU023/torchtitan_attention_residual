@@ -1,0 +1,39 @@
+base 1a8a0f5f head e3f2ccfb scratch /tmp/verl_split_verify.eSYa torchtitan /tmp/wt_int0922b
+apply --check OK: 01_engine_tp_packed_and_compat.patch
+  stage 01: 3 changed py files, ast errors 0, ruff All checks passed!
+  tests (4 files): W0921 23:23:20.714000 4170413 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+    W0921 23:23:20.754000 4170413 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+    ERROR tests/workers/test_torchtitan_engine_checkpoint_step.py
+    ERROR tests/workers/test_torchtitan_engine_config_fields.py
+    !!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+    5 warnings, 2 errors in 13.67s
+apply --check OK: 02_engine_pipeline.patch
+  stage 02: 1 changed py files, ast errors 0, ruff All checks passed!
+  tests (6 files): W0921 23:23:38.877000 4171344 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+    W0921 23:23:38.921000 4171344 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+    ERROR tests/workers/test_torchtitan_engine_checkpoint_step.py
+    ERROR tests/workers/test_torchtitan_engine_config_fields.py
+    ERROR tests/workers/test_torchtitan_engine_pp_token_budget.py
+    !!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+    5 warnings, 3 errors in 13.58s
+apply --check OK: 03_engine_ep_lora_qat_sync.patch
+  stage 03: 1 changed py files, ast errors 0, ruff All checks passed!
+  tests (9 files): W0921 23:23:57.277000 4171597 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+    W0921 23:23:57.321000 4171597 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+    ERROR tests/workers/test_torchtitan_engine_checkpoint_step.py
+    ERROR tests/workers/test_torchtitan_engine_config_fields.py
+    ERROR tests/workers/test_torchtitan_engine_pp_token_budget.py
+    !!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+    5 warnings, 3 errors in 13.89s
+apply --check OK: 04_engine_context_parallel.patch
+  stage 04: 4 changed py files, ast errors 0, ruff All checks passed!
+  tests (11 files): 56 passed, 4 warnings, 4 subtests passed in 84.71s (0:01:24)
+apply --check OK: 05_kimi_k3.patch
+  stage 05: 12 changed py files, ast errors 0, ruff All checks passed!
+  tests (12 files): 63 passed, 5 warnings, 4 subtests passed in 88.51s (0:01:28)
+apply --check OK: 06_metrics_logprob_diff.patch
+  stage 06: 1 changed py files, ast errors 0, ruff All checks passed!
+  tests (12 files): 63 passed, 5 warnings, 4 subtests passed in 85.51s (0:01:25)
+apply --check OK: local_env_and_diagnostics.patch
+  stage lo: 7 changed py files, ast errors 0, ruff All checks passed!
+changed files at the last stage: 32 (branch: 32)

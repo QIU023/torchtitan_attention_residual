@@ -24,7 +24,7 @@ index eff83bad..669de523 100644
  
  if __name__ == "__main__":
 diff --git a/tests/workers/test_torchtitan_engine_cp_config.py b/tests/workers/test_torchtitan_engine_cp_config.py
-index 117ee83e..64d7fd59 100644
+index 117ee83e..ac33ba3a 100644
 --- a/tests/workers/test_torchtitan_engine_cp_config.py
 +++ b/tests/workers/test_torchtitan_engine_cp_config.py
 @@ -11,12 +11,13 @@
@@ -46,7 +46,7 @@ index 117ee83e..64d7fd59 100644
  
  CPU only: config objects and one meta-device model build, no process group and no GPU.
  """
-@@ -30,42 +31,125 @@ import pytest
+@@ -30,42 +31,127 @@ import pytest
  torch = pytest.importorskip("torch")
  yaml = pytest.importorskip("yaml")
  # The engine module imports torchtitan at module scope, so skip rather than fail when
@@ -61,8 +61,14 @@ index 117ee83e..64d7fd59 100644
 -    ContextParallelLoadBalancerConfig = None  # noqa: E402
 +# the fork is not on the path -- same guard as the sibling engine tests.
 +pytest.importorskip("torchtitan.models.kimi_k3")
++# The transform under test maps inner attentions per type and pins a load-balancer
++# config: the context-parallel API of the torchtitan tree these tests target. A tree
++# without it (upstream main's single-class transform) skips the file rather than fail.
++try:
++    from torchtitan.config import ContextParallelLoadBalancerConfig
++except ImportError as missing:  # pragma: no cover - depends on the torchtitan tree
++    pytest.skip(f"torchtitan tree without the context-parallel API: {missing}", allow_module_level=True)
 +
-+from torchtitan.config import ContextParallelLoadBalancerConfig  # noqa: E402
 +from torchtitan.config.transform import apply_transforms  # noqa: E402
 +from torchtitan.models.common.attention import FlexInnerAttention  # noqa: E402
 +from torchtitan.models.common.cp_attention import (  # noqa: E402
@@ -70,8 +76,6 @@ index 117ee83e..64d7fd59 100644
 +    UlyssesCPFlexInnerAttention,
 +)
 +from torchtitan.models.kimi_k3.config_registry import kimi_k3_debugmodel  # noqa: E402
-+from torchtitan.models.kimi_k3.cp_kda import ContextParallelInnerKDA  # noqa: E402
-+from torchtitan.models.kimi_k3.kda import InnerKDA  # noqa: E402
  from torchtitan.models.llama3.config_registry import llama3_debugmodel  # noqa: E402
  from torchtitan.protocols.model import BaseModel  # noqa: E402
  
@@ -101,17 +105,15 @@ index 117ee83e..64d7fd59 100644
 +
 +
 +class TestContextParallelTransform(unittest.TestCase):
-+    def test_ulysses_maps_flex_and_kda(self):
++    def test_ulysses_maps_flex(self):
 +        transform, _ = _helpers()
 +        mapping = transform(kimi_k3_debugmodel().model_spec.model, "ulysses").inner_attention
 +        self.assertIs(mapping[FlexInnerAttention.Config], UlyssesCPFlexInnerAttention)
-+        self.assertIs(mapping[InnerKDA.Config], ContextParallelInnerKDA)
 +
 +    def test_allgather_kv_maps_flex_to_the_sharded_blockmask_backend(self):
 +        transform, _ = _helpers()
 +        mapping = transform(kimi_k3_debugmodel().model_spec.model, "allgather_kv").inner_attention
 +        self.assertIs(mapping[FlexInnerAttention.Config], KVAllGatherCPFlexInnerAttention)
-+        self.assertIs(mapping[InnerKDA.Config], ContextParallelInnerKDA)
 +
 +    def test_unknown_backend_names_the_choices(self):
 +        transform, _ = _helpers()
@@ -193,7 +195,7 @@ index 117ee83e..64d7fd59 100644
  
      def _yaml(self, relative):
          import verl
-@@ -76,9 +160,9 @@ class TestEngineConfigDefaults(unittest.TestCase):
+@@ -76,9 +162,9 @@ class TestEngineConfigDefaults(unittest.TestCase):
          from verl.workers.config import TorchtitanEngineConfig
  
          config = TorchtitanEngineConfig()
@@ -204,7 +206,7 @@ index 117ee83e..64d7fd59 100644
  
      def test_engine_yaml_declares_the_same_defaults(self):
          from verl.workers.config import TorchtitanEngineConfig
-@@ -111,7 +195,9 @@ class TestFoldedTokenStreamProbe(unittest.TestCase):
+@@ -111,7 +197,9 @@ class TestFoldedTokenStreamProbe(unittest.TestCase):
          return type(model).preprocess_inputs is not BaseModel.preprocess_inputs
  
      def test_titan_decoders_own_their_preprocessing(self):
@@ -217,10 +219,10 @@ index 117ee83e..64d7fd59 100644
          self.assertFalse(type(_BareModel()).preprocess_inputs is not BaseModel.preprocess_inputs)
 diff --git a/tests/workers/test_torchtitan_engine_cp_gloo.py b/tests/workers/test_torchtitan_engine_cp_gloo.py
 new file mode 100644
-index 00000000..d0277047
+index 00000000..cc9a0cc6
 --- /dev/null
 +++ b/tests/workers/test_torchtitan_engine_cp_gloo.py
-@@ -0,0 +1,321 @@
+@@ -0,0 +1,326 @@
 +# Copyright 2026 Bytedance Ltd. and/or its affiliates
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -260,6 +262,7 @@ index 00000000..d0277047
 +the mesh is built.
 +"""
 +
++import importlib.util
 +import os
 +import traceback
 +import unittest
@@ -271,6 +274,9 @@ index 00000000..d0277047
 +# The CP model path lives in the torchtitan fork; skip rather than fail when it is
 +# not on the path -- same guard as the sibling engine tests.
 +pytest.importorskip("torchtitan.models.kimi_k3")
++# The preprocess_inputs half runs the model's context-parallel path, which the torchtitan
++# tree the engine targets carries as the K3 CP module; a tree without it skips that half.
++_HAS_K3_CP = importlib.util.find_spec("torchtitan.models.kimi_k3.cp_kda") is not None
 +
 +import torch.multiprocessing as mp  # noqa: E402
 +
@@ -507,6 +513,7 @@ index 00000000..d0277047
 +    }
 +
 +
++@unittest.skipUnless(_HAS_K3_CP, "torchtitan tree without the K3 context-parallel module")
 +class TestContextParallelPreprocessInputs(unittest.TestCase):
 +    """The K3 model's CP preprocessing on CPU: contiguous shards, masks, KDA routing."""
 +
@@ -685,10 +692,10 @@ index 928daa74..a138a760 100644
              f"spmd_backend {self.spmd_backend} not supported"
          )
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index 6ff67f34..6d32f5d1 100644
+index e246a96e..3d13eeb2 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
-@@ -36,8 +36,7 @@ from torchtitan.components.optimizer import OptimizersContainer, ParamGroupConfi
+@@ -37,8 +37,7 @@ from torchtitan.components.optimizer import OptimizersContainer, ParamGroupConfi
  from torchtitan.config import CompileConfig, ParallelismConfig, TrainingConfig
  from torchtitan.distributed import utils as dist_utils
  from torchtitan.distributed.activation_checkpoint import FullAC, SelectiveAC
@@ -698,7 +705,7 @@ index 6ff67f34..6d32f5d1 100644
  
  
  def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
-@@ -88,6 +87,30 @@ def _lora_transform(model_config):
+@@ -89,6 +88,30 @@ def _lora_transform(model_config):
          target_modules=list(targets) if targets else None,
      )
  
@@ -729,7 +736,7 @@ index 6ff67f34..6d32f5d1 100644
  from verl.utils.ulysses import gather_outputs_and_unpad, ulysses_pad
  from torchtitan.distributed.parallel_dims import ParallelDims
  from torchtitan.train import Trainer
-@@ -303,10 +326,12 @@ class TorchTitanEngine(BaseEngine):
+@@ -304,10 +327,12 @@ class TorchTitanEngine(BaseEngine):
              tensor_parallel_degree=self.engine_config.tensor_parallel_size,
              enable_sequence_parallel=self.engine_config.sequence_parallel,
              pipeline_parallel_degree=self.engine_config.pipeline_parallel_size,
@@ -743,7 +750,7 @@ index 6ff67f34..6d32f5d1 100644
              expert_parallel_degree=self.engine_config.expert_parallel_size,
              **_parallelism_compat_kwargs(
                  self.engine_config.spmd_backend, self.engine_config.context_parallel_size > 1
-@@ -367,6 +392,15 @@ class TorchTitanEngine(BaseEngine):
+@@ -372,6 +397,15 @@ class TorchTitanEngine(BaseEngine):
              loss=CrossEntropyLoss.Config(),
          )
          transforms = []
@@ -759,7 +766,7 @@ index 6ff67f34..6d32f5d1 100644
          lora_transform = _lora_transform(self.model_config)
          if lora_transform is not None:
              # model.lora with a rank adapts through torchtitan's own transform (ordered after
-@@ -702,6 +736,13 @@ class TorchTitanEngine(BaseEngine):
+@@ -711,6 +745,13 @@ class TorchTitanEngine(BaseEngine):
                  raise ValueError(f"logits vocab dim {pred.shape[-1]} is neither the vocabulary ({vocab}) nor its tp shard")
              elif getattr(self.module[-1], "_sp_group", None) is not None:
                  pred = gather_outputs_and_unpad(pred.contiguous(), gather_dim=1, grad_scaler=False, group=tp_group)
@@ -773,7 +780,7 @@ index 6ff67f34..6d32f5d1 100644
          return pred
  
      def forward_step(self, micro_batch: TensorDict, loss_function, forward_only):
-@@ -1586,14 +1627,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1611,14 +1652,11 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
              output_args["pp_pad_len"] = pp_pad_len
          pad_multiple = 1
          if self.parallel_dims.cp_enabled:
@@ -793,7 +800,7 @@ index 6ff67f34..6d32f5d1 100644
          if self.parallel_dims.tp_enabled:
              # Sequence parallel scatters the token dim across the TP ranks, so the
              # packed stream must divide by the TP degree as well.
-@@ -1630,7 +1668,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1655,7 +1693,29 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                          attn_type=self.engine_config.attn_type,
                      )
                      extra_kwargs["attention_masks"] = attention_mask

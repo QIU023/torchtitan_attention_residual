@@ -96,10 +96,10 @@ index 00000000..26d0f997
 +            self.assertTrue(got[f"model.layers.1.moe.experts.{e}.w1.weight"].is_contiguous())
 diff --git a/tests/workers/test_torchtitan_engine_lora_sync.py b/tests/workers/test_torchtitan_engine_lora_sync.py
 new file mode 100644
-index 00000000..6042de7d
+index 00000000..e7f870bd
 --- /dev/null
 +++ b/tests/workers/test_torchtitan_engine_lora_sync.py
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,133 @@
 +# Copyright 2024 Bytedance Ltd. and/or its affiliates
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -140,6 +140,23 @@ index 00000000..6042de7d
 +pytest.importorskip("torchtitan.models.kimi_k3")
 +
 +
++def _tree_lora_available() -> bool:
++    """The merged sync folds adapters through torchtitan's merge helper on the LoRA debug
++    recipe; both live on the torchtitan tree the engine targets, not on upstream main yet."""
++    try:
++        from torchtitan.config.transform.lora import merge_lora_state_dict  # noqa: F401
++        from torchtitan.models.kimi_k3 import config_registry
++    except ImportError:
++        return False
++    return hasattr(config_registry, "kimi_k3_debugmodel_lora")
++
++
++_needs_tree_lora = pytest.mark.skipif(
++    not _tree_lora_available(),
++    reason="torchtitan tree without merge_lora_state_dict and the kimi_k3 LoRA debug recipe",
++)
++
++
 +def _helper():
 +    """Load just the transform, without pulling in the engine's dependency chain."""
 +    import pathlib
@@ -168,6 +185,7 @@ index 00000000..6042de7d
 +
 +
 +class TestMergedWeightSync:
++    @_needs_tree_lora
 +    def test_adapter_tensors_do_not_reach_the_rollout(self):
 +        merged, merged_keys = _helper()(_lora_model())
 +        assert not [k for k in merged if "lora" in k or ".base." in k]
@@ -179,6 +197,7 @@ index 00000000..6042de7d
 +            for k in merged
 +        ), sorted(merged)[:5]
 +
++    @_needs_tree_lora
 +    def test_the_merged_output_tracks_the_adapter(self):
 +        """The differential that separates this from the raw path.
 +
@@ -504,7 +523,7 @@ index 00000000..b7dcfe44
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index ad574a3d..6ff67f34 100644
+index d06b737a..e246a96e 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
 @@ -16,6 +16,7 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
@@ -513,9 +532,9 @@ index ad574a3d..6ff67f34 100644
  import importlib
 +import itertools
  import logging
+ import dataclasses
  import inspect
- import math
-@@ -36,6 +37,7 @@ from torchtitan.config import CompileConfig, ParallelismConfig, TrainingConfig
+@@ -37,6 +38,7 @@ from torchtitan.config import CompileConfig, ParallelismConfig, TrainingConfig
  from torchtitan.distributed import utils as dist_utils
  from torchtitan.distributed.activation_checkpoint import FullAC, SelectiveAC
  from torchtitan.distributed.context_parallel import prepare_context_parallel_input
@@ -523,7 +542,7 @@ index ad574a3d..6ff67f34 100644
  
  
  def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
-@@ -63,6 +65,29 @@ def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
+@@ -64,6 +66,29 @@ def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
              )
      return kwargs
  
@@ -553,7 +572,7 @@ index ad574a3d..6ff67f34 100644
  from verl.utils.ulysses import gather_outputs_and_unpad, ulysses_pad
  from torchtitan.distributed.parallel_dims import ParallelDims
  from torchtitan.train import Trainer
-@@ -87,6 +112,7 @@ from verl.workers.engine.torchtitan.utils import (
+@@ -88,6 +113,7 @@ from verl.workers.engine.torchtitan.utils import (
      derive_torchtitan_name_and_flavor,
      enable_fsdp_gradient_division,
      get_attention_masks,
@@ -561,9 +580,9 @@ index ad574a3d..6ff67f34 100644
  )
  
  from ..base import BaseEngine, BaseEngineCtx, EngineRegistry
-@@ -302,6 +328,9 @@ class TorchTitanEngine(BaseEngine):
-         )
-         compile_config = CompileConfig(enable=self.engine_config.use_torch_compile)
+@@ -307,6 +333,9 @@ class TorchTitanEngine(BaseEngine):
+         checkpoint = CheckpointManager.Config(**checkpoint_kwargs)
+         compile_config = _compile_config(self.engine_config.use_torch_compile)
          training_kwargs = {}
 +        # The standard token dispatcher synchronizes with the CPU, which CUDA
 +        # graphs cannot capture; run eager under expert parallel.
@@ -571,7 +590,7 @@ index ad574a3d..6ff67f34 100644
          if self.engine_config.max_seq_len is not None:
              training_kwargs["seq_len"] = self.engine_config.max_seq_len
          if self.engine_config.offload_policy or self.engine_config.forward_only:
-@@ -337,6 +366,15 @@ class TorchTitanEngine(BaseEngine):
+@@ -342,6 +371,15 @@ class TorchTitanEngine(BaseEngine):
              # verl uses its own loss function and ignores this one.
              loss=CrossEntropyLoss.Config(),
          )
@@ -585,9 +604,9 @@ index ad574a3d..6ff67f34 100644
 +        if transforms:
 +            self.config = apply_transforms(self.config, transforms)
          self.trainer = Trainer(self.config)
-         # Decoders on torchtitan main take a folded [T] token stream and own their input
-         # preprocessing (masks, CP shards, layouts); probed on the model, not on its name.
-@@ -834,9 +872,19 @@ class TorchTitanEngine(BaseEngine):
+         # torchtitan main keeps the model parts, optimizers, schedule and
+         # checkpointer on the trainer's TrainingEngine; earlier trees on the
+@@ -843,9 +881,19 @@ class TorchTitanEngine(BaseEngine):
      def get_per_tensor_param_shard(self, **kwargs):
          """Yield this rank's *local* shard ``(hf_name, local_flat_bf16, ShardSpec)`` instead of the full tensor."""
          self._assert_shard_export_supported()
@@ -608,7 +627,7 @@ index ad574a3d..6ff67f34 100644
  
          # Expert stacks go WHOLE with a slot table; to_hf would name only the local experts, breaking lockstep.
          stacks = {}
-@@ -868,53 +916,149 @@ class TorchTitanEngine(BaseEngine):
+@@ -877,53 +925,149 @@ class TorchTitanEngine(BaseEngine):
  
          return _gen(), None
  
@@ -791,7 +810,7 @@ index ad574a3d..6ff67f34 100644
  
      def _iter_pp_gathered(self, gen, device):
          """Stream the stages in order: the owning rank yields its own tensors and broadcasts them, the
-@@ -943,6 +1087,36 @@ class TorchTitanEngine(BaseEngine):
+@@ -952,6 +1096,36 @@ class TorchTitanEngine(BaseEngine):
                      torch.distributed.broadcast(t, src=src, group=group)
                      yield name, t
  
@@ -828,7 +847,7 @@ index ad574a3d..6ff67f34 100644
  
  _FSDP_GRAD_UPCAST_GUARDED = False
  
-@@ -1057,6 +1231,234 @@ def _cu_seqlens_from_positions(positions):
+@@ -1082,6 +1256,234 @@ def _cu_seqlens_from_positions(positions):
      return torch.cat((starts, starts.new_full((1,), num_tokens))).to(torch.int32)
  
  

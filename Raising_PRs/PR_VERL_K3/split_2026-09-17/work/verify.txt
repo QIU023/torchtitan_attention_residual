@@ -1,67 +1,22 @@
+base 1a8a0f5f head e3f2ccfb scratch /tmp/verl_split_verify.J6jJ torchtitan /tmp/tt_main_63c4
 apply --check OK: 01_engine_tp_packed_and_compat.patch
-  stage 01: 19 changed py files present, ast errors 0, ruff All checks passed!
+  stage 01: 3 changed py files, ast errors 0, ruff All checks passed!
+  tests (4 files): 17 passed, 4 warnings in 13.30s
 apply --check OK: 02_engine_pipeline.patch
-  stage 02: 21 changed py files present, ast errors 0, ruff All checks passed!
+  stage 02: 1 changed py files, ast errors 0, ruff All checks passed!
+  tests (6 files): 23 passed, 4 warnings in 28.27s
 apply --check OK: 03_engine_ep_lora_qat_sync.patch
-  stage 03: 24 changed py files present, ast errors 0, ruff All checks passed!
+  stage 03: 1 changed py files, ast errors 0, ruff All checks passed!
+  tests (9 files): 38 passed, 2 skipped, 4 warnings in 33.81s
 apply --check OK: 04_engine_context_parallel.patch
-  stage 04: 26 changed py files present, ast errors 0, ruff All checks passed!
+  stage 04: 4 changed py files, ast errors 0, ruff All checks passed!
+  tests (11 files): 37 passed, 5 skipped, 4 warnings, 2 subtests passed in 54.95s
 apply --check OK: 05_kimi_k3.patch
-  stage 05: 27 changed py files present, ast errors 0, ruff All checks passed!
+  stage 05: 12 changed py files, ast errors 0, ruff All checks passed!
+  tests (12 files): 42 passed, 5 skipped, 5 warnings, 2 subtests passed in 58.77s
 apply --check OK: 06_metrics_logprob_diff.patch
-  stage 06: 27 changed py files present, ast errors 0, ruff All checks passed!
+  stage 06: 1 changed py files, ast errors 0, ruff All checks passed!
+  tests (12 files): 42 passed, 5 skipped, 5 warnings, 2 subtests passed in 62.47s (0:01:02)
 apply --check OK: local_env_and_diagnostics.patch
-  stage lo: 27 changed py files present, ast errors 0, ruff All checks passed!
-
-ruff 0.16.5 from /venv/main, since venv_verl carries no ruff at all. The repo's
-pre-commit pins v0.12.2; only F821, F811 and F822 are selected here.
-
-$ build.py
-final tree a613a6e11184098c8458cdbd9f4beadf660f3837
-HEAD tree a613a6e11184098c8458cdbd9f4beadf660f3837
-(identical: the union of the seven patches reproduces 447f07c3 exactly)
-
-$ union vs HEAD, file by file
-(identical)
-
-$ local markers and logbook paths in 01-06 (all must read 0)
-01_engine_tp_packed_and_compat.patch:0
-02_engine_pipeline.patch:0
-03_engine_ep_lora_qat_sync.patch:0
-04_engine_context_parallel.patch:0
-05_kimi_k3.patch:0
-06_metrics_logprob_diff.patch:0
-local_env_and_diagnostics.patch:6   (by design; the pattern set now also covers
-                                     VERL_TORCHTITAN_RECOMPILE_LIMIT, RECOMPILE-LIMIT
-                                     and _raise_recompile_limit)
-
-$ numstat per patch
-== 01_engine_tp_packed_and_compat.patch
-10 files, +576/-36
-== 02_engine_pipeline.patch
-3 files, +354/-4
-== 03_engine_ep_lora_qat_sync.patch
-4 files, +923/-34
-== 04_engine_context_parallel.patch
-8 files, +567/-28
-== 05_kimi_k3.patch
-12 files, +426/-26
-== 06_metrics_logprob_diff.patch
-1 files, +6/-0
-== local_env_and_diagnostics.patch
-8 files, +288/-5
-
-01 to 06 are byte-identical to the previous regeneration and git reports them
-unmodified on disk, which is an independent way of seeing that all 34 new line
-items landed in the diagnostics group.
-
-$ upstream tests at the stage that changes what they exercise
-stage 05 + the vllm version shim from patch 00:
-  tests/workers/rollout/test_vision_placeholder_tokens_on_cpu.py   7 passed
-  tests/workers/test_torchtitan_engine_k3_processor.py             5 passed
-
-Without that one-file overlay the module does not even collect: the box runs a
-dev build of vLLM whose version string only patch 00 teaches verl to accept, so
-on this machine no test that imports vllm can run against patches 01 to 06 on
-their own. The overlay touches verl/third_party/vllm/__init__.py and nothing
-else, and patch 00 is the environment group that never goes upstream.
+  stage lo: 7 changed py files, ast errors 0, ruff All checks passed!
+changed files at the last stage: 32 (branch: 32)

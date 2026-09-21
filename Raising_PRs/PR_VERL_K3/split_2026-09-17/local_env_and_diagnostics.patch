@@ -115,22 +115,23 @@ index a138a760..537c5d57 100644
          )
          assert self.activation_checkpoint in ["selective", "full", "none"], (
 diff --git a/verl/workers/engine/torchtitan/transformer_impl.py b/verl/workers/engine/torchtitan/transformer_impl.py
-index a2c10fd7..cee83f53 100644
+index 5cd37c3c..a5f18650 100644
 --- a/verl/workers/engine/torchtitan/transformer_impl.py
 +++ b/verl/workers/engine/torchtitan/transformer_impl.py
-@@ -17,9 +17,11 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
+@@ -17,10 +17,12 @@ The concrete Engine implementation using PyTorch TorchTitan parallelism (FSDP2 +
  
  import importlib
  import itertools
 +import contextlib
  import logging
+ import dataclasses
  import inspect
  import math
 +import sys
  import os
  import re
  from contextlib import nullcontext
-@@ -39,6 +41,40 @@ from torchtitan.distributed.activation_checkpoint import FullAC, SelectiveAC
+@@ -40,6 +42,40 @@ from torchtitan.distributed.activation_checkpoint import FullAC, SelectiveAC
  from torchtitan.config.transform import apply_transforms, ContextParallelTransform
  
  
@@ -171,17 +172,17 @@ index a2c10fd7..cee83f53 100644
  def _parallelism_compat_kwargs(spmd_backend: str, cp_enabled: bool) -> dict:
      """ParallelismConfig fields whose shape differs across the torchtitan trees this engine runs on.
  
-@@ -420,7 +456,8 @@ class TorchTitanEngine(BaseEngine):
+@@ -425,7 +461,8 @@ class TorchTitanEngine(BaseEngine):
              transforms.append(lora_transform)
          if transforms:
              self.config = apply_transforms(self.config, transforms)
 -        self.trainer = Trainer(self.config)
 +        with _fp32_matmul_emulation_optional():
 +            self.trainer = Trainer(self.config)
-         # Decoders on torchtitan main take a folded [T] token stream and own their input
-         # preprocessing (masks, CP shards, layouts); probed on the model, not on its name.
-         from torchtitan.protocols.model import BaseModel
-@@ -836,6 +873,18 @@ class TorchTitanEngine(BaseEngine):
+         # torchtitan main keeps the model parts, optimizers, schedule and
+         # checkpointer on the trainer's TrainingEngine; earlier trees on the
+         # Trainer itself.
+@@ -845,6 +882,18 @@ class TorchTitanEngine(BaseEngine):
          torch.distributed.barrier()
          if self._is_offload_param:
              for module in self.module:
@@ -200,7 +201,7 @@ index a2c10fd7..cee83f53 100644
                  offload_fsdp_model_to_cpu(module)
  
      def load_checkpoint(
-@@ -1021,6 +1070,88 @@ class TorchTitanEngine(BaseEngine):
+@@ -1030,6 +1079,88 @@ class TorchTitanEngine(BaseEngine):
                  params.update(module_params)
                  merged_lora_keys.update(module_merged)
  
@@ -289,7 +290,7 @@ index a2c10fd7..cee83f53 100644
          if self._is_offload_param:
              for module in self.module:
                  offload_fsdp_model_to_cpu(module)
-@@ -1048,6 +1179,17 @@ class TorchTitanEngine(BaseEngine):
+@@ -1057,6 +1188,17 @@ class TorchTitanEngine(BaseEngine):
                  "wrapped projections; none is configured"
              )
  
@@ -307,7 +308,7 @@ index a2c10fd7..cee83f53 100644
  
          if adapter_mode:
              if base_sync_done:
-@@ -1207,6 +1349,99 @@ def _guard_fsdp_grad_upcast() -> None:
+@@ -1216,6 +1358,99 @@ def _guard_fsdp_grad_upcast() -> None:
      FSDPParam.to_accumulated_grad_if_needed = guarded
  
  
@@ -407,7 +408,7 @@ index a2c10fd7..cee83f53 100644
  # Processor output names that differ from the model's forward parameters.
  _MULTIMODAL_KEY_ALIASES = {"grid_thws": "grid_thw", "image_grid_thw": "grid_thw"}
  # Multimodal tensors keep their own leading dimension (images, not the folded stream).
-@@ -1707,6 +1942,10 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
+@@ -1732,6 +1967,10 @@ class TorchTitanEngineWithLMHead(TorchTitanEngine):
                          attn_type=self.engine_config.attn_type,
                      )
                      extra_kwargs["attention_masks"] = attention_mask

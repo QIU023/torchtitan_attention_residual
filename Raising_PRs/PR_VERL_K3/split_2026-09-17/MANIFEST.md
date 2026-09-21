@@ -445,3 +445,29 @@ The remap is the narrowest kind. `work/assign.py` was remapped from the table as
 Two independent signs that the assignment is right, rather than only the builder's own assertion: patches 01 to 06 come out byte-identical to the previous regeneration and git reports them unmodified on disk, and the marker grep over 01 to 06, widened to cover `VERL_TORCHTITAN_RECOMPILE_LIMIT`, `RECOMPILE-LIMIT` and `_raise_recompile_limit`, still reads 0 for each.
 
 Why the correction was needed at all is worth carrying here, since it is the kind of thing a reviewer of patch 00 would ask. A dynamo config value lives in a `ContextVar` and Ray runs each async actor method in its own task, so a value set once per process lands in the first task's context and is gone by the next call. The diagnostic announced a raised limit truthfully and the check read the default 8 three minutes later in the same process. It now sets the value on the call that is about to use it, and the flag survives only to keep the log to one line.
+
+---
+## Regenerated on head `e3f2ccfb` (2026-09-22)
+
+Four commits since `515b162c`, all on the engine and its tests: the engine port to torchtitan main's checkpointer component, optional compile config and `trainer.engine` attributes (`b647eaef`), and three test guards that skip on a torchtitan tree without the per-type context-parallel API, the K3 CP module or the LoRA merge helpers (`7af75a36`, `3183c21f`, `e3f2ccfb`). Branch against base `1a8a0f5f`: 32 files.
+
+The remap is now a tool, `work/remap.py` + `work/apply_remap.py`: the old and new item lists of the engine file are aligned by text, every old changed item's ordinal follows it, a replaced line inherits its patch, a genuinely new line takes the default ordinal and is listed for review; `VARIANTS` keys and `MOVES` indices go through the same map. On `b647eaef` the engine file went from 2178 to 2213 items, 15 lines replaced (`self.trainer.X` to `self._titan.X`, two of them in patch 02's pipeline code, which keep their patch) and 45 new changed items, all compat, all in patch 01 with `_parallelism_compat_kwargs`; the three test commits touch no engine item.
+
+`work/verify.sh` replaces the transcript-by-hand: it applies the seven patches in order on a scratch copy of the base, runs `ast.parse` and `ruff --select F821,F811,F822` on every stage's changed files, and runs the cumulative test files the stages introduce with the vLLM version shim from patch 00 overlaid for the tests only, against the torchtitan named by `TITAN`. Two runs, nothing else on the box during either (two gloo test sets at once pick the same free port and one rank dies while the other waits forever):
+
+    stage                          upstream torchtitan 63c4e9fef      integration tree k3_int_20260922c
+    01_engine_tp_packed_and_compat   17 passed                          collection error (see below)
+    02_engine_pipeline               23 passed                          collection error
+    03_engine_ep_lora_qat_sync       38 passed, 2 skipped               collection error
+    04_engine_context_parallel       37 passed, 5 skipped               56 passed
+    05_kimi_k3                       42 passed, 5 skipped               63 passed
+    06_metrics_logprob_diff          42 passed, 5 skipped               63 passed
+
+Every stage applies with `git apply --check`, parses and lints clean on both. What the two columns say about the dependencies, found this round because upstream torchtitan main now carries the `kimi_k3` package, so the old `importorskip("torchtitan.models.kimi_k3")` guards stopped skipping there:
+
+- Upstream torchtitan's `ContextParallelTransform` takes one inner-attention class; the tree's takes a per-type mapping and `exclude_fqn_prefixes`, and the tree has `ContextParallelLoadBalancerConfig` where upstream has a string. Patch 04's engine CP path is written for the tree's form (plan item 4, "once on main's CP API"); its tests now skip on upstream with a reason naming the missing API instead of failing at import.
+- Upstream has no `kimi_k3.cp_kda` and no `merge_lora_state_dict` / `kimi_k3_debugmodel_lora`; the K3 halves of the gloo CP test and the merged LoRA sync tests skip there (the 5 and 2 skips).
+- The stage-04 variant of `test_torchtitan_engine_cp_config.py` (`work/cp_config_04.py`) asserted the KDA mapping that patch 05 adds; it failed on any tree with the K3 CP module at stage 04 and is now flex-only, the KDA assertions live in the stage-05 (HEAD) version.
+- The integration tree lacks upstream torchtitan's `prepare_context_parallel_input` export (its CP stack exports `prepare_context_parallel_batch`), which upstream verl's base engine imports at module scope; stages 01 to 03 therefore collect only against upstream torchtitan, and patch 04 replaces that import. This is the tree's divergence from main, not the split's.
+
+`build.py` asserts the final tree equals `e3f2ccfb`'s tree with git plumbing (`work/build.log`); the verifier's scratch copy skips ignored-but-tracked files, so it compares changed-file counts (32 = 32) instead.
