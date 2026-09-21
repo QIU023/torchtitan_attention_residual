@@ -1,0 +1,20 @@
+tree=/tmp/wt_int0922b cfg=kimi_k3_debugmodel seed_cfg=kimi_k3_debugmodel batch=--training.num-tokens-per-train-step 4096 --training.num-tokens-per-microbatch-per-dp-rank 256
+seed cached=/workspace/.mx4_seeds_0922b/kimi_k3_debugmodel_49ffe72a4588
+seed files=2
+dp1          seed-ok            s1=8.15339   s3=5.92741   s10=3.61492  
+fsdp2        seed-ok            s1=8.11933   s3=5.84786   s10=3.61462  
+tp2          ASSERT-SEED-FAIL   s1=          s3=          s10=         
+ep2_fsdp2    seed-ok            s1=8.11933   s3=5.84765   s10=3.61380  
+tp2_ep2      seed-ok            s1=8.15325   s3=5.92864   s10=3.61200  
+pp2          seed-ok            s1=8.15339   s3=5.92875   s10=3.61643  
+fsdp2_pp2    seed-ok            s1=8.11933   s3=5.84762   s10=3.61405  
+tp2_pp2      ASSERT-SEED-FAIL   s1=          s3=          s10=         
+fsdp2_pp2_ep2 seed-ok            s1=8.11933   s3=5.84788   s10=3.61475  
+fsdp2_tp2_ep2 seed-ok            s1=8.11963   s3=5.84646   s10=3.61438  
+cp2_ag       seed-ok            s1=8.15329   s3=5.92498   s10=3.61448  
+cp2_ul       seed-ok            s1=8.15326   s3=5.92626   s10=3.61225  
+cp2_ep2      seed-ok            s1=8.15329   s3=5.92703   s10=3.61549  
+cp2_fsdp2    seed-ok            s1=8.11948   s3=5.84795   s10=3.61344  
+cp2_tp2_ag   ASSERT-SEED-FAIL   s1=          s3=          s10=         
+cp2_tp2_ul   ASSERT-SEED-FAIL   s1=          s3=          s10=         
+DONE /workspace/mx4_int0922b_0921_210957
