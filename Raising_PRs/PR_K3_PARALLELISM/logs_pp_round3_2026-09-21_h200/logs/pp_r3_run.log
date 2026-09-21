@@ -1,0 +1,88 @@
+== seeds 03:48:28
+seed_c4_1024 rc=0
+seed_c4_2048 rc=0
+== A: bf16, 1024 tokens per step (4 x 256), fp32 norm 03:48:50
+dp1_ns_cold rc=0 steps=100 seed_loaded=1 03:52:26
+dp1_ns rc=0 steps=100 seed_loaded=1 03:55:29
+dp1 rc=0 steps=100 seed_loaded=1 03:58:40
+dp1_rev rc=0 steps=100 seed_loaded=1 03:58:42
+pp2 rc=1 steps=0 seed_loaded=0 03:58:45
+vp2c rc=0 steps=200 seed_loaded=2 04:00:34
+vp2n rc=0 steps=200 seed_loaded=2 04:02:24
+pp2vp4c rc=0 steps=200 seed_loaded=2 04:02:25
+pp2vp4n rc=0 steps=200 seed_loaded=2 04:04:15
+pp4 rc=0 steps=400 seed_loaded=4 04:05:52
+pp4vp2c rc=0 steps=400 seed_loaded=4 04:07:35
+pp4vp2n rc=0 steps=400 seed_loaded=4 04:09:18
+pp4vp4c rc=0 steps=400 seed_loaded=4 04:10:52
+pp4vp4n rc=0 steps=400 seed_loaded=4 04:12:24
+== B: fp32 parameters, compute and reduction (FP32_PROBE) 04:12:24
+f32_dp1_ns_cold rc=0 steps=100 seed_loaded=1 04:19:46
+f32_dp1_ns rc=0 steps=100 seed_loaded=1 04:26:48
+f32_vp2c rc=0 steps=200 seed_loaded=2 04:30:54
+f32_dp1 rc=0 steps=100 seed_loaded=1 04:33:47
+f32_vp2n rc=0 steps=200 seed_loaded=2 04:37:58
+f32_pp4vp4c rc=0 steps=400 seed_loaded=4 04:41:36
+f32_pp4vp4n rc=0 steps=400 seed_loaded=4 04:45:16
+== C: bf16, 2048 tokens per step (4 x 256 per rank), dp2 04:45:16
+d2_dp2_ns_cold rc=0 steps=200 seed_loaded=2 04:49:00
+d2_dp2_ns rc=0 steps=200 seed_loaded=2 04:52:18
+d2_dp2 rc=0 steps=200 seed_loaded=2 04:55:41
+d2_ep2 rc=0 steps=200 seed_loaded=2 04:56:29
+d2_pp2 rc=0 steps=400 seed_loaded=4 04:58:41
+d2_vp2c rc=0 steps=400 seed_loaded=4 05:01:13
+d2_vp2n rc=0 steps=400 seed_loaded=4 05:03:11
+== D: appendix, bf16 total grad norm (GN_FP32 off) 05:03:11
+STOPPED-AFTER-C-DONE 05:03:18
+== R1: references with the logged-loss equalization, pp2 05:03:18
+pp2 rc=0 steps=200 seed_loaded=2 05:05:36
+RERUN-DONE
+dp1_ns_cold rc=0 steps=100 seed_loaded=1 05:06:55
+dp1_ns rc=0 steps=100 seed_loaded=1 05:10:00
+RERUN-DONE
+f32_dp1_ns_cold rc=0 steps=100 seed_loaded=1 05:10:39
+dp1_ns_oldcache rc=0 steps=100 seed_loaded=1 05:14:10
+f32_dp1_ns rc=0 steps=100 seed_loaded=1 05:17:34
+RERUN-DONE
+== R2: warm self-reruns: [warm:dp1 warm:vp2c warm:pp2vp4c warm:f32_vp2n warm:d2_dp2] [warm:dp1_rev warm:f32_vp2c warm:d2_ep2] then [warm:pp4vp2c warm:pp4vp4c warm:f32_pp4vp4n warm:f32_pp4vp4c warm:d2_vp2c] 05:17:34
+f32_dp1_ns_oldcache rc=0 steps=100 seed_loaded=1 05:18:51
+dp1_ns_oldboth rc=0 steps=100 seed_loaded=1 05:19:13
+dp1_rev_w rc=0 steps=100 seed_loaded=1 05:20:46
+dp1_w rc=0 steps=100 seed_loaded=1 05:20:51
+vp2c_w rc=0 steps=200 seed_loaded=2 05:22:40
+f32_dp1_ns_oldboth rc=0 steps=100 seed_loaded=1 05:23:17
+pp2vp4c_w rc=0 steps=200 seed_loaded=2 05:24:30
+f32_vp2c_w rc=0 steps=200 seed_loaded=2 05:24:50
+f32_vp2n_w rc=0 steps=200 seed_loaded=2 05:28:32
+d2_ep2_w rc=0 steps=200 seed_loaded=2 05:28:52
+RERUN-DONE
+d2_dp2_w rc=0 steps=200 seed_loaded=2 05:31:54
+RERUN-DONE
+pp4vp2c_w rc=0 steps=400 seed_loaded=4 05:33:35
+pp4vp4c_w rc=0 steps=400 seed_loaded=4 05:35:08
+f32_pp4vp4n_w rc=0 steps=400 seed_loaded=4 05:38:45
+f32_pp4vp4c_w rc=0 steps=400 seed_loaded=4 05:42:23
+d2_vp2c_w rc=0 steps=400 seed_loaded=4 05:44:21
+RERUN-DONE
+RERUN-ALL-DONE 05:44:21
+fp32 locate hacks applied to /workspace/tt_pp
+== L: fp32 locate campaign, 100 steps 05:44:26
+ref rc=1 steps=0 grads=0 params=0 05:44:28
+vp2n rc=1 steps=0 grads=0 params=0 05:44:48
+vp2c rc=1 steps=0 grads=0 params=0 05:44:50
+ref2 rc=1 steps=0 grads=0 params=0 05:45:06
+pp4vp4n rc=1 steps=0 grads=0 params=0 05:45:32
+LOCATE-DONE 05:45:33
+vp2n rc=0 steps=200 grads=2 params=2 05:49:59
+PP_NORM_EXACT hack applied to /workspace/tt_pp
+== X: fp32 whole stack cells with the norm in the reference's order, 100 steps 05:50:05
+fqn order: 459 names
+ref rc=0 steps=100 grads=1 params=1 05:52:56
+vp2c_xn rc=0 steps=200 grads=2 05:54:14
+vp2n_xn rc=0 steps=200 grads=2 05:54:21
+vp2c rc=0 steps=200 grads=2 params=2 05:57:34
+pp4vp4n_xn rc=0 steps=400 grads=4 05:58:17
+XN-DONE 05:58:29
+ref2 rc=0 steps=100 grads=1 params=1 06:00:14
+pp4vp4n rc=0 steps=400 grads=4 params=4 06:03:52
+LOCATE-DONE 06:03:55
