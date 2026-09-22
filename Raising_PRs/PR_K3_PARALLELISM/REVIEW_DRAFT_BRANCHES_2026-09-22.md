@@ -41,3 +41,23 @@ The abstraction finding is `setattr(model, "_cp_group_all", ...)` at parallelize
 4. Dynamic CP: split the transform commit off, since it belongs to 4639's shape rather than main's, and move the CP group off the model attribute.
 
 Every body needs its numbers re-measured after the rebase, on H100 or H200 and in the hundred-step form, and every one of them currently names a tree that is not the branch.
+
+## What was done, later the same day
+
+All four were fixed and the four fork branches force-pushed; `k3_pp_text` (4312's own PR branch) was not touched. PR 4312's latest comments, eight from shuhuayu on 2026-09-22 against `layout.py` and `model.py`, are addressed on `pp_review4`, which was re-homed onto upstream main `7349a2282` after #4810 removed the per-model `parallelize.py`: head `78be13c96`, five typed commits, and two type errors of its own fixed in place (overloads for `pipeline_with_first_last_stage_modules`, whose `return_split` made the five-value unpack unprovable, and `BaseModel` for the model parameter of `pipeline_kimi_k3`). pyrefly now reports zero errors on `torchtitan/models/kimi_k3` on every one of these branches, where the head of 4312 alone had four.
+
+| branch | head | base | what changed |
+| --- | --- | --- | --- |
+| `k3_pp_offload` | `f87e74c7b` | 4312 `78be13c96` | the store takes its device, the switch is a model-config field, the whole-stack pairing raises, the test skips properly |
+| `k3_pp_balance` | `76f7d90df` | 4312 `78be13c96` | the pool is partitioned per source, a span is freed once, the hooks install through the stage, the address is routable, the knobs are a config record |
+| `k3_pp_mm` | `191b31bc0` | 4312 `78be13c96` | rebuilt: a stage subclass instead of method replacement, the dead side stream gone, backward anchors fire, one split helper, a cell that reaches it |
+| `k3_cp_mm` | `e0f1b8569` | 4639 `0088c9b70` | the transform commit dropped, the CP group from the mesh, `new_subgroups_by_enumeration`, recompute regions restored, the typecheck rule off import |
+
+Measured on this box (4 or 2 x RTX 5060 Ti, seed 42, one warm compile cache; the numbers for the bodies still come from H100):
+
+- Offload: pp4 x vp4 with the switch off and on is identical on all five steps. The first, cold-cache control run differed from step 3, which is the autotune confound.
+- Balance: pp2 with rank 0 parking on rank 1 over TCP is identical to the control on all five steps; 340 tensors parked (420 MiB) and all 340 fetched back, no pool refusals.
+- DEP: the pp4 x vp2 cell runs, the plan places what the upfront prefix leaves, every deferred tower backward runs at a planned slot. The tower's forward is bitwise identical whether encoded ahead or inline; the losses separate from step 3 by the order the tower's bf16 gradients accumulate in, and each cell reproduces itself exactly.
+- Dynamic CP: the cp2 cell completes and the partition engages once the threshold lets the debug image qualify. Both runs need type checking off, because 4639's own head raises `SpmdTypeError` in its gated norm on this box with none of this branch's changes present.
+
+Still owed on all four: the hundred-step tables on H100, and for dynamic CP a re-measurement of the partitioned-versus-replicated comparison (the rewritten probe, `matrix_scripts/vitcp_probe.py`, hangs at the partitioned call).
