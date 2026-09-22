@@ -3,6 +3,9 @@
 Branch `k3_moonep_seam` = `7c4041c07`, thirteen commits on main `6c2dadbb3` (2026-09-18), zero behind it; 8 files, +1007/-17, of which 360 lines are tests. Open as draft PR 4751, whose head follows this branch. Earlier heads, for the notes below: `9e71d1073` (rebase onto `a3a819c67`, 2026-09-17), `904473aef` (the fused transport), `3c458bdf1` (lint), `84f2704ce` (the on-device test). Draft until the package is public on the CI boxes; the CPU tests need neither the package nor a GPU. Body in the #4577 format (2026-09-14), Results from the 4 x H100 box (`phase13_k3like_48b_posttrain/MOONEP_H100_2026-09-19.md`); cells in `MOONEP_TEST_PLAN_2026-09-16.md`.
 
 Notes for filing:
+- 2026-09-22: refactored to where torchtitan keeps transports (commit "moonep: the transport lives where torchtitan keeps transports"). The primitives are `distributed/moonep/moonep.py`, the dispatcher sits with DeepEP and HybridEP in `models/common/token_dispatcher.py`, the prefetch-slot experts next to `GroupedExperts` in `models/common/moe.py`, and `"moonep"` is selected through `make_token_dispatcher_config`; the Kimi K3 folder keeps 49 lines of wiring. One `requires_ep` class variable replaces the two flags, the SM budget is a module constant rather than a config knob, and the barrier handles MoonEP does not expose are read in one named function. `kimi_k3_debugmodel_moonep` and the h100 cell `kimi_k3_moonep_fsdp4_ep4` follow `qwen3_moe_deepep` and its cell; without them nothing in the repo reaches the backend. CPU 22 passed.
+- 2026-09-22, CORRECTION to the DeepEP note below: DeepEP v2 does not need an RDMA NIC. `torchtitan/models/qwen3/config_registry.py` documents the NVLink-only path (`EP_DISABLE_GIN=1`, `EP_REUSE_NCCL_COMM=0`, `NVSHMEM_REMOTE_TRANSPORT=none`, `NVSHMEM_DISABLE_MNNVL=1`) and torchtitan's own `run_8xgpu_integration_tests.sh` and `validate_release_gpu.sh` launch with `NCCL_NVLS_ENABLE=0 EP_DISABLE_GIN=1`. That text was in the tree at this branch's base, so the 09-19 run should have tried it before concluding the box could not host DeepEP. The comparison the report makes is therefore runnable on the same 4 x H100 NVSwitch box, and it is the missing evidence this PR needs.
+- 2026-09-22, on the step-time table: those numbers come from the numerics cells, which run `--debug.deterministic` without compile at 256 tokens per micro-batch per rank and eight gradient-accumulation micro-batches. A step there is 5.2 seconds, so the total is set by the deterministic reference paths rather than by the MoE transport, and a difference of 83 ms between two such totals cannot be attributed to the transport. The shape is also structurally against MoonEP: it moves expert rows so tokens need not move, and at this flavor the rows it copies each micro-batch are an order of magnitude more bytes than the tokens they replace. A perf claim needs its own cells with compile on, determinism off and a per-rank token count near the target.
 - 2026-09-19, 4 x H100 box: four commits, `822642a22` (the mesh check reads core's `efsdp` axis), `25dae14b4` (the CPU tests drop what the on-device test now covers), `676f91826` (ufmt) and `c02e6240f` (the mesh precondition tested against real `ParallelDims` meshes). An earlier version of this note said they were held back from the published branch, which was true when it was written: they went out afterwards on an explicit instruction, and because the push rewrote the branch it was preceded by a file-by-file check that the remote's previous eight commits were content-equivalent to the rebased branch's first eight. Draft 4751's head moved with them. Test surface is 360 added test lines against the 618 the audit measured, and comment plus docstring is 9.9 percent of the 576 added non-blank production lines, measured on `git diff 6c2dadbb3 HEAD -- torchtitan/`. The Results section below is this box's; cells 1 to 7 and 9 of the plan ran here, cell 8 is declined with the reason in `phase13_k3like_48b_posttrain/MOONEP_H100_2026-09-19.md`.
 - 2026-09-19, `7c4041c07`: two pieces of surface the 09-19 diff audit named are gone, since this is a draft. The `MoonEPTableBackend` Protocol had one implementation, which did not declare it, and no second user including the tests, so its two annotations now name the backend directly; and `token_padding` only ever carried MoonEP's own `Buffer` default of 128, which no flavor set. `num_sms` stays, because `launch_prefetch` and `launch_grad_reduce` both take it as a required argument and dropping it would put a constant in their call sites. 30 lines out, CPU tests still 16 passed, ufmt clean against the repo's pinned black and usort.
 - 2026-09-17 10:00Z: head `84f2704ce` adds the on-device test (2 passed on two H200s). The H200 dp2 / dp4 moonep rows differ from the standard dispatcher at step 1 with a bitwise fresh-cache floor; held out of the body until located (`MOONEP_H200_2026-09-17.md`, 10:00Z).
@@ -24,9 +27,9 @@ Notes for filing:
 
 Add MoonEP (MoonshotAI/MoonEP, the balanced EP transport of the Kimi K3 report) as a Kimi K3 MoE comm backend, selected with `model_registry(..., moe_comm_backend="moonep")`.
 
-- `MoonEPTokenDispatcher` (`kimi_k3/moon_ep_dispatcher.py`): a `BaseEPTokenDispatcher` subclass whose dispatch and combine run MoonEP's kernels on a persistent buffer allocated from `wire_meshes` on the EP group.
-- `MoonEPGroupedExperts` (`kimi_k3/moon_ep_experts.py`): a `GroupedExperts` subclass that computes over this rank's `E / R` expert rows followed by its `B` prefetch slots, which MoonEP's prefetch kernel fills, through `GroupedExperts._grouped_mm`.
-- `update_ep_token_dispatcher_config` (`models/common/token_dispatcher.py`): fills the static token capacity of every EP dispatcher config that declares `static_token_capacity`, instead of naming DeepEP and HybridEP; both declare it, so their behaviour is unchanged.
+- `MoonEPTokenDispatcher` (`models/common/token_dispatcher.py`, beside DeepEP and HybridEP; the package-facing primitives in `distributed/moonep/moonep.py`): a `BaseEPTokenDispatcher` subclass whose dispatch and combine run MoonEP's kernels on a persistent buffer allocated from `wire_meshes` on the EP group.
+- `MoonEPGroupedExperts` (`models/common/moe.py`): a `GroupedExperts` subclass that computes over this rank's `E / R` expert rows followed by its `B` prefetch slots, which MoonEP's prefetch kernel fills, through `GroupedExperts._grouped_mm`.
+- `update_ep_token_dispatcher_config` (`models/common/token_dispatcher.py`): fills the static token capacity of every EP dispatcher config that declares `static_token_capacity`, instead of naming DeepEP and HybridEP, and reads `requires_ep` for the EP=1 refusal; `make_token_dispatcher_config` gains `"moonep"`, so backend selection stays in one place; both declare it, so their behaviour is unchanged.
 - Tests: CPU checks for what needs neither the package nor a device, and an on-device test that runs the dispatcher and the expert tables with the real package on two GPUs against a dense reference.
 
 ## Design
@@ -39,7 +42,7 @@ MoonEP's planner picks the experts to copy, recomputed per dispatch. Each rank p
 
 A rank computes on its own experts followed by its slots. The grouped GEMM therefore takes the plan's `cu_seqlens` with the rows of experts homed elsewhere dropped, which are empty because a token reaches either its expert's home rank or a rank holding a slot copy.
 
-The transport stays in the model folder, like fla, and the package is imported only when an EP mesh exists; with no EP mesh both classes are their parents, so a flavor carrying the config still runs unsharded. The first version keeps expert parameters whole per EP rank, so `efsdp == 1`, and refuses `dp_replicate`.
+The package is imported only when an EP mesh exists; with no EP mesh both classes are their parents, so a flavor carrying the config still runs unsharded. The first version keeps expert parameters whole per EP rank, so `efsdp == 1`, and refuses `dp_replicate`.
 
 Requirements and cost:
 
@@ -109,7 +112,7 @@ Its communication time is flat under imbalance. MoonEP's own benchmark at the re
 
 The static shapes also remove a per-layer host synchronization. `AllToAllTokenDispatcher.dispatch` calls `.tolist()` on both split vectors, two device-to-host transfers per MoE layer, and the MoonEP path has none in the per-layer forward.
 
-End to end on the debug flavor, median forward plus backward per step over steps 2 to 10 on the shared warm cache:
+End to end on the debug flavor, median forward plus backward per step over steps 2 to 10 on the shared warm cache. These are the numerics cells, which run deterministically without compile at 256 tokens per micro-batch per rank, so they bound the transport's cost in that regime rather than measure its speed:
 
 | cell | median fwd+bwd per step |
 | --- | ---: |
@@ -123,7 +126,7 @@ MoonEP is 1.6 percent slower at `dp 4 x ep 4` and 0.6 percent at `dp 2 x ep 2`. 
 
 That is the expected sign here. This flavor's routing is near uniform, so the balancing has nothing to balance while the barriers and the prefetch copies still cost, and the imbalance it removes at four ranks is only 1.5x. The same sweep run over rank counts, which is arithmetic on the routing with no transport in it, reads 8.3x at 64 ranks with 4 experts each, the regime a K3-shaped expert count runs in.
 
-The comparison the report makes is against DeepEP, whose time is set by the hottest rank, and it is not in this PR: DeepEP v2 asserts NCCL GIN at construction, and GIN needs an RDMA device the box does not have. So this PR claims correctness, wiring and the balance mechanism, not a speedup.
+The comparison the report makes is against DeepEP, whose time is set by the hottest rank, and it is not in this PR yet. So this PR claims correctness, wiring and the balance mechanism, not a speedup.
 
 ## Limitations
 

@@ -77,3 +77,16 @@ Not irreducible, three items:
 ## Correctness notes from the read
 
 The gradient scratch buffers are overwritten rather than accumulated across micro-batches, which is correct because each micro-batch's backward returns its own gradient and autograd accumulates into the parameter. The fp32 `[E, in, out]` table is allocated zeroed and only this rank's span is ever written, so the reduce adds peers' slot contributions onto this rank's own rows without touching the rest. Both hold only while a later micro-batch's forward cannot run before an earlier one's backward, which is the interleaved-pipeline limitation the body already states.
+
+## 2026-09-22: acted on the audit, and two claims that did not survive a second read
+
+The three "not irreducible" items and the placement question were taken up on branch commit "moonep: the transport lives where torchtitan keeps transports" (`e09f8a5e0`, 14 commits on `6c2dadbb3`, 13 files, +1026/-12; the model folder's share drops from 614 lines to 49).
+
+- Placement. Upstream keeps no model-local comm backend: DeepEP and HybridEP primitives live in `distributed/deepep/`, their dispatchers in `models/common/token_dispatcher.py`, and `make_token_dispatcher_config` is the one place that maps a backend name to a class. MoonEP's dispatcher reads only `hidden_dim`, `top_k` and `num_experts`, so nothing in it was Kimi K3's. It now follows that layout, which also removes the reason the branch had to bypass the factory: the K3 spec no longer special-cases the dispatcher.
+- Two class variables became one. A backend declares `requires_ep`, which both skips the capacity fill at EP=1 and raises for a backend that needs EP.
+- `num_sms` is a module constant in the transport rather than a config knob no flavor set.
+- The private reach stays, in one named function (`barrier_handles`) with the reason in its docstring. The fix is an accessor in MoonEP.
+- The flavor and the CI cell that were missing: `kimi_k3_debugmodel_moonep` plus the h100 cell `kimi_k3_moonep_fsdp4_ep4`, following `qwen3_moe_deepep` and `qwen3_moe_deepep_fsdp4_ep4`. Without them the body's own reproduction command named a config that did not exist and no shipped config reached the backend.
+- Untouched, because this box has no NVSwitch Hopper to verify a behaviour change on: the backward recompute (the expert GEMMs run one extra time per micro-batch, which the cost list does not mention) and the table orientation.
+
+Two claims in the body did not survive: DeepEP v2 does not need an RDMA NIC (`EP_DISABLE_GIN=1` with the NVSHMEM variables, documented in qwen3's deepep flavor and used by torchtitan's own 8-GPU CI script, both present at this branch's base), and the step-time table is not a speed measurement (it comes from the deterministic numerics cells at 256 tokens per micro-batch, where a step is 5.2 s and the transport is a rounding error in the total). Both are corrected in `PR_BODY_MOONEP.md`.
