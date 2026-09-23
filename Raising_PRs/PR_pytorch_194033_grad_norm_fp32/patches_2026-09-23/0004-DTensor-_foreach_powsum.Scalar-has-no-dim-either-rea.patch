@@ -1,0 +1,106 @@
+From 0ff051d35d6abaf4f2816de77dcd29cc98200170 Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Wed, 23 Sep 2026 09:50:42 +0000
+Subject: [PATCH 4/4] DTensor: _foreach_powsum.Scalar has no dim either; read
+ dim and keepdim by schema position
+
+_foreach_powsum.Scalar is (self, ord, dtype) like _foreach_norm.Scalar, and its
+strategy read args_schema[2] as dim, so a dtype= call failed the same way. Both
+strategies now take dim and keepdim from the positions the op's schema gives them,
+which replaces the op identity check. test_foreach_powsum_sharded gains a bfloat16
+input with dtype=torch.float32.
+---
+ test/distributed/tensor/test_math_ops.py   | 14 +++++++++-
+ torch/distributed/tensor/_ops/_math_ops.py | 30 ++++++++++++++--------
+ 2 files changed, 33 insertions(+), 11 deletions(-)
+
+diff --git a/test/distributed/tensor/test_math_ops.py b/test/distributed/tensor/test_math_ops.py
+index 205db5ffcd..d38b528090 100644
+--- a/test/distributed/tensor/test_math_ops.py
++++ b/test/distributed/tensor/test_math_ops.py
+@@ -842,7 +842,7 @@ class DistMathOpsTest(DTensorTestBase):
+     def test_foreach_norm(self):
+         device_mesh = self.build_device_mesh()
+ 
+-        # dtype is _foreach_norm.Scalar's keyword argument: (self, ord, *, dtype).
++        # dtype is _foreach_norm.Scalar's third argument: (self, ord, dtype).
+         for input_dtype, dtype in (
+             (torch.float32, None),
+             (torch.bfloat16, torch.float32),
+@@ -999,6 +999,18 @@ class DistMathOpsTest(DTensorTestBase):
+             self.assertEqual(sharded_out[0].full_tensor(), expected0)
+             self.assertEqual(sharded_out[1].full_tensor(), expected1)
+ 
++        # dtype sits where linalg__powsum has dim: _foreach_powsum.Scalar is (self, ord, dtype).
++        low = [grad0.bfloat16(), grad1.bfloat16()]
++        sharded_low = [distribute_tensor(t, device_mesh, [Shard(0)]) for t in low]
++        out = torch.ops.aten._foreach_powsum(low, 2, dtype=torch.float32)
++        sharded_out = torch.ops.aten._foreach_powsum(
++            sharded_low, 2, dtype=torch.float32
++        )
++        for o, so in zip(out, sharded_out):
++            self.assertEqual(so.placements, (Partial("sum"),))
++            self.assertEqual(so.dtype, o.dtype)
++            self.assertEqual(so.full_tensor(), o)
++
+     @with_comms
+     def test_foreach_norm_different_mesh(self):
+         mesh_shape = (2, self.world_size // 2)
+diff --git a/torch/distributed/tensor/_ops/_math_ops.py b/torch/distributed/tensor/_ops/_math_ops.py
+index cbce092fa8..5ba2fbe943 100644
+--- a/torch/distributed/tensor/_ops/_math_ops.py
++++ b/torch/distributed/tensor/_ops/_math_ops.py
+@@ -923,6 +923,24 @@ def _get_norm_reduction_op(norm_type: int | float | str) -> ReductionOpType:
+         return NormReduction(norm_type)
+ 
+ 
++def _dim_keepdim_from_schema(
++    op: torch._ops.OpOverload, args_schema: tuple[Any, ...]
++) -> tuple[Any, bool]:
++    """Read dim and keepdim from the positions op's schema gives them.
++
++    The _foreach_*.Scalar overloads reduce each tensor fully and have neither:
++    their schema is (self, ord, dtype), so a positional read would take dtype for dim.
++    """
++    names = [arg.name for arg in op._schema.arguments]
++    dim = None
++    keepdim = False
++    if "dim" in names and len(args_schema) > names.index("dim"):
++        dim = args_schema[names.index("dim")]
++    if "keepdim" in names and len(args_schema) > names.index("keepdim"):
++        keepdim = args_schema[names.index("keepdim")]
++    return dim, keepdim
++
++
+ @register_single_dim_strategy(
+     [aten.linalg_vector_norm.default, aten.norm.Scalar],
+     schema_info=RuntimeSchemaInfo(1),
+@@ -949,14 +967,7 @@ def vector_norm_single_dim_strategy(
+     norm_type = args_schema[1] if len(args_schema) > 1 else 2
+     if not isinstance(norm_type, (int, float, str)):
+         raise AssertionError(f"Expected int, float, or str, got {type(norm_type)}")
+-    # Specialize for _foreach_norm.Scalar since it reduces each tensor fully and
+-    # has no dim/keepdim (its schema is (self, ord, *, dtype)).
+-    if op == aten._foreach_norm.Scalar:
+-        dim = None
+-        keepdim = False
+-    else:
+-        dim = args_schema[2] if len(args_schema) > 2 else None
+-        keepdim = args_schema[3] if len(args_schema) > 3 else False
++    dim, keepdim = _dim_keepdim_from_schema(op, args_schema)
+     dims = _infer_reduction_dims(dim, ndim)
+ 
+     return _reduction_single_dim_strategy(
+@@ -993,8 +1004,7 @@ def powsum_single_dim_strategy(
+         raise AssertionError(f"Expected TensorMeta, got {type(input_meta)}")
+     ndim = len(input_meta.shape)
+ 
+-    dim = args_schema[2] if len(args_schema) > 2 else None
+-    keepdim = args_schema[3] if len(args_schema) > 3 else False
++    dim, keepdim = _dim_keepdim_from_schema(op, args_schema)
+     dims = _infer_reduction_dims(dim, ndim)
+ 
+     return _reduction_single_dim_strategy(
+-- 
+2.43.0
+

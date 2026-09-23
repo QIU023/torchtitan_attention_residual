@@ -1,0 +1,216 @@
+diff --git a/test/distributed/tensor/test_math_ops.py b/test/distributed/tensor/test_math_ops.py
+index 4a8e90bd60..d38b528090 100644
+--- a/test/distributed/tensor/test_math_ops.py
++++ b/test/distributed/tensor/test_math_ops.py
+@@ -842,20 +842,29 @@ class DistMathOpsTest(DTensorTestBase):
+     def test_foreach_norm(self):
+         device_mesh = self.build_device_mesh()
+ 
+-        grad0 = torch.randn(12, 8)
+-        grad1 = torch.randn(8, 8)
++        # dtype is _foreach_norm.Scalar's third argument: (self, ord, dtype).
++        for input_dtype, dtype in (
++            (torch.float32, None),
++            (torch.bfloat16, torch.float32),
++        ):
++            with self.subTest(input_dtype=input_dtype, dtype=dtype):
++                grad0 = torch.randn(12, 8, dtype=input_dtype)
++                grad1 = torch.randn(8, 8, dtype=input_dtype)
+ 
+-        sharded_grad0 = distribute_tensor(grad0, device_mesh, [Shard(0)])
+-        sharded_grad1 = distribute_tensor(grad1, device_mesh, [Shard(0)])
++                sharded_grad0 = distribute_tensor(grad0, device_mesh, [Shard(0)])
++                sharded_grad1 = distribute_tensor(grad1, device_mesh, [Shard(0)])
+ 
+-        # non-sharded op
+-        out = torch.ops.aten._foreach_norm([grad0, grad1], 2)
++                # non-sharded op
++                out = torch.ops.aten._foreach_norm([grad0, grad1], 2, dtype=dtype)
+ 
+-        # sharded op
+-        sharded_out = torch.ops.aten._foreach_norm([sharded_grad0, sharded_grad1], 2)
++                # sharded op
++                sharded_out = torch.ops.aten._foreach_norm(
++                    [sharded_grad0, sharded_grad1], 2, dtype=dtype
++                )
+ 
+-        for o, so in zip(out, sharded_out):
+-            self.assertEqual(so.full_tensor(), o)
++                for o, so in zip(out, sharded_out):
++                    self.assertEqual(so.dtype, o.dtype)
++                    self.assertEqual(so.full_tensor(), o)
+ 
+     @with_comms
+     def test_foreach_max_sharded(self):
+@@ -990,6 +999,18 @@ class DistMathOpsTest(DTensorTestBase):
+             self.assertEqual(sharded_out[0].full_tensor(), expected0)
+             self.assertEqual(sharded_out[1].full_tensor(), expected1)
+ 
++        # dtype sits where linalg__powsum has dim: _foreach_powsum.Scalar is (self, ord, dtype).
++        low = [grad0.bfloat16(), grad1.bfloat16()]
++        sharded_low = [distribute_tensor(t, device_mesh, [Shard(0)]) for t in low]
++        out = torch.ops.aten._foreach_powsum(low, 2, dtype=torch.float32)
++        sharded_out = torch.ops.aten._foreach_powsum(
++            sharded_low, 2, dtype=torch.float32
++        )
++        for o, so in zip(out, sharded_out):
++            self.assertEqual(so.placements, (Partial("sum"),))
++            self.assertEqual(so.dtype, o.dtype)
++            self.assertEqual(so.full_tensor(), o)
++
+     @with_comms
+     def test_foreach_norm_different_mesh(self):
+         mesh_shape = (2, self.world_size // 2)
+diff --git a/test/test_nn.py b/test/test_nn.py
+index e5f5014cc8..56c8c629d1 100644
+--- a/test/test_nn.py
++++ b/test/test_nn.py
+@@ -13539,6 +13539,39 @@ if __name__ == '__main__':
+         clip_grad_value_([p2], clip_value, foreach=foreach)
+         self.assertEqual(p1.grad, p2.grad)
+ 
++    # The bfloat16 values below are those of the CPU and CUDA kernels, which accumulate in
++    # float32 and round to nearest even; another backend may round differently.
++    @onlyOn(["cpu", "cuda"])
++    @parametrize_test('foreach', (False, True))
++    @parametrize_test('norm_type', (1.0, 2.0))
++    def test_get_total_norm_dtype(self, norm_type, foreach, device):
++        # By default each per-tensor norm of low-precision inputs is rounded to their dtype
++        # before the norms are combined, so the total depends on how the tensors are split.
++        # With dtype=torch.float32 every norm is accumulated and returned in float32. The
++        # inputs are small integers, so the float32 sums are exact and the result is the
++        # correctly rounded norm: it is compared without tolerance.
++        g = torch.tensor([255.0, 32.0, 1.0], dtype=torch.bfloat16, device=device)
++        whole, split = [g], [g[:2], g[2:]]
++
++        exact = {1.0: 255.0 + 32.0 + 1.0, 2.0: math.sqrt(255.0**2 + 32.0**2 + 1.0**2)}[norm_type]
++        expected = torch.tensor(exact, dtype=torch.float32, device=device)
++        for tensors in (whole, split):
++            total = get_total_norm(tensors, norm_type=norm_type, foreach=foreach, dtype=torch.float32)
++            self.assertEqual(total, expected, atol=0, rtol=0)
++
++        whole_default = get_total_norm(whole, norm_type=norm_type, foreach=foreach)
++        split_default = get_total_norm(split, norm_type=norm_type, foreach=foreach)
++        self.assertEqual(whole_default.dtype, torch.bfloat16)
++        self.assertEqual(split_default.dtype, torch.bfloat16)
++        if norm_type == 2.0:
++            # The first part of the split has norm 257, which rounds to 256 in bfloat16, so the
++            # split total is sqrt(256**2 + 1) -> 256 while the unsplit one is sqrt(66050) -> 258.
++            self.assertEqual(whole_default.item(), 258.0)
++            self.assertEqual(split_default.item(), 256.0)
++
++        empty = get_total_norm([], norm_type=norm_type, dtype=torch.float32)
++        self.assertEqual(empty.dtype, torch.float32)
++
+     @parametrize_test('foreach', (False, True))
+     @parametrize_test('norm_type', (0.5, 1.5, 2, 4, 'inf'))
+     def test_clip_grad_norm(self, norm_type, foreach, device):
+diff --git a/torch/distributed/tensor/_ops/_math_ops.py b/torch/distributed/tensor/_ops/_math_ops.py
+index 89ddcfeb2a..5ba2fbe943 100644
+--- a/torch/distributed/tensor/_ops/_math_ops.py
++++ b/torch/distributed/tensor/_ops/_math_ops.py
+@@ -923,6 +923,24 @@ def _get_norm_reduction_op(norm_type: int | float | str) -> ReductionOpType:
+         return NormReduction(norm_type)
+ 
+ 
++def _dim_keepdim_from_schema(
++    op: torch._ops.OpOverload, args_schema: tuple[Any, ...]
++) -> tuple[Any, bool]:
++    """Read dim and keepdim from the positions op's schema gives them.
++
++    The _foreach_*.Scalar overloads reduce each tensor fully and have neither:
++    their schema is (self, ord, dtype), so a positional read would take dtype for dim.
++    """
++    names = [arg.name for arg in op._schema.arguments]
++    dim = None
++    keepdim = False
++    if "dim" in names and len(args_schema) > names.index("dim"):
++        dim = args_schema[names.index("dim")]
++    if "keepdim" in names and len(args_schema) > names.index("keepdim"):
++        keepdim = args_schema[names.index("keepdim")]
++    return dim, keepdim
++
++
+ @register_single_dim_strategy(
+     [aten.linalg_vector_norm.default, aten.norm.Scalar],
+     schema_info=RuntimeSchemaInfo(1),
+@@ -949,8 +967,7 @@ def vector_norm_single_dim_strategy(
+     norm_type = args_schema[1] if len(args_schema) > 1 else 2
+     if not isinstance(norm_type, (int, float, str)):
+         raise AssertionError(f"Expected int, float, or str, got {type(norm_type)}")
+-    dim = args_schema[2] if len(args_schema) > 2 else None
+-    keepdim = args_schema[3] if len(args_schema) > 3 else False
++    dim, keepdim = _dim_keepdim_from_schema(op, args_schema)
+     dims = _infer_reduction_dims(dim, ndim)
+ 
+     return _reduction_single_dim_strategy(
+@@ -987,8 +1004,7 @@ def powsum_single_dim_strategy(
+         raise AssertionError(f"Expected TensorMeta, got {type(input_meta)}")
+     ndim = len(input_meta.shape)
+ 
+-    dim = args_schema[2] if len(args_schema) > 2 else None
+-    keepdim = args_schema[3] if len(args_schema) > 3 else False
++    dim, keepdim = _dim_keepdim_from_schema(op, args_schema)
+     dims = _infer_reduction_dims(dim, ndim)
+ 
+     return _reduction_single_dim_strategy(
+diff --git a/torch/nn/utils/clip_grad.py b/torch/nn/utils/clip_grad.py
+index c7b2d6fcdd..29cba11be2 100644
+--- a/torch/nn/utils/clip_grad.py
++++ b/torch/nn/utils/clip_grad.py
+@@ -51,6 +51,7 @@ def _get_total_norm(
+     norm_type: float = 2.0,
+     error_if_nonfinite: bool = False,
+     foreach: bool | None = None,
++    dtype: torch.dtype | None = None,
+ ) -> torch.Tensor:
+     r"""Compute the norm of an iterable of tensors.
+ 
+@@ -69,6 +70,13 @@ def _get_total_norm(
+             If ``None``, use the foreach implementation for CUDA and CPU native tensors and silently
+             fall back to the slow implementation for other device types.
+             Default: ``None``
++        dtype (torch.dtype, optional): if set, the per-tensor norms and the norm-of-norms are
++            accumulated in this dtype and the result is returned in it. Otherwise, inputs accumulate
++            in their own dtype by default, which may be undesirable for lower precision inputs
++            (e.g. ``bfloat16``). It must be a floating point dtype that the inputs promote to
++            (``torch.promote_types(input.dtype, dtype) == dtype``), the constraint
++            :func:`torch.linalg.vector_norm` places on its ``dtype``; anything else raises.
++            Default: ``None``.
+ 
+     Returns:
+         Total norm of the tensors (viewed as a single vector).
+@@ -79,7 +87,7 @@ def _get_total_norm(
+         tensors = list(tensors)
+     norm_type = float(norm_type)
+     if len(tensors) == 0:
+-        return torch.tensor(0.0)
++        return torch.tensor(0.0, dtype=dtype)
+     first_device = tensors[0].device
+     grouped_tensors: dict[
+         tuple[torch.device, torch.dtype], tuple[list[list[Tensor]], list[int]]
+@@ -92,18 +100,21 @@ def _get_total_norm(
+         if (foreach is None and _has_foreach_support(device_tensors, device)) or (
+             foreach and _device_has_foreach_support(device)
+         ):
+-            norms.extend(torch._foreach_norm(device_tensors, norm_type))
++            norms.extend(torch._foreach_norm(device_tensors, norm_type, dtype=dtype))
+         elif foreach:
+             raise RuntimeError(
+                 f"foreach=True was passed, but can't use the foreach API on {device.type} tensors"
+             )
+         else:
+             norms.extend(
+-                [torch.linalg.vector_norm(g, norm_type) for g in device_tensors]
++                [
++                    torch.linalg.vector_norm(g, norm_type, dtype=dtype)
++                    for g in device_tensors
++                ]
+             )
+ 
+     total_norm = torch.linalg.vector_norm(
+-        torch.stack([norm.to(first_device) for norm in norms]), norm_type
++        torch.stack([norm.to(first_device) for norm in norms]), norm_type, dtype=dtype
+     )
+ 
+     if error_if_nonfinite and torch.logical_or(total_norm.isnan(), total_norm.isinf()):
