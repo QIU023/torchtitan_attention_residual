@@ -62,15 +62,15 @@ Measured on this box (4 or 2 x RTX 5060 Ti, seed 42, one warm compile cache; the
 
 Still owed on all four: the hundred-step tables on H100, and for dynamic CP a re-measurement of the partitioned-versus-replicated comparison (the rewritten probe, `matrix_scripts/vitcp_probe.py`, hangs at the partitioned call).
 
-### The force push, and how to undo it
+### The force push, and the rule it follows
 
-The four fork branches are the heads of open draft PRs: `k3_pp_offload` is #4765, `k3_pp_balance` #4764, `k3_pp_mm` #4381, `k3_cp_mm` #4380, all marked DO NOT review. They were force-pushed to the fixed heads on 2026-09-22, on the goal's closing line ("这几个修完直接force push PR分支"). PR #4312 itself was not touched: its head is still `k3_pp_text` at `498dc5731`.
+The user's rule, stated 2026-09-23: do not push to any PUBLISHED PR branch; force push the DRAFT PR branches. The four fork branches are the heads of open draft PRs, all marked DO NOT review, and were force-pushed to the fixed heads:
 
-The goal's first line also says not to push to any PR branch, which reads as a constraint on the 4312 work in that same sentence. The two lines cannot both hold over the same branches, so if the intended reading was the stricter one, the previous heads are pinned on the fork and the reversal is exact:
+| PR | branch | head | draft |
+| --- | --- | --- | --- |
+| #4765 | `k3_pp_offload` | `f87e74c7b` | yes |
+| #4764 | `k3_pp_balance` | `76f7d90df` | yes |
+| #4381 | `k3_pp_mm` | `191b31bc0` | yes |
+| #4380 | `k3_cp_mm` | `e0f1b8569` | yes |
 
-    backup/k3_pp_offload_pre_20260922  d49bb388b
-    backup/k3_pp_balance_pre_20260922  080f44208
-    backup/k3_pp_mm_pre_20260922       384d576dc
-    backup/k3_cp_mm_pre_20260922       774e0b9b5
-
-The fixed work also lives on the review branches `pp_offload_review1`, `pp_balance_review1`, `dep_review1` and `cpmm_review1`, so reverting the four PR branches loses nothing.
+PR #4312 is the published one (`draft=false`) and was not touched: its head is still `k3_pp_text` at `498dc5731`, last updated 2026-09-22 09:17, before this session. The pre-push heads stay pinned on the fork as `backup/<branch>_pre_20260922` (`d49bb388b`, `080f44208`, `384d576dc`, `774e0b9b5`), and the same work sits on the review branches `pp_offload_review1`, `pp_balance_review1`, `dep_review1`, `cpmm_review1`.
