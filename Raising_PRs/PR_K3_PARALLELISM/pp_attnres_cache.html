@@ -1,0 +1,237 @@
+<title>AttnRes Cache Transport</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --ink: #1f2328;
+    --muted: #5f6b76;
+    --rule: #d9d4c7;
+    --box: #ffffff;
+    --fwd: #1f2328;
+    --bwd: #d92d20;
+    --lab-fwd: #d9760a;
+    --lab-bwd: #d92d20;
+    --note: #1f6fb2;
+    --comm-fill: #c6efce;
+    --comm-stroke: #2f9e44;
+    --font: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15181c; --ink: #e6e9ec; --muted: #9aa5b1; --rule: #2f363d; --box: #1c2127;
+      --fwd: #e6e9ec; --bwd: #ff6b5e; --lab-fwd: #f2a54a; --lab-bwd: #ff6b5e; --note: #6cb4f5;
+      --comm-fill: #1f4d2b; --comm-stroke: #69db7c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15181c; --ink: #e6e9ec; --muted: #9aa5b1; --rule: #2f363d; --box: #1c2127;
+    --fwd: #e6e9ec; --bwd: #ff6b5e; --lab-fwd: #f2a54a; --lab-bwd: #ff6b5e; --note: #6cb4f5;
+    --comm-fill: #1f4d2b; --comm-stroke: #69db7c;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font); padding-block: 28px 40px; padding-inline: 16px; }
+  main { max-width: 1480px; margin: 0 auto; display: grid; gap: 18px; }
+  header h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 70ch; }
+  .fig { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--box); }
+  .fig svg { display: block; min-width: 1180px; width: 100%; height: auto; color: var(--ink); font-family: var(--font); }
+  figcaption { font-size: 13px; color: var(--muted); padding: 10px 14px 12px; max-width: 110ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; color: var(--muted); align-items: center; }
+  .legend code { font-family: var(--mono); color: var(--ink); font-size: 12.5px; }
+  .sw { display: inline-block; width: 26px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+  .sw.fwd { background: var(--fwd); } .sw.bwd { background: var(--bwd); }
+  .chip { display: inline-block; width: 22px; height: 12px; vertical-align: middle; margin-right: 6px; border: 1.5px solid var(--comm-stroke); border-radius: 3px; background: var(--comm-fill); }
+  .chip.h { background: repeating-linear-gradient(135deg, var(--comm-stroke) 0 1px, transparent 1px 4px); }
+
+  /* SVG roles: classes carry the theme tokens; the attributes in the markup are the light values for a standalone export */
+  svg .ent { fill: var(--box); stroke: var(--ink); stroke-width: 1.6; }
+  svg .comm { fill: var(--comm-fill); stroke: var(--comm-stroke); stroke-width: 1.6; }
+  svg .commh { fill: url(#hatch); stroke: var(--comm-stroke); stroke-width: 1.6; }
+  svg .hatch-line { stroke: var(--comm-stroke); }
+  svg .fwd { stroke: var(--fwd); fill: none; stroke-width: 2; }
+  svg .bwd { stroke: var(--bwd); fill: none; stroke-width: 2; }
+  svg .mk-fwd { fill: var(--fwd); } svg .mk-bwd { fill: var(--bwd); }
+  svg text { fill: var(--ink); font-size: 12.5px; }
+  svg .t { font-size: 13.5px; font-weight: 600; }
+  svg .sym { font-family: var(--mono); font-size: 12.5px; }
+  svg .lf { fill: var(--lab-fwd); font-family: var(--mono); font-size: 12.5px; }
+  svg .lb { fill: var(--lab-bwd); font-family: var(--mono); font-size: 12.5px; }
+  svg .note { fill: var(--note); font-size: 11.5px; }
+  svg .cap { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; }
+  svg .cap.f { fill: var(--lab-fwd); } svg .cap.b { fill: var(--lab-bwd); }
+  svg .title { font-size: 15px; font-weight: 600; }
+  svg .sub { fill: var(--muted); font-size: 12px; }
+</style>
+
+<main>
+  <header>
+    <h1>Block attention residual under pipeline parallelism, with the rank cache</h1>
+    <p>One stage on one rank. Forward in black, backward in red, the P2P sends and receives in green. The same stage with the cache off is on the right.</p>
+  </header>
+
+  <figure class="fig" style="margin:0">
+  <svg viewBox="0 0 1460 690" role="img" aria-label="Forward and backward data flow of one Kimi K3 pipeline stage with the block cache on, next to the same stage with the cache off">
+    <defs>
+      <marker id="mf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="mk-fwd" fill="#1f2328"/>
+      </marker>
+      <marker id="mb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="mk-bwd" fill="#d92d20"/>
+      </marker>
+      <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="6" height="6" fill="#eef9f0"/>
+        <line x1="0" y1="0" x2="0" y2="6" class="hatch-line" stroke="#2f9e44" stroke-width="1.2"/>
+      </pattern>
+    </defs>
+
+    <!-- ===================== panel 1: cache on ===================== -->
+    <text x="20" y="30" class="title">attn_res_cache on</text>
+    <text x="180" y="30" class="sub">stage s on rank r; a hop carries the blocks the next rank has not seen</text>
+
+    <!-- input / output labels -->
+    <text x="365" y="72" text-anchor="middle" class="lf">h, Δ  from stage s−1</text>
+    <text x="365" y="604" text-anchor="middle" class="lf">h′, Δ′  to stage s+1</text>
+    <text x="665" y="604" text-anchor="middle" class="lb">∇h′, ∇Δ′  from stage s+1</text>
+    <text x="665" y="72" text-anchor="middle" class="lb">∇h, ∇Δ  to stage s−1</text>
+
+    <!-- forward column -->
+    <rect x="260" y="90" width="210" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44"/>
+    <text x="365" y="115" text-anchor="middle" class="t">P2P recv</text>
+
+    <rect x="260" y="190" width="210" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328"/>
+    <text x="365" y="211" text-anchor="middle" class="t">assemble</text>
+    <text x="365" y="228" text-anchor="middle" class="sym">B = store ⊕ Δ  (leaf)</text>
+
+    <rect x="260" y="300" width="210" height="60" rx="8" class="ent" fill="#ffffff" stroke="#1f2328"/>
+    <text x="365" y="324" text-anchor="middle" class="t">layers l..m</text>
+    <text x="365" y="343" text-anchor="middle" class="sym">first layer of a block: B ← B ⊕ h</text>
+
+    <rect x="260" y="420" width="210" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328"/>
+    <text x="365" y="441" text-anchor="middle" class="t">pack Δ′</text>
+    <text x="365" y="458" text-anchor="middle" class="sym">columns the next rank lacks</text>
+
+    <rect x="260" y="530" width="210" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44"/>
+    <text x="365" y="555" text-anchor="middle" class="t">P2P send</text>
+
+    <text x="260" y="660" class="cap f" fill="#d9760a">FORWARD</text>
+
+    <!-- forward arrows -->
+    <line x1="365" y1="130" x2="365" y2="188" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="373" y="164" class="lf">h, Δ</text>
+    <line x1="365" y1="240" x2="365" y2="298" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="373" y="274" class="lf">h, B</text>
+    <line x1="365" y1="360" x2="365" y2="418" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="373" y="394" class="lf">h′, B′</text>
+    <line x1="365" y1="470" x2="365" y2="528" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="373" y="516" class="lf">h′, Δ′</text>
+
+    <!-- rank store -->
+    <rect x="20" y="190" width="170" height="170" rx="8" class="ent" fill="#ffffff" stroke="#1f2328"/>
+    <text x="105" y="214" text-anchor="middle" class="t">rank store</text>
+    <text x="105" y="236" text-anchor="middle" class="sym">blocks B ≤ s−P</text>
+    <text x="105" y="254" text-anchor="middle" class="sym">deposits ∇B</text>
+    <text x="105" y="278" text-anchor="middle" class="sub">keyed (micro-batch, block)</text>
+    <text x="105" y="296" text-anchor="middle" class="sub">one per rank, shared by</text>
+    <text x="105" y="312" text-anchor="middle" class="sub">the rank's stages</text>
+    <text x="105" y="340" text-anchor="middle" class="note">freed after the rank's last stage</text>
+
+    <line x1="190" y1="208" x2="258" y2="208" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="224" y="203" text-anchor="middle" class="lf">held B</text>
+    <line x1="260" y1="232" x2="192" y2="232" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="224" y="247" text-anchor="middle" class="lf">cache Δ</text>
+    <polyline points="260,330 224,330 224,300 192,300" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="222" y="346" text-anchor="middle" class="lf">commit new B</text>
+
+    <!-- backward column -->
+    <rect x="560" y="530" width="210" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44"/>
+    <text x="665" y="555" text-anchor="middle" class="t">P2P recv</text>
+
+    <rect x="560" y="420" width="210" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328"/>
+    <text x="665" y="441" text-anchor="middle" class="t">collect</text>
+    <text x="665" y="458" text-anchor="middle" class="sym">∇Δ′ += deposits of own B</text>
+
+    <rect x="560" y="190" width="210" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328"/>
+    <text x="665" y="211" text-anchor="middle" class="t">split ∇B</text>
+    <text x="665" y="228" text-anchor="middle" class="sym">Δ part → wire, stored → deposit</text>
+
+    <rect x="560" y="90" width="210" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44"/>
+    <text x="665" y="115" text-anchor="middle" class="t">P2P send</text>
+
+    <text x="560" y="660" class="cap b" fill="#d92d20">BACKWARD</text>
+
+    <!-- backward arrows -->
+    <line x1="665" y1="530" x2="665" y2="472" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="673" y="506" class="lb">∇h′, ∇Δ′</text>
+    <line x1="560" y1="445" x2="472" y2="352" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="500" y="418" class="lb">backward</text>
+    <line x1="470" y1="312" x2="558" y2="220" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="478" y="258" class="lb">∇h, ∇B</text>
+    <line x1="665" y1="190" x2="665" y2="132" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="673" y="164" class="lb">∇h, ∇Δ</text>
+
+    <!-- store <-> backward: deposits in (from split), deposits out (to collect) -->
+    <polyline points="560,200 520,200 520,160 105,160 105,188" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="480" y="154" text-anchor="end" class="lb">deposit stored ∇B</text>
+    <polyline points="105,360 105,500 600,500 600,472" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="230" y="494" class="lb">deposits, counted against the tables</text>
+
+    <!-- notes -->
+    <text x="790" y="323" class="note">last stage: aggregation</text>
+    <text x="790" y="339" class="note">on (h, B), no send</text>
+    <text x="790" y="212" class="note">tables: the same on</text>
+    <text x="790" y="228" class="note">every rank, no collective</text>
+
+    <!-- divider -->
+    <line x1="960" y1="20" x2="960" y2="670" stroke="#d9d4c7" stroke-dasharray="4 6"/>
+
+    <!-- ===================== panel 2: cache off ===================== -->
+    <text x="1000" y="30" class="title">attn_res_cache off</text>
+    <text x="1160" y="30" class="sub">the whole stack on every hop</text>
+
+    <text x="1145" y="72" text-anchor="middle" class="lf">h, B  from stage s−1</text>
+    <text x="1145" y="604" text-anchor="middle" class="lf">h′, B′  to stage s+1</text>
+    <text x="1370" y="604" text-anchor="middle" class="lb">∇h′, ∇B′  from stage s+1</text>
+    <text x="1370" y="72" text-anchor="middle" class="lb">∇h, ∇B  to stage s−1</text>
+
+    <rect x="1040" y="90" width="210" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44"/>
+    <text x="1145" y="115" text-anchor="middle" class="t">P2P recv</text>
+    <rect x="1040" y="300" width="210" height="60" rx="8" class="ent" fill="#ffffff" stroke="#1f2328"/>
+    <text x="1145" y="324" text-anchor="middle" class="t">layers l..m</text>
+    <text x="1145" y="343" text-anchor="middle" class="sym">B is the leaf, nothing assembled</text>
+    <rect x="1040" y="530" width="210" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44"/>
+    <text x="1145" y="555" text-anchor="middle" class="t">P2P send</text>
+    <text x="1040" y="660" class="cap f" fill="#d9760a">FORWARD</text>
+
+    <line x1="1145" y1="130" x2="1145" y2="298" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="1153" y="220" class="lf">h, B</text>
+    <line x1="1145" y1="360" x2="1145" y2="528" class="fwd" stroke="#1f2328" marker-end="url(#mf)"/>
+    <text x="1153" y="450" class="lf">h′, B′</text>
+
+    <rect x="1290" y="530" width="160" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44"/>
+    <text x="1370" y="555" text-anchor="middle" class="t">P2P recv</text>
+    <rect x="1290" y="90" width="160" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44"/>
+    <text x="1370" y="115" text-anchor="middle" class="t">P2P send</text>
+    <text x="1290" y="660" class="cap b" fill="#d92d20">BACKWARD</text>
+
+    <polyline points="1370,530 1370,345 1252,345" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="1378" y="445" class="lb">∇h′, ∇B′</text>
+    <polyline points="1250,315 1330,315 1330,132" class="bwd" stroke="#d92d20" marker-end="url(#mb)"/>
+    <text x="1338" y="225" class="lb">∇h, ∇B</text>
+
+    <text x="1040" y="392" class="note">no store, no deposits;</text>
+    <text x="1040" y="408" class="note">B grows with the stage index</text>
+  </svg>
+  <figcaption>With the cache on, a rank keeps every block it has seen, so a hop carries only the blocks the next rank lacks (Δ) and a block committed at stage s rides the wire for P−1 hops; the gradient of a stored block is deposited in the store and collected by the stage that brought it onto the rank, in the order the schedule already guarantees. With the cache off the same stage sends the whole stack, and there is nothing to deposit or collect.</figcaption>
+  </figure>
+
+  <div class="legend">
+    <span><code>h</code> hidden [T, D]</span>
+    <span><code>B</code> block stack [T, N, D]</span>
+    <span><code>Δ</code> blocks the next rank lacks [T, N<sub>d</sub>, D]</span>
+    <span><code>∇</code> gradient of</span>
+    <span><span class="sw fwd"></span>forward</span>
+    <span><span class="sw bwd"></span>backward</span>
+    <span><span class="chip"></span>P2P, forward</span>
+    <span><span class="chip h"></span>P2P, backward</span>
+  </div>
+</main>
