@@ -74,3 +74,7 @@ The user's rule, stated 2026-09-23: do not push to any PUBLISHED PR branch; forc
 | #4380 | `k3_cp_mm` | `e0f1b8569` | yes |
 
 PR #4312 is the published one (`draft=false`) and was not touched: its head is still `k3_pp_text` at `498dc5731`, last updated 2026-09-22 09:17, before this session. The pre-push heads stay pinned on the fork as `backup/<branch>_pre_20260922` (`d49bb388b`, `080f44208`, `384d576dc`, `774e0b9b5`), and the same work sits on the review branches `pp_offload_review1`, `pp_balance_review1`, `dep_review1`, `cpmm_review1`.
+
+### Dynamic CP's base: decided 2026-09-23
+
+Dynamic CP (#4380, `k3_cp_mm` = `e0f1b8569`) stays on upstream CP PR 4639's head `0088c9b70`, which sits on `1e4b1f686`, 14 commits behind main and before #4810; it carries none of 4312. The user's decision: wait for 4639 to rebase, and the one commit follows it. Not chosen: porting the commit onto today's main without 4639 (three files conflict, the install moves into the model, and the PR would add tower CP to a model with no text CP), or putting it on main plus 4312. DEP (#4381) is on the latest main through 4312: `191b31bc0` = 3 commits on `78be13c96` on `7349a2282`, the main tip.
