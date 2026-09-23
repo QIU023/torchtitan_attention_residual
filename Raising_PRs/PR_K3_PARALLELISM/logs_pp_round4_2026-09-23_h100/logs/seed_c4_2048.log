@@ -1,0 +1,32 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-23 08:03:33,898 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-23 08:03:34,376 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-23 08:03:34,376 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-23 08:03:34,441 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-23 08:03:34,443 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /home/ubuntu/results/pp_r4/seed_c4_2048/structured_logs/training.global_rank_0.20260923-080334-PTX9TD.jsonl
+[titan] 2026-09-23 08:03:34,602 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-23 08:03:34,955 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-23 08:03:34,955 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-23 08:03:34,965 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.18GiB memory
+[titan] 2026-09-23 08:03:34,986 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-23 08:03:35,694 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[titan] 2026-09-23 08:03:35,807 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-23 08:03:35,810 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[titan] 2026-09-23 08:03:35,810 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-23 08:03:35,814 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-23 08:03:36,639 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[titan] 2026-09-23 08:03:36,643 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 481 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-23 08:03:36,645 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[titan] 2026-09-23 08:03:36,645 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[titan] 2026-09-23 08:03:36,645 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[titan] 2026-09-23 08:03:36,648 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /home/ubuntu/results/pp_r4/seed_c4_2048/checkpoint
+[titan] 2026-09-23 08:03:36,648 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-23 08:03:36,648 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.00GiB(0.00%)
+[titan] 2026-09-23 08:03:36,648 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 2048 tokens per train step, gradient accumulation steps 8, maximum context length 2048, total steps 1 (warmup 2)
+[titan] 2026-09-23 08:03:36,649 - torchtitan.components.checkpointer.dcp - INFO - Saving the checkpointer.
+[titan] 2026-09-23 08:03:36,677 - torchtitan.components.checkpointer.dcp - INFO - Saving a model only checkpoint in torch.float32 at last step, step 0.
+[titan] 2026-09-23 08:03:36,970 - torchtitan.tools.utils - INFO - [GC] GC collection invoked by checkpointer. took 0.01 seconds
+[titan] 2026-09-23 08:03:36,971 - torchtitan.components.checkpointer.dcp - INFO - Last step checkpoint completed in 0.32s
+[titan] 2026-09-23 08:03:36,971 - __main__ - INFO - Created seed checkpoint
+[titan] 2026-09-23 08:03:36,971 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[titan] 2026-09-23 08:03:37,451 - __main__ - INFO - Process group destroyed
