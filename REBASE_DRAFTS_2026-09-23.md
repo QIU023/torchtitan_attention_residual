@@ -119,3 +119,33 @@ Pushed (force with lease): k3_pp_balance `76477d31d`, k3_pp_offload `d30334e06`,
 bases `pp4312_on_main_0923` / `cp4639_on_main_0923` are superseded for the PP drafts; the CP draft `923f8bd47` still
 sits on `cp4639_on_main_0923`. Next for the user: push pp_review4 to k3_pp_text when ready; decide whether the DEP
 core relaxation should move into 4312 (then no cell would need a particular split).
+
+## Round 3: the user's scoping
+
+The maintainers have not decided whether they want the pp4 x vp4 cell at all, so it stays as it is on k3_pp_text
+(head alone on the last stage; under #4596's DistMuon it fails with "matched no parameters", the K2.7 README's
+documented constraint; the split fix is in this file's round 2 and in the reflog if it is ever wanted). The DEP
+optimizer relaxation stays in DEP until 4312 merges.
+
+pp_review4 = `3902077ca` on main `b64103072` (NOT pushed): the rebase plus exactly one change, the composability
+cell `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2` sets `config.optimizer = default_adamw(lr=8e-4)` (DistMuon has no TP,
+#3353, as upstream's `kimi_k3_debugmodel_mm` does). That cell is fsdp2 x tp2 x ep2 x pp2 with `1F1B` and 4
+microbatches: pp2 x vp1, one stage per rank, NOT pp2 x vp2.
+
+What each pp2 shape exercises of the cache transport on the 17-layer debug model (default split, blocks of 4,
+loop-style ranks), from BlockLayoutTables:
+
+| shape | stages | hops | hops with an empty delta | hops whose receiver already holds blocks | stages entering with a cache | max deposits per block |
+|---|---|---|---|---|---|---|
+| pp2 x vp1 (the composability cell today) | 2 | 1 | 0 | 0 | 0 | 0 |
+| pp2 x vp2 | 4 | 3 | 0 | 2 | 2 | 1 |
+| pp2 x vp4 | 8 | 7 | 3 | 6 | 6 | 3 |
+
+vp1 sends [0, 1, 2] once and never touches the rank store; vp2 reads the store but every stage commits a block, so
+no hop carries an empty delta; vp4 is the first shape with pass-through hops, three readers per block and a last
+stage entering with four cached blocks, the same paths the 16-stage pp4 x vp4 cell covers. Recommendation: if
+pp4 x vp4 goes, make the composability cell pp2 x vp4 (Interleaved1F1B, 8 stages, same 8 GPUs, still AdamW).
+
+Drafts re-stacked on `3902077ca` and pushed: k3_pp_balance `005cf4aee`, k3_pp_offload `c73e17c03`, k3_pp_mm
+`94e6e7116` (DEP's first commit `ca218294d` is the optimizer relaxation). Each draft's diff against its base is
+unchanged (only a hunk header offset for DEP).
