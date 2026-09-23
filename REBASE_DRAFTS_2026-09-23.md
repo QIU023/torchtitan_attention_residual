@@ -79,3 +79,43 @@ Each draft's diff against its base is unchanged by the rebase except in the file
 - `torchtitan/models/kimi_k3/kda.py` guard lift `(12, 0)` in /tmp/wt_ppbal, /tmp/wt_ppoff, /tmp/wt_depnew, /tmp/wt_cpnew and the scratch base worktree.
 - `torchtitan/models/kimi_k3/cp_kda.py` attn-gym 0.0.10 shim in /tmp/wt_cpnew.
 - venv_bfx9 gained `transformers` (flux import in the definitions test); attn-gym 0.0.10 sits in `scratchpad/goal0923/attn_gym_010` for PYTHONPATH.
+
+## Round 2 (same night): 4312 fixed on pp_review4, the drafts re-stacked on it
+
+The user rejected the AdamW fallback for 4312 ("we cannot merge and then switch back to AdamW") and asked for the
+two places to be solved on pp_review4: what the pp4 x vp4 cell's last stage holds, and TP.
+
+What #4596 actually does (read, not guessed):
+- `kimi_k3_debugmodel()` returns a `_KimiK3TrainerConfig` whose `__post_init__` (re-run by tyro at parse time on the
+  final parallelism) raises "Kimi K3 DistMuon currently requires tensor_parallel_degree=1" (TODO #3353). The
+  maintainers' own TP cell `kimi_k3_debugmodel_mm` (b200.py:21) replaces the optimizer with AdamW before setting
+  tp=2; shuhuayu on #4596 (discussion_r4079749504, 09-23): "muon for tp is not supported yet, and we want to keep
+  this test for tp composibility. will merge these two test once the distmuon tp pr lands." So TP was not rolled
+  back: TP works, DistMuon does not support it yet, and a TP cell keeps AdamW by upstream's own rule.
+- Under PP, `_build_param_groups` runs per model part and raises when a pattern matches nothing on that part. The
+  K2.7 README says so in words: "DistMuon additionally requires every stage to own at least one transformer layer:
+  a stage holding only norm and lm_head has no Muon matrices ... it does not arise at realistic depths". 4312's
+  16-stage debug split put the head alone on the last stage, which is exactly that case.
+
+pp_review4 = `7785d29f2` on main `b64103072` (NOT pushed: k3_pp_text is the published PR branch, still `3f9201ea0`):
+- `6290ffc4e` pp4 x vp4 cell: the last stage is `["layers.16", "norm", "lm_head", "output_res_proj",
+  "output_res_norm"]`, layers 1 and 2 get a stage each so the count stays 16; DistMuon kept. The layout test's
+  spelled-out split follows, with expectations re-derived from BlockLayoutTables (producer stages [0, 3, 7, 11, 15],
+  delta_to_send(2)=[0], (3)=[1], (6)=[], (11)=[3], (14)=[]).
+- `7b014b077` composability cell: `config.optimizer = default_adamw(lr=8e-4)` with the #3353 reason, the way
+  `kimi_k3_debugmodel_mm` does.
+- Checks: CPU pytest 125 passed (incl. test_optimizer_param_groups); pyrefly 85 errors on the touched files, the
+  same 85 as on `3f9201ea0`; `kimi_k3_debugmodel_pp4_vp4` 3 steps on 4 GPUs with DistMuon (9 Muon + 34 AdamW params
+  on part 0); `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2` 3 steps on 8 GPUs.
+
+DEP = `9754bd8c8` on pp_review4: new first commit `7586c9036` "optimizer: a param-group pattern may match nothing on
+one pipeline stage" (the container skips the group on that stage and refuses a pattern only when no stage matches
+it; test `test_pattern_may_match_nothing_on_one_stage`), and the vit_dep cell is back on the recipe's DistMuon. The
+tower-only stage cannot own a layer without changing DEP's design, so DEP carries the core relaxation. Smoke: 3
+steps on 4 GPUs, part 0 (tower + embedding) AdamW only, part 1 DistMuon 44 + AdamW 37 params, bubble plan active.
+CPU pytest 151. Balance = `76477d31d`, offload = `d30334e06` on pp_review4, pytest 109 / 104.
+
+Pushed (force with lease): k3_pp_balance `76477d31d`, k3_pp_offload `d30334e06`, k3_pp_mm `9754bd8c8`. The scratch
+bases `pp4312_on_main_0923` / `cp4639_on_main_0923` are superseded for the PP drafts; the CP draft `923f8bd47` still
+sits on `cp4639_on_main_0923`. Next for the user: push pp_review4 to k3_pp_text when ready; decide whether the DEP
+core relaxation should move into 4312 (then no cell would need a particular split).
