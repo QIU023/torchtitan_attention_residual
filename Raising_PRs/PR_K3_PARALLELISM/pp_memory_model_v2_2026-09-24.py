@@ -58,13 +58,17 @@ def build(pp, vp, n_layers, block):
     return t, layers
 
 
-def simulate(pp, vp, m, n_layers, block, scheme, act_per_layer=1.0, fix=()):
+def simulate(pp, vp, m, n_layers, block, scheme, act_per_layer=1.0, fix=(), movable_out=None):
     """Per rank: (persistent units, dynamic units per slot, layer-activation units per slot).
 
     fix removes one v4 gap at a time: "grad_pin" (input gradients sent are freed once used),
     "per_block" (the store keeps each block from its arrival to the rank's last backward),
     "hidden_out" (a forward output is freed once sent), "open_copy" (a block opened inside a
     stage is appended without copying the stack).
+
+    With movable_out (a dict), the stacks a block opening leaves for the stage's later layers go
+    there per rank and slot instead of into the dynamic units, for the span in which only
+    activation checkpointing holds them: pp_balance can park those, like the layer inputs in acts.
     """
     t, layers = build(pp, vp, n_layers, block)
     order, width = schedule(pp, vp, m)
@@ -103,9 +107,12 @@ def simulate(pp, vp, m, n_layers, block, scheme, act_per_layer=1.0, fix=()):
     dyn = {r: [0.0] * width for r in range(pp)}
     acts = {r: [0.0] * width for r in range(pp)}
 
-    def add(r, start, stop, units):
+    mov = {r: [0.0] * width for r in range(pp)}
+
+    def add(r, start, stop, units, movable=False):
+        target = mov if (movable and movable_out is not None) else dyn
         for time in range(start, min(stop, width)):
-            dyn[r][time] += units
+            target[r][time] += units
 
     for r in range(pp):
         for mb in range(m):
@@ -131,8 +138,10 @@ def simulate(pp, vp, m, n_layers, block, scheme, act_per_layer=1.0, fix=()):
                     if s > 0 and n_in[s]:
                         add(r, f, b + 1, n_in[s])  # the leaf stack copy
                     if commits[s]:
-                        stop = b + 1 if held_to_backward[s] else f_last + 1
-                        add(r, f, stop, n_in[s] + commits[s])  # the model's new stack
+                        # the store's view holds the model's new stack to the rank's last forward
+                        add(r, f, f_last + 1, n_in[s] + commits[s])
+                        if held_to_backward[s]:
+                            add(r, f_last + 1, b + 1, n_in[s] + commits[s], movable=True)
                     if s < S - 1:
                         add(r, f, end, 1 + k_out[s])  # hidden output and payload copy, pinned
                     if s > 0:
@@ -141,7 +150,7 @@ def simulate(pp, vp, m, n_layers, block, scheme, act_per_layer=1.0, fix=()):
                     if s > 0:
                         add(r, f, b + 1, 1)  # hidden input, received on demand
                     if commits[s] and held_to_backward[s] and "open_copy" not in fix:
-                        add(r, f, b + 1, n_in[s] + commits[s])
+                        add(r, f, b + 1, n_in[s] + commits[s], movable=True)
                     if s < S - 1 and "hidden_out" not in fix:
                         add(r, f, b + 1, 1)  # hidden output until its send is waited
                     if s > 0 and "grad_pin" not in fix:
@@ -164,6 +173,8 @@ def simulate(pp, vp, m, n_layers, block, scheme, act_per_layer=1.0, fix=()):
                     ]
                     if arrivals:
                         add(r, min(arrivals), b_last + 1, 1)
+    if movable_out is not None:
+        movable_out.update(mov)
     return persistent, dyn, acts, width
 
 

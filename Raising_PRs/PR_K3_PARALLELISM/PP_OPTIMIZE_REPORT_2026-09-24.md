@@ -7,7 +7,8 @@
 ## 0. 结论
 
 - **实测**（8 × RTX 5060 16 GB，探针模型见 §2.1，pp8 × vp2，16 个 micro-batch）
-  - 在 seq 3584 下对比（基线能跑的最长 seq，4096 时 rank 6 OOM）：各 rank 峰值 allocated 降 2.65 到 5.59 GiB，最重的 rank 从 13.38 降到 8.04 GiB（−40%）。
+  - 在 seq 3584 下对比（基线能跑的最长 seq，4096 时 rank 6 OOM），看全部 8 个 rank：各 rank 峰值 allocated 降 2.65 到 5.59 GiB，均值从 11.36 降到 6.98 GiB（−39%），最重的 rank 从 13.38 降到 8.04 GiB（−40%），rank 间极差从 4.95 缩到 2.25 GiB。
+  - 这个探针用 FullAC，每个 rank 能被 balance 草案（#4764）搬走的只有 0.12 到 0.75 GiB，叠加 balance 后两棵树的峰值都不变（§8）；所以这里的收益就看全部 rank 的逐 rank 对比和均值。
   - 步与步之间常驻的显存从 3.40–6.02 降到 0.99–1.76 GiB，torch 的常驻接收缓冲从 2.41–4.16 GiB 降到 0。
   - 100 步的 loss 和 grad norm 与基线全部逐位一致，tps 中位数相同（都是 570），见 §2.4。
   - 显存相同时，优化后每个 micro-batch 能放 6144 个 token，基线只能放 3584（1.71×）：优化后 seq 6144 峰值 13.32 GiB，基线 seq 3584 峰值 13.38 GiB。
@@ -62,6 +63,8 @@
 | 6 | 13.38 | 12.12 | 9.72 | 10.37 | 8.53 | 7.79 | 5.59 | 5.52 |
 | 7 | 12.05 | 11.50 | 9.85 | 9.31 | 8.32 | 8.04 | 4.01 | 3.54 |
 | 最大 | 13.38 | 12.12 | 10.63 | 10.37 | 8.53 | 8.04 | | |
+| 均值（8 个 rank） | 11.36 | 10.46 | 9.15 | 9.10 | 7.60 | 6.98 | 4.38 | |
+| 极差（最大 − 最小） | 4.95 | 4.20 | 3.64 | 3.16 | 2.20 | 2.25 | | |
 | 最大 reserved | 14.26 | 12.98 | 11.55 | 11.17 | 9.37 | 8.80 | | |
 
 各列的含义：
@@ -189,18 +192,19 @@ V4 之后最重的 rank 从 rank 6 变成了 rank 7（它放着 lm_head 和 loss
 - CUDA、NCCL 等预留 4 GiB；
 - 有效算力：H100 450 TFLOPS，GB300 1100 TFLOPS。
 
-### 5.5 这些切分上块残差加 hidden 的显存（校准后的模型，最重 rank，GiB）
+### 5.5 这些切分上块残差加 hidden 的显存（校准后的模型，全部 rank，GiB）
 
-| 切分 | pp_review4（常驻 + 动态） | V4 | 下界 |
-|---|---:|---:|---:|
-| H100 PP8 × VP4，M=16 | 94.6（35.0 + 59.6） | 43.1 | 20.9 |
-| H100 PP16 × VP2，M=32 | 146.1（70.0 + 76.1） | 54.9 | 26.6 |
-| GB300 PP4 × VP4，M=16 | 82.4（35.0 + 47.4） | 28.2 | 10.4 |
-| GB300 PP2 × VP8，M=16 | 93.8（40.2 + 53.6） | 33.8 | 8.0 |
+| 切分 | pp_review4：最小 / 均值 / 最大 | V4 | 下界 |
+|---|---|---|---|
+| H100 PP8 × VP4，M=16 | 71.8 / 84.0 / 94.6 | 30.4 / 34.8 / 43.1 | 17.9 / 19.2 / 20.9 |
+| H100 PP16 × VP2，M=32 | 90.8 / 117.9 / 146.1 | 37.2 / 45.8 / 54.9 | 20.5 / 23.5 / 26.6 |
+| GB300 PP4 × VP4，M=16 | 67.8 / 72.6 / 82.4 | 25.2 / 26.6 / 28.2 | 9.0 / 9.6 / 10.4 |
+| GB300 PP2 × VP8，M=16 | 86.0 / 89.9 / 93.8 | 26.2 / 30.0 / 33.8 | 8.0 / 8.0 / 8.0 |
 
-- 这些数字包含 torch 的 hidden 缓冲和被钉住的 hidden send，任何 PP 模型都有这部分，不全是 AttnRes 的。每个 rank 的明细见 `pp_memory_model_v2_2026-09-24.out.txt`。
-- 这里修正了 `K3_2P8T_PP_VP_MEMORY_2026-09-24.md` §4 里“本 PR”那一行：旧模型没有算被钉住的 send，低估了约 200 个单位。
-- 结论：pp_review4 现在的实现在 torch runtime 下跑不了 H100 上的 2.8T，V4 勉强可以。要达到下界，还需要 §4 里 torch 和模型两侧的改动。
+- **balance 碰不到这一项**：块残差加 hidden 全是 balance 搬不动的部分（接收缓冲、副本、被钉住的 send、store）。叠加 balance 后，每个 rank 的峰值仍不低于它自己的这一项加静态显存。V4 把每个 rank 的这一项都降了，不只是最重的那个。
+- **包含通用开销**：这些数字含 torch 的 hidden 缓冲和被钉住的 hidden send，任何 PP 模型都有这部分，不全是 AttnRes 的。每个 rank 的明细见 `pp_memory_model_v2_2026-09-24.out.txt`。
+- **修正旧文档**：这里修正了 `K3_2P8T_PP_VP_MEMORY_2026-09-24.md` §4 里“本 PR”那一行。旧模型没有算被钉住的 send，低估了约 200 个单位。
+- **结论**：pp_review4 现在的实现在 torch runtime 下跑不了 H100 上的 2.8T，最轻的 rank 也要 72 GiB；V4 为 30 到 55 GiB。要达到下界，还需要 §4 里 torch 和模型两侧的改动。
 
 ### 5.6 可靠程度
 
@@ -210,6 +214,93 @@ V4 之后最重的 rank 从 rank 6 变成了 rank 7（它放着 lm_head 和 loss
 
 ## 6. 下一步（待定）
 
-- 模型改为 block 列表：在 pp_review_optimize 上做，并实测 H100 式切分下 cat 副本那一项。
+- 4 × H100 上按 §9 测量：全部 rank，先不叠加、再叠加 balance。
+- 模型改为 block 列表：在 pp_review_optimize 上做，并实测 stage 中间开 block 那份 `cat` 副本。
 - torch issue：send 在 step 末才 wait，接收缓冲按 micro-batch 常驻。附 `stash_probe.py` 和 §2.2 的数据。
 - 按规则，这里的数都是 5060 上的冒烟级数据；要写进 PR 的数，需要在 H100 上重跑。
+
+## 7. 限制
+
+1. **send 只在 action-list runtime 下由 stage 持有。** 包括 Interleaved1F1B、LoopedBFS、InterleavedZeroBubble。单 stage schedule（1F1B、GPipe）会把 send 和 recv 合成一批来避免死锁，这时仍交给 torch 发，payload 改发只含这几个 block 的副本，副本同样被钉到 step 末，所以 vp=1 时收益小。
+2. **反向 send（发给上一段的梯度）仍被 torch 钉到 step 末。** 发送方在本步里没有能证明对端已收到的动作，要改 torch 的 schedule。按 §4 的模型：探针上是 0.9 GiB，2.8T 上 4.8 到 18.3 GiB。
+3. **stage 中间开 block 时模型 `cat` 出的整条 stack 还在。** 本 stage 后面的层用 checkpoint 保存它，一直留到反向。发布模型的切分里 8 次开 block 全在 stage 中间（pp8 × vp4，93 层，block 12），这一项在 2.8T H100 PP8 × VP4 上约 9.2 GiB/rank。要改成 block 列表载体，涉及模型 forward 以及 TP/SP/CP 对它的切分声明。
+4. **store 是每个 micro-batch 一块连续缓冲。** 按本 rank 最大的 stage 分配，从该 rank 第一次前向留到最后一次反向，不能按 block 单独释放。这也使 offload 没法逐 block 停放（§8）。
+5. **多用了一批 torch 私有接口。** `_setup_forward_recv_info`、`_setup_backward_recv_info`、`_retrieve_recv_grads`、`_make_tensor_from_meta`、`_batch_p2p`、`_PipelineScheduleRuntime`。torch 升级时可能要跟着改；上游 review 也可能要求把“按需接收缓冲”和“提前 wait send”放到 torch 里做。
+6. **store 的行通过 `.data` 读写，绕过了 autograd 的 version counter。** 这样写入别的行时，不会让已保存的 stack view 报原地写错误。代价是 autograd 不再替我们检查。正确性依赖 layout 的不变式：每个 micro-batch 每行只写一次，而且写在所有覆盖它的 stack view 创建之前。这由 4 进程 gloo 的逐位梯度测试覆盖。
+7. **stage 输入是转置后的非连续 view。** 模型只把它送进 `torch.cat`，所以数值逐位不变。如果以后模型直接对 stack 做 reduction，或者打开 compile，布局可能改变 kernel 的选择。探针跑的是 eager。
+8. **覆盖面有限。** 只在 PP-only（dp1、tp1）、FullAC、5060 上测过。TP/SP、EP、FSDP>1、CP 的组合，以及 4312 的 CI 格子（pp2 × vp2 的 17 层模型、B200 上的 fsdp2 × tp2 × ep2 × pp2 × vpp4）都还没跑。
+9. **其余两点。** eval（只有前向）不持有 send，仍在 step 末 wait；stage 放置仍只支持 loop-style（与 pp_review4 相同）。
+
+## 8. 与 pp balance（#4764）、pp offload（#4765）的关系
+
+两个草案都叠在 `3902077ca` 上，代码已核对。
+
+**balance（`k3_pp_balance`）**
+- 机制：在每个 stage 的前向外面套 `saved_tensors_hooks`，把 autograd 保存的、CUDA 上连续的、至少 1 MiB 的张量写进一个目标 rank 预先分配的池（Mooncake）。池整步常驻在目标 rank 上，各源 rank 平分；每个源 rank 另有 256 MiB 的 staging 缓冲。
+- 它能搬的，只有“autograd 保存、且别处不再引用”的张量：FullAC 下是 stage 内非首层的层输入；在 V4 里还包括 stage 中间开 block 留下的那条 stack。
+- 它搬不动 torch 的接收缓冲、fwd_cache 里的副本、被钉住的 send 张量和 store，而这些正是 V4 去掉的。所以两者是**互补可叠加**的：V4 降低每个 rank 搬不动的底，balance 再把能搬的部分在 rank 间摊平。
+- V4 的 stage 输入 stack 是 store 的非连续 view，草案会自动跳过它，不会白传。基线的 stack 副本虽然连续，但同时被 fwd_cache 引用，搬走也释放不了显存，只会白占带宽。
+- V4 之后最重的 rank 变了（5060 上 r6 → r7，H100 探针上 r2 → r3），balance 的目标 rank、源 rank 和池大小都要重新定，池也会小很多。
+- 代码上：草案在 `forward_one_chunk` 外面加了一个 forward context，和 V4 对这个函数的改写能直接合并；需要 rebase 到 pp_review_optimize 上。
+
+叠加 balance 后的估算（全部 rank，GiB；`kit_pp_optimize_2026-09-24/balance_overlay.py`，输出见 `balance_overlay.out.txt`）：
+
+| 配置 | 树 | 各 rank 不叠加 | 最大 / 均值 | 叠加 balance 后各 rank | 最大 |
+|---|---|---|---:|---|---:|
+| 5060 探针，FullAC | 基线（实测） | 8.44 … 13.38（8 个 rank） | 13.38 / 11.36 | 能搬的只有 0.12–0.75，不变 | 13.38 |
+| 同上 | V4（实测） | 5.79 … 8.04 | 8.04 / 6.98 | 不变 | 8.04 |
+| H100 探针（§9），FullAC，dim 4096 | 基线 | 62.5, 60.3, 70.5, 66.9 | 70.5 / 65.1 | 66.5, 60.3, 66.7, 66.9 | 66.9 |
+| 同上 | V4 | 36.7, 35.1, 39.6, 43.9 | 43.9 / 38.8 | 38.2, 35.1, 39.6, 42.7 | 42.7 |
+| 同上，每层多存到 4 个单位（类似 selective AC） | 基线 | 69.6, 66.6, 76.1, 71.6 | 76.1 / 71.0 | 69.6, 71.6, 71.4, 71.6 | 71.6 |
+| 同上 | V4 | 43.8, 41.4, 45.2, 48.7 | 48.7 / 44.8 | 43.8, 45.2, 45.2, 45.2 | 45.2 |
+
+- 能搬的越多，balance 越能把各 rank 压到接近均值，这时 V4 的收益接近各 rank 的平均节省，而不是最重那个 rank 的节省。
+- 表中“每层 4 个单位”是假设值，要以 H100 上的实测为准。
+
+**offload（`k3_pp_offload`）**
+- 机制：在旧 store（按 block 存的 dict）的 `put` 里把提交的 block 拷到 pinned host，`blocks()` 读的时候再拷回 GPU。
+- 在 pp_review4 上省不下显存：它停放的 block 是 torch 接收缓冲或 checkpoint 所持 stack 的别名。
+- 在 V4 上它和重写后的 store 直接冲突，而且照搬也省不下：store 是一块连续缓冲，不能逐行释放；stage 前面那些行又被该 stage 的 checkpoint 当作输入保存，要到反向才释放。
+- 要让 offload 在 V4 之上真正省显存，需要三件事：
+  - block 列表载体，让 store 能逐 block 持有；
+  - checkpoint 重算时从 store 重新取 stack，而不是一直引用它，这样 store 才能在两次使用之间把 block 停到 host；
+  - 在每次使用前异步预取回来。
+- 做到之后，显存可以低于 §4 的下界，因为下界假设 block 从到达一直驻留到最后一次反向。
+
+## 9. 4 × H100 的度量方案与探针尺寸（看全部 rank，叠加 balance）
+
+### 9.1 探针尺寸（`h100_probe_sizing.py`，输出见 `h100_probe_sizing.out.txt` 和 `balance_sizing.out.txt`）
+
+- **结构**：pp4 × vp4，用 `--parallelism.pipeline-parallel-layers-per-stage 3` 切出 16 段；46 层，block 6，共 8 个 block。
+  - 这样每次开 block 都在 stage 中间，与发布模型的切分一致；32 层、block 4 的版本里提交几乎都落在 stage 的最后一层。
+  - 16 个注意力 head（KDA 与 MLA 的内部维度 2048），seq 8192（K3 预训练的 micro-batch），M=16，FullAC，AdamW。
+- **标定**：静态显存按每个参数 16 字节算，参数在 meta 上实数。反向重算的瞬时项用 5060 的 V4 实测拟合（(−201 + 48 × (N + 1)) 个单位，最后一个 rank 加 62），拿来反推 5060 基线，每个 rank 误差不超过 0.5 GiB。
+- **两种尺寸**：
+  - **不叠加 balance：dim 4096**（20.8 亿参数，每 rank 静态 7.1–8.4 GiB）。基线各 rank 62.5 / 60.3 / 70.5 / 66.9 GiB，V4 为 36.7 / 35.1 / 39.6 / 43.9 GiB。同样峰值下 V4 每个 micro-batch 能放 14336 个 token（1.75×）。
+  - **叠加 balance、让所有 rank 都接近 72 GiB：dim 4352**（22.1 亿参数，每 rank 静态 7.5–9.0 GiB）。基线叠加 balance 后各 rank 70.8 / 64.1 / 70.9 / 71.1（目标 r0，源 r2，池 4.25 GiB）；V4 叠加 balance 后 40.8 / 37.2 / 42.0 / 45.3（目标 r0，源 r3，池 1.75 GiB）。V4 叠加 balance 能放 13824 个 token（1.69×）。
+- **5060 上已冒烟**：4 卡，dim 1024，2 步。切分与估算一致，rank 3 上是 stage 3、7、11、15，各 3 层。
+
+### 9.2 怎么度量收益
+
+- **全部 rank 的峰值 allocated**：每步在 titan 重置前记录，同时记 reserved、步间常驻、接收缓冲字节。收益同时报三个数：逐 rank 的差值、均值的差值、最大值的差值；叠加 balance 后另报一遍。显存的噪声底是 0：5060 上同配置重复运行，allocated 和 reserved 都逐字节一致；H100 上重跑一次 V4 确认。
+- **容量**：每棵树在同一配置下能跑的最长 micro-batch（每次 3 步，按 512 递增到 OOM），不叠加和叠加 balance 各测一遍。
+- **吞吐**：同配置下的 tps 用来检查没有退步；各自容量上限处的 tps 和 MFU 用来体现收益。可选：V4 把省下的显存用来换 selective AC，测 tps。
+- **数值**：基线与 V4 各跑 100 步，同一暖缓存谱系的两份副本，loss 和 grad norm 逐位对比。
+- **分解**：基线、基线加自持 send（`base_own_sends_probe.patch`）、V4 三格，与 5060 的分解对照。
+- **模型验证**：各 rank 的预测值与实测值对照，作为第二个标定点（这次包含 stage 中间开 block 那一项）。
+
+### 9.3 格子与顺序
+
+| 顺序 | 格子 | 步数 | 用途 |
+|---:|---|---:|---|
+| 1 | 基线，dim 4096 | 3 | 确认撑到约 70 GiB，必要时按 ±256 调整 dim |
+| 2 | V4，同配置 | 3 | 主结果 |
+| 3 | V4，同配置再跑一次 | 3 | 噪声底 |
+| 4 | 基线 + 自持 send | 3 | 分解 |
+| 5 | V4 的 seq 依次加 512，直到 OOM；基线 seq 加 512 确认 OOM | 各 3 | 容量 |
+| 6 | 基线与 V4 各 100 步 | 100 | 数值逐位 |
+| 7 | 基线 + balance、V4 + balance，dim 4352 | 3 | 叠加 balance 的全部 rank（前提：#4764 已 rebase 到两棵树上，H100 机器装了 mooncake） |
+| 8 | 可选：selective AC | 3 | 能搬的更多时 balance 的效果，以及用省下的显存换吞吐 |
+
+- 脚本：`kit_pp_optimize_2026-09-24/run_ppmem_h100.sh`，参数为名字、树、缓存、seq、步数。可用 `PPMEM_DIM`、`PPMEM_LAYERS`、`PPMEM_BLOCK` 覆盖尺寸，用 `TORCHRUN` 指定环境。
+- 按估算每步约 1.3 秒，全部格子不到一小时。

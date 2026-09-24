@@ -1,0 +1,22 @@
+transient fit on the 5060 V4 run: -201 + 48.0 x (N + 1) units, head +62 units
+check on the 5060 baseline (GiB): rank: measured / predicted
+  r0: 8.44 / 8.81
+  r1: 10.04 / 10.11
+  r2: 10.84 / 10.29
+  r3: 11.36 / 11.12
+  r4: 12.11 / 11.92
+  r5: 12.64 / 12.75
+  r6: 13.38 / 13.57
+  r7: 12.05 / 11.58
+
+H100 x 4 (80 GB), 16 attention heads, M = 16; the probe is sized so pp_review4's heaviest rank reaches 72.0 GiB allocated
+| layout | layers / block | block opens mid-stage | dim | seq | params | pp_review4 max rank | V4 same config | V4 longest micro-batch under the same peak |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| pp4 x vp4 | 46 / 6 | 8 of 16 | 4096 | 8192 | 2076 M | 70.5 | 43.9 | 14336 (1.75x) |
+    per rank pp_review4: 62.5, 60.3, 70.5, 66.9; V4: 36.7, 35.1, 39.6, 43.9
+| pp4 x vp4 | 46 / 6 | 8 of 16 | 2048 | 17408 | 1062 M | 71.1 | 42.1 | 30720 (1.76x) |
+    per rank pp_review4: 61.5, 60.3, 71.1, 66.6; V4: 34.1, 33.5, 38.2, 42.1
+| pp4 x vp4 | 30 / 4 | 0 of 16 | 4608 | 8192 | 1581 M | 71.7 | 45.1 | 13824 (1.69x) |
+    per rank pp_review4: 62.9, 65.4, 71.7, 71.0; V4: 33.0, 36.9, 36.7, 45.1
+| pp4 x vp4 | 30 / 4 | 0 of 16 | 2048 | 18944 | 707 M | 71.2 | 43.0 | 32256 (1.70x) |
+    per rank pp_review4: 60.6, 63.4, 71.2, 69.6; V4: 29.9, 34.2, 35.2, 43.0

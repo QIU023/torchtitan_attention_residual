@@ -1,0 +1,52 @@
+transient fit on the 5060 V4 run: -201 + 48.0 x (N + 1) units, head +62 units
+check on the 5060 baseline (GiB): rank: measured / predicted
+  r0: 8.44 / 8.81
+  r1: 10.04 / 10.11
+  r2: 10.84 / 10.29
+  r3: 11.36 / 11.12
+  r4: 12.11 / 11.92
+  r5: 12.64 / 12.75
+  r6: 13.38 / 13.57
+  r7: 12.05 / 11.58
+
+8 x RTX 5060 probe: pp8 x vp2, M=16, 32 layers in blocks of 4, dim 2048, seq 3584, 1.0 unit(s) saved per layer beyond a stage's first
+| scheme | r0 | r1 | r2 | r3 | r4 | r5 | r6 | r7 | max | mean | with pp_balance: per rank | max | knobs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|
+| base (measured) | 8.44 | 10.04 | 10.84 | 11.36 | 12.11 | 12.64 | 13.38 | 12.05 | 13.38 | 11.36 | | | |
+| v4 (measured) | 5.79 | 6.37 | 6.62 | 6.81 | 7.20 | 7.22 | 7.79 | 8.04 | 8.04 | 6.98 | | | |
+| base | 8.81 | 10.11 | 10.29 | 11.12 | 11.92 | 12.75 | 13.57 | 11.58 | 13.57 | 11.27 | 8.8, 10.1, 10.3, 11.1, 11.9, 12.7, 13.6, 11.6 | 13.57 | none helps |
+    largest movable GiB per rank: 0.74, 0.51, 0.26, 0.23, 0.21, 0.18, 0.15, 0.12
+| v4 | 6.09 | 6.42 | 6.28 | 6.65 | 7.05 | 7.28 | 8.05 | 8.04 | 8.05 | 6.98 | 6.1, 6.4, 6.3, 6.6, 7.0, 7.3, 8.0, 8.0 | 8.05 | none helps |
+    largest movable GiB per rank: 0.75, 0.51, 0.26, 0.23, 0.21, 0.18, 0.15, 0.12
+| lower | 4.96 | 5.50 | 5.16 | 5.55 | 5.83 | 6.21 | 6.48 | 6.53 | 6.53 | 5.78 | 5.0, 5.5, 5.2, 5.6, 5.8, 6.2, 6.5, 6.5 | 6.53 | none helps |
+    largest movable GiB per rank: 0.53, 0.51, 0.26, 0.23, 0.21, 0.18, 0.15, 0.12
+
+4 x H100 probe, FullAC: pp4 x vp4, M=16, 46 layers in blocks of 6, dim 4096, seq 8192, 1.0 unit(s) saved per layer beyond a stage's first
+| scheme | r0 | r1 | r2 | r3 | max | mean | with pp_balance: per rank | max | knobs |
+|---|---:|---:|---:|---:|---:|---:|---|---:|---|
+| base | 62.52 | 60.31 | 70.50 | 66.91 | 70.50 | 65.06 | 66.5, 60.3, 66.7, 66.9 | 66.91 | dest r0, sources [2], pool 4.00 GiB |
+    largest movable GiB per rank: 6.56, 2.12, 6.38, 1.62
+| v4 | 36.71 | 35.06 | 39.56 | 43.85 | 43.85 | 38.79 | 38.2, 35.1, 39.6, 42.7 | 42.66 | dest r0, sources [3], pool 1.50 GiB |
+    largest movable GiB per rank: 6.56, 2.12, 6.38, 1.62
+| lower | 27.39 | 25.93 | 29.37 | 33.79 | 33.79 | 29.12 | 29.1, 25.9, 29.4, 32.4 | 32.41 | dest r0, sources [3], pool 1.75 GiB |
+    largest movable GiB per rank: 2.38, 2.12, 1.88, 1.62
+
+4 x H100 probe, more saved per layer (a selective AC): pp4 x vp4, M=16, 46 layers in blocks of 6, dim 4096, seq 8192, 4.0 unit(s) saved per layer beyond a stage's first
+| scheme | r0 | r1 | r2 | r3 | max | mean | with pp_balance: per rank | max | knobs |
+|---|---:|---:|---:|---:|---:|---:|---|---:|---|
+| base | 69.64 | 66.56 | 76.12 | 71.60 | 76.12 | 70.98 | 69.6, 71.6, 71.4, 71.6 | 71.60 | dest r1, sources [2], pool 5.00 GiB |
+    largest movable GiB per rank: 13.69, 8.50, 12.00, 6.50
+| v4 | 43.83 | 41.43 | 45.19 | 48.73 | 48.73 | 44.79 | 43.8, 45.2, 45.2, 45.2 | 45.23 | dest r1, sources [3], pool 3.75 GiB |
+    largest movable GiB per rank: 13.69, 8.50, 12.00, 6.50
+| lower | 34.52 | 32.31 | 35.00 | 38.66 | 38.66 | 35.12 | 34.5, 35.6, 35.0, 35.7 | 35.66 | dest r1, sources [3], pool 3.25 GiB |
+    largest movable GiB per rank: 9.50, 8.50, 7.50, 6.50
+
+4 x H100 probe, more saved per layer (a selective AC): pp4 x vp4, M=16, 46 layers in blocks of 6, dim 4096, seq 8192, 8.0 unit(s) saved per layer beyond a stage's first
+| scheme | r0 | r1 | r2 | r3 | max | mean | with pp_balance: per rank | max | knobs |
+|---|---:|---:|---:|---:|---:|---:|---|---:|---|
+| base | 79.14 | 75.06 | 83.62 | 77.85 | 83.62 | 78.92 | 79.1, 79.6, 79.4, 77.9 | 79.56 | dest r1, sources [2], pool 4.50 GiB |
+    largest movable GiB per rank: 23.19, 17.00, 19.50, 13.00
+| v4 | 53.33 | 49.93 | 52.69 | 55.23 | 55.23 | 52.79 | 53.3, 52.2, 52.7, 53.2 | 53.33 | dest r1, sources [3], pool 2.25 GiB |
+    largest movable GiB per rank: 23.19, 17.00, 19.50, 13.00
+| lower | 44.02 | 40.81 | 42.50 | 45.16 | 45.16 | 43.12 | 42.8, 43.8, 42.5, 43.9 | 43.91 | dest r1, sources [3, 0], pool 3.00 GiB |
+    largest movable GiB per rank: 19.00, 17.00, 15.00, 13.00
