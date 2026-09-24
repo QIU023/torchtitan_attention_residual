@@ -58,3 +58,58 @@ Earlier runs in this work used 3, 5, 8 and 10 steps with no reason for any of th
 ## Filed
 
 #4780, 2026-09-18. Branch `k3_attnres_recompute` at `9f6bae06f`; the two commits are the aggregation and the zero initialisation. Numbers in the body are the H100 ones, per the rule that the 5060 only smokes.
+
+## 2026-09-24: tianyu's review answered on `attnres_review1` (not pushed to the PR branch)
+
+tianyu-l (issuecomment-5807507932): what problem does the PR solve, in simple terms; the autograd Function's many
+small ops look slow; use something like fla's `fla/ops/attnres/fused.py` through the override mechanism. The bot
+review (5807512687) agreed and spelled the route out: keep the eager form as the default, add a `Configurable`
+node the override can target, put the fused kernel behind `torchtitan/overrides/`, land the zero init on its own,
+and show training-level peak memory and throughput.
+
+Review branch `attnres_review1` = `e0d441c62` on main `b64103072`, pushed to the fork only (`k3_attnres_recompute`
+stays `9f6bae06f`; the user force-pushes when the H100 numbers are in). Three commits:
+
+1. `f6d78ee24` kimi_k3: zero initialise the attention residual projections (the PR's commit, unchanged).
+2. `0a16e90f0` kimi_k3: the attention residual aggregation is a Configurable. `AttentionResidual(Function[Tensor])`,
+   parameter-free, default `__call__` = main's eager FP32 form; the block gets `attention_res_fn` / `ffn_res_fn`
+   and the model `output_res_fn`, all `field(default_factory=AttentionResidual.Config)` so `__init__.py` is
+   untouched. The weights stay `attention_res_norm` / `attention_res_proj` etc., so the state dict adapter,
+   `sharding.py` and every PP split in the 4312 stack are untouched (the bot's variant, wrapping norm + proj in a
+   module, would have renamed every FQN). The hand-written `_AttentionResidualAggregation` is gone.
+3. `e0d441c62` overrides: Kimi's attention residual fused with flash-linear-attention.
+   `torchtitan/overrides/fused_attnres.py`: `FusedAttentionResidual` calls `fla.ops.attnres.fused_attnres(query,
+   [*stack.unbind(1), prefix_sum], norm.weight, rms_eps=eps)`; fla optional (helion_rope's import-sentinel
+   pattern), falls back to eager without fla or off CUDA; `@override(target=AttentionResidual.Config, exact=True)`.
+   `pyproject.toml` lists `fla`, `fla.*` in pyrefly's replace-imports-with-any.
+
+fla's op is Kimi's aggregation exactly: `naive_attnres` = RMSNorm(v, w) scored against `query`, softmax over
+sources in FP32, weighted sum of the raw sources, one downcast. `fla.ops.attnres` exists only on fla main
+(0.6.0 dev; PyPI 0.5.2 has no `fla.ops` at all); installed with
+`pip install --no-deps --target <dir> git+https://github.com/fla-org/flash-linear-attention.git@main`.
+The kernel reads sources as contiguous `[T, D]` rows (`_build_ptr_table`, `D` constexpr), so the `[T, N, D]`
+stack's per-block views are copied once per call; a stride-aware kernel would be a fla-side follow-up.
+
+SPMD type checking: three attempts. (a) `register_local_autograd_function(FusedAttnresFunction)`: the checker's
+local rule runs the Function's forward on META tensors to infer types, and fla raises "Triton attnres requires CUDA
+tensors". (b) `spmd.register_decomposition(FusedAttnresFunction, _eager_attnres)`, the eager math with the op's
+signature and output tree: the checker traces the decomposition, the kernel runs for real; but the decomposition
+returned `o.new_empty(0)` for the unrequested probabilities and a fresh tensor types as R against the local V
+("Local SPMD produces V on axis mesh_dp but DTensor produces R"); returning the probabilities transposed instead
+failed with "PartitionSpec length 2 doesn't match tensor ndim 1" because the real op's placeholder is 1-D.
+(c) final: the second output is `probs.T` when `return_weights` else `scores.logsumexp(-1)` (1-D, derived, never
+fresh). Registered for the Triton and, when importable, the Gluon Function classes. The 4-GPU
+`kimi_k3_debugmodel_mm` cell (typechecking=True) runs with the override: 49 nodes replaced, 3 steps.
+
+Numbers on the 5060: fla fused vs eager on random inputs, forward and all four gradients: bf16 rel 2e-5 / 3e-5
+(max abs diff 3.9e-3 = one bf16 ulp at magnitude 1), fp32 rel 1e-7; zero init gives the mean and no norm grad.
+`test_fused_attnres_override.py` 4 passed on CUDA with fla; CPU suite 43 passed 2 skipped (incl. test_override,
+test_no_new_cli_options, all K3 CPU tests); pyrefly 0 errors on the four changed files; ufmt clean.
+mm cell, seed 42 deterministic, 3 steps: eager loss 12.58970 / 11.03258 / 9.29013, fused 12.58621 / 11.05843 /
+9.47570; peak memory step 1 7.75 vs 6.99 GiB. Not an identity claim: 49 bf16 roundings per step plus this box's
+MoE near-tie sensitivity (see memory k3-step10-spread); the H100 kit runs eager twice for the noise floor.
+
+H100 kit `kit_h100_2026-09-24/`: `probe_attnres.py` (flavors `attnres_debug` = stock debug on AdamW, `attnres_wide`
+sized by ATTNRES_DIM/LAYERS/BLOCK, e.g. 4096/16/2 for a stack of 8), `run_attnres_h100.sh` (eager, eager2, fused
+per token count, 20 steps seeded), `tables_attnres.py` (loss 1/10/last, peak GiB, tps). Drafts:
+`REPLY_4780_TIANYU_2026-09-24.md` (one comment, PASTE markers, NUMBERS to fill), `PR_BODY_v2_2026-09-24.md`.
