@@ -1,5 +1,15 @@
 # pytorch PR-194033: get_total_norm dtype + DTensor _foreach_norm strategy -- backup of the rebased branch
 
+## 2026-09-24: re-checked; rebased again onto main `a0afa8eb62` (still not pushed)
+
+No new comment since Jane's 09-22 request. Main moved 92 commits past `54144378a7` without touching any of the four
+files this PR changes; the rebase is clean: head `6f9a8ecbfc` (`775e12fd72` DTensor strategy, `3d5a0ca015` dtype +
+docstring constraint, `80fc4c94d1` tests with `@onlyOn(["cpu", "cuda"])`, `6f9a8ecbfc` powsum, droppable). Re-run on
+`venv_ptnightly` with the two source files overlaid (unchanged since 09-23): `test_get_total_norm_dtype` 8/8 on cpu
+and cuda, DTensor `foreach_norm` / `foreach_powsum` 8/8 on 4 GPUs. A bf16-accumulating backend, simulated add by add,
+gives 256 for both the whole tensor and the split, so the bot's structural `whole != split` would fail there too; CPU
+gives 258 and 256. `NATIVE_DEVICES` on main is still ('cpu', 'cuda', 'xpu', 'meta', 'mps', 'mtia', privateuse1).
+
 ## 2026-09-23: rebased onto main `54144378a7`, Jane's 09-22 request addressed locally (not pushed)
 
 Jane (2026-09-22, comment 5783420331) asked for a rebase, "fix the errors", and thoughts on the claude[bot] review's point 3 and the docstring item under 4. The errors were only the two `inductor_aoti_fallback` CPU shards, which Dr. CI marks unstable and unrelated; the PR was `mergeable_state: dirty` (863 commits behind). Rebase conflict: one import line in `test/test_nn.py` (upstream dropped `skipCUDAIfRocm`); resolved, and the `skipXLA` import went away with the change below.
