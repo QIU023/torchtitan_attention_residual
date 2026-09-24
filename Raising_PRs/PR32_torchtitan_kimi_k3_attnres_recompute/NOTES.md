@@ -113,3 +113,37 @@ H100 kit `kit_h100_2026-09-24/`: `probe_attnres.py` (flavors `attnres_debug` = s
 sized by ATTNRES_DIM/LAYERS/BLOCK, e.g. 4096/16/2 for a stack of 8), `run_attnres_h100.sh` (eager, eager2, fused
 per token count, 20 steps seeded), `tables_attnres.py` (loss 1/10/last, peak GiB, tps). Drafts:
 `REPLY_4780_TIANYU_2026-09-24.md` (one comment, PASTE markers, NUMBERS to fill), `PR_BODY_v2_2026-09-24.md`.
+
+## 2026-09-24 round 2: tianyu's review r4090059193 (CHANGES_REQUESTED), handled locally, PR branch untouched
+
+tianyu-l: "fix the init in its own PR"; "use torch_remat to solve the recomputation issue ... instead of introducing an autograd function"; "make `_apply_attention_residual` a configurable function ... with this reference impl as default, but maybe use torch.compiled version (or even call / copy FLAs' fused impl) as override ... (can leave to @acisseJZhong)". The user: leave the compile part untouched, re-evaluate how it depends on AC reuse (#4656), push nothing to a published PR branch.
+
+Branches (fork only; `k3_attnres_recompute` stays `9f6bae06f`, #4656's `k3_ac_reuse_attention` stays `7e9622a22`):
+
+- `k3_attnres_zero_init` = `db483314a`, new, one commit on main `9e159aed7`: the zero init plus `tests/unit_tests/cpu/test_kimi_k3_attention_residual_init.py` (3 tests; the init test fails on main as a control). Commit message now cites Section 5 of the Attention Residuals technical report (arXiv 2603.15031, "all pseudo-query vectors must be initialized to zero"); the earlier "Kimi Linear report" attribution was wrong (that paper's Section 5 says its architecture is identical to Kimi Linear). Body draft `PR_BODY_zero_init_2026-09-24.md`; the PR is not opened.
+- `attnres_review1` = `4e4baa4f3` on main `9e159aed7` (was `e0d441c62` on `b64103072`), three commits:
+  1. `83f05cf98` the Configurable (init tests moved out; the config-node test stays).
+  2. `38fcdde4a` torch_remat recompute: #4656's `remat.checkpoint` wrapping ported onto the Function (`_checkpointed_attention_residual(name, aggregate, ...)`, block flag `checkpoint_residual`, output aggregation always checkpointed), marking moved from `parallelize_kimi_k3` (gone after #4810) into `KimiK3Model.parallelize` before the policy is built. Tests in `test_kimi_k3_attention_residual.py`: #4656's three plus RegionAC composition and the parallelize marking (fake PG, meta model), 6 passed; controls: without the port 5 fail, without the marking the parallelize test fails.
+  3. `4e4baa4f3` the fla override, patch byte-identical to `e0d441c62`'s (compile part untouched).
+
+Checks: CPU 50 passed, 2 skipped (override, residual, test_override, test_skip_dp) in `/venv/main` with fla 0.6.0 on `PYTHONPATH` and in `/workspace/venv_bfx9` without fla; override test 4 passed on CUDA with fla; `tests/unit_tests/gpu/test_kimi_k3.py` 3 passed 1 skipped on main and head alike; pre-commit on the changed files passes (pyrefly and lychee skipped there); pyrefly 0.45.1 (the pinned hook version, `scratchpad/pyrefly045`) gives the same 2 errors as main (`torch_checkpointing` in this env) and `--remove-unused-ignores` changes nothing. Local pyrefly 1.2.0 rewrites 25 files repo-wide on main as well: environment, reverted file by file (never the KDA guard lift).
+
+Dependency evaluation: `DEPENDENCY_override_vs_ac_reuse_2026-09-24.md` (verdict, per-call bytes, the 13-cell 5060 smoke, torch_remat facts, options). Short form: complementary; the checkpoint belongs at the call site; fla's `ctx.res` makes fused-under-checkpoint pure overhead until fla rebuilds the table in backward; #4656 superseded by commit 2 (option A recommended, the user decides).
+
+5060 smoke (13 cells, stock `kimi_k3_debugmodel`, one shared warm cache lineage): head bitwise to main 10/10 steps under none, selective, full and region AC; the AC-off peak drops 13.22 to 12.79 GiB; RegionAC runs (the flag works end to end). The fla override rows differ from eager from step 1 (loss 8e-4, grad norm two bf16 steps), identically across AC modes: not located, held back from every draft.
+
+Diff audit (`git diff upstream/main attnres_review1`): no logbook path, no measured value in code, no private helper with a docstring in commits 1 and 2 (the block helper's docstring was dropped). New private defs: `_checkpointed_attention_residual` and `KimiK3TransformerBlock._attention_residual`, both #4656's, nothing in `models/common` or `distributed` wraps a call in a remat checkpoint conditionally. Left as is in the untouched override commit, for its owner: the module docstring says the op "saves per-token statistics instead of the FP32 stack" but it also keeps a bf16 copy of the stack (`ctx.res`); `_eager_attnres` is a private helper with a two-line docstring; the import sentinel catches only `ImportError` (in `/venv/main` fla-core 0.5.1 raises `AttributeError` from tilelang, so the module fails to import there).
+
+H100 kit, rewritten (`kit_h100_2026-09-24/`): `run_attnres_h100.sh` runs main against the head, AC off and selective, plus the fused rows, one GPU per cell, every cell of a token count on a copy of one warm cache lineage, `main_none_rerun` as the noise floor; `lift_kda_guard.py` admits the local capability in both checkouts; `tables_attnres.py` counts equal steps against the reference; `probe_saved_bytes.py` (per-call bytes, `--time` for the op timing, `--fla-res-from-saved`). Dry run on the 5060 (STEPS=3, TOKENS=512): all 9 cells rc=0, head 3/3 equal, AC-off peak 14.61 to 14.17 GiB with the kit's AdamW flavor, the same pair #4656 measured on the H200. On the H100 box (see memory h100-box-217-18-55-200-env; `~/tt` holds uncommitted MoonEP work, so only fetch into it and add worktrees; add an `upstream` remote first if it has none):
+
+    git -C ~/tt fetch origin attnres_review1 && git -C ~/tt fetch upstream main
+    git -C ~/tt worktree add --detach ~/tt_attnres origin/attnres_review1
+    git -C ~/tt worktree add --detach ~/tt_main upstream/main
+    ~/venv_k3/bin/pip install --no-deps --target ~/fla_main git+https://github.com/fla-org/flash-linear-attention.git@main
+    MAIN=~/tt_main HEAD=~/tt_attnres VENV=~/venv_k3 FLA=~/fla_main OUT=~/results/attnres_r2 FLAVOR=attnres_debug \
+      TOKENS="512 4096" STEPS=20 GPUS="0 1 2 3" nohup bash <kit>/run_attnres_h100.sh > ~/results/attnres_r2.log 2>&1 &
+    ~/venv_k3/bin/python <kit>/probe_saved_bytes.py --time   # from ~/tt_attnres, PYTHONPATH=~/fla_main:.
+
+Drafts: `REPLY_4780_TIANYU_r4090059193_2026-09-24.md` (one PASTE block, `#INIT_PR` and `NUMBERS` to fill, #4656 sentence conditional), `PR_BODY_v3_2026-09-24.md`, `PR_BODY_zero_init_2026-09-24.md`. `REPLY_4780_TIANYU_2026-09-24.md` and `PR_BODY_v2_2026-09-24.md` are superseded.
+
+Waiting on the user: open the init PR; force-push `attnres_review1` to `k3_attnres_recompute`; keep or close #4656; run the H100 kit; whether the fla override stays in this PR or goes to acisseJZhong.
