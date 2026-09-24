@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="12" viewBox="0 0 1480 700" role="img" aria-label="Forward and backward data flow of one Kimi K3 pipeline stage with the block cache on, next to the same stage with the cache off">
+<svg xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" viewBox="0 0 1490 700" role="img" aria-label="Forward and backward data flow of one Kimi K3 pipeline stage with the block cache on, next to the same stage with the cache off">
     <defs>
-      <marker id="mf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <marker id="mf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/>
       </marker>
-      <marker id="mb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <marker id="mb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 z" fill="#d92d20"/>
       </marker>
       <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -14,134 +14,141 @@
     </defs>
 
     <!-- ===================== cache on ===================== -->
-    <text x="20" y="30" class="title" fill="#1f2328" font-size="15" font-weight="600">attn_res_cache on</text>
-    <text x="170" y="30" class="sub" fill="#5f6b76">stage s on rank r</text>
+    <text x="20" y="30" class="title" fill="#1f2328" font-size="16" font-weight="600">attn_res_cache on</text>
+    <text x="180" y="30" class="sub" fill="#5f6b76">stage s on rank r</text>
 
-    <text x="365" y="72" text-anchor="middle" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h, Δ  from stage s−1</text>
-    <text x="365" y="604" text-anchor="middle" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h′, Δ′  to stage s+1</text>
-    <text x="685" y="72" text-anchor="middle" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h, ∇Δ  to stage s−1</text>
-    <text x="685" y="604" text-anchor="middle" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h′, ∇Δ′  from stage s+1</text>
+    <text x="375" y="72" text-anchor="middle" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h, Δ  from stage s−1</text>
+    <text x="375" y="604" text-anchor="middle" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h′, Δ′  to stage s+1</text>
+    <text x="695" y="72" text-anchor="middle" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h, ∇Δ  to stage s−1</text>
+    <text x="695" y="604" text-anchor="middle" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h′, ∇Δ′  from stage s+1</text>
 
-    <!-- forward column -->
-    <rect x="250" y="90" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="365" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P recv</text>
+    <!-- forward column: x 260..490, midline 375 -->
+    <rect x="260" y="90" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="375" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P recv</text>
 
-    <rect x="250" y="190" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
-    <text x="365" y="211" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">assemble</text>
-    <text x="365" y="229" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">B = store ⊕ Δ  (leaf)</text>
+    <rect x="260" y="190" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
+    <text x="375" y="210" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">assemble</text>
+    <text x="375" y="230" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">B = store ⊕ Δ  (leaf)</text>
 
-    <rect x="250" y="300" width="230" height="60" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
-    <text x="365" y="325" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">layers l..m</text>
-    <text x="365" y="345" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">block start: B ⊕= h</text>
+    <rect x="260" y="290" width="230" height="60" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
+    <text x="375" y="315" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">layers l..m</text>
+    <text x="375" y="337" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">block start: B ⊕= h</text>
 
-    <rect x="250" y="420" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
-    <text x="365" y="441" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">pack Δ′</text>
-    <text x="365" y="459" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">what the next rank lacks</text>
+    <rect x="260" y="420" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
+    <text x="375" y="440" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">pack Δ′</text>
+    <text x="375" y="460" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">what the next rank lacks</text>
 
-    <rect x="250" y="530" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="365" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P send</text>
+    <rect x="260" y="530" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="375" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P send</text>
 
-    <text x="250" y="684" class="cap f" fill="#d9760a" font-size="12.5" font-weight="600" letter-spacing="0.08em">FORWARD</text>
+    <text x="260" y="684" class="cap f" fill="#d9760a" font-weight="600" letter-spacing="0.08em">FORWARD</text>
 
-    <line x1="365" y1="130" x2="365" y2="188" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="373" y="182" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h, Δ</text>
-    <line x1="365" y1="240" x2="365" y2="298" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="373" y="274" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h, B</text>
-    <line x1="365" y1="360" x2="365" y2="418" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="373" y="394" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h′, B′</text>
-    <line x1="365" y1="470" x2="365" y2="528" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="373" y="522" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h′, Δ′</text>
+    <!-- forward arrows: bottom-edge midpoint to top-edge midpoint -->
+    <line x1="375" y1="130" x2="375" y2="189" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
+    <text x="383" y="183" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h, Δ</text>
+    <line x1="375" y1="240" x2="375" y2="289" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
+    <text x="383" y="270" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h, B</text>
+    <line x1="375" y1="350" x2="375" y2="419" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
+    <text x="383" y="390" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h′, B′</text>
+    <line x1="375" y1="470" x2="375" y2="529" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
+    <text x="383" y="522" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h′, Δ′</text>
 
-    <!-- rank store -->
-    <rect x="20" y="190" width="170" height="140" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
-    <text x="105" y="214" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">rank store</text>
-    <text x="105" y="240" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">B ≤ s−P</text>
-    <text x="105" y="260" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">∇B deposits</text>
-    <text x="105" y="286" text-anchor="middle" class="sub" fill="#5f6b76">keyed (mb, block)</text>
-    <text x="105" y="304" text-anchor="middle" class="sub" fill="#5f6b76">shared by the rank's stages</text>
-    <text x="105" y="348" text-anchor="middle" class="note" fill="#1f6fb2" font-size="11.5">one per rank</text>
+    <!-- rank store: x 20..190, y 190..450, right-edge midpoint (190, 320) -->
+    <rect x="20" y="190" width="170" height="260" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
+    <text x="105" y="216" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">rank store</text>
+    <text x="105" y="250" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">B ≤ s−P</text>
+    <text x="105" y="274" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇B deposits</text>
+    <text x="105" y="304" text-anchor="middle" class="sub" fill="#5f6b76">keyed (mb, block)</text>
+    <text x="105" y="404" text-anchor="middle" class="sub" fill="#5f6b76">one per rank,</text>
+    <text x="105" y="424" text-anchor="middle" class="sub" fill="#5f6b76">shared by its stages</text>
 
-    <line x1="190" y1="212" x2="248" y2="212" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="220" y="203" text-anchor="middle" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">held B</text>
-    <line x1="250" y1="238" x2="192" y2="238" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="220" y="254" text-anchor="middle" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">cache Δ</text>
-    <polyline points="250,330 220,330 220,300 192,300" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="222" y="348" text-anchor="middle" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">commit B</text>
+    <!-- store <-> assemble: one line, a head at each end, at assemble's left-edge midpoint -->
+    <line x1="191" y1="215" x2="259" y2="215" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-start="url(#mf)" marker-end="url(#mf)"/>
+    <text x="225" y="206" text-anchor="middle" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">held B</text>
+    <text x="225" y="234" text-anchor="middle" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">cache Δ</text>
+    <!-- layers -> store: left-edge midpoint to right-edge midpoint, straight -->
+    <line x1="260" y1="320" x2="191" y2="320" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
+    <text x="225" y="311" text-anchor="middle" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">commit</text>
 
-    <!-- backward column -->
-    <rect x="570" y="530" width="230" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="685" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P recv</text>
+    <!-- backward column: x 580..810, midline 695 -->
+    <rect x="580" y="530" width="230" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="695" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P recv</text>
 
-    <rect x="570" y="420" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
-    <text x="685" y="441" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">collect</text>
-    <text x="685" y="459" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">∇Δ′ += deposits</text>
+    <rect x="580" y="420" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
+    <text x="695" y="440" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">collect</text>
+    <text x="695" y="460" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇Δ′ += deposits</text>
 
-    <rect x="570" y="190" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
-    <text x="685" y="211" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">split ∇B</text>
-    <text x="685" y="229" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">Δ → wire, held → deposit</text>
+    <rect x="580" y="190" width="230" height="50" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
+    <text x="695" y="210" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">split ∇B</text>
+    <text x="695" y="230" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">Δ → wire, held → deposit</text>
 
-    <rect x="570" y="90" width="230" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="685" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P send</text>
+    <rect x="580" y="90" width="230" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="695" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P send</text>
 
-    <text x="570" y="684" class="cap b" fill="#d92d20" font-size="12.5" font-weight="600" letter-spacing="0.08em">BACKWARD</text>
+    <text x="580" y="684" class="cap b" fill="#d92d20" font-weight="600" letter-spacing="0.08em">BACKWARD</text>
 
-    <line x1="685" y1="530" x2="685" y2="472" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="693" y="506" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h′, ∇Δ′</text>
-    <line x1="570" y1="445" x2="482" y2="352" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="486" y="445" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">backward</text>
-    <line x1="480" y1="312" x2="568" y2="220" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="522" y="292" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h, ∇B</text>
-    <line x1="685" y1="190" x2="685" y2="132" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="693" y="164" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h, ∇Δ</text>
+    <!-- backward arrows -->
+    <line x1="695" y1="530" x2="695" y2="471" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="703" y="506" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h′, ∇Δ′</text>
+    <!-- collect top-edge midpoint -> layers right-edge midpoint -->
+    <line x1="695" y1="420" x2="491" y2="320" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="496" y="380" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">backward</text>
+    <!-- layers right edge -> split left-edge midpoint -->
+    <line x1="490" y1="302" x2="579" y2="215" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="548" y="300" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h, ∇B</text>
+    <line x1="695" y1="190" x2="695" y2="131" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="703" y="150" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h, ∇Δ</text>
 
-    <!-- store <-> backward column -->
-    <polyline points="570,200 525,200 525,160 105,160 105,188" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="533" y="150" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">deposit ∇B</text>
-    <polyline points="105,330 105,496 610,496 610,472" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="112" y="490" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">deposits</text>
+    <!-- split right-edge midpoint -> store top-edge midpoint -->
+    <polyline points="810,215 830,215 830,160 105,160 105,189" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="498" y="152" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">deposit ∇B</text>
+    <!-- store bottom-edge midpoint -> collect left-edge midpoint -->
+    <polyline points="105,450 105,496 545,496 545,445 579,445" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="113" y="488" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">deposits</text>
 
     <!-- notes -->
-    <text x="820" y="215" class="note" fill="#1f6fb2" font-size="11.5">tables: the same on</text>
-    <text x="820" y="231" class="note" fill="#1f6fb2" font-size="11.5">every rank, no collective</text>
-    <text x="820" y="330" class="note" fill="#1f6fb2" font-size="11.5">last stage: aggregation</text>
-    <text x="820" y="346" class="note" fill="#1f6fb2" font-size="11.5">on (h, B), no send</text>
+    <text x="842" y="200" class="note" fill="#1f6fb2" font-size="12">tables: the same on</text>
+    <text x="842" y="217" class="note" fill="#1f6fb2" font-size="12">every rank, no collective</text>
+    <text x="842" y="330" class="note" fill="#1f6fb2" font-size="12">last stage: aggregation</text>
+    <text x="842" y="347" class="note" fill="#1f6fb2" font-size="12">on (h, B), no send</text>
 
-    <line x1="975" y1="20" x2="975" y2="690" stroke="#d9d4c7" stroke-dasharray="4 6"/>
+    <line x1="990" y1="20" x2="990" y2="690" stroke="#d9d4c7" stroke-dasharray="4 6"/>
 
     <!-- ===================== cache off ===================== -->
-    <text x="1000" y="30" class="title" fill="#1f2328" font-size="15" font-weight="600">attn_res_cache off</text>
-    <text x="1160" y="30" class="sub" fill="#5f6b76">the whole stack every hop</text>
+    <text x="1010" y="30" class="title" fill="#1f2328" font-size="16" font-weight="600">attn_res_cache off</text>
+    <text x="1180" y="30" class="sub" fill="#5f6b76">the whole stack every hop</text>
 
-    <text x="1155" y="72" text-anchor="middle" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h, B  from stage s−1</text>
-    <text x="1155" y="604" text-anchor="middle" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h′, B′  to stage s+1</text>
-    <text x="1375" y="72" text-anchor="middle" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h, ∇B  to stage s−1</text>
-    <text x="1375" y="604" text-anchor="middle" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h′, ∇B′  from stage s+1</text>
+    <text x="1165" y="72" text-anchor="middle" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h, B  from stage s−1</text>
+    <text x="1165" y="604" text-anchor="middle" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h′, B′  to stage s+1</text>
+    <text x="1385" y="72" text-anchor="middle" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h, ∇B  to stage s−1</text>
+    <text x="1385" y="604" text-anchor="middle" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h′, ∇B′  from stage s+1</text>
 
-    <rect x="1040" y="90" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="1155" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P recv</text>
-    <rect x="1040" y="300" width="230" height="60" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
-    <text x="1155" y="325" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">layers l..m</text>
-    <text x="1155" y="345" text-anchor="middle" class="sym" fill="#1f2328" font-family="IBM Plex Mono, Consolas, monospace">B is the leaf</text>
-    <rect x="1040" y="530" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="1155" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P send</text>
-    <text x="1040" y="684" class="cap f" fill="#d9760a" font-size="12.5" font-weight="600" letter-spacing="0.08em">FORWARD</text>
+    <rect x="1050" y="90" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="1165" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P recv</text>
+    <rect x="1050" y="290" width="230" height="60" rx="8" class="ent" fill="#ffffff" stroke="#1f2328" stroke-width="1.4"/>
+    <text x="1165" y="315" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">layers l..m</text>
+    <text x="1165" y="337" text-anchor="middle" class="sym" fill="#1f2328" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">B is the leaf</text>
+    <rect x="1050" y="530" width="230" height="40" rx="8" class="comm" fill="#c6efce" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="1165" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P send</text>
+    <text x="1050" y="684" class="cap f" fill="#d9760a" font-weight="600" letter-spacing="0.08em">FORWARD</text>
 
-    <line x1="1155" y1="130" x2="1155" y2="298" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="1163" y="220" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h, B</text>
-    <line x1="1155" y1="360" x2="1155" y2="528" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
-    <text x="1163" y="450" class="lf" fill="#d9760a" font-family="IBM Plex Mono, Consolas, monospace">h′, B′</text>
+    <line x1="1165" y1="130" x2="1165" y2="289" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
+    <text x="1173" y="215" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h, B</text>
+    <line x1="1165" y1="350" x2="1165" y2="529" class="fwd" fill="none" stroke="#1f2328" stroke-width="1.8" marker-end="url(#mf)"/>
+    <text x="1173" y="445" class="lf" fill="#d9760a" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">h′, B′</text>
 
-    <rect x="1300" y="530" width="150" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="1375" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P recv</text>
-    <rect x="1300" y="90" width="150" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
-    <text x="1375" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="13" font-weight="600">P2P send</text>
-    <text x="1300" y="684" class="cap b" fill="#d92d20" font-size="12.5" font-weight="600" letter-spacing="0.08em">BACKWARD</text>
+    <rect x="1310" y="530" width="150" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="1385" y="555" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P recv</text>
+    <rect x="1310" y="90" width="150" height="40" rx="8" class="commh" fill="url(#hatch)" stroke="#2f9e44" stroke-width="1.4"/>
+    <text x="1385" y="115" text-anchor="middle" class="t" fill="#1f2328" font-size="14" font-weight="600">P2P send</text>
+    <text x="1310" y="684" class="cap b" fill="#d92d20" font-weight="600" letter-spacing="0.08em">BACKWARD</text>
 
-    <polyline points="1375,530 1375,345 1272,345" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="1383" y="445" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h′, ∇B′</text>
-    <polyline points="1270,315 1335,315 1335,132" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
-    <text x="1343" y="225" class="lb" fill="#d92d20" font-family="IBM Plex Mono, Consolas, monospace">∇h, ∇B</text>
+    <!-- recv top-edge midpoint -> layers right-edge midpoint; layers right edge -> send bottom-edge midpoint -->
+    <polyline points="1385,530 1385,320 1281,320" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="1393" y="445" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h′, ∇B′</text>
+    <polyline points="1280,302 1385,302 1385,131" class="bwd" fill="none" stroke="#d92d20" stroke-width="1.8" marker-end="url(#mb)"/>
+    <text x="1393" y="215" class="lb" fill="#d92d20" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace" font-size="14">∇h, ∇B</text>
 
-    <text x="1040" y="630" class="note" fill="#1f6fb2" font-size="11.5">no store, no deposits;</text>
-    <text x="1040" y="646" class="note" fill="#1f6fb2" font-size="11.5">B grows with the stage index</text>
+    <text x="1050" y="630" class="note" fill="#1f6fb2" font-size="12">no store, no deposits;</text>
+    <text x="1050" y="647" class="note" fill="#1f6fb2" font-size="12">B grows with the stage index</text>
   </svg>
