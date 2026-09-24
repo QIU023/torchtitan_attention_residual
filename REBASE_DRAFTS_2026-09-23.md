@@ -149,3 +149,29 @@ pp4 x vp4 goes, make the composability cell pp2 x vp4 (Interleaved1F1B, 8 stages
 Drafts re-stacked on `3902077ca` and pushed: k3_pp_balance `005cf4aee`, k3_pp_offload `c73e17c03`, k3_pp_mm
 `94e6e7116` (DEP's first commit `ca218294d` is the optimizer relaxation). Each draft's diff against its base is
 unchanged (only a hunk header offset for DEP).
+
+## 2026-09-24: tianyu's two applied suggestions merged into pp_review4
+
+The user applied two of tianyu's suggestions on GitHub (review 5299726630): `c60cd3f95` renames `assemble_stack` to
+`_assemble_stack` in stage.py, `9bb1b87f0` renames the helper `present` to `get_present_modules` in
+`torchtitan/distributed/pipeline_parallel.py`. A suggestion changes only the line it sits on, so the PR head
+`9bb1b87f0` is broken: `test_kimi_k3_pp_stage.py` fails collection (ImportError: cannot import name 'assemble_stack'),
+three of the four `pipeline_with_first_last_stage_modules` tests fail with NameError: name 'present' is not defined,
+and every K3 pipeline build would hit the same NameError.
+
+pp_review4 = `9729cbdb5` (on main `b64103072`): the two commits cherry-picked with their message, author and
+tianyu's Co-authored-by kept, each amended to rename every reference (stage.py's two call sites, the stage test's
+import and three calls, PP_ATTN_RES_CACHE.md; the two call sites of the helper). A merge commit was not used:
+pp_review4 is rebased on a newer main, so a merge would carry both copies of the seven commits.
+Checked per file (blob comparison over the 21 files 4312 touches): pp_review4 differs from the PR head only in the
+three cell-list files (exactly main's #4596 lines plus the three AdamW lines of the composability cell) and in the
+four rename-completion files. (The file-level "diff of diffs" used on 09-23 only detects files added or removed;
+this blob check is the one that shows the replay is faithful.) CPU pytest 102 passed; pyrefly on the three touched
+.py files 2 errors before and after. Pushed to the fork as `pp_review4` (was `3f9201ea0`); k3_pp_text untouched.
+
+Not yet handled from the same review round: tianyu: remove the svg (the user replied it will be split out), "vp" vs
+"vpp" naming, "simply raise on CP" (model.py:404), make the other two stage.py helpers private too, move
+PPRankLocalCache into kimi_k3/pipeline_parallel/cache.py, "not clear why we have to use @overload"; shuhuayu: the
+composability cell at vp=4 and drop the pp4 x vp4 cell. main moved 3 more commits (to 9e159aed7, touching kimi_k3
+__init__.py and model.py); `git merge-tree` says pp_review4 merges onto it cleanly. The three PP drafts still sit on
+`3902077ca`.
