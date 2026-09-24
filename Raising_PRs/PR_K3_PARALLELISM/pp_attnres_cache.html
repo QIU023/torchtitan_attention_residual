@@ -51,7 +51,7 @@
   <p>The diagram shows one virtual stage on one rank with <code>attn_res_cache</code> on, and the same stage with it off. Forward in black, backward in red; the P2P receive and send are the green boxes, solid for forward and hatched for backward. Nothing else communicates: no collective runs in the transport.</p>
 
   <figure class="fig" style="margin-inline:0">
-  <svg viewBox="0 0 1550 840" role="img" aria-label="Forward and backward data flow of one Kimi K3 pipeline stage with the block cache on, next to the same stage with the cache off">
+  <svg viewBox="0 0 1550 866" role="img" aria-label="Forward and backward data flow of one Kimi K3 pipeline stage with the block cache on, next to the same stage with the cache off">
     <defs>
       <marker id="mf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/>
@@ -80,7 +80,7 @@
 
     <rect x="260" y="190" width="230" height="50" rx="8" class="ent"/>
     <text x="375" y="210" text-anchor="middle" class="t">assemble</text>
-    <text x="375" y="230" text-anchor="middle" class="sym">B = store ⊕ Δ  (leaf)</text>
+    <text x="375" y="230" text-anchor="middle" class="sym">B = cache ⊕ Δ  (leaf)</text>
 
     <rect x="260" y="290" width="230" height="60" rx="8" class="ent"/>
     <text x="375" y="315" text-anchor="middle" class="t">layers l..m</text>
@@ -105,20 +105,20 @@
     <line x1="375" y1="470" x2="375" y2="529" class="fwd" marker-end="url(#mf)"/>
     <text x="383" y="522" class="lf">[h′, Δ′]</text>
 
-    <!-- rank store: x 20..190, y 190..450, right-edge midpoint (190, 320) -->
+    <!-- rank cache: x 20..190, y 190..450, right-edge midpoint (190, 320) -->
     <rect x="20" y="190" width="170" height="260" rx="8" class="ent"/>
-    <text x="105" y="216" text-anchor="middle" class="t">rank store</text>
+    <text x="105" y="216" text-anchor="middle" class="t">rank cache</text>
     <text x="105" y="250" text-anchor="middle" class="sym">B ≤ s−P</text>
     <text x="105" y="274" text-anchor="middle" class="sym">∇B deposits</text>
     <text x="105" y="304" text-anchor="middle" class="sub">keyed (mb, block)</text>
     <text x="105" y="404" text-anchor="middle" class="sub">one per rank,</text>
     <text x="105" y="424" text-anchor="middle" class="sub">shared by its stages</text>
 
-    <!-- store <-> assemble: one line, a head at each end, at assemble's left-edge midpoint -->
+    <!-- cache <-> assemble: one line, a head at each end, at assemble's left-edge midpoint -->
     <line x1="191" y1="215" x2="259" y2="215" class="fwd" marker-start="url(#mf)" marker-end="url(#mf)"/>
     <text x="225" y="206" text-anchor="middle" class="lf">held B</text>
     <text x="225" y="234" text-anchor="middle" class="lf">cache Δ</text>
-    <!-- layers -> store: left-edge midpoint to right-edge midpoint, straight -->
+    <!-- layers -> cache: left-edge midpoint to right-edge midpoint, straight -->
     <line x1="260" y1="320" x2="191" y2="320" class="fwd" marker-end="url(#mf)"/>
     <text x="225" y="311" text-anchor="middle" class="lf">commit</text>
 
@@ -144,17 +144,17 @@
     <text x="703" y="506" class="lb">[∇h′, ∇Δ′]</text>
     <!-- collect top-edge midpoint -> layers right-edge midpoint -->
     <polyline points="695,420 695,320 491,320" class="bwd" marker-end="url(#mb)"/>
-    <text x="703" y="385" class="lb">backward</text>
-    <!-- layers right edge -> split left-edge midpoint -->
-    <polyline points="490,298 535,298 535,215 579,215" class="bwd" marker-end="url(#mb)"/>
-    <text x="543" y="268" class="lb">[∇h, ∇B]</text>
+    <text x="540" y="340" class="lb">[∇h′, ∇B′]</text>
+    <!-- layers right edge -> split bottom-edge midpoint -->
+    <polyline points="490,298 695,298 695,241" class="bwd" marker-end="url(#mb)"/>
+    <text x="540" y="290" class="lb">[∇h, ∇B]</text>
     <line x1="695" y1="190" x2="695" y2="131" class="bwd" marker-end="url(#mb)"/>
     <text x="703" y="151" class="lb">[∇h, ∇Δ]</text>
 
-    <!-- split right-edge midpoint -> store top-edge midpoint -->
+    <!-- split right-edge midpoint -> cache top-edge midpoint -->
     <polyline points="810,215 830,215 830,160 105,160 105,189" class="bwd" marker-end="url(#mb)"/>
     <text x="498" y="152" class="lb">deposit ∇B</text>
-    <!-- store bottom-edge midpoint -> collect left-edge midpoint -->
+    <!-- cache bottom-edge midpoint -> collect left-edge midpoint -->
     <polyline points="105,450 105,496 545,496 545,445 579,445" class="bwd" marker-end="url(#mb)"/>
     <text x="113" y="488" class="lb">deposits</text>
 
@@ -168,7 +168,7 @@
 
     <!-- ===================== cache off ===================== -->
     <text x="1005" y="30" class="title">attn_res_cache off</text>
-    <text x="1180" y="30" class="sub">the whole stack every hop; no store, no deposits</text>
+    <text x="1180" y="30" class="sub">the whole stack every hop; no cache, no deposits</text>
 
     <text x="1140" y="72" text-anchor="middle" class="lf">[h, B] from virtual stage s−1</text>
     <text x="1140" y="604" text-anchor="middle" class="lf">[h′, B′] to virtual stage s+1</text>
@@ -197,13 +197,13 @@
 
     <!-- recv top-edge midpoint -> layers right-edge midpoint -->
     <polyline points="1405,530 1405,320 1256,320" class="bwd" marker-end="url(#mb)"/>
-    <text x="1413" y="445" class="lb">[∇h′, ∇B′]</text>
-    <!-- layers right edge -> send left-edge midpoint -->
-    <polyline points="1255,298 1290,298 1290,110 1329,110" class="bwd" marker-end="url(#mb)"/>
-    <text x="1298" y="215" class="lb">[∇h, ∇B]</text>
+    <text x="1290" y="340" class="lb">[∇h′, ∇B′]</text>
+    <!-- layers right edge -> send bottom-edge midpoint -->
+    <polyline points="1255,298 1405,298 1405,131" class="bwd" marker-end="url(#mb)"/>
+    <text x="1290" y="290" class="lb">[∇h, ∇B]</text>
 
     <!-- ===================== legend ===================== -->
-    <rect x="20" y="668" width="940" height="156" rx="8" class="lgd"/>
+    <rect x="20" y="668" width="1100" height="178" rx="8" class="lgd"/>
     <text x="44" y="698" class="key">h</text>
     <text x="84" y="698" class="def">hidden state [T, D]</text>
     <text x="44" y="720" class="key">B</text>
@@ -216,32 +216,36 @@
     <text x="84" y="786" class="def">append columns to the stack</text>
     <text x="44" y="808" class="key">h′</text>
     <text x="84" y="808" class="def">this stage's output, likewise B′ and Δ′</text>
+    <text x="44" y="830" class="key">mb</text>
+    <text x="84" y="830" class="def">micro-batch</text>
 
     <text x="486" y="698" class="key">wire</text>
     <text x="566" y="698" class="def">the P2P hop to a neighbouring virtual stage</text>
     <text x="486" y="720" class="key">held</text>
-    <text x="566" y="720" class="def">kept in the rank store for this rank's later stages</text>
-    <text x="486" y="742" class="key">deposit</text>
-    <text x="566" y="742" class="def">a held column's gradient, left in the store</text>
-    <text x="486" y="764" class="key">leaf</text>
-    <text x="566" y="764" class="def">a fresh autograd leaf the stage owns</text>
-    <text x="486" y="786" class="key">s, P</text>
-    <text x="566" y="786" class="def">virtual stage, PP degree; s−P: this rank's previous stage</text>
-    <text x="486" y="808" class="key">mb</text>
-    <text x="566" y="808" class="def">micro-batch</text>
+    <text x="566" y="720" class="def">kept in the rank cache for this rank's later stages</text>
+    <text x="486" y="742" class="key">split</text>
+    <text x="566" y="742" class="def">cut ∇B by column: Δ's columns go back on the wire, held ones become deposits</text>
+    <text x="486" y="764" class="key">deposit</text>
+    <text x="566" y="764" class="def">a held column's gradient, left in the rank cache</text>
+    <text x="486" y="786" class="key">collect</text>
+    <text x="566" y="786" class="def">the stage that brought a block onto the rank adds that block's deposits</text>
+    <text x="486" y="808" class="key">leaf</text>
+    <text x="566" y="808" class="def">a fresh autograd leaf the stage owns</text>
+    <text x="486" y="830" class="key">s, P</text>
+    <text x="566" y="830" class="def">virtual stage, PP degree; s−P: this rank's previous stage</text>
   </svg>
   </figure>
 
   <h2>Forward</h2>
-  <p>A rank keeps every block it has seen in one store shared by its virtual stages, keyed by micro-batch and block. On entry a stage assembles the stack the model expects from the store and the received <code>Δ</code>, as a fresh autograd leaf; the model returns the stack with its new blocks appended, the stage commits them to the store and sends on only what the next rank lacks. A block committed at stage <code>s</code> is therefore new on the wire for <code>P−1</code> hops and then held by every rank. The routing tables that say which blocks travel and which are held are a pure function of the split, computed identically on every rank.</p>
+  <p>A rank keeps every block it has seen in one cache shared by its virtual stages, keyed by micro-batch and block. On entry a stage assembles the stack the model expects from the cache and the received <code>Δ</code>, as a fresh autograd leaf; the model returns the stack with its new blocks appended, the stage commits them to the cache and sends on only what the next rank lacks. A block committed at stage <code>s</code> is therefore new on the wire for <code>P−1</code> hops and then held by every rank. The routing tables that say which blocks travel and which are held are a pure function of the split, computed identically on every rank.</p>
 
   <h2>Backward</h2>
-  <p>The gradient of the assembled leaf splits by column: the received columns go back on the wire as <code>∇Δ</code>, the held columns are deposited in the store. The stage that brought a block onto the rank collects those deposits into its own incoming gradient before its backward, and the count is checked against the tables, so a missing deposit raises instead of training quietly. The order this needs, a rank's stages running backward in decreasing index, is one every pipeline schedule provides by data dependency.</p>
+  <p>The gradient of the assembled leaf splits by column: the received columns go back on the wire as <code>∇Δ</code>, the held columns are deposited in the cache. The stage that brought a block onto the rank collects those deposits into its own incoming gradient before its backward, and the count is checked against the tables, so a missing deposit raises instead of training quietly. The order this needs, a rank's stages running backward in decreasing index, is one every pipeline schedule provides by data dependency.</p>
 
   <h2>Configurations</h2>
   <table>
     <tr><th>Config</th><th>A hop carries</th><th>A rank keeps</th><th>Gradient of a held block</th><th>Schedules</th></tr>
-    <tr><td><code>attn_res_cache</code> on</td><td><code>h</code> and <code>Δ</code></td><td>blocks committed at stages ≤ s−P, and deposits</td><td>deposited in the store, collected by the stage that brought the block</td><td>loop-style stage placement (stage s on rank s mod P)</td></tr>
+    <tr><td><code>attn_res_cache</code> on</td><td><code>h</code> and <code>Δ</code></td><td>blocks committed at stages ≤ s−P, and deposits</td><td>deposited in the cache, collected by the stage that brought the block</td><td>loop-style stage placement (stage s on rank s mod P)</td></tr>
     <tr><td><code>attn_res_cache</code> off</td><td><code>h</code> and the whole stack <code>B</code></td><td>nothing</td><td>returns on the wire inside <code>∇B</code></td><td>any</td></tr>
   </table>
 </main>
