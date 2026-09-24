@@ -147,3 +147,9 @@ H100 kit, rewritten (`kit_h100_2026-09-24/`): `run_attnres_h100.sh` runs main ag
 Drafts: `REPLY_4780_TIANYU_r4090059193_2026-09-24.md` (one PASTE block, `#INIT_PR` and `NUMBERS` to fill, #4656 sentence conditional), `PR_BODY_v3_2026-09-24.md`, `PR_BODY_zero_init_2026-09-24.md`. `REPLY_4780_TIANYU_2026-09-24.md` and `PR_BODY_v2_2026-09-24.md` are superseded.
 
 Waiting on the user: open the init PR; force-push `attnres_review1` to `k3_attnres_recompute`; keep or close #4656; run the H100 kit; whether the fla override stays in this PR or goes to acisseJZhong.
+
+## 2026-09-24 round 2b: the fla override leaves 4780 (the user's decision)
+
+The user: tianyu named @acisseJZhong for the override, so this PR does not take that part. `attnres_review1` reset to `38fcdde4a` (Configurable, torch_remat) and force-pushed to the fork; `k3_attnres_recompute`, `k3_ac_reuse_attention` and `k3_attnres_zero_init` unchanged. The override commit `4e4baa4f3` survives only as `fused_attnres_override_4e4baa4f3.patch` here (`git am` onto the review branch restores it). Model code is identical between the two heads, so the round-2 smoke's main against head rows hold. Rechecked on `38fcdde4a`: CPU 48 passed (residual, test_override, test_skip_dp) in `/workspace/venv_bfx9`, `tests/unit_tests/gpu/test_kimi_k3.py` 3 passed 1 skipped, pre-commit passes on the changed files, pyrefly 0.45.1 the same 2 environment errors as main and no hook edits.
+
+Kit: `run_attnres_h100.sh` has no fused cells and no `FLA` variable any more (five cells per token count: main, main again, head, each AC off, plus main and head under selective AC). `probe_saved_bytes.py` calls `fla.ops.attnres.fused_attnres` directly when fla imports (any import failure skips the fla rows) instead of the removed override module. Reply and body v3 updated: the override is left to @acisseJZhong; the one sentence on `ctx.res` in the reply is optional.

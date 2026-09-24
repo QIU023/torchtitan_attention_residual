@@ -1,0 +1,314 @@
+From 4e4baa4f34b7fff604f724e94376030482155dcf Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Thu, 24 Sep 2026 04:48:40 +0000
+Subject: [PATCH] overrides: Kimi's attention residual fused with
+ flash-linear-attention
+
+fused_attnres swaps every AttentionResidual for fla's fused Triton op,
+which saves per-token statistics instead of the FP32 stack and rebuilds
+the upcasts in backward. fla is optional: without it, or off CUDA, the
+aggregation falls back to the eager form. The op runs no collective, so
+its autograd Function is registered as local for SPMD type checking.
+---
+ pyproject.toml                                |   2 +-
+ .../cpu/test_fused_attnres_override.py        | 118 ++++++++++++++
+ torchtitan/overrides/fused_attnres.py         | 149 ++++++++++++++++++
+ 3 files changed, 268 insertions(+), 1 deletion(-)
+ create mode 100644 tests/unit_tests/cpu/test_fused_attnres_override.py
+ create mode 100644 torchtitan/overrides/fused_attnres.py
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 7948b1ffa..8b1f2cc86 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -78,7 +78,7 @@ markers = [
+ python-version = "3.11"
+ project-excludes = ["torchtitan/experiments", "torchtitan/rl", "**/tests/**"]
+ replace-imports-with-any = [
+-    "torchao.*", "torchft", "torchvision.*", "deep_ep.*", "jinja2.*", "helion", "helion.*", "batch_invariant_ops", "torchcomms", # optional dependencies
++    "torchao.*", "torchft", "torchvision.*", "deep_ep.*", "jinja2.*", "helion", "helion.*", "fla", "fla.*", "batch_invariant_ops", "torchcomms", # optional dependencies
+     # torch_remat is required, but does not publish Pyrefly stubs.
+     "torch_remat",
+ ]
+diff --git a/tests/unit_tests/cpu/test_fused_attnres_override.py b/tests/unit_tests/cpu/test_fused_attnres_override.py
+new file mode 100644
+index 000000000..76baa4fb4
+--- /dev/null
++++ b/tests/unit_tests/cpu/test_fused_attnres_override.py
+@@ -0,0 +1,118 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++import types
++import unittest
++from typing import cast
++
++import torch
++
++from torchtitan.config import apply_overrides, OverrideConfig
++from torchtitan.models.kimi_k3.config_registry import kimi_k3_debugmodel
++from torchtitan.models.kimi_k3.model import AttentionResidual, KimiK3Model
++from torchtitan.overrides import fused_attnres as fused_attnres_module
++from torchtitan.overrides.fused_attnres import FusedAttentionResidual
++
++EPS = 1e-5
++_FLA = fused_attnres_module._FLA_IMPORT_ERROR is None
++
++
++def _grad(leaf: torch.Tensor) -> torch.Tensor:
++    assert leaf.grad is not None
++    return leaf.grad.detach().float().clone()
++
++
++def _modules(projection: torch.Tensor, norm_weight: torch.Tensor):
++    return (
++        types.SimpleNamespace(weight=projection),
++        types.SimpleNamespace(weight=norm_weight, eps=EPS),
++    )
++
++
++def _inputs(tokens, blocks, dim, dtype, device, seed=0):
++    generator = torch.Generator().manual_seed(seed)
++
++    def make(*shape, scale=1.0):
++        return (torch.randn(*shape, generator=generator) * scale).to(dtype).to(device)
++
++    return (
++        make(tokens, dim).requires_grad_(),
++        make(tokens, blocks, dim).requires_grad_(),
++        make(1, dim, scale=dim**-0.5).requires_grad_(),
++        (1 + 0.1 * torch.randn(dim, generator=generator))
++        .to(dtype)
++        .to(device)
++        .requires_grad_(),
++        make(tokens, dim),
++    )
++
++
++class TestFusedAttnresOverrideConfig(unittest.TestCase):
++    def test_override_replaces_every_aggregation(self):
++        config = kimi_k3_debugmodel(seq_len=512)
++        model_config = cast(KimiK3Model.Config, config.model)
++        replacements = apply_overrides(
++            OverrideConfig(
++                imports=["torchtitan.overrides.fused_attnres.fused_attnres"]
++            ),
++            config,
++        )
++        # Two per layer (layer 0's attention one is built but unused) and the
++        # output one.
++        self.assertEqual(len(replacements), 2 * len(model_config.layers) + 1)
++        for layer in model_config.layers:
++            self.assertIsInstance(layer.attention_res_fn, FusedAttentionResidual.Config)
++            self.assertIsInstance(layer.ffn_res_fn, FusedAttentionResidual.Config)
++        self.assertIsInstance(model_config.output_res_fn, FusedAttentionResidual.Config)
++
++    def test_falls_back_to_eager_off_cuda(self):
++        prefix, stack, projection, norm_weight, _ = _inputs(
++            16, 3, 8, torch.float32, "cpu"
++        )
++        expected = AttentionResidual.Config().build()(
++            prefix, stack, *_modules(projection, norm_weight)
++        )
++        actual = FusedAttentionResidual.Config().build()(
++            prefix, stack, *_modules(projection, norm_weight)
++        )
++        torch.testing.assert_close(actual, expected)
++
++
++@unittest.skipUnless(
++    torch.cuda.is_available() and _FLA, "the fused aggregation needs CUDA and fla"
++)
++class TestFusedAttnresNumerics(unittest.TestCase):
++    def _compare(self, tokens, blocks, dim, dtype, rtol, atol):
++        prefix, stack, projection, norm_weight, grad_output = _inputs(
++            tokens, blocks, dim, dtype, "cuda"
++        )
++        leaves = [prefix, stack, projection, norm_weight]
++        outputs, grads = [], []
++        for aggregate in (
++            AttentionResidual.Config().build(),
++            FusedAttentionResidual.Config().build(),
++        ):
++            for leaf in leaves:
++                leaf.grad = None
++            output = aggregate(prefix, stack, *_modules(projection, norm_weight))
++            output.backward(grad_output)
++            outputs.append(output.detach().float())
++            grads.append([_grad(leaf) for leaf in leaves])
++        torch.testing.assert_close(outputs[1], outputs[0], rtol=rtol, atol=atol)
++        for expected, actual in zip(*grads, strict=True):
++            torch.testing.assert_close(actual, expected, rtol=rtol, atol=atol)
++
++    def test_matches_eager_in_float32(self):
++        self._compare(128, 3, 64, torch.float32, rtol=1e-5, atol=1e-5)
++
++    def test_matches_eager_in_bfloat16(self):
++        # The fused op rounds once at the end, as the eager form does; the
++        # remaining gap is the FP32 reduction order.
++        self._compare(2048, 7, 1024, torch.bfloat16, rtol=1e-2, atol=1e-2)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/torchtitan/overrides/fused_attnres.py b/torchtitan/overrides/fused_attnres.py
+new file mode 100644
+index 000000000..3d1fb3d9f
+--- /dev/null
++++ b/torchtitan/overrides/fused_attnres.py
+@@ -0,0 +1,149 @@
++# Copyright (c) Meta Platforms, Inc. and affiliates.
++# All rights reserved.
++#
++# This source code is licensed under the BSD-style license found in the
++# LICENSE file in the root directory of this source tree.
++
++"""Fused attention residual override for Kimi K3.
++
++``fused_attnres`` replaces every ``AttentionResidual`` aggregation with the
++fused Triton op of flash-linear-attention, which saves per-token statistics
++instead of the FP32 stack and rebuilds the upcasts in backward::
++
++    torchtitan_train ... --override.imports torchtitan.overrides.fused_attnres.fused_attnres
++
++The kernel is opt-in: without ``fla`` (``flash-linear-attention`` at or above
++0.6.0, which introduced ``fla.ops.attnres``), or off CUDA, the aggregation
++falls back to the eager form. For SPMD type checking the op is registered
++with its eager decomposition, so the checker never runs the kernel.
++"""
++
++from __future__ import annotations
++
++import logging
++from dataclasses import dataclass
++from typing import TYPE_CHECKING
++
++import spmd_types as spmd
++import torch
++
++from torchtitan.config import derive, override
++from torchtitan.models.common import Linear
++from torchtitan.models.common.nn_modules import RMSNorm
++from torchtitan.models.kimi_k3.model import AttentionResidual
++from torchtitan.observability.logging import warn_once
++
++logger = logging.getLogger(__name__)
++
++if TYPE_CHECKING:
++    # The type checker always sees fla as importable (resolved to Any via
++    # ``replace-imports-with-any`` in pyproject.toml); the runtime import-error
++    # sentinel below is what makes it a genuine optional dependency.
++    from fla.ops.attnres import fused_attnres as fla_fused_attnres
++    from fla.ops.attnres.fused import FusedAttnresFunction
++
++    _FLA_IMPORT_ERROR: ImportError | None = None
++else:
++    try:
++        from fla.ops.attnres import fused_attnres as fla_fused_attnres
++        from fla.ops.attnres.fused import FusedAttnresFunction
++
++        _FLA_IMPORT_ERROR = None
++    except ImportError as e:
++        fla_fused_attnres = None
++        FusedAttnresFunction = None
++        _FLA_IMPORT_ERROR = e
++
++__all__ = ["FusedAttentionResidual", "fused_attnres"]
++
++
++def _eager_attnres(
++    query: torch.Tensor,
++    rms_weight: torch.Tensor,
++    output_rms_weight: torch.Tensor | None,
++    rms_eps: float,
++    scale: float,
++    return_weights: bool,
++    checkpoint_level: int,
++    *residuals: torch.Tensor,
++) -> tuple[torch.Tensor, torch.Tensor]:
++    """The fused op as plain ops, with its signature and outputs: the SPMD type
++    checker traces this on meta tensors, since the Triton kernel cannot run there."""
++    del checkpoint_level
++    values_TLD = torch.stack([r.float() for r in residuals], dim=1)
++    variance = values_TLD.pow(2).mean(dim=-1, keepdim=True)
++    keys_TLD = values_TLD * torch.rsqrt(variance + rms_eps)
++    score_weight_D = rms_weight.float() * query.float() * scale
++    scores_TL = (keys_TLD * score_weight_D).sum(dim=-1)
++    probs_TL = torch.softmax(scores_TL, dim=-1)
++    output_TD = torch.matmul(probs_TL.unsqueeze(1), values_TLD).squeeze(1)
++    if output_rms_weight is not None:
++        output_TD = torch.nn.functional.rms_norm(
++            output_TD, (output_TD.shape[-1],), output_rms_weight.float(), rms_eps
++        )
++    # Only the types of the outputs are read, and they must have the op's
++    # ranks: the probabilities [L, T] when they are requested, else a
++    # per-token vector standing in for the op's empty one (a fresh tensor
++    # would type as replicated).
++    probs = probs_TL.transpose(0, 1) if return_weights else scores_TL.logsumexp(-1)
++    return output_TD.to(residuals[0].dtype), probs
++
++
++if _FLA_IMPORT_ERROR is None:
++    spmd.register_decomposition(FusedAttnresFunction, _eager_attnres)
++    # fla dispatches to a Gluon backend where it can; it has the same signature.
++    try:
++        from fla.ops.attnres.backends.gluon import FusedAttnresGluonFunction
++    except ImportError:
++        pass
++    else:
++        spmd.register_decomposition(FusedAttnresGluonFunction, _eager_attnres)
++
++
++class FusedAttentionResidual(AttentionResidual):
++    """Kimi's attention residual through flash-linear-attention's fused op."""
++
++    @dataclass(kw_only=True, slots=True)
++    class Config(AttentionResidual.Config):
++        pass
++
++    def __call__(
++        self,
++        prefix_sum_TD: torch.Tensor,
++        block_residual_TND: torch.Tensor,
++        projection: Linear,
++        norm: RMSNorm,
++    ) -> torch.Tensor:
++        if _FLA_IMPORT_ERROR is not None:
++            warn_once(
++                logger,
++                "fused_attnres: fla.ops.attnres is not importable "
++                f"({_FLA_IMPORT_ERROR}); falling back to the eager aggregation.",
++            )
++            return super().__call__(prefix_sum_TD, block_residual_TND, projection, norm)
++        if not prefix_sum_TD.is_cuda:
++            warn_once(
++                logger,
++                "fused_attnres: the fused op needs CUDA tensors; falling back to "
++                "the eager aggregation.",
++            )
++            return super().__call__(prefix_sum_TD, block_residual_TND, projection, norm)
++        assert norm.eps is not None
++        # The op reads sources as rows: the stack's per-block views are copied
++        # once into contiguous [T, D] tensors, and the running sum is the last
++        # source, as in the eager form.
++        return fla_fused_attnres(
++            projection.weight.squeeze(0),
++            [*block_residual_TND.unbind(dim=1), prefix_sum_TD],
++            norm.weight,
++            rms_eps=norm.eps,
++        )
++
++
++@override(
++    target=AttentionResidual.Config,
++    exact=True,
++    description="Fuse Kimi's attention residual aggregation with flash-linear-attention.",
++)
++def fused_attnres(cfg: AttentionResidual.Config) -> FusedAttentionResidual.Config:
++    return derive(cfg, FusedAttentionResidual.Config)
+-- 
+2.43.0
+

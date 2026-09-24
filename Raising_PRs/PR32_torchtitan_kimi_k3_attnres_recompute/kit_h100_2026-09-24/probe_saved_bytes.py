@@ -1,11 +1,12 @@
 """Bytes one attention-residual call keeps alive for backward, per implementation.
 
-Run from a torchtitan checkout of attnres_review1 with fla 0.6.0 importable:
+Run from a torchtitan checkout of attnres_review1; fla 0.6.0 (git main) on the
+path adds its fused op, called the way an override of the node would call it:
 
     PYTHONPATH=<fla main>:. python <kit>/probe_saved_bytes.py [--time]
 
-For each of eager, fla fused and torch.compile(eager), with and without the
-torch_remat checkpoint the model puts around the call, it reports:
+For each of eager, torch.compile(eager) and, when importable, fla fused, with and
+without the torch_remat checkpoint the model puts around the call, it reports:
 
   held      memory allocated after forward minus before, minus the output:
             what the autograd graph of this one call keeps until backward
@@ -29,7 +30,11 @@ import torch
 import torch_remat as remat
 
 from torchtitan.models.kimi_k3.model import AttentionResidual
-from torchtitan.overrides.fused_attnres import _FLA_IMPORT_ERROR, FusedAttentionResidual
+
+try:  # a broken fla install can raise more than ImportError (tilelang, tvm_ffi)
+    from fla.ops.attnres import fused_attnres as fla_fused_attnres
+except Exception:
+    fla_fused_attnres = None
 
 EPS = 1e-6
 
@@ -47,6 +52,16 @@ def call(fn, stack, prefix, proj, norm):
     projection = types.SimpleNamespace(weight=proj)
     rms = types.SimpleNamespace(weight=norm, eps=EPS)
     return fn(prefix, stack, projection, rms)
+
+
+def fla_fused(prefix_sum_TD, block_residual_TND, projection, norm):
+    """fla's fused op on the node's arguments: the stack's block views plus the running sum."""
+    return fla_fused_attnres(
+        projection.weight.squeeze(0),
+        [*block_residual_TND.unbind(dim=1), prefix_sum_TD],
+        norm.weight,
+        rms_eps=norm.eps,
+    )
 
 
 def patch_fla_res_from_saved():
@@ -140,14 +155,15 @@ def main():
         "--shapes", default="2048x8x7168,8192x4x1024", help="tokens x entries x dim"
     )
     args = parser.parse_args()
-    assert _FLA_IMPORT_ERROR is None, _FLA_IMPORT_ERROR
     if args.fla_res_from_saved:
+        assert fla_fused_attnres is not None, "--fla-res-from-saved needs fla 0.6.0"
         patch_fla_res_from_saved()
     device = torch.device("cuda")
     eager = AttentionResidual.Config().build()
-    fused = FusedAttentionResidual.Config().build()
     compiled = torch.compile(eager.__call__)
-    impls = {"eager": eager, "fla fused": fused, "compile(eager)": compiled}
+    impls = {"eager": eager, "compile(eager)": compiled}
+    if fla_fused_attnres is not None:
+        impls["fla fused"] = fla_fused
     mib = 1 << 20
     print(
         f"device {torch.cuda.get_device_name()}  torch {torch.__version__}"

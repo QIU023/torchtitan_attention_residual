@@ -10,6 +10,10 @@
 - So the recompute decision belongs to the model, at the call site, where the AC coverage is known. An override owns only its math. The fla wrinkle is fla's to fix (rebuild the pointer table from the saved tensors in backward); with that change, fused under the checkpoint keeps nothing.
 - #4656 is superseded by the review branch's torch_remat commit: same mechanism and same tests, ported onto the Configurable and into `KimiK3Model.parallelize` after #4810. Whether to close #4656 or keep it as the carrier is the user's call (options at the end).
 
+## Decision (the user, 2026-09-24, after reading this)
+
+The fla override leaves #4780: tianyu named @acisseJZhong for it, so this PR does not take that part. `attnres_review1` is now `38fcdde4a` (Configurable, torch_remat), force-pushed to the fork; the override commit `4e4baa4f3` is kept only as `fused_attnres_override_4e4baa4f3.patch` in this folder. The model code of `38fcdde4a` and `4e4baa4f3` is identical (the override commit adds `overrides/fused_attnres.py`, its test and one `pyproject.toml` line), so the smoke's main against head rows below hold for the new head. The findings on fla stay here as notes for whoever writes the override; the reply to tianyu mentions `ctx.res` in one optional sentence.
+
 ## What each form keeps for backward (one call, measured)
 
 `kit_h100_2026-09-24/probe_saved_bytes.py` on one RTX 5060 Ti, `attnres_review1` (torch 2.14 nightly, torch_remat 0.2.0, fla 0.6.0 from git main), bf16 inputs. "Held" is memory allocated after forward minus before, minus the output: what the call's autograd graph keeps until backward. "Peak" is the max allocated over forward and backward, above the inputs. Bytes are a property of the shapes, not of the GPU; timing is not measured here.
@@ -74,7 +78,7 @@ Reading the table:
 
 1. `kimi_k3: the attention residual aggregation is a Configurable`: no dependency. Pure move of main's eager form into `AttentionResidual.__call__`; one config node per residual site.
 2. `kimi_k3: recompute the attention residual in backward with torch_remat`: needs 1 (it passes the built Function to `remat.checkpoint`). The block keeps `checkpoint_residual`; `KimiK3Model.parallelize` clears it for selective, full and region AC before building the policy. The model's output aggregation always takes its own checkpoint (no block wraps it). Six CPU tests, four ported from #4656 plus the RegionAC composition and the parallelize marking; both controls fail as expected (without the port five tests fail, without the marking the parallelize test fails).
-3. `overrides: Kimi's attention residual fused with flash-linear-attention`: needs 1 only; untouched this round (patch byte-identical to the pre-rebase commit). With 2 below it, AC-off runs with the override pay one fused forward per call in backward and save nothing until fla stops holding `ctx.res`.
+3. `overrides: Kimi's attention residual fused with flash-linear-attention`: needs 1 only; untouched this round (patch byte-identical to the pre-rebase commit). With 2 below it, AC-off runs with the override pay one fused forward per call in backward and save nothing until fla stops holding `ctx.res`. Dropped from the branch by the user's decision above.
 
 Open items for whoever owns the override (acisseJZhong, per tianyu), none done tonight:
 
