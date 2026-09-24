@@ -1,0 +1,62 @@
+pp8 x vp2, M=16, 32 layers in blocks of 4, unit 0.0137 GiB, 1.0 unit(s) per layer beyond a stage's first
+| rank | base: persistent + peak(dyn + acts) units | v4: persistent + peak(dyn + acts) units | lower: persistent + peak(dyn + acts) units | base - v4 GiB | v4 - lower GiB |
+|---:|---|---|---|---:|---:|
+| 0 | 176 + 236 = 412 | 0 + 213 = 213 | 0 + 130 = 130 | 2.72 | 1.13 |
+| 1 | 224 + 271 = 495 | 0 + 225 = 225 | 0 + 158 = 158 | 3.69 | 0.92 |
+| 2 | 240 + 265 = 505 | 0 + 212 = 212 | 0 + 130 = 130 | 4.01 | 1.12 |
+| 3 | 256 + 293 = 549 | 0 + 222 = 222 | 0 + 142 = 142 | 4.47 | 1.09 |
+| 4 | 272 + 304 = 576 | 0 + 220 = 220 | 0 + 131 = 131 | 4.87 | 1.22 |
+| 5 | 288 + 332 = 620 | 0 + 220 = 220 | 0 + 142 = 142 | 5.47 | 1.07 |
+| 6 | 304 + 345 = 649 | 0 + 245 = 245 | 0 + 130 = 130 | 5.52 | 1.57 |
+| 7 | 224 + 272 = 496 | 0 + 237 = 237 | 0 + 127 = 127 | 3.54 | 1.50 |
+heaviest rank, GiB: v4 3.2, -grad_pin 0.9, -per_block 0.0, -hidden_out 0.1, -open_copy 0.0, all fixes 1.8, lower 1.8
+
+H100 PP8 x VP4, M=16: block residual + hidden memory per rank, GiB (no layer activations)
+| rank | base persistent + dynamic | v4 | lower | base / lower |
+|---:|---|---:|---:|---:|
+| 0 | 29.8 + 52.1 = 81.8 | 41.0 | 18.2 | 4.5 |
+| 1 | 38.5 + 44.5 = 83.0 | 31.3 | 19.2 | 4.3 |
+| 2 | 38.5 + 44.5 = 83.0 | 30.8 | 18.6 | 4.5 |
+| 3 | 33.2 + 39.3 = 72.5 | 30.4 | 17.9 | 4.0 |
+| 4 | 35.0 + 59.6 = 94.6 | 43.1 | 20.9 | 4.5 |
+| 5 | 42.0 + 50.8 = 92.8 | 33.9 | 20.2 | 4.6 |
+| 6 | 42.0 + 50.8 = 92.8 | 33.8 | 19.6 | 4.7 |
+| 7 | 31.5 + 40.2 = 71.8 | 33.8 | 18.9 | 3.8 |
+heaviest rank, GiB: v4 43.1, -grad_pin 4.8, -per_block 2.0, -hidden_out 3.4, -open_copy 9.2, all fixes 20.9, lower 20.9
+
+H100 PP16 x VP2, M=32: block residual + hidden memory per rank, GiB (no layer activations)
+| rank | base persistent + dynamic | v4 | lower | base / lower |
+|---:|---|---:|---:|---:|
+| 0 | 38.5 + 52.3 = 90.8 | 44.7 | 20.5 | 4.4 |
+| 1 | 49.0 + 49.5 = 98.5 | 38.1 | 22.9 | 4.3 |
+| 2 | 49.0 + 49.5 = 98.5 | 37.6 | 21.8 | 4.5 |
+| 3 | 45.5 + 46.0 = 91.5 | 37.2 | 20.7 | 4.4 |
+| 4 | 49.0 + 65.5 = 114.5 | 51.8 | 24.8 | 4.6 |
+| 5 | 56.0 + 58.4 = 114.4 | 41.7 | 23.7 | 4.8 |
+| 6 | 56.0 + 58.4 = 114.4 | 41.2 | 22.6 | 5.1 |
+| 7 | 52.5 + 54.9 = 107.4 | 40.8 | 21.5 | 5.0 |
+| 8 | 56.0 + 75.4 = 131.4 | 53.3 | 25.8 | 5.1 |
+| 9 | 63.0 + 67.3 = 130.3 | 45.9 | 24.9 | 5.2 |
+| 10 | 63.0 + 67.3 = 130.3 | 45.9 | 24.1 | 5.4 |
+| 11 | 59.5 + 63.8 = 123.3 | 45.9 | 23.2 | 5.3 |
+| 12 | 63.0 + 81.5 = 144.5 | 54.9 | 26.6 | 5.4 |
+| 13 | 70.0 + 76.1 = 146.1 | 51.3 | 25.5 | 5.7 |
+| 14 | 70.0 + 76.1 = 146.1 | 51.3 | 24.4 | 6.0 |
+| 15 | 49.0 + 55.1 = 104.1 | 51.3 | 23.3 | 4.5 |
+heaviest rank, GiB: v4 54.9, -grad_pin 9.0, -per_block 0.0, -hidden_out 2.5, -open_copy 3.6, all fixes 26.6, lower 26.6
+
+GB300 PP4 x VP4, M=16: block residual + hidden memory per rank, GiB (no layer activations)
+| rank | base persistent + dynamic | v4 | lower | base / lower |
+|---:|---|---:|---:|---:|
+| 0 | 29.8 + 40.7 = 70.4 | 25.3 | 9.0 | 7.9 |
+| 1 | 33.2 + 36.6 = 69.9 | 25.2 | 9.2 | 7.6 |
+| 2 | 35.0 + 47.4 = 82.4 | 28.2 | 10.4 | 7.9 |
+| 3 | 31.5 + 36.3 = 67.8 | 27.7 | 9.7 | 7.0 |
+heaviest rank, GiB: v4 28.2, -grad_pin 9.2, -per_block 0.5, -hidden_out 1.4, -open_copy 0.5, all fixes 10.4, lower 10.4
+
+GB300 PP2 x VP8, M=16: block residual + hidden memory per rank, GiB (no layer activations)
+| rank | base persistent + dynamic | v4 | lower | base / lower |
+|---:|---|---:|---:|---:|
+| 0 | 40.2 + 53.6 = 93.8 | 26.2 | 8.0 | 11.8 |
+| 1 | 40.2 + 45.7 = 86.0 | 33.8 | 8.0 | 10.8 |
+heaviest rank, GiB: v4 33.8, -grad_pin 18.3, -per_block 0.0, -hidden_out 0.9, -open_copy 0.0, all fixes 8.0, lower 8.0

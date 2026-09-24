@@ -1,5 +1,10 @@
 # 2.8T Kimi K3 预训练：5D 切分估算，以及 vp>1 时各 PP rank 的显存时间线（2026-09-24）
 
+> **更正（同日晚）**：本文的切分推荐和“本 PR”一行的数字已被 `PP_OPTIMIZE_REPORT_2026-09-24.md` 取代。
+> - PP8 × VP4 和 PP4 × VP8 只是可行域里的一个点，报告并没有给出并行度。
+> - 本文漏了 MTP 层、MoonEP 的缓冲，也没算 torch 把被发送张量钉到 step 末的开销，“本 PR”一行因此低估了约 200 个单位。
+> - 用 8 卡实测校准过的模型见 `pp_memory_model_v2_2026-09-24.py`。
+
 脚本：`pp_memory_timeline_2026-09-24.py`（本目录；需在 pp_review4 的 checkout 里运行，调用 PR 自己的 layout 表和 torch 的 `ScheduleInterleaved1F1B` 排程）。原始输出：`pp_memory_timeline_2026-09-24.out.txt`。
 
 ## 0. 结论

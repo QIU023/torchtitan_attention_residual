@@ -1,0 +1,36 @@
+--- a/torchtitan/models/kimi_k3/pipeline_parallel/stage.py	2026-09-24 18:58:32.100588813 +0000
++++ b/torchtitan/models/kimi_k3/pipeline_parallel/stage.py	2026-09-24 21:26:45.753784706 +0000
+@@ -16,6 +16,7 @@
+ import torch
+ from torch.distributed.pipelining import PipelineStage
+ from torch.distributed.pipelining._utils import flatten_args
++from torch.distributed.pipelining.schedules import _batch_p2p
+ 
+ from .cache import PPRankLocalCache
+ from .layout import BlockLayoutTables
+@@ -241,6 +242,16 @@
+         if deposit is not None and grad_col_TD is not None:
+             grad_col_TD.add_(deposit)
+ 
++    def get_fwd_send_ops(self, fwd_chunk_id: int):
++        # PROBE ONLY: own the forward sends and wait them at this stage's backward
++        ops = super().get_fwd_send_ops(fwd_chunk_id)
++        if self.has_backward and ops:
++            if not hasattr(self, "_fwd_send_works"):
++                self._fwd_send_works = {}
++            self._fwd_send_works[fwd_chunk_id] = _batch_p2p(ops)
++            return []
++        return ops
++
+     def backward_one_chunk(
+         self,
+         bwd_chunk_id: int,
+@@ -248,6 +259,8 @@
+         full_backward: bool = True,
+         last_backward=False,
+     ):
++        for work in getattr(self, "_fwd_send_works", {}).pop(bwd_chunk_id, []):
++            work.wait()
+         super().backward_one_chunk(
+             bwd_chunk_id,
+             loss=loss,
