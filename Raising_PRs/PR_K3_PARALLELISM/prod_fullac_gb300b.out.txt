@@ -1,0 +1,16 @@
+W0925 00:22:41.600000 447847 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0925 00:22:41.836000 447847 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+
+=== GB300, 2.8T (fullac): pp2 x vp8, M=16, EP64; HBM 268.2 GiB; NIC 400 Gb/s x 1.0 for PP and parks; host 200 GB/s; 1100 TFLOPS
+| scheme | r0 | r1 | max | mean | step s | worst stall s | NIC GB | host GB | knobs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| pp_review4 | 223.2 | 206.9 | 223.2 | 215.0 | 50.61 | 0.000 | 86 | 0 |  |
+| V4 | 147.5 | 155.5 | 155.5 | 151.5 | 50.61 | 0.000 | 86 | 0 |  |
+| V4 + early grad wait | 137.0 | 132.9 | 137.0 | 135.0 | 50.61 | 0.000 | 86 | 0 |  |
+| V4 + balance | 137.0 | 132.9 | 137.0 | 135.0 | 50.61 | 0.000 | 86 | 0 | balance  lead 1;  |
+| V4 + offload (saves) | 123.7 | 125.1 | 125.1 | 124.4 | 50.61 | 0.000 | 86 | 341 | offload r0 K112, r1 K92 lead 1 |
+| V4 + offload (saves + store blocks, not in the report) | 122.3 | 124.2 | 124.2 | 123.2 | 50.61 | 0.000 | 86 | 1399 | offload r0 K112, r1 K92 + store lead 1 |
+| V4 + offload + balance | 123.7 | 125.1 | 125.1 | 124.4 | 50.61 | 0.000 | 86 | 341 | balance  lead 1; offload r0 K112, r1 K92 lead 1 |
+at each rank's peak with offload + balance (fraction of step; GiB by class): r0 0.09: fixed 108.0 deposits 3.4 grad sends 0.2 hidden 3.4 saved 0.8 store 3.5 transient 4.4; r1 0.22: fixed 109.5 deposits 3.5 grad sends 0.4 hidden 3.4 saved 0.3 store 3.5 transient 4.4
+lead sweep, balance (lead, max GiB, mean GiB, step s, worst stall s): [(1, 125.1, 124.4, 50.61, 0.0), (2, 125.1, 124.4, 50.61, 0.0), (4, 125.1, 124.4, 50.61, 0.0), (8, 125.1, 124.4, 50.61, 0.0), (16, 125.1, 124.4, 50.61, 0.0)]
+lead sweep, offload: [(1, 125.1, 124.4, 50.61, 0.0), (2, 125.2, 124.5, 50.61, 0.0), (4, 125.3, 124.6, 50.61, 0.0), (8, 125.5, 124.8, 50.61, 0.0), (16, 125.8, 125.2, 50.61, 0.0)]

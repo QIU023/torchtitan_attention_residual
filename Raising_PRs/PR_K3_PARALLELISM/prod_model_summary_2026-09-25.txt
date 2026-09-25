@@ -1,0 +1,80 @@
+#### prod_fullac_h100a | H100, 2.8T (fullac): pp8 x vp4, M=16, EP64; HBM 74.5 GiB; NIC 400 Gb/s x 0.5 for PP and parks; host 50 GB/s; 450 TFLOPS
+  pp_review4                                   min  119.4 mean  136.5 max  159.5 | step  34.83 stall  0.000 | host GB      0
+  V4                                           min   80.5 mean   83.9 max   92.0 | step  34.83 stall  0.000 | host GB      0
+  V4 + early grad wait                         min   75.8 mean   78.9 max   87.4 | step  34.83 stall  0.000 | host GB      0
+  V4 + balance                                 min   75.9 mean   79.9 max   85.3 | step  34.83 stall  0.000 | host GB      0
+  V4 + offload (saves)                         min   68.4 mean   69.8 max   71.2 | step  34.83 stall  0.000 | host GB    245
+  V4 + offload (saves + store blocks, not in t min   60.7 mean   62.2 max   63.2 | step  34.83 stall  0.000 | host GB   2027
+  V4 + offload + balance                       min   68.4 mean   69.8 max   71.2 | step  34.83 stall  0.000 | host GB    245
+#### prod_fullac_h100b | H100, 2.8T (fullac): pp16 x vp2, M=32, EP32; HBM 74.5 GiB; NIC 400 Gb/s x 0.5 for PP and parks; host 50 GB/s; 450 TFLOPS
+  pp_review4                                   min  137.6 mean  165.3 max  200.4 | step  39.20 stall  0.000 | host GB      0
+  V4                                           min   85.5 mean   90.3 max   98.9 | step  39.20 stall  0.000 | host GB      0
+  V4 + early grad wait                         min   67.9 mean   79.7 max   92.8 | step  39.20 stall  0.000 | host GB      0
+  V4 + balance                                 min   74.4 mean   79.9 max   86.8 | step  39.48 stall  1.345 | host GB      0
+  V4 + offload (saves)                         min   64.3 mean   70.5 max   75.9 | step  39.20 stall  0.000 | host GB    462
+  V4 + offload (saves + store blocks, not in t min   50.9 mean   57.6 max   59.7 | step  39.20 stall  0.000 | host GB   3082
+  V4 + offload + balance                       min   64.3 mean   70.5 max   75.9 | step  39.20 stall  0.000 | host GB    462
+#### prod_fullac_gb300a | GB300, 2.8T (fullac): pp4 x vp4, M=16, EP64; HBM 268.2 GiB; NIC 400 Gb/s x 1.0 for PP and parks; host 200 GB/s; 1100 TFLOPS
+  pp_review4                                   min  140.1 mean  150.4 max  162.8 | step  26.51 stall  0.000 | host GB      0
+  V4                                           min  100.5 mean  101.0 max  101.5 | step  26.51 stall  0.000 | host GB      0
+  V4 + early grad wait                         min   87.6 mean   90.8 max   93.8 | step  26.51 stall  0.000 | host GB      0
+  V4 + balance                                 min   89.4 mean   91.7 max   93.0 | step  26.76 stall  1.087 | host GB      0
+  V4 + offload (saves)                         min   79.7 mean   80.3 max   80.8 | step  26.51 stall  0.000 | host GB    316
+  V4 + offload (saves + store blocks, not in t min   77.4 mean   77.8 max   78.2 | step  26.51 stall  0.000 | host GB   1141
+  V4 + offload + balance                       min   79.7 mean   80.3 max   80.8 | step  26.51 stall  0.000 | host GB    316
+#### prod_fullac_gb300b | GB300, 2.8T (fullac): pp2 x vp8, M=16, EP64; HBM 268.2 GiB; NIC 400 Gb/s x 1.0 for PP and parks; host 200 GB/s; 1100 TFLOPS
+  pp_review4                                   min  206.9 mean  215.0 max  223.2 | step  50.61 stall  0.000 | host GB      0
+  V4                                           min  147.5 mean  151.5 max  155.5 | step  50.61 stall  0.000 | host GB      0
+  V4 + early grad wait                         min  132.9 mean  135.0 max  137.0 | step  50.61 stall  0.000 | host GB      0
+  V4 + balance                                 min  132.9 mean  135.0 max  137.0 | step  50.61 stall  0.000 | host GB      0
+  V4 + offload (saves)                         min  123.7 mean  124.4 max  125.1 | step  50.61 stall  0.000 | host GB    341
+  V4 + offload (saves + store blocks, not in t min  122.3 mean  123.2 max  124.2 | step  50.61 stall  0.000 | host GB   1399
+  V4 + offload + balance                       min  123.7 mean  124.4 max  125.1 | step  50.61 stall  0.000 | host GB    341
+#### prod_report_h100a | H100, 2.8T (report): pp8 x vp4, M=16, EP64; HBM 74.5 GiB; NIC 400 Gb/s x 0.5 for PP and parks; host 50 GB/s; 450 TFLOPS
+  pp_review4                                   min  236.8 mean  288.3 max  312.8 | step  27.88 stall  0.000 | host GB      0
+  V4                                           min  202.3 mean  236.1 max  261.3 | step  27.88 stall  0.000 | host GB      0
+  V4 + early grad wait                         min  196.8 mean  231.1 max  256.7 | step  27.88 stall  0.000 | host GB      0
+  V4 + balance                                 min  207.1 mean  232.4 max  249.2 | step  28.10 stall  0.205 | host GB      0
+  V4 + offload (saves)                         min   69.6 mean   71.4 max   74.5 | step  27.89 stall  0.054 | host GB   5301
+  V4 + offload (saves + store blocks, not in t min   61.8 mean   64.4 max   65.7 | step  27.89 stall  0.054 | host GB   6978
+  V4 + offload + balance                       min   69.6 mean   71.4 max   74.5 | step  27.89 stall  0.054 | host GB   5301
+#### prod_report_h100b | H100, 2.8T (report): pp16 x vp2, M=32, EP32; HBM 74.5 GiB; NIC 400 Gb/s x 0.5 for PP and parks; host 50 GB/s; 450 TFLOPS
+  pp_review4                                   min  222.3 mean  317.2 max  366.7 | step  31.39 stall  0.000 | host GB      0
+  V4                                           min  169.0 mean  241.5 max  305.6 | step  31.39 stall  0.000 | host GB      0
+  V4 + early grad wait                         min  149.3 mean  231.8 max  297.9 | step  31.39 stall  0.000 | host GB      0
+  V4 + balance                                 min  163.1 mean  232.2 max  287.2 | step  31.61 stall  0.318 | host GB      0
+  V4 + offload (saves)                         min   66.7 mean   72.1 max   77.0 | step  31.40 stall  0.059 | host GB  10871
+  V4 + offload (saves + store blocks, not in t min   55.3 mean   61.9 max   64.1 | step  31.40 stall  0.183 | host GB  13366
+  V4 + offload + balance                       min   66.7 mean   72.1 max   77.0 | step  31.40 stall  0.059 | host GB  10871
+#### prod_report_gb300a | GB300, 2.8T (report): pp4 x vp4, M=16, EP64; HBM 268.2 GiB; NIC 400 Gb/s x 1.0 for PP and parks; host 200 GB/s; 1100 TFLOPS
+  pp_review4                                   min  262.8 mean  302.1 max  327.1 | step  21.16 stall  0.000 | host GB      0
+  V4                                           min  226.3 mean  253.4 max  274.3 | step  21.16 stall  0.000 | host GB      0
+  V4 + early grad wait                         min  213.4 mean  243.1 max  266.6 | step  21.16 stall  0.000 | host GB      0
+  V4 + balance                                 min  238.0 mean  250.8 max  262.5 | step  21.27 stall  0.244 | host GB      0
+  V4 + offload (saves)                         min   82.2 mean   82.5 max   83.0 | step  21.16 stall  0.000 | host GB   5430
+  V4 + offload (saves + store blocks, not in t min   79.5 mean   80.5 max   81.3 | step  21.16 stall  0.000 | host GB   6271
+  V4 + offload + balance                       min   82.2 mean   82.5 max   83.0 | step  21.16 stall  0.000 | host GB   5430
+#### prod_report_gb300b | GB300, 2.8T (report): pp2 x vp8, M=16, EP64; HBM 268.2 GiB; NIC 400 Gb/s x 1.0 for PP and parks; host 200 GB/s; 1100 TFLOPS
+  pp_review4                                   min  351.4 mean  367.4 max  383.4 | step  40.50 stall  0.000 | host GB      0
+  V4                                           min  300.9 mean  304.0 max  307.1 | step  40.50 stall  0.000 | host GB      0
+  V4 + early grad wait                         min  278.4 mean  287.4 max  296.5 | step  40.50 stall  0.000 | host GB      0
+  V4 + balance                                 min  278.4 mean  287.4 max  296.5 | step  40.50 stall  0.000 | host GB      0
+  V4 + offload (saves)                         min  126.5 mean  127.2 max  127.8 | step  40.50 stall  0.000 | host GB   5430
+  V4 + offload (saves + store blocks, not in t min  124.8 mean  125.8 max  126.9 | step  40.50 stall  0.000 | host GB   6488
+  V4 + offload + balance                       min  126.5 mean  127.2 max  127.8 | step  40.50 stall  0.000 | host GB   5430
+#### prod_report_h100a_host25 | H100, 2.8T (report): pp8 x vp4, M=16, EP64; HBM 74.5 GiB; NIC 400 Gb/s x 0.5 for PP and parks; host 25 GB/s; 450 TFLOPS
+  pp_review4                                   min  236.8 mean  288.3 max  312.8 | step  27.88 stall  0.000 | host GB      0
+  V4                                           min  202.3 mean  236.1 max  261.3 | step  27.88 stall  0.000 | host GB      0
+  V4 + early grad wait                         min  196.8 mean  231.1 max  256.7 | step  27.88 stall  0.000 | host GB      0
+  V4 + balance                                 min  207.1 mean  232.4 max  249.2 | step  28.10 stall  0.205 | host GB      0
+  V4 + offload (saves)                         min  196.8 mean  228.0 max  248.2 | step  28.15 stall  0.315 | host GB     90
+  V4 + offload (saves + store blocks, not in t min  181.9 mean  210.5 max  238.2 | step  28.14 stall  0.629 | host GB   2061
+  V4 + offload + balance                       min  196.8 mean  228.0 max  248.2 | step  28.15 stall  0.315 | host GB     90
+#### prod_report_h100b_host25 | H100, 2.8T (report): pp16 x vp2, M=32, EP32; HBM 74.5 GiB; NIC 400 Gb/s x 0.5 for PP and parks; host 25 GB/s; 450 TFLOPS
+  pp_review4                                   min  222.3 mean  317.2 max  366.7 | step  31.39 stall  0.000 | host GB      0
+  V4                                           min  169.0 mean  241.5 max  305.6 | step  31.39 stall  0.000 | host GB      0
+  V4 + early grad wait                         min  149.3 mean  231.8 max  297.9 | step  31.39 stall  0.000 | host GB      0
+  V4 + balance                                 min  163.1 mean  232.2 max  287.2 | step  31.61 stall  0.318 | host GB      0
+  V4 + offload (saves)                         min  122.0 mean  186.4 max  254.5 | step  31.70 stall  1.951 | host GB   3158
+  V4 + offload (saves + store blocks, not in t min  112.4 mean  177.3 max  242.9 | step  31.70 stall  1.951 | host GB   5686
+  V4 + offload + balance                       min  122.0 mean  186.4 max  254.5 | step  31.70 stall  1.951 | host GB   3158

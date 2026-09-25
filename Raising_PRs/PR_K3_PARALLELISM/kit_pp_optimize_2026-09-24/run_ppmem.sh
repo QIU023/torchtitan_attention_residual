@@ -10,7 +10,7 @@ cd "$tree"
 PPMEM_OUT="$OUT/mem" PPMEM_SEQ="$seq" PYTHONPATH="$K:." \
 TORCHINDUCTOR_CACHE_DIR="$cache/ic" TRITON_CACHE_DIR="$cache/tc" \
 /workspace/venv_bfx9/bin/torchrun --nproc_per_node=8 --rdzv_backend c10d --rdzv_endpoint=localhost:29910 \
-  --local-ranks-filter 7 --role rank --tee 3 \
+  --local-ranks-filter ${PPMEM_LOG_RANK:-7} --role rank --tee 3 \
   -m torchtitan.train --module probe_ppmem --config ppmem_wide \
   --training.steps "$steps" --debug.seed 42 --debug.deterministic \
   --training.num-tokens-per-train-step "$((16 * seq))" --training.num-tokens-per-microbatch-per-dp-rank "$seq" \

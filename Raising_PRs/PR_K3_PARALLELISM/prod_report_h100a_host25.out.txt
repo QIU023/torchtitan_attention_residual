@@ -1,0 +1,16 @@
+W0925 00:34:32.071000 457448 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0925 00:34:32.259000 457448 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+
+=== H100, 2.8T (report): pp8 x vp4, M=16, EP64; HBM 74.5 GiB; NIC 400 Gb/s x 0.5 for PP and parks; host 25 GB/s; 450 TFLOPS
+| scheme | r0 | r1 | r2 | r3 | r4 | r5 | r6 | r7 | max | mean | step s | worst stall s | NIC GB | host GB | knobs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| pp_review4 | 311.6 | 312.8 | 302.1 | 282.5 | 309.9 | 280.5 | 270.5 | 236.8 | 312.8 | 288.3 | 27.88 | 0.000 | 312 | 0 |  |
+| V4 | 255.7 | 261.3 | 250.6 | 241.5 | 242.4 | 222.8 | 212.1 | 202.3 | 261.3 | 236.1 | 27.88 | 0.000 | 312 | 0 |  |
+| V4 + early grad wait | 250.7 | 256.7 | 246.0 | 236.9 | 237.8 | 217.3 | 206.6 | 196.8 | 256.7 | 231.1 | 27.88 | 0.000 | 312 | 0 |  |
+| V4 + balance | 249.2 | 247.4 | 246.0 | 236.9 | 237.8 | 217.3 | 217.5 | 207.1 | 249.2 | 232.4 | 28.10 | 0.205 | 357 | 0 | balance r1->r7 K2, r0->r6 K2 lead 2;  |
+| V4 + offload (saves) | 248.2 | 234.4 | 246.0 | 236.9 | 237.8 | 217.3 | 206.6 | 196.8 | 248.2 | 228.0 | 28.15 | 0.315 | 312 | 90 | offload r1 K6, r0 K2 lead 1 |
+| V4 + offload (saves + store blocks, not in the report) | 238.2 | 195.1 | 226.5 | 222.0 | 227.3 | 201.1 | 192.2 | 181.9 | 238.2 | 210.5 | 28.14 | 0.629 | 312 | 2061 | offload r1 K16, r0 K2, r2 K2, r3 K2, r4 K2, r5 K2, r6 K2, r7 K2 + store lead 2 |
+| V4 + offload + balance | 248.2 | 234.4 | 246.0 | 236.9 | 237.8 | 217.3 | 206.6 | 196.8 | 248.2 | 228.0 | 28.15 | 0.315 | 312 | 90 | balance  lead 1; offload r1 K6, r0 K2 lead 1 |
+at each rank's peak with offload + balance (fraction of step; GiB by class): r0 0.21: fixed 38.6 hidden 6.9 saved 189.0 store 11.5 transient 2.2; r1 0.17: fixed 38.0 hidden 8.2 saved 178.3 store 10.0; r2 0.43: fixed 38.0 deposits 5.2 grad sends 0.7 hidden 7.8 saved 179.9 store 12.2 transient 2.2; r3 0.42: fixed 39.5 deposits 5.2 grad sends 0.7 hidden 7.3 saved 169.6 store 12.2 transient 2.2; r4 0.30: fixed 38.0 deposits 5.5 grad sends 0.4 hidden 6.8 saved 171.0 store 14.0 transient 2.2; r5 0.38: fixed 38.0 deposits 7.0 grad sends 0.7 hidden 6.5 saved 149.1 store 14.0 transient 2.2; r6 0.37: fixed 38.0 deposits 7.0 grad sends 0.7 hidden 6.0 saved 138.8 store 14.0 transient 2.2; r7 0.36: fixed 38.9 deposits 7.0 grad sends 0.7 hidden 5.6 saved 128.5 store 14.0 transient 2.2
+lead sweep, balance (lead, max GiB, mean GiB, step s, worst stall s): [(1, 248.2, 228.0, 28.15, 0.315), (2, 248.2, 228.0, 28.15, 0.315), (4, 248.2, 228.0, 28.15, 0.315), (8, 248.2, 228.0, 28.15, 0.315), (16, 248.2, 228.0, 28.15, 0.315)]
+lead sweep, offload: [(1, 248.2, 228.0, 28.15, 0.315), (2, 248.2, 228.0, 28.01, 0.252), (4, 248.2, 228.0, 27.88, 0.126), (8, 248.2, 228.0, 27.88, 0.0), (16, 248.2, 228.0, 27.88, 0.0)]

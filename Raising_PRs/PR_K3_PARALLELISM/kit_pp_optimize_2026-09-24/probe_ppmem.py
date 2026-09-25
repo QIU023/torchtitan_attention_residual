@@ -96,7 +96,10 @@ def ppmem_wide() -> Trainer.Config:
     seq = int(os.environ.get("PPMEM_SEQ", "4096"))
     config = kimi_k3_debugmodel(seq_len=seq)
     config.optimizer = default_adamw(lr=8e-4)
-    config.activation_checkpoint = FullAC.Config()
+    if os.environ.get("PPMEM_AC", "full") == "full":
+        config.activation_checkpoint = FullAC.Config()
+    else:
+        config.activation_checkpoint = None
     config.model = _kimi_k3_config(
         max_context_length=seq,
         dim=dim,
@@ -130,6 +133,23 @@ def ppmem_wide() -> Trainer.Config:
         ),
         attn_backend="flex",
     )
+    parked = int(os.environ.get("PPMEM_OFFLOAD_MB", "0"))
+    if parked:
+        from torchtitan.models.kimi_k3.pipeline_parallel.activations import PPOffloadKnobs
+
+        config.model.pp_offload = PPOffloadKnobs(
+            microbatches=parked, lead=int(os.environ.get("PPMEM_OFFLOAD_LEAD", "1"))
+        )
+    pairs = os.environ.get("PPMEM_BALANCE_PAIRS", "")
+    if pairs:
+        from torchtitan.models.kimi_k3.pipeline_parallel.activations import PPBalanceKnobs
+
+        config.model.pp_balance = PPBalanceKnobs(
+            pairs=tuple(tuple(int(x) for x in p.split(":")) for p in pairs.split(",")),
+            microbatches=int(os.environ.get("PPMEM_BALANCE_MB", "8")),
+            lead=int(os.environ.get("PPMEM_BALANCE_LEAD", "1")),
+            pool_gib=float(os.environ.get("PPMEM_BALANCE_POOL_GIB", "2")),
+        )
     _install_hooks()
     atexit.register(_dump_peak_memory)
     return config
