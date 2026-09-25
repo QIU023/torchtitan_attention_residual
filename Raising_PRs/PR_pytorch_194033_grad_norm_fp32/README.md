@@ -1,5 +1,68 @@
 # pytorch PR-194033: get_total_norm dtype + DTensor _foreach_norm strategy -- backup of the rebased branch
 
+## 2026-09-25：review 分支 `get-total-norm-dtype-review1` 重跑验证（只验证，PR 分支和回复都没动）
+
+**分支：**
+- fork `QIU023/pytorch` 的 `get-total-norm-dtype-review1`，head `bdbf5318ba`。
+- 上面是 4 个 commit：
+  - `bc82bab519`：DTensor `_foreach_norm.Scalar` 的策略；
+  - `2f743565e0`：`get_total_norm` 的 dtype 参数；
+  - `6143bf7b97`：测试；
+  - `bdbf5318ba`：powsum。
+- 与 upstream main 的 merge-base 是 `69f2e45ef3`。
+- 改了 4 个文件，+99/-18。117 行改动与 `full_2026-09-23.diff` 逐行一致，文件顺序也相同。
+- PR 分支 `get-total-norm-dtype` 仍在 `1ad4f1623f`，本次未动。
+
+**环境：**
+- `venv_ptnightly`，torch `2.15.0.dev20260902+cu130`，`torch.version.git_version` = `3c73a854d2`。
+- **兼容性：** 两个源文件在 nightly `3c73a854d2` 与 main `69f2e45e` 之间差 0 行，所以覆盖之后等于 nightly 加上本 PR 的改动。
+  - 两个测试文件在两者之间有上游改动：`test/test_nn.py` 差 1788 行，`test_math_ops.py` 差 3 行。本次只跑了本 PR 的用例。
+- **覆盖：**
+  - 覆盖前，site-packages 里这两个文件已经和 review1 相同（md5 `06fbcd34` / `b78d164c`），是 09-23/24 覆盖后没有恢复留下的。原版 nightly 的这两个文件就是 `3c73a854d2`（= `69f2e45e`）上的版本。
+  - 照样先备份到 scratchpad `pr194033_0925/venv_backup_0925/`，再用 `git show bdbf5318ba:<path>` 取出的文件覆盖，跑完恢复成备份。
+- **测试文件：** 用 `git show bdbf5318ba:test/...` 取到 scratchpad 目录里运行。不能在 pytorch 源码目录下运行，否则 `import torch` 会加载源码树里的 torch。
+
+| 项 | 原始命令（在 scratchpad 目录，`python` = `/workspace/venv_ptnightly/bin/python`） | 结果 |
+|---|---|---|
+| 1 | `python -m pytest test_nn.py -k get_total_norm_dtype -v -p no:cacheprovider -rs` | **8 passed**，5222 deselected。cpu 4 个、cuda 4 个：foreach False/True × norm_type 1.0/2.0 |
+| 2 | `CUDA_VISIBLE_DEVICES=0,1,2,3 python -m pytest test_math_ops.py -k "foreach_norm or foreach_powsum" -v -p no:cacheprovider -rs` | **8 passed**，104 deselected，2 subtests passed。`DistMathOpsTest` 与 `DistMathOpsTestWithLocalTensor` 各 4 个：`test_foreach_norm`、`_different_mesh`、`_partial`、`test_foreach_powsum_sharded` |
+| 3 | 反向检查：`python powsum_negcheck.py <port>`（gloo，world 1），依次把三版 `_math_ops.py` 覆盖进 site-packages | 旧策略：PR 分支 `1ad4f1623f` 的版本（md5 `8ef9f0e5`）和 09-13 版（`venv_backup_0923`，md5 `40f893a7`，与前者只差 3 行注释）都输出 `RAISED RuntimeError '>=' not supported between instances of 'torch.dtype' and 'int'`。review1（md5 `b78d164c`）输出 `OK torch.float32 (Partial(sum),)` |
+| 4a | `ruff check <四个改动文件>`（ruff 0.16.5，配置为 review1 的 `pyproject.toml`） | `All checks passed!` |
+| 4b | `ufmt check <四个改动文件>`（ufmt 2.3.0，black 22.12.0） | **超出"只允许 clip_grad.py 两行"的范围**，见下 |
+
+**4b 的原始输出：**
+
+```
+Would format torch/nn/utils/clip_grad.py
+Would format test/test_nn.py
+✨ 2 files would be formatted, 2 files already formatted ✨
+```
+
+**4b 的定位（只定位，不下结论）：**
+- **`torch/nn/utils/clip_grad.py`：** 两处 hunk，即 `_tensor_or_tensors: TypeAlias = ...  # noqa: PYI042` 和 `] = _group_tensors_by_device_and_dtype([grads])  # type: ignore[assignment]`。base `69f2e45e` 上同样出现，就是上游原有的那两行。
+- **`test/test_nn.py`：** base `69f2e45e` 上 ufmt 同样报这个文件，整个文件没有按 black 格式化，base 的 ufmt diff 约 1.4 万行。把 review1 与 base 的 ufmt diff 相减，只在 review1 出现的改动有下面 4 处，都在本 PR 新增的 `test_get_total_norm_dtype` 里：
+
+```
+-    @parametrize_test('foreach', (False, True))
+-    @parametrize_test('norm_type', (1.0, 2.0))
++    @parametrize_test("foreach", (False, True))
++    @parametrize_test("norm_type", (1.0, 2.0))
+-        exact = {1.0: 255.0 + 32.0 + 1.0, 2.0: math.sqrt(255.0**2 + 32.0**2 + 1.0**2)}[norm_type]
++        exact = {
++            1.0: 255.0 + 32.0 + 1.0,
++            2.0: math.sqrt(255.0**2 + 32.0**2 + 1.0**2),
++        }[norm_type]
+-            total = get_total_norm(tensors, norm_type=norm_type, foreach=foreach, dtype=torch.float32)
++            total = get_total_norm(
++                tensors, norm_type=norm_type, foreach=foreach, dtype=torch.float32
++            )
+```
+
+- **pytorch 实际用的格式化 linter：** review1 的 `.lintrunner.toml`（第 1303 行起）里负责 Python 格式化的是 `PYFMT`（`tools/linter/adapters/pyfmt_linter.py`），不是本地的 ufmt。它的 `exclude_patterns` 包含 `test/test_nn.py`，另外三个改动文件都在它的检查范围内。本地没有跑 PYFMT。
+- **与 09-23 记录的差异：** 09-23 的记录只写了 `clip_grad.py` 那两行，没有写当时是否对 `test_nn.py` 跑过 ufmt。
+
+**本次没有做的：** 没有推 `get-total-norm-dtype`，没有贴 `REPLY_2026-09-23.md`。中间文件都在 scratchpad 的 `pr194033_0925/`：ufmt 的完整 diff、比对结果和备份。
+
 ## 2026-09-24: re-checked; rebased again onto main `a0afa8eb62` (still not pushed)
 
 No new comment since Jane's 09-22 request. Main moved 92 commits past `54144378a7` without touching any of the four
