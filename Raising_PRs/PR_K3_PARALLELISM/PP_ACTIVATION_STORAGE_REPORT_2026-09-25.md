@@ -1,6 +1,6 @@
 # offload 与 balance 草案重写：统一激活存储（2026-09-25）
 
-分支（fork，均未碰已发布的 PR 分支 `k3_pp_offload` `c73e17c03`、`k3_pp_balance` `005cf4aee`）：
+分支（fork）。2026-09-25 按用户的话同步了两个 draft PR：`k3_pp_offload` 从 `c73e17c03` 改为 `49117a146`，`k3_pp_balance` 从 `005cf4aee` 改为 `46692171b`；旧 head 存为 `backup/k3_pp_offload_pre_20260925`、`backup/k3_pp_balance_pre_20260925`。新 body 见 `PR_BODY_PP_OFFLOAD.md`、`PR_BODY_PP_BALANCE.md`，等用户粘贴。
 
 | 分支 | head | 内容 |
 |---|---|---|
