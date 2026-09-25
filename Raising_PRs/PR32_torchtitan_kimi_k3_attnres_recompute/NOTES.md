@@ -164,3 +164,4 @@ Kit: `run_attnres_h100.sh` has no fused cells and no `FLA` variable any more (fi
   - pyrefly 对这两个文件没有报错；它在全仓库顺手改的 25 个文件已回退。
 - **body：** `PR_BODY_zero_init_2026-09-24.md`（精简版），由用户从 fork 开 PR。
 - **#4780：** PR 分支 `k3_attnres_recompute` 最上面仍是 zero init commit `9f6bae06f`，怎么去掉由用户决定，这次没有动。
+- 09-25 稍后：按用户要求（"不需要unit test"）从 commit 里删掉测试文件，`k3_attnres_zero_init` 现为 `ae3a7881b`，只改 `kimi_k3/__init__.py`（+9/-3）。flake8、µfmt 通过；把原测试放在仓库外对新 commit 运行，3 个通过。body 里的测试条目相应删去。
