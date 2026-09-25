@@ -1,0 +1,25 @@
+5060 probe PP8 x VP2, 32 layers, block 4, seq 3584 x 2048, M=16: block+hidden per rank, GiB (max / mean over 8 ranks)
+  v4     max   3.24  mean   2.82  per-rank 2.4 2.6 2.6 2.8 2.9 2.9 3.2 3.1
+  lower  max   1.76  mean   1.59  per-rank 1.2 1.7 1.5 1.7 1.6 1.8 1.6 1.6
+  tight  max   1.33  mean   1.17  per-rank 0.8 1.2 1.1 1.3 1.2 1.3 1.2 1.3
+  tight vs lower: max -0.44 GiB (25%), mean -0.42 GiB
+H100 PP8 x VP4, 93 layers, block 12, 8K x 7168, M=16: block+hidden per rank, GiB (max / mean over 8 ranks)
+  v4     max  43.09  mean  34.77  per-rank 41.0 31.3 30.8 30.4 43.1 33.9 33.8 33.8
+  lower  max  20.89  mean  19.20  per-rank 18.2 19.2 18.6 17.9 20.9 20.2 19.6 18.9
+  tight  max  17.39  mean  15.75  per-rank 14.8 15.9 15.2 14.5 17.4 16.7 16.1 15.4
+  tight vs lower: max -3.50 GiB (17%), mean -3.45 GiB
+H100 PP16 x VP2, M=32: block+hidden per rank, GiB (max / mean over 16 ranks)
+  v4     max  54.91  mean  45.81  per-rank 44.7 38.1 37.6 37.2 51.8 41.7 41.2 40.8 53.3 45.9 45.9 45.9 54.9 51.3 51.3 51.3
+  lower  max  26.58  mean  23.52  per-rank 20.5 22.9 21.8 20.7 24.8 23.7 22.6 21.5 25.8 24.9 24.1 23.2 26.6 25.5 24.4 23.3
+  tight  max  19.58  mean  16.77  per-rank 13.8 16.5 15.9 15.2 17.8 16.7 15.6 14.5 18.9 18.0 17.2 16.3 19.6 18.5 17.4 16.3
+  tight vs lower: max -7.00 GiB (26%), mean -6.75 GiB
+GB300 PP4 x VP4, M=16: block+hidden per rank, GiB (max / mean over 4 ranks)
+  v4     max  28.22  mean  26.58  per-rank 25.3 25.2 28.2 27.7
+  lower  max  10.39  mean   9.57  per-rank 9.0 9.2 10.4 9.7
+  tight  max   8.64  mean   7.88  per-rank 7.3 7.5 8.6 8.0
+  tight vs lower: max -1.75 GiB (17%), mean -1.70 GiB
+GB300 PP2 x VP8, M=16: block+hidden per rank, GiB (max / mean over 2 ranks)
+  v4     max  33.80  mean  30.02  per-rank 26.2 33.8
+  lower  max   7.98  mean   7.98  per-rank 8.0 8.0
+  tight  max   7.11  mean   7.11  per-rank 7.1 7.1
+  tight vs lower: max -0.88 GiB (11%), mean -0.88 GiB
