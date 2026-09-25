@@ -61,7 +61,12 @@ Would format test/test_nn.py
 - **pytorch 实际用的格式化 linter：** review1 的 `.lintrunner.toml`（第 1303 行起）里负责 Python 格式化的是 `PYFMT`（`tools/linter/adapters/pyfmt_linter.py`），不是本地的 ufmt。它的 `exclude_patterns` 包含 `test/test_nn.py`，另外三个改动文件都在它的检查范围内。本地没有跑 PYFMT。
 - **与 09-23 记录的差异：** 09-23 的记录只写了 `clip_grad.py` 那两行，没有写当时是否对 `test_nn.py` 跑过 ufmt。
 
-**本次没有做的：** 没有推 `get-total-norm-dtype`，没有贴 `REPLY_2026-09-23.md`。中间文件都在 scratchpad 的 `pr194033_0925/`：ufmt 的完整 diff、比对结果和备份。
+**09-25 之后按用户确认推了 PR 分支：** `get-total-norm-dtype` 用 `--force-with-lease=get-total-norm-dtype:1ad4f1623f` 从 `1ad4f1623f` 更新到 `bdbf5318ba`，旧 head 备份为 fork 分支 `backup/get-total-norm-dtype_pre_20260925`。
+- 4 个 commit 的提交信息里没有 trailer，也没有跨仓库引用。
+- GitHub 上 PR 194033：head `bdbf5318ba`，4 个 commit，4 个文件，+99/-18，open，`mergeable_state: unstable`（fork PR 的 CI 要等维护者批准）。
+- `REPLY_2026-09-23.md` 还没贴，等用户确认。
+
+**当时未做（推送之前）：** 没有推 `get-total-norm-dtype`，没有贴 `REPLY_2026-09-23.md`。中间文件都在 scratchpad 的 `pr194033_0925/`：ufmt 的完整 diff、比对结果和备份。
 
 ## 2026-09-24: re-checked; rebased again onto main `a0afa8eb62` (still not pushed)
 
