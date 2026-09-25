@@ -91,6 +91,17 @@ The reply states the one position that analysis supports. It gives the reviewer 
 
 Trigger: the first PR 4312 r4097059930 draft agreed with jinsooihm and offered to keep tianyu's assertion. It did not explain that the refusal had replaced a silent clearing whose one reason (a removed `__post_init__` check) was gone. It also left out what the refusal cost: Kimi K3 could not reach vp4 from the knob at 93 layers, and the other models on that path could not use the knob either.
 
+## No comments by default in contributed code (user, 2026-09-25)
+
+Code that goes into a contributed repo gets no new comment by default. Add one only when the code cannot show a constraint that a reader would otherwise break, and state it in one line as a fact. Never comment on:
+- where something lives, or why it is not somewhere else;
+- what a change fixes, or which reviewer asked for it;
+- how the design was chosen.
+
+Those go in the commit message or the PR body. Before every commit on an upstream-bound branch, list the added comment and docstring lines (`git diff <base> | grep -E '^\+.*(#|""")'`) and delete each one that fails this bar.
+
+Trigger: PR 4312's split check in `TrainingEngine.Config` (09-25) went out with a two-line comment explaining why it is not in `ParallelismConfig.__post_init__`. The user had it removed and the commit amended.
+
 ## Diff-audit rule (user, 2026-09-09)
 
 Before a PR draft is called ready, read the branch's own diff line by line --
