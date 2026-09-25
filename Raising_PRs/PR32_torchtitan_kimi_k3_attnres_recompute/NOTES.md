@@ -153,3 +153,14 @@ Waiting on the user: open the init PR; force-push `attnres_review1` to `k3_attnr
 The user: tianyu named @acisseJZhong for the override, so this PR does not take that part. `attnres_review1` reset to `38fcdde4a` (Configurable, torch_remat) and force-pushed to the fork; `k3_attnres_recompute`, `k3_ac_reuse_attention` and `k3_attnres_zero_init` unchanged. The override commit `4e4baa4f3` survives only as `fused_attnres_override_4e4baa4f3.patch` here (`git am` onto the review branch restores it). Model code is identical between the two heads, so the round-2 smoke's main against head rows hold. Rechecked on `38fcdde4a`: CPU 48 passed (residual, test_override, test_skip_dp) in `/workspace/venv_bfx9`, `tests/unit_tests/gpu/test_kimi_k3.py` 3 passed 1 skipped, pre-commit passes on the changed files, pyrefly 0.45.1 the same 2 environment errors as main and no hook edits.
 
 Kit: `run_attnres_h100.sh` has no fused cells and no `FLA` variable any more (five cells per token count: main, main again, head, each AC off, plus main and head under selective AC). `probe_saved_bytes.py` calls `fla.ops.attnres.fused_attnres` directly when fla imports (any import failure skips the fla rows) instead of the removed override module. Reply and body v3 updated: the override is left to @acisseJZhong; the one sentence on `ctx.res` in the reply is optional.
+
+## 2026-09-25：zero init 单独成 PR（按用户要求）
+
+- **分支：** `k3_attnres_zero_init` 从 `db483314a`（main `9e159aed7`）cherry-pick 到最新 main `56f04c702`，没有冲突，现为 `c86dfc2e9`，只有 1 个 commit，已推到 fork。旧版备份为 `backup/k3_attnres_zero_init_pre_20260925`。
+- **注释：** 按 CLAUDE.md 的"默认不加注释"规则删减，只留两行各一行的约束说明。
+- **验证：**
+  - 测试 3 passed；同一测试文件放在不带这个 commit 的 main 上是 1 failed, 2 passed。
+  - flake8、µfmt、license 通过。
+  - pyrefly 对这两个文件没有报错；它在全仓库顺手改的 25 个文件已回退。
+- **body：** `PR_BODY_zero_init_2026-09-24.md`（精简版），由用户从 fork 开 PR。
+- **#4780：** PR 分支 `k3_attnres_recompute` 最上面仍是 zero init commit `9f6bae06f`，怎么去掉由用户决定，这次没有动。
