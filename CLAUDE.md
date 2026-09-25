@@ -74,6 +74,17 @@ answer is that the cells are not comparable (different data streams,
 different caches), say that first and re-pair them per the numerics-table
 rule; do not argue the old table.
 
+## Review replies: reconstruct every motive, then take one position (user, 2026-09-25)
+
+When reviewers pull different ways (one asked for a check, another questions it), or one reviewer argues from a leaning, never side with whoever spoke last. Before drafting:
+- find each earlier decision on that code: the commit, the comment that caused it, and what it guarded at the time;
+- check whether that reason still holds in the current tree;
+- work out what each option costs the PR's main model and every other model on the same code path.
+
+The reply states the one position that analysis supports. It gives the reviewer who did not see the history its context, with links. In the same reply, it tells the reviewer whose request is being reversed why. It names who owns the gap. Do not let "Agreed" stand in for the argument, and do not offer to flip back if the other side prefers ("Happy to keep X if you prefer"): that is fence-sitting. Ask for a look at the concrete change instead.
+
+Trigger: the first PR 4312 r4097059930 draft agreed with jinsooihm and offered to keep tianyu's assertion. It did not explain that the refusal had replaced a silent clearing whose one reason (a removed `__post_init__` check) was gone. It also left out what the refusal cost: Kimi K3 could not reach vp4 from the knob at 93 layers, and the other models on that path could not use the knob either.
+
 ## Diff-audit rule (user, 2026-09-09)
 
 Before a PR draft is called ready, read the branch's own diff line by line --
