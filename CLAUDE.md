@@ -6,6 +6,12 @@ Operational context for any Claude instance working in this repo. Full narrative
 [phase13_k3like_48b_posttrain/PLAN.md](phase13_k3like_48b_posttrain/PLAN.md)
 (repo-side execution detail; §0 reconciles the two).
 
+## Language rule (user, 2026-09-25)
+
+- Replies to the user: always Chinese. Internal reasoning may be English.
+- Logbook explanatory files (notes, audits, handoffs, READMEs in this repo): Chinese where possible.
+- Anything that goes into a contributed repo (torchtitan, veRL, pytorch, sglang, ...): PR bodies, review replies, commit messages, code comments and docstrings: English, as the PR-text rule below says. (Pending the user's confirmation of this line: the instruction as typed read "全部中文".)
+
 ## Commit-message rule: no cross-repo reference forms (both repos, incl. the fork)
 
 Never put `owner/repo#N` or a full `github.com/.../pull|issues/N` URL for a
