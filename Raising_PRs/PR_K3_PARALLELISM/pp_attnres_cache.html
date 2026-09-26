@@ -42,6 +42,8 @@
   svg .key { font-family: var(--mono); font-size: 14px; font-weight: 600; }
   svg .def { fill: #3d4750; font-size: 13px; }
   svg .txt { fill: var(--ink); font-size: 13px; }
+  svg .cell { fill: var(--ink); font-family: var(--mono); font-size: 13px; }
+  svg .rule { stroke: var(--ink); stroke-width: 1.2; }
   svg .band { fill: #f3f1ec; }
   svg .off { fill: var(--muted); font-family: var(--mono); font-size: 13px; }
 </style>
@@ -241,76 +243,102 @@
   </figure>
 
   <h2>Example</h2>
-  <p>Forward only, with three ranks and two virtual stages each in loop placement, and each stage opening one block. A rank holds every block produced at stage s−3 or earlier, because that is where it last ran the micro-batch; a hop carries the rest, so no hop carries more than P−1 = 2 blocks, where the whole stack grows by one block per hop.</p>
+  <p>Forward only, with four ranks and two virtual stages each in loop placement, the shape of the cache-based pipeline figure in the Attention Residuals paper, and each stage opening one block. A rank holds every block produced at stage s−4 or earlier, because that is where it last ran the micro-batch; a hop brings the rest. From the second virtual stage on, a hop carries at most P−1 = 3 blocks, where the whole stack would be 4 to 7.</p>
   <figure class="fig" style="margin-inline:0">
-  <svg viewBox="0 0 1185 462" role="img" aria-label="Forward-only example: three ranks with two virtual stages each in loop placement, the blocks each rank holds at every stage and the blocks every hop carries">
+  <svg viewBox="0 0 1290 636" role="img" aria-label="Forward-only example: four ranks with two virtual stages each in loop placement, the blocks each rank holds when each stage starts, the blocks each hop brings, and the per-hop P2P volume with the cache on and off">
     <defs>
       <marker id="xmf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/>
       </marker>
     </defs>
     <text x="20" y="26" class="title">Example: forward only</text>
-    <text x="200" y="26" class="sub">3 ranks, 2 virtual stages each, loop placement (stage s on rank s mod 3); stage s opens block b<tspan dy="3" font-size="10">s</tspan></text>
-    <text x="200" y="46" class="sub">cache: the blocks the rank holds when the stage starts; Δ: the blocks a hop carries besides h</text>
-    <rect x="16" y="60" width="1160" height="90" rx="8" class="band"/>
-    <text x="28" y="110" class="t">rank 0</text>
-    <rect x="16" y="170" width="1160" height="90" rx="8" class="band"/>
-    <text x="28" y="220" class="t">rank 1</text>
-    <rect x="16" y="280" width="1160" height="90" rx="8" class="band"/>
-    <text x="28" y="330" class="t">rank 2</text>
-    <rect x="110" y="70" width="142" height="70" rx="8" class="ent"/>
-    <text x="181" y="92" text-anchor="middle" class="t">stage 0</text>
-    <text x="181" y="112" text-anchor="middle" class="sym">cache: empty</text>
-    <text x="181" y="131" text-anchor="middle" class="sym">commit b0</text>
-    <rect x="295" y="180" width="142" height="70" rx="8" class="ent"/>
-    <text x="366" y="202" text-anchor="middle" class="t">stage 1</text>
-    <text x="366" y="222" text-anchor="middle" class="sym">cache: empty</text>
-    <text x="366" y="241" text-anchor="middle" class="sym">commit b1</text>
-    <rect x="480" y="290" width="142" height="70" rx="8" class="ent"/>
-    <text x="551" y="312" text-anchor="middle" class="t">stage 2</text>
-    <text x="551" y="332" text-anchor="middle" class="sym">cache: empty</text>
-    <text x="551" y="351" text-anchor="middle" class="sym">commit b2</text>
-    <rect x="665" y="70" width="142" height="70" rx="8" class="ent"/>
-    <text x="736" y="92" text-anchor="middle" class="t">stage 3</text>
-    <text x="736" y="112" text-anchor="middle" class="sym">cache: b0</text>
-    <text x="736" y="131" text-anchor="middle" class="sym">commit b3</text>
-    <rect x="850" y="180" width="142" height="70" rx="8" class="ent"/>
-    <text x="921" y="202" text-anchor="middle" class="t">stage 4</text>
-    <text x="921" y="222" text-anchor="middle" class="sym">cache: b0 b1</text>
-    <text x="921" y="241" text-anchor="middle" class="sym">commit b4</text>
-    <rect x="1035" y="290" width="142" height="70" rx="8" class="ent"/>
-    <text x="1106" y="312" text-anchor="middle" class="t">stage 5</text>
-    <text x="1106" y="332" text-anchor="middle" class="sym">cache: b0 b1 b2</text>
-    <text x="1106" y="351" text-anchor="middle" class="sym">commit b5</text>
-    <polyline points="215,140 215,215 294,215" class="fwd" marker-end="url(#xmf)"/>
-    <text x="221" y="208" class="lf">Δ: b0</text>
-    <polyline points="400,250 400,325 479,325" class="fwd" marker-end="url(#xmf)"/>
-    <text x="406" y="318" class="lf">Δ: b0 b1</text>
-    <polyline points="585,290 585,105 664,105" class="fwd" marker-end="url(#xmf)"/>
-    <text x="591" y="98" class="lf">Δ: b1 b2</text>
-    <polyline points="770,140 770,215 849,215" class="fwd" marker-end="url(#xmf)"/>
-    <text x="776" y="208" class="lf">Δ: b2 b3</text>
-    <polyline points="955,250 955,325 1034,325" class="fwd" marker-end="url(#xmf)"/>
-    <text x="961" y="318" class="lf">Δ: b3 b4</text>
-    <text x="1035" y="378" class="note">aggregation over b0 … b5</text>
-    <text x="20" y="404" class="sub">hop</text>
-    <text x="20" y="426" class="lf">cache on</text>
-    <text x="20" y="448" class="off">cache off</text>
-    <text x="255" y="404" text-anchor="middle" class="sub">stage 0 → 1</text>
-    <text x="255" y="426" text-anchor="middle" class="lf">b0</text>
-    <text x="255" y="448" text-anchor="middle" class="off">b0</text>
-    <text x="440" y="404" text-anchor="middle" class="sub">stage 1 → 2</text>
-    <text x="440" y="426" text-anchor="middle" class="lf">b0 b1</text>
-    <text x="440" y="448" text-anchor="middle" class="off">b0 b1</text>
-    <text x="625" y="404" text-anchor="middle" class="sub">stage 2 → 3</text>
-    <text x="625" y="426" text-anchor="middle" class="lf">b1 b2</text>
-    <text x="625" y="448" text-anchor="middle" class="off">b0 b1 b2</text>
-    <text x="810" y="404" text-anchor="middle" class="sub">stage 3 → 4</text>
-    <text x="810" y="426" text-anchor="middle" class="lf">b2 b3</text>
-    <text x="810" y="448" text-anchor="middle" class="off">b0 b1 b2 b3</text>
-    <text x="995" y="404" text-anchor="middle" class="sub">stage 4 → 5</text>
-    <text x="995" y="426" text-anchor="middle" class="lf">b3 b4</text>
-    <text x="995" y="448" text-anchor="middle" class="off">b0 b1 b2 b3 b4</text>
+    <text x="200" y="26" class="sub">4 ranks, 2 virtual stages each, loop placement (stage s on rank s mod 4); stage s opens block b<tspan dy="3" font-size="10">s</tspan></text>
+    <text x="200" y="46" class="sub">cache: the blocks the rank holds when the stage starts, produced at stage s−4 or earlier; recv: the blocks the hop brings besides h</text>
+    <text x="380" y="74" text-anchor="middle" class="t">virtual stage 0</text>
+    <line x1="110" y1="82" x2="650" y2="82" class="rule"/>
+    <text x="1000" y="74" text-anchor="middle" class="t">virtual stage 1</text>
+    <line x1="730" y1="82" x2="1270" y2="82" class="rule"/>
+    <rect x="16" y="92" width="1264" height="96" rx="8" class="band"/>
+    <text x="28" y="145" class="t">rank 0</text>
+    <rect x="16" y="196" width="1264" height="96" rx="8" class="band"/>
+    <text x="28" y="249" class="t">rank 1</text>
+    <rect x="16" y="300" width="1264" height="96" rx="8" class="band"/>
+    <text x="28" y="353" class="t">rank 2</text>
+    <rect x="16" y="404" width="1264" height="96" rx="8" class="band"/>
+    <text x="28" y="457" class="t">rank 3</text>
+    <rect x="110" y="98" width="150" height="84" rx="8" class="ent"/>
+    <text x="185" y="118" text-anchor="middle" class="t">stage 0</text>
+    <text x="185" y="138" text-anchor="middle" class="cell">cache: empty</text>
+    <text x="185" y="156" text-anchor="middle" class="cell">recv: none</text>
+    <text x="185" y="174" text-anchor="middle" class="cell">commit b0</text>
+    <rect x="240" y="202" width="150" height="84" rx="8" class="ent"/>
+    <text x="315" y="222" text-anchor="middle" class="t">stage 1</text>
+    <text x="315" y="242" text-anchor="middle" class="cell">cache: empty</text>
+    <text x="315" y="260" text-anchor="middle" class="cell">recv: b0</text>
+    <text x="315" y="278" text-anchor="middle" class="cell">commit b1</text>
+    <rect x="370" y="306" width="150" height="84" rx="8" class="ent"/>
+    <text x="445" y="326" text-anchor="middle" class="t">stage 2</text>
+    <text x="445" y="346" text-anchor="middle" class="cell">cache: empty</text>
+    <text x="445" y="364" text-anchor="middle" class="cell">recv: b0 b1</text>
+    <text x="445" y="382" text-anchor="middle" class="cell">commit b2</text>
+    <rect x="500" y="410" width="150" height="84" rx="8" class="ent"/>
+    <text x="575" y="430" text-anchor="middle" class="t">stage 3</text>
+    <text x="575" y="450" text-anchor="middle" class="cell">cache: empty</text>
+    <text x="575" y="468" text-anchor="middle" class="cell">recv: b0 b1 b2</text>
+    <text x="575" y="486" text-anchor="middle" class="cell">commit b3</text>
+    <rect x="730" y="98" width="150" height="84" rx="8" class="ent"/>
+    <text x="805" y="118" text-anchor="middle" class="t">stage 4</text>
+    <text x="805" y="138" text-anchor="middle" class="cell">cache: b0</text>
+    <text x="805" y="156" text-anchor="middle" class="cell">recv: b1 b2 b3</text>
+    <text x="805" y="174" text-anchor="middle" class="cell">commit b4</text>
+    <rect x="860" y="202" width="150" height="84" rx="8" class="ent"/>
+    <text x="935" y="222" text-anchor="middle" class="t">stage 5</text>
+    <text x="935" y="242" text-anchor="middle" class="cell">cache: b0 b1</text>
+    <text x="935" y="260" text-anchor="middle" class="cell">recv: b2 b3 b4</text>
+    <text x="935" y="278" text-anchor="middle" class="cell">commit b5</text>
+    <rect x="990" y="306" width="150" height="84" rx="8" class="ent"/>
+    <text x="1065" y="326" text-anchor="middle" class="t">stage 6</text>
+    <text x="1065" y="346" text-anchor="middle" class="cell">cache: b0 b1 b2</text>
+    <text x="1065" y="364" text-anchor="middle" class="cell">recv: b3 b4 b5</text>
+    <text x="1065" y="382" text-anchor="middle" class="cell">commit b6</text>
+    <rect x="1120" y="410" width="150" height="84" rx="8" class="ent"/>
+    <text x="1195" y="430" text-anchor="middle" class="t">stage 7</text>
+    <text x="1195" y="450" text-anchor="middle" class="cell">cache: b0 … b3</text>
+    <text x="1195" y="468" text-anchor="middle" class="cell">recv: b4 b5 b6</text>
+    <text x="1195" y="486" text-anchor="middle" class="cell">commit b7</text>
+    <polyline points="150,182 150,244 239,244" class="fwd" marker-end="url(#xmf)"/>
+    <polyline points="280,286 280,348 369,348" class="fwd" marker-end="url(#xmf)"/>
+    <polyline points="410,390 410,452 499,452" class="fwd" marker-end="url(#xmf)"/>
+    <polyline points="610,410 610,140 729,140" class="fwd" marker-end="url(#xmf)"/>
+    <polyline points="770,182 770,244 859,244" class="fwd" marker-end="url(#xmf)"/>
+    <polyline points="900,286 900,348 989,348" class="fwd" marker-end="url(#xmf)"/>
+    <polyline points="1030,390 1030,452 1119,452" class="fwd" marker-end="url(#xmf)"/>
+    <text x="1120" y="516" class="note">aggregation over b0 … b7</text>
+    <text x="20" y="548" class="t">PP cross-rank P2P communication amount per hop: blocks carried besides h</text>
+    <text x="20" y="572" class="sub">hop</text>
+    <text x="20" y="596" class="lf">cache on</text>
+    <text x="20" y="620" class="off">cache off</text>
+    <text x="200" y="572" text-anchor="middle" class="sub">stage 0 → 1</text>
+    <text x="200" y="596" text-anchor="middle" class="lf">b0</text>
+    <text x="200" y="620" text-anchor="middle" class="off">b0</text>
+    <text x="350" y="572" text-anchor="middle" class="sub">stage 1 → 2</text>
+    <text x="350" y="596" text-anchor="middle" class="lf">b0 b1</text>
+    <text x="350" y="620" text-anchor="middle" class="off">b0 b1</text>
+    <text x="500" y="572" text-anchor="middle" class="sub">stage 2 → 3</text>
+    <text x="500" y="596" text-anchor="middle" class="lf">b0 b1 b2</text>
+    <text x="500" y="620" text-anchor="middle" class="off">b0 b1 b2</text>
+    <text x="650" y="572" text-anchor="middle" class="sub">stage 3 → 4</text>
+    <text x="650" y="596" text-anchor="middle" class="lf">b1 b2 b3</text>
+    <text x="650" y="620" text-anchor="middle" class="off">b0 … b3</text>
+    <text x="800" y="572" text-anchor="middle" class="sub">stage 4 → 5</text>
+    <text x="800" y="596" text-anchor="middle" class="lf">b2 b3 b4</text>
+    <text x="800" y="620" text-anchor="middle" class="off">b0 … b4</text>
+    <text x="950" y="572" text-anchor="middle" class="sub">stage 5 → 6</text>
+    <text x="950" y="596" text-anchor="middle" class="lf">b3 b4 b5</text>
+    <text x="950" y="620" text-anchor="middle" class="off">b0 … b5</text>
+    <text x="1100" y="572" text-anchor="middle" class="sub">stage 6 → 7</text>
+    <text x="1100" y="596" text-anchor="middle" class="lf">b4 b5 b6</text>
+    <text x="1100" y="620" text-anchor="middle" class="off">b0 … b6</text>
   </svg>
   </figure>
 

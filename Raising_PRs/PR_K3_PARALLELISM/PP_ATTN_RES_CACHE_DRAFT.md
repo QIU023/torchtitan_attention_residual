@@ -17,11 +17,12 @@ forward and hatched backward. The legend in the figure defines every symbol.
 
 ## Example
 
-Forward only, with three ranks and two virtual stages each in loop placement,
+Forward only, with four ranks and two virtual stages each in loop placement,
+the shape of the cache-based pipeline figure in the Attention Residuals paper,
 and each stage opening one block. A rank holds every block produced at stage
-`s - 3` or earlier, because that is where it last ran the micro-batch; a hop
-carries the rest, so no hop carries more than `P - 1 = 2` blocks, where the
-whole stack grows by one block per hop.
+`s - 4` or earlier, because that is where it last ran the micro-batch; a hop
+brings the rest. From the second virtual stage on, a hop carries at most
+`P - 1 = 3` blocks, where the whole stack would be 4 to 7.
 
 ![Forward-only example of the attention residual cache](../../../../assets/images/kimi_k3_pp_attn_res_cache_example.svg)
 
