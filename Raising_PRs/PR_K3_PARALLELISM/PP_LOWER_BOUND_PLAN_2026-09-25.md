@@ -109,7 +109,9 @@
 **怎么读：**
 - open_copy 只出现在 stage 中间开 block 的 rank 上（H100 PP8×VP4 是 rank 0 和 4）。去掉它，最大值降 10.2 GiB，均值只降 2.6 GiB。它是 rank 之间不均的主要来源。balance 可以把它搬到别的 rank，但那是花带宽搬一份本不该存在的副本。
 - per_block 和 hidden_out 在每个 rank 上都降，均值和最大值降得差不多。
-- 5060 的 32 层 block 4 探针，最重的 rank 3 上没有开 block，所以最大值上看不出 open_copy。要在 5060 上实测 open_copy，得用 46 层 block 6 的切分（8 次开 block 都在 stage 中间，offload 草案实测用的就是它）。
+- 5060 的 32 层 block 4 探针看不出 open_copy。按核心的切分，它 8 次开 block 里有 7 次落在所在 stage 的最后一层，新 stack 后面没有层去存，只有 rank 0 在第 0 层开的那一次留下副本。
+- 所以 5060 实测不另编层数，直接用生产的 93 层、block 12、PP8×VP4 切分，只缩小 dim 和 seq。这样 stage 划分、开 block 的位置（rank 0 和 4）和最重的 rank（4）都与 H100 PP8×VP4 的模型相同，每个 rank 的单位数一一对应。
+- 这个探针在 dim 2048 时约 21 亿参数，每个 rank 的静态显存约 3.9 GiB（fp32 主参数、梯度和两份 Adam 状态），5060 放得下。
 - 全部数字的明细（每个切分的每个 rank）在 `pp_memory_model_v4b_2026-09-25.out.txt`。
 
 ## 4. 设计：到下界要改什么
@@ -206,9 +208,15 @@
 
 ## 7. 验证计划
 
-- **5060（冒烟和同一性）：** 46 层、block 6、pp8×vp2、M16、FullAC、seq 2048，当前分支对 PR A 原型：
-  - 每个 rank 的峰值 allocated，报均值和最大值，与模型预测对照（模型：最大值 1.7 → 0.9 GiB）；5060 上同配置重复运行，显存逐字节相同，噪声底是 0；
+- **5060（冒烟和同一性）：** 生产的 93 层、block 12、pp8×vp4、M16、FullAC、dim 2048、seq 2048（放不下就降 dim，层数和 block 不动），当前分支对 PR A 原型：
+  - 每个 rank 的峰值 allocated，报均值和最大值，与模型预测对照（模型：block 和 hidden 的最大值 2.8 → 1.5 GiB，和 H100 PP8×VP4 的单位数相同，按 dim 2048、seq 2048 换算）；5060 上同配置重复运行，显存逐字节相同，噪声底是 0；
   - 同一份暖缓存上 100 步，loss 和 grad norm 逐位一致；
   - `test_kimi_k3_pp_block_grads`（4 进程 gloo）逐位一致。
 - **H100（PR 里的数字）：** 按 `PP_OPTIMIZE_REPORT_2026-09-24.md` §9 的 4 × H100 方案，加一格 PR A。
 - **offload 和 balance 的计划器：** 先在模型里比较新旧计划（同一带宽预算下各 rank 的峰值），再上 5060。
+
+## 8. 修订（2026-09-26）
+
+- **实测切分改为生产切分。** 09-25 版写的是 46 层、block 6，那是 09-24 为了在 16 个 stage 上凑出"stage 中间开 block"临时选的层数。生产的 93 层、block 12 在 PP8×VP4 上本身就是 8 次开 block 都在 stage 中间，不需要另编层数（§3、§7 已改）。
+- **pp_review_optimize 的逐行审核** 见 `PP_REVIEW_OPTIMIZE_DIFF_AUDIT_2026-09-26.md`：行为上没有发现错误；µfmt 不通过、测试类放在 main guard 之后、注释超标，这几项做 PR A 时先修。
+- **DEP（#4381）已 rebase 到 4312 的 `7814d1f8b` 并推送**，`k3_pp_mm` 和 `dep_review1` 都是 `232834a4d`，经过见 `PR_BODY_PP_MM_v3.md` 的状态部分。DEP 直接叠在 4312 上，与 PR A、PR B、PR C 这条显存线互不依赖。
