@@ -1,6 +1,6 @@
 # Draft PR：Kimi K3 流水线 cache 的说明页和两张图（stacked on 4312）
 
-- 分支：fork `QIU023/torchtitan` 的 `k3_pp_cache_doc` = `c3e95b0f7`，在 PR 4312 的 head `k3_pp_text` = `7814d1f8b` 之上只多一个 commit（相对 main 共 16 个 commit，其中 15 个是 4312 的）。
+- 分支：fork `QIU023/torchtitan` 的 `k3_pp_cache_doc` = `c79066a0d`，在 PR 4312 的 head `k3_pp_text` = `7814d1f8b` 之上只多一个 commit（相对 main 共 16 个 commit，其中 15 个是 4312 的）。
 - 这个 commit 只加三个文件，没有改任何代码：
   - `torchtitan/models/kimi_k3/pipeline_parallel/PP_ATTN_RES_CACHE.md`（57 行）：09-25 从 4312 删掉的那版说明页，加上 Overview（主图）和 Example（例子图）两节，store 统一叫 rank cache。
   - `assets/images/kimi_k3_pp_attn_res_cache.svg`：一个 virtual stage、cache 开和关、forward 和 backward、带图例。
