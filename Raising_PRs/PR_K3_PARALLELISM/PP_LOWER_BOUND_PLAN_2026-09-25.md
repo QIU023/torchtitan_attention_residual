@@ -220,3 +220,9 @@
 - **实测切分改为生产切分。** 09-25 版写的是 46 层、block 6，那是 09-24 为了在 16 个 stage 上凑出"stage 中间开 block"临时选的层数。生产的 93 层、block 12 在 PP8×VP4 上本身就是 8 次开 block 都在 stage 中间，不需要另编层数（§3、§7 已改）。
 - **pp_review_optimize 的逐行审核** 见 `PP_REVIEW_OPTIMIZE_DIFF_AUDIT_2026-09-26.md`：行为上没有发现错误；µfmt 不通过、测试类放在 main guard 之后、注释超标，这几项做 PR A 时先修。
 - **DEP（#4381）已 rebase 到 4312 的 `7814d1f8b` 并推送**，`k3_pp_mm` 和 `dep_review1` 都是 `232834a4d`，经过见 `PR_BODY_PP_MM_v3.md` 的状态部分。DEP 直接叠在 4312 上，与 PR A、PR B、PR C 这条显存线互不依赖。
+- **三步已全部实现并测完（09-26 下午）**，见 `PP_LOWER_BOUND_CAMPAIGN_2026-09-26.md`。
+  - 用户定的顺序：①PR A，②统一激活存储，③offload 与 balance 一起做。
+  - #4765 装 ①②，#4764 装 ③。两个 draft 已同步到 `7b43e1d01` 和 `37967996b`，body 在 `PR_BODY_4765_2026-09-26.md`、`PR_BODY_4764_2026-09-26.md`。
+  - 5060 实测，最大值和均值（GiB）：4312 为 11.76 和 10.77，V4 为 7.29 和 6.35，PR A 为 6.82 和 5.91；加上统一激活存储后不变；offload 加 balance 为 6.46 和 5.84。全部 20 步逐位一致，耗时不变。
+  - 定位结论：PR A 之后，峰值在每个 rank 最后一个反向，block 不再是决定峰值的那一项。
+
