@@ -1,6 +1,6 @@
-# Draft PR：Kimi K3 流水线 cache 的说明页和两张图（stacked on 4312）
+# Draft PR：Kimi K3 流水线 cache 的说明页和两张图（base main）
 
-- 分支：fork `QIU023/torchtitan` 的 `k3_pp_cache_doc` = `c79066a0d`，在 PR 4312 的 head `k3_pp_text` = `7814d1f8b` 之上只多一个 commit（相对 main 共 16 个 commit，其中 15 个是 4312 的）。
+- 分支：fork `QIU023/torchtitan` 的 `k3_pp_cache_doc` = `52f9dd6d3`，在 upstream main `f35966713` 之上只有一个 commit（2026-09-27：4312 已 squash 合并为 `e033f7517`，分支从旧的 `c79066a0d` 改为直接 cherry-pick 到 main，页面引用的名字在 main 上都存在）。
 - 这个 commit 只加三个文件，没有改任何代码：
   - `torchtitan/models/kimi_k3/pipeline_parallel/PP_ATTN_RES_CACHE.md`（57 行）：09-25 从 4312 删掉的那版说明页，加上 Overview（主图）和 Example（例子图）两节，store 统一叫 rank cache。
   - `assets/images/kimi_k3_pp_attn_res_cache.svg`：一个 virtual stage、cache 开和关、forward 和 backward、带图例。
@@ -19,10 +19,6 @@ Adds a page for the Kimi K3 pipeline's attention residual cache, `torchtitan/mod
 
 - `assets/images/kimi_k3_pp_attn_res_cache.svg`: one virtual stage on one rank with `attn_res_cache` on and off, forward and backward, with the P2P sends and receives and a legend for every symbol.
 - `assets/images/kimi_k3_pp_attn_res_cache_example.svg`: a forward-only example, four ranks with two virtual stages each in loop placement, showing the blocks each rank holds when each stage starts, the blocks each hop brings, and the per-hop P2P volume with the cache on and off.
-
-## Relation to #4312
-
-Stacked on #4312, whose commits show here until it merges; only the last commit is this PR's, and it adds documentation only.
 
 ## Test plan
 
