@@ -12,6 +12,7 @@
   - #4617 把 `ParallelismConfig` 挪到了 `torchtitan.config.parallelism`，DEP 的测试改了导入。
   - 注释按"默认不加注释"规则修剪：14 处多行注释改成一行约束，或删掉（讲设计怎么选的那些）；starved/exhausted 的含义挪进字段 docstring。
 - **标题：** 线上是 `[DO NOT review, pending K3 text PP merging] [Kimi K3] Add K3 MoonViT DEP support to schedule ViT stages into text LLM PP bubbles`。4312 已合并，前缀可以去掉，由你改。
+- **粘贴区的 GPU 结果一律写 Pending（H100）**（用户 09-27："不能按照5060的结果写body"）。下面两条 5060 的结果只留在 logbook。
 - **bubble 开关对比已在新 head 上重测（09-27 晚）：** 4 × 5060，pp4 × vp2，seed 42，deterministic，本地 recipe `scratchpad/dep_bubble/dep_bubble.py`（只把 `vision_dep.bubble` 关掉，不进分支），一份预热 cache 拷给每格，每个设置跑两遍 10 步。结果和 body 旧说法一致，并补了定位：第 2 步是第一次放置的一步，dump 每个参数梯度（本地探针 `dep_bubble_probe.py`）后，四个 rank 上 443 个文本参数的梯度逐位相同，22 个视觉塔参数的梯度全不同（相对差 1.2e-3 到 3.1e-3，梯度是 bf16）。结果和脚本拷在 `kit_dep_mixed_2026-09-27/bubble_onoff/`。
 - **"every step places" 改成"第一步以外"：** 第 1 步按设计全部 inline 编码（`vision_dep.py` 注释：FSDP 第一次 root forward 之前编码会让视觉塔成为 root），计数从第 2 步开始；Design 里本来就写了这一点。
 - **线上 body：** 之前用 API 读线上 body 被权限拦过，粘贴前请对照一下。
@@ -36,8 +37,8 @@ Report sec 5.2.3: the vision tower takes a pipeline stage of its own ahead of th
 
 - `pytest tests/unit_tests/cpu -k "kimi_k3 or pipeline_parallel or cli or integration_test" -q` (120 passed, 1 skipped). The bubble tests cover the placement invariants, a backward-anchored placement firing, the run-ahead, and the deferred backward: a cut and replayed tower backward is bitwise the gradient the inline one produces, out-of-order replays accumulate like one pass, the pending bound changes when rather than whether a gradient runs, and nothing is lost when no slot ever comes.
 - `pytest tests/unit_tests/cpu/test_optimizer_param_groups.py -q` (24 passed), including a pattern that matches nothing on one stage.
-- The `kimi_k3_pp4_vp2_vit_dep` cell in the B200 suite, which derives its split from `vision_dep` rather than spelling one out: 10 steps on 4 x RTX 5060 Ti, loss 7.96843 to 6.13097 (no fixed seed, so only that it runs); every step after the first, which encodes inline, places 2 of 2 planned encodes in a bubble, runs 4 upfront and 2 inline, and runs all 6 deferred tower backwards at planned slots.
-- The same cell at dp_shard 2 with the even data-parallel ranks text only (`set_rank_conditional_image_presence`), 4 steps on 8 x RTX 5060 Ti: every step completes, under the default reshard policy and with `fsdp_reshard_after_forward=always`.
-- pp4 x vp2 with the bubble on and off, `seed=42`, deterministic, 10 steps on 4 x RTX 5060 Ti, one inductor cache warmed by a 1-step run of each and copied per run, each setting run twice: each setting reproduces itself on all 10 steps, and the two agree on steps 1 and 2 and separate from step 3. Step 2 is the first step with placements; its gradients are bitwise equal on all 443 text parameters of the four ranks and differ on all 22 tower parameters by 1.2e-3 to 3.1e-3 relative, under the 7.8e-3 of bf16 rounding, since the deferred tower backwards add the micro-batches into the bf16 gradients in another order. The hundred-step table on H100 goes here.
+- The `kimi_k3_pp4_vp2_vit_dep` cell in the B200 suite, which derives its split from `vision_dep` rather than spelling one out: pending (H100).
+- The same cell at dp_shard 2 with the even data-parallel ranks text only (`set_rank_conditional_image_presence`), under the default reshard policy and with `fsdp_reshard_after_forward=always`: pending (H100).
+- pp4 x vp2 with the bubble on and off, same seed on one warm compile cache: pending (H100).
 
 --- PASTE END ---
