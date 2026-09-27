@@ -20,3 +20,19 @@
 | `diag_v4`、`diag_pra` | V4 和 PR A | 逐动作记录。当时追踪的实际是第 4 步（`PPMEM_ACTION_TRACE` 的步数差一，后来修了） |
 | `diag_obl` | 第三步第一版 | 逐动作记录，追踪第 4 步 |
 | `diag_obl2` | 第三步第一版，加上计划输入的导出 | 逐动作记录，追踪第 5 步；计划的输入在 scratchpad 的 `plan_inputs*.pkl`，没有拷进来 |
+
+## 2026-09-27：CheckpointPolicy 重构后（base 是 4312 `ffdd169ef`，main `d0f3bbfd6`）
+
+- 这一批用本地 torch 兼容补丁跑（`../kit_pp_review5_rebase_2026-09-26/pr5_torch_compat_shim.patch`）；KDA 不再需要放宽。
+- 探针开关：`PPMEM_CPU_OFFLOAD=none|all|planned`、`PPMEM_BALANCE=1`、`PPMEM_HOST_GBPS=10`、`PPMEM_PEER_GBPS=2`。
+- 显存跑 10 步（第 3 到 10 步每个 rank 的峰值相差不超过 0.01 GiB），计时抓第 8 步。
+- 五个格子共用一条 cache 血缘：s4 的四格预热 cache0，s5 在同一个 cache0 上再预热一步。
+- `rank*.json` 的每条记录里多了 `storage`：存储的累计计数（各后端搬走的字节、`late_fetches`、`off_device_bytes`）。
+
+| 目录 | 代码 | 说明 |
+|---|---|---|
+| `s5_mem_base`、`s5_time_base` | 4312 `ffdd169ef` | 同 base 的基线 |
+| `s4_mem_pra`、`s4_time_pra` | PR A `7ae870508` | |
+| `s4_mem_all`、`s4_time_all` | #4765 `7c0f5cd3c`，`cpu_offload=all` | |
+| `s4_mem_plan`、`s4_time_plan` | #4764 `e6241b78b`，`cpu_offload=planned` | host 带宽按 10 GB/s 预算 |
+| `s4_mem_planbal`、`s4_time_planbal` | #4764 `e6241b78b`，planned 加 `balance` | 对端带宽按 2 GB/s 预算；5060 没有 RDMA，池在对端 host 内存里 |

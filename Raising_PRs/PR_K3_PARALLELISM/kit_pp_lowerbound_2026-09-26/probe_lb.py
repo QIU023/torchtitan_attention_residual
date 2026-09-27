@@ -100,6 +100,17 @@ def _manager_pinned_peak() -> int:
     return peak
 
 
+def _storage_stats() -> dict:
+    """The activation storage's cumulative counters (bytes moved per backend, late fetches)."""
+    for store in _STORES:
+        storage = getattr(store, "_storage", None)
+        if storage is not None:
+            stats = {k: float(v) for k, v in storage.stats.items() if not k.startswith("pinned")}
+            stats["off_device_bytes"] = float(getattr(storage, "off_device_bytes", 0))
+            return stats
+    return {}
+
+
 _ACTIONS: list = []
 _PLAN_INPUTS: list = []
 
@@ -168,6 +179,7 @@ def _record_peak() -> None:
             "recv_buffers_gib": _recv_buffer_bytes() / 2**30,
             "store_peak_gib": _STORE_PEAK[0] / 2**30,
             "pinned_peak_gib": _manager_pinned_peak() / 2**30,
+            "storage": _storage_stats(),
             "alloc_retries": stats.get("num_alloc_retries", 0),
             "num_ooms": stats.get("num_ooms", 0),
         }
@@ -271,7 +283,16 @@ def lb_probe() -> Trainer.Config:
         config.activation_checkpoint = FullAC.Config()
     else:
         config.activation_checkpoint = None
+    import inspect
+
+    # main from 09-26 on takes enable_sp; the probe runs no tensor parallelism.
+    sp = (
+        {"enable_sp": False}
+        if "enable_sp" in inspect.signature(_kimi_k3_config).parameters
+        else {}
+    )
     config.model = _kimi_k3_config(
+        **sp,
         max_context_length=seq,
         dim=dim,
         vocab_size=2048,
@@ -305,9 +326,18 @@ def lb_probe() -> Trainer.Config:
         attn_backend="flex",
     )
     memory = getattr(config.model, "pp_memory", None)
-    switches = ("PPMEM_MANAGER", "PPMEM_OFFLOAD", "PPMEM_BALANCE", "PPMEM_TARGET_GIB")
+    switches = (
+        "PPMEM_MANAGER",
+        "PPMEM_OFFLOAD",
+        "PPMEM_BALANCE",
+        "PPMEM_TARGET_GIB",
+        "PPMEM_CPU_OFFLOAD",
+    )
     if memory is None and any(os.environ.get(name) for name in switches):
         raise ValueError("this tree's model config has no pp_memory")
+    # 09-27 config (CheckpointPolicy storage): cpu_offload none | all | planned, balance.
+    if memory is not None and os.environ.get("PPMEM_CPU_OFFLOAD"):
+        memory.cpu_offload = os.environ["PPMEM_CPU_OFFLOAD"]
     if memory is not None and os.environ.get("PPMEM_MANAGER") == "1":
         memory.manager = True
     if memory is not None and os.environ.get("PPMEM_OFFLOAD") == "1":

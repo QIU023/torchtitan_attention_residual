@@ -1,0 +1,12 @@
+
+=== GB300, 2.8T (fullac, fused aggregation): pp2 x vp8, M=16, EP64; HBM 268.2 GiB; NIC 400 Gb/s x 1.0 for PP and parks; host 200 GB/s; 1100 TFLOPS
+| scheme | r0 | r1 | min | mean | max | step s | worst stall s | NIC GB | host GB | knobs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| V4 + early grad wait (reference) | 137.0 | 132.9 | 132.9 | 135.0 | 137.0 | 50.61 | 0.000 | 86 | 0 |  |
+| PR A | 130.1 | 131.2 | 130.1 | 130.7 | 131.2 | 50.61 | 0.000 | 86 | 0 |  |
+| PR A + balance | 130.1 | 131.2 | 130.1 | 130.7 | 131.2 | 50.61 | 0.000 | 86 | 0 | balance  lead 1;  |
+| PR A + offload | 121.6 | 123.3 | 121.6 | 122.5 | 123.3 | 50.61 | 0.000 | 86 | 215 | offload r1 K92, r0 K94 lead 1 |
+| PR A + offload + balance | 121.6 | 123.3 | 121.6 | 122.5 | 123.3 | 50.61 | 0.000 | 86 | 215 | balance  lead 1; offload r1 K92, r0 K94 lead 1 |
+PR A block + hidden (store, hidden, grad sends, deposits), GiB: r0 9.0, r1 9.3; max 9.3, mean 9.1
+at each rank's peak, PR A alone (fraction of step; GiB by class): r0 0.10: fixed 108.0 deposits 3.5 grad sends 0.2 hidden 3.3 saved 8.9 store 1.9 transient 4.4; r1 0.09: fixed 109.5 deposits 3.5 grad sends 0.4 hidden 3.4 saved 8.2 store 1.8 transient 4.4
+at each rank's peak, PR A + offload + balance: r0 0.10: fixed 108.0 deposits 3.5 grad sends 0.2 hidden 3.4 saved 0.2 store 1.9 transient 4.4; r1 0.22: fixed 109.5 deposits 3.5 grad sends 0.4 hidden 3.4 saved 0.3 store 1.8 transient 4.4

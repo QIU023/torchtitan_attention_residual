@@ -31,7 +31,9 @@ LB_ROOT=$S/lb PPMEM_LAYERS=93 PPMEM_BLOCK=12 PPMEM_DIM=2048 PPMEM_SEQ=2048 PPMEM
 python3 $K/tab_lb.py $S/lb 5 s2_mem_pra s2_mem_mgr s2_mem_obl
 python3 $K/analyze_trace.py $S/lb/s2_time_pra/dump
 ```
-每个树都要打上 KDA 的 SM120 本地放宽（`ppopt_kda_lift.patch`），这个放宽不进任何提交。
+- 09-26 那批（base 是 main `9e159aed7`）：每个树都要打上 KDA 的 SM120 本地放宽（`ppopt_kda_lift.patch`），这个放宽不进任何提交。
+- 09-27 起（base 是 main `d0f3bbfd6`）：main 的 KDA 门槛已经是 SM90 以上，不用放宽；但本地 torch（2.15.0.dev20260906）没有 main 新用的 `pipeline_per_edge_p2p` 和 `unshard_lookahead`，每个树要打 `../kit_pp_review5_rebase_2026-09-26/pr5_torch_compat_shim.patch`，同样不进任何提交。
+- 09-27 的配置开关是 `PPMEM_CPU_OFFLOAD=none|all|planned` 和 `PPMEM_BALANCE=1`（旧的 `PPMEM_MANAGER`、`PPMEM_OFFLOAD` 只对 09-26 的树有效）。
 
 ## H100 上怎么跑（机器还没有）
 
