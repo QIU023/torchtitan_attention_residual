@@ -2,7 +2,7 @@
 
 ## 状态（不粘贴）
 
-- **分支：** review 分支 `dep_review1` = `31f372593`，是 main `f35966713` 上的 4 个提交，已推到 fork。PR 分支 `k3_pp_mm` 还是 `232834a4d`（旧的 4312 base）。
+- **分支：** review 分支 `dep_review1` 和 PR 分支 `k3_pp_mm` 都是 `31f372593`，即 main `f35966713` 上的 4 个提交。09-27 按用户的话（"PR 分支 k3_pp_mm 直接推 这是draft"）同步，旧 head `232834a4d` 备份为 `backup/k3_pp_mm_pre_20260927`。GitHub 显示 4 个提交、12 个文件，mergeable。PR 分支 `k3_pp_mm` 还是 `232834a4d`（旧的 4312 base）。
 - **rebase 里改了什么：**
   - `model.py` 冲突：main 的 #4777（修多模态 FSDP 卡死）让没有图像的 micro-batch 也造一张假图跑视觉塔，再用零依赖接回文本；DEP 让 forward 接收预先编码好的 `vision_embeds`。两边都保留：先用 `vision_embeds`，没有才就地编码，然后走 main 的假图分支。
   - **有没有语义冲突（已实测）：** 我先以为 DEP 的缓存跳过没有图像的 micro-batch，会让视觉塔的 FSDP all-gather 在有图、没图的 DP rank 上顺序错开，于是加过一次"在放置点编码假图"，后来整个撤掉了。

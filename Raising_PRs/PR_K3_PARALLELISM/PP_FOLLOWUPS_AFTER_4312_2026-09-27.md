@@ -23,7 +23,7 @@
 
 ## DEP（#4381）
 
-- `dep_review1` = `31f372593`（本地，推送见文末），main 上 4 个提交。PR 分支 `k3_pp_mm` 还是 `232834a4d`。
+- `dep_review1` = `k3_pp_mm` = `31f372593`，main 上 4 个提交。
 - **rebase：**
   - `model.py` 冲突：main 的 #4777（修多模态 FSDP 卡死）让没有图像的 micro-batch 在 forward 里造一张假图跑视觉塔，再用零依赖接回；DEP 让 forward 接收预先编码好的 `vision_embeds`。解法：先用 `vision_embeds`，没有才就地编码，然后原样走 #4777 的假图分支。main 的 #4777 代码一行没改。
   - #4617 挪走了 `ParallelismConfig`，DEP 的测试改了导入（折进测试那个提交）。
@@ -53,3 +53,4 @@
 
 - `pp_review_optimize` `d445b2f7f`：已推 fork。
 - `dep_review1` `31f372593`：已推 fork（原 `232834a4d`）。
+- PR 分支 `k3_pp_mm`：按用户的话同步到 `31f372593`（draft），旧 head 备份为 `backup/k3_pp_mm_pre_20260927`；#4381 现在 4 个提交、12 个文件，mergeable。body v4 等用户粘贴。
