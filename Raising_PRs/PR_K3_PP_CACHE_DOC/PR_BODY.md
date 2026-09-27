@@ -20,9 +20,4 @@ Adds a page for the Kimi K3 pipeline's attention residual cache, `torchtitan/mod
 - `assets/images/kimi_k3_pp_attn_res_cache.svg`: one virtual stage on one rank with `attn_res_cache` on and off, forward and backward, with the P2P sends and receives and a legend for every symbol.
 - `assets/images/kimi_k3_pp_attn_res_cache_example.svg`: a forward-only example, four ranks with two virtual stages each in loop placement, showing the blocks each rank holds when each stage starts, the blocks each hop brings, and the per-hop P2P volume with the cache on and off.
 
-## Test plan
-
-- The example's values are the output of `infer_block_layout_tables(stage_to_rank={s: s % 4 for s in range(8)}, n_layers=32, layers_per_block=4, layer_to_stage={l: l // 4 for l in range(32)}, cache=...)` from `layout.py`, with `cache=True` and `cache=False`.
-- `pre-commit run --files` on the three files: trailing whitespace, end of file, large files and codespell pass.
-
 --- PASTE END ---
