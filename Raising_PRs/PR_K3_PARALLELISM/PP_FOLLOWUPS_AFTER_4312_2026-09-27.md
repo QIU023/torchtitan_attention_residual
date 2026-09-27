@@ -73,3 +73,13 @@
 - **PR A**（`kit_pp_lowerbound_2026-09-26/results/s6_*`）：生产切分（93 层、block 12、pp8 × vp4、dim 2048、seq 2048、M16、FullAC），#4656 对 #4656 加 PR A，同一条 cache 血缘：每个 rank 峰值的最大 / 平均 11.47 / 10.80 → 7.12 / 6.23 GiB，10 步逐位一致；第 8 步窗口 25.10 → 24.94 s，计算 7.45 → 7.38 s。组合格 10 步 rc=0。干净导出树上 68 passed（加上 #4656 的测试文件是 72）。
 - 带本地 torch 兼容补丁的 worktree 里，core 的 `test_pipeline_parallel.py` 有 5 个 `KeyError: 'max_active_stages'`，是补丁过滤参数造成的；两棵干净树上都不出现。
 - 补丁已从 `wt_attnres`、`wt_ppopt` 撤掉，临时的 `wt_main_f359` 已删除。
+
+## 09-27 夜：草稿 PR 重叠到 main，DEP 重测，#4656 的 diff 评估
+
+用户："所有base过时的draft PR都直接rebase main然后直接推，告诉我对应的body文件，我随后粘贴。现在最优先需要raise出去的是DEP，PR A，然后更新4656（需要先评估diff会不会变大很多）"。
+
+- **#4765 / #4764 已重叠并直接推：** `k3_pp_offload` = `pp_offload_review1` = `3a73fa869`，`k3_pp_balance` = `pp_balance_review1` = `22df8257f`；栈是 main `f35966713` → #4656 `f14d681f4` → PR A `e8d0a4aec` → #4765 → #4764。唯一冲突在 `cache.py` 类 docstring（保留用户的一行版，去掉 #4765 加的第二段）；#4764 的 diff 逐行不变。lint 干净；干净导出树 76 / 89 passed。旧 head 都有 `backup/*_pre_20260927`。GitHub：#4765 4 个提交、12 个文件，#4764 5 个提交、14 个文件，都 mergeable。
+- **DEP（#4381）不用 rebase：** 已经在当前 main `f35966713` 上。body 里唯一过时的一条（bubble 开关对比）在新 head 上重测并定位：见 `kit_dep_mixed_2026-09-27/bubble_onoff/`。body 顺带改了"every step places"：第 1 步按设计 inline。
+- **#4656 的 diff：** 源码净增 34 行（线上 42 行），重算部分和线上一样大，列表载体净减 11 行；涉及的文件从 3 个变成 6 个。body 长度差不多，但 Results 从 H200 宽模型换成了 5060 debug model。详见 `PR_BODY_4656_2026-09-27.md` 状态段。
+- **#4764 的单节点问题：** 现在单节点只能走 `tcp`（池在目的 host 内存，不经 NVLink）；b1 的 2.31 → 0.70 GiB 是模拟设备池的结果。机器上的 mooncake 0.3.13.post1 带 `nvlink_intra`，要单节点真的 balance 需要接这个协议。详见 `PR_BODY_4764_2026-09-27.md` 状态段。
+- **遗留：** `/tmp/rb_ppoff` 是一个旧 worktree，挂在 `pp_offload_review1` 上，索引停在 09-05 的 `240c3205b`（内容都在那个提交里）。没动它，等用户决定删不删。
