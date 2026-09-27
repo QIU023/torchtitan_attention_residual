@@ -8,6 +8,7 @@
 - **数字：** 5060 实测（`kit_pp_lowerbound_2026-09-26/results/s5_mem_base`、`s4_mem_pra`，base 是 `ffdd169ef`，与现在的 main 只差 #4617）；CPU 计数来自 `PR32_torchtitan_kimi_k3_attnres_recompute/stack_vs_list_2026-09-27.py`；H100 没测。
 - **标题建议**（标题由用户改）：`[Kimi K3] PP rank store at the memory lower bound: one tensor per attention residual block, freed by the stage that brought it`
 - **依赖：** #4656 在它之上 rebase（见 `PR32_torchtitan_kimi_k3_attnres_recompute/PLAN_4656_4780_2026-09-27.md`）；#4765、#4764 叠在它之上。
+- **待定（09-27 用户指出 shuhuayu 那条是 eager AttnRes 的 stack）：** 如果列表载体改放进 #4656，粘贴区 Summary 第一条（block residual 改成列表）和 Design 第二段（21 对 6）要删掉，PR A 只剩 PP 的传输和存储。
 - **还没做：** torch 的 issue（接收缓冲按 micro-batch 常驻、send 到 step 末才 wait），计划书 §6 第 5 条，等用户定时间。
 
 --- PR A body: PASTE BEGIN ---

@@ -54,3 +54,9 @@
 - `pp_review_optimize` `d445b2f7f`：已推 fork。
 - `dep_review1` `31f372593`：已推 fork（原 `232834a4d`）。
 - PR 分支 `k3_pp_mm`：按用户的话同步到 `31f372593`（draft），旧 head 备份为 `backup/k3_pp_mm_pre_20260927`；#4381 现在 4 个提交、12 个文件，mergeable。body v4 等用户粘贴。
+
+## 更正（用户指出 stack 是 eager AttnRes 的）
+
+- shuhuayu 在 #4656 r4099737626 指的是 eager AttnRes 的载体 `block_residual_TND`（`KimiK3TransformerBlock.forward` 每开一个 block 就 `torch.cat`），不是 PP cache 的 stack；21 对 6 是不开 PP 的 eager 计数。PR A 的 PP 内容和这条评论无关，上面"这就是对 shuhuayu 的回答"的说法收回。
+- 列表载体可以放进 #4656，已合并的 stage 在调模型处小改即可（`unbind` 视图传入，按列表下标提交和路由；读代码得出，未实现）。方案改为 #4881 → #4656（checkpoint 加 eager 列表载体）→ PR A（只做 PP）。详见 `PR32_torchtitan_kimi_k3_attnres_recompute/PLAN_4656_4780_2026-09-27.md` 的"更正"一节。
+- 如果按这个方案走，`PR_BODY_PP_CACHE_OPT_2026-09-27.md` 的 Summary 第一条和 Design 第二段（列表、21 对 6）要从 PR A 的 body 里删掉。
