@@ -60,3 +60,9 @@
 - shuhuayu 在 #4656 r4099737626 指的是 eager AttnRes 的载体 `block_residual_TND`（`KimiK3TransformerBlock.forward` 每开一个 block 就 `torch.cat`），不是 PP cache 的 stack；21 对 6 是不开 PP 的 eager 计数。PR A 的 PP 内容和这条评论无关，上面"这就是对 shuhuayu 的回答"的说法收回。
 - 列表载体可以放进 #4656，已合并的 stage 在调模型处小改即可（`unbind` 视图传入，按列表下标提交和路由；读代码得出，未实现）。方案改为 #4881 → #4656（checkpoint 加 eager 列表载体）→ PR A（只做 PP）。详见 `PR32_torchtitan_kimi_k3_attnres_recompute/PLAN_4656_4780_2026-09-27.md` 的"更正"一节。
 - 如果按这个方案走，`PR_BODY_PP_CACHE_OPT_2026-09-27.md` 的 Summary 第一条和 Design 第二段（列表、21 对 6）要从 PR A 的 body 里删掉。
+
+## 按更正重排：#4656 带列表载体，PR A 叠在它上面（09-27 晚）
+
+- `attnres_review1` = `f14d681f4`（#4656 的新 review 分支，main 上两个提交：`aa6d9fedc` 列表载体加 stage 适配，`f14d681f4` 调用处的 torch_remat 重算），已推；旧 head `38fcdde4a` 备份为 `backup/attnres_review1_pre_20260927`。PR 分支 `k3_ac_reuse_attention` 没动。
+- `pp_review_optimize` = `e8d0a4aec`，由用户压缩后的 `be9e2fa69` 重放到 `f14d681f4` 之上，已推。PP 的 5 个文件与 `be9e2fa69` 完全相同（`be9e2fa69` 删掉的 docstring、`_placeholder` 和改回的 `cache.py` 都保留）；`model.py`、`sharding.py` 取 #4656 的，PR A 不再改它们。
+- body：#4656 新写 `PR_BODY_4656_2026-09-27.md`；PR A 改好 `PR_BODY_PP_CACHE_OPT_2026-09-27.md`（去掉列表载体，注明叠在 #4656 上）。两份的 Results 和测试数都等 5060 重测：#4656 对 main 的一致性和显存（`scratchpad/acr/`），PR A 对 #4656 的生产切分显存和计时（`scratchpad/lb6/`），两条分支的组合格冒烟。
