@@ -1,7 +1,7 @@
 # torch issue 草稿：pipelining 的接收缓冲常驻、send 到 step 末才 wait（2026-09-27）
 
-- **用途：** 计划 §6 的第一步。PR A（`pp_review_optimize` = `be9e2fa69`）在 `AttnResPipelineStage` 里覆盖了这两个行为，#4765 的正文要链接这个 issue。
-- **提交位置：** pytorch/pytorch 的 issue，标签 `oncall: distributed`、`module: pipelining`。机器上没有 `gh`，需要你在网页上开。开好后告诉我 issue 号，我把它补进 #4765 正文的 `<torch issue link>`。
+- **用途：** 计划 §6 的第一步。PR A（`pp_review_optimize` = `be9e2fa69`）在 `AttnResPipelineStage` 里覆盖了这两个行为，PR A 的正文（`PR_BODY_PP_CACHE_OPT_2026-09-27.md`）和 #4765 的正文都要链接这个 issue。
+- **提交位置：** pytorch/pytorch 的 issue，标签 `oncall: distributed`、`module: pipelining`。机器上没有 `gh`，需要你在网页上开。开好后告诉我 issue 号，我把它补进两份正文的 `<torch issue link>`。
 - **数据来源：**
   - `PP_OPTIMIZE_REPORT_2026-09-24.md` §2 和 §3：8 × RTX 5060 Ti，pp8 × vp2，Interleaved1F1B，16 个 micro-batch，seq 3584，FullAC；
   - `kit_pp_optimize_2026-09-24/stash_probe.py`。

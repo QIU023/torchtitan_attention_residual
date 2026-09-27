@@ -2,14 +2,14 @@
 
 ## 状态（不粘贴）
 
-- **分支：** review 分支 `pp_review_optimize` = `d445b2f7f`，是 main `f35966713`（含 4312 的 squash `e033f7517` 和 #4617）上的 4 个提交：V4 的三个加 PR A。还没有 PR 分支，也还没开 PR。
+- **分支：** review 分支 `pp_review_optimize` = `be9e2fa69`，main `f35966713`（含 4312 的 squash `e033f7517` 和 #4617）上的 1 个提交。09-27 由 `d445b2f7f` 的 4 个提交压成，同时删了 7 处私有函数和测试辅助类的 docstring、`_placeholder`，改回了 `cache.py` 的类 docstring，树差 +7/−19，见 `PP_REVIEW_OPTIMIZE_DIFF_AUDIT_2026-09-27.md` §5。还没有 PR 分支，也还没开 PR。
 - **rebase：** 从 4312 的 head `ffdd169ef` 重放到 main。一处冲突在 `model.py` 的 `forward` 签名：#4617 把 `attention_masks` 的类型改成了 `HybridAttentionMetadata`，PR A 把 `block_residual_TND` 改成了 `blocks_TD: list[torch.Tensor]`，两边都保留。rebase 前后 PR 自己的 diff（+/- 行）完全相同。
-- **检查：** pyflakes、flake8、ufmt 干净；4 个测试文件 68 个通过；5060 组合格 10 步 rc=0，loss 8.10820 → 3.48003（本地 torch 兼容补丁，不在 diff 里）。
+- **检查：** pyflakes、flake8、ufmt 干净；4 个测试文件 68 个通过（`d445b2f7f` 上跑的；`be9e2fa69` 只删 docstring 和 `_placeholder`，ufmt 已过，单测要在 GPU 机器上重跑）；5060 组合格 10 步 rc=0，loss 8.10820 → 3.48003（本地 torch 兼容补丁，不在 diff 里）。
 - **数字：** 5060 实测（`kit_pp_lowerbound_2026-09-26/results/s5_mem_base`、`s4_mem_pra`，base 是 `ffdd169ef`，与现在的 main 只差 #4617）；CPU 计数来自 `PR32_torchtitan_kimi_k3_attnres_recompute/stack_vs_list_2026-09-27.py`；H100 没测。
 - **标题建议**（标题由用户改）：`[Kimi K3] PP rank store at the memory lower bound: one tensor per attention residual block, freed by the stage that brought it`
 - **依赖：** #4656 在它之上 rebase（见 `PR32_torchtitan_kimi_k3_attnres_recompute/PLAN_4656_4780_2026-09-27.md`）；#4765、#4764 叠在它之上。
 - **待定（09-27 用户指出 shuhuayu 那条是 eager AttnRes 的 stack）：** 如果列表载体改放进 #4656，粘贴区 Summary 第一条（block residual 改成列表）和 Design 第二段（21 对 6）要删掉，PR A 只剩 PP 的传输和存储。
-- **还没做：** torch 的 issue（接收缓冲按 micro-batch 常驻、send 到 step 末才 wait），计划书 §6 第 5 条，等用户定时间。
+- **torch issue：** 草稿在 `TORCH_ISSUE_PP_BUFFERS_2026-09-27.md`，用户在网页上开；开好后把号填进 Design 第三段的 `<torch issue link>`。
 
 --- PR A body: PASTE BEGIN ---
 
@@ -27,7 +27,7 @@ The AttnRes paper stores each block exactly once across a rank's virtual stages,
 
 The list matters without pipeline parallelism too. With the stack, a 24 layer model in blocks of 4 keeps 21 [T, D] units of stack alive until backward, where the longest stack holds 6; with the list it keeps 6. That holds under full, selective and region AC alike, since each checkpoint takes the blocks as an input. With one tensor per block on the wire, a received block needs no row in a shared buffer, and nothing forces a copy when a hop forwards a block it did not make.
 
-torch's pipelining runtime waits send works only after a step's last action, and a pending work keeps its tensor alive. It also keeps one receive buffer per micro-batch for every input and input gradient. The stage overrides both. These two behaviors hold for every pipeline model; they belong in torch, and the overrides go once torch offers them.
+torch's pipelining runtime waits send works only after a step's last action, and a pending work keeps its tensor alive. It also keeps one receive buffer per micro-batch for every input and input gradient. The stage overrides both. These two behaviors hold for every pipeline model; they belong in torch (<torch issue link>), and the overrides go once torch offers them.
 
 ## Results
 

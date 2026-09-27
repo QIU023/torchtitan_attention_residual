@@ -1,6 +1,6 @@
 # pp_review_optimize（PR A）审 diff 和 body（2026-09-27，4312 合并后）
 
-范围：`git diff f35966713 d445b2f7f`。`pp_review_optimize` 已由 GPU 那边 rebase 到 upstream main `f35966713`，有 4 个提交，改了 7 个文件，+564/−314。body 部分审的是 `PR_BODY_4765_2026-09-27.md` 里属于 PR A 的内容：Summary 的前两条、Design 的前三段。PR A 目前没有单独的 body。
+范围：`git diff f35966713 d445b2f7f`。`pp_review_optimize` 已由 GPU 那边 rebase 到 upstream main `f35966713`，有 4 个提交，改了 7 个文件，+564/−314。body 部分审的是 `PR_BODY_4765_2026-09-27.md` 里属于 PR A 的内容：Summary 的前两条、Design 的前三段。写这份审计时我没看到 GPU 那边同时推上来的 PR A 单独 body（`PR_BODY_PP_CACHE_OPT_2026-09-27.md`，f9077b870）；§5 之后两份 body 都已对齐。
 
 跑过的检查：
 - 按 pre-commit 的版本（black 22.12.0、usort 1.0.5）跑 ufmt，7 个文件都已格式化。
@@ -63,5 +63,6 @@
   - 4 个提交压成 1 个，提交说明重写，只描述现在的代码。原计划压成两个，没有这样做：`stage.py` 里两部分交织在一起，这台机器跑不了 kimi_k3 的测试，拆出来的中间状态没法验证；upstream 也是 squash 合并。
   - ufmt 通过（black 22.12.0）。CPU 单测在 Windows 上 import 不了，没有跑，等 GPU 机器跑 `test_kimi_k3_pp_block_grads.py` 和 `test_kimi_k3_pp_stage.py`。
 - **torch 私有接口（§3 第 2 条）：** issue 草稿在 `TORCH_ISSUE_PP_BUFFERS_2026-09-27.md`，需要用户在网页上开；#4765 正文里留了 `<torch issue link>` 待填。
-- **body：** `PR_BODY_4765_2026-09-27.md` 去掉了 stack on #4312，结果表的列名改成 main，状态栏写明表里的数字要在新 base 上重测之后才能粘贴。
+- **body：** `PR_BODY_4765_2026-09-27.md` 改为叠在 PR A 上（`<PR A link>`），结果表的列名改成 main，状态栏写明表里的数字要在新 base 上重测之后才能粘贴。`PR_BODY_PP_CACHE_OPT_2026-09-27.md` 的状态改到 `be9e2fa69`，Design 第三段加了 `<torch issue link>`。
+- **DEP：** GPU 那边把 `dep_review1` 更新到 `31f372593` 以后，我又用 `git merge-tree` 核对了一遍：它和 `be9e2fa69` 仍然互不包含，仍然是同样两处文本冲突。
 - **还没做：** `pp_offload_review1`、`pp_balance_review1` 还要 rebase 到 `be9e2fa69` 上，交给 GPU 那边。
