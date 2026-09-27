@@ -36,3 +36,18 @@
 | `s4_mem_all`、`s4_time_all` | #4765 `7c0f5cd3c`，`cpu_offload=all` | |
 | `s4_mem_plan`、`s4_time_plan` | #4764 `e6241b78b`，`cpu_offload=planned` | host 带宽按 10 GB/s 预算 |
 | `s4_mem_planbal`、`s4_time_planbal` | #4764 `e6241b78b`，planned 加 `balance` | 对端带宽按 2 GB/s 预算；5060 没有 RDMA，池在对端 host 内存里 |
+
+## 2026-09-27：balance 按所有 rank 之间的差来看（本地改 recipe）
+
+- 配置：pp8 × vp4（93 层，block 12，`PPMEM_LPS=3`），cache 开，**关 AC**，dim 1024，seq 512，M16；只测显存，8 步，取第 5 步。
+- 本地补丁 `../balance_probe_local.patch`（不进任何提交），打在 #4764 的树上：
+  - `PPMEM_EMULATE_DEVICE_POOL=1`：目的 rank 在 GPU 上占住池的大小，源 rank 占住 staging 的大小，模拟 RDMA 下池放在设备上的显存；数据仍走 mooncake 的 TCP，所以只看显存，不看时间；
+  - `PPMEM_PLAN_NO_HOST=1`：plan 只能停到别的 rank，不去 host。
+- 四个格子共用一条 cache 血缘（`balance_campaign.sh`），汇总 `balance_table_b1.md`（`balance_table.py`）。
+
+| 目录 | 代码 | 说明 |
+|---|---|---|
+| `b1_mem_pra` | PR A `7ae870508` | 基线 |
+| `b1_mem_bal` | #4764 `e6241b78b`，planned 加 balance，不去 host，模拟设备池 | 只 balance |
+| `b1_mem_off` | #4764，planned | 只 host offload |
+| `b1_mem_both` | #4764，planned 加 balance，模拟设备池 | 两者都开 |

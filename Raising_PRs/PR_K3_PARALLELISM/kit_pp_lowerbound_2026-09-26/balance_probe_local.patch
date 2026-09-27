@@ -1,0 +1,41 @@
+diff --git a/torchtitan/distributed/activation_storage.py b/torchtitan/distributed/activation_storage.py
+index 1b40df51e..60fe97acb 100644
+--- a/torchtitan/distributed/activation_storage.py
++++ b/torchtitan/distributed/activation_storage.py
+@@ -273,6 +273,15 @@ class RemoteBackend:
+                     f"rank {rank} could not open the pool of rank {dest} at "
+                     f"{self._dest_session}"
+                 )
++        # LOCAL PROBE: hold the device memory an rdma pool and staging buffer would take.
++        self._device_footprint = None
++        if os.environ.get("PPMEM_EMULATE_DEVICE_POOL") == "1" and not on_device:
++            footprint = self._pool.numel() if self._pool is not None else 0
++            footprint += staging_bytes if self.parks else 0
++            if footprint and device.type == "cuda":
++                self._device_footprint = torch.empty(
++                    footprint, dtype=torch.uint8, device=device
++                )
+         dist.barrier(group=group)
+ 
+     def _slot(self, nbytes: int) -> int | None:
+diff --git a/torchtitan/models/kimi_k3/pipeline_parallel/activations.py b/torchtitan/models/kimi_k3/pipeline_parallel/activations.py
+index 9857ac8c8..d422515e8 100644
+--- a/torchtitan/models/kimi_k3/pipeline_parallel/activations.py
++++ b/torchtitan/models/kimi_k3/pipeline_parallel/activations.py
+@@ -9,6 +9,7 @@
+ from __future__ import annotations
+ 
+ import logging
++import os  # LOCAL PROBE
+ import time
+ from collections import Counter, defaultdict
+ from collections.abc import Collection
+@@ -399,7 +400,7 @@ class PPMemoryController(BackwardPrefetch):
+             target_bytes=None
+             if config.target_gib is None
+             else int(config.target_gib * 2**30),
+-            offload=True,
++            offload=os.environ.get("PPMEM_PLAN_NO_HOST") != "1",  # LOCAL PROBE
+             balance=config.balance,
+             host_bps=config.host_gbps * 1e9,
+             peer_bps=config.peer_gbps * 1e9,

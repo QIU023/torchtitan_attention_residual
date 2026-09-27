@@ -107,6 +107,38 @@
 - planned 只搬两个 rank，一步多约 1%；rank 7 在关键路径上。
 - 每格只有一次 trace，1% 上下的差别没有噪声底，不能下结论。
 
+## balance 按所有 PP rank 之间的差来看（用户 09-27 指出）
+
+用户："Balance不是应该看所有pp rank cache on之间的内存区别吗？pp8vp4情况下（本地自己改recipe）"。上面那格 planned 加 balance 测不出 balance：一是 5060 没有 RDMA，池在对端 host 内存里，目的 rank 的 GPU 不涨；二是 FullAC 下 rank 之间差得少，而且最重的是 rank 7（头部和最后一个反向），不是报告里 warmup 造成的那种不均。
+
+**本地改的 recipe（不进分支）：** pp8 × vp4（93 层，block 12），cache 开，关 AC，dim 1024，seq 512，M16；本地补丁 `kit_pp_lowerbound_2026-09-26/balance_probe_local.patch`：目的 rank 在 GPU 上占住池的大小（模拟 RDMA 设备池，只看显存），以及 plan 只停到别的 rank、不去 host 的开关。8 × 5060 实测，第 5 步，GiB，四格 8 步 loss 和 grad norm 都与 PR A 逐位相同。
+
+| rank | PR A | 只 balance | 只 host offload | 两者都开 |
+|---:|---:|---:|---:|---:|
+| 0 | 10.22 | 10.22 | 9.95 | 9.95 |
+| 1 | 10.66 | 10.28 | 10.02 | 10.27 |
+| 2 | 10.30 | 10.41 | 9.80 | 9.80 |
+| 3 | 11.19 | 10.46 | 10.20 | 10.20 |
+| 4 | 9.93 | 9.92 | 9.52 | 9.52 |
+| 5 | 9.57 | 9.76 | 9.57 | 9.57 |
+| 6 | 8.88 | 9.99 | 8.89 | 8.88 |
+| 7 | 8.89 | 10.44 | 8.87 | 9.29 |
+| 最大 | 11.19 | 10.46 | 10.20 | 10.27 |
+| 最小 | 8.88 | 9.76 | 8.87 | 8.88 |
+| 均值 | 9.96 | 10.18 | 9.60 | 9.69 |
+| rank 间差 | 2.31 | 0.70 | 1.32 | 1.39 |
+
+- **不均的来源：** 关 AC 后 warmup 的不均出现了，前面的 rank 重（rank 3 最重），后面的轻，和报告描述一致。
+- **只 balance：**
+  - rank 3 每步停 2.64 GiB 到 rank 7，rank 1 停 1.38 GiB 到 rank 6，rank 2 停 0.17 GiB 到 rank 5；
+  - 目的 rank 相应上升（rank 7 +1.55，rank 6 +1.11）；
+  - rank 间差从 2.31 降到 0.70（−70%）；总量不降，均值 +0.22，是池的冗余和 staging；
+  - rank 0 高于目标但没搬，因为能接收的 rank 都已经满到目标。
+- **只 host offload：** 高于均值的 rank 把超出的部分送 host（rank 3 每步 3.67 GiB），最大值压得更低（10.20），均值降到 9.60，但 rank 间差还有 1.32。
+- **两者都开：** plan 几乎全选 host，只有 rank 1 的 0.42 GiB 停到 rank 7。因为这台机器上对端链路按 2 GB/s（TCP）预算、host 按 10 GB/s，多数条目的窗口只够 host。H100 上两者的比例不同（host 25 到 50 GB/s，网卡给 PP 约 25 GB/s），选择也会不同。rank 1 比只 offload 时高 0.25 GiB，是模拟 RDMA 时源 rank 的 staging 缓冲。
+- **plan 用的 profile 偏高约 1.5 GiB：** 第一步全部 offload，拷出中的张量既还在设备上、又已计入 `off_device_bytes`，被算了两次。plan 因此偏保守，但 rank 的高低顺序不受影响。可以改成拷贝完成、源张量释放时才计入。
+- **plan 的限制：** 一个源只有一个目的地；目的地不能同时是源；目标是各 rank profile 峰值的均值。
+
 ## 下一步
 
 - 三个 review 分支已推到 fork（`pp_review_optimize` `7ae870508`、`pp_offload_review1` `7c0f5cd3c`、`pp_balance_review1` `e6241b78b`）。
