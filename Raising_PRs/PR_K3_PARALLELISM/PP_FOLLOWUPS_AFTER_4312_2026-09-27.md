@@ -66,3 +66,10 @@
 - `attnres_review1` = `f14d681f4`（#4656 的新 review 分支，main 上两个提交：`aa6d9fedc` 列表载体加 stage 适配，`f14d681f4` 调用处的 torch_remat 重算），已推；旧 head `38fcdde4a` 备份为 `backup/attnres_review1_pre_20260927`。PR 分支 `k3_ac_reuse_attention` 没动。
 - `pp_review_optimize` = `e8d0a4aec`，由用户压缩后的 `be9e2fa69` 重放到 `f14d681f4` 之上，已推。PP 的 5 个文件与 `be9e2fa69` 完全相同（`be9e2fa69` 删掉的 docstring、`_placeholder` 和改回的 `cache.py` 都保留）；`model.py`、`sharding.py` 取 #4656 的，PR A 不再改它们。
 - body：#4656 新写 `PR_BODY_4656_2026-09-27.md`；PR A 改好 `PR_BODY_PP_CACHE_OPT_2026-09-27.md`（去掉列表载体，注明叠在 #4656 上）。两份的 Results 和测试数都等 5060 重测：#4656 对 main 的一致性和显存（`scratchpad/acr/`），PR A 对 #4656 的生产切分显存和计时（`scratchpad/lb6/`），两条分支的组合格冒烟。
+
+## 两份 body 的数字（09-27 晚，8 × 5060 实测）
+
+- **#4656**（`kit_4656_2026-09-27/`）：debug model、一卡一格，与 main `f35966713` 相比，none、selective、full 三种 AC 下 loss 和 grad norm 10/10 相同；AC 关时显存 0.66 → 0.55 GiB，tps 1523 → 1362（cache 本身的噪声在 4% 左右），selective 和 full 显存不变。预热 cache 的 token 扫描（AC 关、一个 micro-batch、3 步）：2048 / 4096 / 8192 token 分别 1.89 → 1.42、3.51 → 2.62、6.71 → 4.95 GiB，loss 3/3 相同。组合格 10 步 rc=0。干净导出树上 4 passed、71 passed。
+- **PR A**（`kit_pp_lowerbound_2026-09-26/results/s6_*`）：生产切分（93 层、block 12、pp8 × vp4、dim 2048、seq 2048、M16、FullAC），#4656 对 #4656 加 PR A，同一条 cache 血缘：每个 rank 峰值的最大 / 平均 11.47 / 10.80 → 7.12 / 6.23 GiB，10 步逐位一致；第 8 步窗口 25.10 → 24.94 s，计算 7.45 → 7.38 s。组合格 10 步 rc=0。干净导出树上 68 passed（加上 #4656 的测试文件是 72）。
+- 带本地 torch 兼容补丁的 worktree 里，core 的 `test_pipeline_parallel.py` 有 5 个 `KeyError: 'max_active_stages'`，是补丁过滤参数造成的；两棵干净树上都不出现。
+- 补丁已从 `wt_attnres`、`wt_ppopt` 撤掉，临时的 `wt_main_f359` 已删除。

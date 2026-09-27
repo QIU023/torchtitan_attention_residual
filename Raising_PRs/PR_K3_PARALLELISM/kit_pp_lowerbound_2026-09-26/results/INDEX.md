@@ -51,3 +51,15 @@
 | `b1_mem_bal` | #4764 `e6241b78b`，planned 加 balance，不去 host，模拟设备池 | 只 balance |
 | `b1_mem_off` | #4764，planned | 只 host offload |
 | `b1_mem_both` | #4764，planned 加 balance，模拟设备池 | 两者都开 |
+
+## 2026-09-27 晚：PR A 叠到 #4656 之上以后（base 是 main `f35966713` 加 #4656）
+
+- 配置同 s4/s5：93 层、block 12、pp8 × vp4（`PPMEM_LPS=3`），dim 2048，seq 2048，M16，FullAC，seed 42；本地 torch 兼容补丁照旧。
+- 两格共用一条 cache 血缘（`campaign2.sh s6`：cache0 由两格各跑一步预热，每格拷一份）。显存跑 10 步，计时抓第 8 步（计时格只跑 8 步，学习率调度按 8 步算，所以第 5 步起的 loss 和 10 步的显存格不同；两格计时之间逐位一致）。
+- 结果：最大 / 平均 11.47 / 10.80 → 7.12 / 6.23 GiB，10 步 loss 和 grad norm 逐位一致；第 8 步窗口（各 rank 平均）25.10 → 24.94 s，计算 7.45 → 7.38 s。
+- `s6_*_b4656` 和 s5 的 main 基线不是同一条 cache 血缘，也不是同一个 base（s5 是 `ffdd169ef`），两者不直接比。
+
+| 目录 | 代码 | 说明 |
+|---|---|---|
+| `s6_mem_b4656`、`s6_time_b4656` | #4656 `attnres_review1` `f14d681f4` | PR A 的 base |
+| `s6_mem_pra`、`s6_time_pra` | PR A `pp_review_optimize` `e8d0a4aec` | |
