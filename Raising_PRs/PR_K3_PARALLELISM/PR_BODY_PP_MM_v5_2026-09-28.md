@@ -2,9 +2,7 @@
 
 ## 状态（不粘贴）
 
-- **分支：** 本地 `k3_pp_mm` = `bb3e38d4a`，是 main `f35966713` 上的 3 个提交（worktree `C:/Users/78532/AppData/Local/Temp/claude/dep`）。**没有推送**：
-  - fork 上的 `k3_pp_mm` 和 `dep_review1` 仍是旧实现 `31f372593`；
-  - 按推送规则，要先推到 review 分支 `dep_review1`，你在 GPU 上验证并同意后，再同步到 PR 分支。
+- **分支：** PR 分支 `k3_pp_mm` 和 review 分支 `dep_review1` 都是 `bb3e38d4a`，即 main `f35966713` 上的 3 个提交。09-28 按你的话（"直接推送，这是draft PR"）force-with-lease 推送，替换了旧实现 `31f372593`。旧 head 没有另建备份分支，通过 PR 的 force-push 记录和提交哈希仍能找到。
 - **重写的原因：** 旧实现把塔放成 rank 0 上单独的一个 PP stage，不是 DEP，见 `DEP_VS_REPORT_AUDIT_2026-09-27.md`。旧的 4 个提交全部弃用，optimizer 那个提交（只有塔的 stage 匹配不到 Muon 矩阵）也不再需要，因为不存在只有塔的 stage 了。
 - **本机验证：**
   - 21 个测试通过：K3 PP 的旧测试，加上新的规划器测试（8 个）和 gloo 测试（4 个，其中 1 个专测 TP 分片的同步和梯度回写）。
