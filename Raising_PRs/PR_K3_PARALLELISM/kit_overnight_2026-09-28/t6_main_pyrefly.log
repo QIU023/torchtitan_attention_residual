@@ -1,0 +1,416 @@
+Pyrefly (type checking)..................................................Failed
+- hook id: pyrefly-check
+- exit code: 1
+- files were modified by this hook
+
+INFO Checking project configured at `/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/pyproject.toml`
+ WARN /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/pyproject.toml: Invalid search-path: `/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/pytorch` does not exist
+ INFO Removed 40 unused error suppression(s) in 25 file(s)
+ERROR Cannot find module `torch_checkpointing.default_resharder` [missing-import]
+  --> torchtitan/components/checkpointer/torch_checkpointing.py:35:1
+   |
+35 | from torch_checkpointing.default_resharder import DefaultResharder
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  Looked in these locations (from config in `/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/pyproject.toml`):
+  Search path (from config file): ["/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/pytorch"]
+  Import root (inferred from project layout): "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc"
+  Site package path queried from interpreter: ["/venv/main/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages", "/venv/main/lib/python3.12/site-packages"]
+ERROR Object of class `CheckpointWriterConfig` has no attribute `temp_dir_prefix` [missing-attribute]
+   --> torchtitan/components/checkpointer/torch_checkpointing.py:397:17
+    |
+397 |                 self._manager_config.save.writer_config.temp_dir_prefix
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR `ProcessGroup` is not assignable to dict key type `MeshAxis` [bad-assignment]
+  --> torchtitan/components/loss.py:97:14
+   |
+97 |             {tp_group: spmd.I},  # pyrefly: ignore [bad-argument-type]
+   |              ^^^^^^^^
+   |
+ERROR `Literal[PerMeshAxisLocalSpmdType.I]` is not assignable to dict value type `dict[MeshAxis | ProcessGroup | str, PerMeshAxisLocalSpmdType]` [bad-assignment]
+  --> torchtitan/components/loss.py:97:24
+   |
+97 |             {tp_group: spmd.I},  # pyrefly: ignore [bad-argument-type]
+   |                        ^^^^^^
+   |
+ERROR `ProcessGroup` is not assignable to dict key type `MeshAxis` [bad-assignment]
+   --> torchtitan/components/loss.py:234:14
+    |
+234 |             {tp_group: spmd.I},  # pyrefly: ignore [bad-argument-type]
+    |              ^^^^^^^^
+    |
+ERROR `Literal[PerMeshAxisLocalSpmdType.I]` is not assignable to dict value type `dict[MeshAxis | ProcessGroup | str, PerMeshAxisLocalSpmdType]` [bad-assignment]
+   --> torchtitan/components/loss.py:234:24
+    |
+234 |             {tp_group: spmd.I},  # pyrefly: ignore [bad-argument-type]
+    |                        ^^^^^^
+    |
+ERROR Unexpected keyword argument `repeat` in function `torchtitan.components.data.loader.Config.__replace__` [unexpected-keyword]
+   --> torchtitan/components/validate.py:125:53
+    |
+125 |         self.dl_config = replace(config.dataloader, repeat=config.steps != -1)
+    |                                                     ^^^^^^
+    |
+ERROR Object of class `object` has no attribute `hf_assets_path` [missing-attribute]
+   --> torchtitan/config/manager.py:212:35
+    |
+212 |                 f"HF assets path {self.config.hf_assets_path} does not exist!"
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Argument `_RedistributionBucketPlan[_ItemT]` is not assignable to parameter `object` with type `_LocalBucketPlan[_ItemT]` in function `list.append` [bad-argument-type]
+    --> torchtitan/distributed/flex_shard/_optimizer_reshard_schedule.py:1189:13
+     |
+1189 | /             _RedistributionBucketPlan(
+1190 | |                 unredistributed_items=unredistributed_items,
+1191 | |                 redistributed_items=redistributed_items,
+1192 | |                 redistribution_plans=redistribution_plans_tuple,
+1193 | |                 group=group,
+1194 | |                 storage_to_compute_schedule=_build_packed_all_to_all_schedule(
+1195 | |                     redistribution_plans_tuple,
+1196 | |                     direction=_RedistributionDirection.STORAGE_TO_COMPUTE,
+1197 | |                     process_group=group.process_group,
+1198 | |                     local_participant=group.local_participant,
+1199 | |                 ),
+     | |___________________^
+     |
+ERROR Argument `dict[str, str]` is not assignable to parameter `backend_override` with type `dict[str, Backend.Options | str | tuple[str, Backend.Options]] | None` in function `torch.distributed.device_mesh.DeviceMesh._unflatten` [bad-argument-type]
+   --> torchtitan/distributed/parallel_dims.py:228:34
+    |
+228 |                 backend_override=backend_override,
+    |                                  ^^^^^^^^^^^^^^^^
+    |
+ERROR No attribute `pipeline_per_edge_p2p` in module `torch.distributed.config` [missing-attribute]
+   --> torchtitan/distributed/utils.py:528:5
+    |
+528 |     dist_config.pipeline_per_edge_p2p = pipeline_parallel_degree > 1
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR `ProcessGroup` is not assignable to dict key type `MeshAxis` [bad-assignment]
+  --> torchtitan/models/common/async_linear.py:93:14
+   |
+93 |             {group: spmd.S(1)},  # pyrefly: ignore [bad-argument-type]
+   |              ^^^^^
+   |
+ERROR `Shard` is not assignable to dict value type `dict[MeshAxis | ProcessGroup | str, PerMeshAxisLocalSpmdType]` [bad-assignment]
+  --> torchtitan/models/common/async_linear.py:93:21
+   |
+93 |             {group: spmd.S(1)},  # pyrefly: ignore [bad-argument-type]
+   |                     ^^^^^^^^^
+   |
+ERROR `ProcessGroup` is not assignable to dict key type `MeshAxis` [bad-assignment]
+   --> torchtitan/models/common/async_linear.py:192:14
+    |
+192 |             {group: spmd.S(0)},  # pyrefly: ignore [bad-argument-type]
+    |              ^^^^^
+    |
+ERROR `Shard` is not assignable to dict value type `dict[MeshAxis | ProcessGroup | str, PerMeshAxisLocalSpmdType]` [bad-assignment]
+   --> torchtitan/models/common/async_linear.py:192:21
+    |
+192 |             {group: spmd.S(0)},  # pyrefly: ignore [bad-argument-type]
+    |                     ^^^^^^^^^
+    |
+ERROR `ProcessGroup` is not assignable to dict key type `MeshAxis` [bad-assignment]
+   --> torchtitan/models/common/linear.py:216:22
+    |
+216 |                     {tp_group: spmd.P},  # pyrefly: ignore [bad-argument-type]
+    |                      ^^^^^^^^
+    |
+ERROR `Literal[PerMeshAxisLocalSpmdType.P]` is not assignable to dict value type `dict[MeshAxis | ProcessGroup | str, PerMeshAxisLocalSpmdType]` [bad-assignment]
+   --> torchtitan/models/common/linear.py:216:32
+    |
+216 |                     {tp_group: spmd.P},  # pyrefly: ignore [bad-argument-type]
+    |                                ^^^^^^
+    |
+ERROR `ProcessGroup` is not assignable to dict key type `MeshAxis` [bad-assignment]
+  --> torchtitan/models/common/vision_encoder.py:78:22
+   |
+78 |                     {tp_group: spmd.P},  # pyrefly: ignore [bad-argument-type]
+   |                      ^^^^^^^^
+   |
+ERROR `Literal[PerMeshAxisLocalSpmdType.P]` is not assignable to dict value type `dict[MeshAxis | ProcessGroup | str, PerMeshAxisLocalSpmdType]` [bad-assignment]
+  --> torchtitan/models/common/vision_encoder.py:78:32
+   |
+78 |                     {tp_group: spmd.P},  # pyrefly: ignore [bad-argument-type]
+   |                                ^^^^^^
+   |
+ERROR Returned type `list[torchtitan.models.deepseek_v3.model.DeepSeekV3TransformerBlock.Config]` is not assignable to declared return type `list[torchtitan.models.common.decoder.TransformerBlock.Config]` [bad-return]
+   --> torchtitan/models/deepseek_v3/__init__.py:326:12
+    |
+326 |     return layers
+    |            ^^^^^^
+    |
+   ::: torchtitan/models/deepseek_v3/__init__.py:242:6
+    |
+242 | ) -> list[TransformerBlock.Config]:
+    |      ----------------------------- declared return type
+    |
+ERROR Class member `HeavilyCompressedAttention.forward` overrides parent class `DSV4FlexInnerAttention` in an inconsistent manner [bad-override]
+   --> torchtitan/models/deepseek_v4/attention.py:307:9
+    |
+307 |     def forward(  # pyrefly: ignore[bad-param-name-override]
+    |         ^^^^^^^
+    |
+  `HeavilyCompressedAttention.forward` has type `(self: HeavilyCompressedAttention, q: Unknown, swa_k: Unknown, cmp_k: Unknown, attn_sink: Unknown, *, attention_masks: Unknown | None = None) -> Tensor`, which is not assignable to `(self: HeavilyCompressedAttention, q_THK: Tensor, k_THK: Tensor, v_THV: Tensor, *, attention_masks: BlockMask, score_mod: ((Tensor, Tensor, Tensor, Tensor, Tensor) -> Tensor) | None = None, scale: float | None = None, enable_gqa: bool = False, out_transform: ((Tensor, Tensor) -> Tensor) | None = None, **kwargs: Unknown) -> Tensor`, the type of `DSV4FlexInnerAttention.forward`
+  Signature mismatch:
+  ..., q_THK: Tensor, k_THK: Tensor, v_THV: Tensor, *, attention_masks: BlockMask, score_mod: ((Tensor, Tensor, Tensor, Tensor, Tensor) -> Tensor) | None = None, scale: float | None = None, enable_gqa: bool = False, out_transform: ((Tensor, Tensor) -> Tensor) | None = None, **kwargs: Unknown) -...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ parameters
+  ..., q: Unknown, swa_k: Unknown, cmp_k: Unknown, attn_sink: Unknown, *, attention_masks: Unknown | None = None) -> Tensor: ...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ parameters
+ERROR Class member `CompressedSparseAttention.forward` overrides parent class `DSV4FlexInnerAttention` in an inconsistent manner [bad-override]
+   --> torchtitan/models/deepseek_v4/attention.py:330:9
+    |
+330 |     def forward(  # pyrefly: ignore[bad-param-name-override]
+    |         ^^^^^^^
+    |
+  `CompressedSparseAttention.forward` has type `(self: CompressedSparseAttention, q: Unknown, swa_k: Unknown, cmp_k: Unknown, idx_q: Unknown, idx_k: Unknown, idx_w: Unknown, attn_sink: Unknown, *, attention_masks: Unknown | None = None) -> Tensor`, which is not assignable to `(self: CompressedSparseAttention, q_THK: Tensor, k_THK: Tensor, v_THV: Tensor, *, attention_masks: BlockMask, score_mod: ((Tensor, Tensor, Tensor, Tensor, Tensor) -> Tensor) | None = None, scale: float | None = None, enable_gqa: bool = False, out_transform: ((Tensor, Tensor) -> Tensor) | None = None, **kwargs: Unknown) -> Tensor`, the type of `DSV4FlexInnerAttention.forward`
+  Signature mismatch:
+  ..., q_THK: Tensor, k_THK: Tensor, v_THV: Tensor, *, attention_masks: BlockMask, score_mod: ((Tensor, Tensor, Tensor, Tensor, Tensor) -> Tensor) | None = None, scale: float | None = None, enable_gqa: bool = False, out_transform: ((Tensor, Tensor) -> Tensor) | None = None, **kwargs: Unknown) -...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ parameters
+  ..., q: Unknown, swa_k: Unknown, cmp_k: Unknown, idx_q: Unknown, idx_k: Unknown, idx_w: Unknown, attn_sink: Unknown, *, attention_masks: Unknown | None = None) -> Tensor: ...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ parameters
+ERROR `T5EncoderModel` is not assignable to attribute `hf_module` with type `CLIPTextModel` [bad-assignment]
+  --> torchtitan/models/flux/model/hf_embedder.py:44:34
+   |
+44 |                   self.hf_module = T5EncoderModel._from_config(
+   |  __________________________________^
+45 | |                     # pyrefly: ignore [missing-attribute]
+46 | |                     T5EncoderModel.config_class.from_pretrained(
+47 | |                         os.path.join(config.version, "config.json"), **config.hf_kwargs
+48 | |                     )
+49 | |                 )
+   | |_________________^
+   |
+ERROR `T5EncoderModel` is not assignable to attribute `hf_module` with type `CLIPTextModel` [bad-assignment]
+  --> torchtitan/models/flux/model/hf_embedder.py:51:50
+   |
+51 |                   self.hf_module: T5EncoderModel = T5EncoderModel.from_pretrained(
+   |  __________________________________________________^
+52 | |                     config.version, **config.hf_kwargs
+53 | |                 )
+   | |_________________^
+   |
+ERROR `list[int]` is not assignable to dict value type `Tensor` [bad-assignment]
+  --> torchtitan/models/flux/tokenizer.py:62:21
+   |
+62 |             "clip": self.clip_tokenizer.encode(text),
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+ERROR `list[int]` is not assignable to dict value type `Tensor` [bad-assignment]
+  --> torchtitan/models/flux/tokenizer.py:63:19
+   |
+63 |             "t5": self.t5_tokenizer.encode(text),
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+ERROR Returned type `list[torchtitan.models.gpt_oss.model.GptOssTransformerBlock.Config]` is not assignable to declared return type `list[torchtitan.models.common.decoder.TransformerBlock.Config]` [bad-return]
+   --> torchtitan/models/gpt_oss/__init__.py:227:12
+    |
+227 |     return layers
+    |            ^^^^^^
+    |
+   ::: torchtitan/models/gpt_oss/__init__.py:179:6
+    |
+179 | ) -> list[TransformerBlock.Config]:
+    |      ----------------------------- declared return type
+    |
+ERROR `list[list[Tensor | Any] | Any]` is not assignable to `list[Tensor]` [bad-assignment]
+   --> torchtitan/models/kimi_k3/pipeline_parallel/stage.py:191:53
+    |
+191 |           flatten_input_tensors: list[torch.Tensor] = list(
+    |  ________________________________------------------___^
+    | |                                |
+    | |                                declared type
+192 | |             flatten_args(composite_args)
+193 | |         ) + list(flatten_args(composite_kwargs))
+    | |________________________________________________^
+    |
+ERROR Returned type `list[torchtitan.models.llama3.model.Llama3TransformerBlock.Config]` is not assignable to declared return type `list[torchtitan.models.common.decoder.TransformerBlock.Config]` [bad-return]
+   --> torchtitan/models/llama3/__init__.py:102:12
+    |
+102 |     return layers
+    |            ^^^^^^
+    |
+   ::: torchtitan/models/llama3/__init__.py:74:6
+    |
+ 74 | ) -> list[TransformerBlock.Config]:
+    |      ----------------------------- declared return type
+    |
+ERROR Returned type `list[torchtitan.models.qwen3.model.Qwen3TransformerBlock.Config]` is not assignable to declared return type `list[torchtitan.models.common.decoder.TransformerBlock.Config]` [bad-return]
+   --> torchtitan/models/qwen3/__init__.py:125:12
+    |
+125 |     return layers
+    |            ^^^^^^
+    |
+   ::: torchtitan/models/qwen3/__init__.py:97:6
+    |
+ 97 | ) -> list[TransformerBlock.Config]:
+    |      ----------------------------- declared return type
+    |
+ERROR Returned type `list[torchtitan.models.qwen3.model.Qwen3TransformerBlock.Config]` is not assignable to declared return type `list[torchtitan.models.common.decoder.TransformerBlock.Config]` [bad-return]
+   --> torchtitan/models/qwen3/__init__.py:186:12
+    |
+186 |     return layers
+    |            ^^^^^^
+    |
+   ::: torchtitan/models/qwen3/__init__.py:142:6
+    |
+142 | ) -> list[TransformerBlock.Config]:
+    |      ----------------------------- declared return type
+    |
+ERROR Expected a callable, got `object` [not-callable]
+   --> torchtitan/models/qwen3_5/gdn.py:124:25
+    |
+124 |     normalized_q_BTHK = l2norm(q_BTHK, cu_seqlens=cu_seqlens)
+    |                         ^^^^^^
+    |
+ERROR Expected a callable, got `object` [not-callable]
+   --> torchtitan/models/qwen3_5/gdn.py:125:25
+    |
+125 |     normalized_k_BTHK = l2norm(k_BTHK, cu_seqlens=cu_seqlens)
+    |                         ^^^^^^
+    |
+ERROR Expected a callable, got `object` [not-callable]
+   --> torchtitan/models/qwen3_5/gdn.py:168:24
+    |
+168 |         normalized_q = l2norm(inputs[0], cu_seqlens=cu_seqlens)
+    |                        ^^^^^^
+    |
+ERROR Expected a callable, got `object` [not-callable]
+   --> torchtitan/models/qwen3_5/gdn.py:169:24
+    |
+169 |         normalized_k = l2norm(inputs[1], cu_seqlens=cu_seqlens)
+    |                        ^^^^^^
+    |
+ERROR Expected a callable, got `object` [not-callable]
+   --> torchtitan/models/qwen3_5/gdn.py:250:24
+    |
+250 |         normalized_q = l2norm(xq_BTHK, cu_seqlens=cu_seqlens)
+    |                        ^^^^^^
+    |
+ERROR Expected a callable, got `object` [not-callable]
+   --> torchtitan/models/qwen3_5/gdn.py:251:24
+    |
+251 |         normalized_k = l2norm(xk_BTHK, cu_seqlens=cu_seqlens)
+    |                        ^^^^^^
+    |
+ERROR `BlockMask | Mapping[str, BlockMask | VarlenMetadata | None] | VarlenMetadata | None` is not assignable to dict value type `BlockMask | VarlenMetadata | None` [bad-assignment]
+   --> torchtitan/models/qwen3_5/model.py:565:36
+    |
+565 |             "quadratic_attention": quadratic_attention,
+    |                                    ^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Type `None` is not iterable [not-iterable]
+   --> torchtitan/models/utils.py:130:34
+    |
+130 |         for i, name in enumerate(device_mesh.mesh_dim_names):
+    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Class member `_ShardedFSDPTensor.__torch_dispatch__` overrides parent class `_FSDPTensorBase` in an inconsistent manner [bad-override]
+   --> torchtitan/quantization/_fsdp_tensor.py:301:9
+    |
+301 |     def __torch_dispatch__(cls, func, types, args, kwargs=None):
+    |         ^^^^^^^^^^^^^^^^^^
+    |
+  `_ShardedFSDPTensor.__torch_dispatch__` has type `(cls: type[_ShardedFSDPTensor], func: Unknown, types: Unknown, args: Unknown, kwargs: Unknown | None = None) -> Unknown`, which is not assignable to `(func: (...) -> Unknown, types: Iterable[type[Any]], args: tuple[Unknown, ...], kwargs: dict[Unknown, Unknown]) -> Any`, the type of `_FSDPTensorBase.__torch_dispatch__`
+  Signature mismatch:
+  ...ch__(func: (...) -> Unknown, types: Iterable[type[Any]], args: tuple[Unknown, ...], kwargs: dict[Unknown, Unknown]) -> Any: ...
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^     ^^^ return type
+          |
+          parameters
+  ...ch__(cls: type[_ShardedFSDPTensor], func: Unknown, types: Unknown, args: Unknown, kwargs: Unknown | None = None) -> Unknown: ...
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^     ^^^^^^^ return type
+          |
+          parameters
+ERROR Class member `_UnshardedFSDPTensor.__repr__` overrides parent class `_FSDPTensorBase` in an inconsistent manner [bad-override]
+   --> torchtitan/quantization/_fsdp_tensor.py:486:9
+    |
+486 |     def __repr__(self) -> str:  # noqa: D401
+    |         ^^^^^^^^
+    |
+  `_UnshardedFSDPTensor.__repr__` has type `(self: _UnshardedFSDPTensor) -> str`, which is not assignable to `(self: _UnshardedFSDPTensor, *, tensor_contents: Unknown | None = None) -> str | Unknown`, the type of `_FSDPTensorBase.__repr__`
+  Signature mismatch:
+  expected: def __repr__(self: _UnshardedFSDPTensor, *, tensor_contents: Unknown | None = None) -> str | Unknown: ...
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^^^^^^^^ return type
+                                                   |
+                                                   parameters
+  found:    def __repr__(self: _UnshardedFSDPTensor) -> str: ...
+                                                   ^       ^ return type
+                                                   |
+                                                   parameters
+ERROR Class member `_UnshardedFSDPTensor.__torch_dispatch__` overrides parent class `_FSDPTensorBase` in an inconsistent manner [bad-override]
+   --> torchtitan/quantization/_fsdp_tensor.py:524:9
+    |
+524 |     def __torch_dispatch__(cls, func, types, args, kwargs=None):
+    |         ^^^^^^^^^^^^^^^^^^
+    |
+  `_UnshardedFSDPTensor.__torch_dispatch__` has type `(cls: type[_UnshardedFSDPTensor], func: Unknown, types: Unknown, args: Unknown, kwargs: Unknown | None = None) -> Unknown`, which is not assignable to `(func: (...) -> Unknown, types: Iterable[type[Any]], args: tuple[Unknown, ...], kwargs: dict[Unknown, Unknown]) -> Any`, the type of `_FSDPTensorBase.__torch_dispatch__`
+  Signature mismatch:
+  ...__(func: (...) -> Unknown, types: Iterable[type[Any]], args: tuple[Unknown, ...], kwargs: dict[Unknown, Unknown]) -> Any: ...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^     ^^^ return type
+        |
+        parameters
+  ...__(cls: type[_UnshardedFSDPTensor], func: Unknown, types: Unknown, args: Unknown, kwargs: Unknown | None = None) -> Unknown: ...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^     ^^^^^^^ return type
+        |
+        parameters
+=== Error Summary ===
+
+Top 30 Files by Error Count:
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/qwen3_5/gdn.py: 6 errors
+  not-callable: 6
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/components/loss.py: 4 errors
+  bad-assignment: 4
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/common/async_linear.py: 4 errors
+  bad-assignment: 4
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/quantization/_fsdp_tensor.py: 3 errors
+  bad-override: 3
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/components/checkpointer/torch_checkpointing.py: 2 errors
+  missing-attribute: 1
+  missing-import: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/common/linear.py: 2 errors
+  bad-assignment: 2
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/common/vision_encoder.py: 2 errors
+  bad-assignment: 2
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/deepseek_v4/attention.py: 2 errors
+  bad-override: 2
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/flux/model/hf_embedder.py: 2 errors
+  bad-assignment: 2
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/flux/tokenizer.py: 2 errors
+  bad-assignment: 2
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/qwen3/__init__.py: 2 errors
+  bad-return: 2
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/components/validate.py: 1 error
+  unexpected-keyword: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/config/manager.py: 1 error
+  missing-attribute: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/distributed/flex_shard/_optimizer_reshard_schedule.py: 1 error
+  bad-argument-type: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/distributed/parallel_dims.py: 1 error
+  bad-argument-type: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/distributed/utils.py: 1 error
+  missing-attribute: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/deepseek_v3/__init__.py: 1 error
+  bad-return: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/gpt_oss/__init__.py: 1 error
+  bad-return: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/kimi_k3/pipeline_parallel/stage.py: 1 error
+  bad-assignment: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/llama3/__init__.py: 1 error
+  bad-return: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/qwen3_5/model.py: 1 error
+  bad-assignment: 1
+/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_main_pc/torchtitan/models/utils.py: 1 error
+  not-iterable: 1
+
+Top Errors by Count:
+bad-assignment: 18 instances
+not-callable: 6 instances
+bad-override: 5 instances
+bad-return: 5 instances
+missing-attribute: 3 instances
+bad-argument-type: 2 instances
+missing-import: 1 instance
+not-iterable: 1 instance
+unexpected-keyword: 1 instance
+ INFO 42 errors (365 suppressed, 16 warnings not shown)
+
