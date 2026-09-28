@@ -14,3 +14,8 @@
 - `results_sel/`：`rerun_selective.sh`，selective 下两棵树各再跑两遍：main 1154、1127，本 PR 1158、1115 tps，第一张表里 1110 对 1160 是重复跑的波动。
 - 表：`python3 tab_4656.py results`，已填进 `PR_BODY_4656_v4_2026-09-28.md`。
 - main 在 98304 OOM（`RuntimeError: Triton Error [CUDA]: out of memory`，原脚本的 OOM 检测没认出这种写法，已改成不分大小写匹配 "out of memory"），131072 也 OOM；本 PR 98304 是 56.67 GiB，131072 是 75.51 GiB（不进表，表停在 main 第一次 OOM）。
+
+## 第一张表改成 65536 token 的 micro-batch（09-28 07:39 到 07:48，用户："第一张表的 micro-batch 改大到 65536"）
+
+- `run_4656_t1_65536.sh`，结果在 `results_t1/`：262144 token/步（4 个 65536 token 的 micro-batch），其余同原来的第一张表。三种 AC 都是 10/10 逐位相同；关 AC 52.12 → 37.94 GiB，tps 149269 → 134285（新 cache 150143）；selective 11.30 → 11.07、full 6.30 → 6.09 GiB，tps 106657 对 106692、103525 对 103927。
+- 原来 512 token 那版第一张表（`results/` 里的 `id_*`）和 selective 补测（`results_sel/`）不再使用。
