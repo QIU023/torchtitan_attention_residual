@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **09-28 夜 GPU 验证（5060）：** B200 格子第 1 步死锁（步首挂出的 NCCL irecv 碰上塔的 kernel 第一次加载），数值、trace、显存都没测成；详见 `OVERNIGHT_RESULTS_2026-09-28.md` 的 T5 节。修好之前，粘贴区里的 B200 格子和 GPU 结果保持 pending。
 - **分支：** PR 分支 `k3_pp_mm` 和 review 分支 `dep_review1` 都是 `bb3e38d4a`，即 main `f35966713` 上的 3 个提交。09-28 按你的话（"直接推送，这是draft PR"）force-with-lease 推送，替换了旧实现 `31f372593`。旧 head 没有另建备份分支，通过 PR 的 force-push 记录和提交哈希仍能找到。
 - **重写的原因：** 旧实现把塔放成 rank 0 上单独的一个 PP stage，不是 DEP，见 `DEP_VS_REPORT_AUDIT_2026-09-27.md`。旧的 4 个提交全部弃用，optimizer 那个提交（只有塔的 stage 匹配不到 Muon 矩阵）也不再需要，因为不存在只有塔的 stage 了。
 - **本机验证：**

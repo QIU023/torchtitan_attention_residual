@@ -200,3 +200,10 @@
 
 - fork 的 `k3_pp_mm`（PR 4381 的分支）和 `dep_review1` 都从 `31f372593` force-with-lease 推到了 `bb3e38d4a`。
 - 线上 PR 的标题和正文还是旧的，要用 `PR_BODY_PP_MM_v5_2026-09-28.md` 的粘贴段替换。GPU 结果出来之前，正文里一律写 pending。
+
+## 11. GPU 验证（2026-09-28 夜，8 × 5060，`bb3e38d4a` 原样）
+
+- 45 个 CPU 测试在本机 torch 2.15 nightly 上通过。
+- B200 格子第 1 步死锁：`_post_receives` 在步首挂出的 NCCL irecv，碰上本 rank 塔前向里第一次加载的 kernel，形成等待的环。原因见 CUDA Programming Guide §4.8.5.1。K2.5 模式和 bubble 模式都一样，`CUDA_MODULE_LOADING=EAGER` 也规避不了。
+- 两卡最小复现、各 rank 的现场，以及对传输写法的约束，见 `OVERNIGHT_RESULTS_2026-09-28.md` 的 T5 节和 `kit_overnight_2026-09-28/t5/`。
+- §8 清单的数值、trace、显存三项等传输修好以后再测。
