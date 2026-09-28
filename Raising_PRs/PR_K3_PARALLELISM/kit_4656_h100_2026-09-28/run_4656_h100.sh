@@ -20,7 +20,7 @@ cell() {  # <name> <tree> <cache> <steps> <tokens per step> <tokens per micro-ba
     --training.steps $steps --metrics.log_freq 1 --training.num-tokens-per-train-step $tps \
     --training.num-tokens-per-microbatch-per-dp-rank $tpm --dump-folder $D/out activation-checkpoint:$ac > $D/run.log 2>&1 )
   echo "rc=$?" > $D/rc
-  local oom=$(grep -a -c "OutOfMemoryError\|CUDA out of memory" $D/run.log)
+  local oom=$(grep -a -ci "out of memory" $D/run.log)
   echo "$(date +%H:%M:%S) $name $(cat $D/rc) oom=$oom" >> $R/progress.txt
   rm -rf $D/tmp $D/out
 }

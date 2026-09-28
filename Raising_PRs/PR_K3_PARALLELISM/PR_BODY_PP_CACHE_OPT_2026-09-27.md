@@ -42,6 +42,5 @@ Pending (H100).
 
 - `pytest tests/unit_tests/cpu/test_kimi_k3_pp_block_grads.py tests/unit_tests/cpu/test_kimi_k3_pp_stage.py tests/unit_tests/cpu/test_kimi_k3_pp_layout.py tests/unit_tests/cpu/test_pipeline_parallel.py -q` (68 passed)
   - `test_kimi_k3_pp_block_grads.py`: four ranks on gloo under Interleaved1F1B and under 1F1B, cache on and off, blocks opening inside stages; every block gradient bitwise with one device; each block released by the stage that brought it; the input gradient wait points follow the receiver's use.
-- The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4`: pending (H100).
 
 --- PASTE END ---

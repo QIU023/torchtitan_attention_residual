@@ -17,7 +17,7 @@ def steps(cell):
     if not os.path.exists(path):
         return None, False
     text = open(path, errors="ignore").read()
-    oom = "OutOfMemoryError" in text or "CUDA out of memory" in text
+    oom = "out of memory" in text.lower()
     out = {}
     for line in text.splitlines():
         m = PAT.search(re.sub(r"\x1b\[[0-9;]*m", "", line))
@@ -49,7 +49,10 @@ for tree, ac, cell in rows:
 print()
 print("| tokens per micro-batch | peak memory main | peak memory this PR | saved | step 3 loss / grad norm, main and this PR | tps main / this PR |")
 print("| ---: | ---: | ---: | ---: | --- | ---: |")
+main_oom_seen = False
 for tok in (512, 4096, 8192, 16384, 32768, 65536, 98304, 131072):
+    if main_oom_seen:
+        break
     m, m_oom = steps(f"sc_main_{tok}")
     p, p_oom = steps(f"sc_pr_{tok}")
     if m is None and p is None:
@@ -68,3 +71,4 @@ for tok in (512, 4096, 8192, 16384, 32768, 65536, 98304, 131072):
         loss = f"this PR `{p3[0]}` / `{p3[1]}`" if p3 else "-"
         tps = f"no step / {p3[3]}" if p3 else "-"
     print(f"| {tok} | {mm} | {pm} | {saved} | {loss} | {tps} |")
+    main_oom_seen = mm == "out of memory"
