@@ -7,3 +7,10 @@
   - (b) 第二张表：关 AC，一个 micro-batch，3 步，每个配置自己预热一步再在拷贝上量；tokens per micro-batch 取 512、4096、8192、16384、32768、65536、98304、131072，main 第一次 OOM 就停。
 - `tab_4656.py <results dir>`：输出 body 的两张表，替换 `PR_BODY_4656_v4_2026-09-28.md` 粘贴区里的两处 `Pending (H100).`。
 - 机器上要有：`~/venv_pp`（torch nightly、attn-gym、torch_remat、spmd-types、cutlass），`~/w/main` 和 `~/w/c4780` 两个 detached worktree。新机器按 `kit_h100_2026-09-27/scripts/setup_pp.sh` 装。
+
+## 结果（09-28 06:50 到 07:26，`135.135.24.114`，1 × H100 80GB，torch 2.15.0.dev20260926+cu130）
+
+- `results/`：`run_4656_h100.sh` 的每一格（`run.log`、`rc`），`trees.txt`（main `f3596671`、本 PR `f14d681f`，都干净），`progress.txt`。
+- `results_sel/`：`rerun_selective.sh`，selective 下两棵树各再跑两遍：main 1154、1127，本 PR 1158、1115 tps，第一张表里 1110 对 1160 是重复跑的波动。
+- 表：`python3 tab_4656.py results`，已填进 `PR_BODY_4656_v4_2026-09-28.md`。
+- main 在 98304 OOM（`RuntimeError: Triton Error [CUDA]: out of memory`，原脚本的 OOM 检测没认出这种写法，已改成不分大小写匹配 "out of memory"），131072 也 OOM；本 PR 98304 是 56.67 GiB，131072 是 75.51 GiB（不进表，表停在 main 第一次 OOM）。

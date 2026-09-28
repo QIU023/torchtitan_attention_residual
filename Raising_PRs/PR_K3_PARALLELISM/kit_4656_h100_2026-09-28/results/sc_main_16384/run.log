@@ -1,0 +1,35 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-28 07:08:54,349 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-28 07:08:55,498 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/k928/res/4656/sc_main_16384/out/structured_logs/training.global_rank_0.20260928-070855-411FAG.jsonl
+[titan] 2026-09-28 07:08:56,004 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-28 07:08:56,485 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-28 07:08:56,485 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-28 07:08:56,499 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.18GiB memory
+[titan] 2026-09-28 07:08:56,510 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-28 07:08:56,511 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-28 07:08:56,639 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-28 07:08:56,642 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[titan] 2026-09-28 07:08:56,642 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-28 07:08:56,647 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-28 07:08:56,805 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-28 07:08:57,306 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[titan] 2026-09-28 07:08:57,366 - torchtitan.components.optimizer.optimizer - INFO - Optimizer DistMuon (model_part=0): 228 params [(?:attention\.(?:wq_a|wq_b|wkv_a|wkv_b|gate|wo)\.weight|delta_attention\.(?:q_proj|k_proj|v_proj|forget_a|forget_b|output_gate|output_proj)\.weight|routed_experts\.w(?:13|2)\.weight|feed_forward\.w(?:13|2)\.weight|moe\.router\.gate\.weight|moe\.shared_experts\.w(?:13|2)\.weight|moe\.routed_(?:down|up)\.weight)$] {'fused': False, 'foreach': False, 'lr': 0.0008, 'weight_decay': 0.1, 'momentum': 0.95, 'nesterov': True, 'eps': 1e-07}
+[titan] 2026-09-28 07:08:57,367 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 237 params [.*] {'fused': False, 'foreach': True, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-28 07:08:57,369 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[titan] 2026-09-28 07:08:57,370 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-28 07:08:57,370 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.07GiB(0.09%)
+[titan] 2026-09-28 07:08:57,370 - torchtitan.trainer - INFO - Trainer is initialized with 16384 tokens per DP rank, 16384 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[titan] 2026-09-28 07:08:57,370 - torchtitan.trainer - INFO - Training starts at step 1
+/root/venv_pp/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/root/venv_pp/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[titan] 2026-09-28 07:09:06,951 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss:  8.09788  [38;2;180;60;0mgrad_norm:  2.9375  [38;2;54;234;195mmemory: 13.20GiB(16.67%)  [34mtps: 1,569  [36mtflops: 0.25  [35mmfu: 0.02%[39m
+[titan] 2026-09-28 07:09:06,951 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+/root/venv_pp/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[titan] 2026-09-28 07:09:13,882 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss:  8.02694  [38;2;180;60;0mgrad_norm:  5.0312  [38;2;54;234;195mmemory: 13.25GiB(16.74%)  [34mtps: 2,364  [36mtflops: 0.37  [35mmfu: 0.04%[39m
+[titan] 2026-09-28 07:09:14,216 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss:  7.71096  [38;2;180;60;0mgrad_norm:  3.5938  [38;2;54;234;195mmemory: 13.26GiB(16.74%)  [34mtps: 49,096  [36mtflops: 7.70  [35mmfu: 0.78%[39m
+[titan] 2026-09-28 07:09:14,216 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[titan] 2026-09-28 07:09:16,217 - torchtitan.trainer - INFO - Training completed
+[titan] 2026-09-28 07:09:16,413 - __main__ - INFO - Process group destroyed

@@ -1,0 +1,194 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[titan] 2026-09-28 07:17:23,896 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[titan] 2026-09-28 07:17:24,789 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/k928/res/4656/sc_main_98304/out/structured_logs/training.global_rank_0.20260928-071724-NGH0HW.jsonl
+[titan] 2026-09-28 07:17:25,195 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[titan] 2026-09-28 07:17:25,555 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[titan] 2026-09-28 07:17:25,555 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[titan] 2026-09-28 07:17:25,568 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.18GiB memory
+[titan] 2026-09-28 07:17:25,580 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[titan] 2026-09-28 07:17:25,581 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[titan] 2026-09-28 07:17:25,709 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[titan] 2026-09-28 07:17:25,713 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[titan] 2026-09-28 07:17:25,713 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[titan] 2026-09-28 07:17:25,717 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: []
+[titan] 2026-09-28 07:17:25,876 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[titan] 2026-09-28 07:17:26,948 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[titan] 2026-09-28 07:17:27,008 - torchtitan.components.optimizer.optimizer - INFO - Optimizer DistMuon (model_part=0): 228 params [(?:attention\.(?:wq_a|wq_b|wkv_a|wkv_b|gate|wo)\.weight|delta_attention\.(?:q_proj|k_proj|v_proj|forget_a|forget_b|output_gate|output_proj)\.weight|routed_experts\.w(?:13|2)\.weight|feed_forward\.w(?:13|2)\.weight|moe\.router\.gate\.weight|moe\.shared_experts\.w(?:13|2)\.weight|moe\.routed_(?:down|up)\.weight)$] {'fused': False, 'foreach': False, 'lr': 0.0008, 'weight_decay': 0.1, 'momentum': 0.95, 'nesterov': True, 'eps': 1e-07}
+[titan] 2026-09-28 07:17:27,008 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 237 params [.*] {'fused': False, 'foreach': True, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[titan] 2026-09-28 07:17:27,011 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[titan] 2026-09-28 07:17:27,011 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[titan] 2026-09-28 07:17:27,011 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.07GiB(0.09%)
+[titan] 2026-09-28 07:17:27,011 - torchtitan.trainer - INFO - Trainer is initialized with 98304 tokens per DP rank, 98304 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[titan] 2026-09-28 07:17:27,012 - torchtitan.trainer - INFO - Training starts at step 1
+/root/venv_pp/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+/root/venv_pp/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3TransformerBlock) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+  output = self._register_pre_backward_hook(output)
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/root/w/main/torchtitan/train.py", line 73, in <module>
+[rank0]:     main()
+[rank0]:   File "/root/w/main/torchtitan/train.py", line 59, in main
+[rank0]:     trainer.train()
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank0]:     result = f(*args, **kwargs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/w/main/torchtitan/trainer.py", line 473, in train
+[rank0]:     self.train_step(data_iterator)
+[rank0]:   File "/root/w/main/torchtitan/trainer.py", line 378, in train_step
+[rank0]:     detached_loss = engine.forward_backward_microbatch(
+[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/w/main/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/w/main/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+[rank0]:     loss = forward_backward()
+[rank0]:            ^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/w/main/torchtitan/training_engine.py", line 581, in forward_backward
+[rank0]:     return self.forward_backward_body_fn(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/w/main/torchtitan/training_engine.py", line 621, in _non_pp_forward_backward_body
+[rank0]:     loss.backward()
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+[rank0]:     torch.autograd.backward(
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+[rank0]:     _engine_run_backward(
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/graph.py", line 1113, in _engine_run_backward
+[rank0]:     return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/function.py", line 452, in apply
+[rank0]:     return user_fn(self, *args)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/function.py", line 775, in wrapper
+[rank0]:     outputs = fn(ctx, *args, **kwargs)
+[rank0]:               ^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 266, in backward
+[rank0]:     return _l2norm_bwd_op(x, rstd, d_output, cu_seqlens), None, None
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+[rank0]:     return self._op(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 201, in _l2norm_bwd_cuda
+[rank0]:     l2norm_bwd_kernel[grid](
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/jit.py", line 374, in <lambda>
+[rank0]:     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+[rank0]:                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 249, in run
+[rank0]:     used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+[rank0]:                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 207, in check_disk_cache
+[rank0]:     bench_fn()
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 240, in benchmark
+[rank0]:     timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+[rank0]:                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 169, in _bench
+[rank0]:     return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/testing.py", line 272, in do_bench
+[rank0]:     fn()
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 155, in kernel_call
+[rank0]:     self.fn.run(
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/jit.py", line 779, in run
+[rank0]:     kernel.run(grid_0, grid_1, grid_2, stream, kernel.function, kernel.packed_metadata, launch_metadata,
+[rank0]:   File "/root/venv_pp/lib/python3.12/site-packages/triton/backends/nvidia/driver.py", line 331, in __call__
+[rank0]:     self.launch(gridX, gridY, gridZ, stream, function, self.launch_cooperative_grid, self.launch_pdl,
+[rank0]: RuntimeError: Triton Error [CUDA]: out of memory
+E0928 07:17:36.838000 33356 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 33450) of binary: /root/venv_pp/bin/python3
+E0928 07:17:36.849000 33356 torch/distributed/elastic/multiprocessing/errors/error_handler.py:194] no error file defined for parent, to copy child error file (/root/k928/res/4656/sc_main_98304/tmp/torchelastic_15bznd8_/none_gfws5ifm/attempt_0/0/error.json)
+Traceback (most recent call last):
+  File "/root/venv_pp/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/root/venv_pp/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/venv_pp/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/root/venv_pp/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/root/venv_pp/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/root/venv_pp/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-28_07:17:34
+  host      : dfc270f3fb1a
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 33450) 
+  error_file: /root/k928/res/4656/sc_main_98304/tmp/torchelastic_15bznd8_/none_gfws5ifm/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/root/venv_pp/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/root/w/main/torchtitan/trainer.py", line 473, in train
+      self.train_step(data_iterator)
+    File "/root/w/main/torchtitan/trainer.py", line 378, in train_step
+      detached_loss = engine.forward_backward_microbatch(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/w/main/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/root/w/main/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+      loss = forward_backward()
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/w/main/torchtitan/training_engine.py", line 581, in forward_backward
+      return self.forward_backward_body_fn(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/w/main/torchtitan/training_engine.py", line 621, in _non_pp_forward_backward_body
+      loss.backward()
+    File "/root/venv_pp/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+      torch.autograd.backward(
+    File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+      _engine_run_backward(
+    File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/graph.py", line 1113, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/function.py", line 452, in apply
+      return user_fn(self, *args)
+             ^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/torch/autograd/function.py", line 775, in wrapper
+      outputs = fn(ctx, *args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 266, in backward
+      return _l2norm_bwd_op(x, rstd, d_output, cu_seqlens), None, None
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+      return self._op(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 201, in _l2norm_bwd_cuda
+      l2norm_bwd_kernel[grid](
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/jit.py", line 374, in <lambda>
+      return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 249, in run
+      used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 207, in check_disk_cache
+      bench_fn()
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 240, in benchmark
+      timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 169, in _bench
+      return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/testing.py", line 272, in do_bench
+      fn()
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 155, in kernel_call
+      self.fn.run(
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/runtime/jit.py", line 779, in run
+      kernel.run(grid_0, grid_1, grid_2, stream, kernel.function, kernel.packed_metadata, launch_metadata,
+    File "/root/venv_pp/lib/python3.12/site-packages/triton/backends/nvidia/driver.py", line 331, in __call__
+      self.launch(gridX, gridY, gridZ, stream, function, self.launch_cooperative_grid, self.launch_pdl,
+  RuntimeError: Triton Error [CUDA]: out of memory
+  
+============================================================
