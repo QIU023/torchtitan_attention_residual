@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **09-27 晚：先不要贴。** 对照 K2.5 的 DEP 原文和 K3 §5.2.3 重审后，分支实现的是"塔占一个 PP stage，在 rank 0 的空闲槽里编码"，不是 DEP（塔在每个 GPU 都有、按 patch 数均衡、只留输出再重算）。Summary 挂的 "Report sec 5.2.3" 出处不成立。见 `DEP_VS_REPORT_AUDIT_2026-09-27.md`。
 - **分支：** review 分支 `dep_review1` 和 PR 分支 `k3_pp_mm` 都是 `31f372593`，即 main `f35966713` 上的 4 个提交。09-27 按用户的话（"PR 分支 k3_pp_mm 直接推 这是draft"）同步，旧 head `232834a4d` 备份为 `backup/k3_pp_mm_pre_20260927`。GitHub 显示 4 个提交、12 个文件，mergeable。
 - **rebase 里改了什么：**
   - `model.py` 冲突：main 的 #4777（修多模态 FSDP 卡死）让没有图像的 micro-batch 也造一张假图跑视觉塔，再用零依赖接回文本；DEP 让 forward 接收预先编码好的 `vision_embeds`。两边都保留：先用 `vision_embeds`，没有才就地编码，然后走 main 的假图分支。
