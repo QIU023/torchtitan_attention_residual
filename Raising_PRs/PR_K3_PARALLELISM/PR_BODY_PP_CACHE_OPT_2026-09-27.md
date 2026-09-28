@@ -1,5 +1,7 @@
 # PR A body（pp cache optimize，4312 合并后单独开 PR），2026-09-27
 
+> **作废（09-28）：** PR A 只保留第 3 类，body 见 `PR_BODY_PP_CACHE_OPT_v2_2026-09-28.md`；这一版的内容留在本地分支 `pp_review_optimize_dev`。
+
 ## 状态（不粘贴）
 
 - **09-27 夜（用户确认"对 做"）：** `pp_review_optimize` = `439bd2088`，叠在 #4656 的 `aa6d9fedc`（列表载体）上，不经过 #4780 的 checkpoint 提交；PR A 自己的 diff 和 `e8d0a4aec` 逐行相同；干净导出树上 Test plan 的命令 68 passed。旧 head `e8d0a4aec` 备份为 `backup/pp_review_optimize_pre_20260927`。粘贴区的 GPU 结果一律写 Pending（H100），5060 的 campaign s6 留在 logbook。

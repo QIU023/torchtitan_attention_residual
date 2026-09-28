@@ -19,3 +19,8 @@
 
 - `run_4656_t1_65536.sh`，结果在 `results_t1/`：262144 token/步（4 个 65536 token 的 micro-batch），其余同原来的第一张表。三种 AC 都是 10/10 逐位相同；关 AC 52.12 → 37.94 GiB，tps 149269 → 134285（新 cache 150143）；selective 11.30 → 11.07、full 6.30 → 6.09 GiB，tps 106657 对 106692、103525 对 103927。
 - 原来 512 token 那版第一张表（`results/` 里的 `id_*`）和 selective 补测（`results_sel/`）不再使用。
+
+## #4656 head 变化后的核对（09-28）
+
+- `check_head_f181.sh` → `results_f181/`：第一次收小的 `f181f3420` 对量数字的 `f14d681f4`，关 AC 和 selective 各 10 步，逐位相同，显存相同。
+- `check_head_5d46.sh` → `results_5d46/`：第二次收小的 `5d469fdf3`（模型对外保留 stack，stage 不动）对 `f14d681f4`，同样逐位相同，显存 37.94、11.07 GiB，tps 差 1.5% 以内。
