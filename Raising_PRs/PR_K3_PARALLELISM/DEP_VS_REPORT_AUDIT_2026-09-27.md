@@ -141,3 +141,43 @@
 1. 同不同意按 §6 重做。一旦重做，#4381 现在的 4 个提交基本作废，只保留 §6 列出的可复用部分。
 2. 第一个 PR 的均衡范围：先只在一个 DP 副本的 PP rank 之间做（不搬图像），还是一开始就跨 DP（需要 all-to-all）。
 3. 在重做之前，线上的 #4381 要不要先发一句说明。它现在的标题和旧 body 都在说 DEP。
+
+## 8. 重写（2026-09-28，用户："DEP原文+K3说的气泡掩藏都纳入考虑了吗？你本地直接在k3 pp mm重写"）
+
+**§6 的两步合成一次重写，两段原文都做进去了。** 本地 `k3_pp_mm` = `637ddb20f`（main `f35966713` 上 3 个提交，worktree 在 `C:/Users/78532/AppData/Local/Temp/claude/dep`），**没有推送**。fork 上的 `k3_pp_mm` 和 `dep_review1` 仍是旧实现 `31f372593`。正文草稿：`PR_BODY_PP_MM_v5_2026-09-28.md`。
+
+**对应关系：**
+
+| 原文 | 实现 |
+|---|---|
+| K2.5：塔在每个 GPU 上都有，不受其他并行方式影响 | 每个 PP rank 一份计算用的副本（不属于 model part），每步开头从 stage 0 那份的 `full_tensor()` 广播过来 |
+| K2.5：骨干用纯文本的并行方式 | 文本切分就是 core 的切分，不变；塔留在 stage 0，照常归优化器、checkpoint、FSDP 和 grad norm 管，但训练时不再运行 |
+| K2.5：按图像或 patch 数均衡 | 以 micro-batch 为单位，按 `grid_thw` 算 patch 数，在一个 DP 副本的 P 个 rank 之间用 LPT 均衡。图像本来就在每个 rank 的 `kwarg_mbs` 里，不用搬 |
+| K2.5：只留输出，结果汇集到 stage 0 | 编码在 `no_grad` 下进行，特征经独立的通信组发到 stage 0；stage 0 通过模型新增的 `vision_embeds` 参数拼进去 |
+| K2.5：梯度累积在视觉输出上，然后重算加反向 | stage 0 在特征叶子上挂 hook 接梯度，发给 plan 指定的 rank；那个 rank 重算塔再做反向，梯度按 fp32 累加；步末 reduce 到 stage 0，再在 dp 上 all-reduce，最后切回原始塔的本地分片 |
+| K3：前 PP 个 micro-batch 的前向同步放在最前面 | `bubble` 开时，stage 0 最先消费的 P 个 micro-batch 在调度开始之前编码，并均衡到各 rank |
+| K3：其余前向排进气泡 | 其余的编码放进任意 rank 在消费截止时间之前的空闲槽（留 1 个槽给传输），放不下的归入前面那批 |
+| K3：反向同理 | 重算加反向放进 B0.m 加传输时间之后任意 rank 的空闲槽，放不下的在步末均衡地跑 |
+
+**和旧实现比，额外修掉的：**
+- 视觉计算放在独立的 CUDA 流上。旧实现在主计算流上、紧跟着锚点动作发出，runtime 随后为这个动作的输出发出的 send 会先等视觉计算跑完，视觉计算就挡在了下游 rank 的关键路径上。
+- 特征和梯度各用一个独立的通信组（每个 pp 组建两个，`_connect` 预先建好点对点连接），它们的 P2P 顺序和调度自己的 send/recv 互不影响。
+- `pp_schedule.step` 的 monkeypatch 换成返回一个 `_PipelineSchedule` 代理；正文里写明 engine 的 PP step 缺一个模型 hook。
+- 删掉了 optimizer 那个提交：不再存在只有塔的 stage。
+- 名字的去包装改用 core 的 `canonical_fqn`。
+
+**本机验证**（Windows，torch 2.13，scratchpad 的 harness：对模型包打桩，补 nightly 的 `step(arg_mbs=...)`；harness 不进提交）：
+- 20 个测试通过：`test_kimi_k3_dep_plan.py` 8 个，`test_kimi_k3_vision_dep.py` 3 个（4 进程 gloo），加上 K3 PP 的旧测试 `test_kimi_k3_pp_stage.py`、`test_kimi_k3_pp_block_grads.py`。
+- 端到端结果：K2.5 模式、`bubble` 模式、冻结塔三种情况，第 1 步的 loss 和全部梯度都和单设备逐位一致；第 2 步的 loss 和文本梯度也逐位一致，塔梯度差在 fp32 求和顺序以内；eval 与单设备一致。副本初始权重清零，所以同步是真的在起作用。
+- 规划器在 torch 真实的 Interleaved1F1B 动作表上（开销比 1）：pp8 × vp4 时，M16 下最前面 8 个之外的前向全部进气泡，M32 下 24/32。反向能进多少取决于开销比：开销比 1 时，pp4 × vp2、M16 只有 3/16；开销比 0.5 时，非均匀负载的配置能进 10/14。原因是一次重算加反向要占 3 个槽，cooldown 段 1 个槽的小空隙放不下。
+
+**GPU 上要验证的**（在这之前，任何数字都不写进正文）：
+1. B200 格子 `kimi_k3_fsdp2_pp4_vpp2_vision_dep`（8 卡，dp2 × pp4 × vp2，偶数 DP rank 只有文本）能跑通。这是第一次覆盖到这些路径：FSDP 分片的原始塔的 `full_tensor()` 和 `distribute_tensor`、dp all-reduce、独立 CUDA 流、NCCL 下的 `_connect`。
+2. 数值，在同一份暖缓存上：DEP 关 vs 开（K2.5 模式）第 1 步的 loss 逐位一致、文本梯度逐位一致；塔梯度和 DEP 关时比较，并配一行噪声底（同一格跑两次）。`bubble` 关 vs 开：第 1 步的 loss 和文本梯度应当逐位一致；塔梯度会因反向分到的 rank 不同而改变 fp32 的求和分组，只差在求和顺序的量级，同样配一行噪声底。
+3. profiler：看视觉计算是否真的落在各 rank 的空闲段里，send 是否没有被推迟；再对比 DEP 关、DEP 开、`bubble` 开三者的步时。
+4. 显存：rank 0 多出一份 bf16 副本，每个 rank 多一个 fp32 累加器（塔大小乘以 4 字节）。另外，塔还在 stage 0 的根 FSDP 单元里，每步会被 all-gather 一次但用不上；如果显存吃紧，可以把塔单独包成一个 FSDP 单元。
+5. 大图：重算加反向一次只处理一个 micro-batch，副本上套了和原始塔相同的 AC 策略。
+
+**这次没做的：**
+- **跨 DP 的均衡**（K2.5 的 "all GPUs"）：需要在 DP rank 之间用 all-to-all 搬图像，留作后续的开关。
+- **TP > 1 时的分工：** 每个 TP 坐标的 pp 组各自完整编码一遍，也就是在 TP 上重复计算，没有切分。
