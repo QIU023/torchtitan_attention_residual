@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **09-28 rebase（用户："rebase pr A"）：** `pp_review_optimize` = `85eefa54b`，是 main `5dc97a3e7` 上的一个提交（`f35966713` 之后 main 进了 4 个提交，其中有 #4905 的 `ParallelDims` → `ParallelismContext` 改名）。diff 内容和 `d40bd628d` 逐行相同，新加的代码没有用到改名的名字。Test plan 的四个文件 67 passed，pyflakes 干净；scoped pre-commit 除 pyrefly 外全部通过，pyrefly 报的 47 个错都不在本 PR 的 3 个文件里。旧 head 备份在 `backup/pp_review_optimize_pre_rebase_20260928`。本地同名分支还停在旧的 `439bd2088`（在 `wt_ppopt` 里），以 fork 上的为准。5060 上的数字（T2）是在 `f35966713` 上测的。
 - **用户 09-28：** "PR A只做第3类，然后同一个本地dev分支把其他的也留着"。自审和三方对比见 `PR_A_SELF_REVIEW_2026-09-28.md`。
 - **分支：** review 分支 `pp_review_optimize` = `d40bd628d`，main `f35966713` 上一个提交，3 个文件 +152/−3（`stage.py` +135，`__init__.py` +19，`test_kimi_k3_pp_stage.py` 在一个测试桩上补一行）。09-28 夜 T6 的 pyrefly 查出 `get_fwd_recv_ops` 少一个 `tensor_meta is not None` 的判断（main 上没有的错），补上后 amend（原 `d37fb90f1`），行为不变。4312 的函数名、一跳的 [T, Nd, D] 格式、rank cache 和已审的测试都不动，#4914 的页面不受影响。不依赖 #4656。
   - 旧 head `439bd2088`（按 block 传输、bringer 释放加本提交的内容，叠在旧的列表提交 `aa6d9fedc` 上）备份为 `backup/pp_review_optimize_pre_20260928`，本地另有 tag `pp_review_optimize_dev_pre_20260928`。第 1、2 类现在在本地分支 `pp_review_optimize_dev` = `1777ad806`：#4656 `5d469fdf3` → 本 PR（`c87a5e102`）→ 第 1、2 类（`1777ad806`，5 个文件 +383/−271），71 passed。
