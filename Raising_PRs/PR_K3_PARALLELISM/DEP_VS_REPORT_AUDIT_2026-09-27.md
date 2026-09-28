@@ -144,13 +144,13 @@
 
 ## 8. 重写（2026-09-28，用户："DEP原文+K3说的气泡掩藏都纳入考虑了吗？你本地直接在k3 pp mm重写"）
 
-**§6 的两步合成一次重写，两段原文都做进去了。** 本地 `k3_pp_mm` = `637ddb20f`（main `f35966713` 上 3 个提交，worktree 在 `C:/Users/78532/AppData/Local/Temp/claude/dep`），**没有推送**。fork 上的 `k3_pp_mm` 和 `dep_review1` 仍是旧实现 `31f372593`。正文草稿：`PR_BODY_PP_MM_v5_2026-09-28.md`。
+**§6 的两步合成一次重写，两段原文都做进去了。** 本地 `k3_pp_mm` = `bb3e38d4a`（main `f35966713` 上 3 个提交；09-28 按 §9 修正后重提，worktree 在 `C:/Users/78532/AppData/Local/Temp/claude/dep`），**没有推送**。fork 上的 `k3_pp_mm` 和 `dep_review1` 仍是旧实现 `31f372593`。正文草稿：`PR_BODY_PP_MM_v5_2026-09-28.md`。
 
 **对应关系：**
 
 | 原文 | 实现 |
 |---|---|
-| K2.5：塔在每个 GPU 上都有，不受其他并行方式影响 | 每个 PP rank 一份计算用的副本（不属于 model part），每步开头从 stage 0 那份的 `full_tensor()` 广播过来 |
+| K2.5：塔在每个 GPU 上都有，不受其他并行方式影响 | 每个 PP rank 一份计算用的副本（不属于 model part，用模型自己的 TP 方案并行化、不包 FSDP），每步开头从 stage 0 那份的 `full_tensor()` 按 TP 分片广播过来 |
 | K2.5：骨干用纯文本的并行方式 | 文本切分就是 core 的切分，不变；塔留在 stage 0，照常归优化器、checkpoint、FSDP 和 grad norm 管，但训练时不再运行 |
 | K2.5：按图像或 patch 数均衡 | 以 micro-batch 为单位，按 `grid_thw` 算 patch 数，在一个 DP 副本的 P 个 rank 之间用 LPT 均衡。图像本来就在每个 rank 的 `kwarg_mbs` 里，不用搬 |
 | K2.5：只留输出，结果汇集到 stage 0 | 编码在 `no_grad` 下进行，特征经独立的通信组发到 stage 0；stage 0 通过模型新增的 `vision_embeds` 参数拼进去 |
@@ -160,7 +160,7 @@
 | K3：反向同理 | 重算加反向放进 B0.m 加传输时间之后任意 rank 的空闲槽，放不下的在步末均衡地跑 |
 
 **和旧实现比，额外修掉的：**
-- 视觉计算放在独立的 CUDA 流上。旧实现在主计算流上、紧跟着锚点动作发出，runtime 随后为这个动作的输出发出的 send 会先等视觉计算跑完，视觉计算就挡在了下游 rank 的关键路径上。
+- 视觉计算不再挡在 send 前面。旧实现在锚点动作结束后立刻在主流上发视觉计算，runtime 随后为这个动作的输出发出的 send 会先等它跑完，视觉计算就挡在了下游 rank 的关键路径上。现在锚点动作后面有跨 rank 的 send 时，stage 先自己发 send，再跑视觉计算（§9）。
 - 特征和梯度各用一个独立的通信组（每个 pp 组建两个，`_connect` 预先建好点对点连接），它们的 P2P 顺序和调度自己的 send/recv 互不影响。
 - `pp_schedule.step` 的 monkeypatch 换成返回一个 `_PipelineSchedule` 代理；正文里写明 engine 的 PP step 缺一个模型 hook。
 - 删掉了 optimizer 那个提交：不再存在只有塔的 stage。
@@ -172,7 +172,7 @@
 - 规划器在 torch 真实的 Interleaved1F1B 动作表上（开销比 1）：pp8 × vp4 时，M16 下最前面 8 个之外的前向全部进气泡，M32 下 24/32。反向能进多少取决于开销比：开销比 1 时，pp4 × vp2、M16 只有 3/16；开销比 0.5 时，非均匀负载的配置能进 10/14。原因是一次重算加反向要占 3 个槽，cooldown 段 1 个槽的小空隙放不下。
 
 **GPU 上要验证的**（在这之前，任何数字都不写进正文）：
-1. B200 格子 `kimi_k3_fsdp2_pp4_vpp2_vision_dep`（8 卡，dp2 × pp4 × vp2，偶数 DP rank 只有文本）能跑通。这是第一次覆盖到这些路径：FSDP 分片的原始塔的 `full_tensor()` 和 `distribute_tensor`、dp all-reduce、独立 CUDA 流、NCCL 下的 `_connect`。
+1. B200 格子 `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`（8 卡，就是现有的组合格子打开 DEP 和 bubble，偶数 DP rank 只有文本）能跑通。这是第一次覆盖到这些路径：TP 并行的副本、FSDP 加 TP 分片的原始塔的 `full_tensor()` 和 `distribute_tensor`、dp all-reduce、TP all-gather、stage 自己发 send、NCCL 下的 `_connect`。
 2. 数值，在同一份暖缓存上：DEP 关 vs 开（K2.5 模式）第 1 步的 loss 逐位一致、文本梯度逐位一致；塔梯度和 DEP 关时比较，并配一行噪声底（同一格跑两次）。`bubble` 关 vs 开：第 1 步的 loss 和文本梯度应当逐位一致；塔梯度会因反向分到的 rank 不同而改变 fp32 的求和分组，只差在求和顺序的量级，同样配一行噪声底。
 3. profiler：看视觉计算是否真的落在各 rank 的空闲段里，send 是否没有被推迟；再对比 DEP 关、DEP 开、`bubble` 开三者的步时。
 4. 显存：rank 0 多出一份 bf16 副本，每个 rank 多一个 fp32 累加器（塔大小乘以 4 字节）。另外，塔还在 stage 0 的根 FSDP 单元里，每步会被 all-gather 一次但用不上；如果显存吃紧，可以把塔单独包成一个 FSDP 单元。
@@ -180,4 +180,18 @@
 
 **这次没做的：**
 - **跨 DP 的均衡**（K2.5 的 "all GPUs"）：需要在 DP rank 之间用 all-to-all 搬图像，留作后续的开关。
-- **TP > 1 时的分工：** 每个 TP 坐标的 pp 组各自完整编码一遍，也就是在 TP 上重复计算，没有切分。
+
+## 9. 修正（2026-09-28，用户："不可能 TP PR 4499已经做了vit tp，为什么需要分工"）
+
+- **用户说得对。** #4499（main `3ce746c71`）给视觉塔的是 invariant-activation TP 方案：线性层按列和按行切、注意力按头切，输出最后转成 TP 复制。一次编码本来就由 TP 组分担，不需要另外分工。
+- **我那句"TP 上重复编码"出错的原因：** §8 的副本是 `copy.deepcopy` 之后直接 `to_empty` 出来的完整拷贝，没有走模型的并行化，所以每个 TP rank 都在算完整的塔、存完整的权重。问题出在副本上，不是 TP 缺了分工。
+- **改法：**
+  - 副本走和原始塔同一条路径：`annotate_replicated_parameters` 加 `Module._parallelize`，不包 FSDP，然后再套 AC。
+  - 权重同步：stage 0 先 `full_tensor()`，按副本本地分片的形状沿 TP 维切出本 TP rank 的那一片，在这个 TP 坐标的 pp 组里广播。
+  - 梯度：先在 pp 维上 reduce，再在 dp 上 all-reduce；stage 0 把分片沿 TP 维 all-gather 回完整张量，再用 `distribute_tensor` 切成原始塔 FSDP 加 TP 的本地分片。
+  - 副本调用时套上和模型相同的 `spmd_local_context("dp")`。
+- **顺带发现的执行点问题：** §8 为了不挡 send，把视觉计算放到了副流上。可是副本一旦 TP 并行，塔的前向和反向里就有 TP 集合通信，和文本层的集合通信共用 TP 通信器，会在同一条 NCCL 流上按发出顺序排队，副流上的视觉计算又会卡住文本计算。
+  - 现在去掉副流：锚点动作后面有跨 rank 的 send 时，stage 在 `get_fwd_send_ops`/`get_bwd_send_ops` 里先用 `_batch_p2p` 把 send 发出去，再在主流上跑视觉计算，给 runtime 返回空列表（PR A 也用这个模式）。没有跨 rank send 的动作，结束后直接跑。
+  - 这样 send 不会等视觉计算；视觉计算和文本计算的 TP 集合通信在同一个流上按程序顺序执行，也不会互相卡住。
+- **新增测试：** pp2 × tp2 下，原始塔是 TP 上切分的 DTensor，4 个 rank 的副本同步后各自拿到自己的 TP 分片，梯度规约后原始塔的完整梯度等于各 pp rank 分片之和。本机 21 个测试通过。
+- **B200 格子：** 换成现有的 fsdp2 × tp2 × ep2 × pp2 × vpp4 组合格子，打开 DEP 和 bubble，偶数 DP rank 只有文本。
