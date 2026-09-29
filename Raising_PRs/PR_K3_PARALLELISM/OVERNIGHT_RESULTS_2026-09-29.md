@@ -134,3 +134,33 @@ M16 核对（L2，3 步）：K2.5 13 次编码都在调度前；bubble 8 次在�
 - 检查：四个 head 的 pyflakes、ufmt 干净，新 torch 上单测 70 / 71 / 76 / 90 passed，和换底前一样；加的行里没有 `parallel_dims` 这类旧名字。
 - 5060 复核（pp4 × vpp2，20 步，`results_bound_rb/`）：rebase 后的 #4656 对 rebase 后的 PR A 20/20 逐位相同，loss、各 rank 峰值、block 记账和换底前一个数不差。
 - 推送：`pp_review_optimize` = `ec8bb420a`，`pp_offload_review1` = `k3_pp_offload` = `e852c5ae5`，`pp_balance_review1` = `k3_pp_balance` = `8545ea009`；旧 head 都在 `backup/*_pre_20260929b`。upstream 的 `refs/pull/4765/head`、`refs/pull/4764/head` 已是新 head；`refs/pull/4656/head` 还是 `5d469fdf3`。
+
+## 09-29 夜：PR A raise 前检查（用户："改"）
+
+- **CI 格（`kit_overnight_2026-09-29/ci_cells/`，B200 那套里 K3 的三格，8 × 5060，torch 2.15.0.dev20260928，recipe 原样）：**
+
+  | 格 | PR A `ec8bb420a` | PR A `5a8163a58` | rebase 后的 #4656 `4ae9422db` | main `d6810e4d6` |
+  |---|---|---|---|---|
+  | `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4`（8 卡） | rc=0，10 步 | rc=0，10 步 | rc=0，10 步 | 没跑 |
+  | `kimi_k3_debugmodel_mm_muon`（2 卡） | rc=0 | 没跑 | rc=0 | 没跑 |
+  | `kimi_k3_debugmodel_mm`（4 卡） | rc=1 | 没跑 | rc=1 | rc=1 |
+
+  - `mm` 三处报的都是 `SPMD type mismatch on axis mesh_ep: tensor has P, expected I`。main 本身在同一环境同样失败，不是这条线引入的。
+  - 这套 recipe 不设 seed，每格用自己的 cache：三次 PP 格的 step 1 loss 就不一样（8.17270 / 8.23765 / 8.21091），所以这些格只看 rc，不比 loss。PR A 对 #4656 的逐位对比仍是 T1d 和 rebase 复核那组（同 seed、同一份 cache）。
+- **pyrefly 0.45.1（只读，`ci_cells/pyrefly/`）：** main 16 个错误（15 个是本机缺 `torch_checkpointing`、`rich` 的 import，1 个是 main 自己的 `int * None`）。PR A `ec8bb420a` 18 个，多出的 2 个都在 `stage.py`：`list(flatten_args(...))` 标成 `list[torch.Tensor]`，以及 Optional 上的 `.contiguous()`。修成 `5a8163a58` 后是 16，和 main 一样；只改类型，71 passed。
+- **pre-commit（分范围，跳过 pyrefly 和 no-commit-to-branch）：** PR A 的文件全部通过，没有改文件。
+- **#4765、#4764 重叠到 `5a8163a58`：**
+  - #4765 = `6c9943a91`。`stage.py` 前向有一处冲突，取 #4765 那边，只去掉 `kwarg_tensors` 的 `list[torch.Tensor]` 标注。76 passed。
+  - #4764 = `d248662a8`、`43ccdcc06`，没有冲突。90 passed。
+  - pyrefly 比 PR A 多：#4765 自己 2 个（`ActivationStorage._device` 只读描述符被赋值；`register_stage` 收到 `Module | Tensor`），#4764 再多 3 个（TypedDict 键 `StorageBackend` 对 `HostBackend`；`group` 是 Optional；`PPMemoryController._device`）。两个 draft 转正式前要修。
+- **推送：**
+  - `pp_review_optimize` = `5a8163a58`；
+  - `pp_offload_review1` = `k3_pp_offload` = `6c9943a91`；
+  - `pp_balance_review1` = `k3_pp_balance` = `43ccdcc06`；
+  - 旧 head 在 `backup/*_pre_20260929c`；
+  - upstream 的 `refs/pull/4765/head`、`refs/pull/4764/head` 已是新 head；
+  - #4656 的分支没动。
+- **body：**
+  - PR A v3 的 Relation 加了一句：前两个提交是 rebase 后的 #4656，#4656 合并前会显示在这里。
+  - 三份 body 的状态区已更新。
+  - PR A raise 前只差 `<torch issue link>`；Results 等 H100。
