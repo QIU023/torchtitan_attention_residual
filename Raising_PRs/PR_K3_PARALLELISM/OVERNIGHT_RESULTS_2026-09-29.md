@@ -210,3 +210,21 @@ M16 核对（L2，3 步）：K2.5 13 次编码都在调度前；bubble 8 次在�
   - profile 步应该在优化器状态分配之后，或者把优化器状态计进去；
   - 池的大小和计划对不上，出现 `remote_full`；
   - H100 上的 `nvlink_intra` 要先用同一个忙流探针确认不会和默认流互等（已写进 `H100_NEXT_2026-09-30.md` §3b）。
+
+## 09-29 深夜：MoonEP 覆盖 draft PR 分支；DEP 三档冒烟的步时
+
+- **MoonEP（用户："MoonEP rebase main后 直接覆盖draft PR分支"）：**
+  - `k3_moonep_seam` = `moonep_review1` = `30157477b`，在 upstream main `46ec3f232` 上，GitHub #4751 的 head 已是它。
+  - 第一个提交里修了 4 个 pyrefly 错误，只动类型。
+  - 检查：pyrefly 和 main 逐条相同；CPU 53 passed；假 MoonEP 的 GPU 单测 2 passed；4 卡对 standard 第 1 步逐位相同。
+  - 细节在 body v2 状态区。GitHub 上的 body 还要用 v2 的粘贴区替换。
+- **DEP 三档冒烟的步时**（从 T2 的原日志算，dim 1024，pp2 × vpp4 × tp2 × ep2，M4，第 4 到 10 步平均）：
+
+  | | DEP 关 | K2.5 | bubble |
+  |---|---:|---:|---:|
+  | L1 224 px | 2.19 s | 2.30 s | 2.27 s |
+  | L2 448 px | 2.18 s | 2.33 s | 2.28 s |
+  | L3 1024 px | 2.28 s | 2.41 s | 2.33 s |
+
+  DEP 关时，从 L1 到 L3 每步只多 0.09 s。也就是说，1024 px 的图在整步里只占约 5%（每个 2048 token 的 micro-batch 大约一张图，debug 塔只有两层）；DEP 自己多花 2% 到 6%，所以三档都是净亏。R_f（一次编码对一个文本 stage）会高估视觉在整步里的份量，因为一步里有 M × V 个文本 stage。
+- **视频：** titan 里 K3 的 `model.py` 对视频输入直接报 `NotImplementedError`（"Kimi K3 v1 supports images but not videos"）。通用 loader 能解码视频，K2.x 的塔也有时间项，但 K2.x 的 README 把视频训练管线列为待办。

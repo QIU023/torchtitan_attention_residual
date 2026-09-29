@@ -2,6 +2,11 @@
 
 ## 状态（不粘贴）
 
+- **09-29 深夜（用户："MoonEP rebase main后 直接覆盖draft PR分支"）：** PR 分支 `k3_moonep_seam` 和 review 分支 `moonep_review1` 都 force-with-lease 推到 `30157477b`，upstream `refs/pull/4751/head` 已是它。旧 PR head `f556ab4fd` 在 `backup/k3_moonep_seam_pre_rewrite_20260928`，旧 review head `1633dcd79` 在 `backup/moonep_review1_pre_20260929b`。
+  - 换到 upstream main `46ec3f232` 上，三个提交 `5ae489e21`、`16c6aa691`、`30157477b`，重放没有冲突（range-diff 三个都相同）。
+  - 另外在第一个提交里修了新 torch 类型存根下多出的 4 个 pyrefly 错误，只动类型：三个 autograd `Function` 的 `forward` 加 `# pyrefly: ignore[bad-override]`（和同文件的 `backward` 一样）；`torch.autograd.grad` 的输入标成 `list[torch.Tensor]`。
+  - 检查：pyrefly 16 个错误，和 main 逐条相同；pyflakes、ufmt、pre-commit（分范围）干净；CPU 53 passed、13 subtests passed；5060 上接假 MoonEP 的两卡 GPU 单测 2 passed；4 卡 h100 格子对 standard，第 1 步逐位相同，之后相对差 5.7e-05 到 1.5e-03，在 standard 自己换缓存的噪声底（2.4e-03）以内（`kit_moonep_rewrite_2026-09-29/local/e2e/run_e2e_0929n.sh`，只进 logbook）。
+  - **GitHub 上的 body 还是旧实现的**（Design、Requirements 说的是发布前的代码）：用下面的粘贴区整段替换。Results 仍是 Pending (H100)，要真 MoonEP 的正确性和负载数字（H100 SXM，NVSwitch multicast）。标题建议见下，要不要去掉 "[DO NOT Review]" 你定。
 - **09-29 夜（overnight T3，审计文档 §7）：** review 分支 `moonep_review1` = `1633dcd79`，upstream main `a182e530a` 上 3 个提交：原来两个重放后是 `a93b3ad28`、`58b18c61f`，加一个修复 `1633dcd79`。旧 head `a505f74a8` 在 `backup/moonep_review1_pre_20260929`。
   - 修复一：规约前补一道栅栏。MoonEP 的规约远程读各 rank 的槽梯度，自己不带 barrier，要求调用方先保证所有 rank 写完；重写版写完马上规约，中间没有跨 rank 同步。现在在 EP 组上做一次单元素 all-reduce。
   - 修复二：`Buffer` 设 `explicitly_destroy=True`，和 DeepEP 一样，不在 GC 时跑 `destroy()` 的同步和 barrier。
