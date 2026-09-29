@@ -1,0 +1,388 @@
+F.                                                                                                                                                                      [100%]
+================================================================================== FAILURES ===================================================================================
+_________________________________________________ TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl _________________________________________________
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:920: in wrapper
+    self._join_processes(fn)
+        fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+        self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1190: in _join_processes
+    self._check_return_codes(fn, elapsed_time)
+        elapsed    = 300.0939075946808
+        elapsed_time = 300.0987865924835
+        fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+        i          = 3
+        p          = <SpawnProcess name='process 3' pid=1719573 parent=1719488 started>
+        pipe       = <multiprocessing.connection.Connection object at 0x7f6038088320>
+        self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+        start_time = 1790649189.329175
+        subprocess_error = False
+        timeout    = 300
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+fn = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+elapsed_time = 300.0987865924835
+
+    def _check_return_codes(self, fn, elapsed_time) -> None:
+        """
+        Checks that the return codes of all spawned processes match, and skips
+        tests if they returned a return code indicating a skipping condition.
+        """
+        # If no processes are spawned, there is nothing to check.
+        if not self.processes:
+            logger.warning(
+                "Note: no subprocesses were spawned, test was likely skipped."
+            )
+            return
+    
+        first_process = self.processes[0]
+        # first, we check if there are errors in actual processes
+        # (via TEST_ERROR_EXIT CODE), and raise an exception for those.
+        # the reason we do this is to attempt to raise a more helpful error
+        # message than "Process x terminated/timed out"
+        # TODO: we should pipe the exception of the failed subprocess here.
+        # Currently, the actual exception is displayed as a logging output.
+        errored_processes = [
+            (i, p)
+            for i, p in enumerate(self.processes)
+            if p.exitcode == MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+        ]
+        if errored_processes:
+            error = ""
+            for i, process in errored_processes:
+                # Get error from pipe.
+                error_message = self.pid_to_pipe[process.pid].recv()
+                error += (
+                    f"Process {i} exited with error code {MultiProcessTestCase.TEST_ERROR_EXIT_CODE} "
+                    f"and exception:\n{error_message}\n"
+                )
+    
+            raise RuntimeError(error)
+        # If no process exited uncleanly, we check for timeouts, and then ensure
+        # each process exited cleanly.
+        for i, p in enumerate(self.processes):
+            if p.exitcode is None:
+>               raise RuntimeError(
+                    f"Process {i} terminated or timed out after {elapsed_time} seconds"
+                )
+E               RuntimeError: Process 0 terminated or timed out after 300.0987865924835 seconds
+
+elapsed_time = 300.0987865924835
+errored_processes = []
+first_process = <SpawnProcess name='process 0' pid=1719570 parent=1719488 started>
+fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+i          = 0
+p          = <SpawnProcess name='process 0' pid=1719570 parent=1719488 started>
+self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1235: RuntimeError
+---------------------------------------------------------------------------- Captured stdout call -----------------------------------------------------------------------------
+Timing out after 300 seconds and killing subprocesses.
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I0929 02:33:09.324000 1719488 torch/testing/_internal/common_distributed.py:999] Started process 0 with pid 1719570
+I0929 02:33:09.326000 1719488 torch/testing/_internal/common_distributed.py:999] Started process 1 with pid 1719571
+I0929 02:33:09.327000 1719488 torch/testing/_internal/common_distributed.py:999] Started process 2 with pid 1719572
+I0929 02:33:09.329000 1719488 torch/testing/_internal/common_distributed.py:999] Started process 3 with pid 1719573
+W0929 02:33:15.167000 1719573 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 02:33:15.235000 1719573 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 02:33:15.260000 1719571 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 02:33:15.277000 1719572 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 02:33:15.305000 1719570 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 02:33:15.323000 1719571 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 02:33:15.341000 1719572 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 02:33:15.368000 1719570 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[rank0]:W0929 02:33:17.555000 1719570 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank1]:W0929 02:33:17.849000 1719571 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank2]:W0929 02:33:17.860000 1719572 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank3]:W0929 02:33:17.865000 1719573 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank0]:I0929 02:38:09.423000 1719570 torch/testing/_internal/common_distributed.py:1030] Received event Event.GET_TRACEBACK on process 0
+[rank3]:I0929 02:38:09.423000 1719573 torch/testing/_internal/common_distributed.py:1030] Received event Event.GET_TRACEBACK on process 3
+[rank1]:I0929 02:38:09.423000 1719571 torch/testing/_internal/common_distributed.py:1030] Received event Event.GET_TRACEBACK on process 1
+[rank2]:I0929 02:38:09.423000 1719572 torch/testing/_internal/common_distributed.py:1030] Received event Event.GET_TRACEBACK on process 2
+[rank0]:I0929 02:38:09.425000 1719570 torch/testing/_internal/common_distributed.py:1041] Process 0 sent traceback
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] Process 0 timed out with traceback: 
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f3345ffb6c0 (most recent call first):
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f33467fc6c0 (most recent call first):
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f3346ffd6c0 (most recent call first):
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f33477fe6c0 (most recent call first):
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] Current thread 0x00007f3387f0b6c0 (most recent call first):
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f3712840740 (most recent call first):
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 3171 in destroy_process_group
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901 in wrapper
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "<string>", line 1 in <module>
+E0929 02:38:09.425000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+[rank3]:I0929 02:38:09.425000 1719573 torch/testing/_internal/common_distributed.py:1041] Process 3 sent traceback
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Process 1 timed out with traceback: 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f8f2a5dd6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f8f295db6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f8f2adde6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f8f29ddc6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Current thread 0x00007f8f7659a6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f9300f72740 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 6506 in barrier
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 866 in destroy_pg
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "<string>", line 1 in <module>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+[rank1]:I0929 02:38:09.426000 1719571 torch/testing/_internal/common_distributed.py:1041] Process 1 sent traceback
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Process 2 timed out with traceback: 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f53de5dd6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f53ddddc6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f53dd5db6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f53dedde6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Current thread 0x00007f542a49a6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f57b4d8a740 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 6506 in barrier
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 866 in destroy_pg
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "<string>", line 1 in <module>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+[rank2]:I0929 02:38:09.426000 1719572 torch/testing/_internal/common_distributed.py:1041] Process 2 sent traceback
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Process 3 timed out with traceback: 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f3d93fff6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f3da57fe6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f3da4ffd6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f3da5fff6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   <no Python frame>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Current thread 0x00007f3df2d9a6c0 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] Thread 0x00007f417d6e6740 (most recent call first):
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 6506 in barrier
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 866 in destroy_pg
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139]   File "<string>", line 1 in <module>
+E0929 02:38:09.426000 1719488 torch/testing/_internal/common_distributed.py:1139] 
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 0 with pid 1719570
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 1 with pid 1719571
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 2 with pid 1719572
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 3 with pid 1719573
+ERROR    torch.testing._internal.common_distributed:common_distributed.py:1139 Process 0 timed out with traceback: 
+
+Thread 0x00007f3345ffb6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f33467fc6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f3346ffd6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f33477fe6c0 (most recent call first):
+  <no Python frame>
+
+Current thread 0x00007f3387f0b6c0 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+  File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+  File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f3712840740 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 3171 in destroy_process_group
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+  File "<string>", line 1 in <module>
+
+ERROR    torch.testing._internal.common_distributed:common_distributed.py:1139 Process 1 timed out with traceback: 
+
+Thread 0x00007f8f2a5dd6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f8f295db6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f8f2adde6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f8f29ddc6c0 (most recent call first):
+  <no Python frame>
+
+Current thread 0x00007f8f7659a6c0 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+  File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+  File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f9300f72740 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 6506 in barrier
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 866 in destroy_pg
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+  File "<string>", line 1 in <module>
+
+ERROR    torch.testing._internal.common_distributed:common_distributed.py:1139 Process 2 timed out with traceback: 
+
+Thread 0x00007f53de5dd6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f53ddddc6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f53dd5db6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f53dedde6c0 (most recent call first):
+  <no Python frame>
+
+Current thread 0x00007f542a49a6c0 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+  File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+  File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f57b4d8a740 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 6506 in barrier
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 866 in destroy_pg
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+  File "<string>", line 1 in <module>
+
+ERROR    torch.testing._internal.common_distributed:common_distributed.py:1139 Process 3 timed out with traceback: 
+
+Thread 0x00007f3d93fff6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f3da57fe6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f3da4ffd6c0 (most recent call first):
+  <no Python frame>
+
+Thread 0x00007f3da5fff6c0 (most recent call first):
+  <no Python frame>
+
+Current thread 0x00007f3df2d9a6c0 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1035 in _event_listener
+  File "/venv/main/lib/python3.12/threading.py", line 1012 in run
+  File "/venv/main/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/venv/main/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f417d6e6740 (most recent call first):
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 6506 in barrier
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 866 in destroy_pg
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922 in wrapper
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075 in run_test
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1053 in _run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 108 in run
+  File "/venv/main/lib/python3.12/multiprocessing/process.py", line 314 in _bootstrap
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 135 in _main
+  File "/venv/main/lib/python3.12/multiprocessing/spawn.py", line 122 in spawn_main
+  File "<string>", line 1 in <module>
+=========================================================================== short test summary info ===========================================================================
+FAILED tests/unit_tests/gpu/test_kimi_k3_vision_dep.py::TestKimiK3VisionDepNccl::test_encodes_and_backwards_in_idle_slots_under_nccl - RuntimeError: Process 0 terminated or...
+1 failed, 1 passed in 318.32s (0:05:18)

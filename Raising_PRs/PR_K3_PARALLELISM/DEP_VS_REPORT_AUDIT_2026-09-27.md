@@ -237,3 +237,12 @@
 - 冲突在 `kimi_k3/pipeline_parallel/__init__.py`。
 
 **分支：** `k3_pp_mm` 和 `dep_review1` 都是 `55e4274c4`（3 个提交，force-with-lease 推送）。GPU 那边按 `t5b.sh` 补测数值、trace 和显存。
+
+## 13. GPU 验证（2026-09-29，8 × 5060，`55e4274c4`，默认懒加载）
+
+- **死锁已修好：** 仓库里的 B200 格子跑完 10 步。
+- **传输在数值上是对的：** 初始权重相同时，K2.5 和 bubble 两种模式都和 DEP 关逐位一致（前 3 步的 loss，第 1、2 步所有梯度，含塔）。
+- **还要修两处：**
+  1. `_vision_replica` 里 `replica.init_states()` 消耗了全局 CUDA 随机数，而且发生在模型初始化之前，所以同一个种子下 DEP 开和 DEP 关的初始权重不同（stage 0 那段 249 个参数只有 67 个相同）。本地已验证：把它包进 `torch.random.fork_rng(devices=[device])` 就能对齐。
+  2. bubble 模式的新 GPU 测试没过，但不是卡死：rank 0 上第 1 步之后塔的 `proj` 梯度，12 个元素里 1 个相对差 1.44e-6，比默认容差 1.3e-6 略大，原因是 fp32 求和顺序变了（塔的反向换到了另一个 rank 上）。
+- 详情、表格和复现脚本：`DEP_GPU_CHECK_2026-09-29.md`、`kit_dep_gpu_2026-09-29/`。

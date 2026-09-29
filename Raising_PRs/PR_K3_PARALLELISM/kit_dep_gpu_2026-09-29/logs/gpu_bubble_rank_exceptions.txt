@@ -1,0 +1,18 @@
+[probe rank 1] passed
+[probe rank 3] passed
+[probe rank 2] passed
+[probe rank 0] FAILED:
+Traceback (most recent call last):
+  File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/dep_fix/gpu_probe/test_dep_gpu_probe.py", line 29, in test_bubble
+    self._check(bubble=True, frozen_tower=False)
+  File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 258, in _check
+    torch.testing.assert_close(grad, expected)
+  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+    raise error_metas[0].to_error(msg)
+AssertionError: Tensor-likes are not close!
+
+Mismatched elements: 1 / 12 (8.3%)
+Greatest absolute difference: 197568495616.0 at index (0, 2) (up to 1e-05 allowed)
+Greatest relative difference: 1.4436873243539594e-06 at index (0, 2) (up to 1.3e-06 allowed)
+
+[rank2]:I0929 02:44:36.299000 1722384 torch/testing/_internal/common_distributed.py:1030] Received event Event.GET_TRACEBACK on process 2

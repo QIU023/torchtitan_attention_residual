@@ -1,0 +1,13 @@
+diff --git a/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py b/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py
+index 89709239d..40565b7e5 100644
+--- a/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py
++++ b/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py
+@@ -102,7 +102,7 @@ def _vision_replica(
+         if ac_config is not None:
+             ac_config.build(dump_folder=dump_folder).apply(replica)
+     replica.to_empty(device=device)
+-    with torch.no_grad():
++    with torch.no_grad(), torch.random.fork_rng(devices=[device]):  # LOCAL PROBE
+         replica.init_states()
+         dtype = TORCH_DTYPE_MAP[training.mixed_precision_param]
+         for param in replica.parameters():
