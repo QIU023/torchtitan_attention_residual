@@ -207,3 +207,33 @@
 - B200 格子第 1 步死锁：`_post_receives` 在步首挂出的 NCCL irecv，碰上本 rank 塔前向里第一次加载的 kernel，形成等待的环。原因见 CUDA Programming Guide §4.8.5.1。K2.5 模式和 bubble 模式都一样，`CUDA_MODULE_LOADING=EAGER` 也规避不了。
 - 两卡最小复现、各 rank 的现场，以及对传输写法的约束，见 `OVERNIGHT_RESULTS_2026-09-28.md` 的 T5 节和 `kit_overnight_2026-09-28/t5/`。
 - §8 清单的数值、trace、显存三项等传输修好以后再测。
+
+## 12. 传输死锁的修法（2026-09-29，CPU 这边）
+
+**问题**（T5 节，§11）：`_post_receives` 在步首把特征和梯度的 irecv 全部挂出去。挂着的 NCCL kernel 挡住了本 rank 塔前向里 kernel 的第一次加载，而对面的 send 又要等本 rank 之后的计算，形成一个等待的环。
+
+**修法：一对传输的两端，在调度的同一个槽边界上挂出。**
+- 这个边界两边都能走到，而且都不需要对方在边界之后的任何工作。因此任何一个挂出去的操作，都不需要挂它的 rank 再做任何事就能完成。
+- 这样，懒加载时新 kernel 等设备空下来，最多只是多等一会儿，不会绕成环。
+
+**规划器怎么给每次传输定边界：**
+- 预编码的特征：边界 0，也就是步首。编码全部做完以后才挂出。
+- 气泡里编码的特征：发送方那段空闲结束的边界，也就是它下一个动作开始的地方。放置条件相应收紧：这段空闲结束的时刻，加上传输时间，要不晚于 stage 0 消费它的时刻。
+- 气泡里的反向：执行方那段空闲开始的边界。放置条件：这段空闲在 B0.m 之后才开始，反向本身从空闲开始再过一个传输时间后才开始。
+- 尾段的反向：步尾。
+- 每个 rank 把边界映射到自己的钩子上：步首；某个动作之前（stage 在 `forward_one_chunk`/`backward_one_chunk` 开头调用）；某个动作之后（如果这个动作还要发 send，就在 send 发出之后）；步尾。钩子上的操作非阻塞地挂出；receive 在使用前等，send 在步末等。
+- 每一对 rank 之间的所有传输，两边都按（边界，类型，micro-batch）的同一顺序挂出，两个方向合起来的顺序也一致。它们共用一个点对点通信器，所以这一点必须保证。
+- 现在只用一个 DEP 通信组。
+
+**怎么验证的：**
+- 最坏情况模型：每个 kernel 都要等本 rank 所有未配对的操作。用 torch 的 `_add_send_recv` 生成调度自己的 send/recv 顺序，再插入 DEP 的挂出点和视觉计算。
+- 结果（`kit_dep_mixed_2026-09-27/transport/deadlock_sim.py` 及其输出），40 种配置（pp2 × vp4 到 pp8 × vp4，K2.5 和 bubble 两种模式，两种负载，两种开销比）：torch 调度自己全部能跑完；新设计全部能跑完；旧设计全部卡住，和 GPU 上观察到的一致。
+- 这个模型的精简版进了规划器测试（`test_no_wait_cycle_when_kernels_wait_for_the_ranks_posted_transfers`）。我也确认过它能抓到旧写法：只要把 receive 挪到步首，就会报告卡住。
+- 新增 NCCL 下的 GPU 测试（4 卡），塔带 GELU，它的 kernel 在 step 进行中才第一次加载，K2.5 和 bubble 两种模式都测。本机没有 CUDA，这个测试在本机跳过。
+
+**rebase：** 分支已换到 main `5dc97a3e7` 上，#4905 带来的改名都做了：
+- `parallel_dims` 改成 `parallelism_context`；
+- `get_spmd_context(parallel_dims=...)` 改成 `parallelism_context.activate_spmd()`；
+- 冲突在 `kimi_k3/pipeline_parallel/__init__.py`。
+
+**分支：** `k3_pp_mm` 和 `dep_review1` 都是 `55e4274c4`（3 个提交，force-with-lease 推送）。GPU 那边按 `t5b.sh` 补测数值、trace 和显存。

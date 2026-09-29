@@ -2,8 +2,13 @@
 
 ## 状态（不粘贴）
 
-- **09-28 夜 GPU 验证（5060）：** B200 格子第 1 步死锁（步首挂出的 NCCL irecv 碰上塔的 kernel 第一次加载），数值、trace、显存都没测成；详见 `OVERNIGHT_RESULTS_2026-09-28.md` 的 T5 节。修好之前，粘贴区里的 B200 格子和 GPU 结果保持 pending。
-- **分支：** PR 分支 `k3_pp_mm` 和 review 分支 `dep_review1` 都是 `bb3e38d4a`，即 main `f35966713` 上的 3 个提交。09-28 按你的话（"直接推送，这是draft PR"）force-with-lease 推送，替换了旧实现 `31f372593`。旧 head 没有另建备份分支，通过 PR 的 force-push 记录和提交哈希仍能找到。
+- **09-29 传输修复：** 分支现在是 `55e4274c4`，在 main `5dc97a3e7`（#4905 把 ParallelDims 改名为 ParallelismContext）上，一共 3 个提交。PR 分支 `k3_pp_mm` 和 review 分支 `dep_review1` 都已从 `bb3e38d4a` force-with-lease 推送到这里。
+  - 死锁修法：不再在步首挂出 receive。每一对 send 和 receive，两边都在调度的同一个槽边界上挂出，这个边界两边都能在不依赖对方之后工作的情况下走到；receive 在使用前等，send 在步末等。
+  - K2.5 模式：特征在预编码后于步首交换，梯度在调度结束后于步尾交换。
+  - bubble 模式：特征取发送方空闲段结束的边界，梯度取执行方空闲段开始的边界。
+  - 规划器测试里加了一个最坏情况模型：每个 kernel 都要等本 rank 所有未配对的操作。torch 调度自己在这个模型下能跑完，新 plan 也能跑完；只要把 receive 挪到步首就会卡住。新增 NCCL 下的 GPU 测试 `tests/unit_tests/gpu/test_kimi_k3_vision_dep.py`（4 卡），里面的塔带 GELU，它的 kernel 在 step 进行中才第一次加载。
+  - 本机（harness）23 个通过，GPU 测试在本机跳过。
+- **09-28 夜 GPU 验证（5060，`bb3e38d4a`）：** B200 格子第 1 步死锁，见 `OVERNIGHT_RESULTS_2026-09-28.md` 的 T5 节。修好以后按 `t5b.sh` 补测，在这之前粘贴区的 GPU 结果保持 pending。
 - **重写的原因：** 旧实现把塔放成 rank 0 上单独的一个 PP stage，不是 DEP，见 `DEP_VS_REPORT_AUDIT_2026-09-27.md`。旧的 4 个提交全部弃用，optimizer 那个提交（只有塔的 stage 匹配不到 Muon 矩阵）也不再需要，因为不存在只有塔的 stage 了。
 - **本机验证：**
   - 21 个测试通过：K3 PP 的旧测试，加上新的规划器测试（8 个）和 gloo 测试（4 个，其中 1 个专测 TP 分片的同步和梯度回写）。
@@ -31,7 +36,7 @@ A micro-batch is the unit of work and its patch count is the load. Every pipelin
 
 Without `bubble`, every encode runs before the schedule and every backward after it, balanced across the ranks by patch count, which is K2.5's form. With `bubble`, the plan reads every rank's `pipeline_order`: the first pipeline-degree micro-batches stage 0 consumes are encoded before the schedule, and the others in an idle slot of any rank ahead of the forward that reads them; a backward runs in an idle slot after stage 0's backward of the micro-batch; what fits no idle slot joins the balanced prologue or epilogue. Every rank derives the same plan from the action order and `grid_thw`, so no metadata is exchanged.
 
-Planned work runs after the action it is anchored to. When that action sends to another rank, the stage issues the send first and returns no ops to the runtime, so the send does not wait for the vision work. Features and gradients travel on two process groups created per pipeline group, so their order is independent of the schedule's sends and receives. Each rank sums its copy's gradients in fp32; at step end they are reduced to stage 0, all-reduced over data parallel, gathered over tensor parallel and added into the tower's sharded gradients, before the gradient norm.
+Planned work runs after the action it is anchored to. When that action sends to another rank, the stage issues the send first and returns no ops to the runtime, so the send does not wait for the vision work. Features and gradients travel on a process group created per pipeline group, and both ends of a transfer post it at one slot boundary of the schedule, a point each reaches without the other's later work: the prologue's features at the start of the step, the epilogue's gradients at its end, a feature encoded in an idle slot when its rank's next action starts, and a gradient when the idle slot of the rank that uses it begins. A posted send or receive therefore never waits on work its own rank has yet to do; receives are waited where their data is used and sends at the end of the step. Each rank sums its copy's gradients in fp32; at step end they are reduced to stage 0, all-reduced over data parallel, gathered over tensor parallel and added into the tower's sharded gradients, before the gradient norm.
 
 `pipeline_kimi_k3` returns the schedule wrapped so that its `step` runs the vision phases around the core step; the engine's pipeline step body has no model hook for them. The runtime lives in the model's pipeline package, next to the attention residual stage it extends.
 
@@ -41,9 +46,10 @@ The earlier revisions gave the tower a pipeline stage of its own on the first ra
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (12 passed).
-  - `test_kimi_k3_dep_plan.py`: on the Interleaved1F1B action order at pp4 x vp2 and pp8 x vp4, every encode in an idle slot finishes before its consumer, every backward starts after its gradient arrives, planned work sits in idle slots without overlap, each rank sends its features in the order stage 0 receives them, and with a cheap encode every micro-batch after the upfront ones is hidden.
+- `pytest tests/unit_tests/cpu/test_kimi_k3_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (14 passed).
+  - `test_kimi_k3_dep_plan.py`: on the Interleaved1F1B action order at pp2 x vp4, pp4 x vp2 and pp8 x vp4, every encode in an idle slot finishes before its consumer, every backward starts after its gradient arrives, planned work sits in idle slots without overlap, both ends of each transfer post it at one slot boundary and every pair of ranks posts its transfers in the same order, a transfer leaves after its data exists and arrives before its use, and with a cheap encode every micro-batch after the upfront ones is hidden. Replaying the schedule's own sends and receives with every kernel waiting for its rank's unmatched transfers, no rank is left stuck, with the process in either placement.
   - `test_kimi_k3_vision_dep.py`: four ranks on gloo, pp4 x vp2, eight micro-batches with two text only, with the work before and after the schedule and with it in idle slots: the step-1 loss and every gradient are bitwise with one device, the step-2 loss and text gradients are bitwise and the tower gradients agree to fp32 summation order; a frozen tower gets no gradient; eval between steps matches one device. At pp2 x tp2, each copy receives its tensor-parallel shard of the tower and the tower's gradient is the sum of every rank's shards.
+- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q`, the same four ranks under NCCL with a tower whose kernels first load inside the step, in both placements: pending.
 - The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`: pending.
 - DEP on and off on one warm compile cache, and `bubble` on and off, loss, gradients and step time: pending (H100).
 
