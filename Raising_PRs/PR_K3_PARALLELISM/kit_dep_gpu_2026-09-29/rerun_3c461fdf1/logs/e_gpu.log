@@ -1,0 +1,494 @@
+FF                                                                                                                                                                      [100%]
+================================================================================== FAILURES ===================================================================================
+_________________________________________________ TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl _________________________________________________
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:920: in wrapper
+    self._join_processes(fn)
+        fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+        self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1190: in _join_processes
+    self._check_return_codes(fn, elapsed_time)
+        ac         = <SpawnProcess name='process 1' pid=1758709 parent=1758624 started>
+        active_children = [<SpawnProcess name='process 3' pid=1758711 parent=1758624 started>, <SpawnProcess name='process 1' pid=1758709 parent=1758624 started>]
+        elapsed    = 12.316658735275269
+        elapsed_time = 12.417361736297607
+        fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+        i          = 0
+        p          = <SpawnProcess name='process 0' pid=1758708 parent=1758624 stopped exitcode=10>
+        pipe       = <multiprocessing.connection.Connection object at 0x7fb76b86c890>
+        self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+        start_time = 1790657946.3960092
+        subprocess_error = True
+        timeout    = 300
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+fn = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+elapsed_time = 12.417361736297607
+
+    def _check_return_codes(self, fn, elapsed_time) -> None:
+        """
+        Checks that the return codes of all spawned processes match, and skips
+        tests if they returned a return code indicating a skipping condition.
+        """
+        # If no processes are spawned, there is nothing to check.
+        if not self.processes:
+            logger.warning(
+                "Note: no subprocesses were spawned, test was likely skipped."
+            )
+            return
+    
+        first_process = self.processes[0]
+        # first, we check if there are errors in actual processes
+        # (via TEST_ERROR_EXIT CODE), and raise an exception for those.
+        # the reason we do this is to attempt to raise a more helpful error
+        # message than "Process x terminated/timed out"
+        # TODO: we should pipe the exception of the failed subprocess here.
+        # Currently, the actual exception is displayed as a logging output.
+        errored_processes = [
+            (i, p)
+            for i, p in enumerate(self.processes)
+            if p.exitcode == MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+        ]
+        if errored_processes:
+            error = ""
+            for i, process in errored_processes:
+                # Get error from pipe.
+                error_message = self.pid_to_pipe[process.pid].recv()
+                error += (
+                    f"Process {i} exited with error code {MultiProcessTestCase.TEST_ERROR_EXIT_CODE} "
+                    f"and exception:\n{error_message}\n"
+                )
+    
+>           raise RuntimeError(error)
+E           RuntimeError: Process 0 exited with error code 10 and exception:
+E           Traceback (most recent call last):
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E               getattr(self, test_name)()
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E               fn()
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E               method(*args, **kwargs)
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E               raise e
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E               func(self, *args, **kwargs)  # type: ignore[misc]
+E               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 41, in test_encodes_and_backwards_in_idle_slots_under_nccl
+E               self._check(bubble=True, frozen_tower=False)
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E               self.fail("\n\n".join(failures) or "a check failed on another rank")
+E             File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E               raise self.failureException(msg)
+E           AssertionError: Tensor-likes are not close!
+E           
+E           Mismatched elements: 1 / 4 (25.0%)
+E           Greatest absolute difference: 1.52587890625e-05 at index (0,) (up to 1e-05 allowed)
+E           Greatest relative difference: 4.5615911403729115e-06 at index (0,) (up to 1.3e-06 allowed)
+E           
+E           To execute this test, run the following from the base repo dir:
+E               python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl
+E           
+E           This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E           
+E           Process 2 exited with error code 10 and exception:
+E           Traceback (most recent call last):
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E               getattr(self, test_name)()
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E               fn()
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E               method(*args, **kwargs)
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E               raise e
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E               func(self, *args, **kwargs)  # type: ignore[misc]
+E               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 41, in test_encodes_and_backwards_in_idle_slots_under_nccl
+E               self._check(bubble=True, frozen_tower=False)
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E               self.fail("\n\n".join(failures) or "a check failed on another rank")
+E             File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E               raise self.failureException(msg)
+E           AssertionError: a check failed on another rank
+E           
+E           To execute this test, run the following from the base repo dir:
+E               python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl
+E           
+E           This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+
+elapsed_time = 12.417361736297607
+error      = 'Process 0 exited with error code 10 and exception:\nTraceback (most recent call last):\n  File "/workspace/venv_bfx9/...d_backwards_in_idle_slots_under_nccl\n\nThis message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0\n\n'
+error_message = 'Traceback (most recent call last):\n  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal...and_backwards_in_idle_slots_under_nccl\n\nThis message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0\n'
+errored_processes = [(0, <SpawnProcess name='process 0' pid=1758708 parent=1758624 stopped exitcode=10>), (2, <SpawnProcess name='process 2' pid=1758710 parent=1758624 stopped exitcode=10>)]
+first_process = <SpawnProcess name='process 0' pid=1758708 parent=1758624 stopped exitcode=10>
+fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl of <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>>
+i          = 2
+process    = <SpawnProcess name='process 2' pid=1758710 parent=1758624 stopped exitcode=10>
+self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_and_backwards_in_idle_slots_under_nccl>
+
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1230: RuntimeError
+---------------------------------------------------------------------------- Captured stdout call -----------------------------------------------------------------------------
+Process 0 terminated with exit code 10, terminating remaining processes.
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I0929 04:59:06.391000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 0 with pid 1758708
+I0929 04:59:06.393000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 1 with pid 1758709
+I0929 04:59:06.394000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 2 with pid 1758710
+I0929 04:59:06.395000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 3 with pid 1758711
+W0929 04:59:12.542000 1758710 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:12.608000 1758710 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:12.638000 1758711 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:12.681000 1758709 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:12.704000 1758711 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:12.745000 1758709 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:12.755000 1758708 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:12.819000 1758708 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[rank0]:W0929 04:59:14.866000 1758708 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank1]:W0929 04:59:15.134000 1758709 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank2]:W0929 04:59:15.138000 1758710 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank3]:W0929 04:59:15.158000 1758711 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 41, in test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=True, frozen_tower=False)
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] AssertionError: Tensor-likes are not close!
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] Mismatched elements: 1 / 4 (25.0%)
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] Greatest absolute difference: 1.52587890625e-05 at index (0,) (up to 1e-05 allowed)
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] Greatest relative difference: 4.5615911403729115e-06 at index (0,) (up to 1.3e-06 allowed)
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:16.634000 1758708 torch/testing/_internal/common_distributed.py:1085]  exiting process 0 with exit code: 10
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 41, in test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=True, frozen_tower=False)
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085] AssertionError: a check failed on another rank
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:16.637000 1758709 torch/testing/_internal/common_distributed.py:1085]  exiting process 1 with exit code: 10
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 41, in test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=True, frozen_tower=False)
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085] AssertionError: a check failed on another rank
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:16.638000 1758710 torch/testing/_internal/common_distributed.py:1085]  exiting process 2 with exit code: 10
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 41, in test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=True, frozen_tower=False)
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085] AssertionError: a check failed on another rank
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:16.640000 1758711 torch/testing/_internal/common_distributed.py:1085]  exiting process 3 with exit code: 10
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 0 with pid 1758708
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 1 with pid 1758709
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 2 with pid 1758710
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 3 with pid 1758711
+___________________________________________ TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl ___________________________________________
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:920: in wrapper
+    self._join_processes(fn)
+        fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl of <tests.unit_t...kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>>
+        self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1190: in _join_processes
+    self._check_return_codes(fn, elapsed_time)
+        ac         = <SpawnProcess name='process 1' pid=1759067 parent=1758624 started>
+        active_children = [<SpawnProcess name='process 3' pid=1759069 parent=1758624 started>, <SpawnProcess name='process 0' pid=1759066 parent=1758624 started>, <SpawnProcess name='process 1' pid=1759067 parent=1758624 started>]
+        elapsed    = 12.016726970672607
+        elapsed_time = 12.11760950088501
+        fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl of <tests.unit_t...kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>>
+        i          = 2
+        p          = <SpawnProcess name='process 2' pid=1759068 parent=1758624 stopped exitcode=10>
+        pipe       = <multiprocessing.connection.Connection object at 0x7fb76b86d160>
+        self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>
+        start_time = 1790657958.9043896
+        subprocess_error = True
+        timeout    = 300
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>
+fn = <bound method TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl of <tests.unit_t...kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>>
+elapsed_time = 12.11760950088501
+
+    def _check_return_codes(self, fn, elapsed_time) -> None:
+        """
+        Checks that the return codes of all spawned processes match, and skips
+        tests if they returned a return code indicating a skipping condition.
+        """
+        # If no processes are spawned, there is nothing to check.
+        if not self.processes:
+            logger.warning(
+                "Note: no subprocesses were spawned, test was likely skipped."
+            )
+            return
+    
+        first_process = self.processes[0]
+        # first, we check if there are errors in actual processes
+        # (via TEST_ERROR_EXIT CODE), and raise an exception for those.
+        # the reason we do this is to attempt to raise a more helpful error
+        # message than "Process x terminated/timed out"
+        # TODO: we should pipe the exception of the failed subprocess here.
+        # Currently, the actual exception is displayed as a logging output.
+        errored_processes = [
+            (i, p)
+            for i, p in enumerate(self.processes)
+            if p.exitcode == MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+        ]
+        if errored_processes:
+            error = ""
+            for i, process in errored_processes:
+                # Get error from pipe.
+                error_message = self.pid_to_pipe[process.pid].recv()
+                error += (
+                    f"Process {i} exited with error code {MultiProcessTestCase.TEST_ERROR_EXIT_CODE} "
+                    f"and exception:\n{error_message}\n"
+                )
+    
+>           raise RuntimeError(error)
+E           RuntimeError: Process 2 exited with error code 10 and exception:
+E           Traceback (most recent call last):
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E               getattr(self, test_name)()
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E               fn()
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E               method(*args, **kwargs)
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E               raise e
+E             File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E               func(self, *args, **kwargs)  # type: ignore[misc]
+E               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 37, in test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E               self._check(bubble=False, frozen_tower=False)
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E               self.fail("\n\n".join(failures) or "a check failed on another rank")
+E             File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E               raise self.failureException(msg)
+E           AssertionError: a check failed on another rank
+E           
+E           To execute this test, run the following from the base repo dir:
+E               python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E           
+E           This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+
+elapsed_time = 12.11760950088501
+error      = 'Process 2 exited with error code 10 and exception:\nTraceback (most recent call last):\n  File "/workspace/venv_bfx9/...kwards_after_the_schedule_under_nccl\n\nThis message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0\n\n'
+error_message = 'Traceback (most recent call last):\n  File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal...ackwards_after_the_schedule_under_nccl\n\nThis message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0\n'
+errored_processes = [(2, <SpawnProcess name='process 2' pid=1759068 parent=1758624 stopped exitcode=10>)]
+first_process = <SpawnProcess name='process 0' pid=1759066 parent=1758624 started>
+fn         = <bound method TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl of <tests.unit_t...kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>>
+i          = 2
+process    = <SpawnProcess name='process 2' pid=1759068 parent=1758624 stopped exitcode=10>
+self       = <tests.unit_tests.gpu.test_kimi_k3_vision_dep.TestKimiK3VisionDepNccl testMethod=test_encodes_before_and_backwards_after_the_schedule_under_nccl>
+
+/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1230: RuntimeError
+---------------------------------------------------------------------------- Captured stdout call -----------------------------------------------------------------------------
+Process 2 terminated with exit code 10, terminating remaining processes.
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I0929 04:59:18.900000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 0 with pid 1759066
+I0929 04:59:18.901000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 1 with pid 1759067
+I0929 04:59:18.903000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 2 with pid 1759068
+I0929 04:59:18.904000 1758624 torch/testing/_internal/common_distributed.py:999] Started process 3 with pid 1759069
+W0929 04:59:24.626000 1759067 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:24.658000 1759068 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:24.690000 1759067 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:24.722000 1759068 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:24.740000 1759066 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:24.794000 1759069 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:24.801000 1759066 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+W0929 04:59:24.857000 1759069 torch/utils/_pytree.py:630] <enum 'ScaleCalculationMode'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+[rank0]:W0929 04:59:27.224000 1759066 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank2]:W0929 04:59:27.479000 1759068 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank1]:W0929 04:59:27.491000 1759067 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank3]:W0929 04:59:27.515000 1759069 torch/_logging/_internal.py:1394] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 37, in test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=False, frozen_tower=False)
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085] AssertionError: a check failed on another rank
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:28.922000 1759067 torch/testing/_internal/common_distributed.py:1085]  exiting process 1 with exit code: 10
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 37, in test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=False, frozen_tower=False)
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] AssertionError: Tensor-likes are not close!
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] Mismatched elements: 1 / 4 (25.0%)
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] Greatest absolute difference: 1.52587890625e-05 at index (0,) (up to 1e-05 allowed)
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] Greatest relative difference: 4.5615911403729115e-06 at index (0,) (up to 1.3e-06 allowed)
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:28.925000 1759066 torch/testing/_internal/common_distributed.py:1085]  exiting process 0 with exit code: 10
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 37, in test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=False, frozen_tower=False)
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085] AssertionError: a check failed on another rank
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:28.928000 1759069 torch/testing/_internal/common_distributed.py:1085]  exiting process 3 with exit code: 10
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085] Caught exception: 
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085] Traceback (most recent call last):
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1075, in run_test
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     getattr(self, test_name)()
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 922, in wrapper
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     fn()
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3887, in wrapper
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     method(*args, **kwargs)
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 902, in wrapper
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     raise e
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/workspace/venv_bfx9/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 899, in wrapper
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     func(self, *args, **kwargs)  # type: ignore[misc]
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/gpu/test_kimi_k3_vision_dep.py", line 37, in test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     self._check(bubble=False, frozen_tower=False)
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/wt_dep_new/tests/unit_tests/cpu/test_kimi_k3_vision_dep.py", line 285, in _check
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     self.fail("\n\n".join(failures) or "a check failed on another rank")
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]   File "/venv/main/lib/python3.12/unittest/case.py", line 715, in fail
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     raise self.failureException(msg)
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085] AssertionError: a check failed on another rank
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085] To execute this test, run the following from the base repo dir:
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]     python test_kimi_k3_vision_dep.py TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085] 
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E0929 04:59:28.928000 1759068 torch/testing/_internal/common_distributed.py:1085]  exiting process 2 with exit code: 10
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 0 with pid 1759066
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 1 with pid 1759067
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 2 with pid 1759068
+INFO     torch.testing._internal.common_distributed:common_distributed.py:999 Started process 3 with pid 1759069
+=========================================================================== short test summary info ===========================================================================
+FAILED tests/unit_tests/gpu/test_kimi_k3_vision_dep.py::TestKimiK3VisionDepNccl::test_encodes_and_backwards_in_idle_slots_under_nccl - RuntimeError: Process 0 exited with e...
+FAILED tests/unit_tests/gpu/test_kimi_k3_vision_dep.py::TestKimiK3VisionDepNccl::test_encodes_before_and_backwards_after_the_schedule_under_nccl - RuntimeError: Process 2 e...
+2 failed in 31.09s
