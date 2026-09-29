@@ -246,3 +246,22 @@
   1. `_vision_replica` 里 `replica.init_states()` 消耗了全局 CUDA 随机数，而且发生在模型初始化之前，所以同一个种子下 DEP 开和 DEP 关的初始权重不同（stage 0 那段 249 个参数只有 67 个相同）。本地已验证：把它包进 `torch.random.fork_rng(devices=[device])` 就能对齐。
   2. bubble 模式的新 GPU 测试没过，但不是卡死：rank 0 上第 1 步之后塔的 `proj` 梯度，12 个元素里 1 个相对差 1.44e-6，比默认容差 1.3e-6 略大，原因是 fp32 求和顺序变了（塔的反向换到了另一个 rank 上）。
 - 详情、表格和复现脚本：`DEP_GPU_CHECK_2026-09-29.md`、`kit_dep_gpu_2026-09-29/`。
+
+## 13. GPU 复查之后的两处补丁（2026-09-29 下午）
+
+GPU 那边的复查见 `DEP_GPU_CHECK_2026-09-29.md`，分支当时是 `55e4274c4`：
+- 死锁已经修好，B200 格子在默认懒加载下跑完 10 步；
+- 只要两边初始权重相同，K2.5 和 bubble 两种模式都和 DEP 关逐位一致。
+
+要改的两处：
+1. **副本初始化消耗全局随机数。** `_vision_replica` 里的 `replica.init_states()` 在 `set_determinism` 之后、各 model part 的 `init_weights` 之前执行，推进了随机数。结果 DEP 开的整个模型初始权重都变了，第 1 步 loss 是 8.14325 对 8.05527。
+   - 改法：把 `init_states()` 包进 `torch.random.fork_rng`。设备是 CUDA 时连同本卡一起 fork，CPU 时只 fork CPU。副本的权重第一步开头就会被覆盖，这次初始化只是为了把参数和 buffer 建出来。
+   - 新增 CPU 测试 `TestVisionReplicaSeed`：同一个种子下，建副本前后抽到的随机数逐位相同。去掉 `fork_rng` 时这个测试失败，已验证。
+2. **bubble 模式的 GPU 测试容差偏紧。** rank 0 上第 2 步塔 `proj` 的梯度相对差 1.44e-6，默认容差 1.3e-6，原因是反向换到别的 rank 后 fp32 的求和顺序变了。
+   - 另一个问题：玩具模型用学习率 1 跑到第 2 步，梯度到了 1e17 的量级，GPU 上这样比较没有意义。
+   - 改法：
+     - 学习率作为类属性，CPU 仍是 1.0（整数算术，逐位比较），GPU 改成 1e-3；
+     - 塔梯度用相对 1e-5 的容差，注释写明是求和顺序不同；
+     - `_check` 先收集每个 rank 的失败，然后所有 rank 做一次 all_reduce 汇总，再一起失败。这样失败的断言内容能直接显示，其他 rank 也不会在收尾的 barrier 里等到超时。
+
+**分支：** `k3_pp_mm` 和 `dep_review1` 都是 `3c461fdf1`。第 1 个提交（规划器）不变；第 2 个提交是运行时、接线和测试；第 3 个是 B200 格子。本机（harness）24 个通过，GPU 测试在本机跳过。GPU 那边按 `t5c.sh`、`t5d.sh` 复测，不再需要本地的 `fork_rng` 探针补丁。

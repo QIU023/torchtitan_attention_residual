@@ -3,6 +3,10 @@
 ## 状态（不粘贴）
 
 - **09-29 GPU 验证（5060，`55e4274c4`）：** 死锁已修好，B200 格子跑完 10 步。副本初始化多用了随机数，改变了模型的初始权重，所以还不能拿 DEP 开和 DEP 关比；用 `fork_rng` 探针对齐以后，两种模式都和 DEP 关逐位一致。bubble 模式的 GPU 测试有一处容差没过。详见 `DEP_GPU_CHECK_2026-09-29.md`。粘贴区的 GPU 结果仍写 pending。
+- **09-29 下午，两处补丁（GPU 那边在 `DEP_GPU_CHECK_2026-09-29.md` 里提的）：** 分支现在是 `3c461fdf1`，`k3_pp_mm` 和 `dep_review1` 已从 `55e4274c4` force-with-lease 推送到这里。
+  - 副本的初始化包进了 `torch.random.fork_rng`（CUDA 时连同本卡），不再推进全局随机数。同一种子下，DEP 开和 DEP 关的初始权重现在应当相同。新增 CPU 测试：建副本前后抽到的随机数逐位相同；去掉 `fork_rng` 这个测试就失败，已验证。
+  - GPU 测试：学习率改成 1e-3，玩具模型的数值不再涨到 1e17；塔梯度的容差按求和顺序放宽到相对 1e-5；每个 rank 先收集自己的失败，所有 rank 汇总一次后再一起失败，失败的断言内容会直接显示，不再让其他 rank 卡在收尾。
+  - 本机（harness）24 个通过，GPU 测试在本机跳过。
 - **09-29 传输修复：** 分支现在是 `55e4274c4`，在 main `5dc97a3e7`（#4905 把 ParallelDims 改名为 ParallelismContext）上，一共 3 个提交。PR 分支 `k3_pp_mm` 和 review 分支 `dep_review1` 都已从 `bb3e38d4a` force-with-lease 推送到这里。
   - 死锁修法：不再在步首挂出 receive。每一对 send 和 receive，两边都在调度的同一个槽边界上挂出，这个边界两边都能在不依赖对方之后工作的情况下走到；receive 在使用前等，send 在步末等。
   - K2.5 模式：特征在预编码后于步首交换，梯度在调度结束后于步尾交换。
@@ -47,9 +51,9 @@ The earlier revisions gave the tower a pipeline stage of its own on the first ra
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (14 passed).
+- `pytest tests/unit_tests/cpu/test_kimi_k3_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (15 passed).
   - `test_kimi_k3_dep_plan.py`: on the Interleaved1F1B action order at pp2 x vp4, pp4 x vp2 and pp8 x vp4, every encode in an idle slot finishes before its consumer, every backward starts after its gradient arrives, planned work sits in idle slots without overlap, both ends of each transfer post it at one slot boundary and every pair of ranks posts its transfers in the same order, a transfer leaves after its data exists and arrives before its use, and with a cheap encode every micro-batch after the upfront ones is hidden. Replaying the schedule's own sends and receives with every kernel waiting for its rank's unmatched transfers, no rank is left stuck, with the process in either placement.
-  - `test_kimi_k3_vision_dep.py`: four ranks on gloo, pp4 x vp2, eight micro-batches with two text only, with the work before and after the schedule and with it in idle slots: the step-1 loss and every gradient are bitwise with one device, the step-2 loss and text gradients are bitwise and the tower gradients agree to fp32 summation order; a frozen tower gets no gradient; eval between steps matches one device. At pp2 x tp2, each copy receives its tensor-parallel shard of the tower and the tower's gradient is the sum of every rank's shards.
+  - `test_kimi_k3_vision_dep.py`: four ranks on gloo, pp4 x vp2, eight micro-batches with two text only, with the work before and after the schedule and with it in idle slots: the step-1 loss and every gradient are bitwise with one device, the step-2 loss and text gradients are bitwise and the tower gradients agree to fp32 summation order; a frozen tower gets no gradient; eval between steps matches one device. At pp2 x tp2, each copy receives its tensor-parallel shard of the tower and the tower's gradient is the sum of every rank's shards. Building the tower's copy leaves the seeded random stream where it was, so the model initializes the same with the process on or off.
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q`, the same four ranks under NCCL with a tower whose kernels first load inside the step, in both placements: pending.
 - The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`: pending.
 - DEP on and off on one warm compile cache, and `bubble` on and off, loss, gradients and step time: pending (H100).
