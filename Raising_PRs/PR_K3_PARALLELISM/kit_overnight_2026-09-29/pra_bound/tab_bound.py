@@ -41,7 +41,8 @@ def ranks(root, run):
 def main():
     root, layouts = sys.argv[1], sys.argv[2:]
     for L in layouts:
-        a, b = f"4656_{L}", f"pra_{L}"
+        na, nb = os.environ.get("NA", "4656"), os.environ.get("NB", "pra")
+        a, b = f"{na}_{L}", f"{nb}_{L}"
         la, lb = losses(os.path.join(root, a, "run.log")), losses(os.path.join(root, b, "run.log"))
         same = sum(1 for s in la if lb.get(s) == la[s])
         rc = [open(os.path.join(root, r, "rc")).read().strip() if os.path.exists(os.path.join(root, r, "rc")) else "-" for r in (a, b)]
@@ -59,7 +60,7 @@ def main():
         print("| rank | tree | action | allocated | blocks held | store | stage inputs | stage outputs | sends only | recv buffers | bound tight | bound paper | blocks max over step | tight max | paper max |")
         print("|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         for r in sorted(ra):
-            for tree, rr in (("#4656", ra), ("PR A", rb)):
+            for tree, rr in ((a.rsplit("_", 1)[0], ra), (b.rsplit("_", 1)[0], rb)):
                 acts = rr.get(r, {}).get("actions", [])
                 if not acts:
                     continue

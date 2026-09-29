@@ -26,9 +26,9 @@
 | pp4 × vpp4 | 20/20 | 9.51 / 6.87 / 7.94 / 7.68 | 7.98 / 5.59 / 6.35 / 5.80 | 1.27 到 1.88 |
 | pp2 × vpp4 | 20/20 | 12.60 / 10.56 | 11.37 / 9.26 | 1.23 到 1.31 |
 | dp2 × pp2 × vpp2 | 20/20 | 9.92 / 9.92 / 8.12 / 8.12 | 9.17 / 9.17 / 7.29 / 7.29 | 0.75 到 0.83 |
-| pp2 × vpp2 | #4656 第 8 步 OOM（前 7 步相同）；PR A 20 步跑完，rank 0 11.64 | | | 用 expandable segments 重跑，见下 |
+| pp2 × vpp2（expandable segments） | 20/20 | 12.39 / 9.80 | 11.63 / 8.97 | 0.76 到 0.83 |
 
-- #4656 在 pp2 × vpp2 下 OOM 的报错：已分配 10.05 GiB，另有 3.87 GiB 保留未用（碎片），16 GB 的卡放不下；PR A 同一格能跑完。
+- pp2 × vpp2 第一次跑（默认分配器）时，#4656 在第 8 步 OOM（前 7 步和 PR A 相同）：已分配 10.05 GiB，另有 3.87 GiB 保留未用（碎片），16 GB 的卡放不下；PR A 同一格 20 步跑完。两棵树都加 `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` 重跑（`results_bound_pp2vp2_es/`），上表是重跑的数。expandable segments 只影响 reserved，不影响 allocated。
 
 **各 rank 峰值那个动作上的 block 占用（第 5 步，GiB）：**
 
@@ -46,10 +46,19 @@
 | pp2 × vpp4 | 1 | 0.80（0.64） | 0.13（0.08） | 0.08 | 0.11 |
 | dp2 × pp2 × vpp2 | 0、1 | 0.52（0.48） | 0.06（0.03） | 0.03 | 0.08 |
 | dp2 × pp2 × vpp2 | 2、3 | 0.39（0.34） | 0.06（0.05） | 0.05 | 0.08 |
+| pp2 × vpp2 | 0 | 0.52（0.48） | 0.06（0.03） | 0.03 | 0.06 |
+| pp2 × vpp2 | 1 | 0.39（0.34） | 0.06（0.05） | 0.05 | 0.08 |
 
 - **PR A 的 store 在每个布局、每个 rank 的峰值时刻都正好等于紧界**，也就是论文 §4.1 说的每个 block 在 rank 上只存一份，而且比论文的释放点更早。
 - **#4656 在峰值时刻占着紧界的 5 到 13 倍**，大头是整步都被 send 扣住的张量，其次是每个 stage 进门拼出来的 stack 和模型输出的 stack。
 - **PR A 高出紧界的部分是还没 wait 的前向 send。** PR A 在本 stage 反向那个 micro-batch 时才 wait。探针补丁 `pra_bound/early_fwd_wait_probe.patch` 改成在同一个 rank 上下一个虚拟 stage 对同一个 micro-batch 做前向时 wait：那个前向的输入要经过接收方对这个 micro-batch 的前向，所以接收方一定已经用完。最后一个虚拟 stage 仍在反向时 wait。它在 71 个单测上全过；GPU 上的对比见 T1g。
+## T1g 前向 send 提前 wait 的探针（不并入 PR A）
+
+- 补丁 `pra_bound/early_fwd_wait_probe.patch`：前向 send 在同一个 rank 上下一个虚拟 stage 对同一个 micro-batch 做前向时 wait（那个前向的输入要经过接收方对这个 micro-batch 的前向，所以接收方一定已经用完），最后一个虚拟 stage 仍在反向时 wait。71 个单测全过。
+- 5060 上对 PR A（pp4 × vpp2、pp4 × vpp4，同样设置，20 步，`results_bound_early/`）：20/20 逐位相同；**各 rank 的整卡峰值完全不变**（7.16 / 6.30 / 6.04 / 4.76，7.98 / 5.59 / 6.35 / 5.80 GiB）；峰值动作结束时的 block 占用从 0.13 到 0.28 降到 0.09 到 0.19 GiB，基本等于紧界加在途的接收缓冲。
+- 原因：rank 的峰值落在它最后一个虚拟 stage 的反向里，那个 stage 的前向 send 两种写法都在反向时 wait；更早 stage 的 send 在峰值时刻已经放掉，或者和前向缓存里本来就要留到反向的输出是同一块存储。
+- 结论：PR A 不改。block 占用在峰值时刻已经是紧界加在途的一次传输。
+
 ## T1e body 和 torch issue
 
 - PR A body v3：`PR_BODY_PP_CACHE_OPT_v3_2026-09-29.md`。Summary 引论文 §4.1 "each block is stored exactly once across all V virtual stages"；Design 三段：一个 block 为什么在 4312 的 stage 里存了 1 + k 份、为什么在带进来的 stage 反向释放、send 早等为什么是释放生效的前提（接收缓冲交给 torch）。Results：Pending (H100)。
