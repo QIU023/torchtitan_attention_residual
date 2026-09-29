@@ -1,0 +1,21 @@
+10:40:31 tree a03f74981 dirty=0
+10:40:48 microbench dim 1024 seq 1024 rc=1
+10:41:05 microbench dim 1024 seq 2048 rc=1
+10:41:21 microbench dim 2048 seq 1024 rc=1
+10:41:37 microbench dim 2048 seq 2048 rc=1
+10:46:20 smoke L1 (224 px) w_dep_off rc=0; 
+10:49:07 smoke L1 (224 px) w_dep_k25 rc=0; vision_dep: 3 micro-batch(es) with images; encodes 3 before the schedule, 0 in idle slots; backwards 0 in idle slots, 3 after it
+10:50:54 smoke L1 (224 px) w_dep_bubble rc=0; vision_dep: 3 micro-batch(es) with images; encodes 2 before the schedule, 1 in idle slots; backwards 0 in idle slots, 3 after it
+10:55:19 smoke L2 (448 px) w_dep_off rc=0; 
+10:58:22 smoke L2 (448 px) w_dep_k25 rc=0; vision_dep: 3 micro-batch(es) with images; encodes 3 before the schedule, 0 in idle slots; backwards 0 in idle slots, 3 after it
+11:00:10 smoke L2 (448 px) w_dep_bubble rc=0; vision_dep: 3 micro-batch(es) with images; encodes 2 before the schedule, 1 in idle slots; backwards 0 in idle slots, 3 after it
+11:04:10 smoke L3 (1024 px) w_dep_off rc=0; 
+11:06:52 smoke L3 (1024 px) w_dep_k25 rc=0; vision_dep: 3 micro-batch(es) with images; encodes 3 before the schedule, 0 in idle slots; backwards 0 in idle slots, 3 after it
+11:08:38 smoke L3 (1024 px) w_dep_bubble rc=0; vision_dep: 3 micro-batch(es) with images; encodes 2 before the schedule, 1 in idle slots; backwards 0 in idle slots, 3 after it
+11:08:38 dep ratio 5060 done
+11:16:38 microbench rerun dim 1024 seq 1024 rc=0
+11:17:17 microbench rerun dim 1024 seq 2048 rc=0
+11:19:39 microbench rerun dim 2048 seq 1024 rc=0
+11:20:16 microbench rerun dim 2048 seq 2048 rc=0
+11:24:41 m16 L2 w_dep_k25 rc=0; vision_dep: 13 micro-batch(es) with images; encodes 13 before the schedule, 0 in idle slots; backwards 0 in idle slots, 13 after it
+11:26:50 m16 L2 w_dep_bubble rc=0; vision_dep: 13 micro-batch(es) with images; encodes 8 before the schedule, 5 in idle slots; backwards 0 in idle slots, 13 after it

@@ -71,6 +71,35 @@
 - **5060 冒烟**（pp4 × vpp2，dim 2048，16 × 2048，FullAC，6 步，一份缓存，`smoke_4765_4764/smoke.sh`）：五格全部 rc=0，第 6 步 loss、grad norm 都是 5.08641 / 11.3750。各 rank 峰值（第 2 到 5 步，GiB）：什么都不开 6.85 / 6.31 / 6.05 / 4.78；#4765 offload all 6.78 / 6.26 / 5.97 / 4.76；#4764 planned 6.78 / 6.26 / 5.99 / 4.78；balance（tcp）6.78 / 6.26 / 6.02 / 4.78；planned 加 balance 6.78 / 6.26 / 6.01 / 4.78。这个宽度下峰值主要是静态显存，它们能挪的东西少，和 09-26 的结论一致。
 - **推送（用户确认）：** `k3_pp_offload` = `pp_offload_review1` = `019462171`，`k3_pp_balance` = `pp_balance_review1` = `c4afb61f4`，force-with-lease；旧 head 在 `backup/pp_offload_review1_pre_20260929` = `56f4cd3b0`、`backup/pp_balance_review1_pre_20260929` = `0a9034257`。upstream 的 `refs/pull/4765/head`、`refs/pull/4764/head` 已经是新 head。body 的 Relation 改了，需要你在 GitHub 上替换。
 
+## T2 DEP 的文本 / 视觉计算比例
+
+**T2a、T2b（子任务，logbook `000edaf`，文档 `DEP_RATIO_2026-09-29.md`）：**
+- 口径：一次编码前向对一个文本 stage 前向的比例 R_f，加上各 micro-batch 之间图数的差别。
+- K3 发布配置的推算：PP16 × VP2、每个 micro-batch 4096 到 8192 个 token、一张 448 到 1024 px 的图，R_f 是 0.02 到 0.32，图多时按张数线性增加。放宽到 6144 的 debug model 塔和文本同宽，同一张图比 K3 重 5 到 8 倍（对 PP16 × VP2），用同样的 pp2 × vpp4 比是 19 到 31 倍。
+- 数据集：HF `jackyhate/text-to-image-2M` 的 `data_1024_10K`（MIT，一万张 1024 × 1024），打成 `/workspace/dep_data/t2i1024_k4/`（2500 个样本，每个 0 到 4 张图，4.7 GB，重新打包逐字节相同）；本地 recipe 固定正方形 resize（会放大），`max_patches` 至少 5184。
+- 三档：L1 224 px（R_f 约 0.21，K3 区间）、L2 448 px（约 0.87）、L3 1024 px（约 2.6）。
+
+**T2c 5060 实测（`kit_overnight_2026-09-29/dep_ratio/`，结果 `results_dep_ratio/`）：**
+
+单卡微基准，编码前向和一个文本 stage 前向的时间比（括号里是"编码前向加重算加反向"对"stage 前向加反向"的比）：
+
+| dim，seq | stage 前向 ms | 224 px | 448 px | 768 px | 1024 px |
+|---|---:|---|---|---|---|
+| 1024，1024 | 14.46 | 0.26（0.59） | 0.34（0.62） | 0.67（1.29） | 1.45（3.05） |
+| 1024，2048 | 16.08 | 0.23（0.39） | 0.22（0.41） | 0.60（0.92） | 1.30（2.17） |
+| 2048，1024 | 17.32 | 0.23（0.34） | 0.46（0.65） | 1.53（2.23） | 3.11（4.86） |
+| 2048，2048 | 单卡 OOM（微基准不开激活检查点） | | | | |
+
+- 小图（224、448）在 dim 1024 时编码时间几乎一样，是启动开销主导；时间比比 FLOP 比高，和 H100 上 cc12m-test 的观察一致。
+- 第一次跑微基准时把 rope 的 buffer 也转成了 bf16，`torch.polar` 报错；改成只转参数（FSDP 混合精度就是这样）后重跑。
+
+4 卡三档冒烟（dim 1024，pp2 × vpp4 × tp2 × ep2，M4，10 步）：九格全部 rc=0。计划日志三档都一样：K2.5 是"3 次编码都在调度前，反向 3 次都在调度后"；bubble 是"2 次在调度前，1 次进空闲槽；反向 0 次进空闲槽，3 次在调度后"。
+
+M16 核对（L2，3 步）：K2.5 13 次编码都在调度前；bubble 8 次在调度前、5 次进空闲槽；反向仍然 0 次进空闲槽、13 次在调度后。
+
+- **M4 时空闲槽太少，**bubble 只能挪一次编码，和视觉占比无关；M16 时能挪 5/13。所以 H100 的格子要加 M16（已写进 `H100_NEXT_2026-09-30.md`）。
+- **反向一次都没进空闲槽。** K3 报告说反向也排进气泡；09-27 的审计按塔在每个 rank 上的设计推算，pp8 × vp4、M16 时反向能进 13/16。我们的实现在测过的所有布局上都是 0。这是 DEP 规划器要查的问题，今晚照计划不改 DEP 代码，先记下。
+
 ## T3 MoonEP 审计（子任务完成，logbook `8fb189e`）
 
 - **一个真 bug，已修：** `reduce_grad` 前少一道跨 rank 栅栏。MoonEP 的规约 kernel 直接远程读各 rank 的槽梯度，自己不带 barrier（`grad_reduce.py:467-470`），要调用方保证各 rank 都写完；重写版写完槽梯度马上规约，中间没有同步，别的 rank 可能读到没写完的梯度。H100 上 GPU 单测 2 passed 只说明那两次时序没撞上。修法：规约前在 EP 组上做一次单元素 all-reduce，排在同一条 stream 上。
@@ -79,3 +108,20 @@
 - **rebase 和推送（用户确认）：** `moonep_review1` = `1633dcd79`，upstream main `a182e530a` 上三个提交（两个原提交重放，加修复），没有冲突；旧 head `a505f74a8` 在 `backup/moonep_review1_pre_20260929`。CPU 单测 34 passed、13 subtests passed，ufmt 干净。PR 分支 `k3_moonep_seam` 没动。新 head 还没在真实 MoonEP 上跑过。
 - **负载均衡的证据方案**（`kit_overnight_2026-09-29/moonep/`）：128 个专家、top-8，FSDP4 × EP4，standard 对 MoonEP，自然路由和偏向 rank 0 专家的路由各一格；记每层每个 rank 的负载 max / mean，以及 MoonEP 每次 dispatch 是否正好 S × K。假包版本排在本机 GPU 队列里；真机版本约 15 分钟，另加新 head 的 GPU 单测和 CI 格约 10 分钟。
 - 审计文档 `DIFF_AUDIT_MOONEP_2026-09-28.md` §7；body `PR_BODY_MOONEP_v2_2026-09-29.md` 的 Test plan 和 Results 改成负载统计加步时，Requirements 加了栅栏和"LoRA 与 MoonEP 不能同时开"。
+- **假包负载测试（本机 4 × 5060，只验证记账和流程）：** 第一次跑六格都在建模型时失败：探针包装 `RoutedExperts.forward` 时改了参数名，titan 的 local_spmd 按参数名找输入布局，报 `in_dst_shardings is missing entries for: ['counts_E', '_original']`。子任务只在 CPU 上核对过 recipe 和导入，没跑过前向。改成和真实 forward 同名的参数、用闭包传原函数后重跑，四格全部 rc=0：
+
+| 格子 | 第 1 / 10 / 20 步 loss | 静态放置时每层"最忙的 rank / 平均"（均值，最坏） | MoonEP 每次 dispatch 是否正好 S × K |
+|---|---|---|---|
+| standard，自然路由 | 8.24211 / 3.73188 / 3.07722 | 1.55，2.25 | |
+| MoonEP（假包），自然路由 | 8.24213 / 3.72677 / 3.06986 | 1.54，2.33 | 0 / 1280（假包不做规划，预期内） |
+| standard，偏置 | 8.25292 / 3.69951 / 3.06190 | 3.14，3.91 | |
+| MoonEP（假包），偏置 | 8.25329 / 3.70047 / 3.06361 | 3.14，3.91 | 0 / 1280 |
+
+  - 128 个专家、top-8、EP4 时，刚初始化的自然路由就已经有 1.55 倍的失衡；偏置格接近 4 个 rank 的上限 4。真实 MoonEP 应当把每次 dispatch 都做成正好 S × K，这要到 H100 上看。
+
+## 总结
+
+- **目标一（PR A 回到 cache 下界）：** 完成。`pp_review_optimize` = `4ddf8e912`，#4656 之上一个提交；5060 上五个布局 20 步都和 #4656 逐位相同，各 rank 峰值省 0.64 到 1.88 GiB；PR A 的 store 在每个峰值时刻正好等于紧界（比论文 §4.1 的释放点更早），#4656 是紧界的 5 到 13 倍。#4765、#4764 重叠到它上面并推了 draft 分支。body v3、torch issue（只剩 send）已改。前向 send 提前 wait 的探针不降峰值，不并入。
+- **目标二（DEP 比例）：** 完成探索。K3 的区间 R_f 0.02 到 0.32（推算）；数据集和三档 recipe 就绪；5060 上测了时间比；发现 M4 时空闲槽太少、反向从不进空闲槽两个问题。H100 的格子见 `H100_NEXT_2026-09-30.md`。
+- **目标三（MoonEP 审计）：** 完成。找到并修了 `reduce_grad` 前缺的跨 rank 栅栏；`moonep_review1` = `1633dcd79` 已 rebase 到最新 main 并推送；负载均衡的证据方案在假包上跑通，真实数字等 H100。
+- **下次 H100：** `H100_NEXT_2026-09-30.md`，三条线约 4 到 4.5 小时。
