@@ -264,7 +264,6 @@ def _dump_peak_memory() -> None:
 
 
 def lb_probe() -> Trainer.Config:
-    from torchtitan.components.optimizer.optimizer import default_adamw
     from torchtitan.distributed.activation_checkpoint import FullAC
     from torchtitan.models.kimi_k3 import _kimi_k3_config, _vision_encoder_config
     from torchtitan.models.kimi_k3.config_registry import kimi_k3_debugmodel
@@ -274,7 +273,16 @@ def lb_probe() -> Trainer.Config:
     block = int(os.environ.get("PPMEM_BLOCK", "4"))
     seq = int(os.environ.get("PPMEM_SEQ", "4096"))
     config = kimi_k3_debugmodel(seq_len=seq)
-    config.optimizer = default_adamw(lr=8e-4)
+    try:
+        from torchtitan.components.optimizer.optimizer import default_adamw
+
+        config.optimizer = default_adamw(lr=8e-4)
+    except ImportError:  # main from 09-24 on has no default_adamw
+        from torchtitan.components.optimizer import AdamW, OptimizersContainer
+
+        config.optimizer = OptimizersContainer.Config(
+            optimizers=[AdamW.Config(pattern=r".*", lr=8e-4)]
+        )
     if os.environ.get("PPMEM_LPS"):
         config.parallelism.pipeline_parallel_layers_per_stage = int(
             os.environ["PPMEM_LPS"]

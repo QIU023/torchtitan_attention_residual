@@ -1,0 +1,905 @@
+W0929 07:46:13.710000 80542 torch/distributed/run.py:982] 
+W0929 07:46:13.710000 80542 torch/distributed/run.py:982] *****************************************
+W0929 07:46:13.710000 80542 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0929 07:46:13.710000 80542 torch/distributed/run.py:982] *****************************************
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank1]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank3]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank2]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank3]:[titan] 2026-09-29 07:46:20,119 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank2]:[titan] 2026-09-29 07:46:20,334 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-09-29 07:46:20,421 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank1]:[titan] 2026-09-29 07:46:20,431 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank3]:[titan] 2026-09-29 07:46:20,883 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/m4656/main_tc_mm_sp/out/structured_logs/training.global_rank_3.20260929-074620-NDCNAF.jsonl
+[rank2]:[titan] 2026-09-29 07:46:21,106 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/m4656/main_tc_mm_sp/out/structured_logs/training.global_rank_2.20260929-074621-02YCBI.jsonl
+[rank3]:[titan] 2026-09-29 07:46:21,150 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank1]:[titan] 2026-09-29 07:46:21,182 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/m4656/main_tc_mm_sp/out/structured_logs/training.global_rank_1.20260929-074621-JOT0K8.jsonl
+[rank0]:[titan] 2026-09-29 07:46:21,320 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/m4656/main_tc_mm_sp/out/structured_logs/training.global_rank_0.20260929-074621-E9A44A.jsonl
+[rank2]:[titan] 2026-09-29 07:46:21,492 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank1]:[titan] 2026-09-29 07:46:21,620 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-09-29 07:46:21,683 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank2]:[titan] 2026-09-29 07:46:22,427 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank2]:[titan] 2026-09-29 07:46:22,428 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank2]:[titan] 2026-09-29 07:46:22,440 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=2, cp=1, tp=2, ep=2
+[rank3]:[titan] 2026-09-29 07:46:22,427 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-09-29 07:46:22,427 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-09-29 07:46:22,427 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank0]:[titan] 2026-09-29 07:46:22,439 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=2, cp=1, tp=2, ep=2
+[rank3]:[titan] 2026-09-29 07:46:22,427 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank3]:[titan] 2026-09-29 07:46:22,441 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=2, cp=1, tp=2, ep=2
+[rank1]:[titan] 2026-09-29 07:46:22,442 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank1]:[titan] 2026-09-29 07:46:22,442 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank1]:[titan] 2026-09-29 07:46:22,458 - torchtitan.distributed.parallel_dims - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=2, cp=1, tp=2, ep=2
+[rank2]:[titan] 2026-09-29 07:46:24,763 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'tp', 'ep', 'efsdp', 'dp', 'dp_shard']
+[rank2]:[titan] 2026-09-29 07:46:24,774 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank3]:[titan] 2026-09-29 07:46:24,763 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'tp', 'ep', 'efsdp', 'dp', 'dp_shard']
+[rank3]:[titan] 2026-09-29 07:46:24,766 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank2]:[titan] 2026-09-29 07:46:24,788 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank2]:[titan] 2026-09-29 07:46:24,788 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-09-29 07:46:24,792 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'tp', 'ep', 'efsdp', 'dp', 'dp_shard']
+[rank0]:[titan] 2026-09-29 07:46:24,800 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-09-29 07:46:24,814 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-09-29 07:46:24,814 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank3]:[titan] 2026-09-29 07:46:24,779 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank3]:[titan] 2026-09-29 07:46:24,779 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank1]:[titan] 2026-09-29 07:46:24,792 - torchtitan.distributed.parallel_dims - INFO - Successfully created meshes with active dimensions: ['loss', 'tp', 'ep', 'efsdp', 'dp', 'dp_shard']
+[rank1]:[titan] 2026-09-29 07:46:24,795 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank1]:[titan] 2026-09-29 07:46:24,808 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank1]:[titan] 2026-09-29 07:46:24,809 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-09-29 07:46:24,962 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank3]:[titan] 2026-09-29 07:46:24,925 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank3]:[titan] 2026-09-29 07:46:24,929 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[rank0]:[titan] 2026-09-29 07:46:24,966 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[rank2]:[titan] 2026-09-29 07:46:24,939 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank2]:[titan] 2026-09-29 07:46:24,943 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[rank1]:[titan] 2026-09-29 07:46:24,968 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank1]:[titan] 2026-09-29 07:46:24,972 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[rank3]:[titan] 2026-09-29 07:46:25,467 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank2]:[titan] 2026-09-29 07:46:25,494 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-29 07:46:25,511 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-29 07:46:25,534 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank3]:[rank3]:W0929 07:46:25.673000 80615 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank0]:[rank0]:W0929 07:46:25.720000 80612 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank2]:[rank2]:W0929 07:46:25.712000 80614 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank1]:[rank1]:W0929 07:46:25.749000 80613 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank0]:[rank0]:W0929 07:46:26.623000 80612 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank2]:[rank2]:W0929 07:46:26.623000 80614 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank1]:[rank1]:W0929 07:46:26.623000 80613 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank3]:[rank3]:W0929 07:46:26.623000 80615 torch/distributed/tensor/_redistribute.py:394] While redistributing from (_StridedShard(dim=0, sf=2), Shard(dim=0)) to (Replicate(), Replicate()), 2 sequential all_gather operations will be performed. This is suboptimal: multiple collective operations have higher latency (separate kernel launches and synchronization points) and may give inconsistent results between ranks due to different reduction orders. it is not possible to merge non-ascending order all_gather operations.
+[rank0]:[titan] 2026-09-29 07:46:27,858 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[rank0]:[titan] 2026-09-29 07:46:27,861 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 465 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[rank1]:[titan] 2026-09-29 07:46:27,858 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[rank1]:[titan] 2026-09-29 07:46:27,862 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 465 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[rank0]:[titan] 2026-09-29 07:46:27,863 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[rank0]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank0]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.02GiB(0.02%)
+[rank0]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - Trainer is initialized with 2048 tokens per DP rank, 4096 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[rank1]:[titan] 2026-09-29 07:46:27,865 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[rank1]:[titan] 2026-09-29 07:46:27,865 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank1]:[titan] 2026-09-29 07:46:27,865 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.02GiB(0.02%)
+[rank1]:[titan] 2026-09-29 07:46:27,866 - torchtitan.trainer - INFO - Trainer is initialized with 2048 tokens per DP rank, 4096 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[rank2]:[titan] 2026-09-29 07:46:27,858 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[rank2]:[titan] 2026-09-29 07:46:27,862 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 465 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[rank2]:[titan] 2026-09-29 07:46:27,866 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[rank2]:[titan] 2026-09-29 07:46:27,866 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank1]:[titan] 2026-09-29 07:46:27,866 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - Training starts at step 1
+[rank2]:[titan] 2026-09-29 07:46:27,866 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.02GiB(0.02%)
+[rank2]:[titan] 2026-09-29 07:46:27,866 - torchtitan.trainer - INFO - Trainer is initialized with 2048 tokens per DP rank, 4096 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[rank2]:[titan] 2026-09-29 07:46:27,867 - torchtitan.trainer - INFO - Training starts at step 1
+[rank3]:[titan] 2026-09-29 07:46:27,858 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[rank3]:[titan] 2026-09-29 07:46:27,861 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 465 params [.*] {'fused': True, 'foreach': False, 'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1}
+[rank3]:[titan] 2026-09-29 07:46:27,863 - torchtitan.components.optimizer.lr_scheduler - WARNING - Warmup (2) + decay (2) steps exceed total steps (3). Adjusting decay steps to 1.
+[rank3]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank3]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.02GiB(0.02%)
+[rank3]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - Trainer is initialized with 2048 tokens per DP rank, 4096 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 3 (warmup 2)
+[rank3]:[titan] 2026-09-29 07:46:27,864 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:[rank0]: Traceback (most recent call last):
+[rank0]:[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 73, in <module>
+[rank0]:[rank0]:     main()
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 59, in main
+[rank0]:[rank0]:     trainer.train()
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank0]:[rank0]:     result = f(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+[rank0]:[rank0]:     self.train_step(data_iterator)
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+[rank0]:[rank0]:     detached_loss = engine.forward_backward_microbatch(
+[rank0]:[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank0]:[rank0]:     return func(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+[rank0]:[rank0]:     loss = forward_backward()
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+[rank0]:[rank0]:     return self.forward_backward_body_fn(
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+[rank0]:[rank0]:     pred = self.model_parts[0](inputs, **model_kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank0]:[rank0]:     return inner()
+[rank0]:[rank0]:            ^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank0]:[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+[rank0]:[rank0]:     h_TD = self._prepare_multimodal_embeds(
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+[rank0]:[rank0]:     vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+[rank0]:[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank0]:[rank0]:     return inner()
+[rank0]:[rank0]:            ^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank0]:[rank0]:     result = forward_call(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank0]:[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+[rank0]:[rank0]:     x = block(
+[rank0]:[rank0]:         ^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+[rank0]:[rank0]:     x = x + self.attn(
+[rank0]:[rank0]:             ^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank0]:[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+[rank0]:[rank0]:     out_TD = remat.region(
+[rank0]:[rank0]:              ^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+[rank0]:[rank0]:     return function(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+[rank0]:[rank0]:     return self._redistribute_outputs(outputs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+[rank0]:[rank0]:     spmd.assert_type(outputs, out_src)
+[rank0]:[rank0]:   File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+[rank0]:[rank0]:     raise SpmdTypeError(
+[rank0]:[rank0]: spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+[rank0]:
+[rank0]:[rank0]: Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+[rank1]:[rank1]: Traceback (most recent call last):
+[rank1]:[rank1]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank1]:[rank1]:   File "<frozen runpy>", line 88, in _run_code
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 73, in <module>
+[rank1]:[rank1]:     main()
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 59, in main
+[rank1]:[rank1]:     trainer.train()
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank1]:[rank1]:     result = f(*args, **kwargs)
+[rank1]:[rank1]:              ^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+[rank1]:[rank1]:     self.train_step(data_iterator)
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+[rank1]:[rank1]:     detached_loss = engine.forward_backward_microbatch(
+[rank1]:[rank1]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank1]:[rank1]:     return func(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+[rank1]:[rank1]:     loss = forward_backward()
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+[rank1]:[rank1]:     return self.forward_backward_body_fn(
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+[rank1]:[rank1]:     pred = self.model_parts[0](inputs, **model_kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank1]:[rank1]:     return inner()
+[rank1]:[rank1]:            ^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank1]:[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+[rank1]:[rank1]:     h_TD = self._prepare_multimodal_embeds(
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+[rank1]:[rank1]:     vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+[rank1]:[rank1]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank1]:[rank1]:     return inner()
+[rank1]:[rank1]:            ^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank1]:[rank1]:     result = forward_call(*args, **kwargs)
+[rank1]:[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank1]:[rank1]:     outputs = fn(*args, **kwargs)
+[rank1]:[rank1]:               ^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+[rank1]:[rank1]:     x = block(
+[rank1]:[rank1]:         ^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank1]:[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+[rank1]:[rank1]:     x = x + self.attn(
+[rank1]:[rank1]:             ^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank1]:[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank1]:[rank1]:     outputs = fn(*args, **kwargs)
+[rank1]:[rank1]:               ^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+[rank1]:[rank1]:     out_TD = remat.region(
+[rank1]:[rank1]:              ^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+[rank1]:[rank1]:     return function(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank1]:[rank1]:     return self._call_impl(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank1]:[rank1]:     return forward_call(*args, **kwargs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+[rank1]:[rank1]:     return self._redistribute_outputs(outputs)
+[rank1]:[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:[rank1]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+[rank1]:[rank1]:     spmd.assert_type(outputs, out_src)
+[rank1]:[rank1]:   File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+[rank1]:[rank1]:     raise SpmdTypeError(
+[rank1]:[rank1]: spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+[rank1]:
+[rank1]:[rank1]: Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+[rank2]:[rank2]: Traceback (most recent call last):
+[rank2]:[rank2]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank2]:[rank2]:   File "<frozen runpy>", line 88, in _run_code
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 73, in <module>
+[rank2]:[rank2]:     main()
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 59, in main
+[rank2]:[rank2]:     trainer.train()
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank2]:[rank2]:     result = f(*args, **kwargs)
+[rank2]:[rank2]:              ^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+[rank2]:[rank2]:     self.train_step(data_iterator)
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+[rank2]:[rank2]:     detached_loss = engine.forward_backward_microbatch(
+[rank2]:[rank2]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank2]:[rank2]:     return func(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+[rank2]:[rank2]:     loss = forward_backward()
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+[rank2]:[rank2]:     return self.forward_backward_body_fn(
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+[rank2]:[rank2]:     pred = self.model_parts[0](inputs, **model_kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank2]:[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank2]:[rank2]:     return inner()
+[rank2]:[rank2]:            ^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank2]:[rank2]:     result = forward_call(*args, **kwargs)
+[rank2]:[rank2]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+[rank2]:[rank2]:     h_TD = self._prepare_multimodal_embeds(
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+[rank2]:[rank2]:     vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+[rank2]:[rank2]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank2]:[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank2]:[rank2]:     return inner()
+[rank2]:[rank2]:            ^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank2]:[rank2]:     result = forward_call(*args, **kwargs)
+[rank2]:[rank2]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank2]:[rank2]:     outputs = fn(*args, **kwargs)
+[rank2]:[rank2]:               ^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+[rank2]:[rank2]:     x = block(
+[rank2]:[rank2]:         ^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank2]:[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank2]:[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+[rank2]:[rank2]:     x = x + self.attn(
+[rank2]:[rank2]:             ^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank2]:[rank2]:     return self._call_impl(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank2]:[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]: Traceback (most recent call last):
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank2]:[rank2]:     outputs = fn(*args, **kwargs)
+[rank3]:[rank3]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank2]:[rank2]:               ^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+[rank2]:[rank2]:     out_TD = remat.region(
+[rank2]:[rank2]:              ^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+[rank3]:[rank3]:   File "<frozen runpy>", line 88, in _run_code
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 73, in <module>
+[rank2]:[rank2]:     return function(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:     main()
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/train.py", line 59, in main
+[rank3]:[rank3]:     trainer.train()
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank2]:[rank2]:     return self._call_impl(*args, **kwargs)
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank3]:[rank3]:     result = f(*args, **kwargs)
+[rank3]:[rank3]:              ^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank2]:[rank2]:     return forward_call(*args, **kwargs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+[rank3]:[rank3]:     self.train_step(data_iterator)
+[rank2]:[rank2]:     return self._redistribute_outputs(outputs)
+[rank2]:[rank2]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:[rank2]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+[rank2]:[rank2]:     spmd.assert_type(outputs, out_src)
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+[rank3]:[rank3]:     detached_loss = engine.forward_backward_microbatch(
+[rank2]:[rank2]:   File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+[rank2]:[rank2]:     raise SpmdTypeError(
+[rank3]:[rank3]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank2]:[rank2]: spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+[rank2]:
+[rank2]:[rank2]: Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+[rank3]:[rank3]:     return func(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+[rank3]:[rank3]:     loss = forward_backward()
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+[rank3]:[rank3]:     return self.forward_backward_body_fn(
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+[rank3]:[rank3]:     pred = self.model_parts[0](inputs, **model_kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank3]:[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank3]:[rank3]:     return inner()
+[rank3]:[rank3]:            ^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank3]:[rank3]:     result = forward_call(*args, **kwargs)
+[rank3]:[rank3]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+[rank3]:[rank3]:     h_TD = self._prepare_multimodal_embeds(
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+[rank3]:[rank3]:     vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+[rank3]:[rank3]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank3]:[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+[rank3]:[rank3]:     return inner()
+[rank3]:[rank3]:            ^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+[rank3]:[rank3]:     result = forward_call(*args, **kwargs)
+[rank3]:[rank3]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank3]:[rank3]:     outputs = fn(*args, **kwargs)
+[rank3]:[rank3]:               ^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+[rank3]:[rank3]:     x = block(
+[rank3]:[rank3]:         ^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank3]:[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank3]:[rank3]:     return forward_call(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+[rank3]:[rank3]:     x = x + self.attn(
+[rank3]:[rank3]:             ^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank3]:[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank3]:[rank3]:     return forward_call(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank3]:[rank3]:     outputs = fn(*args, **kwargs)
+[rank3]:[rank3]:               ^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+[rank3]:[rank3]:     out_TD = remat.region(
+[rank3]:[rank3]:              ^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+[rank3]:[rank3]:     return function(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank3]:[rank3]:     return self._call_impl(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank3]:[rank3]:     return forward_call(*args, **kwargs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+[rank3]:[rank3]:     return self._redistribute_outputs(outputs)
+[rank3]:[rank3]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:[rank3]:   File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+[rank3]:[rank3]:     spmd.assert_type(outputs, out_src)
+[rank3]:[rank3]:   File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+[rank3]:[rank3]:     raise SpmdTypeError(
+[rank3]:[rank3]: spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+[rank3]:
+[rank3]:[rank3]: Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+W0929 07:46:37.593000 80542 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 80613 closing signal SIGTERM
+W0929 07:46:37.594000 80542 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 80614 closing signal SIGTERM
+W0929 07:46:37.594000 80542 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 80615 closing signal SIGTERM
+E0929 07:46:38.987000 80542 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 80612) of binary: /root/mep/venv/bin/python3
+E0929 07:46:38.991000 80542 torch/distributed/elastic/multiprocessing/errors/error_handler.py:194] no error file defined for parent, to copy child error file (/tmp/torchelastic_n8ehrdu7/none_e3nxk8ho/attempt_0/0/error.json)
+Traceback (most recent call last):
+  File "/root/mep/venv/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-29_07:46:35
+  host      : 0920bced2af1
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 80613) 
+  error_file: /tmp/torchelastic_n8ehrdu7/none_e3nxk8ho/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+      self.train_step(data_iterator)
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+      detached_loss = engine.forward_backward_microbatch(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+      loss = forward_backward()
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+      return self.forward_backward_body_fn(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+      pred = self.model_parts[0](inputs, **model_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+      h_TD = self._prepare_multimodal_embeds(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+      vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+      x = block(
+          ^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+      x = x + self.attn(
+              ^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+      out_TD = remat.region(
+               ^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+      return function(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+      return self._redistribute_outputs(outputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+      spmd.assert_type(outputs, out_src)
+    File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+      raise SpmdTypeError(
+  spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+  
+  Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+  
+[2]:
+  time      : 2026-09-29_07:46:36
+  host      : 0920bced2af1
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 80614)  (SIGTERM)
+  error_file: /tmp/torchelastic_n8ehrdu7/none_e3nxk8ho/attempt_0/2/error.json
+  traceback : Traceback (most recent call last):
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+      self.train_step(data_iterator)
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+      detached_loss = engine.forward_backward_microbatch(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+      loss = forward_backward()
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+      return self.forward_backward_body_fn(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+      pred = self.model_parts[0](inputs, **model_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+      h_TD = self._prepare_multimodal_embeds(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+      vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+      x = block(
+          ^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+      x = x + self.attn(
+              ^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+      out_TD = remat.region(
+               ^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+      return function(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+      return self._redistribute_outputs(outputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+      spmd.assert_type(outputs, out_src)
+    File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+      raise SpmdTypeError(
+  spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+  
+  Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+  
+[3]:
+  time      : 2026-09-29_07:46:36
+  host      : 0920bced2af1
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 80615)  (SIGTERM)
+  error_file: /tmp/torchelastic_n8ehrdu7/none_e3nxk8ho/attempt_0/3/error.json
+  traceback : Traceback (most recent call last):
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+      self.train_step(data_iterator)
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+      detached_loss = engine.forward_backward_microbatch(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+      loss = forward_backward()
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+      return self.forward_backward_body_fn(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+      pred = self.model_parts[0](inputs, **model_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+      h_TD = self._prepare_multimodal_embeds(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+      vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+      x = block(
+          ^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+      x = x + self.attn(
+              ^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+      out_TD = remat.region(
+               ^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+      return function(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+      return self._redistribute_outputs(outputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+      spmd.assert_type(outputs, out_src)
+    File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+      raise SpmdTypeError(
+  spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+  
+  Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-29_07:46:35
+  host      : 0920bced2af1
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 80612) 
+  error_file: /tmp/torchelastic_n8ehrdu7/none_e3nxk8ho/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 473, in train
+      self.train_step(data_iterator)
+    File "/root/mep/w/main_f359/torchtitan/trainer.py", line 378, in train_step
+      detached_loss = engine.forward_backward_microbatch(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 596, in forward_backward_microbatch
+      loss = forward_backward()
+             ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 581, in forward_backward
+      return self.forward_backward_body_fn(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/training_engine.py", line 613, in _non_pp_forward_backward_body
+      pred = self.model_parts[0](inputs, **model_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 582, in forward
+      h_TD = self._prepare_multimodal_embeds(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k3/model.py", line 540, in _prepare_multimodal_embeds
+      vision_embeds = self.vision_encoder(pixel_values, grid_thw=grid_thw)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1893, in _call_impl
+      return inner()
+             ^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1841, in inner
+      result = forward_call(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/kimi_k2_7/vision_encoder.py", line 451, in forward
+      x = block(
+          ^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 259, in forward
+      x = x + self.attn(
+              ^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/models/common/vision_encoder.py", line 224, in forward
+      out_TD = remat.region(
+               ^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch_remat/_api.py", line 419, in wrapper
+      return function(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 306, in forward_with_redistribution
+      return self._redistribute_outputs(outputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/main_f359/torchtitan/protocols/module.py", line 577, in _redistribute_outputs
+      spmd.assert_type(outputs, out_src)
+    File "/root/mep/venv/lib/python3.12/site-packages/spmd_types/runtime.py", line 498, in assert_type
+      raise SpmdTypeError(
+  spmd_types.types.SpmdTypeError: SPMD type mismatch on axis mesh_ep: tensor has PerMeshAxisLocalSpmdType.P, expected PerMeshAxisLocalSpmdType.I
+  
+  Set SPMD_TYPES_TRACEBACK_FILTERING=off to see the full, unfiltered traceback.
+  
+============================================================

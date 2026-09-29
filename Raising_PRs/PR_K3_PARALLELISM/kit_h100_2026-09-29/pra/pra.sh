@@ -1,5 +1,5 @@
 #!/bin/bash
-# PR A on 4 x H100: the debug model widened to dim 6144, pp4 x vp2, 16 micro-batches x 2048 tokens, FullAC,
+# PR A on 4 x H100. First PR 4312's matrix, main against PR A (pp4312/run_4312_pra.sh). Then the debug model widened to dim 6144, pp4 x vp2, 16 micro-batches x 2048 tokens, FullAC,
 # AdamW, seed 42.
 # New torch (the 09-28 nightly built from source; since pytorch#196463 it allocates receive buffers just in
 # time): PR A as committed fails there, so a 2-step run records how; main 5dc97a3e7 against PR A with its
@@ -21,6 +21,7 @@ for t in main_5dc9 pra pra_send dev devp o4765 b4764; do
   echo "$t $(git -C $M/w/$t rev-parse --short HEAD) dirty=$(git -C $M/w/$t status --short | wc -l)"
 done > $LB_ROOT/trees.txt
 note "new torch $($NEW/bin/python -c 'import torch; print(torch.__version__)'), old $($OLD/bin/python -c 'import torch; print(torch.__version__)'), dim $PPMEM_DIM"
+bash ~/kit/pp4312/run_4312_pra.sh > $M/pra4312.log 2>&1; note "4312 matrix for PR A rc=$? ($(tail -1 $M/results/pra4312/progress.txt))"
 export VENV=$NEW
 bash $K/run_lb4.sh fit_main $M/w/main_5dc9 $LB_ROOT/cache_fit 2
 if ! grep -q "rc=0" $LB_ROOT/fit_main/train.log; then
