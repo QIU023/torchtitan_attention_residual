@@ -1,0 +1,14 @@
+#blocked = #ttg.blocked<{sizePerThread = [1], threadsPerWarp = [32], warpsPerCTA = [1], order = [0]}>
+#loc = loc("/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/bound/cache_pp4vp4/ic/nu/cnut3eqtzdeomtbovjpohsis6mwn5dvtxyzg57uvijnup77xaqh4.py":18:1)
+#loc4 = loc("out_ptr0"(#loc))
+module attributes {"ttg.num-ctas" = 1 : i32, "ttg.num-warps" = 1 : i32, ttg.target = "cuda:120", "ttg.threads-per-warp" = 32 : i32} {
+  tt.func public @triton_poi_fused_view_3(%out_ptr0: !tt.ptr<i32> {tt.divisibility = 16 : i32} loc("out_ptr0"(#loc))) attributes {noinline = false} {
+    %cst = arith.constant dense<1> : tensor<1xi32, #blocked> loc(#loc1)
+    %0 = tt.splat %out_ptr0 : !tt.ptr<i32> -> tensor<1x!tt.ptr<i32>, #blocked> loc(#loc2)
+    tt.store %0, %cst : tensor<1x!tt.ptr<i32>, #blocked> loc(#loc3)
+    tt.return loc(#loc)
+  } loc(#loc)
+} loc(#loc)
+#loc1 = loc(unknown)
+#loc2 = loc("/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/bound/cache_pp4vp4/ic/nu/cnut3eqtzdeomtbovjpohsis6mwn5dvtxyzg57uvijnup77xaqh4.py":24:14)
+#loc3 = loc("/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/bound/cache_pp4vp4/ic/nu/cnut3eqtzdeomtbovjpohsis6mwn5dvtxyzg57uvijnup77xaqh4.py":24:5)

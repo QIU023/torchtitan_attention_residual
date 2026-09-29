@@ -1,33 +1,20 @@
-# torch issue 草稿：pipelining 的接收缓冲常驻、send 到 step 末才 wait（2026-09-27）
+# torch issue 草稿：pipelining 的 send 到 step 末才 wait（2026-09-27 起草，09-29 改成只提 send）
 
-- **用途：** 计划 §6 的第一步。PR A（`pp_review_optimize` = `85eefa54b`，09-28 rebase 到 main `5dc97a3e7`）在 `AttnResPipelineStage` 里覆盖了这两个行为；PR A 的正文（`PR_BODY_PP_CACHE_OPT_v2_2026-09-28.md`）的 Design 链接这个 issue，#4765 的正文已经不再引用它。
-- **09-28 待定：** 粘贴区的 Measurement 是 5060 的数字，按"粘贴区不放 5060 的数字"的规则要改：要么换成 H100 的测量，要么只留两卡复现（它演示的是行为，不是性能数字）。等用户定；另外是开成一个 issue 还是按两个行为拆成两个，也等用户定。
-- **提交位置：** pytorch/pytorch 的 issue，标签 `oncall: distributed`、`module: pipelining`。机器上没有 `gh`，需要你在网页上开。开好后告诉我 issue 号，我把它补进两份正文的 `<torch issue link>`。
-- **数据来源：**
-  - `PP_OPTIMIZE_REPORT_2026-09-24.md` §2 和 §3：8 × RTX 5060 Ti，pp8 × vp2，Interleaved1F1B，16 个 micro-batch，seq 3584，FullAC；
-  - `kit_pp_optimize_2026-09-24/stash_probe.py`。
-  - 这是 09-24 的 base 上测的。issue 里只写 torch 的行为和这组测量本身，不当作任何 PR 的结果。
+- **09-29 改动：** torch#196463（"[pipelining] Allocate receive buffers just in time"，09-22 合入，09-23 以后的 nightly 都有）已经把接收缓冲改成收之前才分配、计算接手就交出。原来 issue 的第 1 个行为（接收缓冲整轮常驻）已由 torch 解决，只剩 send 这一半。PR A 同时去掉了接收覆盖（`PR_BODY_PP_CACHE_OPT_v3_2026-09-29.md`）。
+- **粘贴区不放 5060 的数字：** 原来的 Measurement 一节是 5060 上的测量，按规则拿掉了，只留两卡复现（演示的是行为，不是性能数字）。H100 上 PR A 的对比出来以后，要不要补一段数字，你定。
+- **提交位置：** pytorch/pytorch 的 issue，标签 `oncall: distributed`、`module: pipelining`。机器上没有 `gh`，需要你在网页上开。开好后把号填进 PR A 正文的 `<torch issue link>`。
 
-# Title: [pipelining] Receive buffers live for the whole run and send works are waited only at the end of the step
+# Title: [pipelining] The action-list runtime waits every send at the end of the step, keeping sent tensors alive
 
 --- PASTE BEGIN ---
 
 ### Summary
 
-Two behaviors of `torch.distributed.pipelining` hold every pipeline stage's activations and gradients longer than the schedule needs, for any model:
+`_PipelineScheduleRuntime` waits every send `Work` after the step's last action, and a pending `Work` keeps the sent tensor, and the whole storage of a sent view, allocated until then. A stage that has already handed an activation or a gradient to its peer therefore keeps it for the rest of the step, for any model. Receive buffers no longer have the analogous problem since #196463 allocates them just in time.
 
-1. `_PipelineStageBase` allocates one receive buffer per micro-batch for every input and input gradient in `_setup_forward_recv_info` / `_setup_backward_recv_info`, and keeps them across steps.
-2. `_PipelineScheduleRuntime` waits every send `Work` after the step's last action, and a pending `Work` keeps the sent tensor (and the storage of any view) allocated until then.
+### Reproduction
 
-### Measurement
-
-8 x RTX 5060 Ti, pp8 with two virtual stages per rank, `ScheduleInterleaved1F1B`, 16 micro-batches, 3584 tokens per micro-batch, full activation checkpointing, torch nightly 2.15.0.dev20260906:
-
-- The receive buffers alone hold 2.41 to 4.16 GiB per rank between steps.
-- Issuing each forward send from the stage and waiting it when the stage's backward of the same micro-batch starts lowers the per rank peak by 0.52 to 1.30 GiB.
-- With both behaviors overridden (plus model side changes), loss and grad norm stay bitwise identical to the unmodified run on all 100 steps.
-
-A two rank reproduction of the pinning: rank 0 sends a 256 MiB tensor with `batch_isend_irecv` and drops its reference; three seconds after rank 1 has received it, rank 0 still holds 256 MiB, and the memory is released only at `wait()`.
+Rank 0 sends a 256 MiB tensor with `batch_isend_irecv` and drops its reference; three seconds after rank 1 has received it, rank 0 still holds 256 MiB, and the memory is released only at `wait()`.
 
 ```python
 import time, torch, torch.distributed as dist
@@ -52,11 +39,10 @@ dist.barrier(); dist.destroy_process_group()
 
 ### Proposal
 
-- Receive buffers: allocate each one when its receive is posted and drop the stage's reference once the stage has read it (`_retrieve_recv_activations`, `_retrieve_recv_grads`), optionally behind a flag.
-- Send waits in `_PipelineScheduleRuntime`:
-  - a forward send of stage s, micro-batch m can be waited when stage s starts its backward of m, since the receiver has used the tensor by then;
-  - an input gradient send of stage s, micro-batch m can be waited at the first later forward on the same rank whose input the receiving rank produced after the backward that consumed the gradient; the point comes from `pipeline_order`, and a send without such a point keeps today's end of step wait.
+- A forward send of stage s, micro-batch m can be waited when stage s starts its backward of m, since the receiver has used the tensor by then.
+- An input gradient send of stage s, micro-batch m can be waited at the first later forward on the same rank whose input the receiving rank produced after the backward that consumed the gradient. The point comes from `pipeline_order`; a send without such a point keeps today's end of step wait.
+- Single-stage schedules fuse sends with receives and would keep their current behavior.
 
-Both are implemented today as overrides in a model's `PipelineStage` subclass in torchtitan (Kimi K3). I can send a PR for either if the direction is acceptable.
+Both waits are implemented today as overrides in a model's `PipelineStage` subclass in torchtitan (Kimi K3). I can send a PR if the direction is acceptable.
 
 --- PASTE END ---

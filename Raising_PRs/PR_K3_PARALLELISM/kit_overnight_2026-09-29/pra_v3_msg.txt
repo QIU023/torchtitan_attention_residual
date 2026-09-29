@@ -1,0 +1,13 @@
+kimi_k3: each block is stored once per pipeline rank and freed at its last reader
+
+Each hop sends one tensor per block, and the model takes and returns its
+blocks as a list, so the rank store keeps references to the received and
+committed tensors instead of copies, and no stage stacks its blocks into a
+fresh leaf. The store drops each block at the backward of the stage that
+brought it onto the rank, which is its last reader there.
+
+Under the action-list runtime a pending send keeps its tensor alive, so the
+stage waits a forward send at its own backward of that micro-batch and an
+input-gradient send at the first forward that proves the peer has used it,
+instead of at the end of the step. Receive buffers stay with torch, which
+allocates each one right before its receive.
