@@ -164,3 +164,49 @@ M16 核对（L2，3 步）：K2.5 13 次编码都在调度前；bubble 8 次在�
   - PR A v3 的 Relation 加了一句：前两个提交是 rebase 后的 #4656，#4656 合并前会显示在这里。
   - 三份 body 的状态区已更新。
   - PR A raise 前只差 `<torch issue link>`；Results 等 H100。
+
+## 09-29 深夜：#4765、#4764 的 pyrefly，以及 balance 在 5060 上"tcp 传过去再放进显存"的冒烟（用户："现在修 并且balance 5060smoke结果的预期是八卡pp rank cache的显存接近平衡（走tcp传输 然后重新注入显存，这是5060 test only 并且有可能遇到PCIe瓶颈）"）
+
+- **pyrefly：** #4765 = `2140058c5`，#4764 = `76b644a2a`、`224bdbaf4`，已推（旧 head 在 `backup/*_pre_20260929d`，GitHub 上两个 draft 的 head 已更新）。在 venv_0928 激活的环境里是 16 个错误，和 main 一样；76 / 90 passed；pre-commit（分范围）干净。两个 `_device` 错误来自 torch 0928 nightly 的类型存根（`torch.device` 声明了 `__get__`），按 main 的写法加 `# pyrefly: ignore [read-only]`。细节在两份 body 的状态区。
+- **kit：** `kit_overnight_2026-09-29/balance_tcp_device/`（测试补丁、probe、三版启动脚本、结果）。都只在本地，不进 PR。
+
+### 先踩到的坑：mooncake 往显存写走默认流
+
+- **单独测是通的**（`probe_tcp_device_pool.py`，2 卡）：mooncake 0.3.13.post1 的 tcp 能读写对方注册的显存，同步和按流排队的接口都对，64 MiB 约 1.1 到 1.5 GB/s。所以 #4764 里 "The TCP transport serves host memory only" 这句注释不对。
+- **但拷贝排在对方卡的默认流后面**（`probe_tcp_device_pool_busy.py`）：对方在默认流上空转 4 秒，写 64 MiB 用了 3.96 秒；空转放在旁路流上 0.05 秒；池在 pinned host 上 0.04 秒。mooncake 在池所在的卡上用 legacy 默认流拷贝，titan 的计算也在这条流上。
+- **所以在训练进程里直接把池放进显存会卡死**（第一次，`run_bal8.sh`）：建池时目的 rank 在 NCCL barrier 上等源 rank，源 rank 的第一次写等目的卡的默认流，mooncake 报 `ClientSession: no status frame within 30s`。停掉了。
+- **让计算改走旁路流也不行**（第二次，`run_bal8b.sh`）：只换流、不开 balance 的对照格在第 1 步的优化器 pre-hook（MoE quantile balancer）里就报 device-side assert，默认流上同样的配置没问题。栈里有组件在非默认流下不安全，没有继续查。
+- **可行的办法：池放进同卡上的一个辅助进程**（第三次，`run_bal8c.sh`，`pool_holder.py`，`K3_TEST_TCP_POOL_PROCESS=1`）：辅助进程有自己的 CUDA context，mooncake 往它的池里拷贝用的是它自己的默认流，不和训练互等。源端走的还是 `RemoteBackend` 原来的调用；数据经 tcp 到目的机器，再由辅助进程拷进目的卡的显存。每张目的卡上的辅助进程另外占约 0.13 GiB context。
+
+### 结果（8 × 5060，#4764 `224bdbaf4`；09-28 D 组的布局：93 层、block 12、每 stage 3 层、pp8 × vp4 Interleaved1F1B，16 个 micro-batch × 512 token，dim 1024，关 AC，seed 42，6 步，同一份预热缓存）
+
+第 5 步的峰值，GiB（训练进程的 `max_memory_allocated`；"按卡"= 训练进程峰值加上放在这张卡上的池）：
+
+| rank | 关 balance | balance，池在 host（PR 现状） | balance，池在目的卡（辅助进程） | 其中这张卡上的池 |
+|---:|---:|---:|---:|---:|
+| 0 | 6.93 | 6.42 | 6.43 | |
+| 1 | 6.89 | 6.72 | 6.75 | |
+| 2 | 6.61 | 6.59 | 6.59 | |
+| 3 | 7.58 | 7.01 | 7.02 | |
+| 4 | 6.12 | 6.12 | 6.35 | 0.23 |
+| 5 | 5.83 | 5.83 | 6.41 | 0.58 |
+| 6 | 5.57 | 5.57 | 6.30 | 0.73 |
+| 7 | 6.04 | 6.04 | 6.38 | 0.34 |
+| 最大 / 最小 | 7.58 / 5.57 | 7.01 / 5.57 | 7.02 / 6.30 | |
+| rank 间的差 | 2.01 | 1.44 | 0.72 | |
+| 平均 | 6.45 | 6.29 | 6.53 | |
+
+- **数值：** 四格（关、关的重复、池在 host、池在目的卡）6 步的 loss 和 grad norm 全部逐位相同。
+- **nvidia-smi 看到的每卡最高占用**（含 allocator 缓存和 context）：关 balance 时 9.73 到 7.37 GiB，差 2.36；池在目的卡时 9.29 到 8.23 GiB，差 1.06；目的卡 4 到 7 比关 balance 时多 0.36 / 0.71 / 0.85 / 0.47 GiB，也就是池加上辅助进程的 context。GPU 0 上一直压着另外 7 个 rank 各自的 132 MiB context，共约 0.9 GiB，关 balance 时也一样，训练进程自己的统计看不到。
+- **步时**（rank 7 日志时间戳，第 3 到 6 步平均）：关 4.09 s，重复 4.10 s，池在 host 5.81 s（+42%），池在目的卡 35.79 s（8.7 倍）。每步源 rank 共停放约 1.9 GiB，反向再读回同样多（rank 0 到 3 五步累计 2.90 / 2.22 / 1.14 / 3.30 GiB）。慢的不是 PCIe 带宽：探针里单次 64 MiB 能到 1.1 到 1.5 GB/s，按这个速度每步只该多 3 秒左右。慢在 mooncake tcp 进显存的逐次开销：每个保存的张量单独一次传输，每次在对方同步拷贝一次，源端存储流上的传输一个接一个。
+- **为什么没有完全拉平：**
+  - 计划用的是第 1 步的 profile（计划里 profiled 那一列正好等于各 rank 第 1 步的峰值）。关 balance 时，每个 rank 从第 2 步起的峰值都比第 1 步高约 0.53 GiB（rank 3 高 0.62），大小和 AdamW 的两份状态一致：第 1 步之后常驻约 1.06 GiB，按参数、梯度、两份状态各约 0.27 GiB（bf16）推算。AdamW 在第一次 step 时才分配状态。所以计划的绝对数都偏低约 0.55 GiB（源 rank 计划 5.87 / 6.16 / 5.97 / 6.43，实测 6.42 / 6.72 / 6.59 / 7.01）。
+  - 池会满：rank 0 到 2 每步各有 25 到 54 个保存张量因为自己那段池满了，只好留在本卡（统计里的 `remote_full`），rank 1、2 降得比计划少。
+  - 池一共 1.88 GiB，源 rank 的峰值只一共降了 1.27 GiB：池要装下同一时刻停着的全部张量，比源 rank 峰值时刻停着的多。目的 rank 先填到均值，源 rank 就降不下去了。
+  - 最重的 rank 3 只配了一个目的地（rank 6），计划本身就把它留在均值以上 0.5 GiB。
+- **结论：** 把池真正放进目的卡的显存后，8 张卡的峰值差从 2.01 降到 0.72 GiB（按卡），loss 逐位不变，但在 5060 上每步慢 8.7 倍；PR 现在的 host 池只把源 rank 压下来（差 1.44），目的卡不涨，实际是 host offload。
+- **对 #4764 的影响（没改，等用户定）：**
+  - tcp 那句注释不对，真正的限制是"mooncake 往显存拷贝走默认流，会等本卡的计算"；
+  - profile 步应该在优化器状态分配之后，或者把优化器状态计进去；
+  - 池的大小和计划对不上，出现 `remote_full`；
+  - H100 上的 `nvlink_intra` 要先用同一个忙流探针确认不会和默认流互等（已写进 `H100_NEXT_2026-09-30.md` §3b）。
