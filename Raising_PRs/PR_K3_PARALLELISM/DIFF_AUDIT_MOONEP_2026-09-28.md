@@ -65,3 +65,16 @@
   - flavor 按用户的决定处理。
 - 重写之后必须在 NVSwitch 机器上验证（multicast 为 1，见记忆 `moonep-needs-switch-multicast`）：on-device test、h100 格、对 standard dispatcher 的数值，以及和 DeepEP 的对比。这台 5060 和已经停掉的单卡 H100 都跑不了 MoonEP。
 - #4751 是已发布的 draft：重写先推 review 分支，同步 PR 分支要等用户说。
+
+## 6. 重写（2026-09-29，用户："直接重写 备份一下当前moonep tree 推到我晚上提供4 h100的时候能直接smoke然后打开正式pr的程度"）
+
+- **备份：** 旧实现 `f556ab4fd` 在 `backup/k3_moonep_seam_pre_rewrite_20260928`（fork）和同名本地 tag。PR 分支 `k3_moonep_seam` 没动。
+- **新实现：** `moonep_review1` = `a505f74a8`，main `5dc97a3e7` 上的 2 个提交，10 个文件 +605/−3。§5 的几条建议都做了：
+  - `Buffer` 和池都是进程级的，所有层共用。每个 rank 的池块直接当 GEMM 的计算视图，用 titan 自己的权重布局，不另建表，不转置。
+  - 专家侧是 `RoutedExperts` 的子类，只覆盖 `forward`，GEMM 调 `GroupedLinear._grouped_mm`。
+  - §3 的 `w13` 问题：gate、up 各建一个池，从 `w13` 的两半拷进去，这样对得上 MoonEP"三个连续投影"的接口，不用请 MoonEP 改。
+  - core 只在两处名单里加上 MoonEP；Kimi K3 一行不改；不加 flavor，h100 recipe 在函数里直接选后端。
+  - 旧实现的 `edp_shard == 1` 限制去掉了：现在拷的是 FSDP 已经 unshard 好的权重。
+  - 各层共用池不会有竞争：规约 kernel 在所有 rank 读完之后才清本地的槽，预取 kernel 结尾有完成屏障，dispatch 前还有一次 rank 同步（读 `33327eb` 的 `grad_reduce.py`、`prefetch.py` 注释得出）。
+- **本地检查**（假 MoonEP，`kit_moonep_rewrite_2026-09-29/LOCAL_CHECKS.md`）：找出并修掉了两个只有在 GPU 上才会出现的 bug（`ctx.metadata` 是保留属性；反向线程里取不到 EP mesh）。GPU 单测 2 passed；4 卡端到端第 1 步和 standard 逐位相同，之后的差在 standard 自己换一份编译缓存的噪声量级之内。
+- **还没做的：** 真实 MoonEP 上的一切（今晚 4 × H100 的 smoke）；`Buffer` 没有显式 `destroy()`，退出时靠它自己回收。

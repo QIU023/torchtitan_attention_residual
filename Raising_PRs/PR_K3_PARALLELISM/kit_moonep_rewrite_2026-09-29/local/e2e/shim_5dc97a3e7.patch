@@ -1,0 +1,18 @@
+diff --git a/torchtitan/distributed/utils.py b/torchtitan/distributed/utils.py
+index d4f1ab8a1..3f967f0e9 100644
+--- a/torchtitan/distributed/utils.py
++++ b/torchtitan/distributed/utils.py
+@@ -497,9 +497,10 @@ def init_distributed(
+     # Directed physical PP edges need independent, preinitialized communicator
+     # FIFOs so eager execution and CUDA graph replay use deterministic ordering.
+     # Use setattr because this config is absent from some PyTorch type stubs.
+-    setattr(  # noqa: B010
+-        dist_config, "pipeline_per_edge_p2p", pipeline_parallel_degree > 1
+-    )
++    if hasattr(dist_config, "pipeline_per_edge_p2p"):  # LOCAL SHIM: old torch
++        setattr(  # noqa: B010
++            dist_config, "pipeline_per_edge_p2p", pipeline_parallel_degree > 1
++        )
+ 
+     # disable autograd multithreading, to enable TLS DeviceMesh stack for spmd_types backend.
+     # this is needed for AC functionality; multi-threaded autograd means BWD threads performing recompute,
