@@ -32,7 +32,11 @@ def build(dim: int, seq: int, device: str = "cuda"):
     model.to_empty(device=device)
     with torch.no_grad():
         model.init_states()
-    return model.to(torch.bfloat16)
+        # bf16 parameters as FSDP's mixed precision computes with them; buffers (the rope tables) stay fp32.
+        for p in model.parameters():
+            if p.is_floating_point():
+                p.data = p.data.to(torch.bfloat16)
+    return model
 
 
 def timed(fn, warmup: int = 3, iters: int = 10) -> float:

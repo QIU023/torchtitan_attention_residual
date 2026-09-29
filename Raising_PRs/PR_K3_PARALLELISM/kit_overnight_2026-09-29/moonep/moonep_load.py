@@ -100,14 +100,16 @@ def _install() -> None:
     classes = [moe.RoutedExperts]
     if hasattr(moe, "MoonEPRoutedExperts"):
         classes.append(moe.MoonEPRoutedExperts)
+    def recording(original):
+        # Same positional names as RoutedExperts.forward: local_spmd maps inputs to layouts by name.
+        def forward(self, x_TD, topk_scores_TK, topk_expert_ids_TK, num_local_tokens_per_expert_E):
+            _record_call(self, x_TD, num_local_tokens_per_expert_E)
+            return original(self, x_TD, topk_scores_TK, topk_expert_ids_TK, num_local_tokens_per_expert_E)
+
+        return forward
+
     for cls in classes:
-        original = cls.forward
-
-        def forward(self, x_TD, topk_scores_TK, topk_expert_ids_TK, counts_E, _original=original):
-            _record_call(self, x_TD, counts_E)
-            return _original(self, x_TD, topk_scores_TK, topk_expert_ids_TK, counts_E)
-
-        cls.forward = forward
+        cls.forward = recording(cls.forward)
 
     if hasattr(token_dispatcher, "MoonEPTokenDispatcher"):
         dispatch = token_dispatcher.MoonEPTokenDispatcher.dispatch
