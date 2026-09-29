@@ -1,0 +1,29 @@
+diff --git a/torchtitan/distributed/pipeline_parallel.py b/torchtitan/distributed/pipeline_parallel.py
+index dc0534501..fc15d6040 100644
+--- a/torchtitan/distributed/pipeline_parallel.py
++++ b/torchtitan/distributed/pipeline_parallel.py
+@@ -397,6 +397,10 @@ def _build_pipeline_schedule(
+             ),
+             "unshard_lookahead": parallelism.pp_num_unshard_lookahead_factor,
+         }
++        import inspect  # LOCAL SHIM: torch 2.15.0.dev20260906 lacks unshard_lookahead
++
++        _accepted = inspect.signature(schedule_class.__init__).parameters
++        schedule_kwargs = {k: v for k, v in schedule_kwargs.items() if k in _accepted}
+         schedule = schedule_class(
+             stages,  # pyrefly: ignore [bad-argument-type]
+             n_microbatches=num_microbatches,
+diff --git a/torchtitan/distributed/utils.py b/torchtitan/distributed/utils.py
+index acc10c6c8..bd6b21381 100644
+--- a/torchtitan/distributed/utils.py
++++ b/torchtitan/distributed/utils.py
+@@ -525,7 +525,8 @@ def init_distributed(
+ 
+     # Directed physical PP edges need independent, preinitialized communicator
+     # FIFOs so eager execution and CUDA graph replay use deterministic ordering.
+-    dist_config.pipeline_per_edge_p2p = pipeline_parallel_degree > 1
++    if hasattr(dist_config, "pipeline_per_edge_p2p"):  # LOCAL SHIM: old torch
++        dist_config.pipeline_per_edge_p2p = pipeline_parallel_degree > 1
+ 
+     # disable autograd multithreading, to enable TLS DeviceMesh stack for spmd_types backend.
+     # this is needed for AC functionality; multi-threaded autograd means BWD threads performing recompute,
