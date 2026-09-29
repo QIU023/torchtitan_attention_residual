@@ -125,3 +125,12 @@ M16 核对（L2，3 步）：K2.5 13 次编码都在调度前；bubble 8 次在�
 - **目标二（DEP 比例）：** 完成探索。K3 的区间 R_f 0.02 到 0.32（推算）；数据集和三档 recipe 就绪；5060 上测了时间比；发现 M4 时空闲槽太少、反向从不进空闲槽两个问题。H100 的格子见 `H100_NEXT_2026-09-30.md`。
 - **目标三（MoonEP 审计）：** 完成。找到并修了 `reduce_grad` 前缺的跨 rank 栅栏；`moonep_review1` = `1633dcd79` 已 rebase 到最新 main 并推送；负载均衡的证据方案在假包上跑通，真实数字等 H100。
 - **下次 H100：** `H100_NEXT_2026-09-30.md`，三条线约 4 到 4.5 小时。
+
+## 09-29 晚：整条线 rebase 到含 #4914 的 main（用户："b"，"后续PR A整条线是建立在4656 rebase main之后"）
+
+- #4656 的 PR 分支不动（用户选 b）。rebase 后的 #4656 两个提交（`9c6904dea`、`4ae9422db`）只作为 PR A 分支底下的两个提交存在；和原来的 diff 一样，只解了 #4905 改名那处 import 冲突。
+- PR A `ec8bb420a`：重放时唯一的冲突是 #4914 改过 docstring 的 `_pack_outgoing_delta`（本 PR 删掉了它），取本 PR 这边。同一个提交里改了 #4914 的页面：`PP_ATTN_RES_CACHE.md` 的表、1F1B 段，加一段 send 早等；stage 图只改图例里用"stack / 列"说的几行和 cache 关那栏的副标题（本地用 cairosvg 渲染核对过，图例都在框内）。
+- #4765 = `e852c5ae5`，#4764 = `a6c0aef16`、`8545ea009`，重放没有冲突。
+- 检查：四个 head 的 pyflakes、ufmt 干净，新 torch 上单测 70 / 71 / 76 / 90 passed，和换底前一样；加的行里没有 `parallel_dims` 这类旧名字。
+- 5060 复核（pp4 × vpp2，20 步，`results_bound_rb/`）：rebase 后的 #4656 对 rebase 后的 PR A 20/20 逐位相同，loss、各 rank 峰值、block 记账和换底前一个数不差。
+- 推送：`pp_review_optimize` = `ec8bb420a`，`pp_offload_review1` = `k3_pp_offload` = `e852c5ae5`，`pp_balance_review1` = `k3_pp_balance` = `8545ea009`；旧 head 都在 `backup/*_pre_20260929b`。upstream 的 `refs/pull/4765/head`、`refs/pull/4764/head` 已是新 head；`refs/pull/4656/head` 还是 `5d469fdf3`。
