@@ -1,0 +1,14 @@
+#loc = loc("/root/mep/results/pra4312/ind_ref_cold/f3/cf3zj47er4pdtyszd4cb4f3smzuyjrwh6pbrah2hdmat23pcycnk.py":18:1)
+#loc4 = loc("out_ptr0"(#loc))
+module {
+  tt.func public @triton_poi_fused_view_5(%out_ptr0: !tt.ptr<i32> {tt.divisibility = 16 : i32} loc("out_ptr0"(#loc))) attributes {noinline = false} {
+    %tmp0 = arith.constant dense<1> : tensor<1xi32> loc(#loc5)
+    %0 = tt.splat %out_ptr0 : !tt.ptr<i32> -> tensor<1x!tt.ptr<i32>> loc(#loc2)
+    tt.store %0, %tmp0 : tensor<1x!tt.ptr<i32>> loc(#loc3)
+    tt.return loc(#loc)
+  } loc(#loc)
+} loc(#loc)
+#loc1 = loc("/root/mep/results/pra4312/ind_ref_cold/f3/cf3zj47er4pdtyszd4cb4f3smzuyjrwh6pbrah2hdmat23pcycnk.py":23:12)
+#loc2 = loc("/root/mep/results/pra4312/ind_ref_cold/f3/cf3zj47er4pdtyszd4cb4f3smzuyjrwh6pbrah2hdmat23pcycnk.py":24:14)
+#loc3 = loc("/root/mep/results/pra4312/ind_ref_cold/f3/cf3zj47er4pdtyszd4cb4f3smzuyjrwh6pbrah2hdmat23pcycnk.py":24:5)
+#loc5 = loc("tmp0"(#loc1))

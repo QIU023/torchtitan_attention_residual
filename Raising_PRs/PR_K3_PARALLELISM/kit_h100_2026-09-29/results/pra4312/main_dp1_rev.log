@@ -1,0 +1,60 @@
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-09-29 08:04:25,558 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-09-29 08:04:26,175 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[rank0]:[titan] 2026-09-29 08:04:26,263 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[rank0]:[titan] 2026-09-29 08:04:26,266 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/pra4312/main_dp1_rev/structured_logs/training.global_rank_0.20260929-080426-BPNQOK.jsonl
+[rank0]:[titan] 2026-09-29 08:04:26,563 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-09-29 08:04:26,940 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-09-29 08:04:26,940 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank0]:[titan] 2026-09-29 08:04:26,952 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-09-29 08:04:27,014 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-09-29 08:04:27,015 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-09-29 08:04:27,328 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-09-29 08:04:27,454 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-09-29 08:04:27,457 - torchtitan.models.utils - INFO - Total parameter count: 25,776,880, active parameters: 17,236,208
+[rank0]:[titan] 2026-09-29 08:04:27,458 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank0]:[titan] 2026-09-29 08:04:27,462 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: []
+[rank0]:[titan] 2026-09-29 08:04:27,522 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-29 08:04:27,523 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-29 08:04:27,655 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-29 08:04:28,176 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 25,776,880 total parameters
+[rank0]:[titan] 2026-09-29 08:04:28,179 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 465 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-29 08:04:28,182 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[rank0]:[titan] 2026-09-29 08:04:28,188 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /root/mep/results/pra4312/main_dp1_rev/checkpoint
+[rank0]:[titan] 2026-09-29 08:04:28,189 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank0]:[titan] 2026-09-29 08:04:28,189 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.07GiB(0.09%)
+[rank0]:[titan] 2026-09-29 08:04:28,189 - torchtitan.trainer - INFO - Trainer is initialized with 256 tokens per DP rank, 1024 tokens per train step, gradient accumulation steps 4, maximum context length 2048, total steps 100 (warmup 2)
+[rank0]:[titan] 2026-09-29 08:04:28,189 - torchtitan.components.checkpointer.base - INFO - Loading the checkpoint from /root/mep/results/pra4312/main_dp1_rev/checkpoint/step-0.
+W0929 08:04:28.447000 91916 torch/distributed/elastic/agent/server/api.py:753] Received 15 death signal, shutting down workers
+W0929 08:04:28.448000 91916 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 92204 closing signal SIGTERM
+Traceback (most recent call last):
+  File "/root/mep/venv_src/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 377, in launch_agent
+    result = agent.run()
+             ^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/metrics/api.py", line 134, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/agent/server/api.py", line 745, in run
+    result = self._invoke_run(role)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/agent/server/api.py", line 923, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 86, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+                                    ^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 86, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 91916 got signal: 15

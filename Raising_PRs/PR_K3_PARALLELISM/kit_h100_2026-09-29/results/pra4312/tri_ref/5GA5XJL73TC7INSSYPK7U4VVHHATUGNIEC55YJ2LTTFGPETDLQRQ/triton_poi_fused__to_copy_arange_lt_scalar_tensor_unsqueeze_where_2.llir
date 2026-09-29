@@ -1,0 +1,79 @@
+; ModuleID = 'LLVMDialectModule'
+source_filename = "LLVMDialectModule"
+target datalayout = "e-p3:32:32-p4:32:32-p5:32:32-p6:32:32-p7:32:32-i64:64-i128:128-i256:256-v16:16-v32:32-n16:32:64"
+
+; Function Attrs: nounwind
+define ptx_kernel void @triton_poi_fused__to_copy_arange_lt_scalar_tensor_unsqueeze_where_2(ptr addrspace(1) %0, ptr addrspace(1) %1, ptr addrspace(1) %2, ptr addrspace(1) %3, i32 %4, ptr addrspace(1) readnone captures(none) %5, ptr addrspace(1) readnone captures(none) %6) local_unnamed_addr #0 !dbg !4 {
+  %8 = tail call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x(), !dbg !13
+  %9 = shl i32 %8, 2, !dbg !13
+  %10 = tail call i32 @llvm.nvvm.read.ptx.sreg.tid.x(), !dbg !14
+  %11 = and i32 %10, 3, !dbg !14
+  %12 = or disjoint i32 %9, %11, !dbg !15
+  %13 = icmp slt i32 %12, 4, !dbg !16
+  %14 = sdiv i32 %12, 2, !dbg !17
+  %15 = mul i32 %14, 2, !dbg !18
+  %.decomposed = sub i32 %12, %15, !dbg !18
+  %16 = sext i32 %12 to i64, !dbg !19
+  %17 = getelementptr [8 x i8], ptr addrspace(1) %0, i64 %16, !dbg !19
+  %18 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09@$2 ld.global.b64 { $0 }, [ $1 + 0 ];", "=l,l,b"(ptr addrspace(1) %17, i1 %13) #2, !dbg !20
+  %19 = sext i32 %14 to i64, !dbg !21
+  %20 = getelementptr [4 x i8], ptr addrspace(1) %1, i64 %19, !dbg !21
+  %21 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09createpolicy.fractional.L2::evict_last.b64 $0, 1.0;", "=l"() #2, !dbg !22
+  %22 = tail call i32 asm sideeffect "mov.u32 $0, 0x0;\0A\09@$3 ld.global.L1::evict_last.L2::cache_hint.b32 { $0 }, [ $1 + 0 ], $2;", "=r,l,l,b"(ptr addrspace(1) %20, i64 %21, i1 %13) #2, !dbg !22
+  %23 = trunc i64 %18 to i32, !dbg !23
+  %24 = icmp slt i32 %.decomposed, %22, !dbg !24
+  %25 = select i1 %24, i32 %23, i32 2, !dbg !25
+  %26 = getelementptr [4 x i8], ptr addrspace(1) %2, i64 %16, !dbg !26
+  %27 = and i32 %10, 28, !dbg !27
+  %28 = icmp eq i32 %27, 0, !dbg !27
+  %29 = and i1 %28, %13, !dbg !27
+  tail call void asm sideeffect "@$2 st.global.b32 [ $1 + 0 ], { $0 };", "r,l,b"(i32 %23, ptr addrspace(1) %26, i1 %29) #2, !dbg !27
+  %30 = getelementptr [4 x i8], ptr addrspace(1) %3, i64 %16, !dbg !28
+  tail call void asm sideeffect "@$2 st.global.b32 [ $1 + 0 ], { $0 };", "r,l,b"(i32 %25, ptr addrspace(1) %30, i1 %29) #2, !dbg !29
+  ret void, !dbg !30
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef range(i32 0, 2147483647) i32 @llvm.nvvm.read.ptx.sreg.ctaid.x() #1
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef range(i32 0, 1024) i32 @llvm.nvvm.read.ptx.sreg.tid.x() #1
+
+attributes #0 = { nounwind "nvvm.reqntid"="32" }
+attributes #1 = { mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+attributes #2 = { nounwind }
+
+!llvm.dbg.cu = !{!0}
+!llvm.module.flags = !{!2, !3}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "triton", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+!1 = !DIFile(filename: "cz72gh4ocf5dso7epyjivpksaxfm522td6ddlonb3pxj74swzjiu.py", directory: "/root/mep/results/pra4312/ind_ref_cold/z7")
+!2 = !{i32 2, !"Debug Info Version", i32 3}
+!3 = !{i32 4, !"nvvm-reflect-ftz", i32 1}
+!4 = distinct !DISubprogram(name: "triton_poi_fused__to_copy_arange_lt_scalar_tensor_unsqueeze_where_2", linkageName: "triton_poi_fused__to_copy_arange_lt_scalar_tensor_unsqueeze_where_2", scope: !1, file: !1, line: 18, type: !5, scopeLine: 18, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !0)
+!5 = !DISubroutineType(cc: DW_CC_normal, types: !6)
+!6 = !{null, !7, !9, !9, !9, !10, !11, !11}
+!7 = !DIDerivedType(tag: DW_TAG_pointer_type, name: "pointer", baseType: !8, size: 64, dwarfAddressSpace: 1)
+!8 = !DIBasicType(name: "int", size: 64, encoding: DW_ATE_signed)
+!9 = !DIDerivedType(tag: DW_TAG_pointer_type, name: "pointer", baseType: !10, size: 64, dwarfAddressSpace: 1)
+!10 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
+!11 = !DIDerivedType(tag: DW_TAG_pointer_type, name: "pointer", baseType: !12, size: 64, dwarfAddressSpace: 1)
+!12 = !DIBasicType(name: "unknown_type", encoding: DW_ATE_signed)
+!13 = !DILocation(line: 20, column: 15, scope: !4)
+!14 = !DILocation(line: 21, column: 24, scope: !4)
+!15 = !DILocation(line: 21, column: 14, scope: !4)
+!16 = !DILocation(line: 22, column: 13, scope: !4)
+!17 = !DILocation(line: 24, column: 10, scope: !4)
+!18 = !DILocation(line: 25, column: 11, scope: !4)
+!19 = !DILocation(line: 26, column: 20, scope: !4)
+!20 = !DILocation(line: 26, column: 12, scope: !4)
+!21 = !DILocation(line: 27, column: 20, scope: !4)
+!22 = !DILocation(line: 27, column: 12, scope: !4)
+!23 = !DILocation(line: 28, column: 12, scope: !4)
+!24 = !DILocation(line: 30, column: 12, scope: !4)
+!25 = !DILocation(line: 32, column: 12, scope: !4)
+!26 = !DILocation(line: 33, column: 14, scope: !4)
+!27 = !DILocation(line: 33, column: 5, scope: !4)
+!28 = !DILocation(line: 34, column: 14, scope: !4)
+!29 = !DILocation(line: 34, column: 5, scope: !4)
+!30 = !DILocation(line: 18, column: 1, scope: !4)
