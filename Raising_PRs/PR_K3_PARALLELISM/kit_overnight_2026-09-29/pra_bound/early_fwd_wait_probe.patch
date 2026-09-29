@@ -1,0 +1,26 @@
+diff --git a/torchtitan/models/kimi_k3/pipeline_parallel/stage.py b/torchtitan/models/kimi_k3/pipeline_parallel/stage.py
+index 5358c5a28..8f8145146 100644
+--- a/torchtitan/models/kimi_k3/pipeline_parallel/stage.py
++++ b/torchtitan/models/kimi_k3/pipeline_parallel/stage.py
+@@ -155,8 +155,19 @@ class AttnResPipelineStage(PipelineStage):
+     def get_fwd_send_ops(self, fwd_chunk_id: int):
+         ops = super().get_fwd_send_ops(fwd_chunk_id)
+         if self._wait_sends_at_backward and self.has_backward and ops:
+-            # The receiver has used the tensors once this stage's backward of the micro-batch starts.
+-            self._fwd_send_works[fwd_chunk_id] = _batch_p2p(ops)
++            layout = self.layout()
++            later = self.stage_index + len(set(layout.stage_to_rank.values()))
++            if (
++                self._grad_send_waits is not None
++                and layout.stage_to_rank.get(later) == self.group_rank
++            ):
++                # Stage `later` on this rank reads what the peer computed from these tensors.
++                self._grad_send_waits.pinned.setdefault(
++                    (later, fwd_chunk_id), []
++                ).extend(_batch_p2p(ops))
++            else:
++                # The receiver has used the tensors once this stage's backward of the micro-batch starts.
++                self._fwd_send_works[fwd_chunk_id] = _batch_p2p(ops)
+             return []
+         return ops
+ 
