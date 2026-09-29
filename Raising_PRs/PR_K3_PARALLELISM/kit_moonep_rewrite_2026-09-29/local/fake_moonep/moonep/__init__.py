@@ -55,7 +55,8 @@ def _validate_rank_strided_pool(pool: torch.Tensor) -> int:
 
 
 class Buffer:
-    def __init__(self, S, H, K, E, num_ep_ranks, num_sms=None, token_padding=128, group=None):
+    def __init__(self, S, H, K, E, num_ep_ranks, num_sms=None, token_padding=128, group=None,
+                 comm_stream_priority=-1, enable_pdl=True, explicitly_destroy=False):
         self.group = group
         self.R = num_ep_ranks
         assert self.R == dist.get_world_size(group)

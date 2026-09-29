@@ -78,3 +78,60 @@
   - 各层共用池不会有竞争：规约 kernel 在所有 rank 读完之后才清本地的槽，预取 kernel 结尾有完成屏障，dispatch 前还有一次 rank 同步（读 `33327eb` 的 `grad_reduce.py`、`prefetch.py` 注释得出）。
 - **本地检查**（假 MoonEP，`kit_moonep_rewrite_2026-09-29/LOCAL_CHECKS.md`）：找出并修掉了两个只有在 GPU 上才会出现的 bug（`ctx.metadata` 是保留属性；反向线程里取不到 EP mesh）。GPU 单测 2 passed；4 卡端到端第 1 步和 standard 逐位相同，之后的差在 standard 自己换一份编译缓存的噪声量级之内。
 - **还没做的：** 真实 MoonEP 上的一切（今晚 4 × H100 的 smoke）；`Buffer` 没有显式 `destroy()`，退出时靠它自己回收。
+
+## 7. 逐行审计、修复和 rebase（2026-09-29 夜，overnight T3a、T3b）
+
+范围：`moonep_review1` = `a505f74a8` 对 `5dc97a3e7` 的 diff，对照 MoonEP `33327eb` 的源码（`moonep/api.py`、`buffer.py`、`planning.py`、`grad_reduce.py`、`README.md`、`tests/test_e2e.py`）。
+
+**结论：** 一个真 bug：规约前少了一道跨 rank 栅栏。一个稳健性问题：`Buffer` 被 GC 时会跑 `destroy()` 的同步和 barrier。两处都在新提交 `1633dcd79` 里修了。其余调用逐个核对过，没有问题。
+
+### 7.1 真 bug：规约前缺栅栏（`torchtitan/distributed/moonep/moonep.py:130-145`，`reduce_rows`）
+
+- MoonEP 的规约 kernel 第一阶段用 TMA 远程读各 rank 规约缓冲里的槽梯度，开头没有 barrier。docstring 写明调用方要保证所有 rank 的写入先完成：`grad_reduce.py:467-470`，`api.py` 里 `reduce_grad` 的 docstring 也这么写。
+- MoonEP 自己的测试在写完规约缓冲后，先 `torch.cuda.synchronize(); dist.barrier(...)`，再调 `reduce_grad`（`tests/test_e2e.py:134-135`）。README 里 dispatch 反向的顺序是先 `combine` 再 `reduce_grad`，`combine` 默认的 `inter_rank_sync` 正好充当这道栅栏。
+- 重写版的顺序反过来了：`_MoonEPExperts.backward`（`moe.py:185-213`）写完槽梯度马上规约，`combine` 要到之后的 `_Dispatch.backward` 才跑。两者之间没有任何跨 rank 同步。一个 rank 可能在别的 rank 写完之前就去读，把旧值或清零后的槽加进本家专家的梯度，结果悄悄出错。
+- H100 上 GPU 单测两次都过，只说明那两次时序没撞上。这个竞争是按 MoonEP 的契约判定的，不是测出来的。
+- 修法：写完槽梯度、规约之前，在 EP 组上做一次单元素 all-reduce（`moonep.py:143-144`）。它在当前 stream 上排队，不阻塞 CPU，一行注释写明约束。
+- §6 那句"各层共用池不会有竞争"要更正：预取和 dispatch 前的同步都在，规约前这一道原来漏了。
+
+### 7.2 稳健性：`Buffer` 没设 `explicitly_destroy=True`（`moonep.py:48-56`，`get_buffer`）
+
+- `explicitly_destroy=False`（默认）时，`Buffer.__del__` 会跑 `destroy()`，里面是 `torch.cuda.synchronize()` 加 `dist.barrier(group)`。进程级的 buffer 被 GC 时跑这一套（退出时，或以后被替换时），CUDA graph 捕获期间会打断捕获；各 rank 退出不同步时可能卡住。
+- main 的 DeepEP 集成出于同一个原因设 `explicitly_destroy=True`，从不 destroy（`distributed/deepep/deepep.py:352-356`）。照做，加一行注释。kit README 里"没有显式 `destroy()`"那一条也就有了答案。
+
+### 7.3 其余调用逐个核对（都对）
+
+- `Buffer(S, H, K, E, num_ep_ranks, group)`：S 取 `num_max_tokens_per_rank`，E 能被 R 整除；`MoonEPTokenDispatcher.dispatch` 先查每次正好 S 个 token。
+- `dispatch(hidden_sh, route_weights_sk, topk_experts_sk, tokens_per_expert)`：顺序和 dtype 都对，`tokens_per_expert` 是本地计数。`zero_copy` 保持默认 False，返回新张量，可以存进 autograd（docstring 禁止把 zero_copy 视图存进 autograd）。补零行由 dispatch 自己清零。
+- plan 复用的 `dispatch(grad, plan=...)`：仍然先跑 `inter_rank_sync`，只跳过 planning。所以反向进入专家之前有一次同步。
+- `combine`：前向把每个 token 的 K 行求和；作为 dispatch 的反向时，把路由权重的梯度按 `[S, K]` 取回。语义对。
+- `prefetch_weight`：池块用 `pad_dim0_for_alignment` 按 VMM 粒度补齐，`[:, :2epn]` 切片满足 `_validate_rank_strided_pool`（每个 rank 连续、步长 16 字节对齐、不越界）。本地权重每次从 FSDP unshard 后的参数拷进池块前半。
+- `reduce_grad`：形状和 dtype 都对。返回的梯度是 `torch.stack` 和 `clone` 出来的新张量，池的视图不会进到参数的 `.grad` 里。
+- 各层共用的池：前向 dispatch 前有 rank 同步，保证上一层读完槽再覆盖；反向靠 plan 复用的 dispatch，同理；预取结尾有完成屏障。
+- 全部是同步模式（`async_finish=False`），跑在当前 stream 上，没有用 `Buffer` 自己的 comm stream。
+
+### 7.4 规矩
+
+- 新增注释和 docstring 20 行（`git diff 5dc97a3e7 a505f74a8 | grep -E '^\+.*(#|""")'`，去掉版权头、`noqa`、`pyrefly`）：
+  - 两行代码注释都是约束：buffer 是静态的；池被各层共用，所以反向要重填再重算。
+  - docstring 都是一行"做什么"。
+  - 修复提交新增的两行注释也都是约束。
+- 调 `GroupedLinear._grouped_mm` 是调别的类的私有方法。但它正是 LoRA、float8、mxfp8 覆盖的扩展点（`lora.py:164`、`quantization/float8/experts.py:221`、`quantization/mxfp8/experts.py:43`），走它才保得住这些转换器，所以保留。
+  - 代价：LoRA 的适配器按本地 `epn` 个专家建，而 MoonEP 的行里还有副本，两者不能同时开。形状对不上会直接报错，不会静默算错。已写进 body 的 Requirements。
+- 没有 flavor；core 只在两处名单里点名 MoonEP；Kimi K3 目录零行。
+
+### 7.5 rebase、检查和推送
+
+- upstream main 自 `5dc97a3e7` 进了 9 个提交，都不碰 MoE、dispatcher 和 kimi_k3。两个提交重放到 `a182e530a` 上没有冲突：`a93b3ad28`、`58b18c61f`。修复提交是 `1633dcd79`。
+- 检查（`/workspace/venv_0928`，torch 2.15.0.dev20260928，CPU）：
+  - `test_moe.py`、`test_integration_test_definitions.py`：34 passed、13 subtests passed；
+  - pyflakes：只剩 main 原有的两处副作用导入（带 `noqa`）；
+  - ufmt（仓库钉的 2.3.0 / black 22.12.0 / usort 1.0.5）：9 个文件干净。
+- fork：`moonep_review1` = `1633dcd79`（force-push），旧 head 在 `backup/moonep_review1_pre_20260929` = `a505f74a8`。PR 分支 `k3_moonep_seam` 还是 `f556ab4fd`，没动。
+- 假 MoonEP 的 `Buffer` 补上了公开版的 `comm_stream_priority`、`enable_pdl`、`explicitly_destroy` 参数（`kit_moonep_rewrite_2026-09-29/local/fake_moonep/moonep/__init__.py`）。不补的话，新 head 在假包上会因为 `explicitly_destroy` 报错。
+
+### 7.6 负载均衡的证据（T3b）
+
+- 方案和文件在 `kit_overnight_2026-09-29/moonep/`，README 里有命令和时间。
+- 内容：放大专家的 recipe（128 个专家、top-8，FSDP4 × EP4）；Zipf 式偏置加一格自然路由对照；每层每个 rank 的负载探针；MoonEP 每次 dispatch 是否正好 S × K 行。
+- body 的 Test plan 和 Results 改成负载统计加步时（`PR_BODY_MOONEP_v2_2026-09-29.md`）。
