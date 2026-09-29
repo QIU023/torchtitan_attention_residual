@@ -50,7 +50,7 @@
 | pp2 × vpp2 | 1 | 0.39（0.34） | 0.06（0.05） | 0.05 | 0.08 |
 
 - **PR A 的 store 在每个布局、每个 rank 的峰值时刻都正好等于紧界**，也就是论文 §4.1 说的每个 block 在 rank 上只存一份，而且比论文的释放点更早。
-- **#4656 在峰值时刻占着紧界的 5 到 13 倍**，大头是整步都被 send 扣住的张量，其次是每个 stage 进门拼出来的 stack 和模型输出的 stack。
+- **对照的一方是 #4656 的树，但多出来的显存不是 #4656 的**：#4656 只改模型内部（列表载体和 attention residual 的 checkpoint 重算），PP stage 还是 main 里 #4312 那一版。main 的 PP stage 在峰值时刻占着紧界的 5 到 13 倍，大头是整步都被 send 扣住的张量，其次是每个 stage 进门拼出来的 stack 和模型输出的 stack。用 #4656 作对照，只是因为 PR A 叠在它上面。
 - **PR A 高出紧界的部分是还没 wait 的前向 send。** PR A 在本 stage 反向那个 micro-batch 时才 wait。探针补丁 `pra_bound/early_fwd_wait_probe.patch` 改成在同一个 rank 上下一个虚拟 stage 对同一个 micro-batch 做前向时 wait：那个前向的输入要经过接收方对这个 micro-batch 的前向，所以接收方一定已经用完。最后一个虚拟 stage 仍在反向时 wait。它在 71 个单测上全过；GPU 上的对比见 T1g。
 ## T1g 前向 send 提前 wait 的探针（不并入 PR A）
 
