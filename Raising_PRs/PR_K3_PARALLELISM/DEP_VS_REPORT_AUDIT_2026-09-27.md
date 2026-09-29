@@ -274,3 +274,18 @@ GPU 那边的复查见 `DEP_GPU_CHECK_2026-09-29.md`，分支当时是 `55e4274c
   - 它来自第 1 步塔 `proj` 梯度的求和顺序差（最大 3.8e-6），随塔权重的更新传了下来；loss 完全相同。
   - 建议：GPU 上第 1 步之后的所有梯度都用放宽的容差，不只是 `proj`。
 - 逐项的差值：`DEP_GPU_CHECK_2026-09-29.md` 末节，`kit_dep_gpu_2026-09-29/rerun_3c461fdf1/logs/diffs.txt`。
+
+## 16. GPU 这边接手（2026-09-29，用户："你直接接管所有改动"）
+
+- 从这一节起，DEP 的代码、测试和 body 都由 GPU 这边的会话负责。
+- **head：** `a03f74981`，`k3_pp_mm` 和 `dep_review1` 都已用 force-with-lease 推送。旧 head `3c461fdf1` 备份在 `backup/k3_pp_mm_pre_takeover_20260929`。
+- **唯一的改动：** GPU 上（`exact=False`）第 1 步之后的所有梯度都用 `rtol=1e-5, atol=1e-4`，原因见 §15。
+  - CPU 上仍然要求逐位相同；
+  - 第 1 步的检查没有放松；
+  - 这 3 行并进了 `1b6d500e3`，也就是引入测试的那个提交。
+- **结果（8 × 5060）：**
+  - body Test plan 第一条的命令：15 passed；
+  - CPU 测试：48 passed；
+  - NCCL GPU 测试：连跑两次都是 2 passed。
+  - scoped pre-commit 除 pyrefly 外全部通过；pyrefly 本来就不检查 `tests/`。
+- **还没做：** body 需要的 H100/B200 数字，以及视觉计算在真实尺寸下有没有落进空闲槽。
