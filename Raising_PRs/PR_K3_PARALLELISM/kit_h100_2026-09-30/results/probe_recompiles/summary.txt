@@ -1,0 +1,34 @@
+off rc=0
+  rank0 recompiles: 3
+  rank1 recompiles: 0
+  rank2 recompiles: 0
+  rank3 recompiles: 0
+[rank0]:[rank0]:V0930 12:24:51.922000 159507 torch/_dynamo/guards.py:6299] [0/1] [__recompiles] Recompiling function create_block_mask in /root/mep/venv_src/lib/python3.12/site-packages/torch/nn/attention/flex_attention.
+[rank0]:[rank0]:V0930 12:24:51.922000 159507 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:[rank0]:V0930 12:24:51.922000 159507 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     - 0/0: Q_LEN == 2048                                            # m = torch.arange(0, Q_LEN, device=device)  # nn/attent
+[rank0]:[rank0]:V0930 12:24:51.922000 159507 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     - User stack trace:
+[rank0]:[rank0]:V0930 12:25:27.502000 159507 torch/_dynamo/guards.py:6299] [0/2] [__recompiles] Recompiling function create_block_mask in /root/mep/venv_src/lib/python3.12/site-packages/torch/nn/attention/flex_attention.
+[rank0]:[rank0]:V0930 12:25:27.502000 159507 torch/_dynamo/guards.py:6299] [0/2] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:[rank0]:V0930 12:25:27.502000 159507 torch/_dynamo/guards.py:6299] [0/2] [__recompiles]     - 0/0: Q_LEN == 2048                                            # m = torch.arange(0, Q_LEN, device=device)  # nn/attent
+[rank0]:[rank0]:V0930 12:25:27.502000 159507 torch/_dynamo/guards.py:6299] [0/2] [__recompiles]     - User stack trace:
+[rank0]:[rank0]:V0930 12:25:29.507000 159507 torch/_dynamo/guards.py:6299] [1/1] [__recompiles] Recompiling function flex_attention in /root/mep/venv_src/lib/python3.12/site-packages/torch/nn/attention/flex_attention.py:
+[rank0]:[rank0]:V0930 12:25:29.507000 159507 torch/_dynamo/guards.py:6299] [1/1] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:[rank0]:V0930 12:25:29.507000 159507 torch/_dynamo/guards.py:6299] [1/1] [__recompiles]     - 1/0: tensor 'key' size mismatch at index 2. expected 5184, actual 4
+k25 rc=0
+  rank0 recompiles: 3
+  rank1 recompiles: 4
+  rank2 recompiles: 4
+  rank3 recompiles: 0
+[rank0]:[rank0]:V0930 12:26:37.598000 160321 torch/_dynamo/guards.py:6299] [0/1] [__recompiles] Recompiling function create_block_mask in /root/mep/venv_src/lib/python3.12/site-packages/torch/nn/attention/flex_attention.
+[rank2]:[rank2]:V0930 12:26:37.603000 160323 torch/_dynamo/guards.py:6299] [0/1] [__recompiles] Recompiling function create_block_mask in /root/mep/venv_src/lib/python3.12/site-packages/torch/nn/attention/flex_attention.
+[rank0]:[rank0]:V0930 12:26:37.598000 160321 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     triggered by the following guard failure(s):
+[rank2]:[rank2]:V0930 12:26:37.603000 160323 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:[rank0]:V0930 12:26:37.598000 160321 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     - 0/0: GLOBAL_STATE changed: grad_mode 
+[rank1]:[rank1]:V0930 12:26:37.604000 160322 torch/_dynamo/guards.py:6299] [0/1] [__recompiles] Recompiling function create_block_mask in /root/mep/venv_src/lib/python3.12/site-packages/torch/nn/attention/flex_attention.
+[rank1]:[rank1]:V0930 12:26:37.604000 160322 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     triggered by the following guard failure(s):
+[rank1]:[rank1]:V0930 12:26:37.604000 160322 torch/_dynamo/guards.py:6299] [0/1] [__recompiles]     - 0/0: GLOBAL_STATE changed: grad_mode 
+[rank0]:[rank0]:V0930 12:26:42.810000 160321 torch/_dynamo/guards.py:6299] [0/2] [__recompiles] Recompiling function create_block_mask in /root/mep/venv_src/lib/python3.12/site-packages/torch/nn/attention/flex_attention.
+[rank0]:[rank0]:V0930 12:26:42.810000 160321 torch/_dynamo/guards.py:6299] [0/2] [__recompiles]     triggered by the following guard failure(s):
+[rank0]:[rank0]:V0930 12:26:42.810000 160321 torch/_dynamo/guards.py:6299] [0/2] [__recompiles]     - 0/0: Q_LEN == 2048                                            # m = torch.arange(0, Q_LEN, device=device)  # nn/attent
+[rank0]:[rank0]:V0930 12:26:42.810000 160321 torch/_dynamo/guards.py:6299] [0/2] [__recompiles]     - User stack trace:
+PROBE_DONE
