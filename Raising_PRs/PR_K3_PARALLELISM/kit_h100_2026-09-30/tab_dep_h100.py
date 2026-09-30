@@ -6,6 +6,7 @@ Usage: python tab_dep_h100.py <results dir, e.g. results/dep_h100_pp4vpp4>
 import glob
 import os
 import re
+import statistics
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kit_h100_2026-09-29", "dep"))
@@ -20,33 +21,57 @@ def _plan(log):
     return m.group(1).strip() if m else ""
 
 
+def compile_steps(log):
+    """Steps whose log, between the previous step line and theirs, shows an AUTOTUNE (a first-use compile)."""
+    out, current = set(), 0
+    with open(log, errors="replace") as f:
+        for raw in f:
+            line = re.sub(r"\x1b\[[0-9;]*m", "", raw)
+            m = re.search(r"step:\s+(\d+)\s+loss", line)
+            if m:
+                current = max(current, int(m.group(1)))
+            elif "AUTOTUNE" in line:
+                out.add(current + 1)
+    return out
+
+
+def durations(rec, first, last):
+    return {k: (rec[k]["ts"] - rec[k - 1]["ts"]).total_seconds() for k in range(first, last + 1) if k in rec and k - 1 in rec}
+
+
 def timing(root):
     cells = sorted({re.match(r"time_(.+)_w_dep_", os.path.basename(d)).group(1)
                     for d in glob.glob(os.path.join(root, "time_*_w_dep_off"))})
-    print("| level | M | mode | s/step (steps 5 to 20) | vs DEP off | vs K2.5 | peak GiB per rank (step 20) | plan |")
-    print("|---|---:|---|---:|---:|---:|---|---|")
+    print("| level | M | mode | median s/step (steps 5 to 20) | vs DEP off | vs K2.5 | mean | compile steps (s) | "
+          "peak GiB per rank (step 20) | plan |")
+    print("|---|---:|---|---:|---:|---:|---:|---|---|---|")
     for cell in cells:
         level, m = cell.rsplit("_m", 1)
-        secs = {}
+        med = {}
         for key, label in MODES:
             log = os.path.join(root, f"time_{cell}_{key}", "run.log")
             if not os.path.exists(log):
                 continue
             rec = steps(log)
-            secs[key] = step_seconds(rec, 5, 20) if rec else None
+            if not rec:
+                print(f"| {level} | {m} | {label} | failed | | | | | | |")
+                continue
+            d = durations(rec, 5, 20)
+            med[key] = t = statistics.median(d.values())
+            mean = step_seconds(rec, 5, 20)
+            comp = compile_steps(log)
+            slow = ", ".join(f"{k}: {d[k]:.1f}" for k in sorted(d) if k in comp)
             mem = mem_by_rank(log, 20)
-            t = secs[key]
-            vs_off = f"{t / secs['w_dep_off'] - 1:+.1%}" if t and secs.get("w_dep_off") and key != "w_dep_off" else ""
-            vs_k25 = f"{t / secs['w_dep_k25'] - 1:+.1%}" if t and secs.get("w_dep_k25") and key == "w_dep_bubble" else ""
+            vs_off = f"{t / med['w_dep_off'] - 1:+.1%}" if med.get("w_dep_off") and key != "w_dep_off" else ""
+            vs_k25 = f"{t / med['w_dep_k25'] - 1:+.1%}" if med.get("w_dep_k25") and key == "w_dep_bubble" else ""
             peaks = " / ".join(f"{mem[r]:.1f}" for r in sorted(mem))
-            print(f"| {level} | {m} | {label} | {t:.3f} | {vs_off} | {vs_k25} | {peaks} | {_plan(log)} |"
-                  if t else f"| {level} | {m} | {label} | failed | | | | |")
+            print(f"| {level} | {m} | {label} | {t:.3f} | {vs_off} | {vs_k25} | {mean:.3f} | {slow} | {peaks} | {_plan(log)} |")
         fill = os.path.join(root, f"fill_{cell}.txt")
         if os.path.exists(fill):
             with open(fill) as f:
                 line = [x for x in f if x.startswith("all ranks")]
             if line:
-                print(f"| {level} | {m} | measured fill (step 10 trace) | {line[0].strip()[len('all ranks: '):]} | | | | |")
+                print(f"| {level} | {m} | measured fill (step 10 trace) | {line[0].strip()[len('all ranks: '):]} | | | | | | |")
 
 
 def numerics(root):
