@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **09-30 H100 结果已填进粘贴区（`PRA_H100_2026-09-30.md`）：** Results 放了 dim 6144 的两个 4 卡布局（100 步逐位一致，每卡省 1.3 到 3.8 GiB，步时快约 2%，块占用落在论文界上）。dp2 × pp2 × vpp2、pp2 × vpp2、pp2 × vpp4 在 6144 下两个树都 OOM，dim 5120 在补跑，出来后再补一行。Design 改了一句：原文"块在带进来的 stage 反向后就释放"，实测块占用在论文界上、没到紧界，差的是前向 send 要到发送方自己反向时才等，所以改成"带进来的 stage 反向完、并且把它继续发出去的前向 send 也等完之后释放"。要不要这样写你定。
 - **09-30 H100（115.124.123.240，`345e9e00a`，`PRA_H100_2026-09-30.md`）：** Test plan 五个文件在 H100 机器上 70 passed（基线 `e66a9442b` 也是 70 passed，含要 CuTeDSL 的 recompute 测试），粘贴区的 `<N>` 已填。dim 6144 的显存实验在跑，Results 等它。
 - **用户 09-30：** "PR A怎么对cache和stage有这么多的改动？？？能尝试最小化diff吗？而且4312已经合并并且结构是清晰的，这个diff这么改没办法评审，重新重构简化"。
 - **分支（用户 09-30："理想情况来说，不要直接覆盖pp review optimize，这个改动直接加一个commit到这个分支，我去测，测完了没问题再force with lease+rebase 4765/4764"）：** `pp_review_optimize` = `345e9e00a`，fast-forward 推送，没有 force。
@@ -54,13 +55,27 @@ The Kimi K3 pipeline stage keeps each attention-residual block once per pipeline
 
 ## Design
 
-In the stage of #4312 a rank holds a block several times: every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf that lives until its backward, the outgoing payload is another stack, and the rank cache keeps views that pin whole receive buffers and output stacks. With one tensor per block, a received block is its receive buffer and a committed block is the model's own tensor; the rank cache, the stages' inputs and the sends all reference that memory, so a block is freed once the stage that brought it onto the rank has run its backward. The rank cache, the routing tables and the release point are unchanged.
+In the stage of #4312 a rank holds a block several times: every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf that lives until its backward, the outgoing payload is another stack, and the rank cache keeps views that pin whole receive buffers and output stacks. With one tensor per block, a received block is its receive buffer and a committed block is the model's own tensor; the rank cache, the stages' inputs and the sends all reference that memory, so a block is freed once the stage that brought it onto the rank has run its backward and the forward send that carried it on has been waited. The rank cache, the routing tables and the release point are unchanged.
 
 A pending send keeps its tensor allocated until it is waited, and torch's action-list runtime waits every send at the end of the step, which would keep every sent block until then. The stage waits a forward send at its own backward of that micro-batch, when the receiver has used it. This belongs in torch (<torch issue link>); the override goes once torch has it.
 
 ## Results
 
-Pending (H100).
+4 H100s, the Kimi K3 debug model widened to dim 6144 (17 layers in blocks of 4, 8 experts, every width that scales with dim scaled 24 times), 16 micro-batches of 2048 c4 tokens per step, Interleaved1F1B, FullAC, AdamW, seed 42, deterministic, one warm compile cache per layout. #4656 is the two commits below this PR; both trees ran 100 steps.
+
+| layout | peak allocated per rank, #4656 (GiB) | this PR (GiB) | saved (GiB) | step time, #4656 / this PR |
+|---|---|---|---|---|
+| pp4 x vpp2 | 55.97 / 48.86 / 46.62 / 32.76 | 54.68 / 46.61 / 44.75 / 31.40 | 1.29 / 2.25 / 1.88 / 1.36 | 3.662 / 3.582 s |
+| pp4 x vpp4 | 62.75 / 44.14 / 49.05 / 40.38 | 59.54 / 42.19 / 45.29 / 37.34 | 3.21 / 1.95 / 3.76 / 3.05 | 3.821 / 3.744 s |
+
+Loss and grad norm equal #4656's on all 100 steps in both layouts:
+
+| layout | step 1 | step 10 | step 50 | step 100 |
+|---|---:|---:|---:|---:|
+| pp4 x vpp2 | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 2.93439 / 4.9375 | 2.66764 / 1.5859 |
+| pp4 x vpp4 | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 2.75488 / 4.9375 | 2.43219 / 1.2266 |
+
+The block memory the pipeline holds in step 5 (the rank cache, the stages' inputs and outputs and the pending forward sends, counted by storage) peaks at 1.78 / 2.63 / 2.32 / 1.80 GiB per rank on #4656 and 0.59 / 0.61 / 0.47 / 0.45 GiB with this PR at pp4 x vpp2, and at 3.84 / 2.81 / 4.73 / 3.49 and 0.87 / 0.77 / 0.87 / 0.77 GiB at pp4 x vpp4. The paper's bound for the same steps, each block of a micro-batch kept once until the rank's last backward of that micro-batch, is 0.52 / 0.61 / 0.52 / 0.54 and 0.73 / 0.68 / 0.82 / 0.77 GiB.
 
 ## Test plan
 
