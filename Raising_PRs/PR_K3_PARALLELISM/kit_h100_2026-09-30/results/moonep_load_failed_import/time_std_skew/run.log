@@ -1,0 +1,176 @@
+W0930 11:45:26.598000 135327 torch/distributed/run.py:982] 
+W0930 11:45:26.598000 135327 torch/distributed/run.py:982] *****************************************
+W0930 11:45:26.598000 135327 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0930 11:45:26.598000 135327 torch/distributed/run.py:982] *****************************************
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank1]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank3]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank2]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-09-30 11:45:32,506 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank3]:[titan] 2026-09-30 11:45:32,809 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank1]:[titan] 2026-09-30 11:45:32,756 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank2]:[titan] 2026-09-30 11:45:32,796 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:Traceback (most recent call last):
+[rank0]:  File "/root/kit/overnight/moonep/moonep_load.py", line 231, in _cell
+[rank0]:    from torchtitan.components.optimizer import AdamW, OptimizersContainer
+[rank0]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+[rank0]:
+[rank0]:During handling of the above exception, another exception occurred:
+[rank0]:
+[rank0]:Traceback (most recent call last):
+[rank0]:  File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:  File "<frozen runpy>", line 88, in _run_code
+[rank0]:  File "/root/mep/w/moonep/torchtitan/train.py", line 73, in <module>
+[rank0]:    main()
+[rank0]:  File "/root/mep/w/moonep/torchtitan/train.py", line 34, in main
+[rank0]:    config = cast(Trainer.Config, config_manager.parse_args())
+[rank0]:                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 42, in parse_args
+[rank0]:    loaded_config, args = self._load_config(args)
+[rank0]:                          ^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 163, in _load_config
+[rank0]:    loaded_config = config_fn()
+[rank0]:                    ^^^^^^^^^^^
+[rank0]:  File "/root/kit/overnight/moonep/moonep_load.py", line 252, in load_std
+[rank0]:    return _cell("standard")
+[rank0]:           ^^^^^^^^^^^^^^^^^
+[rank0]:  File "/root/kit/overnight/moonep/moonep_load.py", line 235, in _cell
+[rank0]:    from torchtitan.components.optimizer import default_adamw
+[rank0]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+[rank1]:Traceback (most recent call last):
+[rank1]:  File "/root/kit/overnight/moonep/moonep_load.py", line 231, in _cell
+[rank1]:    from torchtitan.components.optimizer import AdamW, OptimizersContainer
+[rank1]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+[rank1]:
+[rank1]:During handling of the above exception, another exception occurred:
+[rank1]:
+[rank1]:Traceback (most recent call last):
+[rank1]:  File "<frozen runpy>", line 198, in _run_module_as_main
+[rank1]:  File "<frozen runpy>", line 88, in _run_code
+[rank1]:  File "/root/mep/w/moonep/torchtitan/train.py", line 73, in <module>
+[rank1]:    main()
+[rank1]:  File "/root/mep/w/moonep/torchtitan/train.py", line 34, in main
+[rank1]:    config = cast(Trainer.Config, config_manager.parse_args())
+[rank1]:                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 42, in parse_args
+[rank1]:    loaded_config, args = self._load_config(args)
+[rank1]:                          ^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 163, in _load_config
+[rank1]:    loaded_config = config_fn()
+[rank1]:                    ^^^^^^^^^^^
+[rank1]:  File "/root/kit/overnight/moonep/moonep_load.py", line 252, in load_std
+[rank1]:    return _cell("standard")
+[rank1]:           ^^^^^^^^^^^^^^^^^
+[rank1]:  File "/root/kit/overnight/moonep/moonep_load.py", line 235, in _cell
+[rank1]:    from torchtitan.components.optimizer import default_adamw
+[rank1]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+[rank2]:Traceback (most recent call last):
+[rank2]:  File "/root/kit/overnight/moonep/moonep_load.py", line 231, in _cell
+[rank2]:    from torchtitan.components.optimizer import AdamW, OptimizersContainer
+[rank2]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+[rank3]:Traceback (most recent call last):
+[rank2]:
+[rank2]:During handling of the above exception, another exception occurred:
+[rank2]:
+[rank3]:  File "/root/kit/overnight/moonep/moonep_load.py", line 231, in _cell
+[rank2]:Traceback (most recent call last):
+[rank2]:  File "<frozen runpy>", line 198, in _run_module_as_main
+[rank2]:  File "<frozen runpy>", line 88, in _run_code
+[rank3]:    from torchtitan.components.optimizer import AdamW, OptimizersContainer
+[rank2]:  File "/root/mep/w/moonep/torchtitan/train.py", line 73, in <module>
+[rank3]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+[rank2]:    main()
+[rank2]:  File "/root/mep/w/moonep/torchtitan/train.py", line 34, in main
+[rank3]:
+[rank2]:    config = cast(Trainer.Config, config_manager.parse_args())
+[rank3]:During handling of the above exception, another exception occurred:
+[rank2]:                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:
+[rank2]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 42, in parse_args
+[rank3]:Traceback (most recent call last):
+[rank2]:    loaded_config, args = self._load_config(args)
+[rank3]:  File "<frozen runpy>", line 198, in _run_module_as_main
+[rank2]:                          ^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:  File "<frozen runpy>", line 88, in _run_code
+[rank2]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 163, in _load_config
+[rank3]:  File "/root/mep/w/moonep/torchtitan/train.py", line 73, in <module>
+[rank2]:    loaded_config = config_fn()
+[rank3]:    main()
+[rank2]:                    ^^^^^^^^^^^
+[rank3]:  File "/root/mep/w/moonep/torchtitan/train.py", line 34, in main
+[rank2]:  File "/root/kit/overnight/moonep/moonep_load.py", line 252, in load_std
+[rank3]:    config = cast(Trainer.Config, config_manager.parse_args())
+[rank2]:    return _cell("standard")
+[rank3]:                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:           ^^^^^^^^^^^^^^^^^
+[rank3]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 42, in parse_args
+[rank2]:  File "/root/kit/overnight/moonep/moonep_load.py", line 235, in _cell
+[rank3]:    loaded_config, args = self._load_config(args)
+[rank2]:    from torchtitan.components.optimizer import default_adamw
+[rank3]:                          ^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+[rank3]:  File "/root/mep/w/moonep/torchtitan/config/manager.py", line 163, in _load_config
+[rank3]:    loaded_config = config_fn()
+[rank3]:                    ^^^^^^^^^^^
+[rank3]:  File "/root/kit/overnight/moonep/moonep_load.py", line 252, in load_std
+[rank3]:    return _cell("standard")
+[rank3]:           ^^^^^^^^^^^^^^^^^
+[rank3]:  File "/root/kit/overnight/moonep/moonep_load.py", line 235, in _cell
+[rank3]:    from torchtitan.components.optimizer import default_adamw
+[rank3]:ModuleNotFoundError: No module named 'torchtitan.components.optimizer'
+W0930 11:45:34.545000 135327 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 135397 closing signal SIGTERM
+W0930 11:45:34.547000 135327 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 135398 closing signal SIGTERM
+W0930 11:45:34.548000 135327 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 135399 closing signal SIGTERM
+E0930 11:45:34.836000 135327 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 135396) of binary: /root/mep/venv_src/bin/python
+Traceback (most recent call last):
+  File "/root/mep/venv_src/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-30_11:45:34
+  host      : 04d63ba06a34
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 135397)  (SIGTERM)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 135397
+[2]:
+  time      : 2026-09-30_11:45:34
+  host      : 04d63ba06a34
+  rank      : 2 (local_rank: 2)
+  exitcode  : -15 (pid: 135398)  (SIGTERM)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 135398
+[3]:
+  time      : 2026-09-30_11:45:34
+  host      : 04d63ba06a34
+  rank      : 3 (local_rank: 3)
+  exitcode  : -15 (pid: 135399)  (SIGTERM)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 135399
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-30_11:45:34
+  host      : 04d63ba06a34
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 135396) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
