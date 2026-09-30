@@ -45,14 +45,18 @@ def _record_call(module, x_TD, counts_E) -> None:
         _GROUP[0] = module.token_dispatcher.ep_mesh.get_group()
 
 
-def _moonep_rows(metadata, tokens: int) -> dict:
+def _moonep_rows(metadata, tokens: int, hidden=None) -> dict:
     cu = metadata.cu_seqlens
     padded = int(cu[-1].item()) if cu is not None and cu.numel() else -1
     plan = metadata.plan
     padding = -1
     ranges = getattr(plan, "zero_fill_ranges", None)
     if isinstance(ranges, torch.Tensor):
-        padding = int((ranges[:, 1] - ranges[:, 0]).clamp(min=0).sum().item())
+        # int32 [E + B, 2]: column 0 the segment's pad start, column 1 its padding row count (MoonEP dispatch.py).
+        padding = int(ranges[:, 1].clamp(min=0).sum().item())
+    nonzero = -1
+    if hidden is not None and padded >= 0:
+        nonzero = int((hidden[:padded].abs().amax(dim=1) > 0).sum().item())
     rank = dist.get_rank(_GROUP[0]) if _GROUP[0] is not None else 0
     copies = getattr(plan, "experts_to_copy", None)
     slots = int((copies[rank] >= 0).sum().item()) if isinstance(copies, torch.Tensor) else -1
@@ -60,6 +64,7 @@ def _moonep_rows(metadata, tokens: int) -> dict:
         "padded_rows": padded,
         "padding_rows": padding,
         "real_rows": padded - padding if padding >= 0 else -1,
+        "nonzero_rows": nonzero,
         "expected_rows": tokens * _K,
         "slots_used": slots,
     }
@@ -117,7 +122,7 @@ def _install() -> None:
         def moonep_dispatch(self, x_TD, *args, _dispatch=dispatch):
             out = _dispatch(self, x_TD, *args)
             if _CALLS and torch.is_grad_enabled() and not _in_backward():
-                _CALLS[-1]["moonep"] = _moonep_rows(out[2], int(x_TD.shape[0]))
+                _CALLS[-1]["moonep"] = _moonep_rows(out[2], int(x_TD.shape[0]), out[0])
             return out
 
         token_dispatcher.MoonEPTokenDispatcher.dispatch = moonep_dispatch

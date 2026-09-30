@@ -62,5 +62,53 @@ def _install_param_dump():
 
 
 _install_param_dump()
+
+
+def _checksums(obj) -> list:
+    tensors = [t for t in torch.utils._pytree.tree_leaves(obj) if isinstance(t, torch.Tensor)]
+    out = []
+    for t in tensors:
+        x = t.detach().double()
+        out.append((tuple(t.shape), str(t.dtype), x.sum().item(), x.abs().sum().item()))
+    return out
+
+
+def _install_stage_dump():
+    from torchtitan.models.kimi_k3.pipeline_parallel.stage import AttnResPipelineStage
+
+    records = {}
+
+    def save():
+        folder = os.environ.get("PROBE_FEATS_OUT")
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+            rank = dist.get_rank() if dist.is_initialized() else 0
+            torch.save(records, os.path.join(folder, f"stages_rank{rank}.pt"))
+
+    original = AttnResPipelineStage.forward_one_chunk
+
+    def forward_one_chunk(self, fwd_chunk_id, args, kwargs=None, save_forward_output=True):
+        out = original(self, fwd_chunk_id, args, kwargs, save_forward_output)
+        records[("stage", self.stage_index, int(fwd_chunk_id))] = _checksums(out)
+        save()
+        return out
+
+    AttnResPipelineStage.forward_one_chunk = forward_one_chunk
+    embeds = k3_model.KimiK3Model._prepare_multimodal_embeds
+    calls = [0]
+
+    def prepare(self, tokens, **kwargs):
+        out = embeds(self, tokens, **kwargs)
+        if torch.is_grad_enabled():
+            records[("embeds", calls[0])] = _checksums(out) + [("vision_embeds_given", kwargs.get("vision_embeds") is not None)]
+            calls[0] += 1
+            save()
+        return out
+
+    k3_model.KimiK3Model._prepare_multimodal_embeds = prepare
+
+
+if os.environ.get("PROBE_STAGES") == "1":
+    _install_stage_dump()
 w_dep_off = base.w_dep_off
 w_dep_k25 = base.w_dep_k25

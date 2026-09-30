@@ -39,6 +39,12 @@ def load(cell_dir):
     worst = max((s["worst_max_over_mean"] for s in measured), default=float("nan"))
     rows = [m for r in ranks for s in r["steps"] for m in s["moonep"]]
     exact = sum(1 for m in rows if m["real_rows"] == m["expected_rows"])
+    nonzero = [m["nonzero_rows"] for m in rows if m.get("nonzero_rows", -1) >= 0]
+    if nonzero:
+        exact_nz = sum(1 for m in rows if m.get("nonzero_rows") == m["expected_rows"])
+        print(f"   {os.path.basename(cell_dir)}: nonzero rows per dispatch min {min(nonzero)} mean {sum(nonzero) / len(nonzero):.1f} "
+              f"max {max(nonzero)} (S x K = {rows[0]['expected_rows']}), {exact_nz} / {len(nonzero)} exactly S x K; "
+              f"padded minus the zero-fill counts: min {min(m['real_rows'] for m in rows)} max {max(m['real_rows'] for m in rows)}")
     slots = [m["slots_used"] for m in rows if m["slots_used"] >= 0]
     return mean, worst, len(rows), exact, (sum(slots) / len(slots) if slots else float("nan"))
 
