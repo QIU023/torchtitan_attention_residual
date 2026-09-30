@@ -1,0 +1,95 @@
+W0930 13:36:56.086000 183393 torch/distributed/run.py:982] 
+W0930 13:36:56.086000 183393 torch/distributed/run.py:982] *****************************************
+W0930 13:36:56.086000 183393 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0930 13:36:56.086000 183393 torch/distributed/run.py:982] *****************************************
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank1]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-09-30 13:37:01,503 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank1]:[titan] 2026-09-30 13:37:01,569 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-09-30 13:37:02,251 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/pra_h100/warmpra_pp2vp2/dump/structured_logs/training.global_rank_0.20260930-133702-RYMXIR.jsonl
+[rank1]:[titan] 2026-09-30 13:37:02,313 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/pra_h100/warmpra_pp2vp2/dump/structured_logs/training.global_rank_1.20260930-133702-B6YQ6D.jsonl
+[rank0]:[titan] 2026-09-30 13:37:02,615 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank1]:[titan] 2026-09-30 13:37:02,682 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-09-30 13:37:03,162 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-09-30 13:37:03,162 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank0]:[titan] 2026-09-30 13:37:03,172 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank1]:[titan] 2026-09-30 13:37:03,162 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank1]:[titan] 2026-09-30 13:37:03,162 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank1]:[titan] 2026-09-30 13:37:03,174 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank0]:[titan] 2026-09-30 13:37:03,544 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank0]:[titan] 2026-09-30 13:37:03,547 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-09-30 13:37:03,557 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank0]:[titan] 2026-09-30 13:37:03,558 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-09-30 13:37:03,559 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank1]:[titan] 2026-09-30 13:37:03,540 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank1]:[titan] 2026-09-30 13:37:03,542 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank1]:[titan] 2026-09-30 13:37:03,552 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank1]:[titan] 2026-09-30 13:37:03,553 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank1]:[titan] 2026-09-30 13:37:03,554 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-09-30 13:37:04,374 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-09-30 13:37:04,390 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-09-30 13:37:04,494 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-09-30 13:37:04,498 - torchtitan.models.utils - INFO - Total parameter count: 13,286,947,968, active parameters: 8,885,570,688
+[rank1]:[titan] 2026-09-30 13:37:04,488 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank1]:[titan] 2026-09-30 13:37:04,491 - torchtitan.models.utils - INFO - Total parameter count: 13,286,947,968, active parameters: 8,885,570,688
+[rank1]:[titan] 2026-09-30 13:37:04,561 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.4', 'layers.5', 'layers.6', 'layers.7', 'layers.8']
+[rank0]:[titan] 2026-09-30 13:37:04,566 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 0 with modules ['vision_encoder', 'tok_embeddings', 'layers.0', 'layers.1', 'layers.2', 'layers.3']
+[rank0]:[titan] 2026-09-30 13:37:04,631 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 2 with modules ['layers.9', 'layers.10', 'layers.11', 'layers.12', 'layers.13']
+[rank0]:[titan] 2026-09-30 13:37:04,642 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:37:04,642 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 13:37:04,627 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 3 with modules ['layers.14', 'layers.15', 'layers.16', 'norm', 'lm_head', 'output_res_proj', 'output_res_norm']
+[rank1]:[titan] 2026-09-30 13:37:04,638 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:37:04,707 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 13:37:04,717 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:37:04,736 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 13:37:04,737 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 4 stages.
+[rank0]:[titan] 2026-09-30 13:37:04,737 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 2 stage(s) on this rank [0, 2], block transport delta with rank store
+[rank1]:[titan] 2026-09-30 13:37:04,698 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 13:37:04,705 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 13:37:04,718 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 13:37:04,719 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 4 stages.
+[rank1]:[titan] 2026-09-30 13:37:04,719 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 2 stage(s) on this rank [1, 3], block transport delta with rank store
+[rank1]:[rank1]:W0930 13:37:05.132000 183463 torch/distributed/tensor/_random.py:215] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeline state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank1]:[titan] 2026-09-30 13:37:05,426 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 13,286,947,968 total parameters
+[rank1]:[titan] 2026-09-30 13:37:05,428 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=0): 134 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 13:37:05,428 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=1): 76 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 13:37:05,429 - torchtitan.components.optim.lr_scheduler - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[rank1]:[titan] 2026-09-30 13:37:05,429 - torchtitan.components.optim.lr_scheduler - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[rank1]:[titan] 2026-09-30 13:37:05,430 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 1[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank1]:[titan] 2026-09-30 13:37:05,430 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank1]:[titan] 2026-09-30 13:37:05,430 - torchtitan.trainer - INFO - CUDA memory usage for model: 10.26GiB(12.95%)
+[rank1]:[titan] 2026-09-30 13:37:05,430 - torchtitan.trainer - INFO - Trainer is initialized with 32768 tokens per DP rank, 32768 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 1 (warmup 2)
+[rank1]:[titan] 2026-09-30 13:37:05,430 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:[titan] 2026-09-30 13:37:05,524 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 13,286,947,968 total parameters
+[rank0]:[titan] 2026-09-30 13:37:05,526 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=0): 121 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 13:37:05,527 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=1): 134 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 13:37:05,528 - torchtitan.components.optim.lr_scheduler - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[rank0]:[titan] 2026-09-30 13:37:05,528 - torchtitan.components.optim.lr_scheduler - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[rank0]:[titan] 2026-09-30 13:37:05,529 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 1[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank0]:[titan] 2026-09-30 13:37:05,529 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank0]:[titan] 2026-09-30 13:37:05,529 - torchtitan.trainer - INFO - CUDA memory usage for model: 14.93GiB(18.85%)
+[rank0]:[titan] 2026-09-30 13:37:05,529 - torchtitan.trainer - INFO - Trainer is initialized with 32768 tokens per DP rank, 32768 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 1 (warmup 2)
+[rank0]:[titan] 2026-09-30 13:37:05,529 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank0]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank0]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank0]:[rank0]:[W930 13:37:19.025117552 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 15925248, total: 85049802752).
+[rank1]:[titan] 2026-09-30 13:37:20,511 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss:  8.07840  [38;2;180;60;0mgrad_norm: 29.8750  [38;2;54;234;195mmemory: 65.00GiB(82.07%)  [34mtps: 966  [36mtflops: 52.75  [35mmfu: 5.33%[39m
+[rank1]:[titan] 2026-09-30 13:37:20,511 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-09-30 13:37:20,604 - torchtitan.observability.metrics - WARNING - 1 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 13:37:20,604 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 29.8750  [38;2;54;234;195mmemory: 75.51GiB(95.33%)  [34mtps: 961  [36mtflops: 52.48  [35mmfu: 5.31%[39m
+[rank0]:[titan] 2026-09-30 13:37:20,604 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-09-30 13:37:20,605 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[rank1]:[titan] 2026-09-30 13:37:20,605 - torchtitan.trainer - INFO - Training completed
+[rank0]:[titan] 2026-09-30 13:37:22,605 - torchtitan.trainer - INFO - Training completed
+[rank1]:[titan] 2026-09-30 13:37:23,899 - __main__ - INFO - Process group destroyed
+[rank0]:[titan] 2026-09-30 13:37:24,154 - __main__ - INFO - Process group destroyed

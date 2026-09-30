@@ -1,0 +1,805 @@
+W0930 13:40:14.699000 185248 torch/distributed/run.py:982] 
+W0930 13:40:14.699000 185248 torch/distributed/run.py:982] *****************************************
+W0930 13:40:14.699000 185248 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0930 13:40:14.699000 185248 torch/distributed/run.py:982] *****************************************
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank1]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-09-30 13:40:20,467 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank1]:[titan] 2026-09-30 13:40:20,740 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-09-30 13:40:21,215 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/pra_h100/4656_pp2vp4/dump/structured_logs/training.global_rank_0.20260930-134021-NL9YEP.jsonl
+[rank0]:[titan] 2026-09-30 13:40:21,526 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank1]:[titan] 2026-09-30 13:40:21,612 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/pra_h100/4656_pp2vp4/dump/structured_logs/training.global_rank_1.20260930-134021-BBIW20.jsonl
+[rank1]:[titan] 2026-09-30 13:40:21,877 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank1]:[titan] 2026-09-30 13:40:22,348 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank1]:[titan] 2026-09-30 13:40:22,348 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank1]:[titan] 2026-09-30 13:40:22,362 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank0]:[titan] 2026-09-30 13:40:22,348 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-09-30 13:40:22,349 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank0]:[titan] 2026-09-30 13:40:22,361 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=2, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank1]:[titan] 2026-09-30 13:40:22,769 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank1]:[titan] 2026-09-30 13:40:22,772 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-09-30 13:40:22,764 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank1]:[titan] 2026-09-30 13:40:22,784 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank0]:[titan] 2026-09-30 13:40:22,766 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank1]:[titan] 2026-09-30 13:40:22,785 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-09-30 13:40:22,777 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank1]:[titan] 2026-09-30 13:40:22,786 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-09-30 13:40:22,778 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-09-30 13:40:22,778 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank1]:[titan] 2026-09-30 13:40:23,629 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[rank0]:[titan] 2026-09-30 13:40:23,613 - httpx - INFO - HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[rank1]:[titan] 2026-09-30 13:40:23,768 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank1]:[titan] 2026-09-30 13:40:23,772 - torchtitan.models.utils - INFO - Total parameter count: 13,286,947,968, active parameters: 8,885,570,688
+[rank1]:[titan] 2026-09-30 13:40:23,841 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.2', 'layers.3', 'layers.4']
+[rank0]:[titan] 2026-09-30 13:40:23,752 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-09-30 13:40:23,755 - torchtitan.models.utils - INFO - Total parameter count: 13,286,947,968, active parameters: 8,885,570,688
+[rank0]:[titan] 2026-09-30 13:40:23,823 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 0 with modules ['vision_encoder', 'tok_embeddings', 'layers.0', 'layers.1']
+[rank1]:[titan] 2026-09-30 13:40:23,906 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 3 with modules ['layers.8', 'layers.9']
+[rank0]:[titan] 2026-09-30 13:40:23,889 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 2 with modules ['layers.5', 'layers.6', 'layers.7']
+[rank1]:[titan] 2026-09-30 13:40:23,972 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 5 with modules ['layers.12', 'layers.13']
+[rank1]:[titan] 2026-09-30 13:40:24,038 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 7 with modules ['layers.16', 'norm', 'lm_head', 'output_res_proj', 'output_res_norm']
+[rank1]:[titan] 2026-09-30 13:40:24,046 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:40:23,955 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 4 with modules ['layers.10', 'layers.11']
+[rank0]:[titan] 2026-09-30 13:40:24,021 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 6 with modules ['layers.14', 'layers.15']
+[rank0]:[titan] 2026-09-30 13:40:24,028 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:40:24,028 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 13:40:24,098 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 13:40:24,102 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 13:40:24,111 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 13:40:24,116 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 13:40:24,123 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 13:40:24,126 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 13:40:24,132 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 13:40:24,134 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 8 stages.
+[rank1]:[titan] 2026-09-30 13:40:24,135 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 4 stage(s) on this rank [1, 3, 5, 7], block transport delta with rank store
+[rank0]:[titan] 2026-09-30 13:40:24,079 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 13:40:24,086 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:40:24,103 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 13:40:24,107 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:40:24,114 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 13:40:24,118 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 13:40:24,125 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 13:40:24,127 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 8 stages.
+[rank0]:[titan] 2026-09-30 13:40:24,128 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 4 stage(s) on this rank [0, 2, 4, 6], block transport delta with rank store
+[rank1]:[rank1]:W0930 13:40:24.549000 185318 torch/distributed/tensor/_random.py:215] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeline state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank1]:[titan] 2026-09-30 13:40:24,876 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 13,286,947,968 total parameters
+[rank1]:[titan] 2026-09-30 13:40:24,878 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=0): 78 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 13:40:24,878 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=1): 56 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 13:40:24,878 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=2): 56 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 13:40:24,879 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=3): 26 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 13:40:24,880 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 1[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank1]:[titan] 2026-09-30 13:40:24,880 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank1]:[titan] 2026-09-30 13:40:24,880 - torchtitan.trainer - INFO - CUDA memory usage for model: 10.69GiB(13.50%)
+[rank1]:[titan] 2026-09-30 13:40:24,880 - torchtitan.trainer - INFO - Trainer is initialized with 32768 tokens per DP rank, 32768 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 100 (warmup 2)
+[rank1]:[titan] 2026-09-30 13:40:24,881 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:[titan] 2026-09-30 13:40:24,972 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 13,286,947,968 total parameters
+[rank0]:[titan] 2026-09-30 13:40:24,974 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=0): 71 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 13:40:24,975 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=1): 78 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 13:40:24,975 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=2): 50 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 13:40:24,975 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=3): 50 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 13:40:24,977 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 1[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank0]:[titan] 2026-09-30 13:40:24,977 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank0]:[titan] 2026-09-30 13:40:24,977 - torchtitan.trainer - INFO - CUDA memory usage for model: 14.50GiB(18.30%)
+[rank0]:[titan] 2026-09-30 13:40:24,977 - torchtitan.trainer - INFO - Trainer is initialized with 32768 tokens per DP rank, 32768 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 100 (warmup 2)
+[rank0]:[titan] 2026-09-30 13:40:24,977 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank0]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank0]:[rank0]:[W930 13:40:38.403206199 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 18022400, total: 85049802752).
+[rank0]:[rank0]:[W930 13:40:39.953942231 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 22216704, total: 85049802752).
+[rank1]:[titan] 2026-09-30 13:40:40,202 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss:  8.16693  [38;2;180;60;0mgrad_norm: 30.1250  [38;2;54;234;195mmemory: 75.32GiB(95.09%)  [34mtps: 941  [36mtflops: 51.36  [35mmfu: 5.19%[39m
+[rank1]:[titan] 2026-09-30 13:40:40,202 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-09-30 13:40:40,338 - torchtitan.observability.metrics - WARNING - 2 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 13:40:40,338 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 30.1250  [38;2;54;234;195mmemory: 75.59GiB(95.43%)  [34mtps: 933  [36mtflops: 50.94  [35mmfu: 5.15%[39m
+[rank0]:[titan] 2026-09-30 13:40:40,338 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[rank0]:[W930 13:40:40.151317465 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 22216704, total: 85049802752).
+[rank1]:[rank1]:[W930 13:40:41.682765167 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 1 while trying to map 20971520 bytes (free: 15466496, total: 85049802752).
+[rank0]:[rank0]:[W930 13:40:41.013220697 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 13828096, total: 85049802752).
+[rank0]:[rank0]:[W930 13:40:41.037469093 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 18022400, total: 85049802752).
+[rank0]:[rank0]:[W930 13:40:41.038687204 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 15925248, total: 85049802752).
+[rank0]:[rank0]:[W930 13:40:41.038885157 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 15925248, total: 85049802752).
+[rank0]:[rank0]:E0930 13:40:41.514000 185317 torch/distributed/pipelining/schedules.py:3149] _PipelineScheduleRuntime caught exception at step 53 when running action 2B0.  Full Schedule:
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154]           Rank 0       Rank 1      
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 000: 0UNSHARD     1UNSHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 001: 2UNSHARD     3UNSHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 002: 0F0          1RECV_F0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 003: 0SEND_F0     5UNSHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 004: 0F1          1RECV_F1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 005: 0SEND_F1     1F0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 006: 2RECV_F0     1SEND_F0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 007: 4UNSHARD     1F1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 008: 2RECV_F1     1SEND_F1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 009: 2F0          3RECV_F0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 010: 2SEND_F0     7UNSHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 011: 2F1          3RECV_F1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 012: 2SEND_F1     3F0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 013: 4RECV_F0     3SEND_F0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 014: 6UNSHARD     3F1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 015: 4RECV_F1     3SEND_F1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 016: 4F0          5RECV_F0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 017: 4SEND_F0     5F0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 018: 6RECV_F0     5SEND_F0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 019: 4F1          5RECV_F1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 020: 4SEND_F1     5F1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 021: 6RECV_F1     5SEND_F1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 022: 6F0          7RECV_F0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 023: 6SEND_F0     7F0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 024: 6F1          7RECV_F1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 025: 6SEND_F1     7B0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 026: 6RECV_B0     7SEND_B0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 027: 0F2          1RECV_F2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 028: 0SEND_F2     7F1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 029: 6B0          5RECV_B0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 030: 6SEND_B0     7B1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 031: 6RECV_B1     7SEND_B1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 032: 0F3          1RECV_F3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 033: 0SEND_F3     1F2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 034: 2RECV_F2     1SEND_F2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 035: 6B1          5RECV_B1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 036: 6SEND_B1     5B0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 037: 4RECV_B0     5SEND_B0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 038: 2F2          3RECV_F2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 039: 2SEND_F2     1F3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 040: 2RECV_F3     1SEND_F3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 041: 4B0          3RECV_B0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 042: 4SEND_B0     5B1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 043: 4RECV_B1     5SEND_B1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 044: 2F3          3RECV_F3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 045: 2SEND_F3     3F2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 046: 4RECV_F2     3SEND_F2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 047: 4B1          3RECV_B1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 048: 4SEND_B1     3B0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 049: 2RECV_B0     3SEND_B0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 050: 4F2          5RECV_F2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 051: 4SEND_F2     3F3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 052: 4RECV_F3     3SEND_F3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 053: 2B0          1RECV_B0     <-- ERROR HERE
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 054: 2SEND_B0     3B1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 055: 2RECV_B1     3SEND_B1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 056: 4F3          5RECV_F3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 057: 4SEND_F3     5F2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 058: 6RECV_F2     5SEND_F2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 059: 2B1          1RECV_B1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 060: 2SEND_B1     1B0         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 061: 0RECV_B0     1SEND_B0    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 062: 6F2          7RECV_F2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 063: 6SEND_F2     5F3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 064: 6RECV_F3     5SEND_F3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 065: 0B0          1B1         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 066: 0RECV_B1     1SEND_B1    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 067: 6F3          7RECV_F3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 068: 6SEND_F3     7F2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 069: 0B1          7B2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 070: 6RECV_B2     7SEND_B2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 071: 0F4          1RECV_F4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 072: 0SEND_F4     7F3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 073: 6B2          5RECV_B2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 074: 6SEND_B2     7B3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 075: 6RECV_B3     7SEND_B3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 076: 0F5          1RECV_F5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 077: 0SEND_F5     1F4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 078: 2RECV_F4     1SEND_F4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 079: 6B3          5RECV_B3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 080: 6SEND_B3     5B2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 081: 4RECV_B2     5SEND_B2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 082: 2F4          3RECV_F4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 083: 2SEND_F4     1F5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 084: 2RECV_F5     1SEND_F5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 085: 4B2          3RECV_B2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 086: 4SEND_B2     5B3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 087: 4RECV_B3     5SEND_B3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 088: 2F5          3RECV_F5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 089: 2SEND_F5     3F4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 090: 4RECV_F4     3SEND_F4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 091: 4B3          3RECV_B3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 092: 4SEND_B3     3B2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 093: 2RECV_B2     3SEND_B2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 094: 4F4          5RECV_F4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 095: 4SEND_F4     3F5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 096: 4RECV_F5     3SEND_F5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 097: 2B2          1RECV_B2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 098: 2SEND_B2     3B3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 099: 2RECV_B3     3SEND_B3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 100: 4F5          5RECV_F5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 101: 4SEND_F5     5F4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 102: 6RECV_F4     5SEND_F4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 103: 2B3          1RECV_B3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 104: 2SEND_B3     1B2         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 105: 0RECV_B2     1SEND_B2    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 106: 6F4          7RECV_F4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 107: 6SEND_F4     5F5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 108: 6RECV_F5     5SEND_F5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 109: 0B2          1B3         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 110: 0RECV_B3     1SEND_B3    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 111: 6F5          7RECV_F5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 112: 6SEND_F5     7F4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 113: 0B3          7B4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 114: 6RECV_B4     7SEND_B4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 115: 0F6          1RECV_F6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 116: 0SEND_F6     7F5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 117: 6B4          5RECV_B4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 118: 6SEND_B4     7B5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 119: 6RECV_B5     7SEND_B5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 120: 0F7          1RECV_F7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 121: 0SEND_F7     1F6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 122: 2RECV_F6     1SEND_F6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 123: 6B5          5RECV_B5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 124: 6SEND_B5     5B4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 125: 4RECV_B4     5SEND_B4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 126: 2F6          3RECV_F6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 127: 2SEND_F6     1F7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 128: 2RECV_F7     1SEND_F7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 129: 4B4          3RECV_B4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 130: 4SEND_B4     5B5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 131: 4RECV_B5     5SEND_B5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 132: 2F7          3RECV_F7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 133: 2SEND_F7     3F6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 134: 4RECV_F6     3SEND_F6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 135: 4B5          3RECV_B5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 136: 4SEND_B5     3B4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 137: 2RECV_B4     3SEND_B4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 138: 4F6          5RECV_F6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 139: 4SEND_F6     3F7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 140: 4RECV_F7     3SEND_F7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 141: 2B4          1RECV_B4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 142: 2SEND_B4     3B5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 143: 2RECV_B5     3SEND_B5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 144: 4F7          5RECV_F7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 145: 4SEND_F7     5F6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 146: 6RECV_F6     5SEND_F6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 147: 2B5          1RECV_B5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 148: 2SEND_B5     1B4         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 149: 0RECV_B4     1SEND_B4    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 150: 6F6          7RECV_F6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 151: 6SEND_F6     5F7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 152: 6RECV_F7     5SEND_F7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 153: 0B4          1B5         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 154: 0RECV_B5     1SEND_B5    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 155: 6F7          7RECV_F7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 156: 6SEND_F7     7F6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 157: 0B5          7B6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 158: 6RECV_B6     7SEND_B6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 159: 0F8          1RECV_F8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 160: 0SEND_F8     7F7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 161: 6B6          5RECV_B6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 162: 6SEND_B6     7B7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 163: 6RECV_B7     7SEND_B7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 164: 0F9          1RECV_F9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 165: 0SEND_F9     1F8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 166: 2RECV_F8     1SEND_F8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 167: 6B7          5RECV_B7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 168: 6SEND_B7     5B6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 169: 4RECV_B6     5SEND_B6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 170: 2F8          3RECV_F8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 171: 2SEND_F8     1F9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 172: 2RECV_F9     1SEND_F9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 173: 4B6          3RECV_B6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 174: 4SEND_B6     5B7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 175: 4RECV_B7     5SEND_B7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 176: 2F9          3RECV_F9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 177: 2SEND_F9     3F8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 178: 4RECV_F8     3SEND_F8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 179: 4B7          3RECV_B7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 180: 4SEND_B7     3B6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 181: 2RECV_B6     3SEND_B6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 182: 4F8          5RECV_F8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 183: 4SEND_F8     3F9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 184: 4RECV_F9     3SEND_F9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 185: 2B6          1RECV_B6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 186: 2SEND_B6     3B7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 187: 2RECV_B7     3SEND_B7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 188: 4F9          5RECV_F9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 189: 4SEND_F9     5F8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 190: 6RECV_F8     5SEND_F8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 191: 2B7          1RECV_B7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 192: 2SEND_B7     1B6         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 193: 0RECV_B6     1SEND_B6    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 194: 6F8          7RECV_F8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 195: 6SEND_F8     5F9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 196: 6RECV_F9     5SEND_F9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 197: 0B6          1B7         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 198: 0RECV_B7     1SEND_B7    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 199: 6F9          7RECV_F9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 200: 6SEND_F9     7F8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 201: 0B7          7B8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 202: 6RECV_B8     7SEND_B8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 203: 0F10         1RECV_F10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 204: 0SEND_F10    7F9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 205: 6B8          5RECV_B8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 206: 6SEND_B8     7B9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 207: 6RECV_B9     7SEND_B9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 208: 0F11         1RECV_F11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 209: 0SEND_F11    1F10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 210: 2RECV_F10    1SEND_F10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 211: 6B9          5RECV_B9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 212: 6SEND_B9     5B8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 213: 4RECV_B8     5SEND_B8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 214: 2F10         3RECV_F10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 215: 2SEND_F10    1F11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 216: 2RECV_F11    1SEND_F11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 217: 4B8          3RECV_B8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 218: 4SEND_B8     5B9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 219: 4RECV_B9     5SEND_B9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 220: 2F11         3RECV_F11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 221: 2SEND_F11    3F10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 222: 4RECV_F10    3SEND_F10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 223: 4B9          3RECV_B9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 224: 4SEND_B9     3B8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 225: 2RECV_B8     3SEND_B8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 226: 4F10         5RECV_F10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 227: 4SEND_F10    3F11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 228: 4RECV_F11    3SEND_F11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 229: 2B8          1RECV_B8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 230: 2SEND_B8     3B9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 231: 2RECV_B9     3SEND_B9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 232: 4F11         5RECV_F11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 233: 4SEND_F11    5F10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 234: 6RECV_F10    5SEND_F10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 235: 2B9          1RECV_B9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 236: 2SEND_B9     1B8         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 237: 0RECV_B8     1SEND_B8    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 238: 6F10         7RECV_F10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 239: 6SEND_F10    5F11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 240: 6RECV_F11    5SEND_F11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 241: 0B8          1B9         
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 242: 0RECV_B9     1SEND_B9    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 243: 6F11         7RECV_F11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 244: 6SEND_F11    7F10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 245: 0B9          7B10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 246: 6RECV_B10    7SEND_B10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 247: 0F12         1RECV_F12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 248: 0SEND_F12    7F11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 249: 6B10         5RECV_B10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 250: 6SEND_B10    7B11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 251: 6RECV_B11    7SEND_B11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 252: 0F13         1RECV_F13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 253: 0SEND_F13    1F12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 254: 2RECV_F12    1SEND_F12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 255: 6B11         5RECV_B11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 256: 6SEND_B11    5B10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 257: 4RECV_B10    5SEND_B10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 258: 2F12         3RECV_F12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 259: 2SEND_F12    1F13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 260: 2RECV_F13    1SEND_F13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 261: 4B10         3RECV_B10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 262: 4SEND_B10    5B11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 263: 4RECV_B11    5SEND_B11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 264: 2F13         3RECV_F13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 265: 2SEND_F13    3F12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 266: 4RECV_F12    3SEND_F12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 267: 4B11         3RECV_B11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 268: 4SEND_B11    3B10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 269: 2RECV_B10    3SEND_B10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 270: 4F12         5RECV_F12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 271: 4SEND_F12    3F13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 272: 4RECV_F13    3SEND_F13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 273: 2B10         1RECV_B10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 274: 2SEND_B10    3B11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 275: 2RECV_B11    3SEND_B11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 276: 4F13         5RECV_F13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 277: 4SEND_F13    5F12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 278: 6RECV_F12    5SEND_F12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 279: 2B11         1RECV_B11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 280: 2SEND_B11    1B10        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 281: 0RECV_B10    1SEND_B10   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 282: 6F12         7RECV_F12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 283: 6SEND_F12    5F13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 284: 6RECV_F13    5SEND_F13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 285: 0B10         1B11        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 286: 0RECV_B11    1SEND_B11   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 287: 6F13         7RECV_F13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 288: 6SEND_F13    7F12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 289: 0B11         7B12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 290: 6RECV_B12    7SEND_B12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 291: 0F14         1RECV_F14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 292: 0SEND_F14    7F13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 293: 6B12         5RECV_B12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 294: 6SEND_B12    7B13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 295: 6RECV_B13    7SEND_B13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 296: 0F15         1RECV_F15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 297: 0SEND_F15    1F14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 298: 2RECV_F14    1SEND_F14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 299: 6B13         5RECV_B13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 300: 6SEND_B13    5B12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 301: 4RECV_B12    5SEND_B12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 302: 2F14         3RECV_F14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 303: 2SEND_F14    1F15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 304: 2RECV_F15    1SEND_F15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 305: 4B12         3RECV_B12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 306: 4SEND_B12    5B13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 307: 4RECV_B13    5SEND_B13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 308: 2F15         3RECV_F15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 309: 2SEND_F15    3F14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 310: 4RECV_F14    3SEND_F14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 311: 4B13         3RECV_B13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 312: 4SEND_B13    3B12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 313: 2RECV_B12    3SEND_B12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 314: 4F14         5RECV_F14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 315: 4SEND_F14    3F15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 316: 4RECV_F15    3SEND_F15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 317: 2B12         1RECV_B12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 318: 2SEND_B12    3B13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 319: 2RECV_B13    3SEND_B13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 320: 4F15         5RECV_F15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 321: 4SEND_F15    5F14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 322: 6RECV_F14    5SEND_F14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 323: 2B13         1RECV_B13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 324: 2SEND_B13    1B12        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 325: 0RECV_B12    1SEND_B12   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 326: 6F14         7RECV_F14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 327: 6SEND_F14    5F15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 328: 6RECV_F15    5SEND_F15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 329: 0B12         1B13        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 330: 0RECV_B13    1SEND_B13   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 331: 6F15         7RECV_F15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 332: 6SEND_F15    7F14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 333: 0B13         7B14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 334: 6RECV_B14    7SEND_B14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 335: 6B14         5RECV_B14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 336: 6SEND_B14    7F15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 337: 6RECV_B15    7B15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 338: 6B15         7SEND_B15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 339: 6SEND_B15    5RECV_B15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 340: 6REDUCE_GRAD 7REDUCE_GRAD
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 341: 6RESHARD     7RESHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 342: 4RECV_B14    5B14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 343: 4B14         5SEND_B14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 344: 4SEND_B14    3RECV_B14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 345: 4RECV_B15    5B15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 346: 4B15         5SEND_B15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 347: 4SEND_B15    3RECV_B15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 348: 4REDUCE_GRAD 5REDUCE_GRAD
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 349: 4RESHARD     5RESHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 350: 2RECV_B14    3B14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 351: 2B14         3SEND_B14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 352: 2SEND_B14    1RECV_B14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 353: 2RECV_B15    3B15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 354: 2B15         3SEND_B15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 355: 2SEND_B15    1RECV_B15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 356: 2REDUCE_GRAD 3REDUCE_GRAD
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 357: 2RESHARD     3RESHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 358: 0RECV_B14    1B14        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 359: 0B14         1SEND_B14   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 360: 0RECV_B15    1B15        
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 361: 0B15         1SEND_B15   
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 362: 0REDUCE_GRAD 1REDUCE_GRAD
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] Step 363: 0RESHARD     1RESHARD    
+[rank0]:[rank0]:E0930 13:40:41.520000 185317 torch/distributed/pipelining/schedules.py:3154] 
+[rank0]:[rank0]: Traceback (most recent call last):
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/_backward.py", line 434, in stage_backward
+[rank0]:[rank0]:     torch.autograd.backward(
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+[rank0]:[rank0]:     _engine_run_backward(
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/graph.py", line 1113, in _engine_run_backward
+[rank0]:[rank0]:     return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1369, in unpack_hook
+[rank0]:[rank0]:     _run_fn_with_dynamo_disabled(frame.recompute_fn, *args)
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+[rank0]:[rank0]:     return disable_fn(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+[rank0]:[rank0]:     return fn(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1336, in _run_fn_with_dynamo_disabled
+[rank0]:[rank0]:     return fn(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 2020, in recompute_fn
+[rank0]:[rank0]:     fn(*args, **kwargs)
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/model.py", line 328, in forward
+[rank0]:[rank0]:     h_TD = self.delta_attention(h_TD, layer_mask, positions)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank0]:[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/kda.py", line 284, in forward
+[rank0]:[rank0]:     out_THV = self.inner_kda(
+[rank0]:[rank0]:               ^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+[rank0]:[rank0]:     outputs = fn(*args, **kwargs)
+[rank0]:[rank0]:               ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/spmd_types/runtime.py", line 1193, in wrapper
+[rank0]:[rank0]:     return fn(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/kda.py", line 178, in forward
+[rank0]:[rank0]:     output_1THV = self.kernel(
+[rank0]:[rank0]:                   ^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+[rank0]:[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+[rank0]:[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/kda.py", line 112, in forward
+[rank0]:[rank0]:     l2norm(k_1THK),
+[rank0]:[rank0]:     ^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 300, in l2norm
+[rank0]:[rank0]:     return _L2Norm.apply(x, eps, cu_seqlens)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 252, in forward
+[rank0]:[rank0]:     output, rstd = _l2norm_fwd_op(x, eps, cu_seqlens)
+[rank0]:[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+[rank0]:[rank0]:     return self._op(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+[rank0]:[rank0]:     return disable_fn(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+[rank0]:[rank0]:     return fn(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1731, in __torch_dispatch__
+[rank0]:[rank0]:     return func(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+[rank0]:[rank0]:     return self._op(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 122, in _l2norm_fwd_cuda
+[rank0]:[rank0]:     output = torch.empty(rows, head_dim, dtype=x.dtype, device=x.device)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 48.00 MiB. GPU 0 has a total capacity of 79.21 GiB of which 35.19 MiB is free. Process 3753743 has 516.00 MiB memory in use. Process 3753742 has 78.66 GiB memory in use. Of the allocated memory 75.20 GiB is allocated by PyTorch, and 422.41 MiB is reserved by PyTorch but unallocated. expandable_segments is enabled. If instead the process is running out of virtual address space (VSZ), expandable segments may be over-reserving VA (each segment reserves ~9/8 of device memory, times the number of streams); reduce it via PYTORCH_CUDA_ALLOC_CONF expandable_segments_reserve / expandable_segments_reserve_by_class.
+[rank0]:
+[rank0]:[rank0]: The above exception was the direct cause of the following exception:
+[rank0]:
+[rank0]:[rank0]: Traceback (most recent call last):
+[rank0]:[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/train.py", line 73, in <module>
+[rank0]:[rank0]:     main()
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/train.py", line 59, in main
+[rank0]:[rank0]:     trainer.train()
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank0]:[rank0]:     result = f(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/trainer.py", line 456, in train
+[rank0]:[rank0]:     self.train_step(data_iterator)
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/trainer.py", line 369, in train_step
+[rank0]:[rank0]:     forward_backward_result = engine.forward_backward(
+[rank0]:[rank0]:                               ^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank0]:[rank0]:     return func(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/training_engine.py", line 506, in forward_backward
+[rank0]:[rank0]:     result = self._run_forward_backward(
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/training_engine.py", line 601, in _forward_backward_body
+[rank0]:[rank0]:     loss = self._pp_forward_backward_microbatch_group(
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/training_engine.py", line 682, in _pp_forward_backward_microbatch_group
+[rank0]:[rank0]:     self.pp_schedule.step(
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 2438, in step
+[rank0]:[rank0]:     self._step_microbatches(
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 3160, in _step_microbatches
+[rank0]:[rank0]:     raise e
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 3147, in _step_microbatches
+[rank0]:[rank0]:     _perform_action(action)
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 3057, in _perform_action
+[rank0]:[rank0]:     stage.backward_one_chunk(
+[rank0]:[rank0]:   File "/root/kit/kit_h100_2026-09-30/pra/probe_bound.py", line 185, in action
+[rank0]:[rank0]:     out = original(self, chunk_id, *args, **kwargs)
+[rank0]:[rank0]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/pipeline_parallel/stage.py", line 251, in backward_one_chunk
+[rank0]:[rank0]:     super().backward_one_chunk(
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 1202, in backward_one_chunk
+[rank0]:[rank0]:     grads_input, _ = self.backward_maybe_with_nosync(
+[rank0]:[rank0]:                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 1024, in backward_maybe_with_nosync
+[rank0]:[rank0]:     result = perform_backward(backward_type)()
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 978, in <lambda>
+[rank0]:[rank0]:     stage_backward(
+[rank0]:[rank0]:   File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/_backward.py", line 475, in stage_backward
+[rank0]:[rank0]:     raise RuntimeError(exc_msg) from e
+[rank0]:[rank0]: RuntimeError: 
+[rank0]:[rank0]:         Failed to run stage backward:
+[rank0]:[rank0]:         Stage output: ('Tensor(torch.Size([2048, 6144]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([2048, 0, 6144]), grad=False, dtype=torch.bfloat16)')
+[rank0]:[rank0]:         Output gradient: ('Tensor(torch.Size([2048, 6144]), grad=False, dtype=torch.bfloat16)', 'None')
+[rank0]:[rank0]:         Input: ['Tensor(torch.Size([2048, 6144]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([2048, 2, 6144]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([2048]), grad=False, dtype=torch.int64)', 'Tensor(torch.Size([2048]), grad=False, dtype=torch.bool)', 'None', 'None', 'None', 'None', '2016', '2016', '2017', '2018', '2019', 'BlockMask(shape=(1, 1, 2048, 2048), sparsity=66.41%, \n(0, 0)\n██                              \n████                            \n██████                          \n████████                        \n██████████                      \n████████████                    \n          ████                  \n          ██████                \n          ████████              \n          ██████████            \n          ████████████          \n          ██████████████        \n          ████████████████      \n          ██████████████████    \n          ████████████████████  \n          ██████████████████████\n)', 'Tensor(torch.Size([3]), grad=False, dtype=torch.int32)', 'Tensor(torch.Size([3]), grad=False, dtype=torch.int32)', '1307', '1307']
+[rank0]:[rank0]:         
+W0930 13:40:44.512000 185248 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 185318 closing signal SIGTERM
+E0930 13:40:45.487000 185248 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 185317) of binary: /root/mep/venv_src/bin/python
+E0930 13:40:45.496000 185248 torch/distributed/elastic/multiprocessing/errors/error_handler.py:194] no error file defined for parent, to copy child error file (/tmp/torchelastic_tz14e_36/none_1jenz32i/attempt_0/0/error.json)
+Traceback (most recent call last):
+  File "/root/mep/venv_src/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-09-30_13:40:45
+  host      : 04d63ba06a34
+  rank      : 1 (local_rank: 1)
+  exitcode  : -15 (pid: 185318)  (SIGTERM)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 185318
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-09-30_13:40:41
+  host      : 04d63ba06a34
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 185317) 
+  error_file: /tmp/torchelastic_tz14e_36/none_1jenz32i/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/_backward.py", line 434, in stage_backward
+      torch.autograd.backward(
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+      _engine_run_backward(
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/graph.py", line 1113, in _engine_run_backward
+      return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1369, in unpack_hook
+      _run_fn_with_dynamo_disabled(frame.recompute_fn, *args)
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+      return disable_fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1336, in _run_fn_with_dynamo_disabled
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 2020, in recompute_fn
+      fn(*args, **kwargs)
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/model.py", line 328, in forward
+      h_TD = self.delta_attention(h_TD, layer_mask, positions)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/kda.py", line 284, in forward
+      out_THV = self.inner_kda(
+                ^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/protocols/module.py", line 305, in forward_with_redistribution
+      outputs = fn(*args, **kwargs)
+                ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/spmd_types/runtime.py", line 1193, in wrapper
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/kda.py", line 178, in forward
+      output_1THV = self.kernel(
+                    ^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+      return self._call_impl(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+      return forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/kda.py", line 112, in forward
+      l2norm(k_1THK),
+      ^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 300, in l2norm
+      return _L2Norm.apply(x, eps, cu_seqlens)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 252, in forward
+      output, rstd = _l2norm_fwd_op(x, eps, cu_seqlens)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+      return self._op(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+      return disable_fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+      return fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/utils/checkpoint.py", line 1731, in __torch_dispatch__
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+      return self._op(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 122, in _l2norm_fwd_cuda
+      output = torch.empty(rows, head_dim, dtype=x.dtype, device=x.device)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 48.00 MiB. GPU 0 has a total capacity of 79.21 GiB of which 35.19 MiB is free. Process 3753743 has 516.00 MiB memory in use. Process 3753742 has 78.66 GiB memory in use. Of the allocated memory 75.20 GiB is allocated by PyTorch, and 422.41 MiB is reserved by PyTorch but unallocated. expandable_segments is enabled. If instead the process is running out of virtual address space (VSZ), expandable segments may be over-reserving VA (each segment reserves ~9/8 of device memory, times the number of streams); reduce it via PYTORCH_CUDA_ALLOC_CONF expandable_segments_reserve / expandable_segments_reserve_by_class.
+  
+  The above exception was the direct cause of the following exception:
+  
+  Traceback (most recent call last):
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/trainer.py", line 456, in train
+      self.train_step(data_iterator)
+    File "/root/mep/w/pra_base/torchtitan/trainer.py", line 369, in train_step
+      forward_backward_result = engine.forward_backward(
+                                ^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/training_engine.py", line 506, in forward_backward
+      result = self._run_forward_backward(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/training_engine.py", line 601, in _forward_backward_body
+      loss = self._pp_forward_backward_microbatch_group(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/training_engine.py", line 682, in _pp_forward_backward_microbatch_group
+      self.pp_schedule.step(
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 2438, in step
+      self._step_microbatches(
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 3160, in _step_microbatches
+      raise e
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 3147, in _step_microbatches
+      _perform_action(action)
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/schedules.py", line 3057, in _perform_action
+      stage.backward_one_chunk(
+    File "/root/kit/kit_h100_2026-09-30/pra/probe_bound.py", line 185, in action
+      out = original(self, chunk_id, *args, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/w/pra_base/torchtitan/models/kimi_k3/pipeline_parallel/stage.py", line 251, in backward_one_chunk
+      super().backward_one_chunk(
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 1202, in backward_one_chunk
+      grads_input, _ = self.backward_maybe_with_nosync(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 1024, in backward_maybe_with_nosync
+      result = perform_backward(backward_type)()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/stage.py", line 978, in <lambda>
+      stage_backward(
+    File "/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/pipelining/_backward.py", line 475, in stage_backward
+      raise RuntimeError(exc_msg) from e
+  RuntimeError: 
+          Failed to run stage backward:
+          Stage output: ('Tensor(torch.Size([2048, 6144]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([2048, 0, 6144]), grad=False, dtype=torch.bfloat16)')
+          Output gradient: ('Tensor(torch.Size([2048, 6144]), grad=False, dtype=torch.bfloat16)', 'None')
+          Input: ['Tensor(torch.Size([2048, 6144]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([2048, 2, 6144]), grad=True, dtype=torch.bfloat16)', 'Tensor(torch.Size([2048]), grad=False, dtype=torch.int64)', 'Tensor(torch.Size([2048]), grad=False, dtype=torch.bool)', 'None', 'None', 'None', 'None', '2016', '2016', '2017', '2018', '2019', 'BlockMask(shape=(1, 1, 2048, 2048), sparsity=66.41%, \n(0, 0)\n██                              \n████                            \n██████                          \n████████                        \n██████████                      \n████████████                    \n          ████                  \n          ██████                \n          ████████              \n          ██████████            \n          ████████████          \n          ██████████████        \n          ████████████████      \n          ██████████████████    \n          ████████████████████  \n          ██████████████████████\n)', 'Tensor(torch.Size([3]), grad=False, dtype=torch.int32)', 'Tensor(torch.Size([3]), grad=False, dtype=torch.int32)', '1307', '1307']
+          
+  
+============================================================

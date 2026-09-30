@@ -5,7 +5,7 @@
 # step of each tree), then each tree on its own copy, one after the other; pp4vp2 also traces one step of each (step 10).
 # Usage: run_pra_h100.sh <layout> [<layout> ...]; results in ~/mep/results/pra_h100.
 M=~/mep; K=~/kit/kit_h100_2026-09-30/pra; KT=~/kit/kit_h100_2026-09-29/pra; V=$M/venv_src
-A=$M/w/pra_base; B=$M/w/pra; O=$M/results/pra_h100; P=$O/progress.txt; mkdir -p $O
+A=$M/w/pra_base; B=$M/w/pra; O=${OUT:-$M/results/pra_h100}; P=$O/progress.txt; mkdir -p $O
 DIM=${PPMEM_DIM:-6144}; STEPS=${STEPS:-100}; export NCCL_NVLS_ENABLE=0
 # titan's run_train.sh default; without it both trees OOM at dim 6144 on about 21 GiB reserved but unallocated.
 export PYTORCH_ALLOC_CONF=expandable_segments:True PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
