@@ -10,7 +10,8 @@ Layout: the B200 vision_dep cell without FSDP (pp2 x vpp4 x tp2 x ep2), as kit_h
 dep_off / dep_k25 / dep_bubble at the debug width; w_* widen the debug model to DEPW_DIM.
 Knobs: DEPR_DATA, DEPR_RES, DEPR_SEQ (tokens per micro-batch, default 2048), DEPR_NMAX (images per sample cap);
 DEPV_TOWER=k3 swaps the 2-layer debug tower for the released K3 MoonViT-V2 shape (27 layers, dim 1024, qkv 1536,
-MLP 4096, 12 heads, pos emb 64); DEPV_COST_RATIO sets vision_dep.bubble_cost_ratio (measured encode / stage forward).
+MLP 4096, 12 heads, pos emb 64); DEPV_COST_RATIO sets vision_dep.bubble_cost_ratio (measured encode / stage forward);
+DEPR_AC=full swaps the cell's SelectiveAC for FullAC (the widened model at seq 6144 or more needs it on 80 GB).
 """
 
 import os
@@ -147,6 +148,10 @@ def _base(widened: bool = False) -> Trainer.Config:
     config.training.num_tokens_per_microbatch_per_dp_rank = seq
     config.model.max_context_length = max(config.model.max_context_length, seq)
     config.dataloader = _dataloader()
+    if os.environ.get("DEPR_AC") == "full":
+        from torchtitan.distributed.activation_checkpoint import FullAC
+
+        config.activation_checkpoint = FullAC.Config()
     return config
 
 

@@ -17,9 +17,10 @@ uv pip install -r $M/w/dep/.ci/docker/requirements.txt -r $M/w/dep/.ci/docker/re
 uv pip install pytest pytest-subtests expecttest pyflakes
 V=4.6.2
 uv pip install nvidia-cutlass-dsl==$V nvidia-cutlass-dsl-libs-base==$V nvidia-cutlass-dsl-libs-core==$V \
-  nvidia-cutlass-dsl-libs-cu12==$V "cuda-bindings>=12.9.4,<13" "cuda-python>=12.9,<13"
+  nvidia-cutlass-dsl-libs-cu12==$V nvidia-cutlass-dsl-libs-cu13==$V "cuda-bindings>=12.9.4,<13" "cuda-python>=12.9,<13"
 uv pip install --reinstall --no-deps $M/pt/dist/torch-*.whl
 uv pip install --reinstall --no-deps --pre "triton==3.8.0+gitc01b6774" --index-url https://download.pytorch.org/whl/nightly/
+uv pip install --reinstall --no-deps nvidia-cutlass-dsl-libs-cu13==$V
 for p in cuda-toolkit nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cudnn-cu13 nvidia-cufft \
   nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvjitlink \
   nvidia-nvshmem-cu13 nvidia-nvtx; do uv pip uninstall -q $p 2>/dev/null; done
