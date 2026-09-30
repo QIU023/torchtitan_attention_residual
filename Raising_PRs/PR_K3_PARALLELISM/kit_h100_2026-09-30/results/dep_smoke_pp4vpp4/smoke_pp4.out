@@ -1,0 +1,15 @@
+w_dep_off pp4vpp4 seq 8192 cap 1 M16 rc=1
+[rank3]:[rank3]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 960.00 MiB. GPU 3 has a total capacity of 79.21 GiB of which 766.75 MiB is free. Process 3258543 has 78.45 GiB memory in 
+[rank3]:[rank3]: RuntimeError: 
+w_dep_bubble pp4vpp4 seq 8192 cap 1 M16 rc=1
+[rank2]:[rank2]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 960.00 MiB. GPU 2 has a total capacity of 79.21 GiB of which 184.75 MiB is free. Process 3261363 has 79.02 GiB memory in 
+[rank2]:[rank2]: RuntimeError: 
+vision_dep: 13 micro-batch(es) with images; encodes 4 before the schedule, 9 in idle slots; backwards 2 in idle slots, 11 after it
+SMOKE_DONE
+w_dep_off pp4vpp4 seq 6144 cap 2 M16 rc=1
+w_dep_bubble pp4vpp4 seq 6144 cap 2 M16 rc=1
+[rank1]:[rank1]: RuntimeError: NCCL GroupEnd failed: unhandled cuda error (run with NCCL_DEBUG=INFO for details) 
+[rank1]:[rank1]: NCCL Last Error: Cuda failure 2 'out of memory'
+vision_dep: 13 micro-batch(es) with images; encodes 5 before the schedule, 8 in idle slots; backwards 1 in idle slots, 12 after it
+SMOKE_DONE
+SMOKE_PP4_DONE

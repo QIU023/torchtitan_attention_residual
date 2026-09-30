@@ -4,10 +4,11 @@
 # (the same data under another reduction order), MoonEP
 # and (if deep_ep imports) DeepEP, deterministic, one warm compile cache, 20 steps; 4. timing:
 # the same backends without --debug.deterministic, 30 steps; 5. the tables.
-M=~/mep; K=$(cd "$(dirname "$0")" && pwd); O=$M/results; mkdir -p $O
-. $M/venv/bin/activate; cd $M/tt
+# Env (09-30 box): VENV (default ~/mep/venv), TREE (default ~/mep/tt), MOONEP (default ~/mep/MoonEP), OUT (default ~/mep/results).
+M=~/mep; K=$(cd "$(dirname "$0")" && pwd); O=${OUT:-$M/results}; mkdir -p $O
+. ${VENV:-$M/venv}/bin/activate; cd ${TREE:-$M/tt}
 note() { echo "$(date +%H:%M:%S) $*" | tee -a $O/summary.txt; }
-note "tree $(git rev-parse --short HEAD) moonep $(git -C $M/MoonEP rev-parse --short HEAD)"
+note "tree $(git rev-parse --short HEAD) moonep $(git -C ${MOONEP:-$M/MoonEP} rev-parse --short HEAD)"
 timeout 1800 python -m pytest tests/unit_tests/cpu/test_moe.py \
   tests/unit_tests/cpu/test_integration_test_definitions.py -q > $O/cpu.log 2>&1
 note "cpu rc=$? $(tail -1 $O/cpu.log)"
