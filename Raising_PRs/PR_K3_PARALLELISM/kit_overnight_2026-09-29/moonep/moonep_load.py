@@ -237,6 +237,13 @@ def _cell(backend: str) -> Trainer.Config:
         config.optimizer = default_adamw(lr=8e-4)
     config.parallelism.data_parallel_shard_degree = 4
     config.parallelism.expert_parallel_degree = 4
+    mode = os.environ.get("MOONEP_AC")
+    if mode == "none":
+        config.activation_checkpoint = None
+    elif mode == "full":
+        from torchtitan.distributed.activation_checkpoint import FullAC
+
+        config.activation_checkpoint = FullAC.Config()
     _install()
     return config
 
