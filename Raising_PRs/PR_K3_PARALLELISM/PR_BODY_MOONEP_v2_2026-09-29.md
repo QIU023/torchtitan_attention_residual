@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **09-30 H100（115.124.123.240，`ab191a771`，`MOONEP_H100_2026-09-30.md`）：** 粘贴区 Results 填了实测表（关 AC 跑的）。GPU 单测 2 passed，CPU 36 passed（装了 `transformers` 之后）。**但 h100 格子 `kimi_k3_fsdp+moonep` 用 recipe 的 SelectiveAC 在第 1 步反向失败**：SAC 按算子回放 MoonEP 的 `autograd.Function` 内部算子，重算时错位（gate 拿到形状 4 的张量）；关 AC 和 FullAC 都能跑。DeepEP / HybridEP 是 `torch.library` 算子并列在 SAC 的保存列表里，所以没有这个问题。修法（把 MoonEP 的 dispatch / combine / 专家计算注册成库算子并加进保存列表，或别的办法）等你定；修好前 PR 不能转 ready，Requirements 也要补一条。
 - **09-30（用户："现在加一个检查，如果模型不是KimiK3则直接拒绝，第二点暂时不加"）：** PR 分支 `k3_moonep_seam` 和 review 分支 `moonep_review1` 都推到 `ab191a771`（旧 head `30157477b` 在 `backup/k3_moonep_seam_pre_20260930`），upstream `refs/pull/4751/head` 已是它。
   - 先换到 main `2164881c4`，前三个提交 `a3dfc7e3a`、`349c2e267`、`e1b600007` 内容不变。
   - 第四个提交 `ab191a771`：`update_ep_token_dispatcher_config` 发现有 MoonEP 的 dispatcher 配置、而模型配置不是 `KimiK3Model.Config` 时直接报错（函数内延迟 import K3，公共代码不在模块级依赖 K3）。`make_token_dispatcher_config` 的说明里标上 "Kimi K3 only"。
@@ -59,7 +60,14 @@ Requirements and costs:
 
 ## Results
 
-Pending (H100): the tokens each EP rank receives in every MoE layer, with standard EP and with MoonEP, under natural routing and under a router biased toward the experts of one rank, and the step time of each.
+4 H100s behind an NVSwitch, MoonEP `33327eb`, the Kimi K3 debug model with 128 experts and top-8 at FSDP 4 x EP 4, seq 512, activation checkpointing off.
+
+| routing | static placement: hottest rank over mean, mean over layers (worst) | MoonEP: dispatches with exactly S x K rows on the rank | step time, standard / MoonEP |
+|---|---:|---:|---:|
+| natural | 1.52 (2.23) | 320 of 320 | 0.327 / 0.308 s |
+| biased toward rank 0's experts | 3.19 (3.92) | 320 of 320 | 0.325 / 0.306 s |
+
+Static placement is the load each rank would receive with the experts on their home ranks, from the router's counts over 20 steps; S x K is 4096 rows here, counted over 5 steps, 16 MoE layers and 4 ranks. Step time is the mean over steps 11 to 30. On the h100 cell's shape (8 experts, top-2), MoonEP's step-1 loss and grad norm equal standard EP's, and its loss stays within 4.9e-3 of standard EP's over 20 steps, inside the 1.3e-2 that standard EP moves by itself at EP 2 (another reduction order).
 
 ## Test plan
 
