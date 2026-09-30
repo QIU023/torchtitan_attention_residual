@@ -94,7 +94,7 @@ def _install() -> None:
     if _INSTALLED[0]:
         return
     _INSTALLED[0] = True
-    from torchtitan.components.optimizer.optimizer import OptimizersContainer
+    from torchtitan.components.optim.optimizer import OptimizersContainer
     from torchtitan.models.common import moe, token_dispatcher
 
     classes = [moe.RoutedExperts]
@@ -227,14 +227,9 @@ def _cell(backend: str) -> Trainer.Config:
     config.model = _model(backend)
     if os.environ.get("LOAD_NO_BIAS") == "1":
         _without_bias_update(config.model)
-    try:
-        from torchtitan.components.optimizer import AdamW, OptimizersContainer
+    from torchtitan.components.optim import AdamW, OptimizersContainer
 
-        config.optimizer = OptimizersContainer.Config(optimizers=[AdamW.Config(pattern=r".*", lr=8e-4)])
-    except ImportError:
-        from torchtitan.components.optimizer import default_adamw
-
-        config.optimizer = default_adamw(lr=8e-4)
+    config.optim.optimizer = OptimizersContainer.Config(optimizers=[AdamW.Config(pattern=r".*", lr=8e-4)])
     config.parallelism.data_parallel_shard_degree = 4
     config.parallelism.expert_parallel_degree = 4
     mode = os.environ.get("MOONEP_AC")
