@@ -1,0 +1,23 @@
+encode rc=0
+no_grad: repeat bitwise True, shape (1296, 6144) torch.bfloat16
+grad: repeat bitwise True, shape (1296, 6144) torch.bfloat16
+fsdp_grad: repeat bitwise True, shape (1296, 6144) torch.bfloat16
+no_grad vs grad: bitwise True, max abs diff 0.000e+00, elements differing 0 of 7962624
+grad vs fsdp_grad: bitwise True, max abs diff 0.000e+00, elements differing 0 of 7962624
+no_grad vs fsdp_grad: bitwise True, max abs diff 0.000e+00, elements differing 0 of 7962624
+off_cold rc=0 step:  1  loss:  8.12706
+k25 rc=0 step:  1  loss:  8.12804
+off rc=0 step:  1  loss:  8.12706
+rank0_call0.pt vision_embeds: bitwise True, max abs diff 0.000e+00, shape (1296, 6144)
+rank0_call0.pt embeds: bitwise True, max abs diff 0.000e+00, shape (2048, 6144)
+   positions equal True
+rank0_call1.pt vision_embeds: bitwise True, max abs diff 0.000e+00, shape (1296, 6144)
+rank0_call1.pt embeds: bitwise True, max abs diff 0.000e+00, shape (2048, 6144)
+   positions equal True
+rank0_call2.pt vision_embeds: bitwise True, max abs diff 0.000e+00, shape (1296, 6144)
+rank0_call2.pt embeds: bitwise True, max abs diff 0.000e+00, shape (2048, 6144)
+   positions equal True
+rank0_call3.pt vision_embeds: bitwise True, max abs diff 0.000e+00, shape (1296, 6144)
+rank0_call3.pt embeds: bitwise True, max abs diff 0.000e+00, shape (2048, 6144)
+   positions equal True
+PROBE_DONE
