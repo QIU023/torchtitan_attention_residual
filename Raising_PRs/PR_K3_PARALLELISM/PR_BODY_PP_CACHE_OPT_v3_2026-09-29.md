@@ -21,6 +21,11 @@
 - **标题建议：** `[Kimi K3] PP: store each attention-residual block once per rank and free it at its last reader`
 - **torch issue：** 草稿 `TORCH_ISSUE_PP_BUFFERS_2026-09-27.md` 已改成只提 send；开好后把号填进 Design 的 `<torch issue link>`。
 - 粘贴区查过 we/our/us 和破折号。
+- **09-30 精简（CPU 这边，用户："PR A的body文件有什么能简化的吗？"）：** 只动 Summary 和 Design。
+  - Summary 里 stage.py 那条原来三句，和 Design 几乎逐句重复，缩成一行；文档那条也缩短了。
+  - Design 删了 "exists 1 + k times"：#4656 的模型在 PP 边界还会把所有块 stack 成一次输出，store 里 committed 块的 view 会钉住整个输出 stack，所以份数不止 1 + k，现在只写 "several times"。
+  - Design 第三段删了三处：没有等待点的 send 照旧步末等（细节）；单 stage schedule 把 send 和 receive 合批、所以只在 action-list runtime 下早等（`__init__.py` 的注释和 Summary 已经说了）；接收缓冲交给 torch（这是相对旧版本 PR A 说的，本分支本来就不碰）。
+  - `<torch issue link>` 还在，raise 前填号或删掉括号。
 
 --- PR A body: PASTE BEGIN ---
 
@@ -28,19 +33,19 @@
 
 The Kimi K3 pipeline stores each attention-residual block once per pipeline rank and frees it at its last reader, the memory the Attention Residuals paper states for cross-stage caching ("each block is stored exactly once across all V virtual stages", section 4.1).
 
-- `kimi_k3/pipeline_parallel/stage.py`: each hop sends one tensor per block, the rank store keeps references to the received and committed tensors, and a stage hands its blocks to the model as a list instead of stacking them into a fresh leaf. The store drops each block at the backward of the stage that brought it onto the rank. Under the action-list runtime, a forward send is waited at the stage's own backward of that micro-batch, and an input-gradient send at the first later forward that proves the peer has used it.
+- `kimi_k3/pipeline_parallel/stage.py`: one tensor per block on each hop and in the rank store, each block released at the backward of the stage that brought it, and early send waits under the action-list runtime.
 - `kimi_k3/pipeline_parallel/cache.py`: release by block, and gradient deposits that add in place.
 - `kimi_k3/pipeline_parallel/__init__.py`: turns the send waits on under `_PipelineScheduleRuntime`, with the wait points taken from the schedule's `pipeline_order`.
 - `kimi_k3/model.py`: the model takes and returns its blocks as a list.
-- `kimi_k3/pipeline_parallel/PP_ATTN_RES_CACHE.md` and the stage figure's legend: the blocks as one tensor each, held until the backward of the stage that brought them, and the send waits.
+- `kimi_k3/pipeline_parallel/PP_ATTN_RES_CACHE.md` and the stage figure's legend: one tensor per block, the new release point and the send waits.
 
 ## Design
 
-The cached transport of #4312 sends each block once, but a rank holds it several times. Every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf on entry and keeps that leaf until its backward, and the store keeps views that pin whole received payloads and the model's output stack. A block read by k stages on a rank therefore exists 1 + k times. With one tensor per block, the received tensor is the block and a committed block is the model's own tensor; the store and the stages hold references to them, so each block exists once on the rank.
+With the cached transport of #4312, a rank holds a block several times: every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf that lives until its backward, and the store's views pin whole received payloads and output stacks. Here a block is one tensor, the received one or, for a committed block, the model's own, and the store and the stages hold references to it, so it exists once on the rank.
 
-In backward order, the last reader of a block on a rank is the stage that brought it there, by receiving it or by committing it. The store drops the block at that stage's backward, which is earlier than the end of the micro-batch that the paper's accounting assumes.
+In backward order, the last reader of a block on a rank is the stage that brought it there, by receiving or committing it, so the store drops it at that stage's backward, earlier than the end of the micro-batch that the paper's accounting assumes.
 
-A pending send keeps its tensor alive until it is waited, and torch's action-list runtime waits every send at the end of the step, which would keep a released block alive until then. The stage waits a forward send at its own backward of the micro-batch, when the receiver has used it, and an input-gradient send at the first forward on the rank that consumes what the peer produced after using the gradient; a send without such a point keeps the end of step wait. This behavior belongs in torch (<torch issue link>), and the override goes once torch has it. Single-stage schedules fuse each send with a receive, so the early waits apply only under the action-list runtime. Receive buffers are left to torch, which allocates each one right before its receive.
+A pending send keeps its tensor alive until it is waited, and torch's action-list runtime waits every send at the end of the step, which would keep a released block alive until then. The stage waits a forward send at its own backward of that micro-batch, and an input-gradient send at the first forward on the rank that consumes what the peer produced after using it. This belongs in torch (<torch issue link>); the override goes once torch has it.
 
 ## Results
 
