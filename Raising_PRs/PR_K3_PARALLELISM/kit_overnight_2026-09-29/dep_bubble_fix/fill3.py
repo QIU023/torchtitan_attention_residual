@@ -30,10 +30,12 @@ def run(pp, vp, m, share):
                 nb=sum(1 for k in b.placed if k[0] == "backward"), exposed=(pro + epi) / T, inline=4 * m * r / T,
                 stalls=len(t._stalls(pp, vp, m, b, loads)) if pp * vp * m <= 1024 else -1)
 
+LAYOUTS = ((8, 4, 32), (16, 2, 32), (16, 2, 64))
+SHARES = tuple(float(x) for x in sys.argv[3].split(",")) if len(sys.argv) > 3 else (0.10, 0.25)
 print("| layout | text : ViT | r | bubble share of the step | **fill rate** | ViT hidden (fwd / bwd) | backwards in bubbles, before -> after the fix | ViT added to the step: DEP off / K2.5 / bubble |")
 print("|---|---|---:|---:|---:|---|---:|---|")
-for pp, vp, m in ((2, 4, 4), (2, 4, 16), (4, 2, 16), (8, 4, 16), (8, 4, 32), (16, 2, 32), (16, 2, 64)):
-    for share in (0.10, 0.25):
+for pp, vp, m in LAYOUTS:
+    for share in SHARES:
         x = run(pp, vp, m, share)
         flag = "" if x["stalls"] <= 0 else f" STALLS {x['stalls']}"
         print(f"| pp{pp} x vp{vp}, M{m} | {100 - round(share * 100)} : {round(share * 100)} | {x['r']:.2f} | {x['bubble']:.0%} | **{x['fill']:.0%}** | {x['hidden']:.0%} ({x['fwd']:.0%} / {x['bwd']:.0%}) | {x['nb_old']} -> {x['nb']} of {m} | +{x['inline']:.0%} / +{x['k25']:.0%} / +{x['exposed']:.0%} |{flag}")
