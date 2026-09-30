@@ -102,9 +102,49 @@ def numerics(root):
         print(f"| {label} ({same}/{len(ref)} steps loss identical) | " + " | ".join(row) + " |")
 
 
+def _median(root, name):
+    log = os.path.join(root, name, "run.log")
+    if not os.path.exists(log):
+        return None
+    rec = steps(log)
+    d = durations(rec, 5, 20) if rec else {}
+    return statistics.median(d.values()) if d else None
+
+
+def diag(root):
+    """Text-only diagnostics (diag_k0.sh) and each cell's step time against the text-only model at its M."""
+    cells = sorted(os.path.basename(d) for d in glob.glob(os.path.join(root, "diag_k0_m*")))
+    if not cells:
+        return
+    print()
+    print("| text-only cell (DEPR_IMG_PER16=0) | median s/step (steps 5 to 20) |")
+    print("|---|---:|")
+    ref = {}
+    for name in cells:
+        t = _median(root, name)
+        m = re.match(r"diag_k0_m(\d+)_(\w+)", name)
+        if m and m.group(2) == "notower" and t:
+            ref[m.group(1)] = t
+        print(f"| {name} | {t:.3f} |" if t else f"| {name} | failed |")
+    if not ref:
+        return
+    print()
+    print("| level | M | text-only (no tower) | DEP off | K2.5 | bubble | efficiency off / K2.5 / bubble |")
+    print("|---|---:|---:|---:|---:|---:|---|")
+    for d in sorted(glob.glob(os.path.join(root, "time_*_w_dep_off"))):
+        cell = re.match(r"time_(.+)_w_dep_off", os.path.basename(d)).group(1)
+        level, m = cell.rsplit("_m", 1)
+        if m not in ref:
+            continue
+        t = [_median(root, f"time_{cell}_{k}") for k, _ in MODES]
+        eff = " / ".join(f"{ref[m] / x:.1%}" if x else "-" for x in t)
+        print(f"| {level} | {m} | {ref[m]:.3f} | " + " | ".join(f"{x:.3f}" if x else "-" for x in t) + f" | {eff} |")
+
+
 def main():
     root = sys.argv[1]
     timing(root)
+    diag(root)
     numerics(root)
 
 
