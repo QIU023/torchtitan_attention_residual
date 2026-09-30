@@ -6,7 +6,9 @@ sample fits in DEPR_SEQ tokens. Every image is resized to a fixed square of DEPR
 1024 -> 1008 px, sides a multiple of patch 14 x merge 2), upsampling allowed (the K3 recipe's
 resize_to_navit_patch_grid only shrinks and caps an image at 256 patches).
 
-Layout: the B200 vision_dep cell without FSDP (pp2 x vpp4 x tp2 x ep2), as kit_h100_2026-09-29/dep/dep4.py.
+Layout: the B200 vision_dep cell without FSDP (pp2 x vpp4 x tp2 x ep2), as kit_h100_2026-09-29/dep/dep4.py; DEPR_LAYOUT=pp4vpp4
+(09-30, the user) makes it pp4 x vpp4 x tp1 x ep1 with core's 16 stage split and the model's end modules pinned, the way
+the B200 recipe builds its 8 stage split.
 dep_off / dep_k25 / dep_bubble at the debug width; w_* widen the debug model to DEPW_DIM.
 Knobs: DEPR_DATA, DEPR_RES, DEPR_SEQ (tokens per micro-batch, default 2048), DEPR_NMAX (images per sample cap);
 DEPV_TOWER=k3 swaps the 2-layer debug tower for the released K3 MoonViT-V2 shape (27 layers, dim 1024, qkv 1536,
@@ -143,6 +145,8 @@ def _base(widened: bool = False) -> Trainer.Config:
     finally:
         config_registry.model_registry = original
     config.parallelism.data_parallel_shard_degree = 1
+    if os.environ.get("DEPR_LAYOUT", "pp2tp2") == "pp4vpp4":
+        _pp4_vpp4(config)
     seq = _seq()
     config.training.max_context_length = seq
     config.training.num_tokens_per_microbatch_per_dp_rank = seq
@@ -153,6 +157,23 @@ def _base(widened: bool = False) -> Trainer.Config:
 
         config.activation_checkpoint = FullAC.Config()
     return config
+
+
+def _pp4_vpp4(config: Trainer.Config) -> None:
+    from torchtitan.distributed.pipeline_parallel import _generate_llm_fqn_per_model_part
+    from torchtitan.models.kimi_k3.model import KimiK3Model
+
+    p = config.parallelism
+    p.tensor_parallel_degree = 1
+    p.enable_sequence_parallel = False
+    p.expert_parallel_degree = 1
+    p.pipeline_parallel_degree = 4
+    split = _generate_llm_fqn_per_model_part(
+        4 * p.pipeline_parallel_degree, len(config.model.layers),
+        p.pipeline_parallel_first_stage_less_layers, p.pipeline_parallel_last_stage_less_layers)
+    split[0][:0] = KimiK3Model.pipeline_first_stage_module_fqns
+    split[-1].extend(KimiK3Model.pipeline_last_stage_module_fqns)
+    p.pipeline_parallel_module_fqns_per_model_part = split
 
 
 def _mode(config: Trainer.Config, enabled: bool, bubble: bool) -> Trainer.Config:

@@ -4,12 +4,12 @@ The debug model widened to --dim (tower as wide as the text, 2 layers), bf16, ra
 - tower: vision_encoder on one image of 224 / 448 / 768 / 1024 px (patch 14, sides 224 / 448 / 756 / 1008):
   forward, and forward + backward (DEP's recompute + backward);
 - text: the full model on a text-only micro-batch of --seq tokens, forward and forward + backward, with CUDA events
-  around every layer (forward hooks, full backward hooks); a stage is a group of layers of the pp2 x vpp4 split
-  (stages 1 to 6 of the eight, the ones without the embedding or the head), reported as their mean.
+  around every layer (forward hooks, full backward hooks); a stage is a group of layers of core's split for --stages
+  stages (8 = pp2 x vpp4, 16 = pp4 x vpp4), the stages without the embedding or the head, reported as their mean.
 Prints the forward ratio (encode forward / stage forward) and the step ratio ((encode forward + recompute forward
 + backward) / (stage forward + backward)) per resolution. Warmup 3, measured 10, medians.
 
-Run in the DEP tree: CUDA_VISIBLE_DEVICES=0 PYTHONPATH=<kit>:. python microbench_ratio.py --dim 1024 --seq 2048
+Run in the DEP tree: CUDA_VISIBLE_DEVICES=0 PYTHONPATH=<kit>:. python microbench_ratio.py --dim 1024 --seq 2048 --stages 8
 """
 
 import argparse
@@ -18,7 +18,6 @@ import statistics
 
 import torch
 
-STAGE_LAYERS = [[2, 3, 4], [5, 6, 7], [8, 9], [10, 11], [12, 13], [14, 15]]
 SIDES = {224: 224, 448: 448, 768: 756, 1024: 1008}
 
 
@@ -107,15 +106,27 @@ def layer_times(model, seq: int) -> tuple[list[float], list[float]]:
     return [statistics.median(x) for x in fwd_ms], [statistics.median(x) if x else float("nan") for x in bwd_ms]
 
 
+def middle_stage_layers(stages: int, num_layers: int) -> list[list[int]]:
+    from torchtitan.distributed.pipeline_parallel import _generate_llm_fqn_per_model_part
+
+    split = _generate_llm_fqn_per_model_part(stages, num_layers, 1, 1)
+    return [[int(m.split(".")[1]) for m in part if m.startswith("layers.")] for part in split[1:-1]]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dim", type=int, default=1024)
     ap.add_argument("--seq", type=int, default=2048)
+    ap.add_argument("--stages", type=int, default=8)
     args = ap.parse_args()
     model = build(args.dim, args.seq)
     fwd, bwd = layer_times(model, args.seq)
-    stage_f = statistics.mean(sum(fwd[i] for i in s) for s in STAGE_LAYERS)
-    stage_fb = statistics.mean(sum(fwd[i] + bwd[i] for i in s) for s in STAGE_LAYERS)
+    groups = middle_stage_layers(args.stages, len(fwd))
+    stage_f = statistics.mean(sum(fwd[i] for i in s) for s in groups)
+    stage_fb = statistics.mean(sum(fwd[i] + bwd[i] for i in s) for s in groups)
+    print(f"stages {args.stages}, middle stage layers {groups}")
+    print("per layer forward ms: " + " ".join(f"{x:.2f}" for x in fwd))
+    print("per layer backward ms: " + " ".join(f"{x:.2f}" for x in bwd))
     print(f"dim {args.dim} seq {args.seq}: text stage forward {stage_f:.2f} ms, forward + backward {stage_fb:.2f} ms")
     print("| image px | patches | encode forward ms | encode forward + backward ms | forward ratio | step ratio |")
     print("|---:|---:|---:|---:|---:|---:|")

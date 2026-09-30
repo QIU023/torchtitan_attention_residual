@@ -1,0 +1,12 @@
+measured at seq 2048: 17 layers forward 132.89 / backward 256.77 ms, text model per micro-batch 522.55 ms (full AC); 16 stage split, middle stage forward 9.02 ms; 1024 px encode forward 32.57 / forward + backward 94.03 ms; image = 1296 tokens
+| seq | cap | mean images per micro-batch | vision tokens share | vision share of step compute | text : vision | cost ratio |
+|---:|---:|---:|---:|---:|---|---:|
+| 4096 | 1 | 0.85 | 27% | 9.3% | 91 : 9 | 1.81 |
+| 4096 | 2 | 1.35 | 43% | 14.1% | 86 : 14 | 2.88 |
+| 4096 | 3 | 1.60 | 51% | 16.3% | 84 : 16 | 3.42 |
+| 6144 | 1 | 0.85 | 18% | 6.4% | 94 : 6 | 1.20 |
+| 6144 | 2 | 1.35 | 28% | 9.8% | 90 : 10 | 1.92 |
+| 6144 | 3 | 1.60 | 34% | 11.5% | 89 : 11 | 2.28 |
+| 8192 | 1 | 0.85 | 13% | 4.9% | 95 : 5 | 0.90 |
+| 8192 | 2 | 1.35 | 21% | 7.6% | 92 : 8 | 1.44 |
+| 8192 | 3 | 1.60 | 25% | 8.8% | 91 : 9 | 1.71 |
