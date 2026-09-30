@@ -4,7 +4,7 @@
 # Numerics and load: seed 42, deterministic, 20 steps, one warm cache. Timing (MODE=real only): 30 steps, not deterministic.
 # MODE=fake: 4 x 5060 with the fake MoonEP package (bookkeeping only; its routing and timing mean nothing).
 # MODE=real: 4 x H100 behind an NVSwitch with MoonEP 33327eb.
-# Env: MODE, TREE (a worktree at moonep_review1 30157477b), VENV, OUT, GPUS (default 0,1,2,3), SKEW (default 0.05).
+# Env: MODE, TREE (a worktree at moonep_review1 ab191a771), VENV, OUT, GPUS (default 0,1,2,3), SKEW (default 0.05).
 set -u
 K=$(cd "$(dirname "$0")" && pwd)
 MODE=${MODE:-fake}; SKEW=${SKEW:-0.05}; GPUS=${GPUS:-0,1,2,3}
