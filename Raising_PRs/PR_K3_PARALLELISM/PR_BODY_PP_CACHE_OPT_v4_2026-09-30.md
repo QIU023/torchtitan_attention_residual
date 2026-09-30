@@ -3,7 +3,14 @@
 ## 状态（不粘贴）
 
 - **用户 09-30：** "PR A怎么对cache和stage有这么多的改动？？？能尝试最小化diff吗？而且4312已经合并并且结构是清晰的，这个diff这么改没办法评审，重新重构简化"。
-- **新提交：** `8b0fcbe38`，只在本地的工作树 `C:/Users/78532/AppData/Local/Temp/claude/pra_min` 里（detached HEAD，没有建分支），**还没有推送**。底下还是 rebase 后的 #4656 两个提交 `9c6904dea`、`4ae9422db`，和 v3 的 `5a8163a58` 同一个底。
+- **分支（用户 09-30："理想情况来说，不要直接覆盖pp review optimize，这个改动直接加一个commit到这个分支，我去测，测完了没问题再force with lease+rebase 4765/4764"）：** `pp_review_optimize` = `345e9e00a`，fast-forward 推送，没有 force。
+  - 推之前远端已经被别的会话 rebase 到 upstream main `97e673b77`：`07abef619`、`e66a9442b`（#4656）、`36cfddf87`（v3），三个补丁和 `9c6904dea`、`4ae9422db`、`5a8163a58` 逐字相同（range-diff 全是 `=`）。
+  - `345e9e00a` 加在 `36cfddf87` 上面，把 v3 缩成最小版（7 个文件 +252/−461）。它相对 #4656 的改动和本地旧底上的 `8b0fcbe38` patch-id 相同，所以 `8b0fcbe38` 和 kit 里的补丁作废，以分支为准。
+  - 新底上重跑过：本机测试 17 passed（另 1 个是本机缺 `renderers` 的固有失败），CPU 记账四个 rank 都正好等于紧界，分范围 pre-commit 全过、没有改文件，pyrefly 0 个错误。
+- **你测完以后：**
+  1. 把 `36cfddf87` 和 `345e9e00a` 压成一个提交（树不变，提交信息用 `8b0fcbe38` 那条），force-with-lease 推 `pp_review_optimize`，旧 head 备份到 `backup/pp_review_optimize_pre_20260930`。
+  2. #4765、#4764 rebase 到新 PR A 上：`stage.py`、`cache.py` 一定冲突，而且"在带进块的 stage 反向时释放"这个时点得由 #4765 自己带上（它在 cache 的 `put` 里 pin、按块 `release` 里 unpin）。
+  3. Test plan 五个文件的通过数，在 GPU 机器上跑完填上。
 - **和 v3（`5a8163a58`）对比：**
 
   | | v3 `5a8163a58` | v4 `8b0fcbe38` |
@@ -30,10 +37,6 @@
     | v4 `8b0fcbe38` | 23 / 26 / 24 / 20 | 同上 | 0 |
 
   - 检查：分范围 pre-commit（ufmt 钉的版本、flake8、pydoclint、codespell、trailing-whitespace、end-of-file、check-ast、insert-license）全部通过；pyrefly 0.45.1 只读跑三个源文件，0 个错误，和基线一样。新增注释三行，都是一行的约束：action-list runtime 不把 send 和 receive 合批；接收方用完张量的时点；core 只保留收到的输入的梯度。提交信息没有 trailer，没有跨仓引用。
-- **推送前要你定：**
-  1. 用 `8b0fcbe38` 替换 `pp_review_optimize`（force-with-lease；旧 head `5a8163a58` 备份到 `backup/pp_review_optimize_pre_20260930`）。
-  2. #4765（`pp_offload_review1` = `2140058c5`）和 #4764（`pp_balance_review1` = `224bdbaf4`）是在 v3 的结构上写的：cache 的 `put` 里 pin 块、按块 `release` 里 unpin，还改了 v3 的 `forward_one_chunk`。换成 v4 以后它们要重新叠，`stage.py`、`cache.py` 一定冲突，而且"在带进块的 stage 反向时释放"这个时点得由 #4765 自己带上。这个交给 GPU 那边。
-  3. H100 计划 §1 的 PR A head 要跟着改；GPU 那边先在 5060 上按 T1d 的探针和五个测试文件复测 v4，把 Test plan 的通过数填上。
 - **还缺：** Test plan 的通过数（五个文件要在 GPU 机器上跑；本机缺 CuTeDSL，recompute 测试跑不了），Design 里的 `<torch issue link>`，Results 等 H100。
 - **标题建议：** `[Kimi K3] PP: keep each attention-residual block once per rank`
 
