@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **09-30 H100（115.124.123.240，`345e9e00a`，`PRA_H100_2026-09-30.md`）：** Test plan 五个文件在 H100 机器上 70 passed（基线 `e66a9442b` 也是 70 passed，含要 CuTeDSL 的 recompute 测试），粘贴区的 `<N>` 已填。dim 6144 的显存实验在跑，Results 等它。
 - **用户 09-30：** "PR A怎么对cache和stage有这么多的改动？？？能尝试最小化diff吗？而且4312已经合并并且结构是清晰的，这个diff这么改没办法评审，重新重构简化"。
 - **分支（用户 09-30："理想情况来说，不要直接覆盖pp review optimize，这个改动直接加一个commit到这个分支，我去测，测完了没问题再force with lease+rebase 4765/4764"）：** `pp_review_optimize` = `345e9e00a`，fast-forward 推送，没有 force。
   - 推之前远端已经被别的会话 rebase 到 upstream main `97e673b77`：`07abef619`、`e66a9442b`（#4656）、`36cfddf87`（v3），三个补丁和 `9c6904dea`、`4ae9422db`、`5a8163a58` 逐字相同（range-diff 全是 `=`）。
@@ -63,7 +64,7 @@ Pending (H100).
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_pp_block_grads.py tests/unit_tests/cpu/test_kimi_k3_pp_stage.py tests/unit_tests/cpu/test_kimi_k3_pp_layout.py tests/unit_tests/cpu/test_pipeline_parallel.py tests/unit_tests/cpu/test_kimi_k3_attention_residual_recompute.py -q` (<N> passed): the four-rank gloo pipelines of #4312, now with one tensor per block and the forward send waits, under Interleaved1F1B with the cache on and off, every block gradient bitwise with one device, and eval between steps.
+- `pytest tests/unit_tests/cpu/test_kimi_k3_pp_block_grads.py tests/unit_tests/cpu/test_kimi_k3_pp_stage.py tests/unit_tests/cpu/test_kimi_k3_pp_layout.py tests/unit_tests/cpu/test_pipeline_parallel.py tests/unit_tests/cpu/test_kimi_k3_attention_residual_recompute.py -q` (70 passed): the four-rank gloo pipelines of #4312, now with one tensor per block and the forward send waits, under Interleaved1F1B with the cache on and off, every block gradient bitwise with one device, and eval between steps.
 
 ## Relation to other PRs
 
