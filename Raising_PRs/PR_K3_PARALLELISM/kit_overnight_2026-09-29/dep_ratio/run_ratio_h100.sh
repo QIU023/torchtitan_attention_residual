@@ -1,5 +1,5 @@
 #!/bin/bash
-# DEP ratio cells for the next H100 session (4 x H100, DEP tree ~/mep/w/dep = a03f74981, ~/mep/venv_src).
+# DEP ratio cells for the next H100 session (4 x H100, DEP tree ~/mep/w/dep = d27839459, ~/mep/venv_src).
 # Data: /root/dep_data/t2i1024_k4 (see README: rebuild from the HF shard with build_dataset.py, or rsync).
 # Per level (L1 224 px, L2 448 px, L3 1024 px; seq 2048; the debug model widened to dim 6144; pp2 x vpp4 x tp2 x ep2):
 # DEP off / K2.5 / bubble warmed 2 steps on one cache, 30 timed steps each (steps 12 to 30), one traced step each;

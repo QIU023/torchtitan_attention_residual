@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **09-30 复查（CPU 这边，用户："检查DEP和MoonEP body和diff，现在这两个可以去H100跑了吗？"）：** diff 和 Design 对得上；reduce 前的栅栏语义成立（本 rank 写完槽梯度，再发 all-reduce，当前流等它完成才进 `reduce_grad`）。粘贴区补了两处：Requirements 加一条 bf16（`prefetch_rows` 的权重池固定 bf16，`dispatch_tokens` 把 token 转 bf16），代价那条写明权重预取也跑两次。
 - **09-29 深夜（用户："MoonEP rebase main后 直接覆盖draft PR分支"）：** PR 分支 `k3_moonep_seam` 和 review 分支 `moonep_review1` 都 force-with-lease 推到 `30157477b`，upstream `refs/pull/4751/head` 已是它。旧 PR head `f556ab4fd` 在 `backup/k3_moonep_seam_pre_rewrite_20260928`，旧 review head `1633dcd79` 在 `backup/moonep_review1_pre_20260929b`。
   - 换到 upstream main `46ec3f232` 上，三个提交 `5ae489e21`、`16c6aa691`、`30157477b`，重放没有冲突（range-diff 三个都相同）。
   - 另外在第一个提交里修了新 torch 类型存根下多出的 4 个 pyrefly 错误，只动类型：三个 autograd `Function` 的 `forward` 加 `# pyrefly: ignore[bad-override]`（和同文件的 `backward` 一样）；`torch.autograd.grad` 的输入标成 `list[torch.Tensor]`。
@@ -42,7 +43,8 @@ Requirements and costs:
 
 - Hopper or newer behind an NVSwitch: MoonEP's buffers assert NVLink multicast.
 - MoonEP at its public release (`33327eb`) with `nvidia-cutlass-dsl` 4.6.2, the version it pins; Attention Gym's KDA kernels run on the same version.
-- The expert forward GEMMs run twice per micro-batch, once more than the standard path without activation checkpointing.
+- The weight prefetch and the expert forward GEMMs run twice per micro-batch, since the backward refills the shared pools and recomputes; the standard path without activation checkpointing runs the GEMMs once.
+- Tokens and expert weights enter MoonEP in bf16, the dtype its kernels take, so the routed experts compute in bf16 whatever the training's parameter dtype; the slot gradients are reduced in fp32.
 - Dispatch and combine are not `torch.library` ops like DeepEP's, so model compile breaks the graph at each of them.
 - One single-element all-reduce on the EP group per MoE layer backward, which orders the slot-gradient writes before MoonEP reads them.
 - LoRA on the routed experts is not supported: its adapters cover this rank's experts, not the copies in its slots.
