@@ -1,6 +1,6 @@
 """Vision share of a DEP step and the planner's cost ratio for (seq, images-per-sample cap) settings, from measured times.
 
-Usage: python choose_levels.py <microbench output> <MANIFEST.json> [--ac full]
+Usage: python choose_levels.py <microbench output> <MANIFEST.json> [--ac full] [--per16 3,7,13]
 
 Inputs: microbench_ratio.py's output (per layer forward and backward at seq 2048, the mean middle stage of the split it
 was run for, encode forward and forward + backward per 1024 px image) and the dataset MANIFEST (n_images_counts).
@@ -53,6 +53,15 @@ def main():
             ratio = per_carrier * enc_f / (stage_f * seq / 2048)
             print(f"| {seq} | {cap} | {mean:.2f} | {mean * TOKENS / seq:.0%} | {share:.1%} | "
                   f"{100 - round(share * 100)} : {round(share * 100)} | {ratio:.2f} |")
+    if "--per16" in sys.argv:
+        print()
+        print("seq 2048, one image per carrier, DEPR_IMG_PER16 = k of every 16 samples carry it:")
+        print("| k | vision share of step compute | text : vision | cost ratio |")
+        print("|---:|---:|---|---:|")
+        for k in (int(x) for x in sys.argv[sys.argv.index("--per16") + 1].split(",")):
+            vision = k / 16 * (enc_f + enc_fb)
+            share = vision / (vision + model_2048)
+            print(f"| {k} | {share:.1%} | {100 - round(share * 100)} : {round(share * 100)} | {enc_f / stage_f:.2f} |")
 
 
 if __name__ == "__main__":

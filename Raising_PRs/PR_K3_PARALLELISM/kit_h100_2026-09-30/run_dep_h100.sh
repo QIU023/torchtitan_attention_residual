@@ -1,8 +1,9 @@
 #!/bin/bash
 # DEP on 4 x H100 (09-30 box): the widened debug text (dim 6144, 17 layers) with the released K3 tower (DEPV_TOWER=k3),
 # 1008 px images from t2i1024_k4, full AC, in the layout DEPR_LAYOUT (default pp4vpp4: pp4 x vpp4 x tp1 x ep1, core's
-# 16 stage split; pp2tp2 is the B200 cell without FSDP). LEVELS="name:seq:cap:ratio:mbs ..." from calib.sh's levels.txt,
-# ratio = the planner's cost ratio for that split (vision_dep.bubble_cost_ratio), mbs a comma list of micro-batch counts.
+# 16 stage split; pp2tp2 is the B200 cell without FSDP). LEVELS="name:seq:cap:ratio:mbs[:per16] ..." from calib.sh's
+# levels.txt, ratio = the planner's cost ratio for that split (vision_dep.bubble_cost_ratio), mbs a comma list of
+# micro-batch counts, per16 (optional) = DEPR_IMG_PER16, how many of every 16 samples carry images.
 # Per level and count: DEP off / K2.5 / bubble warmed 2 steps on one cache, 20 timed steps each on a copy, one profiled
 # step (step 10) each; then numerics at the first level and its first count: DEP off twice, K2.5, bubble, seed 42,
 # deterministic, 20 steps on one cache. Results in ~/mep/results/dep_h100_<layout>; pull them as they land.
@@ -21,8 +22,9 @@ run() {  # <name> <config> <cache> <steps> [args...]
   note "$name rc=$rc $(sed 's/\x1b\[[0-9;]*m//g' $D/run.log | grep -a -o 'vision_dep: .*' | head -1)"
 }
 for lvl in $LEVELS; do
-  IFS=: read -r name seq cap ratio mlist <<< "$lvl"
+  IFS=: read -r name seq cap ratio mlist per16 <<< "$lvl"
   export DEPR_SEQ=$seq DEPR_NMAX=$cap DEPV_COST_RATIO=$ratio
+  if [ -n "$per16" ]; then export DEPR_IMG_PER16=$per16; else unset DEPR_IMG_PER16; fi
   for mbs in ${mlist//,/ }; do
     B="--parallelism.num-pp-microbatches $mbs --training.num-tokens-per-train-step $((mbs * seq))"
     T0=$O/cache_${name}_m$mbs; rm -rf $T0; mkdir -p $T0
@@ -43,8 +45,9 @@ for lvl in $LEVELS; do
     rm -rf $O/cc $T0
   done
 done
-IFS=: read -r name seq cap ratio mlist <<< "${LEVELS%% *}"
+IFS=: read -r name seq cap ratio mlist per16 <<< "${LEVELS%% *}"
 export DEPR_SEQ=$seq DEPR_NMAX=$cap DEPV_COST_RATIO=$ratio; mbs=${mlist%%,*}
+if [ -n "$per16" ]; then export DEPR_IMG_PER16=$per16; else unset DEPR_IMG_PER16; fi
 note "numerics at $name M$mbs"
 B="--parallelism.num-pp-microbatches $mbs --training.num-tokens-per-train-step $((mbs * seq))"
 C0=$O/cache_num; rm -rf $C0; mkdir -p $C0

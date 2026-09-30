@@ -11,6 +11,8 @@ Layout: the B200 vision_dep cell without FSDP (pp2 x vpp4 x tp2 x ep2), as kit_h
 the B200 recipe builds its 8 stage split.
 dep_off / dep_k25 / dep_bubble at the debug width; w_* widen the debug model to DEPW_DIM.
 Knobs: DEPR_DATA, DEPR_RES, DEPR_SEQ (tokens per micro-batch, default 2048), DEPR_NMAX (images per sample cap);
+DEPR_IMG_PER16=k (09-30) ignores the stored n_images: k of every 16 consecutive samples (by key index, evenly spread) use
+their stored images up to the cap, the rest are text-only, so each step of 16 micro-batches has exactly k with images;
 DEPV_TOWER=k3 swaps the 2-layer debug tower for the released K3 MoonViT-V2 shape (27 layers, dim 1024, qkv 1536,
 MLP 4096, 12 heads, pos emb 64); DEPV_COST_RATIO sets vision_dep.bubble_cost_ratio (measured encode / stage forward);
 DEPR_AC=full swaps the cell's SelectiveAC for FullAC (the widened model at seq 6144 or more needs it on 80 GB).
@@ -51,11 +53,21 @@ def _images_cap() -> int:
     return min(fit, int(cap)) if cap else fit
 
 
+def _carries_images(key: str) -> bool | None:
+    per16 = os.environ.get("DEPR_IMG_PER16")
+    if per16 is None:
+        return None
+    i, k = int(key.lstrip("s")), int(per16)
+    return (i + 1) * k // 16 > i * k // 16
+
+
 def process_ratio_sample(sample, **kwargs):
     from torchtitan.hf_datasets.multimodal.mm_datasets import _process_mm_sample
 
     meta = sample.get("json") or {}
-    n = min(int(meta.get("n_images", 0)), _images_cap())
+    carries = _carries_images(meta.get("key", ""))
+    stored = int(meta.get("n_images", 0)) if carries is None else (4 if carries else 0)
+    n = min(stored, _images_cap())
     images = [sample[f"img{j}.jpg"] for j in range(n)]
     texts = [None] * n + [sample.get("txt", "")]
     return _process_mm_sample(texts=texts, images=images + [None], **kwargs)
