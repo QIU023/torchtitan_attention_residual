@@ -1,0 +1,9 @@
+nat rc=0
+skew rc=0
+| cell | rc | loss 1 / 10 / 20 | static placement max / mean (mean, worst) | MoonEP dispatches with S x K rows | mean slots used |
+|---|---|---|---|---:|---:|
+   num_moonep_nat: nonzero rows per dispatch min 4096 mean 4096.0 max 4096 (S x K = 4096), 320 / 320 exactly S x K; padded minus the zero-fill counts: min 4096 max 4096
+| num_moonep_nat | - | 8.23281 / - / - | 1.54, 2.15 | 320 / 320 | 1.0 |
+   num_moonep_skew: nonzero rows per dispatch min 4096 mean 4096.0 max 4096 (S x K = 4096), 320 / 320 exactly S x K; padded minus the zero-fill counts: min 4096 max 4096
+| num_moonep_skew | - | 8.23464 / - / - | 3.17, 3.86 | 320 / 320 | 1.9 |
+CHECK_DONE
