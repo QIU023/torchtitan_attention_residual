@@ -1,5 +1,16 @@
 # pytorch PR-194033: get_total_norm dtype + DTensor _foreach_norm strategy -- backup of the rebased branch
 
+## 2026-09-30：修 CI 和 lint（janeyx99 09-30："can you fix the lint and CI so we can land this?"），推到 review 分支
+
+- **状态：** PR 已 Approved。janeyx99 09-28 用 `@pytorchbot rebase -b origin/main` 把 PR 换到 main `9a9b93ace4`，PR 分支 `get-total-norm-dtype` = `6e815dc26d`（我们的 4 个提交加她的 suggestion 提交）；合入失败，Dr. CI 统计 34 个新失败，另有 3 个与本 PR 无关。
+- **原因（原始日志 `ossci-raw-job-status` 上的 job 日志，gzip）：** 34 个全是同一处。`test/test_nn.py` 导入时 `NameError: name 'onlyOn' is not defined`（第 12980 行 `@onlyOn(["cpu", "cuda"])`），所以所有跑 test_nn 的分片（各平台 default、各 Python 版本 dynamo_wrapped）都挂；lint 是 ruff F821 同一行。upstream 的 "[Test] Refactor test/test_nn.py to be device-agnostic [13/N]"（`a7693b8373e`）把 test_nn 里另一处 `@onlyOn(["cuda", "mps"])` 改成 `@onlyAccelerator`，同时从 import 里删了 `onlyOn`；本 PR 没动 import 行，bot 的 rebase 没有文本冲突，留下了没有 import 的 `@onlyOn`（语义冲突）。
+- **修法：** 一行，把 `onlyOn` 加回 `common_device_type` 的 import（`6245bda9bc`，补丁在 `patches_2026-09-30/`）。`onlyOn` 在 main 的 `common_device_type` 里仍然存在；测试只在 CPU 和 CUDA 上跑的理由不变（bf16 期望值是那两种 kernel 在 fp32 累加、舍入到最近偶数的结果），换成 `onlyAccelerator` 会丢掉 CPU、加进 MPS。TEST_DEVICE_BIAS linter 只查 `device="cuda"`、`.cuda()`、`.to("cuda")` 一类写法，不看装饰器参数，CI 的 lint 也只报了 F821。最新 main `7310405016` 上这段 import 和 PR base 一样，`clip_grad.py`、`_math_ops.py` 没变。
+- **本地验证（5060 本机）：**
+  - lint：CI 用的 ruff 0.14.4（`tools/linter/adapters/ruff_linter.py` 头部钉的版本）加仓库的 `pyproject.toml`，PR head 上 1 个错误（F821，12980 行），修复后 All checks passed。
+  - 测试：新建 `/workspace/venv_pr194033`（torch nightly 2.15.0.dev20260928+cu130；原来的 `venv_ptnightly` 是 09-02 的，rebase 后的 test_nn 要 import 它没有的 `IS_APPLE_M1`），把本分支的 `clip_grad.py`、`_math_ops.py` 覆盖进 site-packages（nightly 里这两个文件和 PR base `9a9b93ace4` 的逐字节相同，所以覆盖后等于 base 加本 PR）。PR head 上复现 CI 的 `NameError`；修复后 `python test/test_nn.py -k test_get_total_norm_dtype` 8/8（CPU 4、CUDA 4），`PYTORCH_TEST_WITH_DYNAMO=1` 下也是 8/8；`test/distributed/tensor/test_math_ops.py -k foreach_norm -k foreach_powsum` 4 卡 8/8。
+  - 本地覆盖不到的：Windows、ROCm、macOS、aarch64、ASAN 这些平台，以及 test_nn 全量；CI 里这些分片的失败都是同一个导入时的 NameError。
+- **分支：** review 分支 `get-total-norm-dtype-review1` = `6245bda9bc`（= PR head `6e815dc26d` + 修复，force-with-lease，旧 head `bdbf5318ba` 备份为 `backup/get-total-norm-dtype-review1_pre_20260930`）。PR 分支没动；同步时从 `6e815dc26d` 到 `6245bda9bc` 是 fast-forward，不用 force。回复草稿在 `REPLY_2026-09-30.md`。
+
 ## 2026-09-25：review 分支 `get-total-norm-dtype-review1` 重跑验证（只验证，PR 分支和回复都没动）
 
 **分支：**
