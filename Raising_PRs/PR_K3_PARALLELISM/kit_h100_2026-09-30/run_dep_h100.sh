@@ -8,7 +8,7 @@
 # step (step 10) each; then numerics at the first level and its first count: DEP off twice, K2.5, bubble, seed 42,
 # deterministic, 20 steps on one cache. Results in ~/mep/results/dep_h100_<layout>; pull them as they land.
 M=~/mep; K=~/kit/overnight/dep_ratio; KD=~/kit/kit_h100_2026-09-29/dep; V=$M/venv_src; W=$M/w/dep
-export DEPR_LAYOUT=${DEPR_LAYOUT:-pp4vpp4}; O=$M/results/dep_h100_$DEPR_LAYOUT; P=$O/progress.txt; mkdir -p $O
+export DEPR_LAYOUT=${DEPR_LAYOUT:-pp4vpp4}; O=${OUT:-$M/results/dep_h100_$DEPR_LAYOUT}; P=$O/progress.txt; mkdir -p $O
 export DEPR_DATA=/root/dep_data/t2i1024_k4 DEPR_RES=1024 DEPW_DIM=6144 DEPV_TOWER=k3 DEPR_AC=full NCCL_NVLS_ENABLE=0
 note() { echo "$(date +%H:%M:%S) $*" >> $P; }
 note "dep $(git -C $W rev-parse --short HEAD) layout $DEPR_LAYOUT torch $($V/bin/python -c 'import torch; print(torch.__version__)') levels: $LEVELS"
@@ -45,6 +45,7 @@ for lvl in $LEVELS; do
     rm -rf $O/cc $T0
   done
 done
+if [ "${NUMERICS:-1}" = 0 ]; then note "dep h100 done (no numerics)"; echo done > $O/DONE; exit 0; fi
 IFS=: read -r name seq cap ratio mlist per16 <<< "${LEVELS%% *}"
 export DEPR_SEQ=$seq DEPR_NMAX=$cap DEPV_COST_RATIO=$ratio; mbs=${mlist%%,*}
 if [ -n "$per16" ]; then export DEPR_IMG_PER16=$per16; else unset DEPR_IMG_PER16; fi
