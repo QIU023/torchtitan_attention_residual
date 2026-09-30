@@ -8,7 +8,9 @@ resize_to_navit_patch_grid only shrinks and caps an image at 256 patches).
 
 Layout: the B200 vision_dep cell without FSDP (pp2 x vpp4 x tp2 x ep2), as kit_h100_2026-09-29/dep/dep4.py.
 dep_off / dep_k25 / dep_bubble at the debug width; w_* widen the debug model to DEPW_DIM.
-Knobs: DEPR_DATA, DEPR_RES, DEPR_SEQ (tokens per micro-batch, default 2048), DEPR_NMAX (images per sample cap).
+Knobs: DEPR_DATA, DEPR_RES, DEPR_SEQ (tokens per micro-batch, default 2048), DEPR_NMAX (images per sample cap);
+DEPV_TOWER=k3 swaps the 2-layer debug tower for the released K3 MoonViT-V2 shape (27 layers, dim 1024, qkv 1536,
+MLP 4096, 12 heads, pos emb 64); DEPV_COST_RATIO sets vision_dep.bubble_cost_ratio (measured encode / stage forward).
 """
 
 import os
@@ -101,7 +103,7 @@ def _dataloader():
 
 
 def _widened(attn_backend="flex", converters=None, moe_comm_backend="standard", *, enable_sp, seq_len=None):
-    from torchtitan.models.kimi_k3 import _kimi_k3_config, _vision_encoder_config
+    from torchtitan.models.kimi_k3 import _kimi_k3_config
 
     dim = int(os.environ["DEPW_DIM"])
     s = dim // 256
@@ -112,10 +114,20 @@ def _widened(attn_backend="flex", converters=None, moe_comm_backend="standard", 
         num_heads=4 * s, q_lora_rank=128 * s, kv_lora_rank=64 * s, qk_nope_head_dim=64, qk_rope_head_dim=32,
         v_head_dim=64, kda_head_dim=128, conv_kernel_size=4, dense_hidden_dim=512 * s, latent_dim=128 * s,
         expert_hidden_dim=128 * s, num_experts=8, top_k=2, num_shared_experts=2,
-        vision_encoder=_vision_encoder_config(
-            text_dim=dim, dim=256 * s, qkv_dim=512 * s, hidden_dim=512 * s, num_layers=2, num_heads=4 * s,
-            init_pos_emb_height=32, init_pos_emb_width=32),
+        vision_encoder=_tower(dim, s),
         attn_backend=attn_backend)
+
+
+def _tower(dim: int, s: int):
+    from torchtitan.models.kimi_k3 import _vision_encoder_config
+
+    if os.environ.get("DEPV_TOWER", "debug") == "k3":
+        return _vision_encoder_config(
+            text_dim=dim, dim=1024, qkv_dim=1536, hidden_dim=4096, num_layers=27, num_heads=12,
+            init_pos_emb_height=64, init_pos_emb_width=64)
+    return _vision_encoder_config(
+        text_dim=dim, dim=256 * s, qkv_dim=512 * s, hidden_dim=512 * s, num_layers=2, num_heads=4 * s,
+        init_pos_emb_height=32, init_pos_emb_width=32)
 
 
 def _base(widened: bool = False) -> Trainer.Config:
@@ -141,6 +153,8 @@ def _base(widened: bool = False) -> Trainer.Config:
 def _mode(config: Trainer.Config, enabled: bool, bubble: bool) -> Trainer.Config:
     config.model.vision_dep.enabled = enabled
     config.model.vision_dep.bubble = bubble
+    if os.environ.get("DEPV_COST_RATIO"):
+        config.model.vision_dep.bubble_cost_ratio = float(os.environ["DEPV_COST_RATIO"])
     return config
 
 
