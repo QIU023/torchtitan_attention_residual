@@ -53,10 +53,11 @@ def timing(root):
             if not os.path.exists(log):
                 continue
             rec = steps(log)
-            if not rec:
-                print(f"| {level} | {m} | {label} | failed | | | | | | |")
+            d = durations(rec, 5, 20) if rec else {}
+            if not d:
+                oom = "OutOfMemoryError" in open(log, errors="replace").read()
+                print(f"| {level} | {m} | {label} | failed{' (OOM)' if oom else ''} | | | | | | |")
                 continue
-            d = durations(rec, 5, 20)
             med[key] = t = statistics.median(d.values())
             mean = step_seconds(rec, 5, 20)
             comp = compile_steps(log)

@@ -1,0 +1,340 @@
+W0930 16:27:29.069000 221521 torch/distributed/run.py:982] 
+W0930 16:27:29.069000 221521 torch/distributed/run.py:982] *****************************************
+W0930 16:27:29.069000 221521 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0930 16:27:29.069000 221521 torch/distributed/run.py:982] *****************************************
+[rank1]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank3]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank2]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-09-30 16:27:35,586 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank2]:[titan] 2026-09-30 16:27:35,730 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank1]:[titan] 2026-09-30 16:27:35,696 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank3]:[titan] 2026-09-30 16:27:35,719 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank1]:[titan] 2026-09-30 16:27:36,433 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/structured_logs/training.global_rank_1.20260930-162736-WQT4FJ.jsonl
+[rank3]:[titan] 2026-09-30 16:27:36,488 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/structured_logs/training.global_rank_3.20260930-162736-E4V9N4.jsonl
+[rank0]:[titan] 2026-09-30 16:27:36,515 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/structured_logs/training.global_rank_0.20260930-162736-ZMDSOM.jsonl
+[rank2]:[titan] 2026-09-30 16:27:36,638 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/structured_logs/training.global_rank_2.20260930-162736-U8HK1N.jsonl
+[rank1]:[titan] 2026-09-30 16:27:37,168 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-09-30 16:27:37,242 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank3]:[titan] 2026-09-30 16:27:37,190 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank2]:[titan] 2026-09-30 16:27:37,302 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank2]:[titan] 2026-09-30 16:27:37,980 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank1]:[titan] 2026-09-30 16:27:37,979 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-09-30 16:27:37,977 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank3]:[titan] 2026-09-30 16:27:37,978 - torchtitan.tools.utils - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank2]:[titan] 2026-09-30 16:27:38,999 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank1]:[titan] 2026-09-30 16:27:38,997 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank3]:[titan] 2026-09-30 16:27:38,997 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank0]:[titan] 2026-09-30 16:27:38,998 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=4, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank2]:[titan] 2026-09-30 16:27:39,510 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank2]:[titan] 2026-09-30 16:27:39,514 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank2]:[titan] 2026-09-30 16:27:39,526 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank2]:[titan] 2026-09-30 16:27:39,528 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank2]:[titan] 2026-09-30 16:27:39,528 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank1]:[titan] 2026-09-30 16:27:39,511 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank1]:[titan] 2026-09-30 16:27:39,514 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank1]:[titan] 2026-09-30 16:27:39,524 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank1]:[titan] 2026-09-30 16:27:39,525 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank1]:[titan] 2026-09-30 16:27:39,525 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank3]:[titan] 2026-09-30 16:27:39,507 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank0]:[titan] 2026-09-30 16:27:39,510 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['pp']
+[rank3]:[titan] 2026-09-30 16:27:39,509 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-09-30 16:27:39,513 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-09-30 16:27:39,524 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank3]:[titan] 2026-09-30 16:27:39,520 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank0]:[titan] 2026-09-30 16:27:39,526 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank3]:[titan] 2026-09-30 16:27:39,521 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-09-30 16:27:39,526 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank3]:[titan] 2026-09-30 16:27:39,521 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank3]:[titan] 2026-09-30 16:27:39,720 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-09-30 16:27:39,705 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank3]:[titan] 2026-09-30 16:27:39,725 - torchtitan.models.utils - INFO - Total parameter count: 12,059,226,240, active parameters: 8,885,570,688
+[rank0]:[titan] 2026-09-30 16:27:39,710 - torchtitan.models.utils - INFO - Total parameter count: 12,059,226,240, active parameters: 8,885,570,688
+[rank0]:[titan] 2026-09-30 16:27:39,757 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank3]:[titan] 2026-09-30 16:27:39,772 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank2]:[titan] 2026-09-30 16:27:39,874 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank2]:[titan] 2026-09-30 16:27:39,879 - torchtitan.models.utils - INFO - Total parameter count: 12,059,226,240, active parameters: 8,885,570,688
+[rank2]:[titan] 2026-09-30 16:27:39,926 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 16:27:39,902 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank1]:[titan] 2026-09-30 16:27:39,907 - torchtitan.models.utils - INFO - Total parameter count: 12,059,226,240, active parameters: 8,885,570,688
+[rank1]:[titan] 2026-09-30 16:27:39,951 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank3]:[titan] 2026-09-30 16:27:39,994 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 3 is building stage_idx 3 with modules ['layers.5']
+[rank0]:[titan] 2026-09-30 16:27:39,979 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 0 with modules ['vision_encoder', 'tok_embeddings', 'layers.0']
+[rank0]:[titan] 2026-09-30 16:27:40,063 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 4 with modules ['layers.6']
+[rank2]:[titan] 2026-09-30 16:27:40,147 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 2 is building stage_idx 2 with modules ['layers.3', 'layers.4']
+[rank3]:[titan] 2026-09-30 16:27:40,079 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 3 is building stage_idx 7 with modules ['layers.9']
+[rank0]:[titan] 2026-09-30 16:27:40,146 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 8 with modules ['layers.10']
+[rank3]:[titan] 2026-09-30 16:27:40,164 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 3 is building stage_idx 11 with modules ['layers.13']
+[rank1]:[titan] 2026-09-30 16:27:40,170 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 1 with modules ['layers.1', 'layers.2']
+[rank1]:[titan] 2026-09-30 16:27:40,254 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 5 with modules ['layers.7']
+[rank2]:[titan] 2026-09-30 16:27:40,232 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 2 is building stage_idx 6 with modules ['layers.8']
+[rank0]:[titan] 2026-09-30 16:27:40,228 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 0 is building stage_idx 12 with modules ['layers.14']
+[rank3]:[titan] 2026-09-30 16:27:40,249 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 3 is building stage_idx 15 with modules ['norm', 'lm_head', 'output_res_proj', 'output_res_norm']
+[rank0]:[titan] 2026-09-30 16:27:40,246 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank3]:[titan] 2026-09-30 16:27:40,252 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 16:27:40,247 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 16:27:40,339 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 9 with modules ['layers.11']
+[rank2]:[titan] 2026-09-30 16:27:40,316 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 2 is building stage_idx 10 with modules ['layers.12']
+[rank3]:[titan] 2026-09-30 16:27:40,290 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 16:27:40,316 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank3]:[titan] 2026-09-30 16:27:40,293 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 16:27:40,319 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank3]:[titan] 2026-09-30 16:27:40,297 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 16:27:40,335 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank3]:[titan] 2026-09-30 16:27:40,300 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 16:27:40,337 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank3]:[titan] 2026-09-30 16:27:40,304 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 16:27:40,341 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank3]:[titan] 2026-09-30 16:27:40,305 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank0]:[titan] 2026-09-30 16:27:40,344 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank3]:[titan] 2026-09-30 16:27:40,308 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-09-30 16:27:40,348 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank3]:[titan] 2026-09-30 16:27:40,312 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 16 stages.
+[rank0]:[titan] 2026-09-30 16:27:40,353 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 16 stages.
+[rank1]:[titan] 2026-09-30 16:27:40,424 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 1 is building stage_idx 13 with modules ['layers.15']
+[rank2]:[titan] 2026-09-30 16:27:40,401 - torchtitan.distributed.pipeline_parallel - INFO - PP rank 2 is building stage_idx 14 with modules ['layers.16']
+[rank1]:[titan] 2026-09-30 16:27:40,429 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank2]:[titan] 2026-09-30 16:27:40,406 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank2]:[titan] 2026-09-30 16:27:40,459 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank2]:[titan] 2026-09-30 16:27:40,462 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank2]:[titan] 2026-09-30 16:27:40,466 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 16:27:40,468 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 16:27:40,471 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 16:27:40,480 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank2]:[titan] 2026-09-30 16:27:40,469 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 16:27:40,482 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank2]:[titan] 2026-09-30 16:27:40,473 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 16:27:40,485 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank2]:[titan] 2026-09-30 16:27:40,475 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank1]:[titan] 2026-09-30 16:27:40,487 - torchtitan.distributed.activation_checkpoint - INFO - Applied FullAC activation checkpointing to the model
+[rank2]:[titan] 2026-09-30 16:27:40,479 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank1]:[titan] 2026-09-30 16:27:40,491 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank2]:[titan] 2026-09-30 16:27:40,483 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 16 stages.
+[rank1]:[titan] 2026-09-30 16:27:40,495 - torchtitan.distributed.pipeline_parallel - INFO - Using pipeline schedule Interleaved1F1B with 16 microbatches and 16 stages.
+[rank1]:[titan] 2026-09-30 16:27:41,337 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 4 stage(s) on this rank [1, 5, 9, 13], block transport delta with rank store, vision encodes decoupled
+[rank2]:[titan] 2026-09-30 16:27:41,530 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 4 stage(s) on this rank [2, 6, 10, 14], block transport delta with rank store, vision encodes decoupled
+[rank0]:[titan] 2026-09-30 16:27:41,726 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 4 stage(s) on this rank [0, 4, 8, 12], block transport delta with rank store, vision encodes decoupled
+[rank3]:[titan] 2026-09-30 16:27:41,728 - torchtitan.models.kimi_k3.pipeline_parallel - INFO - Kimi K3 pipeline: 4 stage(s) on this rank [3, 7, 11, 15], block transport delta with rank store, vision encodes decoupled
+[rank3]:[rank3]:W0930 16:27:41.813000 221593 torch/distributed/tensor/_random.py:215] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeline state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank1]:[rank1]:W0930 16:27:41.813000 221591 torch/distributed/tensor/_random.py:215] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeline state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank2]:[rank2]:W0930 16:27:41.813000 221592 torch/distributed/tensor/_random.py:215] DTensor is synchronizing RNG states of every rank with the state from rank 0. This behavior is deprecated. Please call `torch.manual_seed()` on every rank that participates in SPMD DTensor Operations with the same seed. If using Pipeline Parallelism, each pipeline state would use a different seed, but all ranks belonging to one pipeline stage would use the same seed.
+[rank2]:[titan] 2026-09-30 16:27:42,022 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 12,059,226,240 total parameters
+[rank1]:[titan] 2026-09-30 16:27:42,011 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 12,059,226,240 total parameters
+[rank1]:[titan] 2026-09-30 16:27:42,012 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 56 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 16:27:42,012 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=1): 22 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 16:27:42,012 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=2): 22 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank2]:[titan] 2026-09-30 16:27:42,024 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 50 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 16:27:42,013 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=3): 22 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank2]:[titan] 2026-09-30 16:27:42,024 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=1): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 16:27:42,014 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 3[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank2]:[titan] 2026-09-30 16:27:42,024 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=2): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 16:27:42,014 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank2]:[titan] 2026-09-30 16:27:42,024 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=3): 22 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank1]:[titan] 2026-09-30 16:27:42,014 - torchtitan.trainer - INFO - CUDA memory usage for model: 6.82GiB(8.61%)
+[rank2]:[titan] 2026-09-30 16:27:42,026 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 3[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank1]:[titan] 2026-09-30 16:27:42,014 - torchtitan.trainer - INFO - Trainer is initialized with 65536 tokens per DP rank, 65536 tokens per train step, gradient accumulation steps 1, maximum context length 4096, total steps 12 (warmup 2)
+[rank2]:[titan] 2026-09-30 16:27:42,026 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank1]:[titan] 2026-09-30 16:27:42,014 - torchtitan.trainer - INFO - Training starts at step 1
+[rank2]:[titan] 2026-09-30 16:27:42,026 - torchtitan.trainer - INFO - CUDA memory usage for model: 7.25GiB(9.16%)
+[rank1]:[titan] 2026-09-30 16:27:42,014 - torchtitan.observability.profiler - INFO - Profiling active. Traces will be saved at /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/traces
+[rank2]:[titan] 2026-09-30 16:27:42,026 - torchtitan.trainer - INFO - Trainer is initialized with 65536 tokens per DP rank, 65536 tokens per train step, gradient accumulation steps 1, maximum context length 4096, total steps 12 (warmup 2)
+[rank2]:[titan] 2026-09-30 16:27:42,026 - torchtitan.trainer - INFO - Training starts at step 1
+[rank2]:[titan] 2026-09-30 16:27:42,026 - torchtitan.observability.profiler - INFO - Profiling active. Traces will be saved at /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/traces
+[rank3]:[titan] 2026-09-30 16:27:41,995 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 12,059,226,240 total parameters
+[rank3]:[titan] 2026-09-30 16:27:41,996 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank3]:[titan] 2026-09-30 16:27:41,996 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=1): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank3]:[titan] 2026-09-30 16:27:41,997 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=2): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank3]:[titan] 2026-09-30 16:27:41,997 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=3): 4 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank3]:[titan] 2026-09-30 16:27:41,998 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 3[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank3]:[titan] 2026-09-30 16:27:41,998 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank3]:[titan] 2026-09-30 16:27:41,998 - torchtitan.trainer - INFO - CUDA memory usage for model: 5.28GiB(6.66%)
+[rank3]:[titan] 2026-09-30 16:27:41,998 - torchtitan.trainer - INFO - Trainer is initialized with 65536 tokens per DP rank, 65536 tokens per train step, gradient accumulation steps 1, maximum context length 4096, total steps 12 (warmup 2)
+[rank3]:[titan] 2026-09-30 16:27:41,998 - torchtitan.trainer - INFO - Training starts at step 1
+[rank3]:[titan] 2026-09-30 16:27:41,998 - torchtitan.observability.profiler - INFO - Profiling active. Traces will be saved at /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/traces
+[rank0]:[titan] 2026-09-30 16:27:42,113 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 12,059,226,240 total parameters
+[rank0]:[titan] 2026-09-30 16:27:42,115 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=0): 243 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 16:27:42,115 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=1): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 16:27:42,115 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=2): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 16:27:42,116 - torchtitan.components.optimizer.optimizer - INFO - Optimizer AdamW (model_part=3): 28 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-09-30 16:27:42,118 - torchtitan.observability.metrics - WARNING - [31mPipeline Parallel loss is not visible. Please add [33mrank 3[31m to LOG_RANK environment variable in run_train.sh.[39m
+[rank0]:[titan] 2026-09-30 16:27:42,118 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank0]:[titan] 2026-09-30 16:27:42,118 - torchtitan.trainer - INFO - CUDA memory usage for model: 7.27GiB(9.18%)
+[rank0]:[titan] 2026-09-30 16:27:42,118 - torchtitan.trainer - INFO - Trainer is initialized with 65536 tokens per DP rank, 65536 tokens per train step, gradient accumulation steps 1, maximum context length 4096, total steps 12 (warmup 2)
+[rank0]:[titan] 2026-09-30 16:27:42,118 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:[titan] 2026-09-30 16:27:42,118 - torchtitan.observability.profiler - INFO - Profiling active. Traces will be saved at /root/mep/results/dep_h100_pp4vpp4_origlevels/trace_s4096c3_m16_w_dep_k25/out/traces
+[rank1]:[titan] 2026-09-30 16:28:17,230 - torchtitan.models.kimi_k3.pipeline_parallel.vision_dep - INFO - vision_dep: 13 micro-batch(es) with images; encodes 13 before the schedule, 0 in idle slots; backwards 0 in idle slots, 13 after it
+[rank2]:[titan] 2026-09-30 16:28:17,222 - torchtitan.models.kimi_k3.pipeline_parallel.vision_dep - INFO - vision_dep: 13 micro-batch(es) with images; encodes 13 before the schedule, 0 in idle slots; backwards 0 in idle slots, 13 after it
+[rank0]:[titan] 2026-09-30 16:28:17,219 - torchtitan.models.kimi_k3.pipeline_parallel.vision_dep - INFO - vision_dep: 13 micro-batch(es) with images; encodes 13 before the schedule, 0 in idle slots; backwards 0 in idle slots, 13 after it
+[rank3]:[titan] 2026-09-30 16:28:17,225 - torchtitan.models.kimi_k3.pipeline_parallel.vision_dep - INFO - vision_dep: 13 micro-batch(es) with images; encodes 13 before the schedule, 0 in idle slots; backwards 0 in idle slots, 13 after it
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank2]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank2]:  output = self._register_pre_backward_hook(output)
+[rank3]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank3]:  output = self._register_pre_backward_hook(output)
+[rank3]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank3]:  output = self._register_pre_backward_hook(output)
+[rank0]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank0]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank1]:[titan] 2026-09-30 16:28:37,666 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 37.5000  [38;2;54;234;195mmemory: 60.46GiB(76.33%)  [34mtps: 282  [36mtflops: 15.65  [35mmfu: 1.58%[39m
+[rank2]:[titan] 2026-09-30 16:28:37,669 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 37.5000  [38;2;54;234;195mmemory: 69.41GiB(87.63%)  [34mtps: 282  [36mtflops: 15.65  [35mmfu: 1.58%[39m
+[rank3]:[titan] 2026-09-30 16:28:37,616 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss:  8.10407  [38;2;180;60;0mgrad_norm: 37.5000  [38;2;54;234;195mmemory: 63.26GiB(79.86%)  [34mtps: 282  [36mtflops: 15.66  [35mmfu: 1.58%[39m
+[rank3]:[titan] 2026-09-30 16:28:37,632 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank1]:[titan] 2026-09-30 16:28:37,683 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank2]:[titan] 2026-09-30 16:28:37,685 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-09-30 16:28:37,958 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 37.5000  [38;2;54;234;195mmemory: 67.50GiB(85.21%)  [34mtps: 280  [36mtflops: 15.57  [35mmfu: 1.57%[39m
+[rank0]:[titan] 2026-09-30 16:28:37,958 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank1]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank1]:  output = self._register_pre_backward_hook(output)
+[rank2]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank2]:  output = self._register_pre_backward_hook(output)
+[rank3]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank3]:  output = self._register_pre_backward_hook(output)
+[rank3]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank3]:  output = self._register_pre_backward_hook(output)
+[rank0]:[rank0]:[W930 16:28:41.498332997 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 2162688, total: 85049802752).
+[rank2]:[rank2]:[W930 16:28:43.018669407 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 4980736, total: 85049802752).
+[rank0]:[rank0]:[W930 16:28:45.787488046 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 21037056, total: 85049802752).
+[rank2]:[rank2]:[W930 16:28:45.448110016 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 4980736, total: 85049802752).
+[rank0]:[titan] 2026-09-30 16:28:48,414 - torchtitan.observability.metrics - WARNING - 2 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:28:48,414 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 34.7500  [38;2;54;234;195mmemory: 72.23GiB(91.19%)  [34mtps: 1,567  [36mtflops: 87.03  [35mmfu: 8.80%[39m
+[rank3]:[titan] 2026-09-30 16:28:48,407 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss:  6.24993  [38;2;180;60;0mgrad_norm: 34.7500  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 1,518  [36mtflops: 84.33  [35mmfu: 8.53%[39m
+[rank2]:[titan] 2026-09-30 16:28:48,414 - torchtitan.observability.metrics - WARNING - 2 CUDA memory allocation retries.
+[rank2]:[titan] 2026-09-30 16:28:48,414 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 34.7500  [38;2;54;234;195mmemory: 74.51GiB(94.07%)  [34mtps: 1,525  [36mtflops: 84.69  [35mmfu: 8.56%[39m
+[rank1]:[titan] 2026-09-30 16:28:48,413 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 34.7500  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 1,525  [36mtflops: 84.68  [35mmfu: 8.56%[39m
+[rank3]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank3]:  output = self._register_pre_backward_hook(output)
+[rank3]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPKimiK3Model) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank3]:  output = self._register_pre_backward_hook(output)
+[rank2]:/root/mep/venv_src/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank2]:  output = self._register_pre_backward_hook(output)
+[rank0]:[rank0]:[W930 16:28:51.603103786 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 2162688, total: 85049802752).
+[rank0]:[rank0]:[W930 16:28:54.699198487 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 21037056, total: 85049802752).
+[rank2]:[rank2]:[W930 16:28:54.823793209 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85049802752).
+[rank1]:[titan] 2026-09-30 16:28:55,887 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 74.0000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,192  [36mtflops: 121.75  [35mmfu: 12.31%[39m
+[rank2]:[titan] 2026-09-30 16:28:55,889 - torchtitan.observability.metrics - WARNING - 3 CUDA memory allocation retries.
+[rank2]:[titan] 2026-09-30 16:28:55,889 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 74.0000  [38;2;54;234;195mmemory: 74.22GiB(93.70%)  [34mtps: 2,192  [36mtflops: 121.74  [35mmfu: 12.31%[39m
+[rank0]:[titan] 2026-09-30 16:28:55,889 - torchtitan.observability.metrics - WARNING - 4 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:28:55,889 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 74.0000  [38;2;54;234;195mmemory: 72.21GiB(91.16%)  [34mtps: 2,192  [36mtflops: 121.74  [35mmfu: 12.31%[39m
+[rank3]:[titan] 2026-09-30 16:28:55,882 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss:  8.30488  [38;2;180;60;0mgrad_norm: 74.0000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,192  [36mtflops: 121.74  [35mmfu: 12.31%[39m
+[rank0]:[rank0]:[W930 16:28:58.044290452 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 2162688, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:01.704325518 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85049802752).
+[rank0]:[rank0]:[W930 16:29:01.211241696 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 21037056, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:02.819245604 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 4980736, total: 85049802752).
+[rank1]:[titan] 2026-09-30 16:29:03,679 - torchtitan.observability.metrics - INFO - [31mstep:  4  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 47.7500  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,103  [36mtflops: 116.80  [35mmfu: 11.81%[39m
+[rank2]:[titan] 2026-09-30 16:29:03,680 - torchtitan.observability.metrics - WARNING - 5 CUDA memory allocation retries.
+[rank2]:[titan] 2026-09-30 16:29:03,680 - torchtitan.observability.metrics - INFO - [31mstep:  4  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 47.7500  [38;2;54;234;195mmemory: 73.12GiB(92.32%)  [34mtps: 2,103  [36mtflops: 116.80  [35mmfu: 11.81%[39m
+[rank0]:[titan] 2026-09-30 16:29:03,680 - torchtitan.observability.metrics - WARNING - 6 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:29:03,680 - torchtitan.observability.metrics - INFO - [31mstep:  4  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 47.7500  [38;2;54;234;195mmemory: 72.01GiB(90.92%)  [34mtps: 2,103  [36mtflops: 116.80  [35mmfu: 11.81%[39m
+[rank3]:[titan] 2026-09-30 16:29:03,674 - torchtitan.observability.metrics - INFO - [31mstep:  4  [32mloss:  7.16199  [38;2;180;60;0mgrad_norm: 47.7500  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,103  [36mtflops: 116.80  [35mmfu: 11.81%[39m
+[rank0]:[rank0]:[W930 16:29:06.607900266 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 2162688, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:09.576045201 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85049802752).
+[rank0]:[rank0]:[W930 16:29:09.664749735 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 21037056, total: 85049802752).
+[rank3]:[titan] 2026-09-30 16:29:10,865 - torchtitan.observability.metrics - INFO - [31mstep:  5  [32mloss:  8.71452  [38;2;180;60;0mgrad_norm: 190.0000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,278  [36mtflops: 126.54  [35mmfu: 12.79%[39m
+[rank2]:[titan] 2026-09-30 16:29:10,872 - torchtitan.observability.metrics - WARNING - 6 CUDA memory allocation retries.
+[rank1]:[titan] 2026-09-30 16:29:10,870 - torchtitan.observability.metrics - INFO - [31mstep:  5  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 190.0000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,278  [36mtflops: 126.54  [35mmfu: 12.80%[39m
+[rank2]:[titan] 2026-09-30 16:29:10,872 - torchtitan.observability.metrics - INFO - [31mstep:  5  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 190.0000  [38;2;54;234;195mmemory: 74.29GiB(93.80%)  [34mtps: 2,278  [36mtflops: 126.54  [35mmfu: 12.79%[39m
+[rank0]:[titan] 2026-09-30 16:29:10,871 - torchtitan.observability.metrics - WARNING - 8 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:29:10,872 - torchtitan.observability.metrics - INFO - [31mstep:  5  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 190.0000  [38;2;54;234;195mmemory: 71.93GiB(90.82%)  [34mtps: 2,278  [36mtflops: 126.55  [35mmfu: 12.80%[39m
+[rank0]:[rank0]:[W930 16:29:13.891760279 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 2162688, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:14.421213266 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85049802752).
+[rank0]:[rank0]:[W930 16:29:16.102676108 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 21037056, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:17.715456225 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85049802752).
+[rank0]:[titan] 2026-09-30 16:29:18,168 - torchtitan.observability.metrics - WARNING - 10 CUDA memory allocation retries.
+[rank3]:[titan] 2026-09-30 16:29:18,161 - torchtitan.observability.metrics - INFO - [31mstep:  6  [32mloss:  8.66147  [38;2;180;60;0mgrad_norm: 118.5000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,246  [36mtflops: 124.73  [35mmfu: 12.61%[39m
+[rank0]:[titan] 2026-09-30 16:29:18,168 - torchtitan.observability.metrics - INFO - [31mstep:  6  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 118.5000  [38;2;54;234;195mmemory: 72.11GiB(91.04%)  [34mtps: 2,246  [36mtflops: 124.73  [35mmfu: 12.61%[39m
+[rank2]:[titan] 2026-09-30 16:29:18,168 - torchtitan.observability.metrics - WARNING - 8 CUDA memory allocation retries.
+[rank1]:[titan] 2026-09-30 16:29:18,166 - torchtitan.observability.metrics - INFO - [31mstep:  6  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 118.5000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,246  [36mtflops: 124.73  [35mmfu: 12.61%[39m
+[rank2]:[titan] 2026-09-30 16:29:18,168 - torchtitan.observability.metrics - INFO - [31mstep:  6  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 118.5000  [38;2;54;234;195mmemory: 74.45GiB(93.99%)  [34mtps: 2,246  [36mtflops: 124.72  [35mmfu: 12.61%[39m
+[rank0]:[rank0]:[W930 16:29:20.418962474 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 2162688, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:23.392648649 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85049802752).
+[rank0]:[rank0]:[W930 16:29:23.531764672 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 21037056, total: 85049802752).
+[rank1]:[titan] 2026-09-30 16:29:25,930 - torchtitan.observability.metrics - INFO - [31mstep:  7  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 608.0000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,110  [36mtflops: 117.21  [35mmfu: 11.85%[39m
+[rank2]:[titan] 2026-09-30 16:29:25,932 - torchtitan.observability.metrics - WARNING - 9 CUDA memory allocation retries.
+[rank2]:[titan] 2026-09-30 16:29:25,932 - torchtitan.observability.metrics - INFO - [31mstep:  7  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 608.0000  [38;2;54;234;195mmemory: 74.12GiB(93.57%)  [34mtps: 2,111  [36mtflops: 117.22  [35mmfu: 11.85%[39m
+[rank0]:[titan] 2026-09-30 16:29:25,931 - torchtitan.observability.metrics - WARNING - 12 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:29:25,931 - torchtitan.observability.metrics - INFO - [31mstep:  7  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 608.0000  [38;2;54;234;195mmemory: 72.23GiB(91.19%)  [34mtps: 2,110  [36mtflops: 117.21  [35mmfu: 11.85%[39m
+[rank3]:[titan] 2026-09-30 16:29:25,925 - torchtitan.observability.metrics - INFO - [31mstep:  7  [32mloss:  8.45411  [38;2;180;60;0mgrad_norm: 608.0000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,111  [36mtflops: 117.22  [35mmfu: 11.85%[39m
+[rank0]:[rank0]:[W930 16:29:28.226528073 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 14745600, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:30.776778627 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank0]:[rank0]:[W930 16:29:31.427031855 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 12648448, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:32.126112383 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank2]:[titan] 2026-09-30 16:29:33,732 - torchtitan.observability.metrics - WARNING - 11 CUDA memory allocation retries.
+[rank1]:[titan] 2026-09-30 16:29:33,731 - torchtitan.observability.metrics - INFO - [31mstep:  8  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 476.0000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,101  [36mtflops: 116.66  [35mmfu: 11.80%[39m
+[rank2]:[titan] 2026-09-30 16:29:33,732 - torchtitan.observability.metrics - INFO - [31mstep:  8  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 476.0000  [38;2;54;234;195mmemory: 74.47GiB(94.02%)  [34mtps: 2,101  [36mtflops: 116.66  [35mmfu: 11.80%[39m
+[rank0]:[titan] 2026-09-30 16:29:33,732 - torchtitan.observability.metrics - WARNING - 14 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:29:33,732 - torchtitan.observability.metrics - INFO - [31mstep:  8  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 476.0000  [38;2;54;234;195mmemory: 72.03GiB(90.94%)  [34mtps: 2,100  [36mtflops: 116.66  [35mmfu: 11.80%[39m
+[rank3]:[titan] 2026-09-30 16:29:33,725 - torchtitan.observability.metrics - INFO - [31mstep:  8  [32mloss:  7.12969  [38;2;180;60;0mgrad_norm: 476.0000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,100  [36mtflops: 116.66  [35mmfu: 11.80%[39m
+[rank0]:[rank0]:[W930 16:29:36.934312723 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 14745600, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:39.036575958 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank0]:[rank0]:[W930 16:29:39.096560161 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 12648448, total: 85049802752).
+[rank0]:[titan] 2026-09-30 16:29:41,429 - torchtitan.observability.metrics - WARNING - 16 CUDA memory allocation retries.
+[rank0]:USDT:2026-09-30 16:29:41 221590:221590 SyncActivityProfilerHandler.cpp:39] profiler_start
+[rank1]:USDT:2026-09-30 16:29:41 221591:221591 SyncActivityProfilerHandler.cpp:39] profiler_start
+[rank3]:[titan] 2026-09-30 16:29:41,423 - torchtitan.observability.metrics - INFO - [31mstep:  9  [32mloss:  6.65044  [38;2;180;60;0mgrad_norm: 223.0000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,129  [36mtflops: 118.22  [35mmfu: 11.95%[39m
+[rank0]:[titan] 2026-09-30 16:29:41,430 - torchtitan.observability.metrics - INFO - [31mstep:  9  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 223.0000  [38;2;54;234;195mmemory: 72.13GiB(91.06%)  [34mtps: 2,129  [36mtflops: 118.22  [35mmfu: 11.95%[39m
+[rank2]:USDT:2026-09-30 16:29:41 221592:221592 SyncActivityProfilerHandler.cpp:39] profiler_start
+[rank2]:[titan] 2026-09-30 16:29:41,430 - torchtitan.observability.metrics - WARNING - 12 CUDA memory allocation retries.
+[rank1]:[titan] 2026-09-30 16:29:41,429 - torchtitan.observability.metrics - INFO - [31mstep:  9  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 223.0000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,128  [36mtflops: 118.22  [35mmfu: 11.95%[39m
+[rank2]:[titan] 2026-09-30 16:29:41,430 - torchtitan.observability.metrics - INFO - [31mstep:  9  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 223.0000  [38;2;54;234;195mmemory: 72.69GiB(91.77%)  [34mtps: 2,129  [36mtflops: 118.22  [35mmfu: 11.95%[39m
+[rank3]:USDT:2026-09-30 16:29:41 221593:221593 SyncActivityProfilerHandler.cpp:39] profiler_start
+[rank0]:[rank0]:[W930 16:29:44.815505499 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 14745600, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:45.437764987 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank0]:[rank0]:[W930 16:29:47.171677772 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 12648448, total: 85049802752).
+[rank2]:[rank2]:[W930 16:29:48.769424862 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank0]:[titan] 2026-09-30 16:29:49,638 - torchtitan.observability.metrics - WARNING - 18 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:29:49,638 - torchtitan.observability.metrics - INFO - [31mstep: 10  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 268.0000  [38;2;54;234;195mmemory: 72.15GiB(91.09%)  [34mtps: 1,996  [36mtflops: 110.87  [35mmfu: 11.21%[39m
+[rank3]:[titan] 2026-09-30 16:29:49,631 - torchtitan.observability.metrics - INFO - [31mstep: 10  [32mloss:  6.41538  [38;2;180;60;0mgrad_norm: 268.0000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 1,996  [36mtflops: 110.87  [35mmfu: 11.21%[39m
+[rank2]:[titan] 2026-09-30 16:29:49,638 - torchtitan.observability.metrics - WARNING - 14 CUDA memory allocation retries.
+[rank1]:[titan] 2026-09-30 16:29:49,637 - torchtitan.observability.metrics - INFO - [31mstep: 10  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 268.0000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 1,996  [36mtflops: 110.87  [35mmfu: 11.21%[39m
+[rank2]:[titan] 2026-09-30 16:29:49,638 - torchtitan.observability.metrics - INFO - [31mstep: 10  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 268.0000  [38;2;54;234;195mmemory: 74.33GiB(93.85%)  [34mtps: 1,996  [36mtflops: 110.87  [35mmfu: 11.21%[39m
+[rank0]:USDT:2026-09-30 16:29:50 221590:221590 SyncActivityProfilerHandler.cpp:46] profiler_stop
+[rank3]:USDT:2026-09-30 16:29:50 221593:221593 SyncActivityProfilerHandler.cpp:46] profiler_stop
+[rank1]:USDT:2026-09-30 16:29:50 221591:221591 SyncActivityProfilerHandler.cpp:46] profiler_stop
+[rank2]:USDT:2026-09-30 16:29:50 221592:221592 SyncActivityProfilerHandler.cpp:46] profiler_stop
+[rank0]:[titan] 2026-09-30 16:29:52,625 - torchtitan.observability.profiler - INFO - Dumping profiler traces at step 10
+[rank3]:[titan] 2026-09-30 16:29:52,717 - torchtitan.observability.profiler - INFO - Dumping profiler traces at step 10
+[rank1]:[titan] 2026-09-30 16:29:53,340 - torchtitan.observability.profiler - INFO - Dumping profiler traces at step 10
+[rank2]:[titan] 2026-09-30 16:29:53,658 - torchtitan.observability.profiler - INFO - Dumping profiler traces at step 10
+[rank0]:[titan] 2026-09-30 16:30:03,364 - torchtitan.observability.profiler - INFO - Finished dumping profiler traces in 10.74 seconds
+[rank3]:[titan] 2026-09-30 16:30:03,597 - torchtitan.observability.profiler - INFO - Finished dumping profiler traces in 10.88 seconds
+[rank1]:[titan] 2026-09-30 16:30:05,640 - torchtitan.observability.profiler - INFO - Finished dumping profiler traces in 12.30 seconds
+[rank2]:[titan] 2026-09-30 16:30:07,180 - torchtitan.observability.profiler - INFO - Finished dumping profiler traces in 13.52 seconds
+[rank0]:[rank0]:[W930 16:30:09.337020617 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 14745600, total: 85049802752).
+[rank2]:[rank2]:[W930 16:30:12.415727351 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank0]:[rank0]:[W930 16:30:12.517686561 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 12648448, total: 85049802752).
+[rank1]:[titan] 2026-09-30 16:30:14,960 - torchtitan.observability.metrics - INFO - [31mstep: 11  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 46.7500  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 647  [36mtflops: 35.94  [35mmfu: 3.63%[39m
+[rank2]:[titan] 2026-09-30 16:30:14,961 - torchtitan.observability.metrics - WARNING - 15 CUDA memory allocation retries.
+[rank2]:[titan] 2026-09-30 16:30:14,961 - torchtitan.observability.metrics - INFO - [31mstep: 11  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 46.7500  [38;2;54;234;195mmemory: 72.99GiB(92.14%)  [34mtps: 647  [36mtflops: 35.94  [35mmfu: 3.63%[39m
+[rank0]:[titan] 2026-09-30 16:30:14,961 - torchtitan.observability.metrics - WARNING - 20 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:30:14,961 - torchtitan.observability.metrics - INFO - [31mstep: 11  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 46.7500  [38;2;54;234;195mmemory: 72.01GiB(90.91%)  [34mtps: 647  [36mtflops: 35.94  [35mmfu: 3.63%[39m
+[rank3]:[titan] 2026-09-30 16:30:14,954 - torchtitan.observability.metrics - INFO - [31mstep: 11  [32mloss:  6.18631  [38;2;180;60;0mgrad_norm: 46.7500  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 647  [36mtflops: 35.93  [35mmfu: 3.63%[39m
+[rank0]:[rank0]:[W930 16:30:17.798339035 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 14745600, total: 85049802752).
+[rank2]:[rank2]:[W930 16:30:18.354650146 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank0]:[rank0]:[W930 16:30:20.176221581 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 12648448, total: 85049802752).
+[rank2]:[rank2]:[W930 16:30:21.013198345 CUDACachingAllocator.cpp:623] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 11272192, total: 85049802752).
+[rank3]:[titan] 2026-09-30 16:30:22,324 - torchtitan.observability.metrics - INFO - [31mstep: 12  [32mloss:  5.64147  [38;2;180;60;0mgrad_norm: 82.0000  [38;2;54;234;195mmemory: 67.32GiB(84.99%)  [34mtps: 2,223  [36mtflops: 123.48  [35mmfu: 12.49%[39m
+[rank3]:[titan] 2026-09-30 16:30:22,326 - torchtitan.trainer - INFO - Training completed
+[rank1]:[titan] 2026-09-30 16:30:22,330 - torchtitan.observability.metrics - INFO - [31mstep: 12  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 82.0000  [38;2;54;234;195mmemory: 70.50GiB(89.01%)  [34mtps: 2,223  [36mtflops: 123.48  [35mmfu: 12.49%[39m
+[rank1]:[titan] 2026-09-30 16:30:22,331 - torchtitan.trainer - INFO - Training completed
+[rank2]:[titan] 2026-09-30 16:30:22,331 - torchtitan.observability.metrics - WARNING - 17 CUDA memory allocation retries.
+[rank2]:[titan] 2026-09-30 16:30:22,331 - torchtitan.observability.metrics - INFO - [31mstep: 12  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 82.0000  [38;2;54;234;195mmemory: 74.31GiB(93.82%)  [34mtps: 2,223  [36mtflops: 123.48  [35mmfu: 12.49%[39m
+[rank2]:[titan] 2026-09-30 16:30:22,332 - torchtitan.trainer - INFO - Training completed
+[rank0]:[titan] 2026-09-30 16:30:22,331 - torchtitan.observability.metrics - WARNING - 22 CUDA memory allocation retries.
+[rank0]:[titan] 2026-09-30 16:30:22,331 - torchtitan.observability.metrics - INFO - [31mstep: 12  [32mloss: -1.00000  [38;2;180;60;0mgrad_norm: 82.0000  [38;2;54;234;195mmemory: 72.01GiB(90.91%)  [34mtps: 2,223  [36mtflops: 123.48  [35mmfu: 12.48%[39m
+[rank0]:[titan] 2026-09-30 16:30:22,332 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[rank0]:[titan] 2026-09-30 16:30:24,332 - torchtitan.trainer - INFO - Training completed
+[rank2]:[titan] 2026-09-30 16:30:26,952 - __main__ - INFO - Process group destroyed
+[rank1]:[titan] 2026-09-30 16:30:27,039 - __main__ - INFO - Process group destroyed
+[rank0]:[titan] 2026-09-30 16:30:27,202 - __main__ - INFO - Process group destroyed
+[rank3]:[titan] 2026-09-30 16:30:27,210 - __main__ - INFO - Process group destroyed
