@@ -152,3 +152,10 @@ The p=1 reference comparison uses rtol 1e-4: one-pass sum vs norm-of-norms diffe
 - 检查：ruff 0.14.4 干净；CPU 上 4 / 4，`PYTORCH_TEST_WITH_DYNAMO=1` 4 / 4（`venv_pr194033`，两个覆盖文件和分支一致）。CUDA（19:24 UTC，借 SATS-OPRD 会话的 GPU 0）：CPU 加 CUDA 8 / 8，`PYTORCH_TEST_WITH_DYNAMO=1` 8 / 8；整个 test_nn.py 正常导入。
 - 默认实例化的设备（`instantiate_device_type_tests(..., allow_mps=True)`）：CPU、CUDA、PrivateUse1、MPS，没有 meta。
 - 回复草稿 `REPLY_2026-10-01.md`（请 Jane 再批一次 CI），未发。
+
+## 2026-10-01 夜：rebase 并推送（用户："rebase然后把test agnostic的commit也推到PR"）
+
+- 7 个提交 rebase 到上游 `viable/strict` `9db5978ece`（10-01 17:14 UTC），没有冲突；PR 的整体 diff 和 rebase 前 patch-id 相同（4 个文件 +102/−18）。从旧基底 `9a9b93ace4` 到它，上游只有 3 个提交碰了 `test/test_nn.py`（cuDNN RNN、两个 MPS），没改导入行；`clip_grad.py`、`_math_ops.py`、`test_math_ops.py`、`common_device_type.py` 都没动。
+- 检查：4 个文件 ruff 干净；CPU 上 4 / 4，dynamo 4 / 4。CUDA 没有重跑（GPU 归 SATS-OPRD 会话；PR 的 diff 和相关文件都没变，rebase 前的 CUDA 8 / 8 有效）。
+- 推送：先把 PR 原 head `6245bda9bc` 备份到 `backup/get-total-norm-dtype_pre_20261001b`，再 force-with-lease 推 `get-total-norm-dtype` 和 `get-total-norm-dtype-review1` 到 `7f64b20e60`。GitHub 上 #194033 显示 7 个提交、4 个文件，可合并；CI 等维护者批准。
+- 回复草稿 `REPLY_2026-10-01.md` 已改成新的提交号，未发。
