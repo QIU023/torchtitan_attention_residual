@@ -141,3 +141,14 @@ The p=1 reference comparison uses rtol 1e-4: one-pass sum vs norm-of-norms diffe
   - UNSTABLE：两个 `inductor_aoti_fallback` 分片（任务本身标了 unstable）。
 - 本 PR 改的文件（`clip_grad.py`、`_math_ops.py`、`test_nn.py`）相关的任务都通过。Dr. CI 的状态是 "Approved, please fix all CI failures and trigger merge"；flaky / unstable 的失败合并机器人会按 Dr. CI 的分类忽略，评论 `@pytorchbot merge` 即可（对外操作，等用户）。
 - Jane 的建议（测试与设备无关）：现在 `@onlyOn(["cpu", "cuda"])` 是因为测试后半段断言默认 bf16 路径的具体值（258 / 256），依赖 CPU / CUDA 的累加和舍入；前半段（`dtype=float32` 时等于精确值）本身与设备无关。可选改法：去掉 `onlyOn`，后半段的具体值只在 cpu / cuda 上断言，foreach 在 mps / xla 上跳过（同 `test_clip_grad_norm`）。要推到 PR 分支并再请 Jane 批 CI，等用户定。
+
+## 2026-10-01 晚：测试改成与设备无关（用户选方案 B："B 下一个窗口之后借来验证"）
+
+- `53cc0688eb`（review 分支 `get-total-norm-dtype-review1`，快进；PR 分支仍是 `6245bda9bc`，等 CUDA 验证和用户的话）：
+  - 去掉 `@onlyOn(["cpu", "cuda"])` 和 `onlyOn` 的导入（导入行恢复成上游基底 `9a9b93ace4` 的原样）；
+  - foreach 在 MPS 和 XLA 上跳过（同 `test_clip_grad_norm`）；
+  - 默认 bf16 路径的具体值（258 / 256）只在 cpu / cuda 上断言；
+  - `dtype=float32` 的结果改用默认的 float32 容差：去掉 onlyOn 后测试也会在 MPS 上跑，不能假设那边的开方正确舍入；经 bf16 舍入的总和差约 1，默认容差照样会失败。
+- 检查：ruff 0.14.4 干净；CPU 上 4 / 4，`PYTORCH_TEST_WITH_DYNAMO=1` 4 / 4（`venv_pr194033`，两个覆盖文件和分支一致）。CUDA 那一版等 SATS-OPRD 会话 19:20 UTC 左右把 GPU 0 让出来再跑。
+- 默认实例化的设备（`instantiate_device_type_tests(..., allow_mps=True)`）：CPU、CUDA、PrivateUse1、MPS，没有 meta。
+- 回复草稿 `REPLY_2026-10-01.md`（请 Jane 再批一次 CI），未发。
