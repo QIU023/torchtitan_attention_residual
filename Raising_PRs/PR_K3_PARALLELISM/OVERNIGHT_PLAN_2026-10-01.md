@@ -23,8 +23,9 @@
 
 ## 步骤
 
-- 阶段 1（`kit_overnight_2026-10-01/phase1_microbench.sh`）：单卡 microbench，dim 2048，`base` 塔 seq 2048 / 4096 / 8192，`k3` 塔 seq 2048 作对照。
-- 阶段 2：按实测选 3 档（约 0.1、0.2、0.3），每档先 2 步显存冒烟，再 DEP 关 / K2.5 / bubble 各 10 步（同一份暖 cache），记规划日志和步时；一档加 profiler trace。
+- 阶段 1（`kit_overnight_2026-10-01/phase1_microbench.sh`）：单卡 microbench，`base` 塔 seq 2048 / 4096，`k3` 塔 seq 2048 作对照。原计划 dim 2048，单卡放不下（要跑完 17 层），实际用 dim 1024，DEP 也在 dim 1024 上跑。
+- 阶段 2A（`phase2a_placements.sh`）：6 档代价比例（0.13 到 1.31），bubble 模式各 2 步，读规划日志。放置只取决于代价比例和调度，所以不必每档都计时。
+- 阶段 2B（`phase2_dep.sh`，由 `after_2a.sh` 接上）：q19 一档 DEP 关 / K2.5 / bubble，同一份暖 cache，各 12 步，第 10 步 trace，`ana_fill.py` 算藏住的时间。
 - 阶段 3：整理结果到 `DEP_RATIO_5060_2026-10-01.md`，写明天 H100 的档位和脚本。
 
 ## 完成情况（10:20 UTC）
