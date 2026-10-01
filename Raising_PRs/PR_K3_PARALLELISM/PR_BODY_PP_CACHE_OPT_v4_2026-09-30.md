@@ -4,7 +4,8 @@
 
 - **10-01 收尾（用户："这个真的需要吗？？？"，随后"确认PR A现在已经finalize"）：**
   - 第 1 步逐参数梯度在停之前已经跑完（H100，dim 6144，pp4 × vpp2，两棵树同一份暖 cache 的拷贝，裁剪前按字节 sha256）：465 / 465 个参数逐位相同（`kit_h100_2026-09-30/results/pra_floor_grads/grads_cmp.txt`）。按用户的决定（上面那条和 `9460871a`）不进粘贴区，只记在这里。噪声底那一格刚开始就按 pid 停掉了。
-  - 粘贴区只剩一个占位：Design 里的 `<torch issue link>`。torch issue 的草稿在 `TORCH_ISSUE_PP_BUFFERS_2026-09-27.md`，还没提交；提交要你定，或者把那半句删掉。
+  - Design 里 torch issue 那一句（`<torch issue link>`）按用户 10-01 的话先删掉了（"暂时先删掉torch issue那句话"）；torch issue 的草稿仍在 `TORCH_ISSUE_PP_BUFFERS_2026-09-27.md`，没提交。
+  - 用户 10-01：PR A 不 rebase（"不需要rebase PR A"），本地备好的那份（`scratchpad/wt_pra_rb`）不用；#4764、#4765 由另一个会话去 rebase。
   - **分支还不能合并：** #4963（`pp_review_optimize` = `312bc8144`，main `97e673b77`）在 GitHub 上 `mergeable: false`，和新 main `1aaee42bf` 冲突。本地试 rebase（临时工作树 `scratchpad/wt_pra_rb`，没推）：#4656 副本的第二个提交在 `kimi_k3/model.py` 的 import 处冲突（main 加了 `LocalCompileConfig` 那一行，两边都留），另外它带的测试用了被 #4908 删掉的 `model_registry`，改成 `build_model_config("debugmodel")`（3 行，并进那个提交）。结果 `25cfd7230`、`8f4d4cb6d`、`de71f26a3`；PR A 自己的提交和"块改成 list"那个提交 patch-id 和原来相同；PR 的 5 个测试文件 70 passed；pyrefly 17 个，和 main 相同。推上去之后 #4765、#4764 要跟着重叠，所以等你一句话再推。
 - **10-01 Design 改成两级 bullet（用户："这一段话写成简洁 bullet points之类的格式，然后打印并且覆盖到PR A body"）：** 内容和原来两段一致，没有增减事实；GitHub 上 #4963 的 body 需要用粘贴区整段替换。
 - **10-01 数值表列到第 100 步（用户："我的理解是我们要列100步，还要50步"）：** 成对表的列改成第 1 / 10 / 50 / 100 步加"100 步中逐位相同的步数"，和 09-21 的数值表规则一致（C4 数据列到第 100 步）。数从 H100 原始日志重新解析（`kit_pra_min_2026-09-30/tab_numerics.py`，按 rank 分别解析，打印真实 loss 的 rank 每一步都一致），五个布局都是 100 / 100，第 50、100 步的数和最早那张表一致。
@@ -96,8 +97,7 @@ The Kimi K3 pipeline stage keeps each attention-residual block once per pipeline
   - the rank cache, the routing tables and the release point are unchanged.
 - Send waits:
   - a pending send keeps its tensor allocated until it is waited, and torch's action-list runtime waits every send at the end of the step;
-  - the stage waits a forward send at its own backward of that micro-batch, when the receiver has used it;
-  - this belongs in torch (<torch issue link>), and the override goes once torch has it.
+  - the stage waits a forward send at its own backward of that micro-batch, when the receiver has used it.
 
 ## Results
 
