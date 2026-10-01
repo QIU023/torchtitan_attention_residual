@@ -128,7 +128,9 @@ def _install() -> None:
         def moonep_dispatch(self, x_TD, *args, _dispatch=dispatch):
             out = _dispatch(self, x_TD, *args)
             if _CALLS and torch.is_grad_enabled() and not _in_backward():
-                _CALLS[-1]["moonep"] = _moonep_rows(out[2], int(x_TD.shape[0]), out[0])
+                # 10-01: the row statistics must not enter autograd, or AC sees extra saved tensors in the forward only.
+                with torch.no_grad():
+                    _CALLS[-1]["moonep"] = _moonep_rows(out[2], int(x_TD.shape[0]), out[0])
             return out
 
         token_dispatcher.MoonEPTokenDispatcher.dispatch = moonep_dispatch

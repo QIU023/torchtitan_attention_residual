@@ -1,0 +1,17 @@
+numerics (deterministic, one warm cache; cc12m-test is a debug set, so 20 steps)
+| cell | step 1 loss / grad norm | step 5 loss / grad norm | step 10 loss / grad norm | step 20 loss / grad norm | max rel loss gap to standard |
+|---|---:|---:|---:|---:|---:|
+| moonep | 7.99051 / 2.4219 | 6.76481 / 6.9375 | 4.89623 / 7.0938 | 3.63289 / 4.7500 | 4.52e-03 |
+| standard | 7.99051 / 2.4219 | 6.75462 / 7.0000 | 4.89410 / 7.1562 | 3.61653 / 4.7188 | - |
+| standard_b | 7.99051 / 2.4219 | 6.75462 / 7.0000 | 4.89410 / 7.1562 | 3.61653 / 4.7188 | 0.00e+00 |
+| standard_ep2 | 7.99404 / 2.5469 | 6.75775 / 6.6562 | 4.89860 / 6.8438 | 3.62310 / 4.5625 | 1.36e-02 |
+
+peak memory per rank, GiB (numerics cells)
+moonep: r0 0.24, r1 0.23, r2 0.23, r3 0.23
+standard: r0 0.25, r1 0.22, r2 0.24, r3 0.22
+standard_b: r0 0.25, r1 0.22, r2 0.24, r3 0.22
+standard_ep2: r0 0.23, r1 0.22, r2 0.22, r3 0.22
+
+mean step throughput over steps 11-30 (timing cells, not deterministic), tokens/s per rank
+moonep: 859 over 20 steps
+standard: 692 over 20 steps

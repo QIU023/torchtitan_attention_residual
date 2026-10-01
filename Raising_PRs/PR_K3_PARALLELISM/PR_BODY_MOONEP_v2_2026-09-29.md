@@ -2,6 +2,11 @@
 
 ## 状态（不粘贴）
 
+- **10-01 H100 跑完、粘贴区已填，分支移植到新 main（用户："接管，同一个H100，马上跑MoonEP（跑完再记录并且填充moonep PR body）"，随后"你继续排查moonep，我让cpu claude手动审核diff，记得rebase"）：**
+  - H100（09-30 那台，真 MoonEP `33327eb`，SelectiveAC，`24458aa6e`，`MOONEP_H100_2026-09-30.md` 第 6 节）：GPU 测试 5 passed；h100 格 rc 0；数值格第 1 步和 standard 逐位相同、20 步内最大相对差 4.52e-3（EP 2 自身 1.36e-2）；负载格每次 dispatch 都是 S × K（1280 / 1280），步时 MoonEP 0.519 / 0.534 s 对 standard 0.638 / 0.648 s。负载格第一次在 SAC 下失败，是负载探针自己在前向里做了带梯度的统计（已放进 `no_grad`），不是 MoonEP 的问题。
+  - 移植：upstream main 到了 `1aaee42bf`，#4908 删掉了 `make_token_dispatcher_config` 和 `update_ep_token_dispatcher_config`，dispatcher 改由 `TokenDispatcherTransform` 选择。分支在新 main 上重做成两个提交 `949b7b465`、`e30d82886`：`TokenDispatcherTransform` 加 `routed_experts` 字段换专家类；K3-only 和 EP>1 的检查放进 `config/validation.py`；h100 格搬到 `torchtitan_recipes/tests/suites/h100.py`；GPU 测试改用 `convert_config_type` 构造。旧 head 备份在 `backup/moonep_review1_pre_20261001b`。
+  - 检查：CPU 相关 68 passed + 9 subtests；pyrefly 17 个，和干净的 `1aaee42bf` 逐条相同；5060 假包 GPU 测试 5/5；5060 上集成测试入口跑 h100 格 rc 0；recipe 在 CPU 上构造出来是 16 层 MoonEP 专家和 dispatcher、每 rank 512；H100 真 MoonEP 上 GPU 测试 5 passed、h100 格 rc 0。
+  - 已推 `moonep_review1` 和 `k3_moonep_seam`（#4751 head `e30d82886`，draft，GitHub 显示可合并）。粘贴区的 Results 是移植前那棵树上测的，正文里写明了；K3 的 debug recipe 在新 main 上改用 DistMuon，所以新树上同样的格数字会不同。
 - **10-01 SAC 修好（`24458aa6e`，已推 `k3_moonep_seam` 和 `moonep_review1`；细节和 5060 上的检查见 `MOONEP_H100_2026-09-30.md` 第 5 节）：** 三个 `torch.library.custom_op` 加 ORDERED 副作用（SelectiveAC 和 FullAC 缓存不重放），调用处是 `recompute=False` 的 remat region（RegionAC），core 的 AC 文件没动。粘贴区改了 Summary 第一条、Design 第二段、Requirements 的 compile 条、Test plan 的 GPU 测试。Results 仍是 09-30 关 AC 的表；SAC 下的 h100 格要等 H100 用真 MoonEP 跑完（`kit_h100_2026-09-30/moonep_sac_h100.sh`），那台机器现在连不上。修好之后 #4751 是否转 ready 你定。
 - **09-30 H100（115.124.123.240，`ab191a771`，`MOONEP_H100_2026-09-30.md`）：** 粘贴区 Results 填了实测表（关 AC 跑的）。GPU 单测 2 passed，CPU 36 passed（装了 `transformers` 之后）。**但 h100 格子 `kimi_k3_fsdp+moonep` 用 recipe 的 SelectiveAC 在第 1 步反向失败**：SAC 按算子回放 MoonEP 的 `autograd.Function` 内部算子，重算时错位（gate 拿到形状 4 的张量）；关 AC 和 FullAC 都能跑。DeepEP / HybridEP 是 `torch.library` 算子并列在 SAC 的保存列表里，所以没有这个问题。修法（把 MoonEP 的 dispatch / combine / 专家计算注册成库算子并加进保存列表，或别的办法）等你定；修好前 PR 不能转 ready，Requirements 也要补一条。
 - **09-30（用户："现在加一个检查，如果模型不是KimiK3则直接拒绝，第二点暂时不加"）：** PR 分支 `k3_moonep_seam` 和 review 分支 `moonep_review1` 都推到 `ab191a771`（旧 head `30157477b` 在 `backup/k3_moonep_seam_pre_20260930`），upstream `refs/pull/4751/head` 已是它。
@@ -33,12 +38,13 @@
 
 ## Summary
 
-Add MoonEP (MoonshotAI/MoonEP, the expert-parallel transport of the Kimi K3 report), which keeps every rank's routed token count at `S x K` by prefetching copies of hot experts, as `moe_comm_backend="moonep"`, enabled for Kimi K3 only until other models are validated.
+Add MoonEP (MoonshotAI/MoonEP, the expert-parallel transport of the Kimi K3 report), which keeps every rank's routed token count at `S x K` by prefetching copies of hot experts, selected with `TokenDispatcherTransform`, enabled for Kimi K3 only until other models are validated.
 
 - `MoonEPTokenDispatcher` (`models/common/token_dispatcher.py`, beside DeepEP and HybridEP): dispatch and combine through one process-global MoonEP `Buffer`; the buffer and the NVLink pools live in `distributed/moonep/moonep.py`, and `distributed/moonep/ops.py` registers dispatch, the expert computation and combine as `torch.library` ops.
 - `MoonEPRoutedExperts` (`models/common/moe.py`): `RoutedExperts` whose grouped GEMMs run over this rank's experts followed by the expert copies prefetched into its slots, and whose backward reduces the copies' gradients into their home experts.
-- `make_token_dispatcher_config` and `make_routed_experts_config` (`models/common/config_utils.py`): `"moonep"` selects both classes; `update_ep_token_dispatcher_config` fills MoonEP's static per-rank token count the way it fills DeepEP's.
-- `torchtitan_recipes/tests/h100.py`: `kimi_k3_moonep_fsdp4_ep4`, the Kimi K3 debug model at FSDP 4 x EP 4, in the h100 suite.
+- `TokenDispatcherTransform` (`config/transform/token_dispatcher.py`) takes `routed_experts`, which converts every routed-expert config for a dispatcher that needs its own experts; `TokenDispatcherTransform(dispatcher=MoonEPTokenDispatcher, routed_experts=MoonEPRoutedExperts)` selects MoonEP and fills its static per-rank token count the way it fills DeepEP's.
+- `validate_model_training_config` (`config/validation.py`): MoonEP requires expert parallelism, as DeepEP and HybridEP do, and is refused outside Kimi K3.
+- `torchtitan_recipes/tests/suites/h100.py`: `kimi_k3_moonep_fsdp4_ep4`, the Kimi K3 debug model at FSDP 4 x EP 4, in the h100 suite.
 
 ## Design
 
@@ -46,7 +52,7 @@ MoonEP moves expert weights as well as tokens. After dispatch it prefetches the 
 
 Dispatch, the expert computation and combine are `torch.library` ops, and MoonEP's plan crosses them as a CPU id, as DeepEP's handle does; the backward of dispatch is a combine on the same plan, and the backward of combine is a dispatch. A later layer overwrites the shared pools, so the expert op keeps no graph: its backward refills the pools for its own plan, which also keeps interleaved pipeline schedules correct, and recomputes the expert GEMMs. The three ops register an ordered effect, so selective and full activation checkpointing save their outputs instead of replaying them, and under `RegionAC` each one is a region that is always retained: a replay would dispatch again and refill the shared pools. Routing weights are applied in `combine`, as in the standard dispatcher, so the router trains through the same path. MoonEP's `reduce_grad` reads every rank's slot gradients without a barrier of its own, so the backward writes them and runs an all-reduce on the EP group before reducing.
 
-MoonEP sizes its buffer for a static per-rank token count, so every dispatch carries exactly `num_max_tokens_per_rank` tokens, which `update_ep_token_dispatcher_config` derives from the training shape.
+MoonEP sizes its buffer for a static per-rank token count, so every dispatch carries exactly `num_max_tokens_per_rank` tokens, which `TokenDispatcherTransform` derives from the training shape.
 
 Requirements and costs:
 
@@ -57,25 +63,34 @@ Requirements and costs:
 - The ops have no fake implementations, so the MoE layers do not compile with MoonEP.
 - One single-element all-reduce on the EP group per MoE layer backward, which orders the slot-gradient writes before MoonEP reads them.
 - LoRA on the routed experts is not supported: its adapters cover this rank's experts, not the copies in its slots.
-- Kimi K3 only for now: `update_ep_token_dispatcher_config` refuses `moonep` on any other model config. The backend has run end to end on Kimi K3 only, and gpt-oss, for one, builds plain `RoutedExperts` with per-expert biases around the dispatcher the factory returns.
+- Kimi K3 only for now: `validate_model_training_config` refuses MoonEP on any other model config. The backend has run end to end on Kimi K3 only, and gpt-oss, for one, builds plain `RoutedExperts` with per-expert biases.
 
 ## Results
 
-4 H100s behind an NVSwitch, MoonEP `33327eb`, the Kimi K3 debug model with 128 experts and top-8 at FSDP 4 x EP 4, seq 512, activation checkpointing off.
+4 H100s behind an NVSwitch, MoonEP `33327eb`, FSDP 4 x EP 4, seq 512, the recipes' selective activation checkpointing, on this branch at main `97e673b77` before its port to the config transforms (MoonEP's code is the same). The load cells run the Kimi K3 debug model with 128 experts and top-8; the numerics cells keep its 8 experts and top-2.
 
 | routing | static placement: hottest rank over mean, mean over layers (worst) | MoonEP: dispatches with exactly S x K rows on the rank | step time, standard / MoonEP |
 |---|---:|---:|---:|
-| natural | 1.52 (2.23) | 320 of 320 | 0.327 / 0.308 s |
-| biased toward rank 0's experts | 3.19 (3.92) | 320 of 320 | 0.325 / 0.306 s |
+| natural | 1.54 (2.26) | 1280 of 1280 | 0.638 / 0.519 s |
+| biased toward rank 0's experts | 3.19 (3.92) | 1280 of 1280 | 0.648 / 0.534 s |
 
-Static placement is the load each rank would receive with the experts on their home ranks, from the router's counts over 20 steps; S x K is 4096 rows here, counted over 5 steps, 16 MoE layers and 4 ranks. Step time is the mean over steps 11 to 30. On the h100 cell's shape (8 experts, top-2), MoonEP's step-1 loss and grad norm equal standard EP's, and its loss stays within 4.9e-3 of standard EP's over 20 steps, inside the 1.3e-2 that standard EP moves by itself at EP 2 (another reduction order).
+Static placement is the load each rank would receive with the experts on their home ranks, from the router's counts; S x K is 4096 rows here, counted over 20 steps, 16 MoE layers and 4 ranks. Step time is the mean over steps 11 to 30.
+
+Loss / grad norm on the h100 cell's shape, deterministic, one warm compile cache. The debug dataset is 32 samples that the model memorises, so the runs stop at step 20.
+
+| cell | step 1 | step 10 | step 20 | max relative loss gap to standard EP, steps 1 to 20 |
+|---|---:|---:|---:|---:|
+| standard EP | 7.99051 / 2.4219 | 4.89410 / 7.1562 | 3.61653 / 4.7188 | |
+| MoonEP | 7.99051 / 2.4219 | 4.89623 / 7.0938 | 3.63289 / 4.7500 | 4.52e-3 |
+| standard EP again | 7.99051 / 2.4219 | 4.89410 / 7.1562 | 3.61653 / 4.7188 | 0 |
+| standard EP at EP 2, another reduction order | 7.99404 / 2.5469 | 4.89860 / 6.8438 | 3.62310 / 4.5625 | 1.36e-2 |
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_moe.py tests/unit_tests/cpu/test_integration_test_definitions.py -q`: the `moonep` backend builds the MoonEP experts and dispatcher, a Qwen3 MoE config with `moonep` is refused while Kimi K3 gets its per-rank token count, and the h100 suite registers the new cell.
-- `pytest tests/unit_tests/gpu/test_moonep.py -q` (needs the `moonep` package and NVLink multicast): on two GPUs the MoonEP experts match a dense fp32 reference in output, input gradient and expert weight gradients, once with every token routed to one rank's experts, where tokens must reach the prefetch slots, and once with uniform routing; and under SelectiveAC, FullAC and RegionAC, where the dispatch must run once per forward and no plan may outlive its combine.
-- `python -m tests.integration_tests.run_tests <output_dir> --test_suite h100 --test_name "kimi_k3_fsdp+moonep" --ngpu 4`.
-- Load and step time (pending, 4 H100s behind an NVSwitch): the Kimi K3 debug model with 128 experts and top-8 at FSDP 4 x EP 4, standard EP against MoonEP, natural routing and a router biased toward the experts of rank 0. Per MoE layer and micro-batch, the tokens each rank receives with static placement (max over mean) and, on MoonEP, whether every dispatch puts exactly S x K rows on each rank; the step time of each cell.
+- `pytest tests/unit_tests/cpu/test_transforms.py tests/unit_tests/cpu/test_integration_test_definitions.py -q` (44 passed): the transform turns every routed-expert config of Kimi K3 into MoonEP's experts and dispatcher with its per-rank token count, a Qwen3 MoE config with MoonEP is refused, and the h100 suite registers the new cell with expert parallelism.
+- `pytest tests/unit_tests/gpu/test_moonep.py -q` (needs the `moonep` package and NVLink multicast; 5 passed on 2 H100s): on two GPUs the MoonEP experts match a dense fp32 reference in output, input gradient and expert weight gradients, once with every token routed to one rank's experts, where tokens must reach the prefetch slots, and once with uniform routing; and under SelectiveAC, FullAC and RegionAC, where the dispatch must run once per forward and no plan may outlive its combine.
+- `python -m tests.integration_tests.run_tests <output_dir> --test_suite h100 --test_name "kimi_k3_fsdp+moonep" --gpu_arch h100 --ngpu 4` (passes on 4 H100s; 10 steps under the recipe's selective activation checkpointing).
+- Load and step time (the tables above): the Kimi K3 debug model with 128 experts and top-8 at FSDP 4 x EP 4, standard EP against MoonEP, natural routing and a router biased toward the experts of rank 0; per MoE layer and micro-batch, the tokens each rank receives with static placement (max over mean) and, on MoonEP, whether every dispatch puts exactly S x K rows on each rank; the step time of each cell.
 
 ## Relation to earlier revisions of this PR
 
