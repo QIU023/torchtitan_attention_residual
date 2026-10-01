@@ -44,7 +44,7 @@ def main():
     la, lb = losses(os.path.join(root, runs["4656"], "run.log")), losses(os.path.join(root, runs["pra"], "run.log"))
     same = sum(1 for s in la if lb.get(s) == la[s])
     print(f"## {L}: steps with equal loss and grad norm {same} / {len(la)}; one block = {blk:.4f} GiB\n")
-    print("| rank | tree | actions | blocks = tight | blocks - tight, max | at action | paper - blocks, min | hidden sends alive, max | hidden sends only, max | blocks at peak action | tight there | hidden there |")
+    print("| rank | tree | actions | blocks = tight (0.05 block) | blocks - tight, max | at action | paper - blocks, min | hidden sends alive, max | hidden sends only, max | blocks at peak action | tight there | hidden there |")
     print("|---:|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|")
     for tree, run in runs.items():
         for r, d in sorted(ranks(root, run).items()):
@@ -52,7 +52,7 @@ def main():
             if not acts:
                 continue
             diff = [round(n(a["block_gib"] - a["tight_bound_gib"]), 3) for a in acts]
-            eq = sum(1 for x in diff if abs(x) < 1e-3)
+            eq = sum(1 for x in diff if abs(x) < 0.05)
             worst = max(range(len(acts)), key=lambda i: diff[i])
             pk = max(acts, key=lambda a: a["peak_gib"])
             print(

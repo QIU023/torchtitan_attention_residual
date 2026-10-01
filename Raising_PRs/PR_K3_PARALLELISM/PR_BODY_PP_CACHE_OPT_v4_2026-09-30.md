@@ -2,7 +2,19 @@
 
 ## 状态（不粘贴）
 
-- **10-01 待核实：H100 上"超出紧界"的部分可能是 hidden state，不是块。** body 粘贴区的数字还没改。
+- **10-01 复测成立，粘贴区已改（用户："PR A的cache内存下界结果可能不准确，重新按照这个修复"）：**
+  - 探针：`kit_h100_2026-09-30/pra/probe_bound.py` 的 `tracking` 把前向 send 的第 0 个 op 记成 hidden（断言它就是输出 0），不再算进 `block_gib`，另报 `hidden_sends_alive_gib`，以及 `hidden_sends_only_gib`（存储不在任何 stage 输出里的 hidden send）。
+  - 5060 复测（实测，`kit_pra_min_2026-09-30/run_bound_5060.sh`，结果在 `kit_pra_min_2026-09-30/results_5060_1001/`）：T1d 的设置（dim 2048，16 × 2048 个 c4 token，FullAC，seed 42，deterministic，20 步，第 5 步逐动作记账），pp4 × vpp2，`e66a9442b` 对 `312bc8144`，两棵树各用同一份暖 cache 的拷贝。
+    - PR A 的块数：rank 0 到 2 的 64 个动作全部等于紧界；rank 3 有 48 个相等，另外 16 个是最后一个 stage 的前向（7F0 到 7F15），比紧界少 1 块。原因是紧界把最后一个 stage 在前向里完成、当场用掉的那个块也算了，实际没人存它。
+    - PR A 只被 send 扣住的块：每个动作都是 0。
+    - 待等的 hidden send：PR A 最多 10 / 8 / 6 / 4 个，#4656 32 / 32 / 32 / 16 个。两棵树每个动作上都等于按调度数出来的个数：非最后 stage 的每个前向发一个；#4656 到步末才等，PR A 在发送方自己的反向时等。PR A 的 hidden send 一直还被 stage 输出持有（`hidden_sends_only` 为 0）；#4656 在反向之后只剩 send 扣着（32 / 32 / 32 / 16）。
+    - 20 步 loss 和 grad norm 两树相同。
+  - H100 的按块数（推算，`kit_pra_min_2026-09-30/h100_blocks_from_old.py`，输出 `h100_blocks_derived.md`）：旧记录的 `block_gib` 减去按调度数出的待等 hidden 个数乘一个 [T, D]。PR A 上它和"旧 block 减 sends only"每个动作都一致；pp4 × vpp2 两棵树的块数和 5060 实测完全相同（块数只由调度决定，和宽度无关）。PR A 在五个布局的每个动作上都等于紧界，只有最后 stage 的前向少 1 块（pp4 × vpp4 没有这种动作）。
+  - 粘贴区改了两处：
+    - Results 最后一段换成按块计的表：#4656、本 PR、紧界、论文界，两棵树待等的 hidden send 各一列。整卡峰值和每卡省的 GiB 不变。
+    - Design 那句改回 09-30 之前的原句（块在带进来的 stage 反向后释放）。09-30 加的"并且把它继续发出去的前向 send 也等完"是照同一个探针假象加的。按块实测，块就在紧界上释放：继续往下发它的 send 由同一 rank 上序号不小于它的 stage 发出，在那个 stage 的反向时等完，不会晚于带进来的 stage 的反向。
+  - H100 上要不要用修正后的探针直接重测这几个数，你定。body 里写的是 H100 的数，没有引 5060。
+- **10-01 已核实（见上一条）：H100 上"超出紧界"的部分是 hidden state，不是块。**
   - 原因：`pra_bound/probe_bound.py` 的 `tracking` 把每个前向 send 的所有张量都记进 `_SENT`，包括第 0 个 op（hidden state）。`_account` 统计输出时去掉了 `out_tuple[0]`，所以还没等的 hidden send 没有被别处持有，会落进 "sends only"，再被算进 `block_gib`。
   - 本机旁证（`kit_pra_min_2026-09-30/cpu_bound.py`，新加环境变量 `SKIP_HIDDEN`，`345e9e00a` 的树，pp4 × vpp2）：`SKIP_HIDDEN=1` 时四个 rank 超出紧界都是 0；`SKIP_HIDDEN=0` 时是 10 / 8 / 6 / 4 个 [T, D]。H100 pp4 × vpp2 超出紧界 0.24 / 0.18 / 0.14 / 0.10 GiB，按 dim 6144、seq 2048、bf16 一个 [T, D] 是 0.0234 GiB 折算，是 10.3 / 7.7 / 6.0 / 4.3 个，和本机一致。
   - 5060 复测（不需要 H100）：`probe_bound.py` 的 `tracking` 里改成 `for op in list(ops)[1:]`（或者把第 0 个 op 单独记成 hidden），用 T1d 的设置跑 pp4 × vpp2，#4656 `e66a9442b` 对 PR A `312bc8144`，第 5 步逐动作记账。预期 PR A 的块占用在每个动作上都等于紧界。如果成立，Results 里"落在论文界上"那段改成按块算的数，hidden send 另列。整卡峰值的数字不受影响。
@@ -60,7 +72,7 @@ The Kimi K3 pipeline stage keeps each attention-residual block once per pipeline
 
 ## Design
 
-In the stage of #4312 a rank holds a block several times: every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf that lives until its backward, the outgoing payload is another stack, and the rank cache keeps views that pin whole receive buffers and output stacks. With one tensor per block, a received block is its receive buffer and a committed block is the model's own tensor; the rank cache, the stages' inputs and the sends all reference that memory, so a block is freed once the stage that brought it onto the rank has run its backward and the forward send that carried it on has been waited. The rank cache, the routing tables and the release point are unchanged.
+In the stage of #4312 a rank holds a block several times: every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf that lives until its backward, the outgoing payload is another stack, and the rank cache keeps views that pin whole receive buffers and output stacks. With one tensor per block, a received block is its receive buffer and a committed block is the model's own tensor; the rank cache, the stages' inputs and the sends all reference that memory, so a block is freed once the stage that brought it onto the rank has run its backward. The rank cache, the routing tables and the release point are unchanged.
 
 A pending send keeps its tensor allocated until it is waited, and torch's action-list runtime waits every send at the end of the step, which would keep every sent block until then. The stage waits a forward send at its own backward of that micro-batch, when the receiver has used it. This belongs in torch (<torch issue link>); the override goes once torch has it.
 
@@ -86,7 +98,16 @@ Loss and grad norm equal #4656's on all 100 steps in all five layouts:
 | pp2 x vpp2, dim 5120 | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 2.80749 / 4.2188 | 2.45762 / 1.7578 |
 | pp2 x vpp4, dim 5120 | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 2.77905 / 4.0625 | 2.40688 / 1.1328 |
 
-The block memory the pipeline holds in step 5 (the rank cache, the stages' inputs and outputs and the pending forward sends, counted by storage) peaks at 1.78 / 2.63 / 2.32 / 1.80 GiB per rank on #4656 and 0.59 / 0.61 / 0.47 / 0.45 GiB with this PR at pp4 x vpp2, and at 3.84 / 2.81 / 4.73 / 3.49 and 0.87 / 0.77 / 0.87 / 0.77 GiB at pp4 x vpp4; at dim 5120 it goes from 1.37 / 1.13 to 0.25 / 0.21 GiB per pipeline rank at pp2 x vpp2 (with or without dp2) and from 1.91 / 2.50 to 0.33 / 0.33 GiB at pp2 x vpp4. The paper's bound for the same steps, each block of a micro-batch kept once until the rank's last backward of that micro-batch, is 0.52 / 0.61 / 0.52 / 0.54 and 0.73 / 0.68 / 0.82 / 0.77 GiB at dim 6144, and 0.25 / 0.25 and 0.29 / 0.33 GiB at dim 5120.
+Blocks held in step 5 at each rank's peak, in `[T, D]` blocks (24 MiB at dim 6144, 20 MiB at dim 5120): the rank cache, the stages' saved inputs and outputs and the pending forward sends of blocks, counted by storage. The tight bound frees each block at the backward of the stage that brought it onto the rank; the paper's bound keeps every block of a micro-batch until the rank's last backward of that micro-batch. With this PR the blocks equal the tight bound at every forward and backward of the step, except the last stage's forwards at pp4 x vpp2 and in the pp2 layouts, which sit one block below it because the bound also counts the block that stage completes and uses inside its forward.
+
+| layout | #4656 | this PR | tight bound | paper bound | pending hidden-state sends, #4656 | this PR |
+|---|---|---|---|---|---|---|
+| pp4 x vpp2 | 44 / 81 / 69 / 62 | 15 / 18 / 14 / 15 | 15 / 18 / 14 / 15 | 22 / 26 / 22 / 23 | 32 / 32 / 32 / 16 | 10 / 8 / 6 / 4 |
+| pp4 x vpp4 | 100 / 58 / 143 / 102 | 19 / 17 / 23 / 21 | 19 / 17 / 23 / 21 | 31 / 29 / 35 / 33 | 64 / 64 / 64 / 48 | 18 / 16 / 14 / 12 |
+| pp2 x vpp2, dim 5120, with or without dp2 | 38 / 43 | 9 / 9 | 9 / 9 | 13 / 13 | 32 / 16 | 4 / 2 |
+| pp2 x vpp4, dim 5120 | 34 / 81 | 9 / 11 | 9 / 11 | 15 / 17 | 64 / 48 | 8 / 6 |
+
+A hidden-state send carries a stage's output, one `[T, D]` that is not a block, so it is counted apart (one per forward of a stage other than the last, taken out of the step 5 records); its memory is real and is part of the peaks above. With this PR it is waited at the sender's own backward of that micro-batch; on #4656 it stays until the end of the step.
 
 ## Test plan
 
