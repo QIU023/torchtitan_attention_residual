@@ -149,6 +149,6 @@ The p=1 reference comparison uses rtol 1e-4: one-pass sum vs norm-of-norms diffe
   - foreach 在 MPS 和 XLA 上跳过（同 `test_clip_grad_norm`）；
   - 默认 bf16 路径的具体值（258 / 256）只在 cpu / cuda 上断言；
   - `dtype=float32` 的结果改用默认的 float32 容差：去掉 onlyOn 后测试也会在 MPS 上跑，不能假设那边的开方正确舍入；经 bf16 舍入的总和差约 1，默认容差照样会失败。
-- 检查：ruff 0.14.4 干净；CPU 上 4 / 4，`PYTORCH_TEST_WITH_DYNAMO=1` 4 / 4（`venv_pr194033`，两个覆盖文件和分支一致）。CUDA 那一版等 SATS-OPRD 会话 19:20 UTC 左右把 GPU 0 让出来再跑。
+- 检查：ruff 0.14.4 干净；CPU 上 4 / 4，`PYTORCH_TEST_WITH_DYNAMO=1` 4 / 4（`venv_pr194033`，两个覆盖文件和分支一致）。CUDA（19:24 UTC，借 SATS-OPRD 会话的 GPU 0）：CPU 加 CUDA 8 / 8，`PYTORCH_TEST_WITH_DYNAMO=1` 8 / 8；整个 test_nn.py 正常导入。
 - 默认实例化的设备（`instantiate_device_type_tests(..., allow_mps=True)`）：CPU、CUDA、PrivateUse1、MPS，没有 meta。
 - 回复草稿 `REPLY_2026-10-01.md`（请 Jane 再批一次 CI），未发。
