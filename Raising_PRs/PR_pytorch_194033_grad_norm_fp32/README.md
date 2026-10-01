@@ -9,6 +9,8 @@
   - lint：CI 用的 ruff 0.14.4（`tools/linter/adapters/ruff_linter.py` 头部钉的版本）加仓库的 `pyproject.toml`，PR head 上 1 个错误（F821，12980 行），修复后 All checks passed。
   - 测试：新建 `/workspace/venv_pr194033`（torch nightly 2.15.0.dev20260928+cu130；原来的 `venv_ptnightly` 是 09-02 的，rebase 后的 test_nn 要 import 它没有的 `IS_APPLE_M1`），把本分支的 `clip_grad.py`、`_math_ops.py` 覆盖进 site-packages（nightly 里这两个文件和 PR base `9a9b93ace4` 的逐字节相同，所以覆盖后等于 base 加本 PR）。PR head 上复现 CI 的 `NameError`；修复后 `python test/test_nn.py -k test_get_total_norm_dtype` 8/8（CPU 4、CUDA 4），`PYTORCH_TEST_WITH_DYNAMO=1` 下也是 8/8；`test/distributed/tensor/test_math_ops.py -k foreach_norm -k foreach_powsum` 4 卡 8/8。
   - 本地覆盖不到的：Windows、ROCm、macOS、aarch64、ASAN 这些平台，以及 test_nn 全量；CI 里这些分片的失败都是同一个导入时的 NameError。
+- **10-01 复查，有无这一行的对照（`patches_2026-09-30/ab_onlyon.sh`，同一环境只换 `test/test_nn.py`）：** 没有这一行（PR head `6e815dc26d`）：ruff 0.14.4 报 1 个 F821；pytest 收集整个 test_nn.py 报错、0 个用例；PR 的测试 `NameError`。有这一行（`6245bda9bc`）：ruff 全过；收集到 5197 个用例；PR 的测试 8/8；dynamo 模式 8/8；`-k clip_grad -k total_norm` 38 个通过（4 个 skip）；DTensor 4 卡 8/8。远端 review1 = 本地 `6245bda9bc`，和 PR head 只差这一行。
+- **CI 怎么触发：** 09-25 你推送后 pull、Lint、BC Lint、docs-build 四个 workflow 都是 `action_required`（fork 的 PR，作者还没有合入过 PR，要维护者批准才跑）；09-28 那轮是 janeyx99 批准、pytorch-bot 打 ciflow 标签、pytorchmergebot 触发的。bot 文档：`@pytorchbot rebase` 只给 repeat contributor；`@pytorchbot drci` 任何人可用（刷新 Dr. CI）。所以同步 PR 分支后要请 Jane 批准 workflow。
 - **分支：** review 分支 `get-total-norm-dtype-review1` = `6245bda9bc`（= PR head `6e815dc26d` + 修复，force-with-lease，旧 head `bdbf5318ba` 备份为 `backup/get-total-norm-dtype-review1_pre_20260930`）。PR 分支没动；同步时从 `6e815dc26d` 到 `6245bda9bc` 是 fast-forward，不用 force。回复草稿在 `REPLY_2026-09-30.md`。
 
 ## 2026-09-25：review 分支 `get-total-norm-dtype-review1` 重跑验证（只验证，PR 分支和回复都没动）
