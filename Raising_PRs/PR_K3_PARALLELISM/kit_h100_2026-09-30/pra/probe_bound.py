@@ -239,6 +239,46 @@ def _install() -> None:
             json.dump({"rank": rank, "records": _RECORDS, "actions": _ACTIONS}, f)
 
     atexit.register(dump)
+    _install_grad_dump()
+
+
+def _install_grad_dump() -> None:
+    """10-01: with PPMEM_GRAD_DUMP=<dir>, write every parameter's step-1 gradient hash per rank, before clipping."""
+    out = os.environ.get("PPMEM_GRAD_DUMP")
+    if not out:
+        return
+    import hashlib
+
+    from torchtitan.training_engine import TrainingEngine
+
+    step = TrainingEngine.optim_step
+
+    def dump_then_step(self):
+        if self.num_completed_steps == 0:
+            record = {}
+            for part in self.model_parts:
+                for name, param in part.named_parameters():
+                    grad = param.grad
+                    if grad is None:
+                        record[name] = None
+                        continue
+                    if hasattr(grad, "to_local"):
+                        grad = grad.to_local()
+                    flat = grad.detach().contiguous().reshape(-1)
+                    record[name] = {
+                        "dtype": str(flat.dtype),
+                        "shape": list(grad.shape),
+                        "sha256": hashlib.sha256(flat.view(torch.uint8).cpu().numpy().tobytes()).hexdigest(),
+                        "norm": float(flat.float().norm()),
+                    }
+            rank = int(os.environ.get("RANK", "0"))
+            os.makedirs(out, exist_ok=True)
+            with open(os.path.join(out, f"rank{rank}.json"), "w") as f:
+                json.dump(record, f)
+            print(f"PPMEM_GRAD_DUMP rank {rank}: {len(record)} parameters", flush=True)
+        return step(self)
+
+    TrainingEngine.optim_step = dump_then_step
 
 
 def _widened_model(dim: int, seq: int):

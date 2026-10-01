@@ -2,6 +2,13 @@
 
 ## 状态（不粘贴）
 
+- **10-01 数值表列到第 100 步（用户："我的理解是我们要列100步，还要50步"）：** 成对表的列改成第 1 / 10 / 50 / 100 步加"100 步中逐位相同的步数"，和 09-21 的数值表规则一致（C4 数据列到第 100 步）。数从 H100 原始日志重新解析（`kit_pra_min_2026-09-30/tab_numerics.py`，按 rank 分别解析，打印真实 loss 的 rank 每一步都一致），五个布局都是 100 / 100，第 50、100 步的数和最早那张表一致。
+  - 还差的两项已经排在 H100 上（09-30 那台，`kit_h100_2026-09-30/pra/run_pra_floor_grads.sh`，等 MoonEP 那一轮跑完自动开始，结果在 `~/mep/results/pra_floor_grads`）：
+    1. 第 1 步逐参数梯度：pp4 × vpp2 两棵树在同一份暖 cache 的拷贝上各跑 1 步，在裁剪之前把每个参数的梯度按字节做 sha256（探针的 `PPMEM_GRAD_DUMP`，5060 上 dim 1024 冒烟过：4 个 rank 465 个参数）。填粘贴区那行的 `<N> / <N>`。
+    2. 噪声底：#4656 在 pp4 × vpp2 用一份全新的空 compile cache 跑 100 步，其余和表里那一格相同（第 5 步逐动作记账也开着，只记显存，不改数值）。填 `<floor>` 那一行。
+  - 回复 reviewer 时可用的要点（不进粘贴区）：本 PR 只改块存在哪里（拷贝变成引用），每个运算的输入值不变；梯度累加的顺序理论上可能变，所以不靠推理，靠实测：第 1 步 loss 和逐参数梯度逐位相同，五个布局 100 步全部逐位相同，噪声底那一行说明这个结果不是平凡相等。
+  - reviewer 可能会问：pp4 × vpp2 的参照树自己在第 10 步 grad norm 就是 1040（两棵树相同，是这套设置本身的尖峰）；dp2 × pp2 × vpp2 第 100 步 grad norm 15.75 也是两棵树相同。被问到再答，不写进正文。
+
 - **10-01 数值表改成成对的（用户："Loss and grad norm equal #4656's ... 没有和原始PR的对比表吗？如何说服reviewer它数值没问题？？"）：** 原来只列了 PR A 一行，加一句"和 #4656 相等"，而且列了第 50、100 步。现在按数值表规则改：每个布局"不含本 PR / 本 PR"成对两行，同一份暖 cache、同 seed 同数据（H100 原始日志 `kit_h100_2026-09-30/results/pra_h100*/` 重新解析，dp2 × pp2 × vpp2 按 rank 分开解析，五个布局都是 100/100 逐位相同）；只列第 1 / 10 / 20 步，"100 步全同"用计数列表达，后面的步不列。
   - 还缺两项，都要 GPU（5060 也行，只是要和表的设置一致，最好在 H100 上）：
     1. 噪声底一行：#4656 在 pp4 × vpp2 用一份新的 compile cache 再跑 20 步，看换 cache 本身让第 3 / 10 步变多少。没有这一行，reviewer 不知道"逐位相同"是不是平凡的。
@@ -92,21 +99,21 @@ A pending send keeps its tensor allocated until it is waited, and torch's action
 | pp2 x vpp2, dim 5120 | 67.85 / 49.77 | 66.60 / 48.75 | 1.25 / 1.02 | 5.231 / 5.271 s |
 | pp2 x vpp4, dim 5120 | 67.31 / 52.72 | 65.69 / 50.65 | 1.62 / 2.07 | 5.345 / 5.252 s |
 
-Loss / grad norm with and without this PR (without it is the tree of the two #4656 commits below, whose pipeline stage is main's), each pair on one shared warm compile cache with the same seed and data. The reference is #4656 run a second time on a fresh compile cache, the noise floor of this setup.
+Loss / grad norm with and without this PR (without it is the tree of the two #4656 commits below, whose pipeline stage is main's), each pair on one shared warm compile cache with the same seed and data; the last column counts the steps of the 100 whose loss and grad norm are identical. The third pp4 x vpp2 row runs the tree without this PR again on a fresh compile cache, the noise floor of this setup.
 
-| layout | tree | step 1 | step 10 | step 20 | steps identical to without |
-|---|---|---:|---:|---:|---:|
-| pp4 x vpp2 | without this PR | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 3.88571 / 13.6875 | |
-| pp4 x vpp2 | this PR | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 3.88571 / 13.6875 | 100 / 100 |
-| pp4 x vpp2 | without this PR, fresh compile cache | <floor> | <floor> | <floor> | <floor> / 100 |
-| pp4 x vpp4 | without this PR | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 3.72421 / 13.8750 | |
-| pp4 x vpp4 | this PR | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 3.72421 / 13.8750 | 100 / 100 |
-| dp2 x pp2 x vpp2, dim 5120 | without this PR | 8.06354 / 24.3750 | 6.34372 / 14.5000 | 3.63619 / 9.8125 | |
-| dp2 x pp2 x vpp2, dim 5120 | this PR | 8.06354 / 24.3750 | 6.34372 / 14.5000 | 3.63619 / 9.8125 | 100 / 100 |
-| pp2 x vpp2, dim 5120 | without this PR | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 3.63455 / 17.5000 | |
-| pp2 x vpp2, dim 5120 | this PR | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 3.63455 / 17.5000 | 100 / 100 |
-| pp2 x vpp4, dim 5120 | without this PR | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 4.06530 / 13.0000 | |
-| pp2 x vpp4, dim 5120 | this PR | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 4.06530 / 13.0000 | 100 / 100 |
+| layout | tree | step 1 | step 10 | step 50 | step 100 | steps identical to without |
+|---|---|---:|---:|---:|---:|---:|
+| pp4 x vpp2 | without this PR | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 2.93439 / 4.9375 | 2.66764 / 1.5859 | |
+| pp4 x vpp2 | this PR | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 2.93439 / 4.9375 | 2.66764 / 1.5859 | 100 / 100 |
+| pp4 x vpp2 | without this PR, fresh compile cache | <floor> | <floor> | <floor> | <floor> | <floor> / 100 |
+| pp4 x vpp4 | without this PR | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 2.75488 / 4.9375 | 2.43219 / 1.2266 | |
+| pp4 x vpp4 | this PR | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 2.75488 / 4.9375 | 2.43219 / 1.2266 | 100 / 100 |
+| dp2 x pp2 x vpp2, dim 5120 | without this PR | 8.06354 / 24.3750 | 6.34372 / 14.5000 | 2.74512 / 3.9688 | 2.25450 / 15.7500 | |
+| dp2 x pp2 x vpp2, dim 5120 | this PR | 8.06354 / 24.3750 | 6.34372 / 14.5000 | 2.74512 / 3.9688 | 2.25450 / 15.7500 | 100 / 100 |
+| pp2 x vpp2, dim 5120 | without this PR | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 2.80749 / 4.2188 | 2.45762 / 1.7578 | |
+| pp2 x vpp2, dim 5120 | this PR | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 2.80749 / 4.2188 | 2.45762 / 1.7578 | 100 / 100 |
+| pp2 x vpp4, dim 5120 | without this PR | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 2.77905 / 4.0625 | 2.40688 / 1.1328 | |
+| pp2 x vpp4, dim 5120 | this PR | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 2.77905 / 4.0625 | 2.40688 / 1.1328 | 100 / 100 |
 
 Step 1 gradients at pp4 x vpp2, with and without this PR on the shared cache: <N> / <N> parameters bitwise equal.
 

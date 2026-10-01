@@ -13,7 +13,7 @@ note "tree $(git -C $T rev-parse --short HEAD) dirty=$(git -C $T status --short 
 ( cd $T && CUDA_VISIBLE_DEVICES=0,1 timeout 1800 python -m pytest tests/unit_tests/gpu/test_moonep.py -q -rA > $O/gpu_test.log 2>&1 )
 note "gpu test rc=$? $(tail -1 $O/gpu_test.log)"
 ( cd $T && timeout 3600 python -m tests.integration_tests.run_tests $O/ci --test_suite h100 \
-    --test_name "kimi_k3_fsdp+moonep" --ngpu 4 > $O/ci.log 2>&1 )
+    --test_name "kimi_k3_fsdp+moonep" --gpu_arch h100 --ngpu 4 > $O/ci.log 2>&1 )
 note "h100 cell rc=$?"
 cell() {  # <name> <config> <cache> <steps> [extra args...]
   local name=$1 cfg=$2 cache=$3 steps=$4; shift 4; local D=$O/$name; rm -rf $D; mkdir -p $D
