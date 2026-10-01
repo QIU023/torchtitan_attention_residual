@@ -79,11 +79,13 @@ def _account() -> dict:
             outputs.update(_storages(list(out_tuple)[1:]))
         for infos in list(stage.args_recv_info.values()) + list(stage.grad_recv_info.values()):
             recv.update(_storages(getattr(i, "buffer", None) for i in (infos or ())))
+    hidden_outputs = {}
     for stage in _STAGES:
         if not stage.is_last:
             for out_tuple, _ in stage.fwd_cache.values():
                 outputs.update(_storages(list(out_tuple)[1:]))
-    alive_sent = {"fwd": {}, "bwd": {}}
+                hidden_outputs.update(_storages(list(out_tuple)[:1]))
+    alive_sent = {"fwd": {}, "bwd": {}, "hidden": {}}
     for ref, kind in _SENT:
         t = ref()
         if t is not None:
@@ -102,6 +104,8 @@ def _account() -> dict:
         "stage_outputs_gib": sum(v for k, v in outputs.items() if k not in store_blocks and k not in inputs) / gib,
         "fwd_sends_only_gib": sum(sends_only.values()) / gib,
         "bwd_sends_alive_gib": sum(alive_sent["bwd"].values()) / gib,
+        "hidden_sends_alive_gib": sum(alive_sent["hidden"].values()) / gib,
+        "hidden_sends_only_gib": sum(v for k, v in alive_sent["hidden"].items() if k not in hidden_outputs) / gib,
         "recv_buffers_gib": sum(recv.values()) / gib,
         "deposits_gib": sum(deposits.values()) / gib,
         "tight_bound_gib": sum(_TIGHT.values()) / gib,
@@ -163,12 +167,20 @@ def _install() -> None:
     cache.PPRankLocalCache.__init__ = store_init_and_register
 
     def tracking(kind: str, original):
+        # 10-01 fix: a forward send's op 0 carries output 0, the hidden state, which is not a block. It used to be
+        # recorded as "fwd", and since _account leaves out_tuple[0] out of the stage outputs, a pending hidden send
+        # landed in "sends only" and in block_gib. It is now its own kind, reported as hidden_sends_*.
         def get_ops(self, chunk_id, *args, **kwargs):
             ops = original(self, chunk_id, *args, **kwargs)
             if len(_RECORDS) == step:
-                for op in ops:
+                for i, op in enumerate(ops):
                     t = getattr(op, "tensor", None)
-                    if isinstance(t, torch.Tensor):
+                    if not isinstance(t, torch.Tensor):
+                        continue
+                    if kind == "fwd" and i == 0:
+                        assert t.data_ptr() == self.fwd_cache[chunk_id][0][0].data_ptr(), "op 0 is not output 0"
+                        _SENT.append((weakref.ref(t), "hidden"))
+                    else:
                         _SENT.append((weakref.ref(t), kind))
             return ops
 
