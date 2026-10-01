@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-01 Design 改成两级 bullet（用户："这一段话写成简洁 bullet points之类的格式，然后打印并且覆盖到PR A body"）：** 内容和原来两段一致，没有增减事实；GitHub 上 #4963 的 body 需要用粘贴区整段替换。
 - **10-01 数值表列到第 100 步（用户："我的理解是我们要列100步，还要50步"）：** 成对表的列改成第 1 / 10 / 50 / 100 步加"100 步中逐位相同的步数"，和 09-21 的数值表规则一致（C4 数据列到第 100 步）。数从 H100 原始日志重新解析（`kit_pra_min_2026-09-30/tab_numerics.py`，按 rank 分别解析，打印真实 loss 的 rank 每一步都一致），五个布局都是 100 / 100，第 50、100 步的数和最早那张表一致。
   - 用户 10-01：第 1 步逐参数梯度和噪声底这两项不需要，粘贴区里的噪声底那一行、第 1 步梯度那一句和表头那句说明已删。H100 上排的 `kit_h100_2026-09-30/pra/run_pra_floor_grads.sh` 可以撤掉，没撤也不用它的结果。
   - 回复 reviewer 时可用的要点（不进粘贴区）：本 PR 只改块存在哪里（拷贝变成引用），每个运算的输入值不变；梯度累加的顺序理论上可能变，所以不靠推理，靠实测：第 1 步 loss 和逐参数梯度逐位相同，五个布局 100 步全部逐位相同，噪声底那一行说明这个结果不是平凡相等。
@@ -81,9 +82,18 @@ The Kimi K3 pipeline stage keeps each attention-residual block once per pipeline
 
 ## Design
 
-In the stage of #4312 a rank holds a block several times: every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf that lives until its backward, the outgoing payload is another stack, and the rank cache keeps views that pin whole receive buffers and output stacks. With one tensor per block, a received block is its receive buffer and a committed block is the model's own tensor; the rank cache, the stages' inputs and the sends all reference that memory, so a block is freed once the stage that brought it onto the rank has run its backward. The rank cache, the routing tables and the release point are unchanged.
-
-A pending send keeps its tensor allocated until it is waited, and torch's action-list runtime waits every send at the end of the step, which would keep every sent block until then. The stage waits a forward send at its own backward of that micro-batch, when the receiver has used it. This belongs in torch (<torch issue link>); the override goes once torch has it.
+- Before this PR (the stage of #4312), a rank holds each block several times:
+  - every stage stacks the blocks it reads into a fresh `[T, N, D]` leaf that lives until its backward;
+  - the outgoing payload is a second stack;
+  - the rank cache keeps views that pin whole receive buffers and output stacks.
+- With this PR, one tensor per block:
+  - a received block is its receive buffer, and a committed block is the model's own tensor;
+  - the rank cache, the stages' inputs and the sends all reference that memory, so a block is freed once the stage that brought it onto the rank has run its backward;
+  - the rank cache, the routing tables and the release point are unchanged.
+- Send waits:
+  - a pending send keeps its tensor allocated until it is waited, and torch's action-list runtime waits every send at the end of the step;
+  - the stage waits a forward send at its own backward of that micro-batch, when the receiver has used it;
+  - this belongs in torch (<torch issue link>), and the override goes once torch has it.
 
 ## Results
 
