@@ -2,6 +2,10 @@
 
 ## 状态（不粘贴）
 
+- **10-01 待核实：H100 上"超出紧界"的部分可能是 hidden state，不是块。** body 粘贴区的数字还没改。
+  - 原因：`pra_bound/probe_bound.py` 的 `tracking` 把每个前向 send 的所有张量都记进 `_SENT`，包括第 0 个 op（hidden state）。`_account` 统计输出时去掉了 `out_tuple[0]`，所以还没等的 hidden send 没有被别处持有，会落进 "sends only"，再被算进 `block_gib`。
+  - 本机旁证（`kit_pra_min_2026-09-30/cpu_bound.py`，新加环境变量 `SKIP_HIDDEN`，`345e9e00a` 的树，pp4 × vpp2）：`SKIP_HIDDEN=1` 时四个 rank 超出紧界都是 0；`SKIP_HIDDEN=0` 时是 10 / 8 / 6 / 4 个 [T, D]。H100 pp4 × vpp2 超出紧界 0.24 / 0.18 / 0.14 / 0.10 GiB，按 dim 6144、seq 2048、bf16 一个 [T, D] 是 0.0234 GiB 折算，是 10.3 / 7.7 / 6.0 / 4.3 个，和本机一致。
+  - 5060 复测（不需要 H100）：`probe_bound.py` 的 `tracking` 里改成 `for op in list(ops)[1:]`（或者把第 0 个 op 单独记成 hidden），用 T1d 的设置跑 pp4 × vpp2，#4656 `e66a9442b` 对 PR A `312bc8144`，第 5 步逐动作记账。预期 PR A 的块占用在每个动作上都等于紧界。如果成立，Results 里"落在论文界上"那段改成按块算的数，hidden send 另列。整卡峰值的数字不受影响。
 - **10-01 压成一个提交并推送（用户："压到一个之后push到PR分支和review分支"）：** #4963 的 head 分支就是 `pp_review_optimize`（PR 分支和 review 分支是同一个）。`36cfddf87` + `345e9e00a` 压成 `312bc8144`（父提交是 #4656 的 `e66a9442b`，树和 `345e9e00a` 逐字相同，提交信息用 `8b0fcbe38` 那条，没有 trailer），force-with-lease 推送；旧 head 备份在 `backup/pp_review_optimize_pre_20260930b`（`..._20260930` 已经是 `5a8163a58`）。#4963 现在是 #4656 的两个提交加这一个。GitHub 上的 body 还是旧的，要用下面的粘贴区替换。#4765、#4764 还叠在 `36cfddf87` 上，下一步重叠。
 - **09-30 H100 结果已填进粘贴区（`PRA_H100_2026-09-30.md`）：** Results 放了 dim 6144 的两个 4 卡布局（100 步逐位一致，每卡省 1.3 到 3.8 GiB，步时快约 2%，块占用落在论文界上）。dp2 × pp2 × vpp2、pp2 × vpp2、pp2 × vpp4 在 6144 下两个树都 OOM，dim 5120 补跑的三行也已填上（100 步逐位一致，每卡省 1.0 到 2.1 GiB）。Design 改了一句：原文"块在带进来的 stage 反向后就释放"，实测块占用在论文界上、没到紧界，差的是前向 send 要到发送方自己反向时才等，所以改成"带进来的 stage 反向完、并且把它继续发出去的前向 send 也等完之后释放"。要不要这样写你定。
 - **09-30 H100（115.124.123.240，`345e9e00a`，`PRA_H100_2026-09-30.md`）：** Test plan 五个文件在 H100 机器上 70 passed（基线 `e66a9442b` 也是 70 passed，含要 CuTeDSL 的 recompute 测试），粘贴区的 `<N>` 已填。dim 6144 的显存实验在跑，Results 等它。

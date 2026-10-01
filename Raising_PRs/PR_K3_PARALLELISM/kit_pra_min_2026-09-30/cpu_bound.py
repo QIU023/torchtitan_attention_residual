@@ -79,7 +79,7 @@ def worker(rank, tree, stack_mode, store_file, out_file):
     def tracked_send(self, chunk, *a, **k):
         ops = base_send(self, chunk, *a, **k)
         if recording[0]:
-            for op in list(ops)[1:]:
+            for op in list(ops)[int(os.environ.get("SKIP_HIDDEN", "1")):]:
                 t = getattr(op, "tensor", None)
                 if isinstance(t, torch.Tensor):
                     sent.append(weakref.ref(t))
