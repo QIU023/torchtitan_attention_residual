@@ -1,5 +1,5 @@
 """Local recipes for tonight's smoke (never committed): the h100 MoonEP cell, and the
-same cell on the standard and DeepEP backends. MOONEP_AC=none or full (09-30) replaces
+same cell on the standard and DeepEP backends. MOONEP_AC=none, full (09-30) or typecheck (10-01, SPMD type checking on, AC off) replaces
 the recipe's SelectiveAC, which fails on real MoonEP in the recompute."""
 
 import os
@@ -15,6 +15,18 @@ def _ac(config: Trainer.Config) -> Trainer.Config:
         from torchtitan.distributed.activation_checkpoint import FullAC
 
         config.activation_checkpoint = FullAC.Config()
+    elif mode == "typecheck":
+        import spmd_types.checker as checker
+        from torchtitan_recipes.tests import _set_spmd_typechecking
+
+        entered = checker.typecheck
+
+        def announced(*args, **kwargs):
+            print("MOONEP_TYPECHECK entered", flush=True)
+            return entered(*args, **kwargs)
+
+        checker.typecheck = announced
+        _set_spmd_typechecking(config, typechecking=True)
     return config
 
 

@@ -48,7 +48,13 @@ def _record_call(module, x_TD, counts_E) -> None:
 def _moonep_rows(metadata, tokens: int, hidden=None) -> dict:
     cu = metadata.cu_seqlens
     padded = int(cu[-1].item()) if cu is not None and cu.numel() else -1
-    plan = metadata.plan
+    plan = getattr(metadata, "plan", None)
+    if plan is None and hasattr(metadata, "plan_id"):
+        # 10-01 trees carry a CPU plan id; the plan sits in the ops' table until combine.
+        from torchtitan.distributed.moonep import ops
+
+        entry = ops._plans.get(int(metadata.plan_id))
+        plan = entry.plan if entry is not None else None
     padding = -1
     ranges = getattr(plan, "zero_fill_ranges", None)
     if isinstance(ranges, torch.Tensor):
