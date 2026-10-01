@@ -2,6 +2,10 @@
 
 ## 状态（不粘贴）
 
+- **10-01 数值表改成成对的（用户："Loss and grad norm equal #4656's ... 没有和原始PR的对比表吗？如何说服reviewer它数值没问题？？"）：** 原来只列了 PR A 一行，加一句"和 #4656 相等"，而且列了第 50、100 步。现在按数值表规则改：每个布局"不含本 PR / 本 PR"成对两行，同一份暖 cache、同 seed 同数据（H100 原始日志 `kit_h100_2026-09-30/results/pra_h100*/` 重新解析，dp2 × pp2 × vpp2 按 rank 分开解析，五个布局都是 100/100 逐位相同）；只列第 1 / 10 / 20 步，"100 步全同"用计数列表达，后面的步不列。
+  - 还缺两项，都要 GPU（5060 也行，只是要和表的设置一致，最好在 H100 上）：
+    1. 噪声底一行：#4656 在 pp4 × vpp2 用一份新的 compile cache 再跑 20 步，看换 cache 本身让第 3 / 10 步变多少。没有这一行，reviewer 不知道"逐位相同"是不是平凡的。
+    2. 第 1 步逐参数梯度：pp4 × vpp2 两棵树在同一份 cache 上 dump 第 1 步所有参数的梯度，数 N / N 逐位相同。这是 CLAUDE.md 里的正确性标准（第 1 步 loss 逐位 + 第 1 步梯度逐位、按参数计数）；现在只有 grad norm 这个标量。
 - **10-01 复测成立，粘贴区已改（用户："PR A的cache内存下界结果可能不准确，重新按照这个修复"）：**
   - 探针：`kit_h100_2026-09-30/pra/probe_bound.py` 的 `tracking` 把前向 send 的第 0 个 op 记成 hidden（断言它就是输出 0），不再算进 `block_gib`，另报 `hidden_sends_alive_gib`，以及 `hidden_sends_only_gib`（存储不在任何 stage 输出里的 hidden send）。
   - 5060 复测（实测，`kit_pra_min_2026-09-30/run_bound_5060.sh`，结果在 `kit_pra_min_2026-09-30/results_5060_1001/`）：T1d 的设置（dim 2048，16 × 2048 个 c4 token，FullAC，seed 42，deterministic，20 步，第 5 步逐动作记账），pp4 × vpp2，`e66a9442b` 对 `312bc8144`，两棵树各用同一份暖 cache 的拷贝。
@@ -88,15 +92,23 @@ A pending send keeps its tensor allocated until it is waited, and torch's action
 | pp2 x vpp2, dim 5120 | 67.85 / 49.77 | 66.60 / 48.75 | 1.25 / 1.02 | 5.231 / 5.271 s |
 | pp2 x vpp4, dim 5120 | 67.31 / 52.72 | 65.69 / 50.65 | 1.62 / 2.07 | 5.345 / 5.252 s |
 
-Loss and grad norm equal #4656's on all 100 steps in all five layouts:
+Loss / grad norm with and without this PR (without it is the tree of the two #4656 commits below, whose pipeline stage is main's), each pair on one shared warm compile cache with the same seed and data. The reference is #4656 run a second time on a fresh compile cache, the noise floor of this setup.
 
-| layout | step 1 | step 10 | step 50 | step 100 |
-|---|---:|---:|---:|---:|
-| pp4 x vpp2 | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 2.93439 / 4.9375 | 2.66764 / 1.5859 |
-| pp4 x vpp4 | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 2.75488 / 4.9375 | 2.43219 / 1.2266 |
-| dp2 x pp2 x vpp2, dim 5120 | 8.06354 / 24.3750 | 6.34372 / 14.5000 | 2.74512 / 3.9688 | 2.25450 / 15.7500 |
-| pp2 x vpp2, dim 5120 | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 2.80749 / 4.2188 | 2.45762 / 1.7578 |
-| pp2 x vpp4, dim 5120 | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 2.77905 / 4.0625 | 2.40688 / 1.1328 |
+| layout | tree | step 1 | step 10 | step 20 | steps identical to without |
+|---|---|---:|---:|---:|---:|
+| pp4 x vpp2 | without this PR | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 3.88571 / 13.6875 | |
+| pp4 x vpp2 | this PR | 8.08712 / 24.3750 | 7.56287 / 1040.0000 | 3.88571 / 13.6875 | 100 / 100 |
+| pp4 x vpp2 | without this PR, fresh compile cache | <floor> | <floor> | <floor> | <floor> / 100 |
+| pp4 x vpp4 | without this PR | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 3.72421 / 13.8750 | |
+| pp4 x vpp4 | this PR | 8.12927 / 21.0000 | 7.97795 / 32.5000 | 3.72421 / 13.8750 | 100 / 100 |
+| dp2 x pp2 x vpp2, dim 5120 | without this PR | 8.06354 / 24.3750 | 6.34372 / 14.5000 | 3.63619 / 9.8125 | |
+| dp2 x pp2 x vpp2, dim 5120 | this PR | 8.06354 / 24.3750 | 6.34372 / 14.5000 | 3.63619 / 9.8125 | 100 / 100 |
+| pp2 x vpp2, dim 5120 | without this PR | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 3.63455 / 17.5000 | |
+| pp2 x vpp2, dim 5120 | this PR | 8.06628 / 23.1250 | 5.24328 / 22.1250 | 3.63455 / 17.5000 | 100 / 100 |
+| pp2 x vpp4, dim 5120 | without this PR | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 4.06530 / 13.0000 | |
+| pp2 x vpp4, dim 5120 | this PR | 8.11475 / 35.2500 | 6.92955 / 23.1250 | 4.06530 / 13.0000 | 100 / 100 |
+
+Step 1 gradients at pp4 x vpp2, with and without this PR on the shared cache: <N> / <N> parameters bitwise equal.
 
 Blocks held in step 5 at each rank's peak, in `[T, D]` blocks (24 MiB at dim 6144, 20 MiB at dim 5120): the rank cache, the stages' saved inputs and outputs and the pending forward sends of blocks, counted by storage. The tight bound frees each block at the backward of the stage that brought it onto the rank; the paper's bound keeps every block of a micro-batch until the rank's last backward of that micro-batch. With this PR the blocks equal the tight bound at every forward and backward of the step, except the last stage's forwards at pp4 x vpp2 and in the pp2 layouts, which sit one block below it because the bound also counts the block that stage completes and uses inside its forward.
 
