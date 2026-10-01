@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-01：** 规划器偏离报告原文（装不下就退回前面或后面），修正方案在 `DEP_FIX_PLAN_2026-10-01.md`，等用户确认。修正后粘贴区的 Design 段（"what fits no idle slot joins the balanced prologue or epilogue"、`bubble_cost_ratio` 那句）要改写。
 - **09-30 H100（115.124.123.240，`d27839459`）：** 粘贴区只改了一处：GPU 测试那条从 pending 改成 "3 passed on 4 H100s"（同一台机器上 CPU 那条也是 18 passed）。B200 格子要 8 卡，仍是 pending。"DEP on and off ... loss, gradients and step time" 那条仍写 pending：数值对照里 DEP 开和关第 1 步 loss 不是逐位一致（8.12804 对 8.12706），还在定位（`DEP_H100_2026-09-30.md` 数值对照一节），定位前不进粘贴区。步时和效率（pp4 × vpp4，dim 6144 的 debug 模型加 K3 塔，1008 px）：K2.5 比 DEP 关快 15% 到 29%，大头是 DEP 关时 stage 0 给每个 micro-batch 跑塔（纯文本的用假图）；相对不带塔的纯文本模型，K2.5 的效率 96 : 4 时 85% 到 91%，90 : 10 时 84%，84 : 16 时 74% 到 75%；bubble 对 K2.5 在 ±2% 以内，实测填充率 0% 到 1%（一次编码是 3.6 个 stage 前向，放不进 pp4 × vpp4 的空闲段）。要不要在 body 里放这些数字、怎么放，等第 1 步的差异定位后再和你商量。
 - **09-30 复查（CPU 这边，用户："检查DEP和MoonEP body和diff，现在这两个可以去H100跑了吗？"）：** `d27839459` 把梯度的挂出边界改成 `max(run.start, ready[m])`（`dep_plan.py:342`），发送方在 B0.m 之后挂出，执行方的边界落在自己的空闲段里、按动作顺序等同于段首，两端仍在同一个槽边界，每对 rank 的次序不变。粘贴区 Design 里传输那句还写着"梯度在执行方空闲段开始时换 rank"，已改成两者取较晚。
 - **09-30（用户："DEP没藏到反向？马上debug修复 并且最终汇报气泡填充率"）：** review 分支 `dep_review1` 和 PR 分支 `k3_pp_mm` 都推到 `d27839459`（force-with-lease，旧 head `a03f74981` 在 `backup/k3_pp_mm_pre_20260930`），upstream `refs/pull/4381/head` 已是它。整条线换到 main `46ec3f232` 上（`a00bf6e03`、`22fe32202`、`f85bbb04a` 和原来逐字相同），加一个修复提交 `d27839459`。
