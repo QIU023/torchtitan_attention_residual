@@ -136,10 +136,16 @@ def _widened(attn_backend="flex", converters=None, moe_comm_backend="standard", 
 def _tower(dim: int, s: int):
     from torchtitan.models.kimi_k3 import _vision_encoder_config
 
-    if os.environ.get("DEPV_TOWER", "debug") == "k3":
+    tower = os.environ.get("DEPV_TOWER", "debug")
+    if tower == "k3":
         return _vision_encoder_config(
             text_dim=dim, dim=1024, qkv_dim=1536, hidden_dim=4096, num_layers=27, num_heads=12,
             init_pos_emb_height=64, init_pos_emb_width=64)
+    if tower == "base":
+        # 10-01: the debug tower at its own width (s = 1), not widened with the text.
+        return _vision_encoder_config(
+            text_dim=dim, dim=256, qkv_dim=512, hidden_dim=512, num_layers=2, num_heads=4,
+            init_pos_emb_height=32, init_pos_emb_width=32)
     return _vision_encoder_config(
         text_dim=dim, dim=256 * s, qkv_dim=512 * s, hidden_dim=512 * s, num_layers=2, num_heads=4 * s,
         init_pos_emb_height=32, init_pos_emb_width=32)
