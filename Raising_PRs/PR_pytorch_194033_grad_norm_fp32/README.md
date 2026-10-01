@@ -132,3 +132,12 @@ Validated on nightly 2.15.0.dev20260902+cu130 (venv_ptnightly, the two source pa
 both tests fail on exactly the two defects (`unexpected keyword argument 'dtype'`;
 `'>=' not supported between 'torch.dtype' and 'int'`), so they pin what the reviewer asked for.
 The p=1 reference comparison uses rtol 1e-4: one-pass sum vs norm-of-norms differ by fp32 accumulation order.
+
+## 2026-10-01 晚：CI 重跑结果（head `6245bda9bc`）
+
+- janeyx99 13:49 UTC："I see…ideally this test can be device agnostic so we wouldn't need onlyOn anymore. approved the ci"。
+- 371 个检查全部跑完：363 成功、4 跳过、1 neutral、3 失败。Dr. CI 把 3 个失败都归为和本 PR 无关：
+  - FLAKY：`trunk / macos-py3-arm64 / test (default, 3, 3)`，`test_unary_ufuncs.py::TestUnaryUfuncsCPU::test_contig_vs_every_other__refs__conversions_byte_cpu_bfloat16`（bf16 转 uint8，234 / 513 不一致，最大差 255；两次 RERUN 后仍失败；trunk `7a8a414052` 上有同样的失败）。
+  - UNSTABLE：两个 `inductor_aoti_fallback` 分片（任务本身标了 unstable）。
+- 本 PR 改的文件（`clip_grad.py`、`_math_ops.py`、`test_nn.py`）相关的任务都通过。Dr. CI 的状态是 "Approved, please fix all CI failures and trigger merge"；flaky / unstable 的失败合并机器人会按 Dr. CI 的分类忽略，评论 `@pytorchbot merge` 即可（对外操作，等用户）。
+- Jane 的建议（测试与设备无关）：现在 `@onlyOn(["cpu", "cuda"])` 是因为测试后半段断言默认 bf16 路径的具体值（258 / 256），依赖 CPU / CUDA 的累加和舍入；前半段（`dtype=float32` 时等于精确值）本身与设备无关。可选改法：去掉 `onlyOn`，后半段的具体值只在 cpu / cuda 上断言，foreach 在 mps / xla 上跳过（同 `test_clip_grad_norm`）。要推到 PR 分支并再请 Jane 批 CI，等用户定。
