@@ -2,6 +2,8 @@
 
 ## 状态（不粘贴）
 
+- **10-02 Design 改成两级 bullet（用户："Design里面又是大段段落，改成bullet points嵌套"）：** 原来三段的内容拆成六组（ViT copies、One micro-batch's ViT work、Placement、Fit、Transfers、Wiring），每条一行，内容没有增删。
+
 - **10-02 CPU 会话在上一条之上补了三处（同一句用户要求，两个会话同时改，合并时以 GPU 会话那版为底，没有加长）：**
   - 粘贴区里 tower、encoded 统一改成 ViT 的说法（ViT forward、ViT backward、debug ViT）。
   - 第一次出现 pipeline bubbles 的地方注明是"idle slots in a rank's action order"。
@@ -85,11 +87,27 @@ Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipe
 
 ## Design
 
-Every pipeline rank holds a tensor-parallel copy of the ViT, refreshed from stage 0 each step; stage 0 keeps the parameters, so optimizer, checkpoint and FSDP are unchanged. Each image-carrying micro-batch gets its ViT forward under `no_grad` on one rank, and the features go to stage 0 as `vision_embeds`; the gradient at the features goes back to one rank, which recomputes the ViT forward and runs the ViT backward. The copies' gradients are summed in fp32 and reduced into the ViT's gradients at the end of the step.
-
-With `bubble=False` (the K2.5 form), every ViT forward runs before the pipeline schedule and every ViT backward after it, balanced by patch count. With `bubble=True` (the K3 form), the first pipeline-degree ViT forwards run before the schedule, the rest in pipeline bubbles (idle slots in a rank's action order) ahead of their consumer, and the ViT backwards in bubbles after their gradient; work that fits no bubble falls back to before or after the schedule. Every rank derives the plan from `pipeline_order`; `bubble_cost_ratio` is one ViT forward in units of one text-stage forward, and with a slot lasting as long as its longest action (forward 1, backward 2) it decides what fits. Neither report gives a cost model; these numbers are the plan's own estimates. Transfers use a process group per pipeline group, and both ends post at the same slot boundary, so no posted send or receive waits on its own rank's later work.
-
-`pipeline_kimi_k3` wraps the schedule's `step`, since the engine's pipeline step has no model hook. The package is split like the AttnRes pipeline: the plan like the block layout tables, the runtime like the rank store, and the stage subclasses the AttnRes stage.
+- ViT copies:
+  - Every pipeline rank holds a tensor-parallel copy of the ViT, refreshed from stage 0 each step.
+  - Stage 0 keeps the parameters, so optimizer, checkpoint and FSDP are unchanged.
+- One micro-batch's ViT work:
+  - The ViT forward runs under `no_grad` on one rank, and its features go to stage 0 as `vision_embeds`.
+  - The gradient at the features goes back to one rank, which recomputes the ViT forward and runs the ViT backward.
+  - The copies' gradients are summed in fp32 and reduced into the ViT's gradients at the end of the step.
+- Placement:
+  - `bubble=False` (the K2.5 form): every ViT forward runs before the pipeline schedule and every ViT backward after it, balanced by patch count.
+  - `bubble=True` (the K3 form): the first pipeline-degree ViT forwards run before the schedule, the rest in pipeline bubbles (idle slots in a rank's action order) ahead of their consumer, and the ViT backwards in bubbles after their gradient.
+  - Work that fits no bubble falls back to before or after the schedule.
+- Fit:
+  - A slot lasts as long as its longest action (forward 1, backward 2), and `bubble_cost_ratio` is one ViT forward in units of one text-stage forward.
+  - Neither report gives a cost model; these numbers are the plan's own estimates.
+  - Every rank derives the same plan from `pipeline_order`.
+- Transfers:
+  - Features and gradients use a process group per pipeline group.
+  - Both ends of a transfer post it at the same slot boundary, so no posted send or receive waits on its own rank's later work.
+- Wiring:
+  - `pipeline_kimi_k3` wraps the schedule's `step`, since the engine's pipeline step has no model hook.
+  - The package is split like the AttnRes pipeline: the plan like the block layout tables, the runtime like the rank store, and the stage subclasses the AttnRes stage.
 
 ## Results
 
