@@ -172,3 +172,4 @@ The p=1 reference comparison uses rtol 1e-4: one-pass sum vs norm-of-norms diffe
 - **检查：** ruff 干净；CPU 加 CUDA 8 / 8，`PYTORCH_TEST_WITH_DYNAMO=1` 也是 8 / 8。CUDA 用的是借 SATS-OPRD 会话的 5060 的 GPU 0，前后都通知了它。
 - **提交：** review 分支 `get-total-norm-dtype-review1` = `e2ce6d7378`，从 `7f64b20e60` 快进。PR 分支还是 `7f64b20e60`，同步（快进）和贴 `REPLY_2026-10-02.md` 都等用户。
 - **CI：** `7f64b20e60` 上那一轮已批准，在跑：122 个 pending，2 个失败是不相关的 unstable 任务。
+- **10-02 推送（用户："快进"）：** PR 分支 `get-total-norm-dtype` 从 `7f64b20e60` 快进到 `e2ce6d7378`，没有强推，和 review1 一致。接下来由用户贴 `REPLY_2026-10-02.md`；新提交的 CI 要 Jane 再批一次。
