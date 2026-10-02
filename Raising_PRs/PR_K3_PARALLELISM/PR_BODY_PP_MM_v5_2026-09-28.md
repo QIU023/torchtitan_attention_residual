@@ -2,6 +2,13 @@
 
 ## 状态（不粘贴）
 
+- **10-02 PR 分支已同步（用户："拉取，然后DEP直接推draft PR分支"）：**
+  - `k3_pp_mm` 用 force-with-lease 从 `d27839459` 推到 `b2a57dff7`，旧 head 备份在 `backup/k3_pp_mm_pre_20261002`。#4381 是 draft，6 个提交、13 个文件、+2106 / −11，可合并（CI 待跑）。
+  - 内容是四个 DEP 提交 rebase 到 main `db050eb3f`，加上类型和 docstring 的修正 `a93cd48ea`，再加上 CPU 会话的重构 `b2a57dff7`。
+  - 重构核对：AST 有 64 个定义相同，规划器等价检查 0 处不同；H100 上同一个 bubble 格新旧两棵树 20 步逐位相同。100 步那组和新代码的 GPU 单测还在跑。
+  - 标题前缀 "[DO NOT review, pending K3 text PP merging]" 已经过时（#4312 在 09-26 合了），要不要改由你定。
+  - 粘贴区待改：Summary 里的 recipe 路径要改成 `torchtitan_recipes/tests/suites/b200.py`；Results 补隐藏率和 100 步的数值表（H100 跑完再填）。
+
 - **10-02 结构重构（用户："按照tianyu在4312 comment针对cache/hook方案重构为attnrespipelinestage的方式重构……不能影响数值"）：** review 分支 `dep_review1` 从 `a93cd48ea` 快进到 `b2a57dff7`，PR 分支 `k3_pp_mm` 没动（仍是 `d27839459`）。DEP 代码搬进 `pipeline_parallel/vision_dep/`，按 4312 的拆法分成 `plan.py` / `runtime.py` / `stage.py` / `schedule.py` / `__init__.py`；数值不变（逐位 A/B、规划器等价检查），细节和审计在 `DEP_VISION_DEP_PACKAGE_2026-10-02.md`。粘贴区改了 Summary 的文件列表、Design 末句、Test plan 里的测试文件名（通过数仍是 18）。GPU 那边 H100 的 K3 区间测量跑在 `a93cd48ea` 上，结果对 `b2a57dff7` 同样成立。
 - **10-01：** 规划器偏离报告原文（装不下就退回前面或后面），修正方案在 `DEP_FIX_PLAN_2026-10-01.md`，等用户确认。修正后粘贴区的 Design 段（"what fits no idle slot joins the balanced prologue or epilogue"、`bubble_cost_ratio` 那句）要改写。
 - **09-30 H100（115.124.123.240，`d27839459`）：** 粘贴区只改了一处：GPU 测试那条从 pending 改成 "3 passed on 4 H100s"（同一台机器上 CPU 那条也是 18 passed）。B200 格子要 8 卡，仍是 pending。"DEP on and off ... loss, gradients and step time" 那条仍写 pending：数值对照里 DEP 开和关第 1 步 loss 不是逐位一致（8.12804 对 8.12706），还在定位（`DEP_H100_2026-09-30.md` 数值对照一节），定位前不进粘贴区。步时和效率（pp4 × vpp4，dim 6144 的 debug 模型加 K3 塔，1008 px）：K2.5 比 DEP 关快 15% 到 29%，大头是 DEP 关时 stage 0 给每个 micro-batch 跑塔（纯文本的用假图）；相对不带塔的纯文本模型，K2.5 的效率 96 : 4 时 85% 到 91%，90 : 10 时 84%，84 : 16 时 74% 到 75%；bubble 对 K2.5 在 ±2% 以内，实测填充率 0% 到 1%（一次编码是 3.6 个 stage 前向，放不进 pp4 × vpp4 的空闲段）。要不要在 body 里放这些数字、怎么放，等第 1 步的差异定位后再和你商量。
