@@ -1,0 +1,81 @@
+WARNING:absl:Failed to load jax profiler: No module named 'jax'
+Autotune Choices Stats:
+{"num_choices": 6, "num_triton_choices": 6, "best_kernel": "triton_flex_attention_0", "best_kernel_desc": "BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M=128, BLOCK_N=64, FLOAT32_PRECISION=\"'ieee'\", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4", "best_time": 4.478623867034912, "best_triton_pos": 0}
+AUTOTUNE flex_attention(1x96x4096x96, 1x96x4096x96, 1x96x4096x64, 1x96x4096, 1x96x4096, 1x1x32, 1x1x32x32, 1x1x32, 1x1x32x32, 4096, 4224)
+strides: [9216, 96, 9216, 1], [9216, 96, 9216, 1], [96*s73, s73, 96*s73, 1], [96*s37, s37, 1], [96*s37, s37, 1], [s99, s99, 1], [s22*s72, s22*s72, s72, 1], [s94, s94, 1], [s28*s4, s28*s4, s4, 1], [1], [1]
+dtypes: torch.bfloat16, torch.bfloat16, torch.bfloat16, torch.float32, torch.float32, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32
+  triton_flex_attention_0 4.4786 ms 100.0% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M=128, BLOCK_N=64, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4
+  triton_flex_attention_2 5.2757 ms 84.9% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M=128, BLOCK_N=128, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=2, num_warps=8
+  triton_flex_attention_5 5.3474 ms 83.8% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M=64, BLOCK_N=64, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4
+  triton_flex_attention_3 5.4371 ms 82.4% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M=128, BLOCK_N=128, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=1, num_warps=8
+  triton_flex_attention_4 7.0228 ms 63.8% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M=64, BLOCK_N=128, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4
+  triton_flex_attention_1 14.1668 ms 31.6% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M=128, BLOCK_N=128, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4
+SingleProcess AUTOTUNE benchmarking takes 0.4504 seconds and 0.0812 seconds precompiling for 6 choices
+Autotune Choices Stats:
+{"num_choices": 13, "num_triton_choices": 13, "best_kernel": "triton_flex_attention_backward_18", "best_kernel_desc": "BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=64, BLOCK_M2=128, BLOCK_N1=128, BLOCK_N2=64, FLOAT32_PRECISION=\"'ieee'\", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=8", "best_time": 12.763232231140137, "best_triton_pos": 0}
+AUTOTUNE flex_attention_backward(1x96x4096x96, 1x96x4096x96, 1x96x4096x64, 1x96x4096, 1x96x4096, 1x96x4096x64, 1x96x4096x96, 1x96x4096x64, 1x1x32, 1x1x32x32, 1x1x32, 1x1x32x32, 1x1x32, 1x1x32x32, 1x1x32, 1x1x32x32, 4096, 4224)
+strides: [9216, 96, 9216, 1], [9216, 96, 9216, 1], [96*s73, s73, 96*s73, 1], [96*Max(1, s37), Max(1, s37), 1], [96*s37, s37, 1], [6144*Max(1, s37), 64*Max(1, s37), 64, 1], [9216*s37, 96, 9216, 1], [6144*s0, 64, 6144, 1], [s99, s99, 1], [s22*s72, s22*s72, s72, 1], [s56, s56, 1], [s53*s84, s53*s84, s53, 1], [s94, s94, 1], [s28*s4, s28*s4, s4, 1], [s100, s100, 1], [s11*s5, s11*s5, s11, 1], [1], [1]
+dtypes: torch.bfloat16, torch.bfloat16, torch.bfloat16, torch.float32, torch.float32, torch.bfloat16, torch.bfloat16, torch.bfloat16, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32, torch.int32
+  triton_flex_attention_backward_18 12.7632 ms 100.0% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=64, BLOCK_M2=128, BLOCK_N1=128, BLOCK_N2=64, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=8
+  triton_flex_attention_backward_15 14.1508 ms 90.2% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=64, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=64, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4
+  triton_flex_attention_backward_13 15.3026 ms 83.4% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=32, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=32, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=5, num_warps=4
+  triton_flex_attention_backward_11 15.5527 ms 82.1% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=32, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=32, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4
+  triton_flex_attention_backward_12 15.5712 ms 82.0% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=32, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=32, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=4, num_warps=4
+  triton_flex_attention_backward_14 18.0595 ms 70.7% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=64, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=64, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=1, num_warps=4
+  triton_flex_attention_backward_10 19.0132 ms 67.1% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=32, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=32, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=1, num_warps=4
+  triton_flex_attention_backward_17 21.6944 ms 58.8% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=64, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=64, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=5, num_warps=4
+  triton_flex_attention_backward_16 22.0568 ms 57.9% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=64, BLOCK_M2=64, BLOCK_N1=64, BLOCK_N2=64, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=4, num_warps=4
+  triton_flex_attention_backward_7 32.7736 ms 38.9% BLOCKS_ARE_CONTIGUOUS=False, BLOCK_M1=32, BLOCK_M2=32, BLOCK_N1=32, BLOCK_N2=32, FLOAT32_PRECISION="'ieee'", GQA_SHARED_HEADS=1, HAS_FULL_BLOCKS=True, IS_DIVISIBLE=False, OUTPUT_LOGSUMEXP=True, OUTPUT_MAX=False, PRESCALE_QK=False, QK_HEAD_DIM=96, QK_HEAD_DIM_ROUNDED=128, ROWS_GUARANTEED_SAFE=False, SAFE_HEAD_DIM=False, SM_SCALE=0.10206207261596575, SPARSE_KV_BLOCK_SIZE=128, SPARSE_Q_BLOCK_SIZE=128, USE_TMA=False, V_HEAD_DIM=64, V_HEAD_DIM_ROUNDED=64, WRITE_DQ=True, num_stages=3, num_warps=4
+SingleProcess AUTOTUNE benchmarking takes 2.2969 seconds and 0.0967 seconds precompiling for 13 choices
+Traceback (most recent call last):
+  File "/root/kit/kit_h100_2026-10-02/microbench_new.py", line 144, in <module>
+    main()
+  File "/root/kit/kit_h100_2026-10-02/microbench_new.py", line 128, in main
+    fwd, bwd = layer_times(model, args.seq)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/kit/kit_h100_2026-10-02/microbench_new.py", line 101, in layer_times
+    out.float().mean().backward()
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_tensor.py", line 623, in backward
+    torch.autograd.backward(
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/__init__.py", line 395, in backward
+    _engine_run_backward(
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/graph.py", line 1113, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/function.py", line 452, in apply
+    return user_fn(self, *args)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/autograd/function.py", line 775, in wrapper
+    outputs = fn(ctx, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 266, in backward
+    return _l2norm_bwd_op(x, rstd, d_output, cu_seqlens), None, None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/torch/_ops.py", line 916, in __call__
+    return self._op(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/attn_gym/linear/kda/fwd/triton/l2norm_fwd.py", line 201, in _l2norm_bwd_cuda
+    l2norm_bwd_kernel[grid](
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/runtime/jit.py", line 374, in <lambda>
+    return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 249, in run
+    used_cached_result = self.check_disk_cache(key, pruned_configs, benchmark)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 207, in check_disk_cache
+    bench_fn()
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 240, in benchmark
+    timings = {config: self._bench(*args, config=config, **kwargs) for config in pruned_configs}
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 169, in _bench
+    return self.do_bench(kernel_call, quantiles=(0.5, 0.2, 0.8))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/testing.py", line 272, in do_bench
+    fn()
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 155, in kernel_call
+    self.fn.run(
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/runtime/jit.py", line 779, in run
+    kernel.run(grid_0, grid_1, grid_2, stream, kernel.function, kernel.packed_metadata, launch_metadata,
+  File "/root/mep/venv_src/lib/python3.12/site-packages/triton/backends/nvidia/driver.py", line 331, in __call__
+    self.launch(gridX, gridY, gridZ, stream, function, self.launch_cooperative_grid, self.launch_pdl,
+RuntimeError: Triton Error [CUDA]: out of memory
