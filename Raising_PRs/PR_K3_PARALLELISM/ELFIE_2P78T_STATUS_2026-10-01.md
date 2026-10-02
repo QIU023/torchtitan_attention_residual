@@ -13,7 +13,7 @@
 - **数值正确性还没有证据，原因有两个：**
   - 通过的那次 loss 比 ln V 还高，像是合成 token 或随机初始化；
   - 她的集群上，NCCL 网络插件会把通信结果弄错。
-- **SiTU-GLU 编译：** 她说 97e673b77 "让 K3 可以编译"，打算 rebase 后验证。这个说法不对，97e673b77 不会编译 SiTU-GLU。Shuhua 回复里指向的 #5008 才是真正的修复。#5008 由 Jessica Zhong 在 10-01 23:11 UTC 开出，叠在已合入的 #4985 之上，目前还没合。
+- **SiTU-GLU 编译：** 她说 97e673b77 "让 K3 可以编译"，打算 rebase 后验证。这个说法不对，97e673b77 不会编译 SiTU-GLU。Shuhua 回复里指向的 #5008 才是真正的修复。#5008 由 Jessica Zhong 在 10-01 23:11 UTC 开出，叠在已合入的 #4985 之上，10-02 01:38 UTC 合进 main（`6404b9a11`）。
 
 ## 1. 她的四次运行（GB200 实测，转录）
 
@@ -72,7 +72,7 @@
 | 通信结果出错 | 不带优化器的重放能复现；`NCCL_NET_PLUGIN=none` 时正常。#4947 正文说出错的是跨域（cross-domain）的 rank | 要交给 NVIDIA 内部的 NCCL 团队 | NVIDIA NCCL |
 | NCCL workspace 分配太晚，和 PyTorch 的缓存抢显存 | `NCCL_RUNTIME_CONNECT=0` 把建连提前到初始化，复现过的 OOM 解决了 | 她建议训练里默认打开；Shuhua 请她开个 issue，方便复现和修 | titan 决定默认值 |
 | fake quant 临时显存太多 | 按块对齐分段（AO #4917，草稿） | 单项检查过了，256 卡没验证 | Elfie / torchao |
-| SiTU-GLU 反向 OOM | torch.compile 融合激活函数 | #5008 正在做（第 5 节） | titan（Jessica Zhong） |
+| SiTU-GLU 反向 OOM | torch.compile 融合激活函数 | #5008 已合（10-02 01:38 UTC，`6404b9a11`；第 5 节） | titan（Jessica Zhong） |
 | 发布的打包 MXFP4 权重加载不对 | #4791（草稿，+3497 / −32，31 个文件），内容见表下 | 要和 Ivy Zhou 在 torch core 里的 checkpoint reader 对齐 | Elfie / torch core DCP |
 | 加载视觉权重时多出通信 | #4947（草稿，+102 / −1）：拼接前把视觉 Q/K/V 显式设成 replicate | 回归测试过了；它只是避开那次多余的重分布，没修传输本身 | Elfie |
 | HybridEP 运行时编译缺文件 / CWD | 单独跑 EP32、PP1 能过 | 排查中 | titan 的 `torchtitan/distributed/deepep/hybridep.py` 接入，或 HybridEP 本身 |
@@ -101,7 +101,7 @@
 - `SiTUGLU.__call__`（`models/common/activation.py`）没有注册。所以只 rebase 到 97e673b77 或 main，SiTU-GLU 仍然是 eager。
 
 **#5008 才是修复。**
-- 标题 "[Perf][Compile] Add local compilation for SiTUGLU"，未合。
+- 标题 "[Perf][Compile] Add local compilation for SiTUGLU"。写这份笔记时还没合，10-02 01:38 UTC 合进了 main（`6404b9a11`）。
 - 改动是给 `SiTUGLU.__call__` 加上 `@local_compile("situglu", batch_invariant=True)`，并默认打开，加了 GPU 测试。
 - 它叠在 #4985（cos/sin RoPE，10-01 23:57 UTC 已合）之上。
 - 正文给的是 H100 上单个算子的耗时，不是显存。例如路由专家 [65536, 3072] 前向加反向，从 22.555 ms 降到 1.561 ms（14.45 倍）。
@@ -127,7 +127,7 @@
 
 ## 7. 待定的事（等用户定，没动）
 
-- SiTU-GLU：Shuhua 已经指向 #5008，不用我们再提。她验证时要用的是 #5008（以及它下面的 #4985），不是 97e673b77。
+- SiTU-GLU：Shuhua 已经指向 #5008，不用我们再提。#5008 已经合进 main（`6404b9a11`），所以她 rebase 到这之后的 main 就有编译过的 SiTU-GLU；只 rebase 到 97e673b77 是不够的。
 - 问清 128 卡那次的数据和初始化。要证明加载正确，建议做以下任一项：
   - 用发布权重在真实文本上跑一步前向，loss 应该在几个 nat；
   - 和 vLLM 对 logits。
