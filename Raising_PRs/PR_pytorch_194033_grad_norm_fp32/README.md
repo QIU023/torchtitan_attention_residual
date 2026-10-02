@@ -159,3 +159,16 @@ The p=1 reference comparison uses rtol 1e-4: one-pass sum vs norm-of-norms diffe
 - 检查：4 个文件 ruff 干净；CPU 上 4 / 4，dynamo 4 / 4。CUDA 没有重跑（GPU 归 SATS-OPRD 会话；PR 的 diff 和相关文件都没变，rebase 前的 CUDA 8 / 8 有效）。
 - 推送：先把 PR 原 head `6245bda9bc` 备份到 `backup/get-total-norm-dtype_pre_20261001b`，再 force-with-lease 推 `get-total-norm-dtype` 和 `get-total-norm-dtype-review1` 到 `7f64b20e60`。GitHub 上 #194033 显示 7 个提交、4 个文件，可合并；CI 等维护者批准。
 - 回复草稿 `REPLY_2026-10-01.md` 已改成新的提交号，未发。
+
+## 2026-10-02：Jane 的 r4167202278，测试改成所有后端都不跳过（用户："检查有没有可能按她说的做 这个pr已经block很久了"）
+
+- **Jane 的意见：** 把跳过挪到测试函数里，不比一开始就跳过强；问有没有在所有后端都能跑的巧妙写法，没有的话她宁可明确地在其他设备上跳过。
+- **可行的写法：**
+  - foreach 参数化从 `(False, True)` 改成 `(None, False)`。`None` 在有 foreach 的设备上（cpu、cuda、xpu、mtia、privateuse1，见 `_device_has_foreach_support`）走 `_foreach_norm`，在 mps、xla 上不报错，退回逐张量计算；只有 `True` 在这些设备上会报错，跳过本来就是因为它。
+  - 去掉 bf16 字面值 258 / 256，它们取决于后端怎么舍入。默认路径返回 bf16 dtype 的检查保留。
+  - 测试里不再有 `SkipTest`，也不再有按设备分支的代码。
+  - 上游 `test_clip_grad_norm` 也是在函数里跳过，这次的写法和它不同。
+- **变异检查（实测，CPU）：** 让 foreach 路径丢掉 `dtype`，float32 那组断言就会失败：norm 1 split 得 289，应为 288；norm 2 whole 得 258，应为 257.002；norm 2 split 得 256.002，应为 257.002。所以去掉 bf16 字面值不减少回归覆盖。
+- **检查：** ruff 干净；CPU 加 CUDA 8 / 8，`PYTORCH_TEST_WITH_DYNAMO=1` 也是 8 / 8。CUDA 用的是借 SATS-OPRD 会话的 5060 的 GPU 0，前后都通知了它。
+- **提交：** review 分支 `get-total-norm-dtype-review1` = `e2ce6d7378`，从 `7f64b20e60` 快进。PR 分支还是 `7f64b20e60`，同步（快进）和贴 `REPLY_2026-10-02.md` 都等用户。
+- **CI：** `7f64b20e60` 上那一轮已批准，在跑：122 个 pending，2 个失败是不相关的 unstable 任务。
