@@ -2,6 +2,13 @@
 
 ## 状态（不粘贴）
 
+- **10-02 写法改清楚（用户："DEP body里面写的太confuse了，`bubble`是什么意思 表格里面应该写ViT computation covered in bubble之类的意思"）：**
+  - 表名改成 "ViT computation covered by pipeline bubbles"。
+  - 两列改成 `bubble=False`（K2.5 形式）和 `bubble=True`（K3 形式）。
+  - 比例那列写成"ViT forward / text stage forward"。
+  - Summary 和 Design 里第一次出现 `bubble` 时写明含义；数值那句也改成 `bubble=False` / `bubble=True`。
+  - B200 那行从 pending 改成本机 5060 上 10 步跑完（用户："这个在本机5060跑就行，10步"）。PR head `6f5312fab`，8 张卡，rc 0，日志在 scratchpad 的 `dep_b200cell_5060/`。
+
 - **10-02 大幅精简（用户："DEP body太spamming了，大幅度精简简洁"）：** 粘贴区整段重写，从约 1600 词压到约 500 词。
   - Summary：一句话加三条。
   - Design：三段，分别讲机制、放置、为什么放在这里；传输只留一句。
@@ -64,17 +71,17 @@
 
 ## Summary
 
-Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipeline, with the vision work optionally scheduled into pipeline bubbles as in the K3 report (sec 5.2.3).
+Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipeline, and, as in the K3 report (sec 5.2.3), an option that schedules the ViT computation into pipeline bubbles.
 
 - `kimi_k3/pipeline_parallel/vision_dep/`: `VisionDepPlan` (`plan.py`), `VisionDep` (`runtime.py`), `VisionDepPipelineStage` (`stage.py`), `VisionDepSchedule` (`schedule.py`), wired into `pipeline_kimi_k3` by `__init__.py`.
-- `kimi_k3/model.py`: a `vision_dep` config (`enabled`, `bubble`, `bubble_cost_ratio`) and a `vision_embeds` argument on `forward`.
+- `kimi_k3/model.py`: a `vision_dep` config (`enabled` turns DEP on, `bubble` schedules the ViT computation into pipeline bubbles, `bubble_cost_ratio` is the cost the scheduler assumes for it) and a `vision_embeds` argument on `forward`.
 - `torchtitan_recipes/tests/suites/b200.py`: the existing pp2 x vpp4 B200 recipe enables `vision_dep`.
 
 ## Design
 
 Every pipeline rank holds a tensor-parallel copy of the tower, refreshed from stage 0 each step; stage 0 keeps the parameters, so optimizer, checkpoint and FSDP are unchanged. Each image-carrying micro-batch is encoded under `no_grad` on one rank and its features are sent to stage 0; the gradient at the features goes back to one rank, which recomputes the tower and backpropagates. The copies' gradients are summed in fp32 and reduced into the tower's gradients at the end of the step.
 
-Without `bubble`, encodes run before the schedule and backwards after it, balanced by patch count (the K2.5 form). With `bubble`, the first pipeline-degree encodes run before the schedule, the rest in idle slots ahead of their consumer, and backwards in idle slots after their gradient; work that fits no idle slot falls back to before or after the schedule. Every rank derives the plan from `pipeline_order`; `bubble_cost_ratio` is an encode in units of one text-stage forward. Transfers use a process group per pipeline group, and both ends post at the same slot boundary, so no posted send or receive waits on its own rank's later work.
+With `bubble=False` (the K2.5 form), every ViT forward runs before the pipeline schedule and every ViT backward after it, balanced by patch count. With `bubble=True` (the K3 form), the first pipeline-degree ViT forwards run before the schedule, the rest in pipeline bubbles ahead of their consumer, and the ViT backwards in bubbles after their gradient; work that fits no bubble falls back to before or after the schedule. Every rank derives the plan from `pipeline_order`; `bubble_cost_ratio` is one ViT forward in units of one text-stage forward. Transfers use a process group per pipeline group, and both ends post at the same slot boundary, so no posted send or receive waits on its own rank's later work.
 
 `pipeline_kimi_k3` wraps the schedule's `step`, since the engine's pipeline step has no model hook. The package is split like the AttnRes pipeline: the plan like the block layout tables, the runtime like the rank store, and the stage subclasses the AttnRes stage.
 
@@ -82,9 +89,9 @@ Without `bubble`, encodes run before the schedule and backwards after it, balanc
 
 4 H100s, pp4 x vpp4, Interleaved1F1B with 16 micro-batches, full activation checkpointing; the Kimi K3 debug model widened to dim 6144 with its 2-layer debug tower, one image per sample.
 
-Share of the vision work's kernel time that runs in pipeline bubbles, one traced step (profiler ranges added locally for the measurement):
+ViT computation covered by pipeline bubbles: the share of the ViT forward and backward kernel time that runs inside pipeline bubbles, one traced step (the ViT work wrapped in profiler ranges locally for the measurement):
 
-| seq | image side | cost ratio | K2.5 form | `bubble` |
+| seq | image side | ViT forward / text stage forward | covered, `bubble=False` (K2.5 form) | covered, `bubble=True` (K3 form) |
 |---:|---:|---:|---:|---:|
 | 2048 | 224 px | 0.046 | 2% | 73% |
 | 2048 | 1008 px | 0.135 | 3% | 81% |
@@ -96,7 +103,7 @@ Loss / grad norm, seq 2048 with 224 px images, deterministic, one warm compile c
 |---|---:|---:|---:|---:|
 | DEP off | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 |
 
-DEP off again, the K2.5 form and `bubble` are identical to DEP off on all 100 steps.
+DEP off again, DEP with `bubble=False` and DEP with `bubble=True` are identical to DEP off on all 100 steps.
 
 ## Relation to earlier revisions of this PR
 
@@ -106,6 +113,6 @@ Earlier revisions gave the tower its own pipeline stage on the first rank; this 
 
 - `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (18 passed).
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (3 passed on 4 H100s).
-- The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` with DEP on: pending.
+- The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` with DEP on: 10 steps on 8 RTX 5060 Ti (no B200 at hand).
 
 --- PASTE END ---
