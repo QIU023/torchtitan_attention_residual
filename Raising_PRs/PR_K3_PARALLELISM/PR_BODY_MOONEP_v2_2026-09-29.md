@@ -2,6 +2,14 @@
 
 ## 状态（不粘贴）
 
+- **10-02 rebase 到新 main 并在 H100 上复查（用户："H100恢复连接，先跑MoonEP，然后DEP"；记录在 `MOONEP_H100_2026-09-30.md` 第 7 节）：**
+  - `moonep_review1` = `cec583a44`，在 main `db050eb3f` 上，旧 head 备份在 `backup/moonep_review1_pre_20261002`。
+  - 只有测试格子列表的冲突。产品代码那个提交和 `949b7b465` 内容相同（range-diff 是 `=`）。
+  - **PR 分支 `k3_moonep_seam` 还是 `e30d82886`**：同步要你点头，而且 CI 怎么处理还没定（见 `REVIEW_DEP_MOONEP_2026-10-02.md`）。
+  - H100 真 MoonEP 上：GPU 测试 5 passed；h100 格 rc 0；数值格第 1 步和 standard 逐位相同，20 步内最大相对差 3.04e-3（EP 2 是 1.51e-2）；FullAC 和 SelectiveAC 一样；计时 864.5 对 725.3 tokens/s。
+  - CPU：Test plan 那条命令在新树上还是 44 passed。
+  - 粘贴区已改：Results 的数值表换成新树的数，说明里写明两张表各在哪棵树上测的；负载表没变。
+
 - **10-01 H100 跑完、粘贴区已填，分支移植到新 main（用户："接管，同一个H100，马上跑MoonEP（跑完再记录并且填充moonep PR body）"，随后"你继续排查moonep，我让cpu claude手动审核diff，记得rebase"）：**
   - H100（09-30 那台，真 MoonEP `33327eb`，SelectiveAC，`24458aa6e`，`MOONEP_H100_2026-09-30.md` 第 6 节）：GPU 测试 5 passed；h100 格 rc 0；数值格第 1 步和 standard 逐位相同、20 步内最大相对差 4.52e-3（EP 2 自身 1.36e-2）；负载格每次 dispatch 都是 S × K（1280 / 1280），步时 MoonEP 0.519 / 0.534 s 对 standard 0.638 / 0.648 s。负载格第一次在 SAC 下失败，是负载探针自己在前向里做了带梯度的统计（已放进 `no_grad`），不是 MoonEP 的问题。
   - 移植：upstream main 到了 `1aaee42bf`，#4908 删掉了 `make_token_dispatcher_config` 和 `update_ep_token_dispatcher_config`，dispatcher 改由 `TokenDispatcherTransform` 选择。分支在新 main 上重做成两个提交 `949b7b465`、`e30d82886`：`TokenDispatcherTransform` 加 `routed_experts` 字段换专家类；K3-only 和 EP>1 的检查放进 `config/validation.py`；h100 格搬到 `torchtitan_recipes/tests/suites/h100.py`；GPU 测试改用 `convert_config_type` 构造。旧 head 备份在 `backup/moonep_review1_pre_20261001b`。
@@ -67,7 +75,7 @@ Requirements and costs:
 
 ## Results
 
-4 H100s behind an NVSwitch, MoonEP `33327eb`, FSDP 4 x EP 4, seq 512, the recipes' selective activation checkpointing, on this branch at main `97e673b77` before its port to the config transforms (MoonEP's code is the same). The load cells run the Kimi K3 debug model with 128 experts and top-8; the numerics cells keep its 8 experts and top-2.
+4 H100s behind an NVSwitch, MoonEP `33327eb`, FSDP 4 x EP 4, seq 512, the recipes' selective activation checkpointing. The load cells run the Kimi K3 debug model with 128 experts and top-8, on this branch at main `97e673b77` before its port to the config transforms (MoonEP's code is the same); the numerics cells keep its 8 experts and top-2 and run this branch at main `db050eb3f`.
 
 | routing | static placement: hottest rank over mean, mean over layers (worst) | MoonEP: dispatches with exactly S x K rows on the rank | step time, standard / MoonEP |
 |---|---:|---:|---:|
@@ -80,10 +88,11 @@ Loss / grad norm on the h100 cell's shape, deterministic, one warm compile cache
 
 | cell | step 1 | step 10 | step 20 | max relative loss gap to standard EP, steps 1 to 20 |
 |---|---:|---:|---:|---:|
-| standard EP | 7.99051 / 2.4219 | 4.89410 / 7.1562 | 3.61653 / 4.7188 | |
-| MoonEP | 7.99051 / 2.4219 | 4.89623 / 7.0938 | 3.63289 / 4.7500 | 4.52e-3 |
-| standard EP again | 7.99051 / 2.4219 | 4.89410 / 7.1562 | 3.61653 / 4.7188 | 0 |
-| standard EP at EP 2, another reduction order | 7.99404 / 2.5469 | 4.89860 / 6.8438 | 3.62310 / 4.5625 | 1.36e-2 |
+| standard EP | 7.99090 / 2.4219 | 4.89817 / 7.1562 | 3.63110 / 4.7500 | |
+| MoonEP | 7.99090 / 2.4219 | 4.90741 / 7.1562 | 3.63399 / 4.7500 | 3.04e-3 |
+| MoonEP under full activation checkpointing | 7.99090 / 2.4219 | 4.90741 / 7.1562 | 3.63399 / 4.7500 | 3.04e-3 |
+| standard EP again | 7.99090 / 2.4219 | 4.89817 / 7.1562 | 3.63110 / 4.7500 | 0 |
+| standard EP at EP 2, another reduction order | 7.99403 / 2.5469 | 4.88217 / 6.8438 | 3.62059 / 4.5312 | 1.51e-2 |
 
 ## Test plan
 
