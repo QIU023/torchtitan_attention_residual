@@ -2,6 +2,14 @@
 
 ## 状态（不粘贴）
 
+- **10-02 B200 格子删掉，现有格子打开 DEP（用户："为什么又加b200 recipe？规则没写清楚吗？不能乱加CI cell！删了……kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4 里面的config直接默认打开DEP就行了"）：**
+  - `dep_review1` 和 `k3_pp_mm` 都从 `b2a57dff7` force-with-lease 推到 `6f5312fab`，旧 head 备份在 `backup/dep_review1_pre_20261002b` 和 `backup/k3_pp_mm_pre_20261002b`。
+  - 加 B200 格子的提交 `6b489c94e` 直接从历史里去掉（`rebase --onto`），不留"加了又删"。后面三个提交内容不变，SHA 变成 `e9fce9193`、`2afbf3f54`、`8ba759831`（重构）。
+  - 新提交 `6f5312fab`：现有 recipe `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4` 加一行 `config.model.vision_dep.enabled = True`，是 K2.5 形式，bubble 没开。被删的 recipe 还开了 bubble、让偶数 DP rank 只有文本，这两项没搬。
+  - PR 现在 6 个提交、11 个文件、+2092 / −11。DEP 的代码和测试与 `b2a57dff7` 逐字节相同，所以 H100 上在 `b2a57dff7` 测的隐藏率、数值和 GPU 单测对 `6f5312fab` 同样成立。
+  - 本机：CPU 27 passed、28 subtests；ufmt、flake8 干净。改过的 B200 格子（8 卡）在当前树上还没在 GPU 上跑过。
+  - 粘贴区改了：Summary 和 Test plan 里 B200 那两条。
+
 - **10-02 PR 分支已同步（用户："拉取，然后DEP直接推draft PR分支"）：**
   - `k3_pp_mm` 用 force-with-lease 从 `d27839459` 推到 `b2a57dff7`，旧 head 备份在 `backup/k3_pp_mm_pre_20261002`。#4381 是 draft，6 个提交、13 个文件、+2106 / −11，可合并（CI 待跑）。
   - 内容是四个 DEP 提交 rebase 到 main `db050eb3f`，加上类型和 docstring 的修正 `a93cd48ea`，再加上 CPU 会话的重构 `b2a57dff7`。
@@ -55,7 +63,7 @@ Kimi K3 trains its vision tower with the decoupled encoder process (DEP) of Kimi
   - `schedule.py`: `VisionDepSchedule`, which runs the vision phases around each step.
   - `__init__.py`: `build_vision_replica` and `install_vision_dep`, called from `pipeline_kimi_k3`.
 - `kimi_k3/model.py`: a `vision_dep` config (`enabled`, `bubble`, `bubble_cost_ratio`) and a `vision_embeds` argument on `forward`.
-- `torchtitan_recipes/tests/suites/b200.py`: `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`.
+- `torchtitan_recipes/tests/suites/b200.py`: the existing `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4` recipe enables `vision_dep`, so the B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` runs with the process on.
 
 ## Design
 
@@ -93,6 +101,6 @@ The earlier revisions gave the tower a pipeline stage of its own on the first ra
   - `test_kimi_k3_vision_dep_plan.py`: on the Interleaved1F1B action order at pp2 x vp4, pp4 x vp2 and pp8 x vp4, every encode in an idle slot finishes before its consumer, every backward starts after its gradient arrives, planned work sits in idle slots without overlap, both ends of each transfer post it at one slot boundary and every pair of ranks posts its transfers in the same order, a transfer leaves after its data exists and arrives before its use, a backward uses the rest of an idle run that began before its gradient was ready, a slot lasts as long as its longest action, and with a cheap encode every micro-batch after the upfront ones is hidden. Replaying the schedule's own sends and receives with every kernel waiting for its rank's unmatched transfers, no rank is left stuck, with the process in either placement.
   - `test_kimi_k3_vision_dep.py`: four ranks on gloo, pp4 x vp2, eight micro-batches with two text only, with the work before and after the schedule, with it in idle slots, and with a cheaper tower whose backward waits inside an idle run for a gradient that is ready later: the step-1 loss and every gradient are bitwise with one device, the step-2 loss and text gradients are bitwise and the tower gradients agree to fp32 summation order; a frozen tower gets no gradient; eval between steps matches one device. At pp2 x tp2, each copy receives its tensor-parallel shard of the tower and the tower's gradient is the sum of every rank's shards. Building the tower's copy leaves the seeded random stream where it was, so the model initializes the same with the process on or off.
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q`, the same four ranks under NCCL with a tower whose kernels first load inside the step, in both placements (3 passed on 4 H100s).
-- The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`: pending.
+- The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4`, now with the process on: pending.
 
 --- PASTE END ---

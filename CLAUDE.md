@@ -131,6 +131,10 @@ test-result language. Feature flavors that are the only way to ENABLE a
 technique (qb, mx_qat, lora) are currently tolerated -- flux ships mxfp8
 flavors upstream -- but each one needs that justification, not convenience.
 
+## No new CI cells (user, 2026-10-02)
+
+Never add an integration-test cell (`tests/integration_tests/*.py`) or a suite recipe for one (`torchtitan_recipes/tests/suites/*.py`) on an upstream-bound branch unless the user asks for that cell. A feature that needs CI coverage is switched on in an existing cell's recipe: DEP sets `vision_dep.enabled` in `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4`. An optional backend whose library CI does not install gets no cell: MoonEP keeps only its GPU unit test, which skips without the library. Triggers, both removed on 10-02: MoonEP's `kimi_k3_fsdp+moonep` h100 cell, and DEP's `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4_vision_dep` B200 cell.
+
 ## PR-text rule (maintainer feedback 2026-08-13, restyled by the user 2026-08-29)
 
 For new bodies the section structure below is superseded by the #4577 format (see "#4577 is the reference for code and body", user 2026-09-14); the rest of this rule (English only, one-line paragraphs, the first sentence answers the question, nothing the branch does not carry) still holds.
