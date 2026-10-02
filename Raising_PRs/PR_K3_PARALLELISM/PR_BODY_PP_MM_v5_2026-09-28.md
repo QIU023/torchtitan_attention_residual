@@ -15,7 +15,10 @@
   - 内容是四个 DEP 提交 rebase 到 main `db050eb3f`，加上类型和 docstring 的修正 `a93cd48ea`，再加上 CPU 会话的重构 `b2a57dff7`。
   - 重构核对：AST 有 64 个定义相同，规划器等价检查 0 处不同；H100 上同一个 bubble 格新旧两棵树 20 步逐位相同。100 步那组和新代码的 GPU 单测还在跑。
   - 标题前缀 "[DO NOT review, pending K3 text PP merging]" 已经过时（#4312 在 09-26 合了），要不要改由你定。
-  - 粘贴区改了：Summary 里的 recipe 路径；Design 末尾加了一句 Optimus 的引用（K3 报告 v2 的 [34]），并写明这里拆的单位是整个 micro-batch；新增 Results，先放隐藏率表；去掉 Test plan 里"DEP on and off ... pending"那条。**还没填完，先别贴**：100 步的数值表和新代码的 GPU 单测结果还在跑。
+  - 粘贴区改了：Summary 里的 recipe 路径；Design 末尾加了一句 Optimus 的引用（K3 报告 v2 的 [34]），并写明这里拆的单位是整个 micro-batch；新增 Results，先放隐藏率表；去掉 Test plan 里"DEP on and off ... pending"那条。之后又补了 100 步数值表。
+  - **已填完，可以贴（09:08 UTC）。** 数值表：DEP 关、DEP 关再跑一次、K2.5、bubble 四格，100 步全部逐位相同。
+  - 新代码的 GPU 单测 3 passed（4 张 H100），Test plan 里那行的数不变，现在对应的是 `b2a57dff7`。
+  - B200 格要 8 张卡，仍写 pending。
 
 - **10-02 结构重构（用户："按照tianyu在4312 comment针对cache/hook方案重构为attnrespipelinestage的方式重构……不能影响数值"）：** review 分支 `dep_review1` 从 `a93cd48ea` 快进到 `b2a57dff7`，PR 分支 `k3_pp_mm` 没动（仍是 `d27839459`）。DEP 代码搬进 `pipeline_parallel/vision_dep/`，按 4312 的拆法分成 `plan.py` / `runtime.py` / `stage.py` / `schedule.py` / `__init__.py`；数值不变（逐位 A/B、规划器等价检查），细节和审计在 `DEP_VISION_DEP_PACKAGE_2026-10-02.md`。粘贴区改了 Summary 的文件列表、Design 末句、Test plan 里的测试文件名（通过数仍是 18）。GPU 那边 H100 的 K3 区间测量跑在 `a93cd48ea` 上，结果对 `b2a57dff7` 同样成立。
 - **10-01：** 规划器偏离报告原文（装不下就退回前面或后面），修正方案在 `DEP_FIX_PLAN_2026-10-01.md`，等用户确认。修正后粘贴区的 Design 段（"what fits no idle slot joins the balanced prologue or epilogue"、`bubble_cost_ratio` 那句）要改写。
@@ -90,6 +93,15 @@ Vision work in pipeline bubbles, one traced step per cell: the encodes and tower
 | 1536 | 1008 px | 0.170 | 3% of 65.8 ms | 84% of 66.2 ms |
 
 The cost ratio is an encode over a middle text stage's forward, both measured in the K2.5 run of the cell, and the `bubble` run plans with it. What stays outside the bubbles is the structure the report describes: the first pipeline-degree encodes before the schedule and the last backwards after it. Every encode or backward placed before or between a rank's actions finishes at least 20 µs before the rank's next action starts.
+
+Loss / grad norm over 100 steps at seq 2048 with 224 px images, seed 42, deterministic, each run on a copy of one warm compile cache, with `torch._dynamo.config.automatic_dynamic_shapes = False`: the tower and the text share the compiled flex attention, and with automatic dynamic shapes a rank that runs both recompiles the text's kernel. The 100 steps read 1600 of the 2500 samples, each once.
+
+| cell | step 1 | step 10 | step 50 | step 100 | steps identical to DEP off |
+|---|---:|---:|---:|---:|---:|
+| DEP off | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 | |
+| DEP off again | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 | 100 / 100 |
+| K2.5 form | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 | 100 / 100 |
+| `bubble` | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 | 100 / 100 |
 
 ## Relation to earlier revisions of this PR
 
