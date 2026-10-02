@@ -2,6 +2,11 @@
 
 ## 状态（不粘贴）
 
+- **10-02 PR 分支已同步（用户："同步moonep"）：** `k3_moonep_seam` 用 force-with-lease 从 `e30d82886` 推到 `7b73b1ed5`（= `moonep_review1`），旧 head 备份在 `backup/k3_moonep_seam_pre_20261002`。#4751 是 draft，3 个提交、9 个文件、+769 / −6，可合并（CI 待跑）。
+  - `7b73b1ed5` 已核过：H100 上真 MoonEP 的 GPU 测试 5 passed；它和 `cec583a44` 在同一格上跑 100 步，loss 和 grad norm 逐位相同（`MOONEP_H100_2026-09-30.md` 第 8 节）。
+  - 本机 `test_transforms.py` 是 27 passed，粘贴区里那条 pending 已换成这个数。粘贴区可以贴。
+  - 历史里有"加 h100 格（`cec583a44`）再删掉（`7b73b1ed5`）"这一来一回。DEP 那边已经用 `rebase --onto` 把加格子的提交整个去掉；MoonEP 要不要照样清理，由你定。
+
 - **10-02 用户手动审 diff（"注意MoonEP只是optional backend，很多user是不一定有这个lib的"，h100 recipe 删掉，`moe.py` 的改动不该放在那个文件）：** review 分支 `moonep_review1` 从 `cec583a44` 快进到 `7b73b1ed5`（加一个提交，等你测完再并进原来两个提交）；PR 分支 `k3_moonep_seam` 没动，仍是 `e30d82886`。问答和核对记录在 `MOONEP_LAYOUT_2026-10-02.md`。
   - 删掉 h100 格子 `kimi_k3_fsdp+moonep` 和 recipe `kimi_k3_moonep_fsdp4_ep4`：`tests/integration_tests/h100.py`、`torchtitan_recipes/tests/suites/h100.py`、`test_integration_test_definitions.py` 都回到 main。`REVIEW_DEP_MOONEP_2026-10-02.md` 里 CI 的两个办法，定为办法二。
   - `MoonEPRoutedExperts` 从 `models/common/moe.py` 搬到 `distributed/moonep/experts.py`，`moe.py` 回到 main。类的代码不变，只是 `ops` 从 `forward` 里延迟 import 改成模块顶部 import（`ops.py` 不 import moonep 库）。`MoonEPTokenDispatcher` 留在 `models/common/token_dispatcher.py`，和 DeepEP、HybridEP 的 dispatcher 放在一起。
@@ -105,7 +110,7 @@ Loss / grad norm of the Kimi K3 debug model at FSDP 4 x EP 4, deterministic, one
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_transforms.py -q` (pending on this head): the transform turns every routed-expert config of Kimi K3 into MoonEP's experts and dispatcher with its per-rank token count, and a Qwen3 MoE config with MoonEP is refused.
+- `pytest tests/unit_tests/cpu/test_transforms.py -q` (27 passed): the transform turns every routed-expert config of Kimi K3 into MoonEP's experts and dispatcher with its per-rank token count, and a Qwen3 MoE config with MoonEP is refused.
 - `pytest tests/unit_tests/gpu/test_moonep.py -q` (needs the `moonep` package and NVLink multicast; 5 passed on 2 H100s): on two GPUs the MoonEP experts match a dense fp32 reference in output, input gradient and expert weight gradients, once with every token routed to one rank's experts, where tokens must reach the prefetch slots, and once with uniform routing; and under SelectiveAC, FullAC and RegionAC, where the dispatch must run once per forward and no plan may outlive its combine.
 - Load and step time (the tables above): the Kimi K3 debug model with 128 experts and top-8 at FSDP 4 x EP 4, standard EP against MoonEP, natural routing and a router biased toward the experts of rank 0; per MoE layer and micro-batch, the tokens each rank receives with static placement (max over mean) and, on MoonEP, whether every dispatch puts exactly S x K rows on each rank; the step time of each cell.
 
