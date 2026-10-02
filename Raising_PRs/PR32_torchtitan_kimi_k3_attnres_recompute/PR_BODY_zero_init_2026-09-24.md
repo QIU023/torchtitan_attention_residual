@@ -4,6 +4,13 @@ tianyu-l 在 #4780 的 review（5299962900，r4090059193）里说："fix the ini
 
 ## 状态（2026-09-25，不粘贴）
 
+- **10-02 rebase 到 main（用户："4881 拉取 rebase main"）：**
+  - 拉取：#4881 仍是 open，head `ae3a7881b`，tianyu 09-26 在这个 head 上批准，之后没有新评论；它比 main 落后 84 个提交。
+  - 本地 rebase 到 upstream main `6f716feed`，得到 `609461d20`，在临时工作树 `zi_rb` 里，**还没推**：PR 分支 `k3_attnres_zero_init` 仍是 `ae3a7881b`，推之前要你点头。
+  - 冲突：main 的 #4908、#4913 把 K3 的配置构造从 `kimi_k3/__init__.py` 挪到了 `kimi_k3/flavors.py`。解法是 `__init__.py` 取 main 的版本，同样的改动落到 `flavors.py`：增删的行和原提交逐行相同，仍是 1 个文件 +9/−3。main 上构造这三个投影的只有这三处，也没有测试依赖它们的初始化值。
+  - 检查：trailing-whitespace、end-of-file-fixer、check-ast、ufmt、flake8、codespell 通过；pyrefly 0 errors。本机 import 不了 kimi_k3，没有实际构造模型。
+  - GitHub 上的 body 要整段换成下面的粘贴区：路径改成 `flavors.py`，并删掉不存在的 `test_kimi_k3_attention_residual_init.py` 那一条（claude[bot] 09-26 指出的）。措辞照 GitHub 现有的那版（"Initialize"）。
+
 - **分支：** fork 上的 `k3_attnres_zero_init` = `ae3a7881b`，是 upstream main `56f04c702` 之上的 1 个 commit，只改了 `torchtitan/models/kimi_k3/__init__.py`。09-25 按用户要求（"不需要unit test"）去掉了测试文件，此前是 `c86dfc2e9`。
   - 09-24 的版本 `db483314a` 在 main `9e159aed7` 上。09-25 把它 cherry-pick 到最新 main，没有冲突，旧版备份为 `backup/k3_attnres_zero_init_pre_20260925`。
   - 按"默认不加注释"规则，`__init__.py` 里的注释合成了一行；测试文件已整个删掉。
@@ -20,11 +27,9 @@ Title: `[Kimi K3] Zero-initialise the attention residual projections`
 
 --- PASTE BEGIN ---
 
-## Summary
+Initialize Kimi K3's attention residual projections to zero, as Section 5 of the Attention Residuals technical report requires, so the depth softmax starts uniform and each residual starts as an equal-weight average of its sources.
 
-Initialise Kimi K3's attention residual projections to zero, as Section 5 of the Attention Residuals technical report requires, so the depth softmax starts uniform and each residual starts as an equal-weight average of its sources.
-
-- `torchtitan/models/kimi_k3/__init__.py`: `attention_res_proj`, `ffn_res_proj` and `output_res_proj` take `nn.init.zeros_` instead of `trunc_normal_` at std 0.02.
+- `torchtitan/models/kimi_k3/flavors.py`: `attention_res_proj`, `ffn_res_proj` and `output_res_proj` take `nn.init.zeros_` instead of `trunc_normal_` at std 0.02.
 
 Split out of #4780, as suggested there.
 
