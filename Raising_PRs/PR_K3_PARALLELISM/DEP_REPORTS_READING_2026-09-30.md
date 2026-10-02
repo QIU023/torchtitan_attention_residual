@@ -79,3 +79,21 @@
   - 视频为主的 90 : 10 到 84 : 16 时，藏住 29% 到 62%。
   - 09-30 早些时候"单按容量就装不下大部分 ViT"的说法，只在 75 : 25 这种超出 K3 实际范围的比例下成立，撤回。
 - **不做的：** 按层拆 ViT 不做。动态 CP 等 PP 和 CP 同时能开以后再加，现在没有。
+
+## 10-02 补充：K3 报告 v2 给这句加了引用 [34]（Optimus）
+
+用户 10-02 引了 "We therefore further decompose the ViT computation [34]"，问我们做对了没有。
+
+- **版本**：本地 `phase13_k3like_48b_posttrain/official_k3/report.txt` 是 07-27 拿到的 v1，这句没有引用。arXiv 2607.24653 的 v2（08-07）改成 "...decompose the ViT computation [34]"。v2 的 [34] 是 Weiqi Feng et al., "Optimus: Accelerating Large-Scale Multi-Modal LLM Training by Bubble Exploitation", USENIX ATC 25。DEP 的引用在 v2 里是 [60]（K2.5）。
+- **为什么加**：MoonshotAI/Kimi-K3 的 Issue #3（Optimus 第一作者提的）指出 §5.2.3 缺这条引用；v2 补上了，描述 K3 自己做法的那几句没有改。
+- **Optimus 的做法**（原文 §3、§4.2、§4.3）：
+  - encoder 和 LLM 各用一套并行方案，每张卡都有 encoder 的状态（encoder 也可以自己切 PP，成为若干条 "encoder pipeline"）；
+  - 粗粒度：encoder 前向放进 LLM 计算之前那一大段气泡（DP all-gather 加 PP warmup），反向放进之后那一大段（PP cooldown 加 DP reduce-scatter），放不下的算作没藏住；
+  - 细粒度：反复挑在关键路径上的那条 encoder pipeline，把它一个 micro-batch 的计算拆到 kernel 粒度，按气泡时长塞进夹在 LLM 计算之间的小气泡（其他 PP 气泡、约 300 µs 的 TP 气泡），满足 encoder 内部的层间依赖；encoder 的通信 kernel 放在 LLM 的计算 kernel 期间；
+  - 依赖按 micro-batch 检查：encoder 第 i 个前向的结束时间 ≤ LLM 用它的时刻 F_i，反向的开始时间 ≥ LLM 产出梯度的时刻 B_i；
+  - 还调整了 interleaved 1F1B 的 warmup 个数，把最后几个 micro-batch 的前向依赖点往后推，腾出 warmup 到 steady 之间的气泡。
+- **和我们的实现（`k3_pp_mm` = `d27839459`，`dep_review1` = `1d03bfcc6`）对照**：
+  - K3 原文三句话（前 PP 个 micro-batch 的 ViT 前向同步先做，其余进气泡，反向同理）：做到了。`plan_dep` 里 `upfront = by_consume[:num_ranks]` 进 prologue（按 patch 数在 PP rank 间均衡）；其余编码按 stage 0 的消费顺序找它前面的空闲段；反向找梯度就绪之后的空闲段，后 PP 个通常没有空闲段可用，落在 epilogue。10-01 的 5060 实测在 K3 区间（代价比例 0.13 到 0.82）里，前 PP 个以外的编码全部进气泡，反向 13 个里 12 个进气泡。
+  - 比 Optimus 粗的地方：一个 micro-batch 的编码或反向是整块放进一个空闲段的，不拆层也不拆 kernel，放不下就退回 prologue / epilogue；气泡只看动作网格里的 PP 空闲，不用 TP 气泡和 DP 通信气泡；encoder 不切 PP（K2.5 的 DEP 是每张卡一份塔，我们是每个 PP rank 一份、TP 组内切分）；没有调整 warmup。
+  - 09-30 我写的"拆的单位是 micro-batch，两份报告都没有按层拆 ViT"是按 v1 说的。K3 原文仍然只写到 micro-batch 这一层，但 v2 引的 Optimus 拆到了 kernel。要不要往细里做（比如按层把一次编码拆到同一个 rank 的几个连续空闲段里），由用户定。
+  - PR #4381 的 body 建议补一行引用 Optimus（K3 也引了它），并写明我们的粒度是整个 micro-batch、气泡只用 PP 空闲。
