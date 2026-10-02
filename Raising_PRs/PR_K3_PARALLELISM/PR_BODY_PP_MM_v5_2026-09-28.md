@@ -7,7 +7,7 @@
   - 内容是四个 DEP 提交 rebase 到 main `db050eb3f`，加上类型和 docstring 的修正 `a93cd48ea`，再加上 CPU 会话的重构 `b2a57dff7`。
   - 重构核对：AST 有 64 个定义相同，规划器等价检查 0 处不同；H100 上同一个 bubble 格新旧两棵树 20 步逐位相同。100 步那组和新代码的 GPU 单测还在跑。
   - 标题前缀 "[DO NOT review, pending K3 text PP merging]" 已经过时（#4312 在 09-26 合了），要不要改由你定。
-  - 粘贴区待改：Summary 里的 recipe 路径要改成 `torchtitan_recipes/tests/suites/b200.py`；Results 补隐藏率和 100 步的数值表（H100 跑完再填）。
+  - 粘贴区改了：Summary 里的 recipe 路径；Design 末尾加了一句 Optimus 的引用（K3 报告 v2 的 [34]），并写明这里拆的单位是整个 micro-batch；新增 Results，先放隐藏率表；去掉 Test plan 里"DEP on and off ... pending"那条。**还没填完，先别贴**：100 步的数值表和新代码的 GPU 单测结果还在跑。
 
 - **10-02 结构重构（用户："按照tianyu在4312 comment针对cache/hook方案重构为attnrespipelinestage的方式重构……不能影响数值"）：** review 分支 `dep_review1` 从 `a93cd48ea` 快进到 `b2a57dff7`，PR 分支 `k3_pp_mm` 没动（仍是 `d27839459`）。DEP 代码搬进 `pipeline_parallel/vision_dep/`，按 4312 的拆法分成 `plan.py` / `runtime.py` / `stage.py` / `schedule.py` / `__init__.py`；数值不变（逐位 A/B、规划器等价检查），细节和审计在 `DEP_VISION_DEP_PACKAGE_2026-10-02.md`。粘贴区改了 Summary 的文件列表、Design 末句、Test plan 里的测试文件名（通过数仍是 18）。GPU 那边 H100 的 K3 区间测量跑在 `a93cd48ea` 上，结果对 `b2a57dff7` 同样成立。
 - **10-01：** 规划器偏离报告原文（装不下就退回前面或后面），修正方案在 `DEP_FIX_PLAN_2026-10-01.md`，等用户确认。修正后粘贴区的 Design 段（"what fits no idle slot joins the balanced prologue or epilogue"、`bubble_cost_ratio` 那句）要改写。
@@ -55,7 +55,7 @@ Kimi K3 trains its vision tower with the decoupled encoder process (DEP) of Kimi
   - `schedule.py`: `VisionDepSchedule`, which runs the vision phases around each step.
   - `__init__.py`: `build_vision_replica` and `install_vision_dep`, called from `pipeline_kimi_k3`.
 - `kimi_k3/model.py`: a `vision_dep` config (`enabled`, `bubble`, `bubble_cost_ratio`) and a `vision_embeds` argument on `forward`.
-- `torchtitan_recipes/tests/b200.py`: `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`.
+- `torchtitan_recipes/tests/suites/b200.py`: `kimi_k3_debugmodel_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`.
 
 ## Design
 
@@ -63,11 +63,25 @@ The text split is core's, unchanged. The tower stays on stage 0 as the owner of 
 
 A micro-batch is the unit of work and its patch count is the load. Every pipeline rank already holds the pixel values of every micro-batch of its data-parallel replica, so the features are the only thing that moves to stage 0, and the gradient at the features the only thing that moves back. An encode runs under `no_grad` and keeps only its output; the rank that runs a micro-batch's backward recomputes the tower and backpropagates. Stage 0 splices the features in as a leaf and reads their gradient through a tensor hook, because the stage backward clears input gradients.
 
-Without `bubble`, every encode runs before the schedule and every backward after it, balanced across the ranks by patch count, which is K2.5's form. With `bubble`, the plan reads every rank's `pipeline_order`: the first pipeline-degree micro-batches stage 0 consumes are encoded before the schedule, and the others in an idle slot of any rank ahead of the forward that reads them; a backward runs in an idle slot after stage 0's backward of the micro-batch, including the rest of an idle run that began before that backward; what fits no idle slot joins the balanced prologue or epilogue. Idle time is measured in action time, a slot lasting as long as its longest action with a forward 1 and a backward 2, and `bubble_cost_ratio` is an encode in units of a text-stage forward. Every rank derives the same plan from the action order and `grid_thw`, so no metadata is exchanged.
+Without `bubble`, every encode runs before the schedule and every backward after it, balanced across the ranks by patch count, which is K2.5's form. With `bubble`, the plan reads every rank's `pipeline_order`: the first pipeline-degree micro-batches stage 0 consumes are encoded before the schedule, and the others in an idle slot of any rank ahead of the forward that reads them; a backward runs in an idle slot after stage 0's backward of the micro-batch, including the rest of an idle run that began before that backward; what fits no idle slot joins the balanced prologue or epilogue. Idle time is measured in action time, a slot lasting as long as its longest action with a forward 1 and a backward 2, and `bubble_cost_ratio` is an encode in units of a text-stage forward. Every rank derives the same plan from the action order and `grid_thw`, so no metadata is exchanged. Kimi K3 cites Optimus (ATC 25) for this decomposition; here the unit is a whole micro-batch, and only the pipeline's idle slots are used.
 
 Planned work runs after the action it is anchored to. When that action sends to another rank, the stage issues the send first and returns no ops to the runtime, so the send does not wait for the vision work. Features and gradients travel on a process group created per pipeline group, and both ends of a transfer post it at one slot boundary of the schedule, a point each reaches without the other's later work: the prologue's features at the start of the step, the epilogue's gradients at its end, a feature encoded in an idle slot when its rank's next action starts, and a gradient at the later of stage 0's backward of its micro-batch and the start of the idle slot of the rank that uses it. A posted send or receive therefore never waits on work its own rank has yet to do; receives are waited where their data is used and sends at the end of the step. Each rank sums its copy's gradients in fp32; at step end they are reduced to stage 0, all-reduced over data parallel, gathered over tensor parallel and added into the tower's sharded gradients, before the gradient norm.
 
 `pipeline_kimi_k3` returns the schedule wrapped so that its `step` runs the vision phases around the core step; the engine's pipeline step body has no model hook for them. The process lives in the model's pipeline package and is split like the attention residual pipeline it extends: the plan is built like the block layout tables, the runtime is shared by the rank's stages like the rank store, and the stage subclasses the attention residual stage.
+
+## Results
+
+4 H100s, pp4 x vpp4 (core's 16-stage split, the model's end modules pinned), Interleaved1F1B with 16 micro-batches, full activation checkpointing. The Kimi K3 debug model with its text widened to dim 6144 and its 2-layer debug tower; text-to-image samples with at most one image each at a fixed square size, so 13 to 15 of the 16 micro-batches carry an image. This branch at main `db050eb3f`.
+
+Vision work in pipeline bubbles, one traced step per cell: the encodes and tower backwards were wrapped in profiler ranges for the measurement (not part of this branch), and their kernel time is split by where it ran, inside the step's pipeline span while the rank had no action running, or before or after the schedule.
+
+| seq | image side | cost ratio | K2.5 form (`bubble` off) | `bubble` |
+|---:|---:|---:|---:|---:|
+| 2048 | 224 px | 0.046 | 2% of 16.8 ms | 73% of 16.8 ms |
+| 2048 | 1008 px | 0.135 | 3% of 65.8 ms | 81% of 66.2 ms |
+| 1536 | 1008 px | 0.170 | 3% of 65.8 ms | 84% of 66.2 ms |
+
+The cost ratio is an encode over a middle text stage's forward, both measured in the K2.5 run of the cell, and the `bubble` run plans with it. What stays outside the bubbles is the structure the report describes: the first pipeline-degree encodes before the schedule and the last backwards after it. Every encode or backward placed before or between a rank's actions finishes at least 20 µs before the rank's next action starts.
 
 ## Relation to earlier revisions of this PR
 
@@ -80,6 +94,5 @@ The earlier revisions gave the tower a pipeline stage of its own on the first ra
   - `test_kimi_k3_vision_dep.py`: four ranks on gloo, pp4 x vp2, eight micro-batches with two text only, with the work before and after the schedule, with it in idle slots, and with a cheaper tower whose backward waits inside an idle run for a gradient that is ready later: the step-1 loss and every gradient are bitwise with one device, the step-2 loss and text gradients are bitwise and the tower gradients agree to fp32 summation order; a frozen tower gets no gradient; eval between steps matches one device. At pp2 x tp2, each copy receives its tensor-parallel shard of the tower and the tower's gradient is the sum of every rank's shards. Building the tower's copy leaves the seeded random stream where it was, so the model initializes the same with the process on or off.
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q`, the same four ranks under NCCL with a tower whose kernels first load inside the step, in both placements (3 passed on 4 H100s).
 - The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4_vision_dep`: pending.
-- DEP on and off on one warm compile cache, and `bubble` on and off, loss, gradients and step time: pending (H100).
 
 --- PASTE END ---
