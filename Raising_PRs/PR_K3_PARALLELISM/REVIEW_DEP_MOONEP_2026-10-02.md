@@ -49,6 +49,8 @@
 
 ## MoonEP 逐条
 
+**10-02 用户定了：** 第 1 条取办法二，h100 格子和 recipe 删掉，第 8 条因此不用改；另外 `MoonEPRoutedExperts` 搬出 `models/common/moe.py`。都在 `moonep_review1` `7b73b1ed5`，见 `MOONEP_LAYOUT_2026-10-02.md`。
+
 1. **CI（挡住转正式），要用户定，有两种办法：**
    - **办法一：进 CI。**
      - 把这一格加进基础那一遍的 `--exclude`；

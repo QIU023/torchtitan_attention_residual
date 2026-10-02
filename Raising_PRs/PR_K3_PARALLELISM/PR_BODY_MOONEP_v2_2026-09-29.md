@@ -2,6 +2,14 @@
 
 ## 状态（不粘贴）
 
+- **10-02 用户手动审 diff（"注意MoonEP只是optional backend，很多user是不一定有这个lib的"，h100 recipe 删掉，`moe.py` 的改动不该放在那个文件）：** review 分支 `moonep_review1` 从 `cec583a44` 快进到 `7b73b1ed5`（加一个提交，等你测完再并进原来两个提交）；PR 分支 `k3_moonep_seam` 没动，仍是 `e30d82886`。问答和核对记录在 `MOONEP_LAYOUT_2026-10-02.md`。
+  - 删掉 h100 格子 `kimi_k3_fsdp+moonep` 和 recipe `kimi_k3_moonep_fsdp4_ep4`：`tests/integration_tests/h100.py`、`torchtitan_recipes/tests/suites/h100.py`、`test_integration_test_definitions.py` 都回到 main。`REVIEW_DEP_MOONEP_2026-10-02.md` 里 CI 的两个办法，定为办法二。
+  - `MoonEPRoutedExperts` 从 `models/common/moe.py` 搬到 `distributed/moonep/experts.py`，`moe.py` 回到 main。类的代码不变，只是 `ops` 从 `forward` 里延迟 import 改成模块顶部 import（`ops.py` 不 import moonep 库）。`MoonEPTokenDispatcher` 留在 `models/common/token_dispatcher.py`，和 DeepEP、HybridEP 的 dispatcher 放在一起。
+  - PR 对 main 现在是 9 个文件，+769/−6。
+  - 本机检查：pre-commit 各 hook 通过；pyrefly 0 errors。`test_transforms.py` 加 `test_moe.py` 是 44 passed；另外 2 个 MoonEP 用例要 import Kimi K3，本机 import 不了，改动前的 `cec583a44` 在本机也是这 2 个失败、44 passed。用 DeepSeek V3 debug 配置直接跑 transform：转换结果和"只限 K3"的报错都和改动前一样，建出来的类是 `torchtitan.distributed.moonep.experts.MoonEPRoutedExperts`，整个过程没有 import moonep 库。
+  - 待 GPU 机跑：`test_transforms.py` 全量（27 个，跑完把粘贴区的 pending 换成通过数）和 GPU 测试 5 个（只改了 import 路径）。Results 的数字不受影响，没有行为改动。
+  - 粘贴区改了：Summary 第二条的位置、删 h100 那一条；Design 加一段，说明为什么只有 MoonEP 要专家类、放在哪；Results 两处 h100 格子的说法；Test plan 删集成测试那条，CPU 那条改成单个文件、通过数待填。
+
 - **10-02 rebase 到新 main 并在 H100 上复查（用户："H100恢复连接，先跑MoonEP，然后DEP"；记录在 `MOONEP_H100_2026-09-30.md` 第 7 节）：**
   - `moonep_review1` = `cec583a44`，在 main `db050eb3f` 上，旧 head 备份在 `backup/moonep_review1_pre_20261002`。
   - 只有测试格子列表的冲突。产品代码那个提交和 `949b7b465` 内容相同（range-diff 是 `=`）。
@@ -49,14 +57,15 @@
 Add MoonEP (MoonshotAI/MoonEP, the expert-parallel transport of the Kimi K3 report), which keeps every rank's routed token count at `S x K` by prefetching copies of hot experts, selected with `TokenDispatcherTransform`, enabled for Kimi K3 only until other models are validated.
 
 - `MoonEPTokenDispatcher` (`models/common/token_dispatcher.py`, beside DeepEP and HybridEP): dispatch and combine through one process-global MoonEP `Buffer`; the buffer and the NVLink pools live in `distributed/moonep/moonep.py`, and `distributed/moonep/ops.py` registers dispatch, the expert computation and combine as `torch.library` ops.
-- `MoonEPRoutedExperts` (`models/common/moe.py`): `RoutedExperts` whose grouped GEMMs run over this rank's experts followed by the expert copies prefetched into its slots, and whose backward reduces the copies' gradients into their home experts.
+- `MoonEPRoutedExperts` (`distributed/moonep/experts.py`): `RoutedExperts` whose grouped GEMMs run over this rank's experts followed by the expert copies prefetched into its slots, and whose backward reduces the copies' gradients into their home experts.
 - `TokenDispatcherTransform` (`config/transform/token_dispatcher.py`) takes `routed_experts`, which converts every routed-expert config for a dispatcher that needs its own experts; `TokenDispatcherTransform(dispatcher=MoonEPTokenDispatcher, routed_experts=MoonEPRoutedExperts)` selects MoonEP and fills its static per-rank token count the way it fills DeepEP's.
 - `validate_model_training_config` (`config/validation.py`): MoonEP requires expert parallelism, as DeepEP and HybridEP do, and is refused outside Kimi K3.
-- `torchtitan_recipes/tests/suites/h100.py`: `kimi_k3_moonep_fsdp4_ep4`, the Kimi K3 debug model at FSDP 4 x EP 4, in the h100 suite.
 
 ## Design
 
 MoonEP moves expert weights as well as tokens. After dispatch it prefetches the experts its planner copies into slots on other ranks; each rank's grouped GEMMs cover its `E / R` experts followed by its `E / R` slots, with the planner's `cu_seqlens` as offsets; in backward the slots' gradients are reduced into their home experts. Weights and gradients live in NVLink pools of `2 E / R` rows per rank and projection, allocated once per process and shared by every MoE layer, as MoonEP intends. Each rank copies its unsharded expert weights into the first half of its rows before the prefetch, so the parameters stay ordinary tensors under FSDP. Gate and up get a pool each, since MoonEP's prefetch takes three contiguous projections and `w13` interleaves gate and up per expert.
+
+DeepEP and HybridEP move only tokens, so the standard `RoutedExperts` computes over what they dispatch and each adds only a dispatcher. MoonEP's slots hold other ranks' experts, so the expert computation changes as well; `MoonEPRoutedExperts` lives with the rest of the backend in `distributed/moonep/`, and `models/common/moe.py` is unchanged.
 
 Dispatch, the expert computation and combine are `torch.library` ops, and MoonEP's plan crosses them as a CPU id, as DeepEP's handle does; the backward of dispatch is a combine on the same plan, and the backward of combine is a dispatch. A later layer overwrites the shared pools, so the expert op keeps no graph: its backward refills the pools for its own plan, which also keeps interleaved pipeline schedules correct, and recomputes the expert GEMMs. The three ops register an ordered effect, so selective and full activation checkpointing save their outputs instead of replaying them, and under `RegionAC` each one is a region that is always retained: a replay would dispatch again and refill the shared pools. Routing weights are applied in `combine`, as in the standard dispatcher, so the router trains through the same path. MoonEP's `reduce_grad` reads every rank's slot gradients without a barrier of its own, so the backward writes them and runs an all-reduce on the EP group before reducing.
 
@@ -75,7 +84,7 @@ Requirements and costs:
 
 ## Results
 
-4 H100s behind an NVSwitch, MoonEP `33327eb`, FSDP 4 x EP 4, seq 512, the recipes' selective activation checkpointing. The load cells run the Kimi K3 debug model with 128 experts and top-8, on this branch at main `97e673b77` before its port to the config transforms (MoonEP's code is the same); the numerics cells keep its 8 experts and top-2 and run this branch at main `db050eb3f`.
+4 H100s behind an NVSwitch, MoonEP `33327eb`, FSDP 4 x EP 4, seq 512, the Kimi K3 debug recipe's selective activation checkpointing. The load cells run the Kimi K3 debug model with 128 experts and top-8, on this branch at main `97e673b77` before its port to the config transforms (MoonEP's code is the same); the numerics cells keep its 8 experts and top-2 and run this branch at main `db050eb3f`.
 
 | routing | static placement: hottest rank over mean, mean over layers (worst) | MoonEP: dispatches with exactly S x K rows on the rank | step time, standard / MoonEP |
 |---|---:|---:|---:|
@@ -84,7 +93,7 @@ Requirements and costs:
 
 Static placement is the load each rank would receive with the experts on their home ranks, from the router's counts; S x K is 4096 rows here, counted over 20 steps, 16 MoE layers and 4 ranks. Step time is the mean over steps 11 to 30.
 
-Loss / grad norm on the h100 cell's shape, deterministic, one warm compile cache. The debug dataset is 32 samples that the model memorises, so the runs stop at step 20.
+Loss / grad norm of the Kimi K3 debug model at FSDP 4 x EP 4, deterministic, one warm compile cache. The debug dataset is 32 samples that the model memorises, so the runs stop at step 20.
 
 | cell | step 1 | step 10 | step 20 | max relative loss gap to standard EP, steps 1 to 20 |
 |---|---:|---:|---:|---:|
@@ -96,9 +105,8 @@ Loss / grad norm on the h100 cell's shape, deterministic, one warm compile cache
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_transforms.py tests/unit_tests/cpu/test_integration_test_definitions.py -q` (44 passed): the transform turns every routed-expert config of Kimi K3 into MoonEP's experts and dispatcher with its per-rank token count, a Qwen3 MoE config with MoonEP is refused, and the h100 suite registers the new cell with expert parallelism.
+- `pytest tests/unit_tests/cpu/test_transforms.py -q` (pending on this head): the transform turns every routed-expert config of Kimi K3 into MoonEP's experts and dispatcher with its per-rank token count, and a Qwen3 MoE config with MoonEP is refused.
 - `pytest tests/unit_tests/gpu/test_moonep.py -q` (needs the `moonep` package and NVLink multicast; 5 passed on 2 H100s): on two GPUs the MoonEP experts match a dense fp32 reference in output, input gradient and expert weight gradients, once with every token routed to one rank's experts, where tokens must reach the prefetch slots, and once with uniform routing; and under SelectiveAC, FullAC and RegionAC, where the dispatch must run once per forward and no plan may outlive its combine.
-- `python -m tests.integration_tests.run_tests <output_dir> --test_suite h100 --test_name "kimi_k3_fsdp+moonep" --gpu_arch h100 --ngpu 4` (passes on 4 H100s; 10 steps under the recipe's selective activation checkpointing).
 - Load and step time (the tables above): the Kimi K3 debug model with 128 experts and top-8 at FSDP 4 x EP 4, standard EP against MoonEP, natural routing and a router biased toward the experts of rank 0; per MoE layer and micro-batch, the tokens each rank receives with static placement (max over mean) and, on MoonEP, whether every dispatch puts exactly S x K rows on each rank; the step time of each cell.
 
 ## Relation to earlier revisions of this PR
