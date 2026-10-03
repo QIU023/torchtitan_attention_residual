@@ -1,0 +1,288 @@
+tree 3b0eed285 dirty=0
+============================================================================= test session starts =============================================================================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad
+plugins: typeguard-4.6.0, platformdirs-4.12.1, anyio-4.15.1
+collected 9 items
+
+../moonep_review_1003/test_moonep_fake.py .......F.                                                                                                                     [100%]
+
+================================================================================== FAILURES ===================================================================================
+______________________________________________ TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans ______________________________________________
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:951: in wrapper
+    self._join_processes(fn)
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1221: in _join_processes
+    self._check_return_codes(fn, elapsed_time)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_moonep_fake.TestMoonEPRoutedExpertsOnFourRanks testMethod=test_interleaved_microbatches_keep_their_plans>
+fn = <bound method TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans of <test_moonep_fake.TestMoonEPRoutedExpertsOnFourRanks testMethod=test_interleaved_microbatches_keep_their_plans>>
+elapsed_time = 10.815905094146729
+
+    def _check_return_codes(self, fn, elapsed_time) -> None:
+        """
+        Checks that the return codes of all spawned processes match, and skips
+        tests if they returned a return code indicating a skipping condition.
+        """
+        # If no processes are spawned, there is nothing to check.
+        if not self.processes:
+            logger.warning(
+                "Note: no subprocesses were spawned, test was likely skipped."
+            )
+            return
+    
+        first_process = self.processes[0]
+        # first, we check if there are errors in actual processes
+        # (via TEST_ERROR_EXIT CODE), and raise an exception for those.
+        # the reason we do this is to attempt to raise a more helpful error
+        # message than "Process x terminated/timed out"
+        # TODO: we should pipe the exception of the failed subprocess here.
+        # Currently, the actual exception is displayed as a logging output.
+        errored_processes = [
+            (i, p)
+            for i, p in enumerate(self.processes)
+            if p.exitcode == MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+        ]
+        if errored_processes:
+            error = ""
+            for i, process in errored_processes:
+                # Get error from pipe.
+                error_message = self.pid_to_pipe[process.pid].recv()
+                error += (
+                    f"Process {i} exited with error code {MultiProcessTestCase.TEST_ERROR_EXIT_CODE} "
+                    f"and exception:\n{error_message}\n"
+                )
+    
+>           raise RuntimeError(error)
+E           RuntimeError: Process 0 exited with error code 10 and exception:
+E           Traceback (most recent call last):
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E               getattr(self, test_name)()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E               fn()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E               method(*args, **kwargs)
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E               raise e
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E               func(self, *args, **kwargs)  # type: ignore[misc]
+E               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 277, in test_interleaved_microbatches_keep_their_plans
+E               self._check("hot2", num_layers=2, num_microbatches=2)
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 198, in _check
+E               h_TD = _reference(h_TD, weights_TK.float(), ids_TK, w13_ref, w2_ref)
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 69, in _reference
+E               gate_TF = torch.einsum("td,tfd->tf", x_TD, w13_E2FD[e, 0])
+E                                                          ~~~~~~~~^^^^^^
+E           torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 768.00 MiB. GPU 0 has a total capacity of 15.48 GiB of which 598.00 MiB is free. Including non-PyTorch memory, this process has 14.47 GiB memory in use. Process 2809957 has 132.00 MiB memory in use. Process 2809959 has 132.00 MiB memory in use. Process 2809958 has 132.00 MiB memory in use. Of the allocated memory 14.09 GiB is allocated by PyTorch, and 9.13 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+E           
+E           To execute this test, run the following from the base repo dir:
+E               python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E           
+E           This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1261: RuntimeError
+---------------------------------------------------------------------------- Captured stdout call -----------------------------------------------------------------------------
+Process 0 terminated with exit code 10, terminating remaining processes.
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:52:54.457000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2809956
+I1003 07:52:54.458000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2809957
+I1003 07:52:54.460000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 2 with pid 2809958
+I1003 07:52:54.461000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 3 with pid 2809959
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 277, in test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 198, in _check
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     h_TD = _reference(h_TD, weights_TK.float(), ids_TK, w13_ref, w2_ref)
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 70, in _reference
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     up_TF = torch.einsum("td,tfd->tf", x_TD, w13_E2FD[e, 1])
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]                                              ~~~~~~~~^^^^^^
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116] torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 768.00 MiB. GPU 2 has a total capacity of 15.48 GiB of which 221.38 MiB is free. Including non-PyTorch memory, this process has 15.24 GiB memory in use. Of the allocated memory 14.84 GiB is allocated by PyTorch, and 29.13 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:53:03.417000 2809958 torch/testing/_internal/common_distributed.py:1116]  exiting process 2 with exit code: 10
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 277, in test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 198, in _check
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     h_TD = _reference(h_TD, weights_TK.float(), ids_TK, w13_ref, w2_ref)
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 69, in _reference
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     gate_TF = torch.einsum("td,tfd->tf", x_TD, w13_E2FD[e, 0])
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]                                                ~~~~~~~~^^^^^^
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116] torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 768.00 MiB. GPU 0 has a total capacity of 15.48 GiB of which 598.00 MiB is free. Including non-PyTorch memory, this process has 14.47 GiB memory in use. Process 2809957 has 132.00 MiB memory in use. Process 2809959 has 132.00 MiB memory in use. Process 2809958 has 132.00 MiB memory in use. Of the allocated memory 14.09 GiB is allocated by PyTorch, and 9.13 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:53:03.420000 2809956 torch/testing/_internal/common_distributed.py:1116]  exiting process 0 with exit code: 10
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 277, in test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 198, in _check
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     h_TD = _reference(h_TD, weights_TK.float(), ids_TK, w13_ref, w2_ref)
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 70, in _reference
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     up_TF = torch.einsum("td,tfd->tf", x_TD, w13_E2FD[e, 1])
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]                                              ~~~~~~~~^^^^^^
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116] torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 768.00 MiB. GPU 1 has a total capacity of 15.48 GiB of which 241.38 MiB is free. Including non-PyTorch memory, this process has 15.22 GiB memory in use. Of the allocated memory 14.84 GiB is allocated by PyTorch, and 9.12 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:53:03.426000 2809957 torch/testing/_internal/common_distributed.py:1116]  exiting process 1 with exit code: 10
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 277, in test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 198, in _check
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     h_TD = _reference(h_TD, weights_TK.float(), ids_TK, w13_ref, w2_ref)
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 70, in _reference
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     up_TF = torch.einsum("td,tfd->tf", x_TD, w13_E2FD[e, 1])
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]                                              ~~~~~~~~^^^^^^
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116] torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 768.00 MiB. GPU 3 has a total capacity of 15.48 GiB of which 221.38 MiB is free. Including non-PyTorch memory, this process has 15.24 GiB memory in use. Of the allocated memory 14.84 GiB is allocated by PyTorch, and 29.15 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:53:03.431000 2809959 torch/testing/_internal/common_distributed.py:1116]  exiting process 3 with exit code: 10
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2809956
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2809957
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 2 with pid 2809958
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 3 with pid 2809959
+============================================================================== warnings summary ===============================================================================
+../moonep_review_1003/test_moonep_fake.py:32
+  /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py:32: PytestUnknownMarkWarning: Unknown pytest.mark.multi_gpu - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.multi_gpu
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================================== PASSES ====================================================================================
+________________________________________________________ TestMoonEPRoutedExperts.test_full_ac_matches_dense_reference _________________________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:51:44.790000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2808279
+I1003 07:51:44.792000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2808280
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2808279
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2808280
+______________________________________________ TestMoonEPRoutedExperts.test_hot_routing_fills_slots_and_matches_dense_reference _______________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:51:54.519000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2808516
+I1003 07:51:54.520000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2808517
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2808516
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2808517
+___________________________________________________ TestMoonEPRoutedExperts.test_interleaved_microbatches_keep_their_plans ____________________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:52:04.542000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2808754
+I1003 07:52:04.544000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2808755
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2808754
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2808755
+_______________________________________________________ TestMoonEPRoutedExperts.test_region_ac_matches_dense_reference ________________________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:52:14.966000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2808992
+I1003 07:52:14.968000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2808993
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2808992
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2808993
+______________________________________________________ TestMoonEPRoutedExperts.test_selective_ac_matches_dense_reference ______________________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:52:24.789000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2809230
+I1003 07:52:24.790000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2809231
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2809230
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2809231
+_______________________________________________________ TestMoonEPRoutedExperts.test_two_layers_refill_the_shared_pools _______________________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:52:34.711000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2809472
+I1003 07:52:34.713000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2809473
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2809472
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2809473
+____________________________________________________ TestMoonEPRoutedExperts.test_uniform_routing_matches_dense_reference _____________________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:52:44.834000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2809718
+I1003 07:52:44.836000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2809719
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2809718
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2809719
+______________________________________________ TestMoonEPRoutedExpertsOnFourRanks.test_two_hot_home_ranks_match_dense_reference _______________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:53:05.366000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2810424
+I1003 07:53:05.367000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2810425
+I1003 07:53:05.368000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 2 with pid 2810426
+I1003 07:53:05.370000 2808196 torch/testing/_internal/common_distributed.py:1030] Started process 3 with pid 2810427
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2810424
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2810425
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 2 with pid 2810426
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 3 with pid 2810427
+=========================================================================== short test summary info ===========================================================================
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_full_ac_matches_dense_reference
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_hot_routing_fills_slots_and_matches_dense_reference
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_interleaved_microbatches_keep_their_plans
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_region_ac_matches_dense_reference
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_selective_ac_matches_dense_reference
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_two_layers_refill_the_shared_pools
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_uniform_routing_matches_dense_reference
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExpertsOnFourRanks::test_two_hot_home_ranks_match_dense_reference
+FAILED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExpertsOnFourRanks::test_interleaved_microbatches_keep_their_plans - RuntimeError: Process 0 exited with e...
+============================================================== 1 failed, 8 passed, 1 warning in 98.03s (0:01:38) ==============================================================
+rc=1

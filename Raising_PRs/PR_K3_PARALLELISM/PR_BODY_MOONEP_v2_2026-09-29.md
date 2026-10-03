@@ -2,6 +2,17 @@
 
 ## 状态（不粘贴）
 
+- **10-03 云端审查意见（用户："另一个云端claude审核了PR……如果合理，则修复，然后推到moonep pr和review分支"）：** 逐条结论见 `REVIEW_MOONEP_CLOUD_2026-10-03.md`。
+  - 四条主要意见都成立，已修。`grad_route_weights` 的 materialize 不需要改。
+  - 两个分支都是 `5e4596dc7`，仍是 `db050eb3f` 上的两个提交：
+    - 生产代码 `95e631a16`：导入时检查 prefetch 签名；`prefetch_rows` 加一行注释，写明只有 trailing barrier 的约束。
+    - 测试 `5e4596dc7`：新增两层、两 micro-batch 交错、4 卡两个热点 home；参考实现改成按专家分组；CPU 拒绝测试关掉 CUDA graph。
+  - 推送：先备份为 `backup/{moonep_review1,k3_moonep_seam}_pre_20261003` = `94aeed14f`，再 force-with-lease。#4751 显示 2 个提交、9 个文件、+866/−6，可合并，仍是 draft。
+  - 检查：
+    - 假包 5060 GPU 测试 9/9；两个变异（反向不重填、反向用最近 plan）只被新用例抓到。
+    - CPU 63 passed。
+    - pyrefly 与旧 head 相同。
+  - 粘贴区改动：Requirements 加了版本检查和 compile 支持程度；新增代价一段；参数不 alias pool 的原因并进 Design；`[F, D]` 一句；测试计划写明新用例待 H100。759 词。
 - **10-02 历史清理和 body 精简（用户："都做"）：**
   - **历史：** 在 main `db050eb3f` 上重做成两个提交。`a16140feb` 是产品代码，`MoonEPRoutedExperts` 从一开始就放在 `distributed/moonep/experts.py`；`94aeed14f` 是测试，没有 h100 格。
   - **和验证过的树一致：** 最终文件树和 `7b73b1ed5` 逐字节相同，H100 上的 GPU 测试和 100 步核对照样成立；中间那个提交单独 import 也正常。
@@ -79,18 +90,23 @@ Adds MoonEP, the expert-parallel transport of the Kimi K3 report, as an optional
 
 ## Design
 
-MoonEP moves expert weights as well as tokens: after dispatch it prefetches copies of hot experts into slots on other ranks, each rank's grouped GEMMs run over its own experts followed by its slots, and in backward the slots' gradients are reduced into their home experts. The buffer and the weight and gradient pools are allocated once per process and shared by every MoE layer; each rank copies its unsharded expert weights into its pool rows, so the parameters stay ordinary FSDP tensors.
+MoonEP moves expert weights as well as tokens: after dispatch it prefetches copies of hot experts into slots on other ranks, each rank's grouped GEMMs run over its own experts followed by its slots, and in backward the slots' gradients are reduced into their home experts. The buffer and the weight and gradient pools are allocated once per process and shared by every MoE layer; each rank copies its unsharded expert weights into its pool rows, since FSDP allocates that unsharded storage itself.
 
 Dispatch, the expert computation and combine are `torch.library` ops with an ordered effect, so selective and full activation checkpointing save their outputs instead of replaying them, since a replay would dispatch again and overwrite the shared pools; under `RegionAC` each op is a retained region. The expert op's backward refills the pools for its own plan and recomputes the GEMMs, and an all-reduce on the EP group orders the slot gradient writes before MoonEP reads them.
 
 MoonEP's buffer is static: every dispatch carries exactly `num_max_tokens_per_rank` tokens, which the transform derives from the training shape.
 
-Requirements and costs:
+Requirements:
 
-- Hopper or newer behind an NVSwitch (NVLink multicast); MoonEP `33327eb` with `nvidia-cutlass-dsl` 4.6.2.
+- Hopper or newer behind an NVSwitch (NVLink multicast).
+- MoonEP `33327eb` with `nvidia-cutlass-dsl` 4.6.2. MoonEP's version string has stayed 0.0.1 across API changes, so `moonep.py` checks the prefetch signature at import.
 - Tokens and expert weights enter MoonEP in bf16; slot gradients are reduced in fp32.
-- The MoE layers do not compile with MoonEP (the ops have no fake implementations), and LoRA on the routed experts is not supported.
-- The weight prefetch and the expert forward GEMMs run twice per micro-batch.
+- LoRA on the routed experts is not supported.
+- No compile region may contain the MoonEP ops, which have no fake implementations; titan's local regions still compile, including SiTU-GLU inside the expert computation.
+
+Costs of one pool set for every layer, per MoE layer and micro-batch: the refill adds a second NVLink weight prefetch and a second copy of the local experts into the pool, and the recompute runs 4 grouped GEMM passes where standard EP without activation checkpointing runs 3. In exchange, pool memory does not grow with the number of layers.
+
+The gate and up rows are titan's `[F, D]`, where MoonEP documents `[H, H']`. The prefetch copies each expert as a block, so this matters only once quantized experts bring scale tensors, which MoonEP re-tiles per expert.
 
 ## Results
 
@@ -116,7 +132,7 @@ Standard EP run twice is identical on all 20 steps, and MoonEP under full activa
 ## Test plan
 
 - `pytest tests/unit_tests/cpu/test_transforms.py -q` (27 passed).
-- `pytest tests/unit_tests/gpu/test_moonep.py -q` (5 passed on 2 H100s; skips without MoonEP or NVLink multicast).
+- `pytest tests/unit_tests/gpu/test_moonep.py -q` (skips without MoonEP or NVLink multicast): the five single-layer cases passed on 2 H100s; the two-layer, interleaved micro-batch and four-GPU cases are pending an H100 run.
 
 ## Relation to earlier revisions of this PR
 

@@ -1,0 +1,530 @@
+tree 0895fcbfc dirty=1
+============================================================================= test session starts =============================================================================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad
+plugins: typeguard-4.6.0, platformdirs-4.12.1, anyio-4.15.1
+collected 9 items / 5 deselected / 4 selected
+
+../moonep_review_1003/test_moonep_fake.py .FFF                                                                                                                          [100%]
+
+================================================================================== FAILURES ===================================================================================
+___________________________________________________ TestMoonEPRoutedExperts.test_interleaved_microbatches_keep_their_plans ____________________________________________________
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:951: in wrapper
+    self._join_processes(fn)
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1221: in _join_processes
+    self._check_return_codes(fn, elapsed_time)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_moonep_fake.TestMoonEPRoutedExperts testMethod=test_interleaved_microbatches_keep_their_plans>
+fn = <bound method TestMoonEPRoutedExperts.test_interleaved_microbatches_keep_their_plans of <test_moonep_fake.TestMoonEPRoutedExperts testMethod=test_interleaved_microbatches_keep_their_plans>>
+elapsed_time = 10.21259617805481
+
+    def _check_return_codes(self, fn, elapsed_time) -> None:
+        """
+        Checks that the return codes of all spawned processes match, and skips
+        tests if they returned a return code indicating a skipping condition.
+        """
+        # If no processes are spawned, there is nothing to check.
+        if not self.processes:
+            logger.warning(
+                "Note: no subprocesses were spawned, test was likely skipped."
+            )
+            return
+    
+        first_process = self.processes[0]
+        # first, we check if there are errors in actual processes
+        # (via TEST_ERROR_EXIT CODE), and raise an exception for those.
+        # the reason we do this is to attempt to raise a more helpful error
+        # message than "Process x terminated/timed out"
+        # TODO: we should pipe the exception of the failed subprocess here.
+        # Currently, the actual exception is displayed as a logging output.
+        errored_processes = [
+            (i, p)
+            for i, p in enumerate(self.processes)
+            if p.exitcode == MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+        ]
+        if errored_processes:
+            error = ""
+            for i, process in errored_processes:
+                # Get error from pipe.
+                error_message = self.pid_to_pipe[process.pid].recv()
+                error += (
+                    f"Process {i} exited with error code {MultiProcessTestCase.TEST_ERROR_EXIT_CODE} "
+                    f"and exception:\n{error_message}\n"
+                )
+    
+>           raise RuntimeError(error)
+E           RuntimeError: Process 0 exited with error code 10 and exception:
+E           Traceback (most recent call last):
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E               getattr(self, test_name)()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E               fn()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E               method(*args, **kwargs)
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E               raise e
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E               func(self, *args, **kwargs)  # type: ignore[misc]
+E               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 258, in test_interleaved_microbatches_keep_their_plans
+E               self._check("hot", num_layers=2, num_microbatches=2)
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E               torch.testing.assert_close(
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E               raise error_metas[0].to_error(msg)
+E           AssertionError: Tensor-likes are not close!
+E           
+E           Mismatched elements: 7465 / 131072 (5.7%)
+E           Greatest absolute difference: 0.19336450099945068 at index (200, 291) (up to 0.05 allowed)
+E           Greatest relative difference: 34848.73046875 at index (23, 266) (up to 0.05 allowed)
+E           
+E           To execute this test, run the following from the base repo dir:
+E               python test_moonep_fake.py TestMoonEPRoutedExperts.test_interleaved_microbatches_keep_their_plans
+E           
+E           This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1261: RuntimeError
+---------------------------------------------------------------------------- Captured stdout call -----------------------------------------------------------------------------
+Process 0 terminated with exit code 10, terminating remaining processes.
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:57:24.855000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2815357
+I1003 07:57:24.856000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2815358
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 258, in test_interleaved_microbatches_keep_their_plans
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     self._check("hot", num_layers=2, num_microbatches=2)
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 7122 / 131072 (5.4%)
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.22777341306209564 at index (240, 306) (up to 0.05 allowed)
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 25573.34765625 at index (156, 345) (up to 0.05 allowed)
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExperts.test_interleaved_microbatches_keep_their_plans
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:32.892000 2815358 torch/testing/_internal/common_distributed.py:1116]  exiting process 1 with exit code: 10
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 258, in test_interleaved_microbatches_keep_their_plans
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     self._check("hot", num_layers=2, num_microbatches=2)
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 7465 / 131072 (5.7%)
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.19336450099945068 at index (200, 291) (up to 0.05 allowed)
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 34848.73046875 at index (23, 266) (up to 0.05 allowed)
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExperts.test_interleaved_microbatches_keep_their_plans
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:32.897000 2815357 torch/testing/_internal/common_distributed.py:1116]  exiting process 0 with exit code: 10
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2815357
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2815358
+_______________________________________________________ TestMoonEPRoutedExperts.test_two_layers_refill_the_shared_pools _______________________________________________________
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:951: in wrapper
+    self._join_processes(fn)
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1221: in _join_processes
+    self._check_return_codes(fn, elapsed_time)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_moonep_fake.TestMoonEPRoutedExperts testMethod=test_two_layers_refill_the_shared_pools>
+fn = <bound method TestMoonEPRoutedExperts.test_two_layers_refill_the_shared_pools of <test_moonep_fake.TestMoonEPRoutedExperts testMethod=test_two_layers_refill_the_shared_pools>>
+elapsed_time = 10.013520240783691
+
+    def _check_return_codes(self, fn, elapsed_time) -> None:
+        """
+        Checks that the return codes of all spawned processes match, and skips
+        tests if they returned a return code indicating a skipping condition.
+        """
+        # If no processes are spawned, there is nothing to check.
+        if not self.processes:
+            logger.warning(
+                "Note: no subprocesses were spawned, test was likely skipped."
+            )
+            return
+    
+        first_process = self.processes[0]
+        # first, we check if there are errors in actual processes
+        # (via TEST_ERROR_EXIT CODE), and raise an exception for those.
+        # the reason we do this is to attempt to raise a more helpful error
+        # message than "Process x terminated/timed out"
+        # TODO: we should pipe the exception of the failed subprocess here.
+        # Currently, the actual exception is displayed as a logging output.
+        errored_processes = [
+            (i, p)
+            for i, p in enumerate(self.processes)
+            if p.exitcode == MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+        ]
+        if errored_processes:
+            error = ""
+            for i, process in errored_processes:
+                # Get error from pipe.
+                error_message = self.pid_to_pipe[process.pid].recv()
+                error += (
+                    f"Process {i} exited with error code {MultiProcessTestCase.TEST_ERROR_EXIT_CODE} "
+                    f"and exception:\n{error_message}\n"
+                )
+    
+>           raise RuntimeError(error)
+E           RuntimeError: Process 0 exited with error code 10 and exception:
+E           Traceback (most recent call last):
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E               getattr(self, test_name)()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E               fn()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E               method(*args, **kwargs)
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E               raise e
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E               func(self, *args, **kwargs)  # type: ignore[misc]
+E               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 254, in test_two_layers_refill_the_shared_pools
+E               self._check("hot", num_layers=2)
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E               torch.testing.assert_close(
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E               raise error_metas[0].to_error(msg)
+E           AssertionError: Tensor-likes are not close!
+E           
+E           Mismatched elements: 6109 / 131072 (4.7%)
+E           Greatest absolute difference: 0.1755976676940918 at index (240, 11) (up to 0.05 allowed)
+E           Greatest relative difference: 2019.8062744140625 at index (213, 250) (up to 0.05 allowed)
+E           
+E           To execute this test, run the following from the base repo dir:
+E               python test_moonep_fake.py TestMoonEPRoutedExperts.test_two_layers_refill_the_shared_pools
+E           
+E           This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1261: RuntimeError
+---------------------------------------------------------------------------- Captured stdout call -----------------------------------------------------------------------------
+Process 0 terminated with exit code 10, terminating remaining processes.
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:57:35.128000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2815600
+I1003 07:57:35.130000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2815601
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 254, in test_two_layers_refill_the_shared_pools
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     self._check("hot", num_layers=2)
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 6467 / 131072 (4.9%)
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.19628384709358215 at index (65, 78) (up to 0.05 allowed)
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 2899.5458984375 at index (15, 383) (up to 0.05 allowed)
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExperts.test_two_layers_refill_the_shared_pools
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:43.192000 2815601 torch/testing/_internal/common_distributed.py:1116]  exiting process 1 with exit code: 10
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 254, in test_two_layers_refill_the_shared_pools
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     self._check("hot", num_layers=2)
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 6109 / 131072 (4.7%)
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.1755976676940918 at index (240, 11) (up to 0.05 allowed)
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 2019.8062744140625 at index (213, 250) (up to 0.05 allowed)
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExperts.test_two_layers_refill_the_shared_pools
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:43.194000 2815600 torch/testing/_internal/common_distributed.py:1116]  exiting process 0 with exit code: 10
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2815600
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2815601
+______________________________________________ TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans ______________________________________________
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:951: in wrapper
+    self._join_processes(fn)
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1221: in _join_processes
+    self._check_return_codes(fn, elapsed_time)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_moonep_fake.TestMoonEPRoutedExpertsOnFourRanks testMethod=test_interleaved_microbatches_keep_their_plans>
+fn = <bound method TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans of <test_moonep_fake.TestMoonEPRoutedExpertsOnFourRanks testMethod=test_interleaved_microbatches_keep_their_plans>>
+elapsed_time = 11.917235612869263
+
+    def _check_return_codes(self, fn, elapsed_time) -> None:
+        """
+        Checks that the return codes of all spawned processes match, and skips
+        tests if they returned a return code indicating a skipping condition.
+        """
+        # If no processes are spawned, there is nothing to check.
+        if not self.processes:
+            logger.warning(
+                "Note: no subprocesses were spawned, test was likely skipped."
+            )
+            return
+    
+        first_process = self.processes[0]
+        # first, we check if there are errors in actual processes
+        # (via TEST_ERROR_EXIT CODE), and raise an exception for those.
+        # the reason we do this is to attempt to raise a more helpful error
+        # message than "Process x terminated/timed out"
+        # TODO: we should pipe the exception of the failed subprocess here.
+        # Currently, the actual exception is displayed as a logging output.
+        errored_processes = [
+            (i, p)
+            for i, p in enumerate(self.processes)
+            if p.exitcode == MultiProcessTestCase.TEST_ERROR_EXIT_CODE
+        ]
+        if errored_processes:
+            error = ""
+            for i, process in errored_processes:
+                # Get error from pipe.
+                error_message = self.pid_to_pipe[process.pid].recv()
+                error += (
+                    f"Process {i} exited with error code {MultiProcessTestCase.TEST_ERROR_EXIT_CODE} "
+                    f"and exception:\n{error_message}\n"
+                )
+    
+>           raise RuntimeError(error)
+E           RuntimeError: Process 3 exited with error code 10 and exception:
+E           Traceback (most recent call last):
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E               getattr(self, test_name)()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E               fn()
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E               method(*args, **kwargs)
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E               raise e
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E               func(self, *args, **kwargs)  # type: ignore[misc]
+E               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 276, in test_interleaved_microbatches_keep_their_plans
+E               self._check("hot2", num_layers=2, num_microbatches=2)
+E             File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E               torch.testing.assert_close(
+E             File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E               raise error_metas[0].to_error(msg)
+E           AssertionError: Tensor-likes are not close!
+E           
+E           Mismatched elements: 3275 / 131072 (2.5%)
+E           Greatest absolute difference: 0.15726786851882935 at index (2, 335) (up to 0.05 allowed)
+E           Greatest relative difference: 733.4741821289062 at index (239, 104) (up to 0.05 allowed)
+E           
+E           To execute this test, run the following from the base repo dir:
+E               python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E           
+E           This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+
+/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py:1261: RuntimeError
+---------------------------------------------------------------------------- Captured stdout call -----------------------------------------------------------------------------
+Process 3 terminated with exit code 10, terminating remaining processes.
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:57:45.226000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2815837
+I1003 07:57:45.228000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2815838
+I1003 07:57:45.229000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 2 with pid 2815839
+I1003 07:57:45.230000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 3 with pid 2815840
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 276, in test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 2768 / 131072 (2.1%)
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.1499013751745224 at index (39, 152) (up to 0.05 allowed)
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 892.977294921875 at index (39, 349) (up to 0.05 allowed)
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:55.003000 2815837 torch/testing/_internal/common_distributed.py:1116]  exiting process 0 with exit code: 10
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 276, in test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 3460 / 131072 (2.6%)
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.17460915446281433 at index (167, 63) (up to 0.05 allowed)
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 657.59423828125 at index (138, 62) (up to 0.05 allowed)
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:55.003000 2815838 torch/testing/_internal/common_distributed.py:1116]  exiting process 1 with exit code: 10
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 276, in test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 3275 / 131072 (2.5%)
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.15726786851882935 at index (2, 335) (up to 0.05 allowed)
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 733.4741821289062 at index (239, 104) (up to 0.05 allowed)
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:55.004000 2815840 torch/testing/_internal/common_distributed.py:1116]  exiting process 3 with exit code: 10
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] Caught exception: 
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] Traceback (most recent call last):
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 1106, in run_test
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     getattr(self, test_name)()
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_distributed.py", line 953, in wrapper
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     fn()
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/common_utils.py", line 3952, in wrapper
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     method(*args, **kwargs)
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 904, in wrapper
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     raise e
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 901, in wrapper
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     func(self, *args, **kwargs)  # type: ignore[misc]
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 276, in test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     self._check("hot2", num_layers=2, num_microbatches=2)
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py", line 209, in _check
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     torch.testing.assert_close(
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]   File "/workspace/venv_0928/lib/python3.12/site-packages/torch/testing/_comparison.py", line 1689, in assert_close
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     raise error_metas[0].to_error(msg)
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] AssertionError: Tensor-likes are not close!
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] Mismatched elements: 3016 / 131072 (2.3%)
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] Greatest absolute difference: 0.20873795449733734 at index (8, 484) (up to 0.05 allowed)
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] Greatest relative difference: 475.6656799316406 at index (9, 460) (up to 0.05 allowed)
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] To execute this test, run the following from the base repo dir:
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]     python test_moonep_fake.py TestMoonEPRoutedExpertsOnFourRanks.test_interleaved_microbatches_keep_their_plans
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] 
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116] This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+E1003 07:57:55.007000 2815839 torch/testing/_internal/common_distributed.py:1116]  exiting process 2 with exit code: 10
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2815837
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2815838
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 2 with pid 2815839
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 3 with pid 2815840
+============================================================================== warnings summary ===============================================================================
+../moonep_review_1003/test_moonep_fake.py:32
+  /tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad/moonep_review_1003/test_moonep_fake.py:32: PytestUnknownMarkWarning: Unknown pytest.mark.multi_gpu - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.multi_gpu
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================================== PASSES ====================================================================================
+______________________________________________ TestMoonEPRoutedExperts.test_hot_routing_fills_slots_and_matches_dense_reference _______________________________________________
+---------------------------------------------------------------------------- Captured stderr call -----------------------------------------------------------------------------
+I1003 07:57:14.827000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 0 with pid 2815121
+I1003 07:57:14.830000 2815045 torch/testing/_internal/common_distributed.py:1030] Started process 1 with pid 2815122
+------------------------------------------------------------------------------ Captured log call ------------------------------------------------------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 0 with pid 2815121
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1030 Started process 1 with pid 2815122
+=========================================================================== short test summary info ===========================================================================
+PASSED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_hot_routing_fills_slots_and_matches_dense_reference
+FAILED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_interleaved_microbatches_keep_their_plans - RuntimeError: Process 0 exited with error code 1...
+FAILED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExperts::test_two_layers_refill_the_shared_pools - RuntimeError: Process 0 exited with error code 10 and e...
+FAILED ../moonep_review_1003/test_moonep_fake.py::TestMoonEPRoutedExpertsOnFourRanks::test_interleaved_microbatches_keep_their_plans - RuntimeError: Process 3 exited with e...
+============================================================ 3 failed, 1 passed, 5 deselected, 1 warning in 48.55s ============================================================
+rc=1
