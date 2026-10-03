@@ -4,6 +4,7 @@ tianyu-l 在 #4780 的 review（5299962900，r4090059193）里说："fix the ini
 
 ## 状态（2026-09-25，不粘贴）
 
+- **已作废（10-03）：** 下面这次本地 rebase（`609461d20`）没有推，已被另一会话的 `42dac61c7`（main `e76e810c7`，含 #4680）取代，PR 分支 10-03 已推到它。当前状态和 B200 黄金文件流程看 `PR_BODY_4881_v2_2026-10-02.md`。
 - **10-02 rebase 到 main（用户："4881 拉取 rebase main"）：**
   - 拉取：#4881 仍是 open，head `ae3a7881b`，tianyu 09-26 在这个 head 上批准，之后没有新评论；它比 main 落后 84 个提交。
   - 本地 rebase 到 upstream main `6f716feed`，得到 `609461d20`，在临时工作树 `zi_rb` 里，**还没推**：PR 分支 `k3_attnres_zero_init` 仍是 `ae3a7881b`，推之前要你点头。
