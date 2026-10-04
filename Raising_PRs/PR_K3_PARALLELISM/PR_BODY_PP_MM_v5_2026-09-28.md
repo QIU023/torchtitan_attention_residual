@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-04 按审查意见改（用户转来的审查 1 到 3 条，并说"别drift了，排布还得是这样的"）：** `dep_review1` = `8518f473f`（替换 `5b01a6932`，备份 `backup/dep_review1_pre_20261004b`）。排布不变：每个 ViT 工作的 rank、所在气泡和先后顺序仍是图 11。去掉了规划器把结尾气泡里的反向报成"贴着段尾"的那段（运行时从来是在 rank 最后一个文本动作之后就做）；图 11 的单测改成断言 rank、所在气泡和顺序；运行时测试新增逐 rank 的执行顺序检查；docstring 压短。粘贴区改了两处措辞（"ahead of the final ones"、表下面那句测试说明），通过数不变（20 passed）。
 - **10-04 按图 11 重排（用户："为什么？不要随便否认图里面的正确性，并且现在的DEP body还得想办法在PR head代码里面yield和图片完全一致的stage排布"）：** review 分支 `dep_review1` = `5b01a6932`（替换 `6b580e438`，备份 `backup/dep_review1_pre_20261004`），PR 分支 `k3_pp_mm` 仍是 `6f5312fab`。细节在 `DEP_K3_FIG11_REVIEW_2026-10-04.md` 的"第二轮"。
   - 粘贴区改了：Design 的 Placement 换成新规则，Fit 补上 ViT 反向按 3 个前向算；Design 末尾加图 11 的排布表和检查它的测试名；Results 里隐藏率表和 `bubble=True` 的 100 步数值改成 Pending (H100)（都是旧放置规则下测的），DEP 关和 `bubble=False` 那句保留（K2.5 形式的规划结果不变，随机 592 组逐项相同）；Test plan 的 CPU 通过数 18 → 20，GPU 那行改成 Pending (H100)（本机 5060 上 2 passed，只记在 logbook）。
   - 贴之前要先把 PR 分支同步到 `5b01a6932`（等你的话）。
@@ -101,7 +102,7 @@ Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipe
 - Placement:
   - `bubble=False` (the K2.5 form): every ViT forward runs before the pipeline schedule and every ViT backward after it, balanced by patch count.
   - `bubble=True` (the K3 form): the ViT forwards of the schedule's first pipeline-degree micro-batches run before it and the ViT backwards of its last pipeline-degree micro-batches after it, balanced by patch count.
-  - The other ViT forwards run in the pipeline bubble that opens each rank's schedule (its idle slots before its first action), right after the upfront ones, and the other ViT backwards in the bubble that closes it, right before the final ones.
+  - The other ViT forwards run in the pipeline bubble that opens each rank's schedule (its idle slots before its first action), right after the upfront ones, and the other ViT backwards in the bubble that closes it, ahead of the final ones.
   - Each goes to the least filled of those bubbles for its length, the lower rank on a tie, so a rank's share grows with its bubble.
   - Work that fits no bubble falls back to before or after the schedule.
 - Fit:
@@ -115,7 +116,7 @@ Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipe
   - `pipeline_kimi_k3` wraps the schedule's `step`, since the engine's pipeline step has no model hook.
   - The package is split like the AttnRes pipeline: the plan like the block layout tables, the runtime like the rank store, and the stage subclasses the AttnRes stage.
 
-With pp 3 x vpp 4 and 6 micro-batches the plan is the layout of Figure 11 in the K3 report (micro-batches numbered from 1); `test_three_ranks_and_six_microbatches_lay_out_as_in_the_k3_report` checks it, with the start and end of each bubble item, for cost ratios 0.05 to 0.3:
+With pp 3 x vpp 4 and 6 micro-batches the plan is the layout of Figure 11 in the K3 report (micro-batches numbered from 1); `test_three_ranks_and_six_microbatches_lay_out_as_in_the_k3_report` checks the rank, bubble and order of every item for cost ratios 0.05 to 0.3, and the runtime tests check that every rank runs exactly its planned ViT work, in order, before its first text action and after its last:
 
 | rank | ViT forward before the schedule | ViT forward in the opening bubble | ViT backward in the closing bubble | ViT backward after the schedule |
 |---|---|---|---|---|
