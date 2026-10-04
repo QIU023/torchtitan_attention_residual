@@ -110,3 +110,52 @@ Figure 11 是 3 段 PP、6 个 micro-batch 的示意图：
 ## 第二轮：推送（10-04）
 
 - `dep_review1` 从 `6b580e438` force-with-lease 推到 `5b01a6932`，旧 head 备份为 `backup/dep_review1_pre_20261004`。提交没有 trailer。
+
+## CPU 会话独立核对 `5b01a6932`（10-04）
+
+用户："拉取，审查DEP review分支的新changes，k3原文的排布是这样的，校验代码是否真的生成这个排布，并且有什么unit test检验它吗？"
+
+我先自己从图上读出排布（编号从 1 起），没有用 GPU 会话的 `fig11.json`：
+- ViT 前向：调度前 PP0 {1}、PP1 {2}、PP2 {3}；开头气泡 PP1 {4}、PP2 {5, 6}；
+- ViT 反向：结尾气泡 PP1 {1}、PP2 {2, 3}；调度后 PP0 {4}、PP1 {5}、PP2 {6}；
+- 稳定阶段没有 ViT 工作。
+
+**规划器（`cpu_check/fig11_check.py`）：** pp3 × vp4、6 个 micro-batch、均匀负载，文本顺序取 torch 的 `ScheduleInterleaved1F1B`。
+- 代价比 0.01、0.05、0.1、0.2、0.3、1/3：和图逐项相同，每个 rank 内的先后也相同。
+- 0.34、0.5、1.0：不同。PP1 的结尾气泡放不下一次 3 倍的 ViT 反向，mb1 改去 PP2，mb3 退回调度后。和提交信息说的界一致。
+- 其他形状、代价比 0.1：稳定阶段都没有 ViT 工作，越靠后的 rank 分到越多。
+  - pp4 × vp4、M8：开头 {1:1, 2:1, 3:2}，结尾 {1:1, 2:1, 3:2}；
+  - pp8 × vp4、M32：开头 {1:1, …, 7:6}，结尾 {1:1, …, 7:7}；
+  - pp16 × vp2、M32：每个 rank 各 1 个，rank 15 各 2 个。
+- 负载不均时，调度前和调度后的那 PP 个按 patch 数做 LPT：最大的给 rank 0，不再是 mb r 对 rank r。只有部分 micro-batch 带图时，"前 PP 个"按调度位置取，没图的跳过。
+
+**真跑运行时（`cpu_check/fig11_runtime.py`）：** 3 个 gloo rank、12 个 stage、Interleaved1F1B、6 个 micro-batch，每个都带一张图；记录一步训练里每个 rank 实际执行的顺序。
+- 代价比 0.05、0.2、0.3：
+  - PP0：`[ViT fwd 1]` 文本 48 个动作 `[ViT bwd 4]`
+  - PP1：`[ViT fwd 2] [ViT fwd 4]` 文本 `[ViT bwd 1] [ViT bwd 5]`
+  - PP2：`[ViT fwd 3] [ViT fwd 5] [ViT fwd 6]` 文本 `[ViT bwd 2] [ViT bwd 3] [ViT bwd 6]`
+  - 文本动作之间没有任何 ViT 工作。和图完全一样。
+- 第 1 步每个参数的梯度、最后一个 rank 的 loss，都和单卡逐位相同（PP0 5/5、PP1 4/4、PP2 3/3）。
+- 0.5：排布和规划器一样变了，数值仍逐位相同。
+
+**单测：**
+- 直接对着图检查的是 `test_three_ranks_and_six_microbatches_lay_out_as_in_the_k3_report`：代价比 0.05 到 0.3，断言调度前、调度后的分配，以及 6 个气泡工作的 rank 和起止时刻。
+- 另外两个测的是结构：
+  - `test_encodes_open_and_backwards_close_each_ranks_schedule`：三种形状、三个代价比、负载不均，气泡里的前向都在开头段，反向都在结尾段；
+  - `test_the_first_and_last_pipeline_degree_microbatches_run_outside_the_schedule`。
+- 本机 harness：20 passed、46 subtests，和 GPU 会话一致。
+- 没有覆盖的：
+  - **运行时的执行顺序没有单测。** gloo 和 NCCL 的运行时测试（pp4 × vp2、M8）只比数值，并检查 `plan.placed` 里有没有前向和反向两类，不检查每个 rank 实际在哪里执行。上面的脚本说明现在是对的，但没有测试守住。
+  - 图的形状只在规划器层面测；均匀负载。
+
+**审查意见：**
+1. **结尾气泡里"贴着段尾往前排"只改了 `placed` 的时刻，运行时不这么跑。** `_place_backwards` 最后把结尾段里的反向挪到段尾。但 `placed` 只被运行时拿来在日志里数个数（`runtime.py:122`）。运行时在 rank 的最后一个文本动作之后（有 send 时在 send 发出之后）立刻执行这些反向，没有延后。先后顺序和图一样，段内的时刻不一样。rank 那时本来就空着，早做不会更慢。
+   - 所以这 10 行只是让规划器报的数字对上图的画法，单测断言的段尾时刻测的也是这件事，不是运行时的行为。
+   - 建议去掉，测试改成断言 rank、所在的段和先后顺序。审查的人看到会问"运行时会等到段尾吗"，答案是不会。
+   - 如果保留，body 里"with the start and end of each bubble item"要说明这是规划器的时刻，不是执行时刻。
+2. **补一个运行时顺序的检查。** 在现有 gloo 测试里记录每个 rank 的 `_encode`、`_backward` 和文本动作的执行顺序，断言视觉工作只出现在第一个文本动作之前或最后一个之后，并且每个 rank 执行的 micro-batch 和计划一致。不改产品代码，几行测试。
+3. **图的复现依赖我们的代价常数。** 用我们的常数（ViT 反向 3 倍，传输留 1 个单位），只有代价比 ≤ 1/3 时和图一样。图自己的比例是 ViT 前向 0.5、反向 1.0，按我们的常数在 0.5 时 PP1 的结尾气泡放不下。这在 K3 的区间（0.02 到 0.32，H100 实测 0.046 到 0.170）里没有问题，但 body 已写明"for cost ratios 0.05 to 0.3"，不要说成"任意代价比都等于图"。
+4. 其余：
+   - `VisionDepPlan` 的类 docstring 变成三段（约 13 行），比 #4577 的标准长，可以把排布规则压成两三句；
+   - 删掉"反向在空闲段里等晚到的梯度"那两个运行时用例的理由成立：结尾段从 rank 最后一个动作之后开始，那时非最后 PP 个的梯度早就有了。规划器单测里的手写顺序还覆盖这个情况；
+   - 不开 bubble 的 K2.5 形式不变（GPU 会话 592 组逐项相同），B200 那个格子开的就是它。
