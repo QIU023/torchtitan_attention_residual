@@ -64,6 +64,58 @@ titan 现在没人用 forward context，DETAIL 也不是默认，所以目前不
 
 建议发一条短评论，作者身份（4312 的作者）：确认改法、补上症状和时间线（方便 maintainer 理解为什么 4312 的格子是绿的），并提一句覆写还漏了 forward context 和 DETAIL 校验。最后那句是否保留由用户定；保留就意味着要做 follow-up。
 
+## 10-04 补充（用户："为什么我们当时要这么做？？如果5025之后，再做follow up怎么做？"）
+
+### 症状已经实测
+
+- 4656 那个会话 10-04 在 5060 上用 torch `dev20261003`（`venv_1003b`）跑 main `838e6962e` 的 B200 PP 格子，main 自己就报 "FSDP finalize_backward requires manual backward finalization"（`PR_BODY_4656_v6_2026-10-04.md`）。上面"读源码得出、没有跑过"的那条现在有实测支撑，评论草稿里那句可以照写。
+- #5025 到 10-04 仍是 draft，没有评论和 review，head 仍是 `fc6302123`。
+
+### 当时为什么整段复制 `forward_one_chunk`
+
+logbook 里没有一条写明"考虑过窄的接口、为什么没用"，下面是从设计记录和代码推出来的：
+- **store 的 key 只能从 schedule 拿。** NCCL 每次给新的接收 buffer，张量身份跨 P2P 不保留，所以 rank 上的 block 只能按 micro-batch 编号存取。设计记录（`PP_DESIGN_WORKFLOW_2026-09-07.en.md` 第 49 行）写的就是"子类化让这件事很简单：chunk id 就是被覆写的那个调用的参数"。基类里拿得到编号的只有 `forward_one_chunk` / `backward_one_chunk`（和 `_retrieve_recv_activations`）。
+- **要改的三处都在基类 forward 的中间：**
+  - 模型看到的输入：收到的是 `(hidden, delta)`，模型要的是拼好的整个 stack；
+  - 为反向保存的输入：必须是拼好的 stack 这个叶子，store 里 block 的梯度才能和 delta 的梯度一起拿回来。这一点是 I/W 拆开的反向逼出来的：`stage_backward_input` 用 `autograd.grad` 只算 stage 输入的梯度，store 的 block 如果不是 stage 输入，拆开的反向里就拿不到它们的梯度；
+  - 发出去、存进 forward 状态的输出：必须是只含对方缺的 block 的 payload，不是模型返回的整个 stack。
+  基类里这三样共用 `composite_args` 和 `output_tuple` 两个变量，没法"先调 super 再修"，所以当时就把整个函数照抄改写，让整套协议在一个函数里能读完（设计记录把子类叫作"协议的可执行说明"）。
+- **tianyu 当时也说这是权宜之计。** 09-11 在 #4312（r3987651867）："I don't [think] this is a bit hacky, but the tradeoff is to have clean integration point without intrusive change to existing `pipeline_parallel.py`. We need to take some time and see if this is the proper abstraction for attn res."
+- **代价已经出现两次。** 基类一改，就得有人来改我们的拷贝：
+  - #4661（Chien-Chin，10-01）：torch 把 `fwd_cache` 换成 `_forward_chunk_states` / `_make_forward_chunk_state`，他顺手改了 K3 的 `stage.py`；
+  - #5025（Shuhua）：就是这次。
+  - 我们的拷贝还直接读写 torch 的私有记账（`_forward_chunk_states`、`_make_forward_chunk_state`），这正是 #4661 要动它的原因。
+
+### 顺带查出来的：DETAIL 模式下 K3 PP（开 cache）今天就过不了
+
+- `TORCH_DISTRIBUTED_DEBUG=DETAIL` 时，基类 `backward_one_chunk`（K3 调的是 super）会拿 `grads_input` 去对 `_stage_meta.input_grads` 校验 shape 和 stride。`input_grads` 是按收到的 `(hidden, delta)` 推的，而这时 K3 的梯度还是整个 stack 的梯度（拆分在 super 返回之后才做）。开 `attn_res_cache` 时 stack 比 delta 宽，校验必然报 `PipeliningMetadataError`。
+- `attn_res_cache=False` 时 stack 就是 delta，校验能过。
+- DETAIL 不是默认，所以没人碰到。这是读源码得出的，没有跑过。
+
+### follow-up 怎么做（建议在 #5025 合入后单独开一个小 PR）
+
+**第一步，前向改成复用基类（只动 titan）：**
+- `forward_one_chunk` 只留薄薄一层：记下当前 chunk id，调 `super().forward_one_chunk(...)`，返回前如果是本 rank 的最后一个 stage 就 `store.release(mb)`。
+- `_retrieve_recv_activations(mb)`（基类本来就给 chunk id）：调 super 拿到 `(hidden, delta)`，用 `_assemble` 拼出 stack 叶子，返回 `(hidden, stack)`。这样模型的输入和反向保存的输入都是 stack，和现在一样。
+- `forward_maybe_with_nosync(*args, **kwargs)`：调 super 跑模型；不是最后一个 stage 时，用记下的 chunk id 做 `_commit_and_route`，返回 `(hidden_out, payload)`。基类于是把 payload 存进 forward 状态、拿去发送，和现在一样。stage 0 不走 `_retrieve_recv_activations`，它的 commit 也靠记下的 chunk id。
+- 这两个方法在 torch main 里都只被 `forward_one_chunk` 调用，覆写不会影响别的路径（已查 `stage.py` 和 `schedules.py`）。
+- 得到的东西：
+  - #5025 加的那一行变成多余，删掉，改由基类负责；基类的 forward context、出错时的调试信息、以后基类再加的东西都自动继承；
+  - titan 的前向不再碰 `_forward_chunk_states` / `_make_forward_chunk_state`。反向那边只剩 eval 路径里 `_forward_chunk_states.pop`，基类每步开头的 `clear_runtime_states` 本来就会清，可以一起去掉；
+  - 前向从约 45 行变成约 20 行，算子和顺序不变，应当逐位相同。
+- 要跟着改的测试：#5025 的 CPU 测试把 `torchtitan...stage.FSDPModule` 换成桩，改成复用基类后，判断发生在 torch 的 `stage.py` 里，要改成换 `torch.distributed.pipelining.stage.FSDPModule`（或者直接断言"和基类 `PipelineStage` 行为一致"）。
+- 验证：
+  - CPU 上 `test_kimi_k3_pp_stage.py`、`test_kimi_k3_pp_block_grads.py`、`test_kimi_k3_pp_layout.py`（要 torch `dev20261003` 及以后，5060 的 `venv_1003b` 有）；
+  - 5060 上 B200 的 PP 格子，改前改后同一份预热缓存，10 步逐位相同；
+  - 新旧代码各跑一遍、逐位比较，和 DEP 重构那次一样。
+- DETAIL：改完以后，开 cache 时前向的输入校验也会报错（现在是反向报）。建议这一步在 `set_routing` 里遇到 `_runtime_validate` 且开 cache 时直接报一句清楚的错（"DETAIL 校验按收到的 delta 校验，开 cache 时 stage 输入是拼好的 stack，请关 attn_res_cache"），不要静默关掉校验。
+
+**第二步（可选，要支持 DETAIL 才做）：** 反向也照样收窄：薄的 `backward_one_chunk` 记 chunk id，在 `backward_maybe_with_nosync` 里把 stack 的梯度拆成 delta 的梯度和 deposit，再交给基类。基类于是拿 delta 形状的梯度去校验、写进 `bwd_cache`。前向输入校验那一侧还要让保存的输入换成 `(hidden, delta)`、stack 另存，改动不小，先不做。
+
+**第三步（长期，torch 侧）：** `RFC_pytorch_pipelining_multi_consumer/RFC.md` 第 3 点：给 `PipelineStage` 一个公开的每个 micro-batch 的接口（chunk id，输入、输出的变换），子类就不用碰私有方法。这就是 tianyu 说的"proper abstraction"，要和 torch 那边谈。
+
+**和在开的 PR 的先后：** #4963（PR A）、#4764、#4765 都改写了 `forward_one_chunk`。建议这个 follow-up 先进，它们再 rebase 成只覆写这几个窄方法；否则每次 torch 基类变化，三个 PR 都要各改一遍。DEP（#4381）的 stage 调的是 `super().forward_one_chunk`，不受影响。
+
 --- PASTE BEGIN ---
 
 Thanks, this is the right fix: it is the same line, under the same condition, that the base `PipelineStage.forward_one_chunk` gained when pytorch/pytorch#196640 relanded, and the matching reset stays in the base `wait_for_gradient_reduction` / `clear_runtime_states`, which `AttnResPipelineStage` does not override.
