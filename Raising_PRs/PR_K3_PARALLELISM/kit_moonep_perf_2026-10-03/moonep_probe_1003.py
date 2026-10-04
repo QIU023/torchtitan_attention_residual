@@ -1,6 +1,6 @@
 """Local probe recipes for the MoonEP performance round (logbook kit only, never committed to a branch).
 
-Kimi K3 debug model, seq 512, FSDP 4 x EP 4 (the removed h100 cell's shape). PROBE_STEPS sets the step count
+Kimi K3 debug model, seq 512, FSDP 4 x EP 4 (the removed h100 cell's shape); the *_ep2 and *_hsdp cells change the layout. PROBE_STEPS sets the step count
 (default 10), PROBE_DET=0 turns deterministic mode off (timing cells), PROBE_PROFILE=1 writes a profiler trace
 of steps PROBE_PROFILE_STEPS (default 6,7). The shared-stream cell needs the review branch after 09cf5783c.
 """
@@ -31,18 +31,19 @@ def _probe(config):
     return config
 
 
-def _base(ep: int = 4):
+def _base(ep: int = 4, dp_shard: int = 4, dp_replicate: int = 1):
     config = kimi_k3_debugmodel(seq_len=512)
     config = replace(config, parallelism=replace(config.parallelism, expert_parallel_degree=ep))
-    config.parallelism.data_parallel_shard_degree = 4
+    config.parallelism.data_parallel_shard_degree = dp_shard
+    config.parallelism.data_parallel_replicate_degree = dp_replicate
     return config
 
 
-def _moonep():
+def _moonep(config=None):
     from torchtitan.distributed.moonep.experts import MoonEPRoutedExperts
 
     return apply_transforms(
-        _base(),
+        _base() if config is None else config,
         [TokenDispatcherTransform(dispatcher=MoonEPTokenDispatcher, routed_experts=MoonEPRoutedExperts)],
     )
 
@@ -73,3 +74,20 @@ def moonep_full_cell():
     config = _moonep()
     config.activation_checkpoint = FullAC.Config()
     return _probe(config)
+
+
+# Expert FSDP over two ranks (dp_shard 4 x EP 2) and HSDP (dp_replicate 2 x dp_shard 2 x EP 2), item 12 of 10-04.
+def standard_ep2_cell():
+    return _probe(apply_transforms(_base(ep=2), []))
+
+
+def moonep_ep2_cell():
+    return _probe(_moonep(_base(ep=2)))
+
+
+def standard_hsdp_cell():
+    return _probe(apply_transforms(_base(ep=2, dp_shard=2, dp_replicate=2), []))
+
+
+def moonep_hsdp_cell():
+    return _probe(_moonep(_base(ep=2, dp_shard=2, dp_replicate=2)))
