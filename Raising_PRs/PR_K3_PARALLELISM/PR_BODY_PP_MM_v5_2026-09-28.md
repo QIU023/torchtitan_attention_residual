@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-04 PR 分支同步（用户："DEP排布的检查有加到unit test吗？review分支检查过了吗？有的话推pr分支"）：** `k3_pp_mm` 从 `6f5312fab` 快进到 `8518f473f`（= `dep_review1`），普通推送，不是强推；#4381 现在 7 个提交、11 个文件、+2198 / −11。推之前在 `8518f473f` 上核对过：CPU 20 passed（46 个 subtest）；图 11 的单测和首尾固定的单测在 `6f5312fab`、`6b580e438` 两个旧规划器上各失败 7 个 subtest；运行时执行顺序检查在旧规划器 `6f5312fab` 上失败；NCCL 单测在 4 张 5060 上 2 passed（含新的执行顺序检查，代价比 0.25）。GitHub 显示和 main 冲突：只有 `kimi_k3/model.py` 一处，main 的 #5026（`e76e810c7`）在 `KimiK3Model.Config` 同一位置加了 `local_compile_regions`，DEP 在那里加 `vision_dep`，两个字段都留即可；推之前的 `6f5312fab` 也是同样的冲突。rebase 要等你的话。粘贴区可以贴，覆盖率表和 `bubble=True` 的数值仍是 Pending (H100)，H100 正在跑 `8518f473f`。
 - **10-04 按审查意见改（用户转来的审查 1 到 3 条，并说"别drift了，排布还得是这样的"）：** `dep_review1` = `8518f473f`（替换 `5b01a6932`，备份 `backup/dep_review1_pre_20261004b`）。排布不变：每个 ViT 工作的 rank、所在气泡和先后顺序仍是图 11。去掉了规划器把结尾气泡里的反向报成"贴着段尾"的那段（运行时从来是在 rank 最后一个文本动作之后就做）；图 11 的单测改成断言 rank、所在气泡和顺序；运行时测试新增逐 rank 的执行顺序检查；docstring 压短。粘贴区改了两处措辞（"ahead of the final ones"、表下面那句测试说明），通过数不变（20 passed）。
 - **10-04 按图 11 重排（用户："为什么？不要随便否认图里面的正确性，并且现在的DEP body还得想办法在PR head代码里面yield和图片完全一致的stage排布"）：** review 分支 `dep_review1` = `5b01a6932`（替换 `6b580e438`，备份 `backup/dep_review1_pre_20261004`），PR 分支 `k3_pp_mm` 仍是 `6f5312fab`。细节在 `DEP_K3_FIG11_REVIEW_2026-10-04.md` 的"第二轮"。
   - 粘贴区改了：Design 的 Placement 换成新规则，Fit 补上 ViT 反向按 3 个前向算；Design 末尾加图 11 的排布表和检查它的测试名；Results 里隐藏率表和 `bubble=True` 的 100 步数值改成 Pending (H100)（都是旧放置规则下测的），DEP 关和 `bubble=False` 那句保留（K2.5 形式的规划结果不变，随机 592 组逐项相同）；Test plan 的 CPU 通过数 18 → 20，GPU 那行改成 Pending (H100)（本机 5060 上 2 passed，只记在 logbook）。
