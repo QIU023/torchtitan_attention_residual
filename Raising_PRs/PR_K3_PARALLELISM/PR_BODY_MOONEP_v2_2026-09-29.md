@@ -2,6 +2,8 @@
 
 ## 状态（不粘贴）
 
+- **10-04 第 10、18 条（CPU 会话）：** `moonep_review1` 快进到 `0b698e3c2`（池在 `_init_self_buffers` 里分配；dispatch 时 plan 表不空就报错）。PR 分支仍是 `5e4596dc7`，粘贴区描述的就是它，不改。1–9 条的核对和 10–20 条的处理见 `MOONEP_ITEMS_10_20_2026-10-04.md`，同步 PR 分支时 body 要改的地方也列在那里。
+
 - **10-03 云端审查意见（用户："另一个云端claude审核了PR……如果合理，则修复，然后推到moonep pr和review分支"）：** 逐条结论见 `REVIEW_MOONEP_CLOUD_2026-10-03.md`。
   - 四条主要意见都成立，已修。`grad_route_weights` 的 materialize 不需要改。
   - 两个分支都是 `5e4596dc7`，仍是 `db050eb3f` 上的两个提交：
