@@ -2,7 +2,7 @@
 # DEP band placement on the H100, against the review head it corrects; layout and data as the 10-02 box
 # (~/mep, ~/kit, DEPR_DATA rebuilt by kit_h100_2026-09-29/dep prep). One GPU job at a time.
 # 1) numerics: seq 2048, 224 px, one image per sample, M16, bubble at cost ratio 0.116, deterministic, automatic
-#    dynamic shapes off, 20 steps, old (6f5312fab) and new (6b580e438) on copies of one warm cache; cmp_steps.py.
+#    dynamic shapes off, 20 steps, old (6f5312fab) and new (5b01a6932) on copies of one warm cache; cmp_steps.py.
 # 2) hiding rate per level: K2.5 traced on the new tree gives the measured cost ratio; then bubble traced at that ratio
 #    on both trees, with DEP's encodes and backwards annotated (probe_annotate_vision_dep_pkg.patch, never committed),
 #    and ana_dep_place.py reports where the vision work ran.
@@ -12,7 +12,7 @@ export DEPR_DATA=/root/dep_data/t2i1024_k4 DEPW_DIM=6144 DEPV_TOWER=base DEPR_AC
 export PYTORCH_ALLOC_CONF=expandable_segments:True PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 note() { echo "$(date +%H:%M:%S) $*" >> $P; }
 git -C $M/tt fetch -q origin dep_review1
-for x in old:6f5312fab new:6b580e438; do W=$M/w/dep_${x%%:*}_probe
+for x in old:6f5312fab new:5b01a6932; do W=$M/w/dep_${x%%:*}_probe
   [ -d $W ] || { git -C $M/tt worktree add -q --detach $W ${x#*:} && git -C $W apply $KN/probe_annotate_vision_dep_pkg.patch; }
   note "${x%%:*} $(git -C $W rev-parse --short HEAD) dirty=$(git -C $W status --short | wc -l)"; done
 OLD=$M/w/dep_old_probe; NEW=$M/w/dep_new_probe

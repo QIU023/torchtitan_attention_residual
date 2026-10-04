@@ -2,6 +2,10 @@
 
 ## 状态（不粘贴）
 
+- **10-04 按图 11 重排（用户："为什么？不要随便否认图里面的正确性，并且现在的DEP body还得想办法在PR head代码里面yield和图片完全一致的stage排布"）：** review 分支 `dep_review1` = `5b01a6932`（替换 `6b580e438`，备份 `backup/dep_review1_pre_20261004`），PR 分支 `k3_pp_mm` 仍是 `6f5312fab`。细节在 `DEP_K3_FIG11_REVIEW_2026-10-04.md` 的"第二轮"。
+  - 粘贴区改了：Design 的 Placement 换成新规则，Fit 补上 ViT 反向按 3 个前向算；Design 末尾加图 11 的排布表和检查它的测试名；Results 里隐藏率表和 `bubble=True` 的 100 步数值改成 Pending (H100)（都是旧放置规则下测的），DEP 关和 `bubble=False` 那句保留（K2.5 形式的规划结果不变，随机 592 组逐项相同）；Test plan 的 CPU 通过数 18 → 20，GPU 那行改成 Pending (H100)（本机 5060 上 2 passed，只记在 logbook）。
+  - 贴之前要先把 PR 分支同步到 `5b01a6932`（等你的话）。
+
 - **10-02 Design 改成两级 bullet（用户："Design里面又是大段段落，改成bullet points嵌套"）：** 原来三段的内容拆成六组（ViT copies、One micro-batch's ViT work、Placement、Fit、Transfers、Wiring），每条一行，内容没有增删。
 
 - **10-02 CPU 会话在上一条之上补了三处（同一句用户要求，两个会话同时改，合并时以 GPU 会话那版为底，没有加长）：**
@@ -96,10 +100,12 @@ Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipe
   - The copies' gradients are summed in fp32 and reduced into the ViT's gradients at the end of the step.
 - Placement:
   - `bubble=False` (the K2.5 form): every ViT forward runs before the pipeline schedule and every ViT backward after it, balanced by patch count.
-  - `bubble=True` (the K3 form): the first pipeline-degree ViT forwards run before the schedule, the rest in pipeline bubbles (idle slots in a rank's action order) ahead of their consumer, and the ViT backwards in bubbles after their gradient.
+  - `bubble=True` (the K3 form): the ViT forwards of the schedule's first pipeline-degree micro-batches run before it and the ViT backwards of its last pipeline-degree micro-batches after it, balanced by patch count.
+  - The other ViT forwards run in the pipeline bubble that opens each rank's schedule (its idle slots before its first action), right after the upfront ones, and the other ViT backwards in the bubble that closes it, right before the final ones.
+  - Each goes to the least filled of those bubbles for its length, the lower rank on a tie, so a rank's share grows with its bubble.
   - Work that fits no bubble falls back to before or after the schedule.
 - Fit:
-  - A slot lasts as long as its longest action (forward 1, backward 2), and `bubble_cost_ratio` is one ViT forward in units of one text-stage forward.
+  - A slot lasts as long as its longest action (forward 1, backward 2), `bubble_cost_ratio` is one ViT forward in units of one text-stage forward, and a ViT backward costs three ViT forwards (the recompute and the backward).
   - Neither report gives a cost model; these numbers are the plan's own estimates.
   - Every rank derives the same plan from `pipeline_order`.
 - Transfers:
@@ -109,17 +115,19 @@ Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipe
   - `pipeline_kimi_k3` wraps the schedule's `step`, since the engine's pipeline step has no model hook.
   - The package is split like the AttnRes pipeline: the plan like the block layout tables, the runtime like the rank store, and the stage subclasses the AttnRes stage.
 
+With pp 3 x vpp 4 and 6 micro-batches the plan is the layout of Figure 11 in the K3 report (micro-batches numbered from 1); `test_three_ranks_and_six_microbatches_lay_out_as_in_the_k3_report` checks it, with the start and end of each bubble item, for cost ratios 0.05 to 0.3:
+
+| rank | ViT forward before the schedule | ViT forward in the opening bubble | ViT backward in the closing bubble | ViT backward after the schedule |
+|---|---|---|---|---|
+| 0 | 1 | | | 4 |
+| 1 | 2 | 4 | 1 | 5 |
+| 2 | 3 | 5, 6 | 2, 3 | 6 |
+
 ## Results
 
 4 H100s, pp4 x vpp4, Interleaved1F1B with 16 micro-batches, full activation checkpointing; the Kimi K3 debug model widened to dim 6144 with its 2-layer debug ViT, one image per sample.
 
-ViT computation covered by pipeline bubbles: the share of the ViT forward and backward kernel time that runs inside pipeline bubbles, one traced step (the ViT work wrapped in profiler ranges locally for the measurement):
-
-| seq | image side | ViT forward / text stage forward | covered, `bubble=False` (K2.5 form) | covered, `bubble=True` (K3 form) |
-|---:|---:|---:|---:|---:|
-| 2048 | 224 px | 0.046 | 2% | 73% |
-| 2048 | 1008 px | 0.135 | 3% | 81% |
-| 1536 | 1008 px | 0.170 | 3% | 84% |
+ViT computation covered by pipeline bubbles: Pending (H100).
 
 Loss / grad norm, seq 2048 with 224 px images, deterministic, one warm compile cache, automatic dynamic shapes off (the ViT and the text share the compiled flex attention):
 
@@ -127,7 +135,7 @@ Loss / grad norm, seq 2048 with 224 px images, deterministic, one warm compile c
 |---|---:|---:|---:|---:|
 | DEP off | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 |
 
-DEP off again, DEP with `bubble=False` and DEP with `bubble=True` are identical to DEP off on all 100 steps.
+DEP off again and DEP with `bubble=False` are identical to DEP off on all 100 steps; DEP with `bubble=True`: Pending (H100).
 
 ## Relation to earlier revisions of this PR
 
@@ -135,8 +143,8 @@ Earlier revisions gave the ViT its own pipeline stage on the first rank; this re
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (18 passed).
-- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (3 passed on 4 H100s).
+- `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (20 passed).
+- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (Pending (H100).)
 - The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` with DEP on: 10 steps on 8 RTX 5060 Ti (no B200 at hand).
 
 --- PASTE END ---
