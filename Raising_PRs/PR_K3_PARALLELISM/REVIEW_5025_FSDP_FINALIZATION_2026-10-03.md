@@ -58,6 +58,21 @@ titan 现在没人用 forward context，DETAIL 也不是默认，所以目前不
   - #4764 / #4765：`stage.py` 和 `test_kimi_k3_pp_stage.py` 冲突，它们重写了 `forward_one_chunk`。#5025 合入后 rebase 时要把这一行带上。
 - 本地 torch：5060 的 `venv_0928` 和这台 Windows 机器都没有 `set_manual_backward_finalization`。#5025 合入后，K3 的 FSDP × PP 要 `dev20261003` 及以后才能跑；在旧 nightly 上会是 `AttributeError`。基类 stage 在新 torch 上本来也这样要求，titan 跟最新 nightly，不需要兼容处理，但我们自己的 GPU 机器要换 nightly。
 
+## 10-04 决定：现在就评论（用户："既然上游maintainer已经有5025，那我们这个followup应该现在去comment提醒他吗？并且主动说后续可以这样修改？"）
+
+- 建议现在发，趁 #5025 还在 draft、还没人 review：
+  - 4312 是我们的，基类一变就要 maintainer 来改我们的拷贝，已经两次（#4661、#5025）。由 4312 的作者出来认下根因、说明会怎么改，比等别人第三次来改好；
+  - 说清"格子为什么一直绿"，免得 reviewer 怀疑 4312 的测试；
+  - 提前写出 follow-up 要覆写的两个方法，torch pipelining 那边（Chien-Chin 也在改基类）如果觉得这仍是私有接口、或另有计划，能在我们动手前说；
+  - 也避免两边重复改同一处。
+- 立场只有一个：#5025 照现在的样子先合（main 的 B200 PP 格子在 `dev20261003` 上已经挂了），follow-up 等它合入后单独提。不建议把重构塞进 #5025，也不写"如果你愿意我可以……"这类话。
+- 评论里不提 DETAIL：开 cache 时 DETAIL 本来就过不了，follow-up 也不打算完整支持，提了反而像在许诺。
+- 草稿按 10-04 的事实改过：
+  - 第二段写明 B200 通道装的是 cu130 nightly（`dev20260928` 之后直接是 `dev20261003`）；其他通道用 cu132，09-29 到 10-02 每天都有，但 K3 的 FSDP × PP 格子只在 B200 那套里；
+  - 失败现象从"读源码推出"改成实测：5060 上用 `dev20261003` 跑 main `838e6962e` 上这个格子的 recipe，报 "FSDP finalize_backward requires manual backward finalization"（4656 会话 10-04）；
+  - 第三段写出 follow-up 的做法（覆写 `_retrieve_recv_activations` 和 `forward_maybe_with_nosync`）和它能去掉的东西；DETAIL 那半句删掉了。
+- 要不要 @ 谁：Shuhua 是作者，会看到；`#4661` 的作者 Chien-Chin（fegin）也改过这个 stage，要不要 @ 由用户定，不 @ 也可以。
+
 ## 要不要评论
 
 不评论也可以：改法正确，CI 上的 B200 K3 PP 格子会在 `dev20261003` 及以后真正覆盖它。
@@ -118,10 +133,10 @@ logbook 里没有一条写明"考虑过窄的接口、为什么没用"，下面�
 
 --- PASTE BEGIN ---
 
-Thanks, this is the right fix: it is the same line, under the same condition, that the base `PipelineStage.forward_one_chunk` gained when pytorch/pytorch#196640 relanded, and the matching reset stays in the base `wait_for_gradient_reduction` / `clear_runtime_states`, which `AttnResPipelineStage` does not override.
+This is the right fix: it adds the same line, under the same condition, that the base `PipelineStage.forward_one_chunk` gained when pytorch/pytorch#196640 relanded on Sept 29, and the matching reset stays in the base `wait_for_gradient_reduction` / `clear_runtime_states`, which `AttnResPipelineStage` does not override.
 
-For the record on why the B200 `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` cell stayed green: #4312 merged on 09-26 while #196640 was reverted, and the cu130 nightlies jump from `dev20260928` to `dev20261003`, so every run so far (including the `ciflow/b200` run on #4731) used a torch without manual finalization. From `dev20261003` on, without this change `REDUCE_GRAD` raises "finalize_backward requires manual backward finalization" at the end of step 1.
+The B200 `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` cell stayed green because the B200 lane installs cu130 nightlies, which jump from `dev20260928` to `dev20261003`, so every run until today (including the `ciflow/b200` run on #4731) had no manual finalization. With `dev20261003`, the cell's recipe on main fails at the first `REDUCE_GRAD` with "FSDP finalize_backward requires manual backward finalization".
 
-The root cause is on my side: `AttnResPipelineStage.forward_one_chunk` re-implements the base forward, so it also skips `register_forward_context` and the `TORCH_DISTRIBUTED_DEBUG=DETAIL` input/output validation. I will send a follow-up that makes the override reuse the base forward instead of copying it.
+The root cause is in #4312: `AttnResPipelineStage.forward_one_chunk` copies the base forward, so it misses whatever the base adds (this line, `register_forward_context`), and it writes the base's private `_forward_chunk_states`, which #4661 had to update. After this lands I will send a follow-up that overrides `_retrieve_recv_activations` (assemble the block stack) and `forward_maybe_with_nosync` (commit the stage's blocks and pack the payload) instead, so the stage runs the base forward and the line added here can go.
 
 --- PASTE END ---
