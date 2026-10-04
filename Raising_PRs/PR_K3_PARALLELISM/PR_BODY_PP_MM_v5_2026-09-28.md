@@ -2,6 +2,10 @@
 
 ## 状态（不粘贴）
 
+- **10-04 H100（`8518f473f`，`kit_dep_bands_2026-10-04/h100_dep_bands.sh`，结果在本机 scratchpad 的 `h100_1004/dep_fig11/`）：**
+  - 数值（seq 2048、224 px、M16、代价比 0.116、deterministic、动态形状关，100 步，同一份缓存的副本）：DEP 关两遍、K2.5、bubble 四次运行每一步都相同；DEP 关的第 1 / 10 / 50 / 100 步和 10-02 那次也完全一样（8.15085 / 34.0000 … 2.05389 / 4.9375），表里那一行不变。
+  - 覆盖率（标注 kernel 时间）：代价比 0.046 / 0.136 / 0.169 时，K3 形式 71% / 71% / 69%，K2.5 形式 1% / 6% / 0%。旧放置规则（10-02）是 73% / 81% / 84%。差别来自报告的固定结构：后 PP 个 micro-batch 的反向现在在调度后做，这组数据里是 13 个带图的 micro-batch 中的 3 个（以前只有 1 个）；编码进气泡的是 10 个（以前 9 个）。规划日志："encodes 3 before the schedule, 10 in idle slots; backwards 10 in idle slots, 3 after it"。
+  - 粘贴区改了：覆盖率表填回（表头和说明和 10-02 那版一样），数值那句加上 `bubble=True`。GPU 单测那行仍是 Pending (H100)：这一轮 H100 没跑它，已排在 MoonEP 那一轮后面。
 - **10-04 PR 分支同步（用户："DEP排布的检查有加到unit test吗？review分支检查过了吗？有的话推pr分支"）：** `k3_pp_mm` 从 `6f5312fab` 快进到 `8518f473f`（= `dep_review1`），普通推送，不是强推；#4381 现在 7 个提交、11 个文件、+2198 / −11。推之前在 `8518f473f` 上核对过：CPU 20 passed（46 个 subtest）；图 11 的单测和首尾固定的单测在 `6f5312fab`、`6b580e438` 两个旧规划器上各失败 7 个 subtest；运行时执行顺序检查在旧规划器 `6f5312fab` 上失败；NCCL 单测在 4 张 5060 上 2 passed（含新的执行顺序检查，代价比 0.25）。GitHub 显示和 main 冲突：只有 `kimi_k3/model.py` 一处，main 的 #5026（`e76e810c7`）在 `KimiK3Model.Config` 同一位置加了 `local_compile_regions`，DEP 在那里加 `vision_dep`，两个字段都留即可；推之前的 `6f5312fab` 也是同样的冲突。rebase 要等你的话。粘贴区可以贴，覆盖率表和 `bubble=True` 的数值仍是 Pending (H100)，H100 正在跑 `8518f473f`。
 - **10-04 按审查意见改（用户转来的审查 1 到 3 条，并说"别drift了，排布还得是这样的"）：** `dep_review1` = `8518f473f`（替换 `5b01a6932`，备份 `backup/dep_review1_pre_20261004b`）。排布不变：每个 ViT 工作的 rank、所在气泡和先后顺序仍是图 11。去掉了规划器把结尾气泡里的反向报成"贴着段尾"的那段（运行时从来是在 rank 最后一个文本动作之后就做）；图 11 的单测改成断言 rank、所在气泡和顺序；运行时测试新增逐 rank 的执行顺序检查；docstring 压短。粘贴区改了两处措辞（"ahead of the final ones"、表下面那句测试说明），通过数不变（20 passed）。
 - **10-04 按图 11 重排（用户："为什么？不要随便否认图里面的正确性，并且现在的DEP body还得想办法在PR head代码里面yield和图片完全一致的stage排布"）：** review 分支 `dep_review1` = `5b01a6932`（替换 `6b580e438`，备份 `backup/dep_review1_pre_20261004`），PR 分支 `k3_pp_mm` 仍是 `6f5312fab`。细节在 `DEP_K3_FIG11_REVIEW_2026-10-04.md` 的"第二轮"。
@@ -129,7 +133,13 @@ With pp 3 x vpp 4 and 6 micro-batches the plan is the layout of Figure 11 in the
 
 4 H100s, pp4 x vpp4, Interleaved1F1B with 16 micro-batches, full activation checkpointing; the Kimi K3 debug model widened to dim 6144 with its 2-layer debug ViT, one image per sample.
 
-ViT computation covered by pipeline bubbles: Pending (H100).
+ViT computation covered by pipeline bubbles: the share of the ViT forward and backward kernel time that runs inside pipeline bubbles, one traced step (the ViT work wrapped in profiler ranges locally for the measurement):
+
+| seq | image side | ViT forward / text stage forward | covered, `bubble=False` (K2.5 form) | covered, `bubble=True` (K3 form) |
+|---:|---:|---:|---:|---:|
+| 2048 | 224 px | 0.046 | 1% | 71% |
+| 2048 | 1008 px | 0.136 | 6% | 71% |
+| 1536 | 1008 px | 0.169 | 0% | 69% |
 
 Loss / grad norm, seq 2048 with 224 px images, deterministic, one warm compile cache, automatic dynamic shapes off (the ViT and the text share the compiled flex attention):
 
@@ -137,7 +147,7 @@ Loss / grad norm, seq 2048 with 224 px images, deterministic, one warm compile c
 |---|---:|---:|---:|---:|
 | DEP off | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 |
 
-DEP off again and DEP with `bubble=False` are identical to DEP off on all 100 steps; DEP with `bubble=True`: Pending (H100).
+DEP off again, DEP with `bubble=False` and DEP with `bubble=True` are identical to DEP off on all 100 steps.
 
 ## Relation to earlier revisions of this PR
 
