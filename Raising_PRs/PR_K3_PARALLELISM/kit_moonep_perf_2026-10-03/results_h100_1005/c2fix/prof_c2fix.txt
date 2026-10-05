@@ -1,0 +1,86 @@
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                      aten::_grouped_mm         0.50%       1.025ms         1.06%       2.198ms      40.704us      53.978ms        26.53%      53.978ms     999.592us            54  
+                                            aten::copy_         0.75%       1.555ms        61.98%     128.078ms     618.732us      33.208ms        16.32%      33.208ms     160.427us           207  
+                                              aten::mul         0.40%     816.958us         0.61%       1.269ms      14.101us      33.201ms        16.32%      33.201ms     368.896us            90  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us      19.984ms         9.82%      19.984ms     416.327us            48  
+_ZN7cutlass13device_kernelIN2at4cuda6detail25enable_...         0.00%       0.000us         0.00%       0.000us       0.000us      18.414ms         9.05%      18.414ms       1.023ms            18  
+_ZN7cutlass13device_kernelIN2at4cuda6detail25enable_...         0.00%       0.000us         0.00%       0.000us       0.000us      17.767ms         8.73%      17.767ms     987.061us            18  
+_ZN7cutlass13device_kernelIN2at4cuda6detail25enable_...         0.00%       0.000us         0.00%       0.000us       0.000us      17.644ms         8.67%      17.644ms     980.238us            18  
+           GeneratedBackwardFor_moonep_dispatch_default         1.35%       2.787ms         1.72%       3.558ms     592.934us      14.476ms         7.11%      15.481ms       2.580ms             6  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us      14.289ms         7.02%      14.289ms     190.519us            75  
+kernel_cutlass_kernel_moonepinter_rank_syncInterRank...         0.00%       0.000us         0.00%       0.000us       0.000us      12.156ms         5.97%      12.156ms     506.517us            24  
+    GeneratedBackwardFor_moonep_experts_defaultBackward         4.58%       9.470ms        10.08%      20.838ms       3.473ms      10.202ms         5.01%     125.579ms      20.930ms             6  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us      10.178ms         5.00%      10.178ms     282.728us            36  
+                                              aten::div         0.22%     457.592us         0.31%     639.737us      17.770us      10.166ms         5.00%      10.166ms     282.382us            36  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us      10.166ms         5.00%      10.166ms     282.382us            36  
+void at::native::elementwise_kernel<128, 4, at::nati...         0.00%       0.000us         0.00%       0.000us       0.000us       8.689ms         4.27%       8.689ms     482.732us            18  
+                                             aten::mul_         0.07%     154.146us         0.12%     254.747us      14.153us       8.286ms         4.07%       8.286ms     460.339us            18  
+void at::native::vectorized_elementwise_kernel<8, at...         0.00%       0.000us         0.00%       0.000us       0.000us       8.108ms         3.99%       8.108ms     225.230us            36  
+kernel_cutlass_kernel_moonepprefetchPrefetchKernel_o...         0.00%       0.000us         0.00%       0.000us       0.000us       6.920ms         3.40%       6.920ms     576.691us            12  
+                                             aten::tanh         0.11%     232.153us         0.17%     343.193us      14.300us       6.790ms         3.34%       6.790ms     282.928us            24  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us       6.790ms         3.34%       6.790ms     282.928us            24  
+                                             aten::add_         0.09%     193.661us         0.17%     341.883us      18.993us       5.575ms         2.74%       5.575ms     309.735us            18  
+                         Memcpy DtoD (Device -> Device)         0.00%       0.000us         0.00%       0.000us       0.000us       5.426ms         2.67%       5.426ms     106.394us            51  
+void at::native::elementwise_kernel<128, 4, at::nati...         0.00%       0.000us         0.00%       0.000us       0.000us       5.287ms         2.60%       5.287ms     220.296us            24  
+                                    aten::tanh_backward         0.06%     123.584us         0.10%     197.055us      16.421us       4.999ms         2.46%       4.999ms     416.583us            12  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us       4.999ms         2.46%       4.999ms     416.583us            12  
+kernel_cutlass_kernel_moonepgrad_reduceGradReduceKer...         0.00%       0.000us         0.00%       0.000us       0.000us       4.539ms         2.23%       4.539ms     378.218us            12  
+void at::native::vectorized_elementwise_kernel<8, at...         0.00%       0.000us         0.00%       0.000us       0.000us       4.504ms         2.21%       4.504ms     250.202us            18  
+kernel_cutlass_kernel_moonepdispatchDispatchKernel_o...         0.00%       0.000us         0.00%       0.000us       0.000us       3.631ms         1.78%       3.631ms     302.609us            12  
+            GeneratedBackwardFor_moonep_experts_default         1.08%       2.238ms         2.00%       4.138ms     689.651us       3.466ms         1.70%      48.378ms       8.063ms             6  
+                                          aten::sigmoid         0.06%     126.752us         0.09%     188.174us      15.681us       3.402ms         1.67%       3.402ms     283.539us            12  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us       3.402ms         1.67%       3.402ms     283.539us            12  
+kernel_cutlass_kernel_moonepcombineCombineKernel_obj...         0.00%       0.000us         0.00%       0.000us       0.000us       3.309ms         1.63%       3.309ms     275.750us            12  
+                                              aten::cat         0.13%     275.326us         0.19%     386.177us      32.181us       2.909ms         1.43%       2.909ms     242.437us            12  
+void at::native::(anonymous namespace)::CatArrayBatc...         0.00%       0.000us         0.00%       0.000us       0.000us       2.895ms         1.42%       2.895ms     482.491us             6  
+void at::native::unrolled_elementwise_kernel<at::nat...         0.00%       0.000us         0.00%       0.000us       0.000us       2.636ms         1.30%       2.636ms     439.279us             6  
+            GeneratedBackwardFor_moonep_combine_default         0.56%       1.148ms         0.71%       1.463ms     243.805us       2.620ms         1.29%       3.611ms     601.831us             6  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us       2.498ms         1.23%       2.498ms     416.319us             6  
+                                 aten::sigmoid_backward         0.04%      74.621us         0.05%     113.611us      18.935us       2.496ms         1.23%       2.496ms     415.935us             6  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us       2.496ms         1.23%       2.496ms     415.935us             6  
+GeneratedBackwardFor_moonep_dispatch_defaultBackward...         1.07%       2.216ms         1.51%       3.118ms     519.668us       2.450ms         1.20%       3.454ms     575.665us             6  
+    GeneratedBackwardFor_moonep_combine_defaultBackward         1.26%       2.602ms         1.56%       3.214ms     535.674us       2.411ms         1.18%       3.405ms     567.558us             6  
+kernel_cutlass_kernel_moonepgrad_reduceGradReduceKer...         0.00%       0.000us         0.00%       0.000us       0.000us       2.209ms         1.09%       2.209ms     368.089us             6  
+                                              aten::add         0.04%      83.671us         0.06%     121.192us      20.199us       1.426ms         0.70%       1.426ms     237.720us             6  
+kernel_cutlass_kernel_moonepcombine_prologueCombineP...         0.00%       0.000us         0.00%       0.000us       0.000us       1.392ms         0.68%       1.392ms     116.025us            12  
+                                              aten::sum         0.12%     241.765us         0.17%     353.067us      39.230us       1.016ms         0.50%       1.016ms     112.894us             9  
+void at::native::reduce_kernel<512, 1, at::native::R...         0.00%       0.000us         0.00%       0.000us       0.000us       1.013ms         0.50%       1.013ms     112.570us             9  
+kernel_cutlass_kernel_moonepdispatch_epilogueDispatc...         0.00%       0.000us         0.00%       0.000us       0.000us     926.792us         0.46%     926.792us      77.233us            12  
+kernel_cutlass_kernel_moonepplanningPlanningKernel_o...         0.00%       0.000us         0.00%       0.000us       0.000us     541.347us         0.27%     541.347us      90.224us             6  
+                                     record_param_comms         0.05%     101.125us         0.29%     595.882us      49.657us     237.986us         0.12%     237.986us      19.832us            12  
+ncclDevKernel_AllReduce_Sum_f32_RING_LL(ncclDevKerne...         0.00%       0.000us         0.00%       0.000us       0.000us     237.986us         0.12%     237.986us      39.664us             6  
+                                             all_reduce         0.00%       0.000us         0.00%       0.000us       0.000us     237.986us         0.12%     237.986us      39.664us             6  
+                                          aten::aminmax         0.07%     135.212us         0.09%     194.453us      32.409us      71.169us         0.03%      71.169us      11.861us             6  
+void at::native::reduce_kernel<512, 1, at::native::R...         0.00%       0.000us         0.00%       0.000us       0.000us      71.169us         0.03%      71.169us      11.861us             6  
+void at::native::elementwise_kernel<128, 4, at::nati...         0.00%       0.000us         0.00%       0.000us       0.000us      59.489us         0.03%      59.489us      19.830us             3  
+void at::cuda::detail::prepare_grouped_gemm_data<cut...         0.00%       0.000us         0.00%       0.000us       0.000us      51.491us         0.03%      51.491us       2.861us            18  
+void at::cuda::detail::prepare_grouped_gemm_data<cut...         0.00%       0.000us         0.00%       0.000us       0.000us      50.878us         0.03%      50.878us       2.827us            18  
+void at::cuda::detail::prepare_grouped_gemm_data<cut...         0.00%       0.000us         0.00%       0.000us       0.000us      50.303us         0.02%      50.303us       2.795us            18  
+                                        Memset (Device)         0.00%       0.000us         0.00%       0.000us       0.000us      24.580us         0.01%      24.580us       0.910us            27  
+                                         aten::bincount         0.08%     171.773us        59.75%     123.470ms      20.578ms      23.969us         0.01%     130.371us      21.729us             6  
+void at::cuda::kernelHistogram1D<long, long, long, 1...         0.00%       0.000us         0.00%       0.000us       0.000us      23.969us         0.01%      23.969us       3.995us             6  
+void at::native::unrolled_elementwise_kernel<at::nat...         0.00%       0.000us         0.00%       0.000us       0.000us      23.456us         0.01%      23.456us       1.955us            12  
+                                            aten::zero_         0.03%      68.451us         0.15%     312.367us      10.412us      21.667us         0.01%      21.667us       0.722us            30  
+                              aten::_local_scalar_dense         0.04%      90.570us         0.10%     203.644us       4.849us      15.455us         0.01%      15.455us       0.368us            42  
+                         Memcpy DtoH (Device -> Pinned)         0.00%       0.000us         0.00%       0.000us       0.000us      15.455us         0.01%      15.455us       2.576us             6  
+                       Memcpy DtoH (Device -> Pageable)         0.00%       0.000us         0.00%       0.000us       0.000us      15.010us         0.01%      15.010us       2.502us             6  
+void at::native::(anonymous namespace)::CatArrayBatc...         0.00%       0.000us         0.00%       0.000us       0.000us      14.303us         0.01%      14.303us       2.384us             6  
+                                              aten::sub         0.03%      71.970us         0.05%      99.250us      16.542us      10.241us         0.01%      10.241us       1.707us             6  
+void at::native::unrolled_elementwise_kernel<at::nat...         0.00%       0.000us         0.00%       0.000us       0.000us      10.241us         0.01%      10.241us       1.707us             6  
+                                            aten::fill_         0.01%      23.971us         0.02%      39.781us      13.260us       4.576us         0.00%       4.576us       1.525us             3  
+void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.000us         0.00%       0.000us       0.000us       4.576us         0.00%       4.576us       1.525us             3  
+                                            aten::clone         0.02%      36.931us         0.97%       2.007ms     669.063us       0.000us         0.00%      53.889us      17.963us             3  
+                                    aten::empty_strided         0.57%       1.188ms         0.57%       1.188ms       6.186us       0.000us         0.00%       0.000us       0.000us           192  
+                                Activity Buffer Request         0.86%       1.779ms         0.86%       1.779ms       1.779ms       0.000us         0.00%       0.000us       0.000us             1  
+                                        cudaMemcpyAsync        59.81%     123.596ms        59.81%     123.596ms       1.962ms       0.000us         0.00%       0.000us       0.000us            63  
+                                          aten::flatten         0.01%      17.941us         0.03%      53.052us       8.842us       0.000us         0.00%       0.000us       0.000us             6  
+                                             aten::view         0.10%     203.824us         0.10%     203.824us       3.397us       0.000us         0.00%       0.000us       0.000us            60  
+                                       aten::as_strided         0.18%     365.409us         0.18%     365.409us       0.677us       0.000us         0.00%       0.000us       0.000us           540  
+                                       cudaLaunchKernel         1.49%       3.083ms         1.49%       3.083ms       6.587us       0.000us         0.00%       0.000us       0.000us           468  
+                                               aten::to         0.07%     150.672us        60.79%     125.615ms     775.399us       0.000us         0.00%      19.271ms     118.959us           162  
+                                         aten::_to_copy         0.23%     483.717us        60.71%     125.464ms       1.101ms       0.000us         0.00%      19.271ms     169.046us           114  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 206.649ms
+Self CUDA time total: 203.463ms
