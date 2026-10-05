@@ -176,3 +176,11 @@ Figure 11 是 3 段 PP、6 个 micro-batch 的示意图：
   - 运行时用例的代价比从 0.5 改成 0.25：这时 rank 1 到 3 在开头和结尾气泡里各有工作。用 `6f5312fab` 的规划器（会把 mb0 的反向挂在 rank 0 的 B(0,1) 之后）跑新测试，执行顺序检查失败；在 0.5 时旧规划器不往中间放，所以测不出来。`6b580e438` 的规划器只放两端，运行时检查通过（它和图的差别由规划器单测抓）。
   - CPU 20 passed、46 个 subtest；ufmt、pyflakes 干净；flake8 仍只有旧测试里那条 B905；pyrefly 17 个，不在 vision_dep。
 - **H100：** `kit_dep_bands_2026-10-04/h100_dep_bands.sh` 用 `8518f473f`，排在 4656 后面跑：100 步数值（DEP 关两遍、K2.5、bubble，同一份缓存）和三档的覆盖率。
+
+## 10-05：CPU 会话的解耦 `6cda7daca`（用户："拉取 cpu claude 解耦了DEP stage和 AttnRes stage，不应该影响数值，检查即可"；随后"DEP要不就不跑，要不只跑一组即可"）
+
+- 改动：`VisionDepPipelineStage` 直接继承 `PipelineStage`，`pipeline_kimi_k3` 用组合类 `_VisionDepAttnResStage(VisionDepPipelineStage, AttnResPipelineStage)`。
+- 代码层：两棵树装进 schedule 的 stage 类，91 个属性逐个比对实际解析到的源码，只有类的 docstring 不同；MRO 只是最前面多了组合类，super() 链仍是 DEP → AttnRes → PipelineStage（`fig11/stage_resolution.py`）。
+- 单测：CPU 36 passed（DEP 规划器和 gloo 运行时，加 PP stage、PP layout），46 个 subtest；NCCL 单测在 4 × H100 上 2 passed。ufmt、pyflakes 干净；flake8 只有 runtime.py 那条旧的 B905；pyrefly 17 个，不在 vision_dep。
+- 数值（一组）：本机 8 × 5060、torch 0928，B200 suite 的 8 卡格子（FSDP 2 × TP 2 × EP 2 × PP 2 × VPP 4，DEP 开），新旧两版各 10 步、同一份预热缓存的副本：8 个 rank × 10 步，80 行 loss / grad norm 全部相同（第 10 步 3.35700 / 2.4844）。H100 上 bubble / K2.5 的新旧对比按用户的话停掉了，没有结果。
+- PR 分支 `k3_pp_mm` 仍是 `8518f473f`。
