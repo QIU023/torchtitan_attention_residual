@@ -1,0 +1,16 @@
+floor, standard twice (FSDP 4 x EP 4): 465 parameters, 465 bitwise equal; median d 0.00e+00; max d 0.00e+00 (tok_embeddings.weight); routed experts (32) max d 0.00e+00
+efsdp 1, MoonEP vs standard (FSDP 4 x EP 4): 465 parameters, 8 bitwise equal; median d 5.22e-03; max d 3.26e-01 (layers.0._checkpoint_wrapped_module.ffn_res_proj.weight); routed experts (32) max d 5.41e-03
+efsdp 2, MoonEP vs standard (dp_shard 4 x EP 2): 465 parameters, 9 bitwise equal; median d 5.26e-03; max d 3.11e-01 (layers.0._checkpoint_wrapped_module.ffn_res_proj.weight); routed experts (32) max d 5.54e-03
+    against efsdp 1 per parameter: max ratio 4.03; parameters above 3x and d > 1e-2: 1
+        4.03x  d 1.20e-02 (efsdp 1: 2.98e-03)  layers.12._checkpoint_wrapped_module.delta_attention.A_log
+        2.45x  d 1.49e-02 (efsdp 1: 6.08e-03)  layers.4._checkpoint_wrapped_module.ffn_res_proj.weight
+        2.33x  d 3.44e-03 (efsdp 1: 1.48e-03)  layers.15._checkpoint_wrapped_module.attention.kv_norm.weight
+        2.24x  d 1.55e-02 (efsdp 1: 6.89e-03)  layers.4._checkpoint_wrapped_module.ffn_res_norm.weight
+        1.73x  d 6.65e-03 (efsdp 1: 3.83e-03)  layers.9._checkpoint_wrapped_module.delta_attention.A_log
+HSDP, MoonEP vs standard (2 x 2 x EP 2): 465 parameters, 9 bitwise equal; median d 5.29e-03; max d 4.43e-01 (layers.0._checkpoint_wrapped_module.ffn_res_proj.weight); routed experts (32) max d 5.75e-03
+    against efsdp 1 per parameter: max ratio 4.91; parameters above 3x and d > 1e-2: 1
+        4.91x  d 1.46e-02 (efsdp 1: 2.98e-03)  layers.12._checkpoint_wrapped_module.delta_attention.A_log
+        2.40x  d 1.46e-02 (efsdp 1: 6.08e-03)  layers.4._checkpoint_wrapped_module.ffn_res_proj.weight
+        2.18x  d 4.52e-03 (efsdp 1: 2.07e-03)  layers.11._checkpoint_wrapped_module.attention.kv_norm.weight
+        2.18x  d 1.50e-02 (efsdp 1: 6.89e-03)  layers.4._checkpoint_wrapped_module.ffn_res_norm.weight
+        2.17x  d 8.31e-03 (efsdp 1: 3.83e-03)  layers.9._checkpoint_wrapped_module.delta_attention.A_log
