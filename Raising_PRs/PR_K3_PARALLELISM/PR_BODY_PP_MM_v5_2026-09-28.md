@@ -2,6 +2,12 @@
 
 ## 状态（不粘贴）
 
+- **10-04 CPU 会话核对 PR head `8518f473f`（用户："拉取 核对DEP最新分支和body和结果，目前哪个测试是还原K3论文的气泡排布的？"）：**
+  - 三个分支一致：`dep_review1` = `k3_pp_mm` = #4381 head = `8518f473f`。本机 CPU 20 passed、46 subtests；规划器在 pp3 × vp4、6 个 micro-batch、代价比 0.01 到 1/3 时和图 11 逐项相同；真跑运行时（3 个 gloo rank、12 个 stage，代价比 0.1 和 0.3）每个 rank 的执行顺序和图 11 完全一样，文本动作之间没有 ViT 工作，第 1 步梯度和 loss 与单卡逐位相同。
+  - 线上 body（08:31 UTC）是 H100 之前的版本：覆盖率和 `bubble=True` 的数值还写着 Pending，比这里的粘贴区旧。线上多了一段用户加的 "Illustration Figure"（图 11 截图），粘贴区原来没有，已经合进来，放在 Summary 之后、Design 之前；图片的 alt 是截图默认文件名，在线上显示成乱码（"屏幕截图" 的编码坏了），改成英文 "Figure 11 of the Kimi K3 report"。整段贴的时候用这里的版本，图不会丢。
+  - Results 的 "one image per sample" 改成 "at most one image per sample"：这组数据每步 16 个 micro-batch 里 13 个带图（`DEP_K3RANGE_H100_2026-10-02.md`），规划日志也是 13 个。
+  - #4381 和 main 在 `kimi_k3/model.py` 有冲突（#5026 在 `vision_dep` 旁边加了 `local_compile_regions`），rebase 等用户的话。
+
 - **10-05 H100：** NCCL 单测在 `8518f473f`（干净的工作树）上 2 passed，粘贴区那行从 Pending (H100) 改成 "2 passed on 4 H100s"。粘贴区现在没有 Pending 了。
 - **10-04 H100（`8518f473f`，`kit_dep_bands_2026-10-04/h100_dep_bands.sh`，结果在本机 scratchpad 的 `h100_1004/dep_fig11/`）：**
   - 数值（seq 2048、224 px、M16、代价比 0.116、deterministic、动态形状关，100 步，同一份缓存的副本）：DEP 关两遍、K2.5、bubble 四次运行每一步都相同；DEP 关的第 1 / 10 / 50 / 100 步和 10-02 那次也完全一样（8.15085 / 34.0000 … 2.05389 / 4.9375），表里那一行不变。
@@ -96,6 +102,12 @@ Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipe
 - `kimi_k3/model.py`: a `vision_dep` config (`enabled` turns DEP on, `bubble` schedules the ViT computation into pipeline bubbles, `bubble_cost_ratio` is the cost the scheduler assumes for it) and a `vision_embeds` argument on `forward`.
 - `torchtitan_recipes/tests/suites/b200.py`: the existing pp2 x vpp4 B200 recipe enables `vision_dep`.
 
+## Illustration Figure
+
+The green part of ViT forward and backward shown from the Kimi K3 tech report and implemented in this PR:
+
+<img width="1546" height="488" alt="Figure 11 of the Kimi K3 report" src="https://github.com/user-attachments/assets/b236e986-af6a-49c0-8bf9-baa03906e16a" />
+
 ## Design
 
 - ViT copies:
@@ -132,7 +144,7 @@ With pp 3 x vpp 4 and 6 micro-batches the plan is the layout of Figure 11 in the
 
 ## Results
 
-4 H100s, pp4 x vpp4, Interleaved1F1B with 16 micro-batches, full activation checkpointing; the Kimi K3 debug model widened to dim 6144 with its 2-layer debug ViT, one image per sample.
+4 H100s, pp4 x vpp4, Interleaved1F1B with 16 micro-batches, full activation checkpointing; the Kimi K3 debug model widened to dim 6144 with its 2-layer debug ViT, at most one image per sample.
 
 ViT computation covered by pipeline bubbles: the share of the ViT forward and backward kernel time that runs inside pipeline bubbles, one traced step (the ViT work wrapped in profiler ranges locally for the measurement):
 

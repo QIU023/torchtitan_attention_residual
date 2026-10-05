@@ -61,7 +61,7 @@ def worker(rank, tree, ratio, store, out):
 
     run = Run()
     run.rank, run.world_size = rank, WORLD
-    history, plan = run._run_pipeline(bubble=True, frozen_tower=False, evals=[], cost_ratio=ratio)
+    history, plan, *_ = run._run_pipeline(bubble=True, frozen_tower=False, evals=[], cost_ratio=ratio)
     import torch
 
     reference = T._run_single_device(False, torch.device("cpu"), False, 1.0)
