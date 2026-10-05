@@ -62,6 +62,7 @@ def main():
     p.add_argument("--warmup", type=int, default=5)
     p.add_argument("--stream", action="store_true")
     p.add_argument("--routing", default="uniform")
+    p.add_argument("--profile", default="", help="write a per-kernel table of 3 more iterations here (rank 0)")
     args = p.parse_args()
 
     dist.init_process_group("nccl")
@@ -139,7 +140,24 @@ def main():
             torch.cuda.synchronize()
             if i >= args.warmup:
                 times.append(start.elapsed_time(end))
-    peak = torch.cuda.max_memory_allocated() / 2**30
+        peak = torch.cuda.max_memory_allocated() / 2**30
+        if args.profile:
+            from torch.profiler import profile, ProfilerActivity
+
+            with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
+                for _ in range(3):
+                    step()
+                torch.cuda.synchronize()
+            if rank == 0:
+                table = None
+                for key in ("self_cuda_time_total", "self_device_time_total"):
+                    try:
+                        table = prof.key_averages().table(sort_by=key, row_limit=80)
+                        break
+                    except Exception:
+                        continue
+                with open(args.profile, "w") as f:
+                    f.write(table or "no table")
     stats = torch.tensor([statistics.median(times), peak], device=device)
     gathered = [torch.zeros_like(stats) for _ in range(size)]
     dist.all_gather(gathered, stats)
