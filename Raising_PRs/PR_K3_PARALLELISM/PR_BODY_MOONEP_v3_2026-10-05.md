@@ -29,13 +29,13 @@ Adds MoonEP, the expert-parallel transport of the Kimi K3 report, as an optional
 
 ## Design
 
-MoonEP moves expert weights as well as tokens: after dispatch it prefetches copies of hot experts into slots on other ranks, each rank's grouped GEMMs run over its own experts followed by its slots, and in backward the slots' gradients are reduced into their home experts. The buffer and the weight and gradient pools are allocated once per process, when the model's buffers are initialized, and shared by every MoE layer; each rank copies its unsharded expert weights into its pool rows, since FSDP allocates that unsharded storage itself.
+MoonEP moves expert weights as well as tokens: after dispatch it prefetches copies of hot experts into slots on other ranks, each rank's grouped GEMMs run over its own experts and then its slots, and in backward the slots' gradients are reduced into their home experts. The buffer and the pools are allocated once per process, with the model's buffers, and shared by every MoE layer; each rank copies its unsharded expert weights into its pool rows, since FSDP owns that storage.
 
-Dispatch, the expert computation and combine are `torch.library` ops with an ordered effect, so selective and full activation checkpointing save their outputs instead of replaying them, since a replay would dispatch again and overwrite the shared pools; under `RegionAC` each op is a retained region. A dispatch refuses to start while an earlier one still waits for its combine.
+Dispatch, the expert computation and combine are `torch.library` ops with an ordered effect, so selective and full activation checkpointing save their outputs rather than replay them over the shared pools; under `RegionAC` each op is a retained region. A dispatch refuses to start while an earlier one still waits for its combine.
 
-The expert op scales its rows by their routing weights, so combine only sums. Its backward refills the pools for its own plan, recomputes only the activation from the saved gate and up projections, and runs the six grouped GEMMs of the gradient; the routing-weight gradient is read as `<grad_out @ W_down, hidden>`, as in the K3 report, so the expert output is not kept. The slot gradients are reduced in fp32 on MoonEP's stream while the input-gradient GEMMs run, and an all-reduce on the EP group orders the slot writes before MoonEP reads them.
+The expert op scales its rows by their routing weights, so combine only sums. Its backward refills the pools for its plan, recomputes only the activation from the saved gate and up projections, and takes the routing-weight gradient as `<grad_out @ W_down, hidden>`, as in the K3 report, so the expert output is not kept. The slot gradients are reduced in fp32 on MoonEP's stream behind the input-gradient GEMMs, after an all-reduce on the EP group orders the slot writes.
 
-With `shared_experts_stream`, the forward stream waits for the shared experts before the sum, and a hook on the MoE input makes it wait for their backward as well: autograd orders the input gradient across the two streams, but not the side stream's accumulation into the shared experts' parameter gradients, which FSDP reads before the backward ends.
+With `shared_experts_stream`, a hook on the MoE input makes the forward stream wait for the shared experts' backward: autograd orders the input gradient across streams, but not the side stream's parameter-gradient accumulation, which FSDP reads before the backward ends.
 
 MoonEP's buffer is static: every dispatch carries exactly `num_max_tokens_per_rank` tokens, which the transform derives from the training shape.
 
@@ -47,7 +47,7 @@ Requirements:
 - LoRA on the routed experts is not supported.
 - No compile region may contain the MoonEP ops, which have no fake implementations; titan's local regions still compile, including SiTU-GLU inside the expert computation.
 
-Costs of one pool set for every layer, per MoE layer and micro-batch: the refill adds a second NVLink weight prefetch and a second copy of the local experts into the pool, and the gate and up projections are kept for backward. In exchange, pool memory does not grow with the number of layers: with Kimi K3's 896 experts of 3072 x 3584 at EP 64, the bf16 weight pool and the fp32 slot-gradient pool take about 1.85 GB each per rank.
+Costs, per MoE layer and micro-batch: the refill adds a second NVLink weight prefetch and a second local-expert copy, and the gate and up projections are kept for backward. In exchange the pools do not grow with the number of layers: for Kimi K3 (896 experts of 3072 x 3584) at EP 64 the bf16 weight pool and the fp32 slot-gradient pool take about 1.85 GB each per rank.
 
 The gate and up rows are titan's `[F, D]`, where MoonEP documents `[H, H']`. The prefetch copies each expert as a block, so this matters only once quantized experts bring scale tensors, which MoonEP re-tiles per expert.
 
@@ -82,9 +82,9 @@ Loss / grad norm, Kimi K3 debug model (8 experts, top-2), seq 512, deterministic
 | standard EP, HSDP 2 x 2 x EP 2 | 7.99649 / 2.5156 | 4.85360 / 6.7812 | 3.58470 / 4.6875 | |
 | MoonEP, HSDP 2 x 2 x EP 2 | 7.99649 / 2.5156 | 4.84769 / 6.6875 | 3.57996 / 4.6875 | 4.63e-3 |
 
-Standard EP run twice is identical on all 20 steps, and MoonEP under full activation checkpointing matches MoonEP under selective. Moving standard EP from FSDP 4 x EP 4 to the other two layouts changes its loss by up to 1.51e-2 and 1.63e-2.
+Standard EP run twice is identical on all 20 steps, MoonEP under full activation checkpointing matches it under selective, and moving standard EP to the other two layouts changes its loss by up to 1.6e-2.
 
-Step-1 gradients against standard EP of the same layout, per parameter `||a - b|| / ||a||`: the routed experts' gradients, which MoonEP computes and reduces itself, are within 5.4e-3 at FSDP 4 x EP 4, 5.5e-3 at dp_shard 4 x EP 2 and 5.8e-3 under HSDP; the median over all 465 parameters is 5.2e-3 to 5.3e-3 in each layout. Standard EP run twice is bitwise.
+Step-1 gradients against standard EP of the same layout, per parameter `||a - b|| / ||a||`: the routed experts' gradients are within 5.4e-3, 5.5e-3 and 5.8e-3 in the three layouts, and the median over all 465 parameters is 5.2e-3 to 5.3e-3.
 
 ## Test plan
 
