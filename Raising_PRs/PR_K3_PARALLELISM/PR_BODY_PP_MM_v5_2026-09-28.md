@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-05 PR 分支同步（用户："推"）：** `k3_pp_mm` 从 `8518f473f` 快进到 `6cda7daca`（= `dep_review1`，CPU 会话把 DEP stage 和 AttnRes stage 解耦），普通推送。#4381 现在 8 个提交、11 个文件、+2202 / −11，和 main 的冲突仍是 `kimi_k3/model.py` 那一处。核对：stage 类的每个方法解析到的源码不变（只有类 docstring 不同），CPU 36 passed，NCCL 单测在 4 × H100 上 2 passed，B200 的 8 卡格子新旧 10 步逐位相同。粘贴区不用改。
 - **10-04 DEP stage 和 AttnRes 解耦（用户："ViT DEP机制本身并不是需要K3独有的……VisionDepPipelineStage 为什么要继承 AttnResPipelineStage ？？"，随后"直接改，但是你能保证数值完全不变吗？"）：** `dep_review1` 快进到 `6cda7daca`，PR 分支 `k3_pp_mm` 仍是 `8518f473f`。
   - 改动：`VisionDepPipelineStage` 改为继承普通的 `PipelineStage`；`pipeline_kimi_k3` 用 `_VisionDepAttnResStage(VisionDepPipelineStage, AttnResPipelineStage)` 组合；`vision_dep/` 不再 import AttnRes stage 和 `KimiK3VisionEncoder`，塔的类型标成它的父类 `MoonViTEncoder`（Kimi K2.5 也用这个塔）。5 个文件，+18 / −14。
   - 数值不变的依据（没有 GPU 也成立）：
