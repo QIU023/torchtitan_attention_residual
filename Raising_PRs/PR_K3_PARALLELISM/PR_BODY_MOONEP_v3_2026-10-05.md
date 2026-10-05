@@ -2,6 +2,18 @@
 
 ## 状态（不粘贴）
 
+- **10-05 CPU 会话复核 diff 和 body（用户："拉取，检查moonep分支diff和body"）：**
+  - 三个分支一致：`moonep_review1` = `k3_moonep_seam` = #4751 head = `6e3de1b8d`，main `db050eb3f` 上 7 个提交，12 个文件、+1089 / −7。线上 body 已是 v3（08:03 UTC），标题仍带 "[DO NOT Review]"；mergeable 状态是 dirty（和 main 在 `pyproject.toml` 冲突），rebase 等用户的话。
+  - diff 逐行看过：
+    - c2 修复后 `_experts` 用 `out.mul_(weights[:, None])`，反向 `unscaled_grad_hidden` 先 `.float()` 拷一份算权重梯度，再原地乘权重，先后顺序对，没有覆盖还要用的值；和修复前逐位相同（GPU 会话随机张量和 6 个场景都比过）。
+    - 新增注释都是一行约束；docstring 都是一行或两行的"做什么"；没有日志路径、没有实测数字；`_init_self_buffers`、`allocate_pools`、dispatch 的空表检查和我 10-04 提交的一致。
+    - c3（核心 `moe.py` 的 `shared_experts_stream`）按用户的话留在本 PR。`x_TD` 上的 hook 保留，理由（side stream 上参数梯度的累加 autograd 不排序，FSDP 在反向结束前就会读）已写进 body，符合"用 hook 要写明缺哪个接缝"的规则。
+  - body：粘贴区没有 we/our/us、破折号和非 ASCII 字符，正文约 845 词。要注意三处：
+    1. **逐参数梯度那句没有噪声基线，也只报了中位数。** 按数值验收规则，第 1 步梯度要对着一个噪声基线报，并且报到每个参数。状态区记着两个离群值：第 12 层 KDA 的 `A_log` 在 efsdp = 2 / HSDP 下是 1.2e-2 / 1.5e-2（efsdp = 1 是 3.0e-3），第 0 层 `ffn_res_proj` 是 0.31 到 0.44；而 "standard EP 换一种规约顺序" 的逐参数基线没跑。审查的人问最大值时现在答不上来。建议：下次 H100 补这条基线（standard EP 在另一种布局下对 standard EP 逐参数比）再写，或者这句只保留 routed experts 的 5.4e-3 / 5.5e-3 / 5.8e-3，并写明没有基线。
+    2. microbench 表的 "MoE layer with shared experts" 一行没写 `shared_experts_stream` 是开还是关（状态区说 stream 的数字这个 head 上没测，那这一行是关的）。Summary 刚介绍了这个开关，加半句 "(stream off)" 能避免误读。
+    3. Design 里 hook 那句说 "makes the forward stream wait"，代码里等待的是前向时的当前 stream（主 stream），写成 "the main stream" 更准确。
+  - 其余和代码一致：池在初始化时分配、dispatch 拒绝没 combine 的 plan、只重算激活、权重梯度用 `<grad_out @ W_down, hidden>`、slot 梯度异步规约、池大小 1.85 GB 的算法（896 × 3072 × 3584，EP 64）。
+
 - **为什么重写：** PR head 从 `5e4596dc7` 变成 `6e3de1b8d`（c1 到 c5，c2 并入了修复，c3 共享专家 stream 留在本 PR）。v2 描述的是旧代码：反向重算 GEMM、combine 里乘权重、池在第一次前向懒分配，这些都不对了。要改的地方按 `MOONEP_ITEMS_10_20_2026-10-04.md` 的清单。
 - **和 v2 比改了什么：**
   - Summary 加一条 `shared_experts_stream`。
