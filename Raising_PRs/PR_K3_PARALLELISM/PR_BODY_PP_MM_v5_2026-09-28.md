@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-05 H100：** NCCL 单测在 `8518f473f`（干净的工作树）上 2 passed，粘贴区那行从 Pending (H100) 改成 "2 passed on 4 H100s"。粘贴区现在没有 Pending 了。
 - **10-04 H100（`8518f473f`，`kit_dep_bands_2026-10-04/h100_dep_bands.sh`，结果在本机 scratchpad 的 `h100_1004/dep_fig11/`）：**
   - 数值（seq 2048、224 px、M16、代价比 0.116、deterministic、动态形状关，100 步，同一份缓存的副本）：DEP 关两遍、K2.5、bubble 四次运行每一步都相同；DEP 关的第 1 / 10 / 50 / 100 步和 10-02 那次也完全一样（8.15085 / 34.0000 … 2.05389 / 4.9375），表里那一行不变。
   - 覆盖率（标注 kernel 时间）：代价比 0.046 / 0.136 / 0.169 时，K3 形式 71% / 71% / 69%，K2.5 形式 1% / 6% / 0%。旧放置规则（10-02）是 73% / 81% / 84%。差别来自报告的固定结构：后 PP 个 micro-batch 的反向现在在调度后做，这组数据里是 13 个带图的 micro-batch 中的 3 个（以前只有 1 个）；编码进气泡的是 10 个（以前 9 个）。规划日志："encodes 3 before the schedule, 10 in idle slots; backwards 10 in idle slots, 3 after it"。
@@ -156,7 +157,7 @@ Earlier revisions gave the ViT its own pipeline stage on the first rank; this re
 ## Test plan
 
 - `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (20 passed).
-- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (Pending (H100).)
+- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (2 passed on 4 H100s).
 - The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` with DEP on: 10 steps on 8 RTX 5060 Ti (no B200 at hand).
 
 --- PASTE END ---
