@@ -2,6 +2,15 @@
 
 ## 状态（不粘贴）
 
+- **10-04 DEP stage 和 AttnRes 解耦（用户："ViT DEP机制本身并不是需要K3独有的……VisionDepPipelineStage 为什么要继承 AttnResPipelineStage ？？"，随后"直接改，但是你能保证数值完全不变吗？"）：** `dep_review1` 快进到 `6cda7daca`，PR 分支 `k3_pp_mm` 仍是 `8518f473f`。
+  - 改动：`VisionDepPipelineStage` 改为继承普通的 `PipelineStage`；`pipeline_kimi_k3` 用 `_VisionDepAttnResStage(VisionDepPipelineStage, AttnResPipelineStage)` 组合；`vision_dep/` 不再 import AttnRes stage 和 `KimiK3VisionEncoder`，塔的类型标成它的父类 `MoonViTEncoder`（Kimi K2.5 也用这个塔）。5 个文件，+18 / −14。
+  - 数值不变的依据（没有 GPU 也成立）：
+    - 新旧两个类的方法解析逐个比对（`kit_dep_bands_2026-10-04/fig11/cpu_check/mro_fingerprint.py`）：56 个方法，每个都解析到同一份代码（字节码、常量、名字逐项相同），唯一的区别是 DEP 的 9 个方法现在定义在父类里；MRO 里 DEP 之后紧接着仍是 AttnRes stage，所以每个 `super()` 落到的地方不变。
+    - 新旧两棵树在 4 个 gloo rank、6 组配置上逐位对比：286 个张量（loss、eval loss、梯度）0 处不同，plan 也全同。
+    - CPU：DEP 和 PP 的测试 29 passed、46 subtests；图 11 形状真跑运行时，每个 rank 的执行顺序仍是图 11，第 1 步和单卡逐位相同。
+    - GPU 路径只多了一层类，没有新代码；NCCL 那边执行的是同一份方法。
+  - 粘贴区：Design 的 Wiring 一条改成两条，写明 DEP stage 不依赖 AttnRes、K3 是组合使用。
+
 - **10-04 CPU 会话核对 PR head `8518f473f`（用户："拉取 核对DEP最新分支和body和结果，目前哪个测试是还原K3论文的气泡排布的？"）：**
   - 三个分支一致：`dep_review1` = `k3_pp_mm` = #4381 head = `8518f473f`。本机 CPU 20 passed、46 subtests；规划器在 pp3 × vp4、6 个 micro-batch、代价比 0.01 到 1/3 时和图 11 逐项相同；真跑运行时（3 个 gloo rank、12 个 stage，代价比 0.1 和 0.3）每个 rank 的执行顺序和图 11 完全一样，文本动作之间没有 ViT 工作，第 1 步梯度和 loss 与单卡逐位相同。
   - 线上 body（08:31 UTC）是 H100 之前的版本：覆盖率和 `bubble=True` 的数值还写着 Pending，比这里的粘贴区旧。线上多了一段用户加的 "Illustration Figure"（图 11 截图），粘贴区原来没有，已经合进来，放在 Summary 之后、Design 之前；图片的 alt 是截图默认文件名，在线上显示成乱码（"屏幕截图" 的编码坏了），改成英文 "Figure 11 of the Kimi K3 report"。整段贴的时候用这里的版本，图不会丢。
@@ -132,7 +141,8 @@ The green part of ViT forward and backward shown from the Kimi K3 tech report an
   - Both ends of a transfer post it at the same slot boundary, so no posted send or receive waits on its own rank's later work.
 - Wiring:
   - `pipeline_kimi_k3` wraps the schedule's `step`, since the engine's pipeline step has no model hook.
-  - The package is split like the AttnRes pipeline: the plan like the block layout tables, the runtime like the rank store, and the stage subclasses the AttnRes stage.
+  - The package is split like the AttnRes pipeline: the plan like the block layout tables, the runtime like the rank store.
+  - `VisionDepPipelineStage` is a plain `PipelineStage` and does not depend on the attention residual; Kimi K3 composes it with the AttnRes stage, so another multimodal model under PP can use it on its own stage.
 
 With pp 3 x vpp 4 and 6 micro-batches the plan is the layout of Figure 11 in the K3 report (micro-batches numbered from 1); `test_three_ranks_and_six_microbatches_lay_out_as_in_the_k3_report` checks the rank, bubble and order of every item for cost ratios 0.05 to 0.3, and the runtime tests check that every rank runs exactly its planned ViT work, in order, before its first text action and after its last:
 
