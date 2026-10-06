@@ -38,6 +38,8 @@
   - 共享专家 stream 的 MoE 层数字是 10-04 在 c5 上测的（72.57 → 71.02 ms），本 head 上没测，所以没进表。
 - **粘贴前提：** PR 分支已经是 `6e3de1b8d`；#4751 是 draft，和 main 只在 `pyproject.toml` 冲突（推之前就有），rebase 等你的话。
 
+- **10-06（PR head `16ff9da7f`，rebase 到 main `3f087cf15`）：** 端到端表在新 head 上重测（H100，同一份 cache；torch 68e0ae4 加 `local/mpp_shim`，见 `MOONEP_DIFF_REVIEW_2026-10-06.md`）。数值整体移动来自 main（纯 main 的 standard 第 1 步也是 8.18811）；MoonEP 和 standard EP 第 1 步三种布局都逐位相同。Test plan：CPU 39 passed（5060），GPU 11 passed（4 × H100）。microbench 没有重跑：新提交只改名和加测试。
+
 --- PR 4751 body v3: PASTE BEGIN ---
 
 ## Summary
@@ -98,19 +100,19 @@ Loss / grad norm, Kimi K3 debug model (8 experts, top-2), seq 512, deterministic
 
 | cell | step 1 | step 10 | step 20 | max relative loss gap to standard EP of the same layout |
 |---|---:|---:|---:|---:|
-| standard EP, FSDP 4 x EP 4 | 7.99090 / 2.4219 | 4.89817 / 7.1562 | 3.63110 / 4.7500 | |
-| MoonEP, FSDP 4 x EP 4 | 7.99090 / 2.4219 | 4.90077 / 7.1875 | 3.62509 / 4.6875 | 2.90e-3 |
-| standard EP, dp_shard 4 x EP 2 | 7.99403 / 2.5469 | 4.88217 / 6.8438 | 3.62059 / 4.5312 | |
-| MoonEP, dp_shard 4 x EP 2 | 7.99403 / 2.5469 | 4.88064 / 6.8438 | 3.60856 / 4.5000 | 3.83e-3 |
-| standard EP, HSDP 2 x 2 x EP 2 | 7.99649 / 2.5156 | 4.85360 / 6.7812 | 3.58470 / 4.6875 | |
-| MoonEP, HSDP 2 x 2 x EP 2 | 7.99649 / 2.5156 | 4.84769 / 6.6875 | 3.57996 / 4.6875 | 4.63e-3 |
+| standard EP, FSDP 4 x EP 4 | 8.18811 / 2.1875 | 5.82440 / 10.7500 | 4.46201 / 8.0000 | |
+| MoonEP, FSDP 4 x EP 4 | 8.18811 / 2.1875 | 5.82486 / 10.6875 | 4.46116 / 8.0000 | 1.60e-3 |
+| standard EP, dp_shard 4 x EP 2 | 8.19370 / 2.2031 | 5.83694 / 10.3750 | 4.42467 / 8.3125 | |
+| MoonEP, dp_shard 4 x EP 2 | 8.19370 / 2.2031 | 5.83617 / 10.3750 | 4.42168 / 8.3750 | 2.03e-3 |
+| standard EP, HSDP 2 x 2 x EP 2 | 8.17808 / 2.2031 | 5.85455 / 10.3125 | 4.43081 / 8.7500 | |
+| MoonEP, HSDP 2 x 2 x EP 2 | 8.17808 / 2.2031 | 5.85582 / 10.3125 | 4.43006 / 8.7500 | 1.89e-3 |
 
-Standard EP run twice is identical on all 20 steps, MoonEP under full activation checkpointing matches it under selective, and moving standard EP to the other two layouts changes its loss by up to 1.6e-2.
+Standard EP run twice is identical on all 20 steps, MoonEP under full activation checkpointing matches it under selective, and moving standard EP to the other two layouts changes its loss by up to 1.1e-2.
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_transforms.py tests/unit_tests/cpu/test_moonep_ops.py -q` (28 passed).
-- `pytest tests/unit_tests/gpu/test_moonep.py tests/unit_tests/gpu/test_moe_shared_experts_stream.py -q` (10 passed on 4 H100s; `test_moonep.py` skips without MoonEP or NVLink multicast).
+- `pytest tests/unit_tests/cpu/test_transforms.py tests/unit_tests/cpu/test_moonep_ops.py -q` (39 passed).
+- `pytest tests/unit_tests/gpu/test_moonep.py tests/unit_tests/gpu/test_moe_shared_experts_stream.py -q` (11 passed on 4 H100s; `test_moonep.py` skips without MoonEP or NVLink multicast).
 
 ## Relation to earlier revisions of this PR
 

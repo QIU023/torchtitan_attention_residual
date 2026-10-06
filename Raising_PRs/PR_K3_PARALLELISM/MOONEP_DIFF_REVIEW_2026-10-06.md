@@ -120,3 +120,32 @@ H100（需要 NVLink multicast）：
    - microbench 不用重跑：改名不影响性能。
 
 全部通过之后：用户同意 → `k3_moonep_seam` 用 `--force-with-lease` 从 `6e3de1b8d` 同步到 `16ff9da7f`，填 Test plan 计数，重新贴 body，去掉标题里的 "[DO NOT Review]"，再从 draft 转成 ready。
+
+## GPU 会话跑 `16ff9da7f`（10-06）
+
+5060（venv_1003b，torch 2.15.0.dev20261003）：
+1. `pytest tests/unit_tests/cpu/test_transforms.py tests/unit_tests/cpu/test_moonep_ops.py -q`（GPU 隐藏，和 CI 一样）：39 passed。
+2. `test_moe_shared_experts_stream.py`：2 passed。临时删掉 `moe.py:743` 的 `x_TD.register_hook(wait_for_shared_experts_backward)` 后连跑 3 次：新用例 `test_input_hook_orders_the_side_stream_gradient_accumulation` 3 次都失败（`w13.weight`），旧用例 3 次都通过。恢复后 2 passed，worktree 干净。
+3. pre-commit（`--files` 为 `3f087cf15..16ff9da7f` 改动的 12 个文件，跳过 no-commit-to-branch 和 lychee）：除 pyrefly 外全部通过。pyrefly 的 18 个错误和干净 main `3f087cf15` 的错误集合完全相同，都是环境问题（缺 `torch_checkpointing` 包、attn_gym 和 torch 的 API 版本），没有一个在 MoonEP 的文件里。pyrefly 顺手删了 `hf_datasets/multimodal/utils/video.py` 里的一个 suppression，这是附带改动，已经 checkout 掉。
+
+H100（10-06，同一台 4 × H100，torch 2.15.0a0+git68e0ae4，和 10-05 相同）：
+4. `test_moonep.py` + `test_moe_shared_experts_stream.py`：11 passed（114 s）。
+5. 端到端：第一次起跑时 `16ff9da7f` 的格子全部在建模型时失败：main 的 #5068（`179c8dcad`）现在总是给 `MixedPrecisionPolicy` 传 `param_dtype_override_fn`，而 torch 68e0ae4 没有这个字段；5060 的 dev20261003 也没有。这台机器的驱动只到 CUDA 12.8，用不了 cu130/cu132 nightly，cu128/cu126 又没有 10 月的包。
+   - 改用 kit 的 `local/mpp_shim/sitecustomize.py`：`param_dtype_override_fn=None` 时直接去掉，非 None 时报错；每个进程都会打印提示。K3 的格子传的都是 None，所以计算和新 torch 一样，两棵树也都在同一个 torch 上。
+   - 新树 standard（FSDP 4 × EP 4）第 1 步是 8.18811 / 2.1875，10-05 表里是 7.99090 / 2.4219。standard EP 不经过 MoonEP 的代码，这个变化来自 rebase 带进来的 main 提交（新 base 里有 #4881 的零初始化，旧 base `db050eb3f` 没有）。定位之前数字暂扣。
+   - 复验脚本 `h100_moonep_recheck_1006.sh` 用同一份 cache 跑三组：新树和旧树 `6e3de1b8d` 各 8 格，加纯 main `3f087cf15` 的 standard 一格；对表脚本 `cmp_recheck_1006.py`。
+   - 结果（`results_h100_1006/cmp.txt`）：
+     - 新 head 第 1 步，MoonEP 和 standard EP 三种布局都逐位相同：FSDP 4 × EP 4 为 8.18811 / 2.1875，dp_shard 4 × EP 2 为 8.19370 / 2.2031，HSDP 为 8.17808 / 2.2031。
+     - 20 步内最大相对 loss 差分别为 1.60e-3、2.03e-3、1.89e-3。
+     - FullAC 和 selective 20/20 相同；standard 跑两次 20/20 相同；standard 换到另外两种布局，loss 最多变 1.1e-2。
+   - 定位：数值整体移动来自 main。
+     - 纯 main `3f087cf15` 的 standard 第 1 步是 8.18811 / 2.1875，和新 head 一样。
+     - 旧 head `6e3de1b8d` 在同一份新 cache 上第 1 步是 7.99090 / 2.4219、7.99403 / 2.5469、7.99649 / 2.5156，和 10-05 一样。
+     - 旧 head 的 20 步对比在用户 10-06 的话（"为什么每一次review都得重新跑数值"）之后停掉，没有跑。
+   - body 粘贴区：端到端表换成新 head 的数，层间差那句改成 1.1e-2，Test plan 改成 39 passed 和 11 passed。
+
+## PR 同步（10-06，用户："注意新的commit不要squash，加到当前PR分支和review分支就行"）
+
+- `k3_moonep_seam` 从 `6e3de1b8d` 用 `--force-with-lease` 同步到 `16ff9da7f`（= `moonep_review1`），旧 head 备份在 `backup/k3_moonep_seam_pre_20261006`。
+- 新提交没有 squash，在 rebase 后的 c1 到 c5 之上单独保留：`8de0e6a97` region 名、`6741d20a5` hook 测试、`16ff9da7f` refusal 测试的 flag。
+- 还剩用户在 GitHub 上做：重新贴 body（`PR_BODY_MOONEP_v3_2026-10-05.md` 粘贴区）、去掉标题里的 "[DO NOT Review]"、从 draft 转成 ready。
