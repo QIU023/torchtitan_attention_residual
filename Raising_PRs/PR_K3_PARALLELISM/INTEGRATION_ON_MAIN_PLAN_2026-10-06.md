@@ -104,3 +104,27 @@ Elfie 分支 rebase 到 main 预计的冲突：
 - **MTP**（集成树 `e68c9af72`）：旧实现用模块级全局变量把 MTP logits 交给 loss，并且拒绝 chunked loss。main 的 DeepSeek V3/V4 已经有一套 MTP 接口（预测元组、`roll_mtp_sequence`、`MTPLoss`、`MTPDecoder`）。K3 接到那套接口上等于重写。
 - **LoRA/QLoRA**（集成树约 20 个提交，加 `quantize_lora_dcp.py`，以及 `rl_lora` / `rl_qlora_mxfp4` 两个 recipe）：main 的 LoRA 改成按 handler 组织（#4877、#4995），旧的 QLoRA packed MXFP4 专家做在已删除的 GroupedExperts 上。要搬就得在 GroupedLinear 和 handler 上重新设计；Elfie 的 MXFP4 packed 存储也许能复用。
 - **neighbor transport**（集成树 `a7328e4fa` `3128317e1` `3d8e13071`）：main 的 PP 执行层变化很大（#4540 静态 eager 执行、#4662 send 预算），要先确认这个修复在 main 上是否还需要。
+  - 10-06 查了：torch dev20261005 的 pipelining 已经自带这两样。`torch.distributed.config.pipeline_per_edge_p2p`（环境变量 `TORCH_DISTRIBUTED_PIPELINE_PER_EDGE_P2P=1`，用 TorchComms 时自动打开）给每条有向的 rank 边一个两 rank 的子 communicator，`(src, dst)` 为键，正反两个方向分开；`_initialize_pipeline_distributed_state` 在第一步之前用一次 parent all-reduce 定 metadata 模式，再预连接 parent 或这些子 communicator（`pipelining/stage.py:193`、`schedules.py:365`、`_p2p.py`）。不用 per-edge 时，torch 会建议把 PP 组建成 `backend="nccl-lazy"`。
+  - 差别只有一处：动态 metadata 在 torch 里走这条边自己的 P2P 组（设备上的 `send_object_list`，`stage.py:1969`），不是旧树那样走每个 replica 的 CPU 组；静态 metadata 模式下根本不交换。旧树走 CPU 是为了避开共享 communicator 的 op 顺序，边各有各的 communicator 之后这个理由不在了。
+  - 所以旧树的三个提交（eager 建边、两 rank 边组、CPU metadata 和投票）建议不搬；多机 PP 的 recipe 设这个环境变量就行。集成树第 2 批有一格 pp4 × vpp4 打开它，和不开的对比。
+
+## 10-06 白天：5060 上的完整测试
+
+### CPU
+
+- 集成树 `wt_int_elfie`（`6d4ef6791`）全量 `tests/unit_tests/cpu`：1497 passed，17 skipped，1 error。
+- main `3f087cf15` 同一个 venv（venv_1006i）：1387 passed，17 skipped，1 error。
+- 两边唯一的 error 都是 `test_torch_checkpointing.py` 收集失败（venv 里没有 `torch_checkpointing` 包）。集成树多 110 个测试，没有新的失败。
+
+### GPU 矩阵（kit `kit_int_2026-10-06/`，20 步，每对共用一份 cache，预热也跑 20 步，typecheck 关）
+
+- PP 的对照不能直接用 main：torch dev20261005 下 main 的 PP 在 FSDP `finalize_backward` 报 `requires manual backward finalization`，要 #5025。所以 PP 的对照树是 `wt_main_5025` = main `3f087cf15` + #5025（`eec07d907`，detached，没有建分支）。
+
+| 配置 | 卡数 | 集成树对 main |
+|---|---|---|
+| dp1 | 1 | 20 步逐位相同 |
+| fsdp2 | 2 | 20 步逐位相同 |
+| tp2（ep2，SP 开） | 2 | 20 步逐位相同 |
+| fsdp2 × ep2 | 2 | 20 步逐位相同 |
+| cp2 all-gather | 2 | 第 5 步开始不同：集成树带 #4380，第 5 步第一张 256 patch 的图被切；集成树和 #4380 树（`fcaaeb25f`）默认阈值那格 20 步逐位相同 |
+| cp2 Ulysses | 2 | 同上；all-gather 和 Ulysses 20 步互相逐位相同（main 和集成树都是） |

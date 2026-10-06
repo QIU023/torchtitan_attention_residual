@@ -5,6 +5,7 @@ cell(): the Kimi K3 debug recipe (main's kimi_k3_debugmodel) as #4639's h100 cel
   CP_DEGREE    context parallel degree (2); CP_DP dp_shard (1); CP_TP tensor parallel (1, sets EP = TP); AdamW everywhere
   CP_MINP      dynamic_cp_min_patches when the tree has it (256 = default; 128 splits cc12m-test's 192-patch images)
   CP_TYPECHECK 0/1 (1, as #4639's cells); CP_STEPS (100); seed 42, deterministic.
+  CP_AC        0 drops the recipe's activation checkpointing (typechecking already drops it).
 """
 
 import os
@@ -61,6 +62,8 @@ def cell():
                 )
             ],
         )
+    if e.get("CP_AC", "1") == "0":
+        config.activation_checkpoint = None
     config.training.steps = int(e.get("CP_STEPS", "100"))
     config.metrics.log_freq = 1
     config.debug.seed = 42
