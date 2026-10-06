@@ -167,3 +167,33 @@ pp4 × vpp4（M8）上集成树才有的开关，和 main + #5025 的 pp4 × vpp
 
 - 探针是 kit 的 `local/feature_probe/sitecustomize.py`：包住 `HostBackend.put`、`RemoteBackend.put` 计数，记下每个 stage 的 `p2p_per_edge`，退出时写到每个 rank 的文件。rank 0 的文件是空的，因为 torchrun 的父进程也加载了 sitecustomize，退出时用空计数覆盖了它；rank 1-3 就够了。
 - MoonEP 在 5060 上跑不了（没有 switch multicast），它的 GPU 单测会 skip；集成树里的 MoonEP 是 `16ff9da7f`，H100 上 10-06 验过。
+
+第 3 批（8 卡，20 步）：
+
+| 配置 | 集成树对 main（PP 用 main + #5025） |
+|---|---|
+| fsdp2 × tp2 × pp2 | 20 步逐位相同 |
+| cp2 × fsdp2 × tp2 | 第 1 步就不同，集成树带 #4380，DP 组 1 第 1 步那张 256 patch 的图被切（同 cp2 × fsdp2） |
+| fsdp2 × pp4 × vpp4，M8 | 20 步逐位相同 |
+| fsdp2 × pp4 × vpp4 + DEP | 第 1 步相同，第 2 步开始不同（已定位，见下） |
+
+DEP 在 dp2 下的差（kit `local/grad_dump/sitecustomize.py` 按步 dump 每个 rank 的本地梯度分片，`cmp_grad_dump.py` 比较；4 卡的 fsdp2 × pp2 × vpp2 复现同一现象）：
+
+- dp1 的 pp4 × vpp4：DEP 开 / 关第 1 步梯度所有 rank 全部参数逐位相同（127 / 122 / 128 / 88 个）。
+- fsdp2 × pp2：第 1 步梯度全部相同，第 2 步 loss 相同，第 3 步 loss 不同。第 2 步的梯度只有 vision encoder 的参数不同（rank 0 有 12 个，rank 1 有 9 个，集中在 layer 0 的 attention、`patch_embed`、`pos_embed`，相对范数差最大 9.9e-4），其余参数全部逐位相同。
+- 关掉 dynamo 的 automatic dynamic shapes（`TORCH_DYNAMO_AUTOMATIC_DYNAMIC_SHAPES=0`）后，第 2 步所有 rank 的全部梯度逐位相同。
+- 原因：DEP 在 no_grad 下跑 tower 前向，反向时重算一遍。第 2 步有新的图片形状，dynamo 按 automatic dynamic shapes 重新编译 flex attention，重算拿到的 kernel 和不开 DEP 时 tower 前向用的不同，tower 早期层的梯度差在 bf16 量级。这是 09-30 在 H100 上记下的同一个编译混淆（memory `flex-compile-shared-across-tower-and-text`），不是 DEP 的数学。
+- 静态 shape 下 fsdp2 × pp2（vpp2，M4）的 DEP 关 / DEP 开 / DEP + bubble 三格 20 步逐位相同（`int_depstatic`）。
+- 所以 DEP 的 PR 正文如果放 dp > 1 的数值对照，要关 automatic dynamic shapes，或者在表注里说明这个编译差异。
+
+### GPU 单测（tests/unit_tests/gpu）
+
+- 第一次两棵树都整套跑：集成树 81 failed / 121 passed / 10 skipped，main + #5025 77 failed / 119 passed / 1 skipped。
+- 大部分失败是测试之间的状态泄漏，不是代码问题：`test_ema.py` 的 `setUpClass` 在 pytest 主进程里 `setdefault` 了 `RANK=0`、`WORLD_SIZE=1`、`LOCAL_RANK=0`，结束时没有清掉。后面 spawn 出来的多进程测试都继承 `LOCAL_RANK=0`，titan 的 `get_local_device()` 读它，所有 rank 都落到 cuda:0，NCCL 报 `Multiple Ranks are using the same GPU/Partition`。
+  - 复现：先跑 `test_ema.py` 再跑 `test_fsdp_embedding.py`，后者失败；单独跑通过。`test_ema.py` 最近一次改动是 main 的 #4660。这是 main 的问题，CI 每个文件是否单独跑没查。
+- 另一类是这台机器的硬件限制：
+  - 5060 没有 P2P，symmetric memory 建不起来（`CUDA driver error: invalid device ordinal`）：async TP、`test_distributed_linear.py` 等；
+  - sm_120 上没有 torchao 的 `mxfp8_quantize` 和 cutlass 的 mxfp8 / nvfp4 kernel；
+  - venv 里没有 helion；
+  - MoonEP 没有 multicast，跳过。
+- 重跑：两棵树都 `--ignore` 掉 `test_ema.py` 跑一遍，再单独跑 `test_ema.py`，逐个测试对比失败集合（`gputests2_*.log`）。
