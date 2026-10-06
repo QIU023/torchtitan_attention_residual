@@ -65,3 +65,19 @@ rebase 之后，Test plan 里的计数（CPU 28 passed、GPU 10 passed）要重�
 - buffer 的 token 数按 PP micro-batch 和 cp·tp 推导。
 - slot 梯度池被覆盖之前，有 dispatch 反向的入口栅栏（`MOONEP_ITEMS_10_20` 第 14 条）。
 - 新增注释都是一行约束，docstring 一到两行，diff 里没有日志路径或实测数字。
+
+## GPU 会话核对（10-06，`6e3de1b8d`，5060，venv_1003b）
+
+逐条对照代码和 main（`3f087cf15`，#4639 已合）核对，结论全部成立：
+
+- 第 1 条成立：main 的 `d75ddfaac`（#4956）给 shared expert 的加法加了 `remat.recompute_needs_tensor(shared_TD)`，head 的 side-stream 分支没有。集成树新树 `k3_int_20261006a` 的 MoonEP 那一层已经按两条路径都加的方式合过（`b8d0025f7`）。
+- 第 2 条成立：`ops.py:181/206/216` 写死 `moonep_dispatch` / `moonep_experts` / `moonep_combine`。DeepEP 和 HybridEP（`token_dispatcher.py:854/876`，`deepep.py:471/591` 收 `remat_region_name` 参数）、dist_moe（`routed_experts.py:175`，`recompute=False`）都由 module 的 `remat_region_name(...)` 给出带 FQN 的名字。RegionAC 用 fnmatch 匹配这个名字（`protocols/module.py:57-68`）。MoonEP 的 region 都是 `recompute=False`，所以改名不影响数值。
+- 第 3 条实测成立：去掉 `x_TD.register_hook(wait_for_shared_experts_backward)` 之后，`test_moe_shared_experts_stream` 5 次全部通过；有 hook 时 3 次也通过。
+  - 补测试的原型在 kit 的 `local/probe_stream_hook_test.py`（单卡，不用 FSDP）：两个 micro-batch 累加到 `.grad`，第二次在 side stream 上原地加；每个 shared expert 参数挂一个 tensor hook，在加之前 sleep；MoE 输入外面包一个 autograd Function，它的 backward 在主 stream 上 clone shared expert 的梯度（FSDP2 post-backward 读梯度的位置）。
+  - 结果：有 hook 时 3 次全部和 stream off 逐位相同；去掉 hook 后 3 次都是 `w13.weight` 不同（`w2` 的累加更早，看不出来）。这个原型可以直接改成 `TestSharedExpertsStream` 的第二个测试。
+- 小问题核对：
+  - `MoonEPTokenDispatcher.buffer` 只在 `init_buffer` 里赋值，只有 GPU 测试 `test_moonep.py:214` 的 `destroy()` 在读。
+  - transform 的 `assert isinstance(name, str)` 在 list 父节点时会抛出没有信息的 AssertionError。K3 的 `RoutedExperts.Config` 父节点是 `MoE.Config`，碰不到。
+  - `validation.py` 里 MoonEP 的拒绝在第 134 行，CUDA graph 检查在第 147 行之后，所以 refusal 测试里的 `disable_cuda_graphs=True` 不起作用。
+- body：GitHub 上的 live body 就是 v3，三处都还在（`forward stream`、microbench 的 MoE 行没写 stream off、逐参数梯度那句带中位数、没有基线）。改了要重新贴。
+- 都没有改到 `moonep_review1` 或 PR 分支上；`k3_moonep_seam` = `moonep_review1` = `6e3de1b8d`，和 main 只在 `pyproject.toml` 冲突。
