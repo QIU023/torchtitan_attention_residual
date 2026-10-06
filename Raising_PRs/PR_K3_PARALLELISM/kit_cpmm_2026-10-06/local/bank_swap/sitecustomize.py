@@ -5,7 +5,7 @@ bitwise, the split path changes nothing but the bank's arithmetic."""
 import os
 import sys
 
-if os.environ.get("BANK_SWAP") == "1":
+if os.environ.get("BANK_SWAP") == "1" and "RANK" in os.environ:  # the torchrun parent has no RANK
     import torch
 
     from torchtitan.models.kimi_k3.vision_encoder import KimiK3VisionEncoder
@@ -33,7 +33,7 @@ if os.environ.get("BANK_SWAP") == "1":
         )
         sys.stderr.write(line)
         if os.environ.get("BANK_SWAP_LOG"):
-            with open(f"{os.environ['BANK_SWAP_LOG']}.rank{os.environ.get('RANK', '0')}", "a") as f:
+            with open(f"{os.environ['BANK_SWAP_LOG']}.rank{os.environ['RANK']}", "a") as f:
                 f.write(line)
         _calls[0] += 1
         return whole

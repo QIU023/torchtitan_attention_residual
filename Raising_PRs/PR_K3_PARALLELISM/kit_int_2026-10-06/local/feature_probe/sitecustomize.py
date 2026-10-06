@@ -5,7 +5,7 @@ FEATURE_PROBE_LOG.rank<N> at exit."""
 import atexit
 import os
 
-if os.environ.get("FEATURE_PROBE_LOG"):
+if os.environ.get("FEATURE_PROBE_LOG") and "RANK" in os.environ:  # the torchrun parent has no RANK
     from collections import Counter
 
     _counts: Counter = Counter()
@@ -40,6 +40,6 @@ if os.environ.get("FEATURE_PROBE_LOG"):
 
     @atexit.register
     def _dump():
-        with open(f"{os.environ['FEATURE_PROBE_LOG']}.rank{os.environ.get('RANK', '0')}", "w") as f:
+        with open(f"{os.environ['FEATURE_PROBE_LOG']}.rank{os.environ['RANK']}", "w") as f:
             for key, value in sorted(_counts.items()):
                 f.write(f"{key} {value}\n")
