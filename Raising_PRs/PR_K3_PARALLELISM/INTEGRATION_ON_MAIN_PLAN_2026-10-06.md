@@ -71,3 +71,36 @@ Elfie 分支 rebase 到 main 预计的冲突：
 2. 检查 MoonEP 新发现的问题。
 3. maintainer 合了 CP（#4639），#4380 Dynamic CP 不再被挡住，先准备它。
 4. 集成树按上面的方案再继续，开始前先问用户。
+
+## 10-06 晚（overnight 目标："完成刚刚的集成树移植 在5060完整测试"）
+
+新树在 scratchpad worktree `wt_int_elfie`（detached），底是 main `3f087cf15`（#4639 已合）。按用户的方案以 Elfie 的分支为底，自下而上：
+
+| 提交 | 内容 | 说明 |
+|---|---|---|
+| `d04ddb1ed` | Elfie `9b8b9d244..b7b5eb2b9` 作为一个改动，作者记为她 | 她的提交中间状态引用已删除的 GroupedExperts（第 6 个提交才改成 GroupedLinear），逐个 rebase 只会在同几个文件里反复冲突。冲突：recipe 从已删除的 `config_registry.py` 挪到 `torchtitan_recipes/tests/models/kimi_k3.py`；LoRA 在 MX QAT 之后执行，改成写进 `relations.py`（main 的 #5007）；`LinearCrossEntropyLoss` 用 main 的 loss 构造函数（#5026 之后没有 compile_config）；adapter 测试改用 main 的 `MODEL_FLAVORS` 和 `build_model_config` |
+| `2224c7ab0` | #5025（Shuhua，未合） | torch dev20261005 下 FSDP × PP 需要 |
+| `84040f93b` `0dc1946aa` `fa07145b8` | #4656 list、remat、PR A | 冲突只在 #4639 的 attention metadata 和 `vision_bank_indices_T` |
+| `ca10f9ad0` `7b054f447` `d023f1d93` | #4765、#4764（review 分支 `fb5d35b56` / `908db8609`） | 无冲突 |
+| `99edeb9a2` | DEP `6cda7daca` 作为一个改动 | `vision_embeds` 和 `vision_bank_indices_T` 都保留 |
+| `cc6885af7` | MoonEP `16ff9da7f` 作为一个改动 | 无冲突 |
+| `14c981cff` `888777913` | remat 测试和 DEP 测试适配 main / PR A | 同 `wt_int1006` |
+| `1b7e2a6ab` | optimizer 放宽 | 同 `wt_int1006` |
+| `6bf639aa6` | Elfie 的 MX QAT、测试、checkpoint 脚本按 main 的接口改 | `MXQATTransform.transform` 接收 context；自冲突声明挪进 `relations.py`；测试用 `ConfigLoader` 和 `build_model_config`。`scripts/validation/kimi_k3/validate_distmuon.py` 还用 #4810 之前的 API，没有移植 |
+| `e6baa03e6` | rl flavor（集成树 `7b6959b91`） | 12 层，MLA 在 3 / 7 / 11 层，约 7.55 亿参数 |
+| `69c4174bb` | report_arch、k3mini（集成树 `5b001bde1` 的 flavor 部分） | released 布局的 debug checkpoint（`/workspace/k3qat_mm_hf`）在 Elfie 的 adapter 下键全部能映射；A_log 由她的 storage reader 整形，不在 `from_hf` 里做，所以旧的 adapter 测试不再搬 |
+| `96805ad44` `6d4ef6791` | #4380 的两个提交 | 无冲突 |
+
+环境：`venv_1006i` = `venv_1006` + Elfie fork 的 torchao（`6352062`，`USE_CPP=0`，`--no-build-isolation`）。
+
+### 和 Elfie 重叠的部分
+
+- QAT：集成树的 `2cf71670e` 做在已删除的 GroupedExperts 上，取 Elfie 的版本。
+- to_hf 的 layer-0 占位（集成树 `4fd7388bc`）：Elfie 的 adapter 测试 `test_pipeline_export_synthesizes_placeholders_only_on_layer_zero_stage` 已包含。
+- released 格式（集成树 `5b001bde1` 的 adapter 部分）：以 Elfie 的为准。
+
+### 没有搬、需要用户决定的
+
+- **MTP**（集成树 `e68c9af72`）：旧实现用模块级全局变量把 MTP logits 交给 loss，并且拒绝 chunked loss。main 的 DeepSeek V3/V4 已经有一套 MTP 接口（预测元组、`roll_mtp_sequence`、`MTPLoss`、`MTPDecoder`）。K3 接到那套接口上等于重写。
+- **LoRA/QLoRA**（集成树约 20 个提交，加 `quantize_lora_dcp.py`，以及 `rl_lora` / `rl_qlora_mxfp4` 两个 recipe）：main 的 LoRA 改成按 handler 组织（#4877、#4995），旧的 QLoRA packed MXFP4 专家做在已删除的 GroupedExperts 上。要搬就得在 GroupedLinear 和 handler 上重新设计；Elfie 的 MXFP4 packed 存储也许能复用。
+- **neighbor transport**（集成树 `a7328e4fa` `3128317e1` `3d8e13071`）：main 的 PP 执行层变化很大（#4540 静态 eager 执行、#4662 send 预算），要先确认这个修复在 main 上是否还需要。

@@ -89,10 +89,16 @@ def cell():
         split[0][:0] = KimiK3Model.pipeline_first_stage_module_fqns
         split[-1].extend(KimiK3Model.pipeline_last_stage_module_fqns)
         p.pipeline_parallel_module_fqns_per_model_part = split
-        config.model.vision_dep.enabled = e("INT_DEP", "0") == "1"
-        config.model.vision_dep.bubble = e("INT_DEP_BUBBLE", "0") == "1"
-        config.model.pp_memory.cpu_offload = e("INT_PPMEM", "none")
-        config.model.pp_memory.balance = e("INT_BALANCE", "0") == "1"
+        if hasattr(config.model, "vision_dep"):
+            config.model.vision_dep.enabled = e("INT_DEP", "0") == "1"
+            config.model.vision_dep.bubble = e("INT_DEP_BUBBLE", "0") == "1"
+        else:
+            assert e("INT_DEP", "0") == "0", "this tree has no vision_dep"
+        if hasattr(config.model, "pp_memory"):
+            config.model.pp_memory.cpu_offload = e("INT_PPMEM", "none")
+            config.model.pp_memory.balance = e("INT_BALANCE", "0") == "1"
+        else:
+            assert e("INT_PPMEM", "none") == "none" and e("INT_BALANCE", "0") == "0", "this tree has no pp_memory"
     config.training.steps = int(e("INT_STEPS", "10"))
     config.metrics.log_freq = 1
     config.debug.seed = 42

@@ -1,15 +1,15 @@
 #!/bin/bash
-# Usage: run_matrix.sh <out> <spec>...   spec = name:tree_dir:gpus:ENV=..,ENV=..
+# Usage: run_matrix2.sh <out> <spec>...   (run_matrix.sh plus PP_PRE=<dir> prepended to PYTHONPATH, WARM_STEPS)   spec = name:tree_dir:gpus:ENV=..,ENV=..
 # Each cell first warms the cell's own cache with a 1-step run of every tree in the spec list that shares its
 # warm key (WARM=<key> in its env), then runs on a copy; progress in <out>/progress.txt.
 O=$1; shift; K=$(cd "$(dirname "$0")" && pwd); mkdir -p $O; P=$O/progress.txt
-. /workspace/venv_1006i/bin/activate
+. /workspace/venv_1006/bin/activate
 note() { echo "$(date +%H:%M:%S) $*" >> $P; }
 run() {  # <name> <tree> <gpus> <cache> <steps> <envs>
   local name=$1 W=$2 gpus=$3 C=$4 steps=$5 envs=$6 D=$O/$1; rm -rf $D; mkdir -p $D
   local n=$(echo $gpus | tr ',' '\n' | wc -l)
-  ( cd $W && env $(echo $envs | tr ',' ' ') INT_STEPS=$steps PYTHONPATH=${PP_PRE:+$PP_PRE:}$K:. TORCHINDUCTOR_CACHE_DIR=$C/ic \
-      TRITON_CACHE_DIR=$C/tc CUDA_VISIBLE_DEVICES=$gpus NGPU=$n LOG_RANK=0 MODULE=int_probe CONFIG=cell \
+  ( cd $W && env $(echo $envs | tr ',' ' ') CP_STEPS=$steps PYTHONPATH=${PP_PRE:+$PP_PRE:}$K:. TORCHINDUCTOR_CACHE_DIR=$C/ic \
+      TRITON_CACHE_DIR=$C/tc CUDA_VISIBLE_DEVICES=$gpus NGPU=$n LOG_RANK=0 MODULE=cpmm_probe CONFIG=cell \
       timeout 3600 ./run_train.sh --output-dir $D/out > $D/run.log 2>&1 )
   local rc=$?; rm -rf $D/out
   note "$name rc=$rc $(sed 's/\x1b\[[0-9;]*m//g' $D/run.log | grep -a -o 'step: *[0-9]* *loss: *[0-9.]* *grad_norm: *[0-9.]*' | sed -n '1p;$p' | tr '\n' ' ')"
@@ -24,6 +24,6 @@ for spec in "$@"; do
     done
     WARMED[$key]=1
   fi
-  rm -rf $O/cc_$key; cp -r $C $O/cc_$key; run $name $W $gpus $O/cc_$key ${STEPS:-20} $envs; rm -rf $O/cc_$key
+  rm -rf $O/cc_$key; cp -r $C $O/cc_$key; run $name $W $gpus $O/cc_$key ${STEPS:-100} $envs; rm -rf $O/cc_$key
 done
 note done
