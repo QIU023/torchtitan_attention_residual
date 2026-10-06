@@ -106,7 +106,8 @@ Elfie 分支 rebase 到 main 预计的冲突：
 - **neighbor transport**（集成树 `a7328e4fa` `3128317e1` `3d8e13071`）：main 的 PP 执行层变化很大（#4540 静态 eager 执行、#4662 send 预算），要先确认这个修复在 main 上是否还需要。
   - 10-06 查了：torch dev20261005 的 pipelining 已经自带这两样。`torch.distributed.config.pipeline_per_edge_p2p`（环境变量 `TORCH_DISTRIBUTED_PIPELINE_PER_EDGE_P2P=1`，用 TorchComms 时自动打开）给每条有向的 rank 边一个两 rank 的子 communicator，`(src, dst)` 为键，正反两个方向分开；`_initialize_pipeline_distributed_state` 在第一步之前用一次 parent all-reduce 定 metadata 模式，再预连接 parent 或这些子 communicator（`pipelining/stage.py:193`、`schedules.py:365`、`_p2p.py`）。不用 per-edge 时，torch 会建议把 PP 组建成 `backend="nccl-lazy"`。
   - 差别只有一处：动态 metadata 在 torch 里走这条边自己的 P2P 组（设备上的 `send_object_list`，`stage.py:1969`），不是旧树那样走每个 replica 的 CPU 组；静态 metadata 模式下根本不交换。旧树走 CPU 是为了避开共享 communicator 的 op 顺序，边各有各的 communicator 之后这个理由不在了。
-  - 所以旧树的三个提交（eager 建边、两 rank 边组、CPU metadata 和投票）建议不搬；多机 PP 的 recipe 设这个环境变量就行。集成树第 2 批有一格 pp4 × vpp4 打开它，和不开的对比。
+  - 而且 main 自己已经打开了：`init_distributed` 在 PP > 1 时把 `pipeline_per_edge_p2p` 设成 True（`torchtitan/distributed/utils.py:406-417`，#4908 起），torch 没有这个选项就直接报错。5060 上的探针（下面）里，不设环境变量的 PP 格子每个 stage 的 `p2p_per_edge` 也都是 True。
+  - 所以旧树的三个提交（eager 建边、两 rank 边组、CPU metadata 和投票）不用搬，recipe 也不用设什么。
 
 ## 10-06 白天：5060 上的完整测试
 
@@ -141,3 +142,28 @@ Elfie 分支 rebase 到 main 预计的冲突：
 
 - 四格都跑完 20 步，loss 一直在降。QAT 第 1 步和不开 QAT 的 fsdp2（8.21143）不同，这是 QAT 改了前向，预期如此。
 - 集成树第 1 批的 pp2 两格不算：main 那格是上面的 #5025 问题；PP 下 rank 0 不是最后一个 stage，打出的 loss 是 −1，kit 的 `run_matrix2.sh` 改成可以指定 `LOG_RANK`（最后一个 stage 的 rank），PP 格子都重排到第 2 批。
+
+第 2 批（4 卡，20 步，typecheck 关；PP 的对照是 main + #5025，`LOG_RANK` 取最后一个 stage 的 rank）：
+
+| 配置 | 集成树对 main |
+|---|---|
+| fsdp4 | 20 步逐位相同 |
+| cp2 × fsdp2 | 第 1 步就不同：DP 组 1 第 1 步有一张 256 patch 的图，#4380 把它切了；集成树和 #4380 树同一格 20 步逐位相同 |
+| fsdp2 × pp2（vpp2） | 20 步逐位相同 |
+| fsdp2 × pp2 × ep2 | 20 步逐位相同 |
+| pp2（vpp2，2 卡） | 20 步逐位相同 |
+| pp4 × vpp4，M8 | 20 步逐位相同 |
+
+pp4 × vpp4（M8）上集成树才有的开关，和 main + #5025 的 pp4 × vpp4 比：
+
+| 开关 | 20 步 | 生效的证据 |
+|---|---|---|
+| DEP（`vision_dep.enabled`） | 逐位相同 | 日志 "vision encodes decoupled"，"8 micro-batch(es) with images; encodes 8 before the schedule" |
+| DEP + bubble | 逐位相同 | "encodes 5 before the schedule, 3 in idle slots; backwards 3 in ..." |
+| PR A `cpu_offload="all"` | 逐位相同 | 探针：3 步里 rank 1 / 2 / 3 往 host 存了 120 / 24 / 72 个张量（120 / 24 / 72 MiB） |
+| PR A `cpu_offload="planned"` | 逐位相同 | 探针：host 88 / 24 / 24 个；rank 3 的计划 "0 stage micro-batch(es) moved, peak 0.47 -> 0.47 GiB, target 0.54 GiB"（rank 3 本来就在目标以下） |
+| balance（mooncake tcp） | 逐位相同 | 探针：rank 1 / 2 往别的 rank 的 pool 存了 48 / 16 个张量（48 / 16 MiB） |
+| `TORCH_DISTRIBUTED_PIPELINE_PER_EDGE_P2P=1` | 逐位相同 | 不算对照：main 已经默认打开（见上），探针里两格的 `p2p_per_edge` 都是 True |
+
+- 探针是 kit 的 `local/feature_probe/sitecustomize.py`：包住 `HostBackend.put`、`RemoteBackend.put` 计数，记下每个 stage 的 `p2p_per_edge`，退出时写到每个 rank 的文件。rank 0 的文件是空的，因为 torchrun 的父进程也加载了 sitecustomize，退出时用空计数覆盖了它；rank 1-3 就够了。
+- MoonEP 在 5060 上跑不了（没有 switch multicast），它的 GPU 单测会 skip；集成树里的 MoonEP 是 `16ff9da7f`，H100 上 10-06 验过。
