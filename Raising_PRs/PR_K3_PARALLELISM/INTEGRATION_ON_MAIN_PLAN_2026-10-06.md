@@ -74,7 +74,7 @@ Elfie 分支 rebase 到 main 预计的冲突：
 
 ## 10-06 晚（overnight 目标："完成刚刚的集成树移植 在5060完整测试"）
 
-新树在 scratchpad worktree `wt_int_elfie`（detached），底是 main `3f087cf15`（#4639 已合）。按用户的方案以 Elfie 的分支为底，自下而上：
+新树在 scratchpad worktree `wt_int_elfie`（detached），底是 main `3f087cf15`（#4639 已合），10-06 白天打了 tag `k3_int_20261006c` = `6d4ef6791` 推到 fork（不是分支；`k3_on_4025` 没动，挪不挪等用户定）。按用户的方案以 Elfie 的分支为底，自下而上：
 
 | 提交 | 内容 | 说明 |
 |---|---|---|
