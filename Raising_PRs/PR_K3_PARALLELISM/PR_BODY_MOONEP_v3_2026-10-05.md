@@ -40,6 +40,8 @@
 
 - **10-06（PR head `16ff9da7f`，rebase 到 main `3f087cf15`）：** 端到端表在新 head 上重测（H100，同一份 cache；torch 68e0ae4 加 `local/mpp_shim`，见 `MOONEP_DIFF_REVIEW_2026-10-06.md`）。数值整体移动来自 main（纯 main 的 standard 第 1 步也是 8.18811）；MoonEP 和 standard EP 第 1 步三种布局都逐位相同。Test plan：CPU 39 passed（5060），GPU 11 passed（4 × H100）。microbench 没有重跑：新提交只改名和加测试。
 
+- **10-06 更正：** 删掉"换布局最多变 1.1e-2"那半句。三种布局的起点权重不同（第 1 步 loss 就不同，standard EP 跨布局逐参数梯度相对差的中位数是 0.53 到 1.34），所以它不是规约顺序的噪声基线。按用户的话不补测基线。
+
 --- PR 4751 body v3: PASTE BEGIN ---
 
 ## Summary
@@ -107,7 +109,7 @@ Loss / grad norm, Kimi K3 debug model (8 experts, top-2), seq 512, deterministic
 | standard EP, HSDP 2 x 2 x EP 2 | 8.17808 / 2.2031 | 5.85455 / 10.3125 | 4.43081 / 8.7500 | |
 | MoonEP, HSDP 2 x 2 x EP 2 | 8.17808 / 2.2031 | 5.85582 / 10.3125 | 4.43006 / 8.7500 | 1.89e-3 |
 
-Standard EP run twice is identical on all 20 steps, MoonEP under full activation checkpointing matches it under selective, and moving standard EP to the other two layouts changes its loss by up to 1.1e-2.
+Standard EP run twice is identical on all 20 steps, and MoonEP under full activation checkpointing matches it under selective.
 
 ## Test plan
 

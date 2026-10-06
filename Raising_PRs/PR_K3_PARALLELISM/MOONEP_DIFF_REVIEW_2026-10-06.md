@@ -149,3 +149,13 @@ H100（10-06，同一台 4 × H100，torch 2.15.0a0+git68e0ae4，和 10-05 相�
 - `k3_moonep_seam` 从 `6e3de1b8d` 用 `--force-with-lease` 同步到 `16ff9da7f`（= `moonep_review1`），旧 head 备份在 `backup/k3_moonep_seam_pre_20261006`。
 - 新提交没有 squash，在 rebase 后的 c1 到 c5 之上单独保留：`8de0e6a97` region 名、`6741d20a5` hook 测试、`16ff9da7f` refusal 测试的 flag。
 - 还剩用户在 GitHub 上做：重新贴 body（`PR_BODY_MOONEP_v3_2026-10-05.md` 粘贴区）、去掉标题里的 "[DO NOT Review]"、从 draft 转成 ready。
+
+## 更正：换布局不是规约顺序的噪声基线（10-06，用户："改 但是不补测"）
+
+- body 以前用"standard EP 换到另外两种布局，loss 最多变 1.6e-2（新 head 上是 1.1e-2）"做 MoonEP 差距的参照，09-30 的记录也把 EP 2 当成"只换规约顺序"。这不成立：
+  - 三种布局第 1 步的 loss 就不同：新 head 上是 8.18811 / 8.19370 / 8.17808，旧 head 上是 7.99090 / 7.99403 / 7.99649。
+  - 用 10-05 的第 1 步梯度 dump（`kit_moonep_perf_2026-10-03/floor_1006.py`）算 standard EP 在不同布局之间的逐参数相对差：FSDP 4 × EP 4 对 dp_shard 4 × EP 2，中位数 0.53，routed 专家中位数 1.07；对 HSDP，中位数 1.34。
+  - 起点权重（或数据）不同，比的是两个不同的模型，不是规约顺序。
+- body 粘贴区删掉了这半句，只保留"standard EP 跑两次 20 步逐位相同，MoonEP 在 FullAC 下和 selective 下相同"。表头"对同布局 standard EP 的最大相对差"不变。
+- 真正的噪声基线（两种布局加载同一个 seed checkpoint，逐参数比第 1 步梯度）按用户的话不补测。
+- MoonEP 一直如此：第 1 步逐位相同，之后 20 步内差 1.5e-3 到 4.9e-3（09-30、10-01、10-05、10-06 各轮），10-05 测的第 1 步梯度相对差约 5e-3，是 bf16 舍入的量级。
