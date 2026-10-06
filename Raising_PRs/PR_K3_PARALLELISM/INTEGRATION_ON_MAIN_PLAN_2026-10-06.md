@@ -196,4 +196,18 @@ DEP 在 dp2 下的差（kit `local/grad_dump/sitecustomize.py` 按步 dump 每�
   - sm_120 上没有 torchao 的 `mxfp8_quantize` 和 cutlass 的 mxfp8 / nvfp4 kernel；
   - venv 里没有 helion；
   - MoonEP 没有 multicast，跳过。
-- 重跑：两棵树都 `--ignore` 掉 `test_ema.py` 跑一遍，再单独跑 `test_ema.py`，逐个测试对比失败集合（`gputests2_*.log`）。
+- 重跑（两棵树都 `--ignore` 掉 `test_ema.py`，再单独跑它；同一个 venv_1006i，8 卡可见）：
+  - 集成树：51 failed / 139 passed / 10 skipped / 1 xfailed（1 小时 6 分，#4380 的两个测试冷 cache 编译占了一大半）；`test_ema.py` 单独 12 passed。
+  - main + #5025：51 failed / 133 passed / 1 skipped / 1 xfailed；`test_ema.py` 单独 12 passed。
+  - 逐个测试比：两边失败的是同一组 51 个，集成树独有的失败 0 个，main 独有的 0 个。集成树多 6 个通过（#4380、DEP 等），多 9 个跳过（MoonEP 没有 multicast）。
+  - 这 51 个都是这台 5060 的环境：mxfp8 / nvfp4（sm_120 没有 torchao 和 cutlass 的 kernel）30 个，helion 没装 9 个，symmetric memory（没有 P2P）7 个，`test_swiglu` 和 `test_rope_compile` 的 local compile 对 eager 不相等各 1 个，`test_qwen3_5_deltanet` 缺包 1 个。
+
+## 10-06 晚上的结论
+
+- 集成树 `k3_int_20261006c`（`6d4ef6791`）在 5060 上：
+  - CPU 没有新失败；
+  - GPU 单测和 main 失败集合相同；
+  - 23 个 main 能跑的并行配置都和 main（PP 加 #5025）20 步逐位相同，或者差异已经定位到 #4380 的切分路径；
+  - DEP、DEP bubble、PR A 的三种显存模式、QAT、rl / report_arch / k3mini 都能跑，开关确实生效，而且和关闭时逐位相同（DEP 在 dp > 1 时要关 automatic dynamic shapes）。
+- 没搬、等用户定的：MTP、LoRA / QLoRA。neighbor transport 不用搬（main 已默认打开 torch 的 per-edge PP communicator）。`k3_on_4025` 要不要挪到新树也等用户定。
+- 集成树里 #4380 还是 `fcaaeb25f`，没带 review 分支上新加的 `f53f65a18`（只删了一行 docstring）。
