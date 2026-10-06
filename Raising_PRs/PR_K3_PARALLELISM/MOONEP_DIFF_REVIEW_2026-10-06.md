@@ -87,3 +87,36 @@ rebase 之后，Test plan 里的计数（CPU 28 passed、GPU 10 passed）要重�
 - 三个分支仍是 `6e3de1b8d`：GPU 会话只核对了问题，没有修，三条要改的都还在。
 - 更正上面最后一句：对当前 main `3f087cf15` 做 `git merge-tree`，冲突是两个文件，`pyproject.toml` 和 `torchtitan/models/common/moe.py`。`moe.py` 的冲突正是第 1 条（#4956 改了共享专家相加那几行），不只是 `pyproject.toml`。
 - 探针 `probe_stream_hook_test.py` 的设计对得上 hook 要防的场景：第二个 micro-batch 在 side stream 上原地累加，主 stream 在 MoE 输入的反向里读梯度。可以照它改成 `TestSharedExpertsStream` 的第二个测试，现有测试保留（它守的是前向 join）。
+
+## 已改（CPU 会话，10-06），`moonep_review1` = `16ff9da7f`
+
+- rebase 到 main `3f087cf15`。
+  - `moe.py` 按第 1 条合：side stream 拿到的 `shared_TD` 也走 `remat.recompute_needs_tensor`。
+  - `pyproject.toml` 两行都保留。
+  - 其余 11 个文件的增删行和 rebase 前逐文件一致。
+- 新增三个提交：
+  - `8de0e6a97`：region 名由 module 给出（第 2 条）；
+  - `6741d20a5`：hook 测试，即 GPU 探针的测试版（第 3 条）；
+  - `16ff9da7f`：去掉 refusal 测试里的 `disable_cuda_graphs`。
+- `buffer` 属性和 `assert isinstance(name, str)` 按讨论不改。
+- 本机：`test_moonep_ops.py` 1 passed；改动的文件过了 black 22.12 和 py_compile。其余测试在 Windows 上 import 不了：main 的核心 import 链经过 KDA，需要 CuTeDSL。
+- PR 分支 `k3_moonep_seam` 仍是 `6e3de1b8d`。
+- body（`PR_BODY_MOONEP_v3_2026-10-05.md`）粘贴区改了三处；Test plan 的计数等下面跑完再填。
+
+## GPU 待跑（树 `moonep_review1` = `16ff9da7f`）
+
+5060 或任意 Linux CUDA 机器：
+1. `pytest tests/unit_tests/cpu/test_transforms.py tests/unit_tests/cpu/test_moonep_ops.py -q`，记通过数，填 body 的 Test plan。
+2. `pytest tests/unit_tests/gpu/test_moe_shared_experts_stream.py -q`，应为 2 passed。
+   - 再临时删掉 `moe.py` 里的 `x_TD.register_hook(wait_for_shared_experts_backward)`（不提交），连跑 3 次：新用例应 3 次都失败，旧用例照常通过。然后恢复。
+3. 对改动的文件跑 pre-commit 或 pyrefly。只 stage 目标文件，hook 顺带改的其他文件 `git checkout` 掉。
+
+H100（需要 NVLink multicast）：
+4. `pytest tests/unit_tests/gpu/test_moonep.py tests/unit_tests/gpu/test_moe_shared_experts_stream.py -q` on 4 H100s，预期 11 passed。
+5. 端到端 8 格（`kit_moonep_perf_2026-10-03/h100_moonep_final_1005.sh`，`TREE` 换成 `16ff9da7f`），共用一份 warm cache：
+   - 每组 MoonEP 和 standard EP 的第 1 步应逐位相同。
+   - 如果整张表和 `6e3de1b8d` 的一致，body 的表不动。
+   - 如果数字变了（main 的 #5026 把 compile region 挪进了 model config，#4956 声明了 remat region，都可能让 K3 debug 的数值整体移动），按数值规则先定位，再换表。定位之前数字一律暂扣。
+   - microbench 不用重跑：改名不影响性能。
+
+全部通过之后：用户同意 → `k3_moonep_seam` 用 `--force-with-lease` 从 `6e3de1b8d` 同步到 `16ff9da7f`，填 Test plan 计数，重新贴 body，去掉标题里的 "[DO NOT Review]"，再从 draft 转成 ready。

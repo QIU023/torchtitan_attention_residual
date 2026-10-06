@@ -2,6 +2,17 @@
 
 ## 状态（不粘贴）
 
+- **10-06 用户说"不需要 GPU 的直接改"，已改（CPU 会话）：**
+  - `moonep_review1` = `16ff9da7f`：rebase 到 main `3f087cf15`，原来的 7 个提交加上 3 个新提交；12 个文件，+1150 / −7。
+    - rebase 的两处冲突：`pyproject.toml` 两行都保留；`moe.py` 按 main #4956 的写法，side stream 拿到的 `shared_TD` 也走 `remat.recompute_needs_tensor`（只多一层 `if shared is None` 分支）。其余 11 个文件逐文件比过，增删行和 rebase 前一致。
+    - `8de0e6a97`：三个 op 的 region 名由 module 给出（dispatcher 用 `ep_communication.dispatch` / `.combine`，和 DeepEP 同名；experts 用 `moonep_experts`），`recompute=False` 不变。
+    - `6741d20a5`：stream 测试加第二个用例，即 GPU 会话探针的测试版：两个 micro-batch，side stream 上的累加前 sleep，主 stream 在 MoE 输入的反向里读共享专家的梯度。
+    - `16ff9da7f`：refusal 测试去掉没用的 `disable_cuda_graphs=True`。
+  - 本机只跑得了 `test_moonep_ops.py`（1 passed）：main 现在的核心 import 链经过 KDA，需要 attn-gym 的 CuTeDSL，Windows 装不了。其余测试只做了 black 22.12（钉的版本）和 py_compile，要在 GPU 机器上跑。
+  - PR 分支 `k3_moonep_seam` 仍是 `6e3de1b8d`，等 GPU 验证和用户同意后再同步。
+  - 粘贴区改了三处：删掉逐参数梯度那句（没有噪声基线；梯度正确性由 GPU 单测对 fp32 稠密参考的逐项比较支撑）；microbench 表 MoE 行加 "(stream off)"；"forward stream" 改成 "main stream"。
+  - **Test plan 的计数还没改**：GPU 应是 11 个（多了一个 stream 用例），CPU 要在 Linux 上重数，GPU 会话跑完再填。结果表是 `6e3de1b8d`（rebase 前）测的，rebase 后第 1 步是否逐位不变也要 GPU 会话确认。
+
 - **10-05 CPU 会话复核 diff 和 body（用户："拉取，检查moonep分支diff和body"）：**
   - 三个分支一致：`moonep_review1` = `k3_moonep_seam` = #4751 head = `6e3de1b8d`，main `db050eb3f` 上 7 个提交，12 个文件、+1089 / −7。线上 body 已是 v3（08:03 UTC），标题仍带 "[DO NOT Review]"；mergeable 状态是 dirty（和 main 在 `pyproject.toml` 冲突），rebase 等用户的话。
   - diff 逐行看过：
@@ -47,7 +58,7 @@ Dispatch, the expert computation and combine are `torch.library` ops with an ord
 
 The expert op scales its rows by their routing weights, so combine only sums. Its backward refills the pools for its plan, recomputes only the activation from the saved gate and up projections, and takes the routing-weight gradient as `<grad_out @ W_down, hidden>`, as in the K3 report, so the expert output is not kept. The slot gradients are reduced in fp32 on MoonEP's stream behind the input-gradient GEMMs, after an all-reduce on the EP group orders the slot writes.
 
-With `shared_experts_stream`, a hook on the MoE input makes the forward stream wait for the shared experts' backward: autograd orders the input gradient across streams, but not the side stream's parameter-gradient accumulation, which FSDP reads before the backward ends.
+With `shared_experts_stream`, a hook on the MoE input makes the main stream wait for the shared experts' backward: autograd orders the input gradient across streams, but not the side stream's parameter-gradient accumulation, which FSDP reads before the backward ends.
 
 MoonEP's buffer is static: every dispatch carries exactly `num_max_tokens_per_rank` tokens, which the transform derives from the training shape.
 
@@ -80,7 +91,7 @@ Forward plus backward of two MoE layers at Kimi K3's expert width (latent 3584, 
 |---|---:|---:|
 | routed experts, uniform routing | 72.20 ms / 8.02 GiB | 64.46 ms / 8.58 GiB |
 | routed experts, skewed routing | 73.48 ms / 8.02 GiB | 65.11 ms / 8.58 GiB |
-| MoE layer with shared experts | 76.82 ms / 8.10 GiB | 69.53 ms / 8.66 GiB |
+| MoE layer with shared experts (stream off) | 76.82 ms / 8.10 GiB | 69.53 ms / 8.66 GiB |
 
 
 Loss / grad norm, Kimi K3 debug model (8 experts, top-2), seq 512, deterministic, one warm compile cache; the 32-sample debug set is memorised, so the runs stop at step 20:
@@ -95,8 +106,6 @@ Loss / grad norm, Kimi K3 debug model (8 experts, top-2), seq 512, deterministic
 | MoonEP, HSDP 2 x 2 x EP 2 | 7.99649 / 2.5156 | 4.84769 / 6.6875 | 3.57996 / 4.6875 | 4.63e-3 |
 
 Standard EP run twice is identical on all 20 steps, MoonEP under full activation checkpointing matches it under selective, and moving standard EP to the other two layouts changes its loss by up to 1.6e-2.
-
-Step-1 gradients against standard EP of the same layout, per parameter `||a - b|| / ||a||`: the routed experts' gradients are within 5.4e-3, 5.5e-3 and 5.8e-3 in the three layouts, and the median over all 465 parameters is 5.2e-3 to 5.3e-3.
 
 ## Test plan
 
