@@ -26,11 +26,15 @@ if os.environ.get("BANK_SWAP") == "1":
             self._cp_subgroups = subgroups
         ref = whole.detach().float()
         diff = split.float() - ref
-        sys.stderr.write(
+        line = (
             f"bank_swap: call {_calls[0]} grids {grid_thw.tolist()} bank {tuple(whole.shape)} {whole.dtype} "
             f"equal {torch.equal(split, whole.detach())} max_abs {diff.abs().max().item():.3e} "
             f"ref_max {ref.abs().max().item():.3e} rel_norm {(diff.norm() / ref.norm()).item():.3e}\n"
         )
+        sys.stderr.write(line)
+        if os.environ.get("BANK_SWAP_LOG"):
+            with open(f"{os.environ['BANK_SWAP_LOG']}.rank{os.environ.get('RANK', '0')}", "a") as f:
+                f.write(line)
         _calls[0] += 1
         return whole
 
