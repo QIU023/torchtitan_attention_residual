@@ -81,3 +81,9 @@ rebase 之后，Test plan 里的计数（CPU 28 passed、GPU 10 passed）要重�
   - `validation.py` 里 MoonEP 的拒绝在第 134 行，CUDA graph 检查在第 147 行之后，所以 refusal 测试里的 `disable_cuda_graphs=True` 不起作用。
 - body：GitHub 上的 live body 就是 v3，三处都还在（`forward stream`、microbench 的 MoE 行没写 stream off、逐参数梯度那句带中位数、没有基线）。改了要重新贴。
 - 都没有改到 `moonep_review1` 或 PR 分支上；`k3_moonep_seam` = `moonep_review1` = `6e3de1b8d`，和 main 只在 `pyproject.toml` 冲突。
+
+## CPU 会话复核 GPU 核对（10-06）
+
+- 三个分支仍是 `6e3de1b8d`：GPU 会话只核对了问题，没有修，三条要改的都还在。
+- 更正上面最后一句：对当前 main `3f087cf15` 做 `git merge-tree`，冲突是两个文件，`pyproject.toml` 和 `torchtitan/models/common/moe.py`。`moe.py` 的冲突正是第 1 条（#4956 改了共享专家相加那几行），不只是 `pyproject.toml`。
+- 探针 `probe_stream_hook_test.py` 的设计对得上 hook 要防的场景：第二个 micro-batch 在 side stream 上原地累加，主 stream 在 MoE 输入的反向里读梯度。可以照它改成 `TestSharedExpertsStream` 的第二个测试，现有测试保留（它守的是前向 join）。
