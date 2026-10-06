@@ -207,7 +207,7 @@ DEP 在 dp2 下的差（kit `local/grad_dump/sitecustomize.py` 按步 dump 每�
 - 集成树 `k3_int_20261006c`（`6d4ef6791`）在 5060 上：
   - CPU 没有新失败；
   - GPU 单测和 main 失败集合相同；
-  - 23 个 main 能跑的并行配置都和 main（PP 加 #5025）20 步逐位相同，或者差异已经定位到 #4380 的切分路径；
+  - main 也能跑的 15 个并行配置里，11 个和 main（PP 加 #5025）20 步逐位相同；另外 4 个 CP 配置（cp2 all-gather、cp2 Ulysses、cp2 × fsdp2、cp2 × fsdp2 × tp2）的差异来自集成树带的 #4380 切分路径，前三个和 #4380 树同一格 20 步逐位相同；
   - DEP、DEP bubble、PR A 的三种显存模式、QAT、rl / report_arch / k3mini 都能跑，开关确实生效，而且和关闭时逐位相同（DEP 在 dp > 1 时要关 automatic dynamic shapes）。
 - 没搬、等用户定的：MTP、LoRA / QLoRA。neighbor transport 不用搬（main 已默认打开 torch 的 per-edge PP communicator）。`k3_on_4025` 要不要挪到新树也等用户定。
 - 集成树里 #4380 还是 `fcaaeb25f`，没带 review 分支上新加的 `f53f65a18`（只删了一行 docstring）。
