@@ -101,7 +101,7 @@ Elfie 分支 rebase 到 main 预计的冲突：
 
 ### 没有搬、需要用户决定的
 
-- **MTP**（集成树 `e68c9af72`）：旧实现用模块级全局变量把 MTP logits 交给 loss，并且拒绝 chunked loss。main 的 DeepSeek V3/V4 已经有一套 MTP 接口（预测元组、`roll_mtp_sequence`、`MTPLoss`、`MTPDecoder`）。K3 接到那套接口上等于重写。
+- **MTP（用户 10-06 晚：不搬）**（集成树 `e68c9af72`）：旧实现用模块级全局变量把 MTP logits 交给 loss，并且拒绝 chunked loss。main 的 DeepSeek V3/V4 已经有一套 MTP 接口（预测元组、`roll_mtp_sequence`、`MTPLoss`、`MTPDecoder`）。K3 接到那套接口上等于重写。
 - **LoRA/QLoRA**（集成树约 20 个提交，加 `quantize_lora_dcp.py`，以及 `rl_lora` / `rl_qlora_mxfp4` 两个 recipe）：main 的 LoRA 改成按 handler 组织（#4877、#4995），旧的 QLoRA packed MXFP4 专家做在已删除的 GroupedExperts 上。要搬就得在 GroupedLinear 和 handler 上重新设计；Elfie 的 MXFP4 packed 存储也许能复用。
 - **neighbor transport**（集成树 `a7328e4fa` `3128317e1` `3d8e13071`）：main 的 PP 执行层变化很大（#4540 静态 eager 执行、#4662 send 预算），要先确认这个修复在 main 上是否还需要。
   - 10-06 查了：torch dev20261005 的 pipelining 已经自带这两样。`torch.distributed.config.pipeline_per_edge_p2p`（环境变量 `TORCH_DISTRIBUTED_PIPELINE_PER_EDGE_P2P=1`，用 TorchComms 时自动打开）给每条有向的 rank 边一个两 rank 的子 communicator，`(src, dst)` 为键，正反两个方向分开；`_initialize_pipeline_distributed_state` 在第一步之前用一次 parent all-reduce 定 metadata 模式，再预连接 parent 或这些子 communicator（`pipelining/stage.py:193`、`schedules.py:365`、`_p2p.py`）。不用 per-edge 时，torch 会建议把 PP 组建成 `backend="nccl-lazy"`。

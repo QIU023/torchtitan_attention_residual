@@ -1,11 +1,11 @@
-# PR 4380 body v3（`cpmm_review1` = `f53f65a18`：`7202a40e7` + `fcaaeb25f` + `f53f65a18`），2026-10-06
+# PR 4380 body v3（PR 分支 `k3_cp_mm` = `cpmm_review1` = `9c648c4e2`：`7202a40e7` + 四个单独的提交），2026-10-06
 
 ## 状态（不粘贴）
 
 - **为什么重写：** #4639 已以 `3f087cf15` 合入 main。v2 描述的是叠在 #4639 旧版上的 `923f8bd47`；新版是在 main 上重写的一个提交，设计改了两处（见 `CPMM_4380_PREP_2026-10-06.md`）：
   - tower 每个 micro-batch 只调用一次（旧版按图逐张调用，不开 PP 时各 rank 的 FSDP all-gather 次数会对不上，2 卡复现会卡死）；
   - 拆分的大图特征在整个 CP 组做一次 all-gather（旧版在别的子组上把这些大图整张重编一遍）。
-- **PR 分支：** `k3_cp_mm` 还是 `923f8bd47`，同步要等用户的话。review 分支 `cpmm_review1` 已推（旧的备份在 `backup/cpmm_review1_pre_20261006`），10-06 白天在上面加了两个单独的提交：`fcaaeb25f`（gather 在 SPMD 类型检查外运行，CI 的 h100 格子开 typecheck，第 5 步就会走到切分路径）和 `f53f65a18`（删掉私有 helper 的 docstring）。
+- **PR 分支（10-06 晚，用户：审核没问题就推）：** `k3_cp_mm` = `9c648c4e2`，force push 前的 `923f8bd47` 备份在 `backup/k3_cp_mm_pre_20261006`。在 `7202a40e7` 上有四个单独的提交：`fcaaeb25f`（gather 放到 SPMD 类型检查外）、`f53f65a18`（删私有 helper 的 docstring）、`2d93f8016`（子组改为 unflatten CP mesh）、`9c648c4e2`（删规划模块没用到的部分，修报错信息，删复述断言的测试注释）。要粘贴本 body，并把标题里的 "[DO NOT review, pending rebase]" 去掉。
 - **5060 上的结果**（不进 body）：在 `CPMM_4380_PREP_2026-10-06.md` 里；body 的 Results 等 H100。
 - 粘贴区已检查：没有 we/our/us，没有破折号。
 
@@ -26,7 +26,7 @@ Main's CP path encodes every image of the micro-batch on every CP rank and gathe
 
 The tower runs once per micro-batch on every rank, as on main, so FSDP issues the same collectives on every rank whatever images a data-parallel rank holds. The packed stream carries the whole images first and then this rank's bands of its sub-group's images. The attention gathers only the band part, and one block mask keys every query to its own image and drops the padding rows. After the projector, one all-gather over the CP group returns every split image's merged tokens, so the bank, and everything after it, is main's. With no large image in the micro-batch the tower runs main's path exactly.
 
-A process group cannot be built per batch, so `KimiK3Model.parallelize` builds one layout per divisor of the CP size, on every rank, including pipeline stages without the tower.
+A process group cannot be built per batch, so `KimiK3Model.parallelize` unflattens the CP mesh once per divisor of the CP size, on every rank, including pipeline stages without the tower.
 
 ## Results
 
@@ -34,7 +34,7 @@ Pending (H100).
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_vit_cp_plan.py -q` (8 passed).
+- `pytest tests/unit_tests/cpu/test_kimi_k3_vit_cp_plan.py -q` (7 passed).
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 GPUs (2 passed): the split tower against the whole tower in fp32, forward and parameter gradients, on one image over the CP group, two images over two sub-groups, one image per rank, and a video whose last rank holds only padding; and two data-parallel groups that split different numbers of images under FSDP.
 
 ## Relation to earlier revisions of this PR
