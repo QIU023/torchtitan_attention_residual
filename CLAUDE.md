@@ -228,6 +228,23 @@ The same holds for any other body or reply section that makes more than one poin
 
 Trigger: the DEP body (#4381) and the #4380 v3 body (10-07) both reached the user with Design as three long paragraphs, and both had to be rewritten as nested bullets ("design又是大段长段落，改成嵌套bullet points的格式，并且写入规则").
 
+## Mechanism structure: the vision_dep pattern (user, 2026-10-07)
+
+A feature that is a mechanism rather than model math (DEP, dynamic CP for the vision tower, a PP transport) is built the way DEP was restructured on 10-02 / 10-04 (`kimi_k3/pipeline_parallel/vision_dep/`, itself modelled on PR 4312's `cache.py` / `stage.py` / `layout.py` split that Tianyu asked for):
+
+- One package per mechanism, named for the mechanism, one responsibility per file:
+  - `plan.py`: the pure planning (which items, where, in what order), no `torch.distributed`, no model import, tested on CPU over many inputs;
+  - `runtime.py` (when there is per-rank state): buffers, collectives, the per-step lifecycle;
+  - the subclass of the titan or torch class the mechanism extends (`stage.py` for `PipelineStage`, `attention.py` for `VisionAttention`), thin, delegating to the runtime;
+  - `__init__.py`: the wiring and the only names the model imports.
+- Mechanism classes extend the generic base class, never a model class, and carry no model name (`VisionDepPipelineStage(PipelineStage)`, not a subclass of `AttnResPipelineStage`). The model composes them where it needs both (`_VisionDepAttnResStage(VisionDepPipelineStage, AttnResPipelineStage)`).
+- The model's own files change only by: a `Config` field, an input seam if one is needed (`vision_embeds=` on the forward), and one call in `parallelize` or the pipeline builder. No mechanism logic lives in the model's `model.py` or `vision_encoder.py`.
+- A long method is cut into named steps the way `VisionDepPlan._build` calls `_place_encodes`, `_place_backwards`, `_anchor_work`, `_hook_transfers`; no 90-line method with nested closures.
+- Location: the package stays in the model folder while no other titan model can run the mechanism, but imports nothing model-specific beyond a type annotation, so promotion to `models/common` or `distributed` is a `git mv`.
+- A restructuring commit changes no behaviour, and the logbook records the proof: the moved code diffs only by renames; a pure planner is shown equivalent on many inputs; a recomposed class resolves every method to the same code (method fingerprint); one toy pipeline or cell is bitwise before and after.
+
+Trigger: the dynamic CP head of PR 4380 (`9b03b4af1`) put the layout, the gathers, the attention subclass, the sub-group builder and a 95-line split forward into `kimi_k3/vision_encoder.py` under K3 names, with the planner as a loose `kimi_k3/vit_cp_plan.py`, while DEP, the same kind of mechanism, already had this structure; the user called the head's structure poor and asked for the DEP way as a rule.
+
 ## What this project is
 
 IC (Yiqiao / QIU023) **reference implementation** of Kimi K3's training-side
