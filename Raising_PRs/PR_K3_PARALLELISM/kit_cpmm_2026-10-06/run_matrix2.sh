@@ -1,9 +1,9 @@
 #!/bin/bash
-# Usage: run_matrix2.sh <out> <spec>...   (run_matrix.sh plus PP_PRE=<dir> prepended to PYTHONPATH, WARM_STEPS)   spec = name:tree_dir:gpus:ENV=..,ENV=..
+# Usage: run_matrix2.sh <out> <spec>...   (run_matrix.sh plus PP_PRE=<dir> prepended to PYTHONPATH, WARM_STEPS, KIT_ENV=<file to source>)   spec = name:tree_dir:gpus:ENV=..,ENV=..
 # Each cell first warms the cell's own cache with a 1-step run of every tree in the spec list that shares its
 # warm key (WARM=<key> in its env), then runs on a copy; progress in <out>/progress.txt.
 O=$1; shift; K=$(cd "$(dirname "$0")" && pwd); mkdir -p $O; P=$O/progress.txt
-. /workspace/venv_1006/bin/activate
+. ${KIT_ENV:-/workspace/venv_1006/bin/activate}
 note() { echo "$(date +%H:%M:%S) $*" >> $P; }
 run() {  # <name> <tree> <gpus> <cache> <steps> <envs>
   local name=$1 W=$2 gpus=$3 C=$4 steps=$5 envs=$6 D=$O/$1; rm -rf $D; mkdir -p $D
