@@ -57,3 +57,15 @@ K3 目录留下的：
 - `_forward_split` 拆成的三步和原函数体逐行对应；
 - encoder 和 attention 的方法指纹和旧 head 比对；
 - GPU 会话：2 个 GPU 测试，加上 CP=2、阈值 128 的一个端到端格子在同一份 cache 上 20 步轨迹和 `9b03b4af1` 逐位相同。
+
+## 已做（10-07，用户："直接改，review和pr分支都做"）
+
+- `k3_cp_mm` = `cpmm_review1` = `6317c5538`：
+  - `e094d6b9a` 按上面的方案重构；
+  - `6317c5538` 把测试注释缩成一行。
+- 和方案的差别：`VisionCPEncoder` mixin 改成单继承的 `MoonViTCPEncoder(MoonViTEncoder)`。这样阈值配置跟着机制走（`MoonViTCPEncoder.Config.dynamic_cp_min_patches`），也避免 mixin 访问父类属性带来的类型检查问题。
+- 证据见 `PR_BODY_CP_MM_v3_2026-10-06.md` 的状态区：
+  - 9 个搬过去的函数 AST 一致；
+  - gloo 上新旧两版 368 个张量逐位相同；
+  - CPU 7 passed。
+  - 复现脚本在 `kit_cpmm_2026-10-06/local/vision_cp_equiv/`：`kda_stub.py` 只给 Windows 用；跑法是 `python dcp_equiv.py <树> <输出> old|new`，再 `python dcp_compare.py <输出>`。

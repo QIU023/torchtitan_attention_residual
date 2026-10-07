@@ -1,6 +1,16 @@
-# PR 4380 body v3（10-07 rebase 后：PR 分支 `k3_cp_mm` = `cpmm_review1` = `9b03b4af1`，在 main `948d65c86` 上，五个提交），2026-10-06
+# PR 4380 body v3（10-07 重构后：PR 分支 `k3_cp_mm` = `cpmm_review1` = `6317c5538`，在 main `948d65c86` 上，七个提交），2026-10-06
 
 ## 状态（不粘贴）
+
+- **10-07 按 DEP 方式重构（用户："直接改，review和pr分支都做，然后改body，及时推送diff"）：** `k3_cp_mm` = `cpmm_review1` = `6317c5538`，在 `9b03b4af1` 之上快进两个提交：
+  - `e094d6b9a` "kimi_k3: dynamic CP as a vision_cp package"：新包 `kimi_k3/vision_cp/`，包括 `plan.py`（原 `vit_cp_plan.py`，内容不变）、`attention.py`（`VisionCPAttention`、`VisionCPLayout`、gather）、`encoder.py`（`MoonViTCPEncoder`，`_forward_split` 拆成 `_pack_inputs`、`_encode`、`_assemble_bank`）、`__init__.py`（`build_cp_subgroups`、`install_vision_cp`）。K3 目录只剩三处改动：`KimiK3VisionEncoder(MoonViTCPEncoder)`、flavor 换用 `VisionCPAttention`、`parallelize` 里一行 `install_vision_cp`。
+  - `6317c5538`：GPU 测试开头的两行注释缩成一行。
+  - **数值不变的证据（本机）：**
+    - 原样搬过去的 9 个函数和方法，AST 和旧 head 一致，只差改名；`plan.py` 逐字节相同。
+    - 拆开的 `_forward_split` 做了新旧对比：4 个 gloo 进程（CPU、fp32，两边都换成同一个稠密注意力），跑 GPU 测试的 4 种情形，新旧两棵树的输出和全部参数梯度 368 个张量逐位相同，并确认每种情形都走了切图路径（kit `kit_cpmm_2026-10-06/local/vision_cp_equiv/`；本机用桩代替 CuTeDSL，不进任何提交）。
+    - CPU 规划测试 7 passed，black 22.12 和 pyflakes 干净。
+  - **GPU 会话待跑：** `test_kimi_k3_vision_cp.py`（4 卡，2 passed）；任选一个 CP=2、阈值 128 的端到端格子，在同一份 cache 上和 `9b03b4af1` 比 20 步轨迹（应逐位相同）；pre-commit 的 pyrefly 只看改动文件。
+  - 粘贴区改了：Summary 的文件和类名、Design 的 Sub-CP groups 一条、新增 Placement 一条、Test plan 的测试文件名。
 
 - **为什么重写：** #4639 已以 `3f087cf15` 合入 main。v2 描述的是叠在 #4639 旧版上的 `923f8bd47`；新版是在 main 上重写的一个提交，设计改了两处（见 `CPMM_4380_PREP_2026-10-06.md`）：
   - tower 每个 micro-batch 只调用一次（旧版按图逐张调用，不开 PP 时各 rank 的 FSDP all-gather 次数会对不上，2 卡复现会卡死）；
@@ -19,10 +29,11 @@
 
 Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3): under context parallelism a large image is split by rows across the ranks of a sub-CP group whose attention gathers keys and values, and several large images are spread over equal sub-groups longest-first.
 
-- `vit_cp_plan.py`: the pure planning (which images split, the sub-group layout and balance, each rank's rows, the key layout after the gather).
-- `KimiK3VisionCPAttention` (`kimi_k3/vision_encoder.py`): the shared vision attention, gathering the split images' keys and values over their sub-group when the tower hands it a `VisionCPLayout`.
-- `KimiK3VisionEncoder.forward`: plans the micro-batch, encodes it, and returns the vision bank of main's CP path.
-- `KimiK3VisionEncoder.Config.dynamic_cp_min_patches` (256): images below it stay whole.
+- `vision_cp/plan.py`: the pure planning (which images split, the sub-group layout and balance, each rank's rows, the key layout after the gather).
+- `VisionCPAttention` (`vision_cp/attention.py`): the shared `VisionAttention`, gathering the split images' keys and values over their sub-group when the tower hands it a `VisionCPLayout`.
+- `MoonViTCPEncoder` (`vision_cp/encoder.py`): a `MoonViTEncoder` that plans the micro-batch, encodes it, and returns the vision bank of main's CP path; Kimi K3's encoder subclasses it.
+- `MoonViTCPEncoder.Config.dynamic_cp_min_patches` (256): images below it stay whole.
+- `install_vision_cp` (`vision_cp/__init__.py`): builds the sub-CP groups, called from `KimiK3Model.parallelize`.
 
 ## Design
 
@@ -44,8 +55,11 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
   - After the projector, one all-gather over the CP group returns every split image's merged tokens, so the bank, and everything after it, is main's.
   - With no large image in the micro-batch, the tower runs main's path exactly.
 - Sub-CP groups:
-  - A process group cannot be built per batch, so `KimiK3Model.parallelize` unflattens the CP mesh once per divisor of the CP size.
+  - A process group cannot be built per batch, so `install_vision_cp` unflattens the CP mesh once per divisor of the CP size, at parallelize time.
   - Building a group is collective, so every rank builds them, including pipeline stages without the tower.
+- Placement:
+  - The mechanism lives in `kimi_k3/vision_cp/`, and its classes extend only `VisionAttention` and `MoonViTEncoder`, so another MoonViT model can use it once it supports context parallelism.
+  - Kimi K3 changes in three places: its encoder's base class, the flavors' vision attention, and one `install_vision_cp` call in `parallelize`.
 
 ## Results
 
@@ -53,7 +67,7 @@ Pending (H100).
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_vit_cp_plan.py -q` (7 passed).
+- `pytest tests/unit_tests/cpu/test_kimi_k3_vision_cp_plan.py -q` (7 passed).
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 GPUs (2 passed): the split tower against the whole tower in fp32, forward and parameter gradients, on one image over the CP group, two images over two sub-groups, one image per rank, and a video whose last rank holds only padding; and two data-parallel groups that split different numbers of images under FSDP.
 
 ## Relation to earlier revisions of this PR
