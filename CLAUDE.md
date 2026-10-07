@@ -215,7 +215,18 @@ Comments and docstrings, the way #4577 writes them:
 - A comment only for a non-obvious invariant or constraint, stated as a fact ("With EP, the router is token-sharded on the dense TP axis even when model-wide sequence parallelism is disabled."). Never a comment narrating the next line, what the PR changed, or why the design was chosen (#4412's removed lines: "The report balances the router bias by solving it, not by stepping it.", a three-line mechanism summary above a class, a memory-size note in a docstring).
 - Tests live in `tests/unit_tests/{cpu,gpu}`; one GPU test that runs the real collective beats many CPU tests of an estimator.
 
-Body format (#4577): `## Summary` is one sentence of what and why, then one bullet per component naming where it lives; `## Design` is short prose, the mechanism first, then one paragraph on why each piece lives where it does; `## Relation to #N` when it replaces or overlaps another PR; `## Test plan` lists the exact commands with their pass counts. No changed-files block (GitHub shows the files). A results table only when the PR's claim is numerical, under the numerics rules above.
+Body format (#4577): `## Summary` is one sentence of what and why, then one bullet per component naming where it lives; `## Design` is nested bullets (next section), the mechanism first, then where each piece lives and why; `## Relation to #N` when it replaces or overlaps another PR; `## Test plan` lists the exact commands with their pass counts. No changed-files block (GitHub shows the files). A results table only when the PR's claim is numerical, under the numerics rules above.
+
+## Design sections are nested bullets (user, 2026-10-07)
+
+A body's `## Design` is never prose paragraphs. Write it as nested bullets:
+- one top-level bullet per mechanism or decision, labelled by what it covers ("Which images split:", "Attention:", "Sub-CP groups:"), mechanism first, placement and its reason after;
+- sub-bullets carry the details, one fact each, and every bullet is one line;
+- a bullet that holds a second sentence which could stand alone is split into sub-bullets.
+
+The same holds for any other body or reply section that makes more than one point. Before a body is handed over, check its Design has no multi-sentence paragraph line.
+
+Trigger: the DEP body (#4381) and the #4380 v3 body (10-07) both reached the user with Design as three long paragraphs, and both had to be rewritten as nested bullets ("design又是大段长段落，改成嵌套bullet points的格式，并且写入规则").
 
 ## What this project is
 
