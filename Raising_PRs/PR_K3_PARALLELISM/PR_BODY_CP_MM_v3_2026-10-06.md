@@ -18,6 +18,7 @@
 - **PR 分支（10-06 晚，用户：审核没问题就推）：** `k3_cp_mm` = `9c648c4e2`，force push 前的 `923f8bd47` 备份在 `backup/k3_cp_mm_pre_20261006`。在 `7202a40e7` 上有四个单独的提交：`fcaaeb25f`（gather 放到 SPMD 类型检查外）、`f53f65a18`（删私有 helper 的 docstring）、`2d93f8016`（子组改为 unflatten CP mesh）、`9c648c4e2`（删规划模块没用到的部分，修报错信息，删复述断言的测试注释）。要粘贴本 body，并把标题里的 "[DO NOT review, pending rebase]" 去掉。
 - **5060 上的结果**（不进 body）：在 `CPMM_4380_PREP_2026-10-06.md` 里；body 的 Results 等 H100。
 - 粘贴区已检查：没有 we/our/us，没有破折号。
+- **Results（10-07 H100）：** box 115.124.123.239，4 卡 H100，驱动 560，所以 torch 是 cu126 的 0906 nightly，加 kit 的 shim（`param_dtype_override_fn`、DistMoE 的两个 pipelining 名字）。测的是 PR head `6317c5538` 和 main `948d65c86`，和 GitHub 上的 PR 一致。kit `kit_cpmm_2026-10-06`（`run_matrix2.sh` 预热 100 步，`table_4380.py` 出表），结果在 box 的 `/workspace/h100_cpmm`。bank 替换：swaplog 里 200 次调用，预热和正式各 100 次。
 - **10-07 Design 改成嵌套 bullet**（用户："design又是大段长段落，改成嵌套bullet points的格式"）：内容和原来三段相同，另外按代码补了三条：行带尾部的 rank 补齐、子组数取 CP 大小不超过大图张数的最大因子并按长度优先填、补齐的 query 在 projector 之后丢掉。每条一行。
 - **10-07 rebase（用户："现在rebase 4380 把除了h100数值之外的其他的事情都做了"）：** 五个提交原样搬到 main `948d65c86`（中间 21 个上游提交，6 个碰 K3 文件，没有冲突），PR 自身 diff 的 patch-id 不变。旧 head `9c648c4e2` 备份在 `backup/k3_cp_mm_pre_20261007`。
 - **CI 覆盖：** main 的两个 h100 K3 CP 格子在 main 上建 optimizer 就失败（DistMuon layout，10-07 nightly 证实）。修复在单独的分支 `k3_cp_muon_layout`，body 草稿 `PR_BODY_K3_CP_MUON_LAYOUT_2026-10-07.md`。那个 PR 开出来以后，可以在本 body 的 Test plan 加一句："The h100 cells `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp` split their first 256-patch image at step 5; they train once #<修复 PR 号> lands."
@@ -63,7 +64,19 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
 
 ## Results
 
-Pending (H100).
+Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86`, CP=2, 100 steps, seed 42, deterministic, SPMD typechecking on as in #4639's cells, AdamW (lr 8e-4) because the recipe's DistMuon does not build under CP on main; each block of cells shares one warm cache; loss / grad norm.
+
+| Configuration | Step 1 | Step 10 | Step 50 | Step 100 |
+|---|---|---|---|---|
+| main, all-gather or Ulysses | 8.19922 / 2.5781 | 3.68411 / 2.5312 | 2.47760 / 2.4531 | 3.04643 / 5.7812 |
+| main, all-gather, second run | 8.19922 / 2.5781 | 3.68411 / 2.5312 | 2.47760 / 2.4531 | 3.04643 / 5.7812 |
+| this PR, all-gather or Ulysses | 8.19922 / 2.5781 | 3.68293 / 2.5625 | 2.47868 / 2.4531 | 3.02490 / 5.7500 |
+| this PR, every image split (threshold 128) | 8.19896 / 2.5781 | 3.67482 / 2.5469 | 2.49460 / 2.4844 | 3.01145 / 5.5938 |
+
+- All-gather and Ulysses give identical numbers for all 100 steps, on main and on this PR; main's second run is identical for all 100 steps.
+- This PR matches main bitwise through step 4. Step 5's micro-batch holds the first 256-patch image, the first one it splits.
+- Splitting every image moves step 1 by 2.6e-4, the split tower's bf16 rounding: a probe that hands main's vision bank to the language model in that run reproduces main bitwise for all 100 steps, and in fp32 the GPU test matches the split tower to the whole tower.
+- With CP=1 this PR matches main bitwise for all 100 steps.
 
 ## Test plan
 
