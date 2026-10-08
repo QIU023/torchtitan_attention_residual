@@ -2,6 +2,15 @@
 
 ## 状态（不粘贴）
 
+- **10-08 CPU 会话检查 diff 和 body（用户："拉取，检查Dynamic CP diff和body"）：**
+  - **diff（`6317c5538`）：** 和 main `2154d68a9`（多了 18 个提交，只有 #5111 碰 K3）合并没有冲突。新增注释 2 行、docstring 23 行，都是一行说明。私有 def 做过复用检查：`_split_mask` 对照了 common 的 `create_block_diagonal_mask`（`models/common/vision_encoder.py:106`），后者要求 Q 和 K 等长、段号连续，表达不了 gather 之后 K 比 Q 长、补齐行编号 −1 的情况，所以不能直接用。
+  - **还没在 head 上确认的：** `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py` 在 `6317c5538` 上没有记录（Test plan 写的 "2 passed" 是 `9b03b4af1` 时的），pre-commit 的 pyrefly 也没有。H100 上的 fp32 大图检查（12/12）和端到端都是在 `6317c5538` 上跑的，本机 gloo 的新旧对比是 368/368。
+  - **body 违反两条规则：**
+    1. Design 在压缩时变成了 9 条平铺的 bullet，没有标签和子 bullet，有几条用分号连着两件事，不符合 10-07 的 "Design sections are nested bullets"。压缩后的措辞可以保留，只需恢复成带标签的嵌套结构。
+    2. 第一张表报了 step 50 和 100。main 的 loss 从第 50 步的 2.47760 回升到第 100 步的 3.04643，已经进入记忆数据集的阶段，按 numerics-table 规则不能报。应改成 step 1 / 10 / 20（先看 main 的轨迹第一次非单调在哪一步）。"100 步逐位相同"这类说法可以留在文字里。100 步的日志在 H100 box 的 `/workspace/h100_cpmm`，logbook 里没有第 20 步的数，要 GPU 会话从日志里取。
+  - 第二张表下面的说明也有两条用分号连着两件事（"Figures include ...; flex compiles ..."），按同一条规则可以拆开。
+  - **线上：** #4380 标题是 "[DO NOT review, pending check and specific scenario]"，body 是压缩前的 v3；CI 修复 PR（`k3_cp_muon_layout`）还没开。
+
 - **10-07 按 DEP 方式重构（用户："直接改，review和pr分支都做，然后改body，及时推送diff"）：** `k3_cp_mm` = `cpmm_review1` = `6317c5538`，在 `9b03b4af1` 之上快进两个提交：
   - `e094d6b9a` "kimi_k3: dynamic CP as a vision_cp package"：新包 `kimi_k3/vision_cp/`，包括 `plan.py`（原 `vit_cp_plan.py`，内容不变）、`attention.py`（`VisionCPAttention`、`VisionCPLayout`、gather）、`encoder.py`（`MoonViTCPEncoder`，`_forward_split` 拆成 `_pack_inputs`、`_encode`、`_assemble_bank`）、`__init__.py`（`build_cp_subgroups`、`install_vision_cp`）。K3 目录只剩三处改动：`KimiK3VisionEncoder(MoonViTCPEncoder)`、flavor 换用 `VisionCPAttention`、`parallelize` 里一行 `install_vision_cp`。
   - `6317c5538`：GPU 测试开头的两行注释缩成一行。
