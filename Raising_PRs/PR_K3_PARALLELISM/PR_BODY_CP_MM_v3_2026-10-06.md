@@ -1,4 +1,4 @@
-# PR 4380 body v3（10-07 重构后：PR 分支 `k3_cp_mm` = `cpmm_review1` = `6317c5538`，在 main `948d65c86` 上，七个提交），2026-10-06
+# PR 4380 body v3（10-08：PR 分支 `k3_cp_mm` = `cpmm_review1` = `96233d5c8`，在 main `948d65c86` 上，八个提交），2026-10-06
 
 ## 状态（不粘贴）
 
@@ -19,7 +19,7 @@
   - **上游 CI 会跑这个测试，而且原样会超时：** `.github/workflows/unit_test_gpu.yaml` 的 "Multi-GPU Unit Tests" 每个 PR 都跑 `pytest tests/unit_tests/gpu -m multi_gpu`，整个 job `timeout: 30` 分钟；本测试标了 `multi_gpu`。
   - **修复：新提交 `96233d5c8` "tests: compile flex without max-autotune in the dynamic CP GPU test"**（只改测试，+13 行）：私有 helper `_compile_flex_without_autotune` 照 `set_determinism`（`torchtitan/distributed/utils.py`）关掉 `inductor_configs` 的 `max_autotune` 和 `coordinate_descent_tuning` 并重新编译 `_compiled_flex_attn`，两个测试方法开头各调用一次（测试在 spawn 出来的子进程里跑，`setUp` 不在子进程执行）；一行注释说明原因。上游 `tests/unit_tests/cpu/test_fused_mla_override.py` 也这样关 autotune。不直接调 `set_determinism`：它还会打开 `use_deterministic_algorithms`（默认不只警告），tower 的双线性插值反向在 CUDA 上没有确定性实现。black 22.12、usort、pyflakes 干净。
   - **H100 上（空的 inductor 和 Triton cache，和 CI 冷启动一样）：2 passed in 80.9 s**（第二个用例 47.9 s，第一个 30.2 s）。跑的文件和提交的逐字节相同。
-  - `cpmm_review1` 快进到 `96233d5c8`（fork）；PR 分支 `k3_cp_mm` 还是 `6317c5538`，等用户的话。Test plan 已改成 "on 4 H100 (2 passed in 81 s from a cold cache)"，描述的是 `96233d5c8`。
+  - `cpmm_review1` 快进到 `96233d5c8`（fork）。用户说"推"后，PR 分支 `k3_cp_mm` 也快进到 `96233d5c8`（不是 force），旧 head `6317c5538` 备份在 `backup/k3_cp_mm_pre_20261008`。Test plan 已改成 "on 4 H100 (2 passed in 81 s from a cold cache)"，描述的是 `96233d5c8`。
 
 - **10-07 按 DEP 方式重构（用户："直接改，review和pr分支都做，然后改body，及时推送diff"）：** `k3_cp_mm` = `cpmm_review1` = `6317c5538`，在 `9b03b4af1` 之上快进两个提交：
   - `e094d6b9a` "kimi_k3: dynamic CP as a vision_cp package"：新包 `kimi_k3/vision_cp/`，包括 `plan.py`（原 `vit_cp_plan.py`，内容不变）、`attention.py`（`VisionCPAttention`、`VisionCPLayout`、gather）、`encoder.py`（`MoonViTCPEncoder`，`_forward_split` 拆成 `_pack_inputs`、`_encode`、`_assemble_bank`）、`__init__.py`（`build_cp_subgroups`、`install_vision_cp`）。K3 目录只剩三处改动：`KimiK3VisionEncoder(MoonViTCPEncoder)`、flavor 换用 `VisionCPAttention`、`parallelize` 里一行 `install_vision_cp`。
