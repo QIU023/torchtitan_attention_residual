@@ -1,0 +1,17 @@
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /workspace/venv_cu126/bin/python
+rootdir: /workspace/tt_cpmm_t
+configfile: pyproject.toml
+plugins: typeguard-4.6.0, platformdirs-4.12.1, anyio-4.15.1
+collecting ... collected 2 items
+
+tests/unit_tests/gpu/test_kimi_k3_vision_cp.py::TestKimiK3VisionDynamicCP::test_data_parallel_groups_with_different_images_stay_matched PASSED [ 50%]
+tests/unit_tests/gpu/test_kimi_k3_vision_cp.py::TestKimiK3VisionDynamicCP::test_split_images_match_the_whole_tower PASSED [100%]
+
+============================== slowest durations ===============================
+47.90s call     tests/unit_tests/gpu/test_kimi_k3_vision_cp.py::TestKimiK3VisionDynamicCP::test_split_images_match_the_whole_tower
+30.23s call     tests/unit_tests/gpu/test_kimi_k3_vision_cp.py::TestKimiK3VisionDynamicCP::test_data_parallel_groups_with_different_images_stay_matched
+
+(4 durations < 0.005s hidden.  Use -vv to show these durations.)
+========================= 2 passed in 80.90s (0:01:20) =========================

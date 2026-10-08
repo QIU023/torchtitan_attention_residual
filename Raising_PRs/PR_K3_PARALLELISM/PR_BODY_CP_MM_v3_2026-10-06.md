@@ -11,6 +11,16 @@
   - 第二张表下面的说明也有两条用分号连着两件事（"Figures include ...; flex compiles ..."），按同一条规则可以拆开。
   - **线上：** #4380 标题是 "[DO NOT review, pending check and specific scenario]"，body 是压缩前的 v3；CI 修复 PR（`k3_cp_muon_layout`）还没开。
 
+- **10-08 GPU 会话按检查结论修复（用户："修复，确认一下GPU单测是H100 ... 先跑完H100"）：**
+  - **第一张表改成 step 1 / 10 / 20：** 数取自 10-07 H100 的 100 步日志（本机 scratchpad `h100_cpmm_results/`，就是 box `/workspace/h100_cpmm` 拉回来的那份）。main 第一次非单调在第 10 步（3.48143 → 3.68411），之后第 12、14、15、17、19、20 步也有回升，所以"第 20 步前单调"这个前提不成立。但每步 2048 token、梯度累积 1，每步只用一个样本，cc12m-test 32 个样本第 33 步才第一次重复；前 32 步的起伏是不同样本的难度，不是记住数据。表注改成说明这一点（规则允许在会被记住的小数据集上提前截止并写明，也不因参考轨迹不单调而删列）。第 20 步：main 两次都是 3.27230 / 3.1562，本 PR 3.26093 / 3.1094，所有图都切 3.25868 / 3.1250；Ulysses 和 all-gather 相同、bank 替换和 main 相同、CP=1 相同都在 100 步里核对过。
+  - **Design 恢复成带标签的嵌套 bullet**（Scope、Which images split、How an image splits、One tower call per micro-batch、Attention、Vision bank、Sub-CP groups、Placement），保留压缩后的措辞。
+  - **用分号连着两件事的条目全部拆开**（Summary、两张表的说明、Relation）；粘贴区文字 893 词（含表格 1151）。
+  - **head 上的检查（H100 .240，`6317c5538`，`run_unit_6317.sh`）：** CPU 规划测试 7 passed；pre-commit 的 pyrefly（0.45.1，`--remove-unused-ignores --summarize-errors`，在两棵树的拷贝上跑）PR head 和 main `948d65c86` 是同一组 20 个错误，都是环境问题（没有 `torch_checkpointing`；torch 0906 缺 `param_dtype_override_fn`、pipelining 的两个名字、`scaled_addmm_` 等），没有一个落在 PR 的文件里；hook 在两边都删了同一处多余的 ignore（`video.py` 的 `import av`，因为这个 venv 装了 av）。GPU 单测在 `6317c5538` 原样（CI 路径，flex 带 max-autotune）：第一个用例（两个 DP 组、FSDP）PASSED；第二个用例（4 种情形，fp32）卡在 autotune 上，4 个 rank 各有一个 ptxas 单线程编译候选 kernel（每个 2.5 GB），25 分钟没结束，停掉了。
+  - **上游 CI 会跑这个测试，而且原样会超时：** `.github/workflows/unit_test_gpu.yaml` 的 "Multi-GPU Unit Tests" 每个 PR 都跑 `pytest tests/unit_tests/gpu -m multi_gpu`，整个 job `timeout: 30` 分钟；本测试标了 `multi_gpu`。
+  - **修复：新提交 `96233d5c8` "tests: compile flex without max-autotune in the dynamic CP GPU test"**（只改测试，+13 行）：私有 helper `_compile_flex_without_autotune` 照 `set_determinism`（`torchtitan/distributed/utils.py`）关掉 `inductor_configs` 的 `max_autotune` 和 `coordinate_descent_tuning` 并重新编译 `_compiled_flex_attn`，两个测试方法开头各调用一次（测试在 spawn 出来的子进程里跑，`setUp` 不在子进程执行）；一行注释说明原因。上游 `tests/unit_tests/cpu/test_fused_mla_override.py` 也这样关 autotune。不直接调 `set_determinism`：它还会打开 `use_deterministic_algorithms`（默认不只警告），tower 的双线性插值反向在 CUDA 上没有确定性实现。black 22.12、usort、pyflakes 干净。
+  - **H100 上（空的 inductor 和 Triton cache，和 CI 冷启动一样）：2 passed in 80.9 s**（第二个用例 47.9 s，第一个 30.2 s）。跑的文件和提交的逐字节相同。
+  - `cpmm_review1` 快进到 `96233d5c8`（fork）；PR 分支 `k3_cp_mm` 还是 `6317c5538`，等用户的话。Test plan 已改成 "on 4 H100 (2 passed in 81 s from a cold cache)"，描述的是 `96233d5c8`。
+
 - **10-07 按 DEP 方式重构（用户："直接改，review和pr分支都做，然后改body，及时推送diff"）：** `k3_cp_mm` = `cpmm_review1` = `6317c5538`，在 `9b03b4af1` 之上快进两个提交：
   - `e094d6b9a` "kimi_k3: dynamic CP as a vision_cp package"：新包 `kimi_k3/vision_cp/`，包括 `plan.py`（原 `vit_cp_plan.py`，内容不变）、`attention.py`（`VisionCPAttention`、`VisionCPLayout`、gather）、`encoder.py`（`MoonViTCPEncoder`，`_forward_split` 拆成 `_pack_inputs`、`_encode`、`_assemble_bank`）、`__init__.py`（`build_cp_subgroups`、`install_vision_cp`）。K3 目录只剩三处改动：`KimiK3VisionEncoder(MoonViTCPEncoder)`、flavor 换用 `VisionCPAttention`、`parallelize` 里一行 `install_vision_cp`。
   - `6317c5538`：GPU 测试开头的两行注释缩成一行。
@@ -43,39 +53,57 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
 
 - `vision_cp/plan.py`: which images split, over which sub-groups, and each rank's rows.
 - `vision_cp/attention.py`: `VisionCPAttention`, `VisionAttention` plus the sub-group key and value gather.
-- `vision_cp/encoder.py`: `MoonViTCPEncoder`, the base of Kimi K3's encoder; `dynamic_cp_min_patches` (256) keeps smaller images whole.
+- `vision_cp/encoder.py`: `MoonViTCPEncoder`, the base of Kimi K3's encoder.
+- `MoonViTCPEncoder.Config.dynamic_cp_min_patches` (256): smaller images stay whole.
 - `vision_cp/__init__.py`: `install_vision_cp` builds the sub-CP groups from `KimiK3Model.parallelize`.
 
 ## Design
 
-- Main's CP path encodes every image on every CP rank; this PR changes only how that vision bank is computed.
-- An image splits when it has at least `dynamic_cp_min_patches` patches and its height takes whole merge blocks.
-- Bands are whole merge blocks of rows, the same rows in every frame; trailing ranks pad to the first band.
-- Large images fill equal sub-groups longest first, as many as the largest divisor of the CP size not above their number.
-- The tower runs once per micro-batch, as on main, so FSDP issues the same collectives on every rank.
-- Only bands gather keys and values; padding keys match nothing, and padded queries are dropped after the projector.
-- One all-gather over the CP group returns the split images' merged tokens, so the bank is main's; with no large image the tower runs main's path.
-- `install_vision_cp` unflattens the CP mesh once per divisor of the CP size; every rank builds the groups, since building is collective.
-- The classes extend only `VisionAttention` and `MoonViTEncoder`, so other MoonViT models can reuse them; Kimi K3 changes its encoder's base class, its flavors' vision attention and `parallelize`.
+- Scope: main's CP path encodes every image on every CP rank, and this PR changes only how that vision bank is computed.
+- Which images split:
+  - An image with at least `dynamic_cp_min_patches` patches whose height takes whole merge blocks.
+  - Every other image stays whole on every rank.
+- How an image splits:
+  - Bands are whole merge blocks of rows, the same rows in every frame.
+  - Trailing ranks pad to the first rank's band.
+  - Large images fill equal sub-groups longest first, as many as the largest divisor of the CP size not above their number.
+- One tower call per micro-batch:
+  - The tower runs once per micro-batch, as on main, so FSDP issues the same collectives on every rank.
+  - The packed stream holds the whole images, then this rank's bands.
+- Attention:
+  - Only bands gather keys and values, over their sub-group.
+  - Padding keys match nothing.
+  - Padded queries are dropped after the projector.
+- Vision bank:
+  - One all-gather over the CP group returns the split images' merged tokens, so the bank is main's.
+  - With no large image, the tower runs main's path.
+- Sub-CP groups:
+  - `install_vision_cp` unflattens the CP mesh once per divisor of the CP size.
+  - Building is collective, so every rank builds them, including pipeline stages without the tower.
+- Placement:
+  - The classes extend only `VisionAttention` and `MoonViTEncoder`, so other MoonViT models can reuse them.
+  - Kimi K3 changes in three places: its encoder's base class, its flavors' vision attention and `parallelize`.
 
 ## Results
 
-Kimi K3 debug model, 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86`, CP=2, 100 steps, seed 42, deterministic, typechecking on as in #4639's cells, AdamW (lr 8e-4; DistMuon does not build under CP on main), one warm cache per block; loss / grad norm.
+Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86`, CP=2, 100 steps, seed 42, deterministic, typechecking on as in #4639's cells, one warm cache per block of cells. Training uses AdamW (lr 8e-4), since DistMuon does not build under CP on main. cc12m-test holds 32 samples and each step takes one, so the columns stop at step 20, before any sample repeats. Cells are loss / grad norm.
 
-| Configuration | Step 1 | Step 10 | Step 50 | Step 100 |
-|---|---|---|---|---|
-| main, all-gather or Ulysses | 8.19922 / 2.5781 | 3.68411 / 2.5312 | 2.47760 / 2.4531 | 3.04643 / 5.7812 |
-| main, all-gather, second run | 8.19922 / 2.5781 | 3.68411 / 2.5312 | 2.47760 / 2.4531 | 3.04643 / 5.7812 |
-| this PR, all-gather or Ulysses | 8.19922 / 2.5781 | 3.68293 / 2.5625 | 2.47868 / 2.4531 | 3.02490 / 5.7500 |
-| this PR, every image split (threshold 128) | 8.19896 / 2.5781 | 3.67482 / 2.5469 | 2.49460 / 2.4844 | 3.01145 / 5.5938 |
+| Configuration | Step 1 | Step 10 | Step 20 |
+|---|---|---|---|
+| main, all-gather or Ulysses | 8.19922 / 2.5781 | 3.68411 / 2.5312 | 3.27230 / 3.1562 |
+| main, all-gather, second run | 8.19922 / 2.5781 | 3.68411 / 2.5312 | 3.27230 / 3.1562 |
+| this PR, all-gather or Ulysses | 8.19922 / 2.5781 | 3.68293 / 2.5625 | 3.26093 / 3.1094 |
+| this PR, every image split (threshold 128) | 8.19896 / 2.5781 | 3.67482 / 2.5469 | 3.25868 / 3.1250 |
 
-- All-gather and Ulysses are identical for 100 steps, on main and on this PR, as is main's second run.
-- This PR matches main bitwise through step 4; step 5's 256-patch image is the first it splits.
+- All-gather and Ulysses are identical for 100 steps, on main and on this PR.
+- Main's second run is identical to its first for 100 steps.
+- This PR matches main bitwise through step 4.
+- Step 5's micro-batch holds the first 256-patch image, the first one this PR splits.
 - Splitting every image moves step 1 by 2.6e-4, the split tower's bf16 rounding: with main's vision bank swapped in, the run matches main bitwise for 100 steps.
 - In fp32 the split tower matches the whole tower within 2e-6 forward and 1e-5 in gradients, in the GPU test and at CP 2 and 4 on 2016 and 4032 px images and 16 video frames.
 - With CP=1 this PR matches main bitwise for 100 steps.
 
-Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forward and backward over one micro-batch's images on 4x H100, with the recipe's selective checkpointing unless noted; peak memory per GPU / time. Every CP rank holds all the images, so main measures the same at CP 1, 2 and 4.
+Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forward and backward over one micro-batch's images on 4x H100, with the recipe's selective checkpointing unless noted. Every CP rank holds all the images, so main measures the same at CP 1, 2 and 4. Cells are peak memory per GPU / time.
 
 | Images (patches) | main | this PR, CP=2 | this PR, CP=4 |
 |---|---|---|---|
@@ -86,21 +114,23 @@ Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forwar
 | four 2016 px images (82944) | 57.6 GiB / 3.2 s | 29.7 GiB / 1.6 s | 15.8 GiB / 0.81 s |
 | 16 frames of 448 px in 4-frame items (16384) | 12.0 GiB / 0.22 s | 6.5 GiB / 0.15 s | 3.7 GiB / 0.15 s |
 
-- Figures include 1.7 GiB of weights and gradients; flex compiles without max-autotune on both sides.
+- Figures include 1.7 GiB of weights and gradients.
+- Flex attention compiles without max-autotune on both sides.
 - Several images or video items go whole to one-rank sub-groups, so memory falls as 1/CP.
 - A split image keeps its whole keys and values on each rank for the attention backward, so its memory falls as 1/CP only under full checkpointing.
 - Training the debug text model with this tower (recipe settings, AdamW) on 2016 px images peaks at 19.1 and 17.6 GiB on main at CP=2 and 4, and 15.1 and 10.8 GiB with this PR.
 - With samples packed into 8192-token micro-batches, this PR trains 11 to 23% faster than main with 38 to 58% less memory (cc12m-test at native size and at 1008 px, CP 2 and 4).
 - A micro-batch holding a single image of 256 to about 9000 patches trains about 5% slower, since its per-layer gathers cost more CPU time than the split saves.
-- On cc12m-test resized to 1008 px, this PR differs from main from step 1 (8.20263 against 8.20187); with main's vision bank swapped in, it matches main bitwise for 20 steps.
+- On cc12m-test resized to 1008 px, this PR differs from main from step 1 (8.20263 against 8.20187).
+- With main's vision bank swapped into that run, it matches main bitwise for 20 steps.
 
 ## Test plan
 
 - `pytest tests/unit_tests/cpu/test_kimi_k3_vision_cp_plan.py -q` (7 passed).
-- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 GPUs (2 passed): split against whole tower in fp32 for one image over the CP group, two images over two sub-groups, one image per rank and a video whose last rank holds only padding; and two data-parallel groups splitting different numbers of images under FSDP.
+- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 H100 (2 passed in 81 s from a cold cache): split against whole tower in fp32 for one image over the CP group, two images over two sub-groups, one image per rank and a video whose last rank holds only padding, and two data-parallel groups splitting different numbers of images under FSDP.
 
 ## Relation to earlier revisions of this PR
 
-The earlier revision sat on the first #4639, called the tower once per image and re-encoded other sub-groups' large images; this one calls it once per micro-batch.
+The earlier revision sat on the first #4639, called the tower once per image and re-encoded other sub-groups' large images. This one calls it once per micro-batch.
 
 --- PASTE END ---
