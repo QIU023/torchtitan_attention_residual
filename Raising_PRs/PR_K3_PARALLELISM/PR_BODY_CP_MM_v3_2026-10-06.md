@@ -1,4 +1,4 @@
-# PR 4380 body v3（10-08：`cpmm_review1` = `5701f2fbc`，PR 分支 `k3_cp_mm` = `96233d5c8` 等推；main `948d65c86`），2026-10-06
+# PR 4380 body v3（10-08：PR 分支 `k3_cp_mm` = `cpmm_review1` = `5701f2fbc`，在 main `948d65c86` 上，九个提交），2026-10-06
 
 ## 状态（不粘贴）
 
@@ -13,7 +13,7 @@
 
 - **10-08 改成 opt-in（用户的建议："改成 opt-in，阈值在打开时仍用 256 ... 开关要从模型 config 读 ... 在现有的两个 h100 CP 格子的 recipe 里打开它"）：**
   - **提交 `5701f2fbc` "kimi_k3: dynamic CP of the vision tower is opt-in"**（叠在 `96233d5c8` 上，单独一个提交，4 个文件 +22/−9）：`dynamic_cp_min_patches: int | None = None`；`install_vision_cp(tower, config, parallelism_context)` 在 CP 关、config 为 None 或阈值为 None 时直接返回；`KimiK3Model.parallelize` 传 `cast(KimiK3Model.Config, self.config).vision_encoder`（PP 的 `_split_module` deepcopy 整个模型，再把非本 stage 的模块设成 None，所以没有 tower 的 stage 也有完整的 config；`cast` 照 muse_glimmer 的写法，否则 pyrefly 报 missing-attribute）；两个 h100 CP recipe 各加一行 `config.model.vision_encoder.dynamic_cp_min_patches = 256`（和 DEP 在 B200 格子里加 `vision_dep.enabled = True` 一样）。
-  - 先推的是 `c5fdbcca5`（没有 cast，pyrefly 多 1 个错误），amend 成 `5701f2fbc` 后 force-with-lease 推 `cpmm_review1`，`c5fdbcca5` 备份在 `backup/cpmm_review1_pre_20261008b`；PR 分支 `k3_cp_mm` 还是 `96233d5c8`，等用户的话。
+  - 先推的是 `c5fdbcca5`（没有 cast，pyrefly 多 1 个错误），amend 成 `5701f2fbc` 后 force-with-lease 推 `cpmm_review1`，`c5fdbcca5` 备份在 `backup/cpmm_review1_pre_20261008b`；用户说"推"后，PR 分支 `k3_cp_mm` 快进到 `5701f2fbc`（不是 force），`96233d5c8` 备份在 `backup/k3_cp_mm_pre_20261008b`。
   - **H100 验证（kit `run_optin_h100.sh`，在 `c5fdbcca5` 上跑，`5701f2fbc` 只多一个运行时不起作用的 `cast`）：** PP 探针（gloo，8 rank，pp2 × cp4，只有 stage 0 有 tower）打开时每个 rank 都建组、不卡，关闭时谁都不建；CPU 规划测试 7 passed；GPU 单测 2 passed in 81 s；端到端（CP2 all-gather，一份 cache，10 步）默认关闭和 main 逐位相同，打开 256 和 `6317c5538` 逐位相同（第 5 步起和 main 不同）；带 DistMuon 修复的两个 h100 recipe 新旧 10 步逐位相同，all-gather 和 Ulysses 相同。
   - **body：** Summary 的阈值那条改成开关的语义；Design 的 Sub-CP groups 改一句（开关从每个 stage 都有的模型 config 读）；两张表的表注各加一句"本 PR 的数据都打开 dynamic CP"；Test plan 加一句默认关闭和打开的逐位对比。
 
