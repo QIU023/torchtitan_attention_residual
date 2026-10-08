@@ -4,7 +4,8 @@ rank and holds the whole micro-batch, as in training. Main's tree encodes every 
 splits images of at least dynamic_cp_min_patches over sub-CP groups (MODE=whole hands it no sub-groups).
 
 env: CASE (key of CASES), AC none|sac|full (the recipe uses sac), WARM (default 2), ITERS (default 5),
-     OUT (jsonl, rank 0 appends one line), TAG, MODE split|whole.
+     OUT (jsonl, rank 0 appends one line), TAG, MODE split|whole, PROFILE (dir: one more step under torch.profiler,
+     rank 0 writes the op table sorted by CPU and by CUDA time).
 run: torchrun --nproc_per_node=<CP degree> tower_bench.py, from the tree's root.
 """
 
@@ -124,6 +125,24 @@ def main() -> None:
         sys.stderr.write(f"rank {rank} OOM: {str(e)[:300]}\n")
         static = peak = reserved = torch.cuda.max_memory_allocated()
         times = [float("nan")]
+
+    if os.environ.get("PROFILE") and status == "ok":
+        from torch.profiler import profile, ProfilerActivity
+
+        dist.barrier()
+        with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
+            step()
+            torch.cuda.synchronize()
+        if rank == 0:
+            d = os.environ["PROFILE"]
+            os.makedirs(d, exist_ok=True)
+            tag = os.environ.get("TAG", "run")
+            averages = prof.key_averages()
+            with open(f"{d}/{tag}.txt", "w") as f:
+                f.write(averages.table(sort_by="self_cpu_time_total", row_limit=45))
+                f.write("\n\n")
+                f.write(averages.table(sort_by="self_cuda_time_total", row_limit=30))
+            prof.export_chrome_trace(f"{d}/{tag}.json")
 
     mine = {"status": status, "static": static, "peak": peak, "reserved": reserved, "times": times}
     everyone = [None] * world

@@ -9,6 +9,8 @@ cell(): the Kimi K3 debug recipe (main's kimi_k3_debugmodel) as #4639's h100 cel
   CP_IMG_PX    resize every image to this square (multiple of 28; upsampling allowed) instead of the recipe's 256-patch cap.
   CP_TOWER     k3 swaps in the released K3 tower (27 layers, dim 1024) projecting to the debug text width.
   CP_SEQ       model and micro-batch context length (default the recipe's 2048).
+  CP_MAXP      raise the recipe's 256-patch cap to this many patches (64 per side), keeping native image sizes.
+  CP_PACK      1 packs whole samples into each micro-batch (MMSamplePackingConfig, 8 bins) instead of one padded sample.
 """
 
 import os
@@ -66,6 +68,26 @@ def cell():
                     max_patches_per_side=side,
                 ),
             ),
+        )
+    if e.get("CP_MAXP"):
+        dataset = config.dataloader.dataset
+        config.dataloader = replace(
+            config.dataloader,
+            dataset=replace(
+                dataset,
+                processor=replace(
+                    dataset.processor,
+                    max_patches=int(e["CP_MAXP"]),
+                    max_patches_per_side=64,
+                ),
+            ),
+        )
+    if e.get("CP_PACK") == "1":
+        from torchtitan.hf_datasets.multimodal.mm_datasets import MMSamplePackingConfig
+
+        config.dataloader = replace(
+            config.dataloader,
+            dataset=MMSamplePackingConfig(dataset=config.dataloader.dataset, num_packing_bins=8),
         )
     _set_spmd_typechecking(config, typechecking=e.get("CP_TYPECHECK", "1") == "1")
     config.parallelism.data_parallel_shard_degree = int(e.get("CP_DP", "1"))
