@@ -2,6 +2,8 @@
 
 ## 状态（不粘贴）
 
+- **10-08 CPU 会话复核粘贴区：** Test plan 第三条 "On 4 H100, the CP=2 all-gather run" 改成 "On 2 H100s"。CP=2、dp1 的格子用 2 张卡：`run_optin_h100.sh` 的端到端调用的是和 muonfix 同一个格子脚本、同一份 cache，muonfix 的日志里是 `--nproc_per_node=2`。GPU 单测那条 "on 4 H100" 本来就对，没改。其余已核对：Design 是嵌套 bullet；表只到 step 20，并在说明里交代了原因；有噪声底那一行；没有 we/our/us、破折号或非 ASCII 字符。
+
 - **10-08 CPU 会话检查 diff 和 body（用户："拉取，检查Dynamic CP diff和body"）：**
   - **diff（`6317c5538`）：** 和 main `2154d68a9`（多了 18 个提交，只有 #5111 碰 K3）合并没有冲突。新增注释 2 行、docstring 23 行，都是一行说明。私有 def 做过复用检查：`_split_mask` 对照了 common 的 `create_block_diagonal_mask`（`models/common/vision_encoder.py:106`），后者要求 Q 和 K 等长、段号连续，表达不了 gather 之后 K 比 Q 长、补齐行编号 −1 的情况，所以不能直接用。
   - **还没在 head 上确认的：** `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py` 在 `6317c5538` 上没有记录（Test plan 写的 "2 passed" 是 `9b03b4af1` 时的），pre-commit 的 pyrefly 也没有。H100 上的 fp32 大图检查（12/12）和端到端都是在 `6317c5538` 上跑的，本机 gloo 的新旧对比是 368/368。
@@ -134,7 +136,7 @@ Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forwar
 
 - `pytest tests/unit_tests/cpu/test_kimi_k3_vision_cp_plan.py -q` (7 passed).
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 H100 (2 passed in 81 s from a cold cache): split against whole tower in fp32 for one image over the CP group, two images over two sub-groups, one image per rank and a video whose last rank holds only padding, and two data-parallel groups splitting different numbers of images under FSDP.
-- On 4 H100, the CP=2 all-gather run (seed 42, 10 steps) with dynamic CP off, the default, matches main bitwise, and with it on at 256 matches `6317c5538`, the revision the tables measure, bitwise.
+- On 2 H100s, the CP=2 all-gather run (seed 42, 10 steps) with dynamic CP off, the default, matches main bitwise, and with it on at 256 matches `6317c5538`, the revision the tables measure, bitwise.
 
 ## Relation to earlier revisions of this PR
 

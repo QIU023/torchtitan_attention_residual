@@ -2,6 +2,13 @@
 
 ## 状态（不粘贴）
 
+- **10-08 CPU 会话复核（用户贴来 GPU 会话的说明后说"检查"）：**
+  - 说明里的事实都对：main 从 `948d65c86` 到 `08f7c391b` 多了 19 个提交，没有一个碰 `kimi_k2_7.py`、`kimi_k3.py`、`flex_shard/`、h100 的 suite 或 integration 定义，三个相关文件和 `948d65c86` 上的逐字节相同；main 的 recipe 和 `dist_muon.py` 里都没有 `dp_shard_cp`；`cfadefab9` 和 main 合并没有冲突。
+  - 粘贴区改了两处：
+    1. Design 原来是一段三句话，不符合 10-07 的 "Design sections are nested bullets"，改成带标签的嵌套 bullet，内容不变；
+    2. H100 那行原来写 "On 4x H100"，实际是 2 张卡（`results_h100_1008/muonfix/cp/fix_ag/run.log` 里 `--nproc_per_node=2`），改成 "On 2 H100s"，并拆成两条。
+  - 改后：没有 we/our/us、破折号或非 ASCII 字符，约 240 词。
+
 - **为什么要这个 PR：**
   - main 的 h100 格子 `kimi_k3_mm_allgather_kv_cp` / `kimi_k3_mm_ulysses_cp`（#4639 带进来的）在建 optimizer 时就失败。10-07 的 H100 nightly（main `7a5bedba3`）两格都是 rc=1，5060 上原样复现。
   - #4380 唯一的 CI 覆盖就是这两格，它们不能训练，#4380 跑 ciflow/h100 也是红的。
@@ -30,13 +37,19 @@ Kimi K3's DistMuon layouts name only `dp_shard`, so under context parallelism, w
 
 ## Design
 
-FSDP flattens its shard dims into one axis named by joining them, so with CP the dense storage axis is `dp_shard_cp`. The recipes build the optimizer config before the CP cells set `context_parallel_degree`, so the layout declares both axes instead of reading the degree. `ComputeLayout` allows declarations for mesh variants a parameter does not use and resolves the one its storage mesh has, so runs without CP resolve the same layout as before.
+- Storage axis: FSDP flattens its shard dims into one axis named by joining them, so with CP the dense storage axis is `dp_shard_cp`.
+- Both axes declared:
+  - The recipes build the optimizer config before the CP cells set `context_parallel_degree`, so the layout cannot read the degree.
+  - `ComputeLayout` allows declarations for mesh variants a parameter does not use and resolves the one its storage mesh has.
+  - Runs without CP resolve the same layout as before.
 
 ## Test plan
 
 - `ciflow/h100.8`: `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp`, which fail at optimizer build on main.
 - `MODULE=torchtitan_recipes.tests.suites.h100 CONFIG=kimi_k3_debugmodel_mm_allgather_kv_cp2 NGPU=2 ./run_train.sh`, and the same with `kimi_k3_debugmodel_mm_ulysses_cp2`, run their 10 steps.
-- On 4x H100 (torch 2.15.0.dev20260906+cu126, seeded): both recipes fail at optimizer build on main and train their 10 steps with this PR, all-gather and Ulysses identical; without CP, `kimi_k3_debugmodel` matches main bitwise for 10 steps.
+- On 2 H100s (torch 2.15.0.dev20260906+cu126, seeded):
+  - Both recipes fail at optimizer build on main and train their 10 steps with this PR, all-gather and Ulysses identical.
+  - Without CP, `kimi_k3_debugmodel` matches main bitwise for 10 steps.
 - `pytest tests/unit_tests/cpu/flex_shard tests/unit_tests/cpu/test_integration_test_definitions.py tests/unit_tests/cpu/test_debug_config_defaults.py tests/unit_tests/cpu/test_kimi_k3_pp_layout.py tests/unit_tests/cpu/test_skip_dp.py -q` (87 passed).
 
 --- PASTE END ---
