@@ -1,0 +1,96 @@
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+W1008 04:03:14.376000 20933 torch/distributed/run.py:982] 
+W1008 04:03:14.376000 20933 torch/distributed/run.py:982] *****************************************
+W1008 04:03:14.376000 20933 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1008 04:03:14.376000 20933 torch/distributed/run.py:982] *****************************************
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+[rank1]:[W1008 04:03:23.534973154 CUDACachingAllocator.cpp:4061] memory allocation failed with OOM on device 1 while trying to allocate 509607936 bytes (free: 212598784, total: 85049802752).
+[rank0]:[W1008 04:03:23.540056616 CUDACachingAllocator.cpp:4061] memory allocation failed with OOM on device 0 while trying to allocate 509607936 bytes (free: 175308800, total: 85049802752).
+[rank1]:[W1008 04:03:26.090173569 CUDACachingAllocator.cpp:4061] memory allocation failed with OOM on device 1 while trying to allocate 509607936 bytes (free: 416022528, total: 85049802752).
+[rank1]:[W1008 04:03:26.090361880 CUDACachingAllocator.cpp:4061] memory allocation failed with OOM on device 1 while trying to allocate 509607936 bytes (free: 416022528, total: 85049802752).
+rank 1 OOM: CUDA out of memory. Tried to allocate 486.00 MiB. GPU 1 has a total capacity of 79.21 GiB of which 396.75 MiB is free. Process 2850415 has 78.81 GiB memory in use. Of the allocated memory 74.96 GiB is allocated by PyTorch, and 2.41 GiB is reserved by PyTorch but unallocated. If reserved but unalloca
+[rank0]:[W1008 04:03:26.126515186 CUDACachingAllocator.cpp:4061] memory allocation failed with OOM on device 0 while trying to allocate 509607936 bytes (free: 378732544, total: 85049802752).
+[rank0]:[W1008 04:03:26.126687028 CUDACachingAllocator.cpp:4061] memory allocation failed with OOM on device 0 while trying to allocate 509607936 bytes (free: 378732544, total: 85049802752).
+rank 0 OOM: CUDA out of memory. Tried to allocate 486.00 MiB. GPU 0 has a total capacity of 79.21 GiB of which 361.19 MiB is free. Process 2850414 has 78.34 GiB memory in use. Process 2850415 has 516.00 MiB memory in use. Of the allocated memory 74.25 GiB is allocated by PyTorch, and 2.65 GiB is reserved by PyT
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/workspace/kit_cpmm/tower_bench.py", line 151, in <module>
+[rank1]:     main()
+[rank1]:   File "/workspace/kit_cpmm/tower_bench.py", line 130, in main
+[rank1]:     dist.all_gather_object(everyone, mine)
+[rank1]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+[rank1]:     return func(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 4367, in all_gather_object
+[rank1]:     all_gather(object_size_list, local_size, group=group)
+[rank1]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+[rank1]:     return func(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 5205, in all_gather
+[rank1]:     work = group.allgather(  # pyrefly: ignore[missing-attribute]
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: RuntimeError: NCCL GroupEnd failed: unhandled cuda error (run with NCCL_DEBUG=INFO for details) 
+[rank1]: NCCL Last Error: Cuda failure 2 'out of memory'
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/workspace/kit_cpmm/tower_bench.py", line 151, in <module>
+[rank0]:     main()
+[rank0]:   File "/workspace/kit_cpmm/tower_bench.py", line 130, in main
+[rank0]:     dist.all_gather_object(everyone, mine)
+[rank0]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 4367, in all_gather_object
+[rank0]:     all_gather(object_size_list, local_size, group=group)
+[rank0]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 5205, in all_gather
+[rank0]:     work = group.allgather(  # pyrefly: ignore[missing-attribute]
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: RuntimeError: NCCL GroupEnd failed: unhandled cuda error (run with NCCL_DEBUG=INFO for details) 
+[rank0]: NCCL Last Error: Cuda failure 2 'out of memory'
+[rank0]:[W1008 04:03:29.952929256 ProcessGroupNCCL.cpp:164] [TC][rank=0][name=e61b37d2ae7c7826dd16f26a0c4be966b21ba7cd] ProcessGroupNCCL e61b37d2ae7c7826dd16f26a0c4be966b21ba7cd was not finalized before destruction. This may indicate a resource leak. Please call finalize() explicitly.
+[rank1]:[W1008 04:03:29.107261858 ProcessGroupNCCL.cpp:164] [TC][rank=0][name=8dfe76f920711352e74bcbecaf3db1eb12601a67] ProcessGroupNCCL 8dfe76f920711352e74bcbecaf3db1eb12601a67 was not finalized before destruction. This may indicate a resource leak. Please call finalize() explicitly.
+W1008 04:03:30.476000 20933 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 21003 closing signal SIGTERM
+E1008 04:03:30.742000 20933 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 21002) of binary: /workspace/venv_cu126/bin/python3
+Traceback (most recent call last):
+  File "/workspace/venv_cu126/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/workspace/kit_cpmm/tower_bench.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-10-08_04:03:30
+  host      : e3396b6e958d
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 21003) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-08_04:03:30
+  host      : e3396b6e958d
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 21002) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

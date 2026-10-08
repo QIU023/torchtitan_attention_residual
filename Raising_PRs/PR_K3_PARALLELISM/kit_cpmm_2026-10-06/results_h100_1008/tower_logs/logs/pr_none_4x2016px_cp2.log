@@ -1,0 +1,15 @@
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+W1008 03:59:36.706000 18369 torch/distributed/run.py:982] 
+W1008 03:59:36.706000 18369 torch/distributed/run.py:982] *****************************************
+W1008 03:59:36.706000 18369 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1008 03:59:36.706000 18369 torch/distributed/run.py:982] *****************************************
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/attention.py:34: FutureWarning: torch.distributed.nn.functional.all_gather is deprecated, use torch.distributed._functional_collectives.all_gather_single instead.
+  parts = list(dist_nn.all_gather(x.contiguous(), group=group))
+/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/attention.py:34: FutureWarning: torch.distributed.nn.functional.all_gather is deprecated, use torch.distributed._functional_collectives.all_gather_single instead.
+  parts = list(dist_nn.all_gather(x.contiguous(), group=group))
+TOWER_BENCH {"tag": "pr_none_4x2016px_cp2", "tree": "tt_cpmm", "case": "4x2016px", "grids": [[1, 144, 144], [1, 144, 144], [1, 144, 144], [1, 144, 144]], "patches": 82944, "ac": "none", "cp": 2, "mode": "split", "plan": [2, 1], "torch": "2.15.0.dev20260906+cu126", "status": "ok", "peak_gib": [41.429, 41.429], "max_peak_gib": 41.429, "max_reserved_gib": 44.092, "static_gib": 2.051, "ms": 1547.5, "ms_all": [1551.3, 1548.4, 1547.5, 1542.9, 1546.2]}
