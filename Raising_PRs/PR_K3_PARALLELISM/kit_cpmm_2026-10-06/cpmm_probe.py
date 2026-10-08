@@ -3,7 +3,8 @@
 cell(): the Kimi K3 debug recipe (main's kimi_k3_debugmodel) as #4639's h100 cells build it. Env:
   CP_MODE      none | allgather (head-tail balancer) | ulysses   (default allgather)
   CP_DEGREE    context parallel degree (2); CP_DP dp_shard (1); CP_TP tensor parallel (1, sets EP = TP); AdamW everywhere
-  CP_MINP      dynamic_cp_min_patches when the tree has it (256 = default; 128 splits cc12m-test's 192-patch images)
+  CP_MINP      dynamic_cp_min_patches when the tree has it (256 by default; 128 splits cc12m-test's 192-patch images;
+               off leaves the tree's default, which is None (dynamic CP off) from c5fdbcca5 on)
   CP_TYPECHECK 0/1 (1, as #4639's cells); CP_STEPS (100); seed 42, deterministic.
   CP_AC        0 drops the recipe's activation checkpointing (typechecking already drops it).
   CP_IMG_PX    resize every image to this square (multiple of 28; upsampling allowed) instead of the recipe's 256-patch cap.
@@ -100,7 +101,7 @@ def cell():
         config.parallelism.tensor_parallel_degree = tp
         config.parallelism.expert_parallel_degree = tp
     vision = config.model.vision_encoder
-    if vision is not None and hasattr(vision, "dynamic_cp_min_patches"):
+    if vision is not None and hasattr(vision, "dynamic_cp_min_patches") and e.get("CP_MINP") != "off":
         vision.dynamic_cp_min_patches = int(e.get("CP_MINP", "256"))
     if mode != "none":
         config.parallelism.context_parallel_degree = int(e.get("CP_DEGREE", "2"))

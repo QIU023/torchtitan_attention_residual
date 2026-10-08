@@ -1,4 +1,4 @@
-# PR 4380 body v3（10-08：PR 分支 `k3_cp_mm` = `cpmm_review1` = `96233d5c8`，在 main `948d65c86` 上，八个提交），2026-10-06
+# PR 4380 body v3（10-08：`cpmm_review1` = `5701f2fbc`，PR 分支 `k3_cp_mm` = `96233d5c8` 等推；main `948d65c86`），2026-10-06
 
 ## 状态（不粘贴）
 
@@ -10,6 +10,12 @@
     2. 第一张表报了 step 50 和 100。main 的 loss 从第 50 步的 2.47760 回升到第 100 步的 3.04643，已经进入记忆数据集的阶段，按 numerics-table 规则不能报。应改成 step 1 / 10 / 20（先看 main 的轨迹第一次非单调在哪一步）。"100 步逐位相同"这类说法可以留在文字里。100 步的日志在 H100 box 的 `/workspace/h100_cpmm`，logbook 里没有第 20 步的数，要 GPU 会话从日志里取。
   - 第二张表下面的说明也有两条用分号连着两件事（"Figures include ...; flex compiles ..."），按同一条规则可以拆开。
   - **线上：** #4380 标题是 "[DO NOT review, pending check and specific scenario]"，body 是压缩前的 v3；CI 修复 PR（`k3_cp_muon_layout`）还没开。
+
+- **10-08 改成 opt-in（用户的建议："改成 opt-in，阈值在打开时仍用 256 ... 开关要从模型 config 读 ... 在现有的两个 h100 CP 格子的 recipe 里打开它"）：**
+  - **提交 `5701f2fbc` "kimi_k3: dynamic CP of the vision tower is opt-in"**（叠在 `96233d5c8` 上，单独一个提交，4 个文件 +22/−9）：`dynamic_cp_min_patches: int | None = None`；`install_vision_cp(tower, config, parallelism_context)` 在 CP 关、config 为 None 或阈值为 None 时直接返回；`KimiK3Model.parallelize` 传 `cast(KimiK3Model.Config, self.config).vision_encoder`（PP 的 `_split_module` deepcopy 整个模型，再把非本 stage 的模块设成 None，所以没有 tower 的 stage 也有完整的 config；`cast` 照 muse_glimmer 的写法，否则 pyrefly 报 missing-attribute）；两个 h100 CP recipe 各加一行 `config.model.vision_encoder.dynamic_cp_min_patches = 256`（和 DEP 在 B200 格子里加 `vision_dep.enabled = True` 一样）。
+  - 先推的是 `c5fdbcca5`（没有 cast，pyrefly 多 1 个错误），amend 成 `5701f2fbc` 后 force-with-lease 推 `cpmm_review1`，`c5fdbcca5` 备份在 `backup/cpmm_review1_pre_20261008b`；PR 分支 `k3_cp_mm` 还是 `96233d5c8`，等用户的话。
+  - **H100 验证（kit `run_optin_h100.sh`，在 `c5fdbcca5` 上跑，`5701f2fbc` 只多一个运行时不起作用的 `cast`）：** PP 探针（gloo，8 rank，pp2 × cp4，只有 stage 0 有 tower）打开时每个 rank 都建组、不卡，关闭时谁都不建；CPU 规划测试 7 passed；GPU 单测 2 passed in 81 s；端到端（CP2 all-gather，一份 cache，10 步）默认关闭和 main 逐位相同，打开 256 和 `6317c5538` 逐位相同（第 5 步起和 main 不同）；带 DistMuon 修复的两个 h100 recipe 新旧 10 步逐位相同，all-gather 和 Ulysses 相同。
+  - **body：** Summary 的阈值那条改成开关的语义；Design 的 Sub-CP groups 改一句（开关从每个 stage 都有的模型 config 读）；两张表的表注各加一句"本 PR 的数据都打开 dynamic CP"；Test plan 加一句默认关闭和打开的逐位对比。
 
 - **10-08 GPU 会话按检查结论修复（用户："修复，确认一下GPU单测是H100 ... 先跑完H100"）：**
   - **第一张表改成 step 1 / 10 / 20：** 数取自 10-07 H100 的 100 步日志（本机 scratchpad `h100_cpmm_results/`，就是 box `/workspace/h100_cpmm` 拉回来的那份）。main 第一次非单调在第 10 步（3.48143 → 3.68411），之后第 12、14、15、17、19、20 步也有回升，所以"第 20 步前单调"这个前提不成立。但每步 2048 token、梯度累积 1，每步只用一个样本，cc12m-test 32 个样本第 33 步才第一次重复；前 32 步的起伏是不同样本的难度，不是记住数据。表注改成说明这一点（规则允许在会被记住的小数据集上提前截止并写明，也不因参考轨迹不单调而删列）。第 20 步：main 两次都是 3.27230 / 3.1562，本 PR 3.26093 / 3.1094，所有图都切 3.25868 / 3.1250；Ulysses 和 all-gather 相同、bank 替换和 main 相同、CP=1 相同都在 100 步里核对过。
@@ -54,7 +60,7 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
 - `vision_cp/plan.py`: which images split, over which sub-groups, and each rank's rows.
 - `vision_cp/attention.py`: `VisionCPAttention`, `VisionAttention` plus the sub-group key and value gather.
 - `vision_cp/encoder.py`: `MoonViTCPEncoder`, the base of Kimi K3's encoder.
-- `MoonViTCPEncoder.Config.dynamic_cp_min_patches` (256): smaller images stay whole.
+- `MoonViTCPEncoder.Config.dynamic_cp_min_patches` turns dynamic CP on: `None`, the default, keeps main's path, and the two h100 CP cells set 256.
 - `vision_cp/__init__.py`: `install_vision_cp` builds the sub-CP groups from `KimiK3Model.parallelize`.
 
 ## Design
@@ -79,14 +85,14 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
   - With no large image, the tower runs main's path.
 - Sub-CP groups:
   - `install_vision_cp` unflattens the CP mesh once per divisor of the CP size.
-  - Building is collective, so every rank builds them, including pipeline stages without the tower.
+  - Building is collective, so every rank builds them and reads the switch from the model config, which pipeline stages without the tower also hold.
 - Placement:
   - The classes extend only `VisionAttention` and `MoonViTEncoder`, so other MoonViT models can reuse them.
   - Kimi K3 changes in three places: its encoder's base class, its flavors' vision attention and `parallelize`.
 
 ## Results
 
-Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86`, CP=2, 100 steps, seed 42, deterministic, typechecking on as in #4639's cells, one warm cache per block of cells. Training uses AdamW (lr 8e-4), since DistMuon does not build under CP on main. cc12m-test holds 32 samples and each step takes one, so the columns stop at step 20, before any sample repeats. Cells are loss / grad norm.
+Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86`, CP=2, 100 steps, seed 42, deterministic, typechecking on as in #4639's cells, one warm cache per block of cells. Training uses AdamW (lr 8e-4), since DistMuon does not build under CP on main. This PR's rows run with dynamic CP on at 256, the last one at 128 so every image splits. cc12m-test holds 32 samples and each step takes one, so the columns stop at step 20, before any sample repeats. Cells are loss / grad norm.
 
 | Configuration | Step 1 | Step 10 | Step 20 |
 |---|---|---|---|
@@ -103,7 +109,7 @@ Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86
 - In fp32 the split tower matches the whole tower within 2e-6 forward and 1e-5 in gradients, in the GPU test and at CP 2 and 4 on 2016 and 4032 px images and 16 video frames.
 - With CP=1 this PR matches main bitwise for 100 steps.
 
-Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forward and backward over one micro-batch's images on 4x H100, with the recipe's selective checkpointing unless noted. Every CP rank holds all the images, so main measures the same at CP 1, 2 and 4. Cells are peak memory per GPU / time.
+Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forward and backward over one micro-batch's images on 4x H100, with the recipe's selective checkpointing unless noted. Every CP rank holds all the images, so main measures the same at CP 1, 2 and 4. This PR's columns and the training figures below run with dynamic CP on at 256. Cells are peak memory per GPU / time.
 
 | Images (patches) | main | this PR, CP=2 | this PR, CP=4 |
 |---|---|---|---|
@@ -128,6 +134,7 @@ Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forwar
 
 - `pytest tests/unit_tests/cpu/test_kimi_k3_vision_cp_plan.py -q` (7 passed).
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 H100 (2 passed in 81 s from a cold cache): split against whole tower in fp32 for one image over the CP group, two images over two sub-groups, one image per rank and a video whose last rank holds only padding, and two data-parallel groups splitting different numbers of images under FSDP.
+- On 4 H100, the CP=2 all-gather run (seed 42, 10 steps) with dynamic CP off, the default, matches main bitwise, and with it on at 256 matches `6317c5538`, the revision the tables measure, bitwise.
 
 ## Relation to earlier revisions of this PR
 
