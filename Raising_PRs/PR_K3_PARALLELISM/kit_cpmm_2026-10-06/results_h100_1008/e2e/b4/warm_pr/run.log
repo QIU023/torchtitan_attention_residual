@@ -1,0 +1,67 @@
++ NGPU=4
++ export LOG_RANK=0
++ LOG_RANK=0
++ MODULE=cpmm_probe
++ CONFIG=cell
++ COMM_BACKEND=
++ TORCHFT_LIGHTHOUSE=http://localhost:29510
++ [[ -n '' ]]
++ '[' '' = fake ']'
++ PYTORCH_ALLOC_CONF=expandable_segments:True
++ TORCHFT_LIGHTHOUSE=http://localhost:29510
++ torchrun --nproc_per_node=4 --rdzv_backend c10d --rdzv_endpoint=localhost:0 --local-ranks-filter 0 --role rank --tee 3 -m torchtitan.train --module cpmm_probe --config cell --output-dir /workspace/h100_e2e/b4/warm_pr/out
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+W1008 05:04:56.973000 40585 torch/distributed/run.py:982] 
+W1008 05:04:56.973000 40585 torch/distributed/run.py:982] *****************************************
+W1008 05:04:56.973000 40585 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1008 05:04:56.973000 40585 torch/distributed/run.py:982] *****************************************
+[rank0]:mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-10-08 05:05:03,861 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-10-08 05:05:04,195 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/h100_e2e/b4/warm_pr/out/structured_logs/training.global_rank_0.20261008-050504-T0EAG3.jsonl
+[rank0]:[titan] 2026-10-08 05:05:04,501 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-10-08 05:05:05,345 - torchtitan.tools.garbage_collector - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-10-08 05:05:05,345 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank0]:[titan] 2026-10-08 05:05:05,364 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=4, tp=1, ep=1
+[rank0]:[titan] 2026-10-08 05:05:06,069 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['loss', 'cp']
+[rank0]:[titan] 2026-10-08 05:05:06,073 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-10-08 05:05:06,086 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank0]:[titan] 2026-10-08 05:05:06,088 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-10-08 05:05:06,088 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-10-08 05:05:06,296 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-10-08 05:05:06,302 - torchtitan.models.utils - INFO - Total parameter count: 442,625,520, active parameters: 18,342,128
+[rank0]:[titan] 2026-10-08 05:05:06,776 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[rank0]:[titan] 2026-10-08 05:05:06,781 - torchtitan.distributed.activation_checkpoint - INFO - Applied SelectiveAC activation checkpointing to the model
+[rank0]:[titan] 2026-10-08 05:05:07,194 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[titan] 2026-10-08 05:05:08,317 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 442,625,520 total parameters
+[rank0]:[titan] 2026-10-08 05:05:08,323 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=0): 665 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-10-08 05:05:08,326 - torchtitan.components.optim.lr_scheduler - WARNING - Warmup (2) + decay (4) steps exceed total steps (5). Adjusting decay steps to 3.
+[rank0]:[titan] 2026-10-08 05:05:08,327 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank0]:[titan] 2026-10-08 05:05:08,327 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.25GiB(0.32%)
+[rank0]:[titan] 2026-10-08 05:05:08,327 - torchtitan.trainer - INFO - Trainer is initialized with 8192 tokens per DP rank, 8192 tokens per train step, gradient accumulation steps 1, maximum context length 8192, total steps 5 (warmup 2)
+[rank0]:[titan] 2026-10-08 05:05:08,327 - torchtitan.trainer - INFO - Training starts at step 1
+[rank0]:/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/attention.py:34: FutureWarning: torch.distributed.nn.functional.all_gather is deprecated, use torch.distributed._functional_collectives.all_gather_single instead.
+[rank0]:  parts = list(dist_nn.all_gather(x.contiguous(), group=group))
+[rank0]:/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/attention.py:34: FutureWarning: torch.distributed.nn.functional.all_gather is deprecated, use torch.distributed._functional_collectives.all_gather_single instead.
+[rank0]:  parts = list(dist_nn.all_gather(x.contiguous(), group=group))
+[rank0]:/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank0]:/workspace/venv_cu126/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+[rank0]:  result = funcol.all_gather_tensor(x, gather_dim, pg)
+[rank0]:/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/fsdp/_fully_shard/_fsdp_state.py:336: UserWarning: FSDP2-wrapped module (FSDPCheckpointWrapper) returned a view tensor. An in-place op on this view (e.g., `x += y`) will silently drop the pre-backward hook and skip the all-gather, which can cause backward to fail or produce wrong gradients. Use out-of-place ops (`out = out + y`, not `out += y`) or `.clone()` the output before any in-place op.
+[rank0]:  output = self._register_pre_backward_hook(output)
+[rank0]:/workspace/venv_cu126/lib/python3.12/site-packages/spmd_types/_collectives.py:305: FutureWarning: `torch.distributed._functional_collectives.all_gather_tensor` is deprecated. Please use `torch.distributed._functional_collectives.all_gather_single` instead.
+[rank0]:  result = funcol.all_gather_tensor(x, gather_dim, pg)
+[rank0]:/workspace/venv_cu126/lib/python3.12/site-packages/spmd_types/_collectives.py:633: FutureWarning: `torch.distributed._functional_collectives.reduce_scatter_tensor` is deprecated. Please use `torch.distributed._functional_collectives.reduce_scatter_single` instead.
+[rank0]:  result = funcol.reduce_scatter_tensor(x, "sum", scatter_dim, pg)
+[rank0]:/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/attention.py:34: FutureWarning: torch.distributed.nn.functional.all_gather is deprecated, use torch.distributed._functional_collectives.all_gather_single instead.
+[rank0]:  parts = list(dist_nn.all_gather(x.contiguous(), group=group))
+[rank0]:[titan] 2026-10-08 05:05:25,717 - torchtitan.observability.metrics - INFO - [31mstep:  1  [32mloss:  8.19395  [38;2;180;60;0mgrad_norm:  3.1250  [38;2;54;234;195mmemory: 10.45GiB(13.19%)  [34mtps: 118  [36mtflops: 0.05  [35mmfu: 0.01%[39m
+[rank0]:[titan] 2026-10-08 05:05:25,717 - torchtitan.distributed.utils - INFO - Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+[rank0]:[titan] 2026-10-08 05:05:26,526 - torchtitan.observability.metrics - INFO - [31mstep:  2  [32mloss:  7.41383  [38;2;180;60;0mgrad_norm:  5.7812  [38;2;54;234;195mmemory: 10.78GiB(13.61%)  [34mtps: 2,535  [36mtflops: 1.11  [35mmfu: 0.11%[39m
+[rank0]:[titan] 2026-10-08 05:05:27,321 - torchtitan.observability.metrics - INFO - [31mstep:  3  [32mloss:  6.27659  [38;2;180;60;0mgrad_norm: 12.5625  [38;2;54;234;195mmemory: 10.78GiB(13.61%)  [34mtps: 2,579  [36mtflops: 1.13  [35mmfu: 0.11%[39m
+[rank0]:[titan] 2026-10-08 05:05:28,117 - torchtitan.observability.metrics - INFO - [31mstep:  4  [32mloss:  6.10165  [38;2;180;60;0mgrad_norm:  7.4375  [38;2;54;234;195mmemory: 10.78GiB(13.61%)  [34mtps: 2,572  [36mtflops: 1.13  [35mmfu: 0.11%[39m
+[rank0]:[titan] 2026-10-08 05:05:28,923 - torchtitan.observability.metrics - INFO - [31mstep:  5  [32mloss:  5.47790  [38;2;180;60;0mgrad_norm:  7.6250  [38;2;54;234;195mmemory: 10.78GiB(13.61%)  [34mtps: 2,543  [36mtflops: 1.12  [35mmfu: 0.11%[39m
+[rank0]:[titan] 2026-10-08 05:05:28,924 - torchtitan.trainer - INFO - Sleeping 2 seconds for other ranks to complete
+[rank0]:[titan] 2026-10-08 05:05:30,924 - torchtitan.trainer - INFO - Training completed
+[rank0]:[titan] 2026-10-08 05:05:31,864 - __main__ - INFO - Process group destroyed

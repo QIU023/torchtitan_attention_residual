@@ -14,6 +14,7 @@
 - **上游相关：**
   - #4448（jinsooihm，K2.7 CP，09-04 以后没动）用的是同一个办法：两个轴都声明。
   - #4353（shuhuayu，DistMuon TP storage layout）改 `dist_muon.py`；这个 PR 只改 recipe，不和它冲突。
+- **10-08 H100 冒烟（box 115.124.123.240 -p 30797，`run_muonfix_h100.sh`）：** main 的 all-gather CP recipe 在建 optimizer 时报同一个 layout 错误；修复后 all-gather 和 Ulysses 都训练满 10 步且相同；叠上 #4380 也训练满 10 步；不开 CP 时 main 两次和修复一次 10 步逐位相同。Test plan 加了一条 H100 的结果。日志 `kit_cpmm_2026-10-06/results_h100_1008/muonfix/`。
 - 粘贴区已检查：没有 we/our/us，没有破折号。
 
 标题：`[Kimi K3] Declare the DistMuon dense layouts on the CP-flattened axis`
@@ -35,6 +36,7 @@ FSDP flattens its shard dims into one axis named by joining them, so with CP the
 
 - `ciflow/h100.8`: `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp`, which fail at optimizer build on main.
 - `MODULE=torchtitan_recipes.tests.suites.h100 CONFIG=kimi_k3_debugmodel_mm_allgather_kv_cp2 NGPU=2 ./run_train.sh`, and the same with `kimi_k3_debugmodel_mm_ulysses_cp2`, run their 10 steps.
+- On 4x H100 (torch 2.15.0.dev20260906+cu126, seeded): both recipes fail at optimizer build on main and train their 10 steps with this PR, all-gather and Ulysses identical; without CP, `kimi_k3_debugmodel` matches main bitwise for 10 steps.
 - `pytest tests/unit_tests/cpu/flex_shard tests/unit_tests/cpu/test_integration_test_definitions.py tests/unit_tests/cpu/test_debug_config_defaults.py tests/unit_tests/cpu/test_kimi_k3_pp_layout.py tests/unit_tests/cpu/test_skip_dp.py -q` (87 passed).
 
 --- PASTE END ---

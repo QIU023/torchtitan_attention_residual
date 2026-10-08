@@ -23,6 +23,7 @@
 - **10-07 rebase（用户："现在rebase 4380 把除了h100数值之外的其他的事情都做了"）：** 五个提交原样搬到 main `948d65c86`（中间 21 个上游提交，6 个碰 K3 文件，没有冲突），PR 自身 diff 的 patch-id 不变。旧 head `9c648c4e2` 备份在 `backup/k3_cp_mm_pre_20261007`。
 - **CI 覆盖：** main 的两个 h100 K3 CP 格子在 main 上建 optimizer 就失败（DistMuon layout，10-07 nightly 证实）。修复在单独的分支 `k3_cp_muon_layout`，body 草稿 `PR_BODY_K3_CP_MUON_LAYOUT_2026-10-07.md`。那个 PR 开出来以后，可以在本 body 的 Test plan 加一句："The h100 cells `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp` split their first 256-patch image at step 5; they train once #<修复 PR 号> lands."
 
+- **10-08 H100 新增（用户："把昨天dynamic cp剩下的H100实验还有特殊的高分辨率测试都跑了，得看到CP维度在超清大图下"）：** Results 末尾加了 tower 的显存和时间表，六行，外加五条说明。数据出自 box 115.124.123.240 -p 30797，PR head `6317c5538`，main `948d65c86`；完整三种 AC 的表和端到端的数在 `CPMM_4380_PREP_2026-10-06.md` 的 10-08 一节。粘贴区现在约 1290 词（按 wc 计，表格也算在内），远超约 500 词的目标；可以压缩 Design，或者把 tower 表缩到四行，由用户决定。
 
 --- PR 4380 body v3: PASTE BEGIN ---
 
@@ -75,8 +76,25 @@ Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86
 
 - All-gather and Ulysses give identical numbers for all 100 steps, on main and on this PR; main's second run is identical for all 100 steps.
 - This PR matches main bitwise through step 4. Step 5's micro-batch holds the first 256-patch image, the first one it splits.
-- Splitting every image moves step 1 by 2.6e-4, the split tower's bf16 rounding: a probe that hands main's vision bank to the language model in that run reproduces main bitwise for all 100 steps, and in fp32 the GPU test matches the split tower to the whole tower.
+- Splitting every image moves step 1 by 2.6e-4, the split tower's bf16 rounding: a probe that hands main's vision bank to the language model in that run reproduces main bitwise for all 100 steps, and in fp32 the GPU test matches the split tower to the whole tower, as does the same check at CP 2 and 4 on 2016 and 4032 px images and 16 frames of video (forward within 2e-6, gradients within 1e-5).
 - With CP=1 this PR matches main bitwise for all 100 steps.
+
+Vision tower alone, as Kimi K3 ships it (27 layers, dim 1024, random bf16 weights), on 4x H100: peak memory per GPU / time of one forward and backward over a micro-batch's images, with the recipe's selective activation checkpointing unless the row says otherwise. Every CP rank holds the micro-batch's images, as in training, so main measures the same at CP 1, 2 and 4.
+
+| Images (patches) | main | this PR, CP=2 | this PR, CP=4 |
+|---|---|---|---|
+| one 2016 px image (20736) | 15.1 GiB / 0.81 s | 10.5 GiB / 0.44 s | 7.5 GiB / 0.27 s |
+| one 4032 px image (82944) | 57.6 GiB / 11.1 s | 39.3 GiB / 5.6 s | 27.1 GiB / 2.9 s |
+| one 4032 px image, no checkpointing | out of memory | 47.8 GiB / 5.5 s | 31.4 GiB / 2.8 s |
+| one 4032 px image, full checkpointing | 9.4 GiB / 14.0 s | 5.8 GiB / 7.0 s | 3.9 GiB / 3.6 s |
+| four 2016 px images (82944) | 57.6 GiB / 3.2 s | 29.7 GiB / 1.6 s | 15.8 GiB / 0.81 s |
+| 16 frames of 448 px in 4-frame items (16384) | 12.0 GiB / 0.22 s | 6.5 GiB / 0.15 s | 3.7 GiB / 0.15 s |
+
+- Each figure includes 1.7 GiB of bf16 weights and gradients; flex attention compiles without max-autotune on both sides.
+- Several images or video items go whole to sub-groups of one rank, so memory falls as 1/CP and nothing is gathered.
+- A split image keeps its whole keys and values on every rank of its sub-group for the attention backward, so its memory falls as 1/CP only under full checkpointing.
+- In training, the debug text model with this tower on 2016 px images peaks at 19.1 GiB (CP=2) and 17.6 GiB (CP=4) on main, and at 15.1 GiB and 10.8 GiB with this PR.
+- On cc12m-test resized to 1008 px, where every micro-batch splits, this PR differs from main from step 1 (8.20263 against 8.20187), and a run that hands main's vision bank to the language model matches main bitwise for 20 steps.
 
 ## Test plan
 

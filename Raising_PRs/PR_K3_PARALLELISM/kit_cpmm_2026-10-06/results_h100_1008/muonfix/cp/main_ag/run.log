@@ -1,0 +1,211 @@
++ NGPU=2
++ export LOG_RANK=0
++ LOG_RANK=0
++ MODULE=muon_probe
++ CONFIG=cell
++ COMM_BACKEND=
++ TORCHFT_LIGHTHOUSE=http://localhost:29510
++ [[ -n '' ]]
++ '[' '' = fake ']'
++ PYTORCH_ALLOC_CONF=expandable_segments:True
++ TORCHFT_LIGHTHOUSE=http://localhost:29510
++ torchrun --nproc_per_node=2 --rdzv_backend c10d --rdzv_endpoint=localhost:0 --local-ranks-filter 0 --role rank --tee 3 -m torchtitan.train --module muon_probe --config cell --output-dir /workspace/h100_muonfix/cp/main_ag/out
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+W1008 05:07:03.752000 42349 torch/distributed/run.py:982] 
+W1008 05:07:03.752000 42349 torch/distributed/run.py:982] *****************************************
+W1008 05:07:03.752000 42349 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1008 05:07:03.752000 42349 torch/distributed/run.py:982] *****************************************
+[rank0]:mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-10-08 05:07:09,621 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-10-08 05:07:10,329 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/h100_muonfix/cp/main_ag/out/structured_logs/training.global_rank_0.20261008-050710-LA20PK.jsonl
+[rank0]:[titan] 2026-10-08 05:07:10,589 - torchtitan.distributed.utils - WARNING - ENV[TORCH_NCCL_ASYNC_ERROR_HANDLING] = 1 will be overridden to 3 based on job config
+[rank0]:[titan] 2026-10-08 05:07:11,226 - torchtitan.tools.garbage_collector - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-10-08 05:07:11,226 - torchtitan.distributed.utils - INFO - Deterministic algorithm enabled (expect perf degradation).
+[rank0]:[titan] 2026-10-08 05:07:11,245 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=2, tp=1, ep=1
+[rank0]:[titan] 2026-10-08 05:07:11,491 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: ['loss', 'cp']
+[rank0]:[titan] 2026-10-08 05:07:11,494 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-10-08 05:07:11,507 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank0]:[titan] 2026-10-08 05:07:11,508 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-10-08 05:07:11,509 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-10-08 05:07:11,668 - torchtitan.protocols.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-10-08 05:07:11,671 - torchtitan.models.utils - INFO - Total parameter count: 26,882,800, active parameters: 18,342,128
+[rank0]:[titan] 2026-10-08 05:07:12,052 - torchtitan.distributed.fsdp - INFO - Applied FSDP to the model
+[rank0]:[rank0]: Traceback (most recent call last):
+[rank0]:[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/train.py", line 72, in <module>
+[rank0]:[rank0]:     main()
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/train.py", line 46, in main
+[rank0]:[rank0]:     trainer = config.build()
+[rank0]:[rank0]:               ^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/config/configurable.py", line 158, in build
+[rank0]:[rank0]:     return self._owner(config=replace(self))
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+[rank0]:[rank0]:     result = f(*args, **kwargs)
+[rank0]:[rank0]:              ^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/trainer.py", line 231, in __init__
+[rank0]:[rank0]:     engine.initialize(
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+[rank0]:[rank0]:     return func(*args, **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/training_engine.py", line 288, in initialize
+[rank0]:[rank0]:     self._initialize_optim()
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/training_engine.py", line 409, in _initialize_optim
+[rank0]:[rank0]:     self.optim = self.config.optim.build(
+[rank0]:[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+[rank0]:[rank0]:     return self._owner(config=replace(self), **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/components/optim/optim.py", line 82, in __init__
+[rank0]:[rank0]:     self.optimizers = config.optimizer.build(
+[rank0]:[rank0]:                       ^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+[rank0]:[rank0]:     return self._owner(config=replace(self), **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/components/optim/optimizer.py", line 302, in __init__
+[rank0]:[rank0]:     optimizer = optimizer_config.build(params=[param_group])
+[rank0]:[rank0]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+[rank0]:[rank0]:     return self._owner(config=replace(self), **kwargs)
+[rank0]:[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/components/optim/optimizer.py", line 210, in __init__
+[rank0]:[rank0]:     super().__init__(
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 198, in __init__
+[rank0]:[rank0]:     _initialize_dist_muon(
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 124, in _initialize_dist_muon
+[rank0]:[rank0]:     compute_layouts = optimizer._build_parameter_compute_layouts(
+[rank0]:[rank0]:                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 287, in _build_parameter_compute_layouts
+[rank0]:[rank0]:     resolved_transition = _resolve_storage_to_compute_transition(
+[rank0]:[rank0]:                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:[rank0]:   File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 1408, in _resolve_storage_to_compute_transition
+[rank0]:[rank0]:     raise ValueError(
+[rank0]:[rank0]: ValueError: Muon compute layout for parameter 'layers.0.delta_attention.q_proj.weight' declares no axis in storage mesh ['dp_shard_cp']; declared axes: ['dp_shard']
+[rank0]:[titan] 2026-10-08 05:07:12,771 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 26,882,800 total parameters
+W1008 05:07:14.475000 42349 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 42428 closing signal SIGTERM
+E1008 05:07:14.869000 42349 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 42427) of binary: /workspace/venv_cu126/bin/python3
+E1008 05:07:14.878000 42349 torch/distributed/elastic/multiprocessing/errors/error_handler.py:194] no error file defined for parent, to copy child error file (/tmp/torchelastic_oh1tf8ax/none_g3gfu_f2/attempt_0/0/error.json)
+Traceback (most recent call last):
+  File "/workspace/venv_cu126/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+torchtitan.train FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-10-08_05:07:12
+  host      : e3396b6e958d
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 42428) 
+  error_file: /tmp/torchelastic_oh1tf8ax/none_g3gfu_f2/attempt_0/1/error.json
+  traceback : Traceback (most recent call last):
+    File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/trainer.py", line 231, in __init__
+      engine.initialize(
+    File "/workspace/tt_main/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/training_engine.py", line 288, in initialize
+      self._initialize_optim()
+    File "/workspace/tt_main/torchtitan/training_engine.py", line 409, in _initialize_optim
+      self.optim = self.config.optim.build(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/components/optim/optim.py", line 82, in __init__
+      self.optimizers = config.optimizer.build(
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/components/optim/optimizer.py", line 302, in __init__
+      optimizer = optimizer_config.build(params=[param_group])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/components/optim/optimizer.py", line 210, in __init__
+      super().__init__(
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 198, in __init__
+      _initialize_dist_muon(
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 124, in _initialize_dist_muon
+      compute_layouts = optimizer._build_parameter_compute_layouts(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 287, in _build_parameter_compute_layouts
+      resolved_transition = _resolve_storage_to_compute_transition(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 1408, in _resolve_storage_to_compute_transition
+      raise ValueError(
+  ValueError: Muon compute layout for parameter 'layers.0.delta_attention.q_proj.weight' declares no axis in storage mesh ['dp_shard_cp']; declared axes: ['dp_shard']
+  
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-08_05:07:12
+  host      : e3396b6e958d
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 42427) 
+  error_file: /tmp/torchelastic_oh1tf8ax/none_g3gfu_f2/attempt_0/0/error.json
+  traceback : Traceback (most recent call last):
+    File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+      result = f(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/trainer.py", line 231, in __init__
+      engine.initialize(
+    File "/workspace/tt_main/torchtitan/observability/structured_logger/structured_logging.py", line 509, in sync_wrapper
+      return func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/training_engine.py", line 288, in initialize
+      self._initialize_optim()
+    File "/workspace/tt_main/torchtitan/training_engine.py", line 409, in _initialize_optim
+      self.optim = self.config.optim.build(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/components/optim/optim.py", line 82, in __init__
+      self.optimizers = config.optimizer.build(
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/components/optim/optimizer.py", line 302, in __init__
+      optimizer = optimizer_config.build(params=[param_group])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/config/configurable.py", line 167, in build
+      return self._owner(config=replace(self), **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/components/optim/optimizer.py", line 210, in __init__
+      super().__init__(
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 198, in __init__
+      _initialize_dist_muon(
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 124, in _initialize_dist_muon
+      compute_layouts = optimizer._build_parameter_compute_layouts(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 287, in _build_parameter_compute_layouts
+      resolved_transition = _resolve_storage_to_compute_transition(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/workspace/tt_main/torchtitan/distributed/flex_shard/dist_muon.py", line 1408, in _resolve_storage_to_compute_transition
+      raise ValueError(
+  ValueError: Muon compute layout for parameter 'layers.0.delta_attention.q_proj.weight' declares no axis in storage mesh ['dp_shard_cp']; declared axes: ['dp_shard']
+  
+============================================================
