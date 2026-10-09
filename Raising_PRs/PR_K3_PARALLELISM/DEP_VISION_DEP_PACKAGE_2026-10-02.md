@@ -58,7 +58,7 @@
 ## 10-09 DEP 单测去掉对 AttnRes 的依赖（用户："DEP单测通用化就行；Dynamic CP暂时不改，钩子得慎用"）
 
 - **查到的情况：** `VisionDepPipelineStage(PipelineStage)` 本身已经独立（`6cda7daca`）；`pipeline_kimi_k3` 里 `_VisionDepAttnResStage(VisionDepPipelineStage, AttnResPipelineStage)` 是 K3 必需的胶水（每个 K3 stage 都要是 AttnRes stage，schedule 每个 stage 只放一个对象），保留不动、不挪进通用。但 DEP 自己的运行时测试用的是这个组合类，玩具模型写成 K3 的 `(hidden, stack)`，还配了 AttnRes 的路由（退化的一块布局）才能跑。
-- **提交 `095acaaad` "tests: the DEP runtime checks drive the plain DEP stage"**（`dep_review1` 快进；PR 分支 `k3_pp_mm` 还是 `6cda7daca`，等用户）：测试直接用 `VisionDepPipelineStage`，去掉 AttnRes 的 import 和路由，玩具 stage 只传一个 hidden；1 个文件 +10/−22，没有新注释。
+- **提交 `095acaaad` "tests: the DEP runtime checks drive the plain DEP stage"**（`dep_review1` 快进；用户说"推"后 PR 分支 `k3_pp_mm` 也快进到 `095acaaad`，不是 force，`6cda7daca` 备份在 `backup/k3_pp_mm_pre_20261009`）：测试直接用 `VisionDepPipelineStage`，去掉 AttnRes 的 import 和路由，玩具 stage 只传一个 hidden；1 个文件 +10/−22，没有新注释。
 - **改的过程中碰到 torch pipelining 的一个边界：** PipelineStage 按 stage 输出元数据的原样内存布局分配接收缓冲区（`_make_tensor_from_meta`，"preserving the exact memory layout"），gloo 的 `irecv` 要求连续。玩具模型里两处会产生不连续：`[TOKENS, 1] * embed[DIM]` 的广播结果（TensorIterator 选了转置步长），和最后一个 stage `sum(-1)` 的输入梯度（`expand`，stride `(1, 0)`）。原来的测试走 AttnRes stage 的传输，碰不到。改成输入直接是 `[TOKENS, DIM]`、最后一个 stage 取 `mean(-1)`（反向是一次除法，输出连续），不加 `.contiguous()`。
 - **检查：** 本机 CPU（venv_1003b，gloo 4 进程）`test_kimi_k3_vision_dep.py` + `test_kimi_k3_vision_dep_plan.py` 20 passed，46 subtests passed（改之前的这版跑 3 个流水线测试失败，就是上面的不连续缓冲区）；black、usort、pyflakes 干净。GPU 的 NCCL 版（复用 `_VisionDepChecks`）这次没跑：H100 已经释放，5060 归 SATS-OPRD。
 - `_VisionDepAttnResStage` 组合类现在没有单测直接覆盖，由 B200 的 fsdp2×tp2×ep2×pp2×vpp4 格子覆盖。
