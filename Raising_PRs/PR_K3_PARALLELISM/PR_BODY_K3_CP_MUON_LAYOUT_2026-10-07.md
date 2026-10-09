@@ -2,6 +2,19 @@
 
 ## 状态（不粘贴）
 
+- **10-09：被 #5191 取代，#5145 应关闭。** acisseJZhong（#4639 的作者）10-09 03:37 UTC 开了 #5191 "[CI Fix] Kimi K3 DistMuon layouts under context parallelism"，06:54 UTC 自己合入（main `31b503c89`）。
+  - 做法和 #5145 完全相同：dense layout 和共用的 ep = 1 routed-expert layout 都同时声明 `dp_shard` 和 `dp_shard_cp`。区别只在写法：#5191 直接内联写在 4 处，#5145 抽成 helper `_dense_compute_layout`。
+  - #5191 的 body 写了 "Related draft: #5145"；H100 CI 两个格子 `rc=0`。
+  - #5145 现在和 main 在两个 recipe 文件上冲突，留着没有意义。
+  - #5145 一直是 draft，标题带 "[DO NOT review, finalizing]"，开出来大约 18 小时后，maintainer 自己修了。教训：修 CI 的 PR 应该一开出来就是 ready。
+- #5204（shuhuayu，"[kimi] Fix multimodal TP SPMD boundary type"）是另一个问题：B200 的 `kimi_k3_mm`（FSDP2 / TP2 / SP / EP2）在 #4639 加的多模态 decoder 边界断言里，TP 要求 `I`，实际是 `R`，改一行。和 DistMuon、CP 都无关。
+
+--- #5145 closing comment: PASTE BEGIN ---
+
+Closing in favour of #5191, which landed the same declarations: `dp_shard` and `dp_shard_cp` on the dense Kimi K3 Muon layouts and on the shared ep = 1 routed-expert layout.
+
+--- PASTE END ---
+
 - **10-08 CPU 会话复核（用户贴来 GPU 会话的说明后说"检查"）：**
   - 说明里的事实都对：main 从 `948d65c86` 到 `08f7c391b` 多了 19 个提交，没有一个碰 `kimi_k2_7.py`、`kimi_k3.py`、`flex_shard/`、h100 的 suite 或 integration 定义，三个相关文件和 `948d65c86` 上的逐字节相同；main 的 recipe 和 `dist_muon.py` 里都没有 `dp_shard_cp`；`cfadefab9` 和 main 合并没有冲突。
   - 粘贴区改了两处：
