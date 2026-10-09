@@ -1,6 +1,14 @@
-# PR 4380 body v3（10-08：PR 分支 `k3_cp_mm` = `cpmm_review1` = `5701f2fbc`，在 main `948d65c86` 上，九个提交），2026-10-06
+# PR 4380 body v3（10-09 rebase 后：PR 分支 `k3_cp_mm` = `cpmm_review1` = `097068e0f`，在 main `01b1b69e3` 上，九个提交），2026-10-06
 
 ## 状态（不粘贴）
+
+- **10-09 rebase（用户："现在先rebase push，然后其他暂时不改，通用性的问题可以我单独问maintainers"）：**
+  - 9 个提交原样搬到 main `01b1b69e3`（含 #5191），没有冲突。逐个提交的 patch-id 和整体 diff 的 patch-id 都和 rebase 前相同（整体 `0255879abbc1`）。
+  - 推送：先把旧 head `5701f2fbc` 备份到 `backup/k3_cp_mm_pre_20261009`，再用 force-with-lease 把 `cpmm_review1` 和 `k3_cp_mm` 都推到 `097068e0f`。
+  - 本机检查：
+    - CPU 规划测试 7 passed，pyflakes 干净；
+    - gloo 上 4 rank 跑 rebase 后的切图路径，和 rebase 前（`6317c5538`，在 `948d65c86` 上）存的输出与梯度比，368 个张量逐位相同（kit `local/vision_cp_equiv/`，CPU，两边都用稠密注意力）。
+  - 下一步：打 `ciflow/h100.8`，两个 K3 CP 格子现在应能跑完。body 和代码其他地方没有改；通用性的问题由用户单独问 maintainer。
 
 - **10-09 CPU 会话复查 diff（用户："拉取，再次检查dynamic cp diff"）：**
   - 10-08 以后没有新提交：PR head = `k3_cp_mm` = `cpmm_review1` = `5701f2fbc`，基于 `948d65c86`，9 个提交。
