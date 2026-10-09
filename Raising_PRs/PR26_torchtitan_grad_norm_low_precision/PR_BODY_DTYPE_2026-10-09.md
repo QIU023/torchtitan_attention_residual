@@ -2,6 +2,8 @@
 
 ## 状态（不粘贴）
 
+- **10-09 用户定稿（"不需要跑数值，4135都审过了，把PR开了 ... 就改这三行；body里面就说follow #4135 conclusion, upstream PR merged 之类的就行，标题得写 pending titan release bind to torch 2.16"）：** 不跑数值，下面"GPU 会话待跑"一节作废。粘贴区换成短版：Summary 一句加一条 bullet，再加一句说明在等绑定 torch 2.16 的 titan release；标题加上 "[Pending torchtitan release bound to torch 2.16]"。分支不变，仍是 `grad_norm_fp32_dtype` = `9d60f8c6d`，只有三行。
+
 - **分支：** fork `QIU023/torchtitan` 的 `grad_norm_fp32_dtype` = `9d60f8c6d`，基于 upstream main `31b503c89`，一个提交，只改 `torchtitan/distributed/utils.py` 三行（第 549、608、615 行的 `get_total_norm` 调用各加 `dtype=torch.float32`）。
   - 本机检查：black 22.12、pyflakes 干净。
   - 提交信息：作者 QIU023，没有 trailer，也没有跨仓库引用（写作 PR-194033）。
@@ -23,37 +25,16 @@
   4. EP 路径：任意一个 EP=2 的格子跑 10 步，确认能跑通、grad norm 是 fp32。
 - 粘贴区已检查：没有 we/our/us、破折号或非 ASCII 字符。
 
-标题：`clip_grad_norm_: accumulate the total norm in float32`
+标题：`[Pending torchtitan release bound to torch 2.16] clip_grad_norm_: accumulate the total norm in float32`
 
 --- PR body: PASTE BEGIN ---
 
 ## Summary
 
-`clip_grad_norm_` now asks `torch.nn.utils.get_total_norm` for a float32 total, so with bf16 gradients the norm no longer depends on how the model is split across pipeline stages and EP groups.
+Follows the conclusion of #4135: the `dtype` argument for `torch.nn.utils.get_total_norm` went into PyTorch instead of a copy in titan, and pytorch/pytorch#194033 has merged (PyTorch 2.16, and nightlies from 2026-10-08).
 
-- `torchtitan/distributed/utils.py`: the three `get_total_norm` calls (one in `clip_grad_norm_`, two in `_clip_grad_norm_with_ep`) pass `dtype=torch.float32`.
+- `torchtitan/distributed/utils.py`: the three `get_total_norm` calls in `clip_grad_norm_` and `_clip_grad_norm_with_ep` pass `dtype=torch.float32`, so with bf16 gradients the total norm accumulates in float32 and no longer depends on the PP or EP split.
 
-## Design
-
-- Where the rounding happened:
-  - `get_total_norm` returns the norm in the gradients' dtype.
-  - With `training.dtype = "bfloat16"`, each stage's or EP group's partial norm is rounded to bf16 before the partials are combined, so the total changes with the split.
-- The fix:
-  - `dtype=torch.float32` accumulates the per-tensor norms and the norm of norms in float32 ([pytorch/pytorch#194033](https://github.com/pytorch/pytorch/pull/194033), PyTorch 2.16).
-  - The returned total is float32, so the DTensor reduction, the EP combine, the PP all-reduce and the clip coefficient all run in float32.
-- Unchanged: with float32 gradients, the default, the accumulation dtype does not change.
-- Requirement: PyTorch 2.16, or a nightly from 2026-10-08 on; `get_total_norm` in 2.15 has no `dtype`.
-
-## Relation to #4135
-
-- #4135 carried a float32 copy of `get_total_norm` in titan; in its review the `dtype` argument went into PyTorch instead, and this PR only passes it.
-
-## Results
-
-Pending.
-
-## Test plan
-
-Pending.
+PyTorch 2.15 does not have the argument, so this is pending the titan release that binds to torch 2.16.
 
 --- PASTE END ---
