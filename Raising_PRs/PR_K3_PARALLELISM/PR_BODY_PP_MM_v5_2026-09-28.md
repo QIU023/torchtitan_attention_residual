@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-09（用户："加，直接推PR分支和review分支，maintainer现在还没时间review"）：** PR 分支 `k3_pp_mm` = `dep_review1` = `4e2ec143b`，比 `6cda7daca` 多两个只改测试的提交：`095acaaad`（运行时测试直接用 `VisionDepPipelineStage`，不再配 AttnRes 路由）和 `4e2ec143b`（覆盖率公式的两个测试）。两次都是快进，旧 head 备份在 `backup/k3_pp_mm_pre_20261009` 和 `..._20261009b`。粘贴区改了：覆盖率表下加一句闭式和上限（推导和 720 点核对见 `DEP_VISION_DEP_PACKAGE_2026-10-09_FORMULA.md`）；Test plan 的 CPU 通过数 20 → 22；GPU 那条换成这次在当前测试代码上的结果（5060 的 GPU 0-3，问过 SATS-OPRD；以前的 "4 H100s" 是 09-30 旧测试代码的结果）。
 - **10-05 PR 分支同步（用户："推"）：** `k3_pp_mm` 从 `8518f473f` 快进到 `6cda7daca`（= `dep_review1`，CPU 会话把 DEP stage 和 AttnRes stage 解耦），普通推送。#4381 现在 8 个提交、11 个文件、+2202 / −11，和 main 的冲突仍是 `kimi_k3/model.py` 那一处。核对：stage 类的每个方法解析到的源码不变（只有类 docstring 不同），CPU 36 passed，NCCL 单测在 4 × H100 上 2 passed，B200 的 8 卡格子新旧 10 步逐位相同。粘贴区不用改。
 - **10-04 DEP stage 和 AttnRes 解耦（用户："ViT DEP机制本身并不是需要K3独有的……VisionDepPipelineStage 为什么要继承 AttnResPipelineStage ？？"，随后"直接改，但是你能保证数值完全不变吗？"）：** `dep_review1` 快进到 `6cda7daca`，PR 分支 `k3_pp_mm` 仍是 `8518f473f`。
   - 改动：`VisionDepPipelineStage` 改为继承普通的 `PipelineStage`；`pipeline_kimi_k3` 用 `_VisionDepAttnResStage(VisionDepPipelineStage, AttnResPipelineStage)` 组合；`vision_dep/` 不再 import AttnRes stage 和 `KimiK3VisionEncoder`，塔的类型标成它的父类 `MoonViTEncoder`（Kimi K2.5 也用这个塔）。5 个文件，+18 / −14。
@@ -165,6 +166,8 @@ ViT computation covered by pipeline bubbles: the share of the ViT forward and ba
 | 2048 | 1008 px | 0.136 | 6% | 71% |
 | 1536 | 1008 px | 0.169 | 0% | 69% |
 
+With every micro-batch carrying an equal image, the plan covers min(M − p, Σ⌊i/r⌋) forwards and min(M − p, Σ⌊(2i − 1)/(3r)⌋) backwards of M, summed over ranks i = 1..p − 1, so coverage is at most 1 − p/M: 50% for Figure 11 and 75% for this table's pp4 × 16 micro-batches, of which 13 carry an image here.
+
 Loss / grad norm, seq 2048 with 224 px images, deterministic, one warm compile cache, automatic dynamic shapes off (the ViT and the text share the compiled flex attention):
 
 | cell | step 1 | step 10 | step 50 | step 100 |
@@ -179,8 +182,8 @@ Earlier revisions gave the ViT its own pipeline stage on the first rank; this re
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (20 passed).
-- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (2 passed on 4 H100s).
+- `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (22 passed), including the coverage bound above on interleaved orders.
+- `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (2 passed on 4 RTX 5060 Ti).
 - The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` with DEP on: 10 steps on 8 RTX 5060 Ti (no B200 at hand).
 
 --- PASTE END ---
