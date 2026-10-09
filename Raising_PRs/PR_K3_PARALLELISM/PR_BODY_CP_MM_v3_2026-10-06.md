@@ -2,6 +2,7 @@
 
 ## 状态（不粘贴）
 
+- **10-09（晚）：** #5145 被 maintainer 的 #5191 取代（acisseJZhong，10-09 06:54 UTC 合入，main `31b503c89`，做法相同）。粘贴区里两处 #5145 改成 #5191：Results 的说明改成 "did not build under CP on that main (#5191 has fixed it since)"，Test plan 改成 "Both cells train on main since #5191."。#4380（`5701f2fbc`）和 main `31b503c89` 合并没有冲突。
 - **10-09：** CI 修复 PR 已由用户开成 #5145；Results 的表注和 Test plan 各补了一处 #5145。
 - **10-08 CPU 会话复核粘贴区：** Test plan 第三条 "On 4 H100, the CP=2 all-gather run" 改成 "On 2 H100s"。CP=2、dp1 的格子用 2 张卡：`run_optin_h100.sh` 的端到端调用的是和 muonfix 同一个格子脚本、同一份 cache，muonfix 的日志里是 `--nproc_per_node=2`。GPU 单测那条 "on 4 H100" 本来就对，没改。其余已核对：Design 是嵌套 bullet；表只到 step 20，并在说明里交代了原因；有噪声底那一行；没有 we/our/us、破折号或非 ASCII 字符。
 
@@ -95,7 +96,7 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
 
 ## Results
 
-Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86`, CP=2, 100 steps, seed 42, deterministic, typechecking on as in #4639's cells, one warm cache per block of cells. Training uses AdamW (lr 8e-4), since DistMuon does not build under CP on main (#5145 fixes it). This PR's rows run with dynamic CP on at 256, the last one at 128 so every image splits. cc12m-test holds 32 samples and each step takes one, so the columns stop at step 20, before any sample repeats. Cells are loss / grad norm.
+Kimi K3 debug model on 4x H100 (torch 2.15.0.dev20260906+cu126), main `948d65c86`, CP=2, 100 steps, seed 42, deterministic, typechecking on as in #4639's cells, one warm cache per block of cells. Training uses AdamW (lr 8e-4), since DistMuon did not build under CP on that main (#5191 has fixed it since). This PR's rows run with dynamic CP on at 256, the last one at 128 so every image splits. cc12m-test holds 32 samples and each step takes one, so the columns stop at step 20, before any sample repeats. Cells are loss / grad norm.
 
 | Configuration | Step 1 | Step 10 | Step 20 |
 |---|---|---|---|
@@ -139,7 +140,7 @@ Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forwar
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 H100 (2 passed in 81 s from a cold cache): split against whole tower in fp32 for one image over the CP group, two images over two sub-groups, one image per rank and a video whose last rank holds only padding, and two data-parallel groups splitting different numbers of images under FSDP.
 - On 2 H100s, the CP=2 all-gather run (seed 42, 10 steps) with dynamic CP off, the default, matches main bitwise, and with it on at 256 matches `6317c5538`, the revision the tables measure, bitwise.
 - The h100 cells `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp` turn dynamic CP on at 256 and split their first 256-patch image at step 5.
-- Both cells train once #5145 lands.
+- Both cells train on main since #5191.
 
 ## Relation to earlier revisions of this PR
 
