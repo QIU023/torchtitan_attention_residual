@@ -138,7 +138,8 @@ Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forwar
 - `pytest tests/unit_tests/cpu/test_kimi_k3_vision_cp_plan.py -q` (7 passed).
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_cp.py -q` on 4 H100 (2 passed in 81 s from a cold cache): split against whole tower in fp32 for one image over the CP group, two images over two sub-groups, one image per rank and a video whose last rank holds only padding, and two data-parallel groups splitting different numbers of images under FSDP.
 - On 2 H100s, the CP=2 all-gather run (seed 42, 10 steps) with dynamic CP off, the default, matches main bitwise, and with it on at 256 matches `6317c5538`, the revision the tables measure, bitwise.
-- The h100 cells `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp` turn dynamic CP on at 256 and split their first 256-patch image at step 5; they train once #5145 lands.
+- The h100 cells `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp` turn dynamic CP on at 256 and split their first 256-patch image at step 5.
+- Both cells train once #5145 lands.
 
 ## Relation to earlier revisions of this PR
 
