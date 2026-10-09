@@ -2,6 +2,13 @@
 
 ## 状态（不粘贴）
 
+- **10-09 CPU 会话复查 diff（用户："拉取，再次检查dynamic cp diff"）：**
+  - 10-08 以后没有新提交：PR head = `k3_cp_mm` = `cpmm_review1` = `5701f2fbc`，基于 `948d65c86`，9 个提交。
+  - 和 main `01b1b69e3`（多了 35 个提交）合并没有冲突。PR 用到的接口在新 main 上都还在：`spmd_mesh_group`、`compiled_create_block_mask`、`VisionAttention._qkv`、`MoonViTEncoder` 的 `compute_position_embeddings` / `merge_kernel_size`、`_tpool_patch_merger`、`ComplexRoPE.apply_rotary_emb`、`FlexInnerAttention.inductor_configs` / `_compiled_flex_attn`。
+  - main 上碰到 K3 的提交，和本 PR 语义上都不重叠：#4838 删了 `parallelize` 的 `skip_dp`，删了 `spmd_types` 的两个 state dict 转换函数；#5184 把 `KDAAttentionMetadata` 改名为 `LinearAttentionMetadata`。
+  - **要 rebase 才能让 h100 CI 变绿：** `integration_test_h100.yaml` 由推送 `ciflow/h100.8/*` tag 触发，跑的是 PR head 本身，不是和 main 合并后的结果。PR head 的历史里没有 #5191，所以两个 K3 CP 格子在 PR 上仍会在建 DistMuon 时失败。rebase 到 main（≥ `31b503c89`）之后再打 `ciflow/h100.8`。预计没有冲突。
+  - 新情况：#5184（acisseJZhong，10-09）给 Qwen3.5 加了多模态 CP，vision bank 同样在每个 CP rank 上整份编码。Qwen3.5 的 tower 用的也是 common 的 `VisionAttention`，所以 `VisionCPAttention` 对它适用；`MoonViTCPEncoder` 不适用，它的 merger 和位置表不一样，切分的前向要另写。Jessica 是 #4639 和 #5184 的作者，可能会问到这一点。
+
 - **10-09（晚）：** #5145 被 maintainer 的 #5191 取代（acisseJZhong，10-09 06:54 UTC 合入，main `31b503c89`，做法相同）。粘贴区里两处 #5145 改成 #5191：Results 的说明改成 "did not build under CP on that main (#5191 has fixed it since)"，Test plan 改成 "Both cells train on main since #5191."。#4380（`5701f2fbc`）和 main `31b503c89` 合并没有冲突。
 - **10-09：** CI 修复 PR 已由用户开成 #5145；Results 的表注和 Test plan 各补了一处 #5145。
 - **10-08 CPU 会话复核粘贴区：** Test plan 第三条 "On 4 H100, the CP=2 all-gather run" 改成 "On 2 H100s"。CP=2、dp1 的格子用 2 张卡：`run_optin_h100.sh` 的端到端调用的是和 muonfix 同一个格子脚本、同一份 cache，muonfix 的日志里是 `--nproc_per_node=2`。GPU 单测那条 "on 4 H100" 本来就对，没改。其余已核对：Design 是嵌套 bullet；表只到 step 20，并在说明里交代了原因；有噪声底那一行；没有 we/our/us、破折号或非 ASCII 字符。
