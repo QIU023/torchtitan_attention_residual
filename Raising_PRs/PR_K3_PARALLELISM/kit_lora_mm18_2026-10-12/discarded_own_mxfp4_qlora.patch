@@ -1,0 +1,473 @@
+diff --git a/tests/unit_tests/cpu/models/common/test_lora.py b/tests/unit_tests/cpu/models/common/test_lora.py
+index 386a3f658..b85877fc5 100644
+--- a/tests/unit_tests/cpu/models/common/test_lora.py
++++ b/tests/unit_tests/cpu/models/common/test_lora.py
+@@ -831,9 +831,11 @@ class TestMergeLoRAStateDictTensorParallel(DTensorTestBase):
+     def world_size(self) -> int:
+         return 2
+ 
+-    def _feed_forward(self):
++    def _feed_forward(self, quantize_base=None):
+         init = {"weight": torch.nn.init.normal_}
+-        config = LoRATransform(rank=8, alpha=16.0).transform(
++        config = LoRATransform(
++            rank=8, alpha=16.0, quantize_base=quantize_base
++        ).transform(
+             make_ffn_config(
+                 dim=64,
+                 hidden_dim=128,
+@@ -853,11 +855,19 @@ class TestMergeLoRAStateDictTensorParallel(DTensorTestBase):
+ 
+     @with_comms
+     def test_merge_gives_each_rank_its_shard_of_the_unsharded_merge(self):
++        self._check_merge_shards(quantize_base=None)
++
++    @with_comms
++    def test_packed_merge_gives_each_rank_its_shard_of_the_unsharded_merge(self):
++        pytest.importorskip("torchao.prototype.mx_formats")
++        self._check_merge_shards(quantize_base="mxfp4")
++
++    def _check_merge_shards(self, quantize_base):
+         from unittest.mock import patch
+ 
+         from torchtitan.distributed.parallelism_context import ParallelismContext
+ 
+-        reference = merge_lora_state_dict(self._feed_forward())
++        reference = merge_lora_state_dict(self._feed_forward(quantize_base))
+         parallelism_context = ParallelismContext(
+             dp_replicate=1,
+             dp_shard=1,
+@@ -872,7 +882,7 @@ class TestMergeLoRAStateDictTensorParallel(DTensorTestBase):
+             "torchtitan.distributed.parallelism_context.device_type", self.device_type
+         ):
+             parallelism_context.build_mesh()
+-        feed_forward = self._feed_forward().to(self.device_type)
++        feed_forward = self._feed_forward(quantize_base).to(self.device_type)
+         feed_forward._parallelize(parallelism_context)
+ 
+         merged = merge_lora_state_dict(feed_forward)
+@@ -884,3 +894,120 @@ class TestMergeLoRAStateDictTensorParallel(DTensorTestBase):
+         torch.testing.assert_close(
+             merged["w2.weight"].cpu(), reference["w2.weight"][:, hidden]
+         )
++
++
++def _mxfp4_reference(weight: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
++    from torchao.prototype.mx_formats.mx_tensor import to_dtype
++
++    return to_dtype(
++        weight,
++        scale.view(torch.float8_e8m0fnu),
++        torch.float4_e2m1fn_x2,
++        32,
++        torch.bfloat16,
++    )
++
++
++@pytest.mark.parametrize("num_linears", [1, 2])
++def test_qlora_mxfp4_packs_the_base_and_folds_it_back(num_linears):
++    pytest.importorskip("torchao.prototype.mx_formats")
++    torch.manual_seed(0)
++    linear = (
++        LoRATransform(rank=8, alpha=16.0, quantize_base="mxfp4")
++        .transform(
++            Linear.Config(
++                in_features=64,
++                out_features=32,
++                num_linears=num_linears,
++                param_init={"weight": torch.nn.init.normal_},
++            )
++        )
++        .build()
++    )
++    linear.init_states()
++    with torch.no_grad():
++        linear.lora_a.weight.normal_()
++        linear.lora_b.weight.normal_()
++    leading = (32,) if num_linears == 1 else (num_linears, 32)
++
++    assert linear.weight.dtype == torch.uint8
++    assert linear.weight.shape == (*leading, 32)
++    assert linear.weight_scale.shape == (*leading, 2)
++    assert set(linear.state_dict()) == {
++        "weight",
++        "weight_scale",
++        "lora_a.weight",
++        "lora_b.weight",
++    }
++
++    base = _mxfp4_reference(linear.weight, linear.weight_scale).float()
++    delta = 2 * torch.matmul(linear.lora_b.weight, linear.lora_a.weight)
++    input_XI = torch.randn(5, 64, requires_grad=True)
++    actual = linear(input_XI)
++    expected = F.linear(input_XI, (base + delta).flatten(0, -2))
++    torch.testing.assert_close(
++        actual, expected.unflatten(-1, leading), rtol=1e-4, atol=1e-4
++    )
++    actual.sum().backward()
++    assert linear.weight.grad is None
++    assert linear.lora_a.weight.grad is not None
++
++    merged = merge_lora_state_dict(linear)
++    assert set(merged) == {"weight"}
++    torch.testing.assert_close(
++        merged["weight"].float(), (base + delta).bfloat16().float()
++    )
++
++
++def test_qlora_mxfp4_packs_grouped_bases():
++    pytest.importorskip("torchao.prototype.mx_formats")
++    torch.manual_seed(0)
++    grouped = (
++        LoRATransform(rank=8, alpha=16.0, quantize_base="mxfp4")
++        .transform(
++            GroupedLinear.Config(
++                group_size=2,
++                in_features=64,
++                out_features=32,
++                num_linears=2,
++                param_init={"weight": torch.nn.init.normal_},
++            )
++        )
++        .build()
++    )
++    grouped.init_states()
++    with torch.no_grad():
++        grouped.lora_a.weight.normal_()
++        grouped.lora_b.weight.normal_()
++
++    assert grouped.weight.shape == (2, 2, 32, 32)
++    assert grouped.weight_scale.shape == (2, 2, 32, 2)
++    base = _mxfp4_reference(grouped.weight, grouped.weight_scale)
++    input_RI = torch.randn(5, 64, dtype=torch.bfloat16)
++    offsets_E = torch.tensor([2, 5], dtype=torch.int32)
++    actual = grouped(input_RI, offsets_E)
++    expected = []
++    for expert, (start, end) in enumerate(((0, 2), (2, 5))):
++        rows = input_RI[start:end]
++        update = F.linear(
++            F.linear(rows, grouped.lora_a.weight[expert].bfloat16()),
++            grouped.lora_b.weight[expert].flatten(0, -2).bfloat16(),
++        )
++        expected.append(F.linear(rows, base[expert].flatten(0, -2)) + 2 * update)
++    torch.testing.assert_close(actual, torch.cat(expected).unflatten(-1, (2, 32)))
++
++
++def test_qlora_mxfp4_leaves_unblockable_bases_unpacked():
++    linear = (
++        LoRATransform(rank=8, quantize_base="mxfp4")
++        .transform(
++            Linear.Config(
++                in_features=48,
++                out_features=8,
++                param_init={"weight": torch.nn.init.normal_},
++            )
++        )
++        .build()
++    )
++    assert linear.weight.dtype == torch.float32
++    assert not hasattr(linear, "weight_scale")
+diff --git a/torchtitan/config/transform/lora.py b/torchtitan/config/transform/lora.py
+index d6d897910..a3fb4396c 100644
+--- a/torchtitan/config/transform/lora.py
++++ b/torchtitan/config/transform/lora.py
+@@ -5,8 +5,8 @@
+ # LICENSE file in the root directory of this source tree.
+ 
+ import logging
+-from dataclasses import dataclass, fields
+-from typing import Any, cast
++from dataclasses import dataclass, fields, replace
++from typing import Any, cast, Literal
+ 
+ from torchtitan.models.base.module import Module
+ 
+@@ -105,20 +105,38 @@ def _make_frozen_config(cfg: Module.Config) -> Module.Config:
+     return frozen_cls(**{f.name: getattr(cfg, f.name) for f in fields(cfg) if f.init})
+ 
+ 
++def _packed_base_fields(
++    cfg: Linear.Config | GroupedLinear.Config, quantize_base: str | None
++) -> dict[str, Any]:
++    """The base-storage fields of a LoRA config: packed only when every 32 inputs form a block."""
++    if quantize_base is None or cfg.in_features % 32:
++        return {}
++    packed: dict[str, Any] = {"quantize_base": quantize_base}
++    sharding = cfg.sharding_config
++    if sharding is not None and "weight" in sharding.state_shardings:
++        packed["sharding_config"] = replace(
++            sharding,
++            state_shardings={
++                **sharding.state_shardings,
++                "weight_scale": sharding.state_shardings["weight"],
++            },
++        )
++    return packed
++
++
+ def _make_linear_lora_config(
+     cfg: Linear.Config,
+     *,
+     rank: int,
+     alpha: float,
++    quantize_base: str | None = None,
+ ) -> Module.Config:
+     assert cfg._owner is not None
+     lora_cls = get_lora_linear(cast(type[Module], cfg._owner))
+     lora_config_cls = cast(Any, lora_cls.Config)
+-    return lora_config_cls(
+-        **{f.name: getattr(cfg, f.name) for f in fields(cfg) if f.init},
+-        rank=rank,
+-        alpha=alpha,
+-    )
++    values = {f.name: getattr(cfg, f.name) for f in fields(cfg) if f.init}
++    values.update(_packed_base_fields(cfg, quantize_base))
++    return lora_config_cls(**values, rank=rank, alpha=alpha)
+ 
+ 
+ def _make_grouped_linear_lora_config(
+@@ -126,17 +144,16 @@ def _make_grouped_linear_lora_config(
+     *,
+     rank: int,
+     alpha: float,
++    quantize_base: str | None = None,
+ ) -> Module.Config:
+     if rank % 8:
+         raise ValueError(f"Grouped LoRA rank must be divisible by 8, got {rank}")
+     assert cfg._owner is not None
+     lora_cls = get_lora_grouped_linear(cast(type[Module], cfg._owner))
+     lora_config_cls = cast(Any, lora_cls.Config)
+-    return lora_config_cls(
+-        **{f.name: getattr(cfg, f.name) for f in fields(cfg) if f.init},
+-        rank=rank,
+-        alpha=alpha,
+-    )
++    values = {f.name: getattr(cfg, f.name) for f in fields(cfg) if f.init}
++    values.update(_packed_base_fields(cfg, quantize_base))
++    return lora_config_cls(**values, rank=rank, alpha=alpha)
+ 
+ 
+ def _make_dist_moe_lora_config(
+@@ -218,6 +235,11 @@ class LoRATransform(ModelConfigTransform):
+     layers.
+     """
+ 
++    quantize_base: Literal["mxfp4"] | None = None
++    """Storage of the frozen base weights: ``"mxfp4"`` packs every adapted base
++    whose in_features divides by 32 into MXFP4 bytes with one e8m0 scale per 32
++    inputs (QLoRA); other bases keep their dtype."""
++
+     def __post_init__(self) -> None:
+         if self.rank <= 0:
+             raise ValueError(f"LoRA rank must be positive, got {self.rank}")
+@@ -280,12 +302,14 @@ class LoRATransform(ModelConfigTransform):
+                     cfg,
+                     rank=self.rank,
+                     alpha=self.alpha,
++                    quantize_base=self.quantize_base,
+                 )
+             elif isinstance(cfg, Linear.Config) and is_target:
+                 new_cfg = _make_linear_lora_config(
+                     cfg,
+                     rank=self.rank,
+                     alpha=self.alpha,
++                    quantize_base=self.quantize_base,
+                 )
+             else:
+                 new_cfg = _make_frozen_config(cfg)
+diff --git a/torchtitan/models/common/lora.py b/torchtitan/models/common/lora.py
+index e82fa6cea..164d52c8f 100644
+--- a/torchtitan/models/common/lora.py
++++ b/torchtitan/models/common/lora.py
+@@ -14,12 +14,13 @@ Shape suffixes: ``X`` arbitrary leading dimensions, ``R`` routed rows,
+ import functools
+ import math
+ from dataclasses import dataclass
+-from typing import cast
++from typing import cast, Literal
+ 
+ import spmd_types as spmd
+ 
+ import torch
+ import torch.nn as nn
++from torch.distributed.tensor import DTensor
+ 
+ from torchtitan.models.base.module import Module
+ from torchtitan.models.base.sharding import ShardingConfig
+@@ -41,14 +42,96 @@ __all__ = [
+ # TODO: Support checkpoint interoperability for LoRA adapter state. Native DCP
+ # base checkpoints cannot initialize LoRA models because lora_a/lora_b keys are
+ # absent, and Hugging Face state-dict adapters omit those keys during export.
++_MX_BLOCK = 32
++
++
++def _mxfp4_quantize(weight: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
++    from torchao.prototype.mx_formats.mx_tensor import to_mx
++
++    scale, data = to_mx(weight.contiguous(), torch.float4_e2m1fn_x2, _MX_BLOCK)
++    return data, scale.view(torch.uint8)
++
++
++def _mxfp4_dequantize(data: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
++    from torchao.prototype.mx_formats.mx_tensor import to_dtype
++
++    return to_dtype(
++        data.contiguous(),
++        scale.contiguous().view(torch.float8_e8m0fnu),
++        torch.float4_e2m1fn_x2,
++        _MX_BLOCK,
++        torch.bfloat16,
++    )
++
++
++def _local(tensor: torch.Tensor) -> torch.Tensor:
++    return tensor.to_local() if isinstance(tensor, DTensor) else tensor
++
++
+ class _LoRAMixin:
+     _lora_scaling: float
++    _packed_base: bool = False
+ 
+     def __init__(self, config) -> None:
+         super().__init__(config)  # type: ignore[misc]
+         for param in nn.Module.parameters(self):  # type: ignore[arg-type]
+             param.requires_grad_(False)
+         self._lora_scaling = config.alpha / config.rank
++        if config.quantize_base == "mxfp4":
++            self._pack_base()
++
++    def _pack_base(self) -> None:
++        """Store the frozen base weight as MXFP4 bytes plus one e8m0 scale per 32 inputs, both uint8."""
++        weight = cast(nn.Module, self).weight
++        if weight.shape[-1] % _MX_BLOCK:
++            raise ValueError(
++                f"quantize_base='mxfp4' needs in_features divisible by {_MX_BLOCK}, "
++                f"got {weight.shape[-1]}"
++            )
++        leading, in_features = weight.shape[:-1], weight.shape[-1]
++        self.weight = nn.Parameter(
++            torch.empty(
++                *leading, in_features // 2, dtype=torch.uint8, device=weight.device
++            ),
++            requires_grad=False,
++        )
++        self.weight_scale = nn.Parameter(
++            torch.empty(
++                *leading,
++                in_features // _MX_BLOCK,
++                dtype=torch.uint8,
++                device=weight.device,
++            ),
++            requires_grad=False,
++        )
++        self._packed_base = True
++
++    def _dequantized_base(self, weight: torch.Tensor) -> torch.Tensor:
++        scale = cast(nn.Module, self).weight_scale.reshape(
++            *weight.shape[:-1], weight.shape[-1] * 2 // _MX_BLOCK
++        )
++        return _mxfp4_dequantize(weight, scale)
++
++    def _init_self_parameters(self) -> None:
++        if not self._packed_base:
++            super()._init_self_parameters()  # type: ignore[misc]
++            return
++        module = cast(Module, self)
++        param_init = module._param_init or {}
++        for name, param in module.named_parameters(recurse=False):
++            if name not in ("weight", "weight_scale"):
++                module._init_param(name, param)
++        data, scale = _local(module.weight), _local(module.weight_scale)
++        weight = torch.empty(*data.shape[:-1], data.shape[-1] * 2, device=data.device)
++        init_weight = param_init.get("weight")
++        if init_weight is None:
++            nn.init.kaiming_uniform_(weight.flatten(0, -2), a=math.sqrt(5))
++        else:
++            init_weight(weight)
++        packed_data, packed_scale = _mxfp4_quantize(weight)
++        with torch.no_grad():
++            data.copy_(packed_data)
++            scale.copy_(packed_scale)
+ 
+ 
+ class _LoRALinearMixin(_LoRAMixin):
+@@ -109,6 +192,8 @@ class _LoRALinearMixin(_LoRAMixin):
+         weight: torch.Tensor,
+         bias: torch.Tensor | None,
+     ) -> torch.Tensor:
++        if self._packed_base:
++            weight = self._dequantized_base(weight).to(input.dtype)
+         base_out_XO = super()._linear(input, weight, bias)  # type: ignore[misc]
+         # The adapters call their local compute directly, so they run inside this
+         # projection's remat region instead of declaring their own: a region
+@@ -223,6 +308,8 @@ class _LoRAGroupedLinearMixin(_LoRAMixin):
+         weight_EOI: torch.Tensor,
+         offsets_E: torch.Tensor,
+     ) -> torch.Tensor:
++        if self._packed_base:
++            weight_EOI = self._dequantized_base(weight_EOI)
+         base_out_RO = super()._grouped_mm(  # type: ignore[misc]
+             input_RI=input_RI,
+             weight_EOI=weight_EOI,
+@@ -274,6 +361,10 @@ class _LoRADistMoeRoutedExpertsMixin:
+ 
+     def __init__(self, config) -> None:
+         super().__init__(config)  # type: ignore[misc]
++        if any(getattr(child, "_packed_base", False) for child in (self.w13, self.w2)):
++            raise NotImplementedError(
++                "Dist-MoE consumes the base weights directly; quantize_base is not supported."
++            )
+         # Freeze parameters owned by the wrapper without freezing adapters
+         # owned by its w13 and w2 children.
+         for param in nn.Module.parameters(self, recurse=False):  # type: ignore[arg-type]
+@@ -318,6 +409,7 @@ def _create_lora_class(
+         class Config(parent_config_cls):  # type: ignore[misc]
+             rank: int
+             alpha: float
++            quantize_base: Literal["mxfp4"] | None = None
+ 
+     LoRAProjection.__name__ = f"LoRA{parent_cls.__name__}"
+     LoRAProjection.__qualname__ = f"LoRA{parent_cls.__name__}"
+@@ -374,7 +466,7 @@ def _state_dict_prefix(module_name: str, state_dict: dict[str, torch.Tensor]) ->
+     )
+ 
+ 
+-def _adapter_delta(module: _LoRAMixin) -> torch.Tensor:
++def _adapter_delta(module: _LoRAMixin, shape: torch.Size) -> torch.Tensor:
+     module = cast(_LoRALinearMixin | _LoRAGroupedLinearMixin, module)
+     lora_a = module.lora_a.weight.float()
+     lora_b = module.lora_b.weight.float()
+@@ -382,7 +474,21 @@ def _adapter_delta(module: _LoRAMixin) -> torch.Tensor:
+         delta = torch.bmm(lora_b.flatten(1, -2), lora_a)
+     else:
+         delta = torch.matmul(lora_b, lora_a)
+-    return module._lora_scaling * delta.view(module.weight.shape)
++    return module._lora_scaling * delta.view(shape)
++
++
++def _base_weight(
++    module: _LoRAMixin, prefix: str, state_dict: dict[str, torch.Tensor]
++) -> torch.Tensor:
++    weight = state_dict[_key(prefix, "weight")]
++    if not module._packed_base:
++        return weight
++    scale = state_dict.pop(_key(prefix, "weight_scale"))
++    if isinstance(weight, DTensor):
++        assert isinstance(scale, DTensor)
++        dense = _mxfp4_dequantize(weight.to_local(), scale.to_local())
++        return DTensor.from_local(dense, weight.device_mesh, weight.placements)
++    return _mxfp4_dequantize(weight, scale)
+ 
+ 
+ def trainable_state_dict(model: nn.Module) -> dict[str, torch.Tensor]:
+@@ -402,8 +508,8 @@ def merge_lora_state_dict(model: nn.Module) -> dict[str, torch.Tensor]:
+             if not isinstance(module, _LoRAMixin):
+                 continue
+             prefix = _state_dict_prefix(name, state_dict)
+-            base = state_dict[_key(prefix, "weight")]
+-            merged = base.float() + _adapter_delta(module)
++            base = _base_weight(module, prefix, state_dict)
++            merged = base.float() + _adapter_delta(module, base.shape)
+             state_dict[_key(prefix, "weight")] = merged.to(base.dtype)
+             del state_dict[_key(prefix, "lora_a.weight")]
+             del state_dict[_key(prefix, "lora_b.weight")]
