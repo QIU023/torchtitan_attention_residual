@@ -101,7 +101,7 @@ main 要求 MoE 模型 ep ≥ tp，所以凡是有 tp 的格子都带 ep；原�
 | LoRA PR | `b61c686dc` | 18 / 18，导出检查 18 格全部 worst 0 |
 | LoRA PR 冻结 stage（`lora_mla`） | `b61c686dc` | pp4 × vpp2、pp8 都跑满 10 步，3 个冻结 part / 3 个整 rank 冻结，导出检查通过；第 1 步 8.10062 / 0.1309 两格相同 |
 | 栈 lora_mxqat | `0fa53c2e3` | 17 / 18 按逐位检查；ep8×fsdp8 的 1 bf16 ulp 已定位（下），按本地批次对齐的检查重跑 18 / 18 |
-| 栈 lora | `0fa53c2e3` | 运行中 |
+| 栈 lora | `0fa53c2e3` | 18 / 18，逐位检查，导出检查 18 格全部 worst 0；每格第 1 步和 LoRA PR 组同一格逐位相同（dp1 组 8.13623，dp2 组 8.18727，ep8×fsdp8 8.16220） |
 
 LoRA PR 组第 1 步：dp1 组（dp1、pp2、pp4、pp8）8.13623 逐位相同，TP 格子差 ≤ 2.3e-5，CP2 3.7e-6；dp2 组（fsdp2、ep2×fsdp2）8.18727，带 TP/PP/CP 的格子差 ≤ 4.2e-5；和 base 组 TP 格子的差同一量级（base tp4×ep4 是 2.1e-5）。LoRA 组的 seed 是 LoRA 模型自己初始化的，底座权重和 base 组不同，所以第 1 步和 base 组不比。
 
