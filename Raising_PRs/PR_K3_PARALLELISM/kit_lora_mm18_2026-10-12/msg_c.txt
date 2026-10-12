@@ -1,0 +1,9 @@
+optim: a pipeline rank with nothing to train still steps
+
+Adapter training under pipeline parallelism can leave a stage with nothing trainable, for example a stage whose layers
+no LoRA target matches. The optimizer container raised "matched no parameters" for such a model part; it now skips the
+part with a log line, and a part that trains still raises on a pattern that matches nothing.
+
+When every part on a rank is frozen, the container still initializes as an Optimizer with one empty parameter group,
+the LR scheduler container holds no scheduler and saves and loads no state, and clip_grad_norm_ puts the rank's zero
+norm on the accelerator so it joins the pipeline all-reduce; it was a CPU tensor, which NCCL rejects.

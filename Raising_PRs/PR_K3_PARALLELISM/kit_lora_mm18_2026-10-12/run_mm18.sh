@@ -3,7 +3,7 @@
 # usage: run_mm18.sh <arm: base|lora|qlora> <tree dir> <out dir>
 # A seed checkpoint of the arm is written by a single-GPU run, every cell loads it (model only) and must log the load.
 # Streams: two 2-GPU streams (0,1 and 6,7; dp1 runs on GPU 0 alone), one 4-GPU stream (2-5), then the 8-GPU cells;
-# one cache per stream. ONLY=<cell> reruns one 1-GPU dp1 cell against an existing seed (no new seed).
+# one cache per stream. ONLY=dp1 or ONLY=cp4 reruns that one cell against the arm's existing seed.
 ARM=$1 T=$2 O=$3
 S=/tmp/claude-0/-workspace/55727fa0-a690-442c-a59f-5ed87d136f52/scratchpad; K=$(cd "$(dirname "$0")" && pwd)
 mkdir -p $O; PR=$O/progress.txt
@@ -22,6 +22,9 @@ note "arm $ARM tree $(git -C $T rev-parse --short HEAD) dirty=$(git -C $T status
 SEED=$O/seed
 if [ "${ONLY:-}" = dp1 ]; then
   run dp1 0 $O/cache_a MM18_CELL=dp=1 MM18_SEED=$SEED/step-0 MODULE=mm18_probe CONFIG=cell
+  exit 0
+elif [ "${ONLY:-}" = cp4 ]; then
+  run cp4 2,3,4,5 $O/cache_b MM18_CELL=cp=4 MM18_SEED=$SEED/step-0 MODULE=mm18_probe CONFIG=cell
   exit 0
 fi
 rm -rf $SEED

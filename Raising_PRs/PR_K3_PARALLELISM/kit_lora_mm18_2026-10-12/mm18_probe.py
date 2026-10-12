@@ -1,10 +1,10 @@
 """The 18-cell multimodal parallelism matrix on main (Python-config era), logbook kit only.
 
 MM18_CELL: comma list of degrees, e.g. "dp=2,tp=2,ep=2,pp=2,cp=1" (missing keys are 1). Sequence parallelism is on
-under TP unless CP is on (the K3 vision splice under CP refuses SP). MM18_ARM: base | lora | lora_mxqat (LoRA over Elfie's MX QAT,
+under TP unless CP is on (the K3 vision splice under CP refuses SP). MM18_ARM: base | lora | lora_mla (MLA projections only) | lora_mxqat (LoRA over Elfie's MX QAT,
 on the stack branch). MM18_SEED: the seed checkpoint folder of the arm. MM18_STEPS: steps (10).
-Kimi K3 debug model (main's 17 layers), multimodal cc12m-test, seq 256, 4096 tokens per step in 256-token
-micro-batches per dp rank, 8 pipeline micro-batches, AdamW (DistMuon has no TP), seed 42, deterministic.
+Kimi K3 debug model (main's 17 layers), multimodal cc12m-test, seq 256 (512 at CP4), 4096 tokens per step in
+one-sequence micro-batches per dp rank, 8 pipeline micro-batches, AdamW (DistMuon has no TP), seed 42, deterministic.
 cell() loads the seed (model only); seed() writes it from a single-GPU build of the same arm.
 """
 
@@ -16,7 +16,7 @@ from torchtitan.config import ParallelismConfig
 
 
 def _degrees(spec: str) -> dict[str, int]:
-    degrees = {"dp": 1, "tp": 1, "ep": 1, "pp": 1, "cp": 1}
+    degrees = {"dp": 1, "tp": 1, "ep": 1, "pp": 1, "cp": 1, "vpp": 1}
     for item in filter(None, spec.split(",")):
         key, value = item.split("=")
         degrees[key] = int(value)
@@ -35,13 +35,20 @@ def _build(degrees: dict[str, int]):
         pipeline_parallel_degree=degrees["pp"],
         enable_sequence_parallel=tp > 1 and cp == 1,
     )
-    config = kimi_k3_debugmodel(seq_len=256, parallelism=parallelism)
+    # CP flex attention needs the sequence divisible by cp * 128, so CP4 runs 512-token sequences.
+    seq_len = max(256, 128 * cp)
+    config = kimi_k3_debugmodel(seq_len=seq_len, parallelism=parallelism)
     config.parallelism.tensor_parallel_degree = tp
     config.parallelism.context_parallel_degree = cp
     if degrees["pp"] > 1:
         config.parallelism.num_pp_microbatches = 8
+    if degrees["vpp"] == 2:
+        # Two stages per rank is the interleaved schedule's default.
+        config.parallelism.pipeline_parallel_schedule = "Interleaved1F1B"
+    else:
+        assert degrees["vpp"] == 1, degrees
     config.training.num_tokens_per_train_step = 4096
-    config.training.num_tokens_per_microbatch_per_dp_rank = 256
+    config.training.num_tokens_per_microbatch_per_dp_rank = seq_len
     config.training.steps = int(os.environ.get("MM18_STEPS", "10"))
     config.metrics.log_freq = 1
     config.debug.seed = 42
@@ -70,6 +77,12 @@ def _build(degrees: dict[str, int]):
         from torchtitan.config.transform import LoRATransform
 
         transforms.append(LoRATransform(rank=8, alpha=16.0))
+    elif arm == "lora_mla":
+        # LoRA on the MLA projections only: stages holding only KDA layers have nothing to train.
+        from torchtitan.config.transform import LoRATransform
+
+        mla = ["attention.wq_a", "attention.wq_b", "attention.wkv_a", "attention.wkv_b", "attention.wo"]
+        transforms.append(LoRATransform(rank=8, alpha=16.0, target_modules=mla))
     elif arm == "lora_mxqat":
         # Elfie's MX QAT (stack branch only): the recipe's MXFP4 policy picks the weights, then LoRA wraps them.
         from typing import cast

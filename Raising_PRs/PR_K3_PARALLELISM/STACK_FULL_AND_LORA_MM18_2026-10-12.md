@@ -33,13 +33,55 @@ main `b663c1673` 的 requirements.txt 固定 `spmd_types@2ae49fce3`、`torch_rem
   - 我在 main 上写好、测过的 packed MXFP4 底座（40 个 LoRA CPU 测试通过）没有提交，丢掉了，补丁只作记录存在 kit 的 `discarded_own_mxfp4_qlora.patch`；
   - NF4 不做；
   - LoRA 和 MXFP4 的组合只在 Elfie 分支上，用她的 `MXQATTransform` 加 `LoRATransform`（relations 里已经是 MX QAT 在 LoRA 之前，她有一个测试检查 LoRA 包住 QAT 线性层）。
-- rebase 后的 LoRA PR = main `b663c1673` 上一个提交 `7d20016a5`（worktree `scratchpad/wt_lora`，没推）：`trainable_state_dict`、`merge_lora_state_dict`。合并按 `state_dict()` 的键改写底座权重（W + (alpha / rank) B A，fp32 算再转回原 dtype），去掉 adapter 键，模型本身不动。不能像原 PR 那样临时换掉模块参数：FSDP2 的 state_dict 前置钩子会把参数换回它自己的 sharded 参数，换进去的合并权重会悄悄丢掉。TP 下 state_dict 是每个 rank 的本地分片，adapter 的切法和底座一致，每个 rank 合并自己的分片。
+- （第一版，最终版见下一节）rebase 后的 LoRA PR = main `b663c1673` 上一个提交 `7d20016a5`（worktree `scratchpad/wt_lora`，没推）：`trainable_state_dict`、`merge_lora_state_dict`。合并按 `state_dict()` 的键改写底座权重（W + (alpha / rank) B A，fp32 算再转回原 dtype），去掉 adapter 键，模型本身不动。不能像原 PR 那样临时换掉模块参数：FSDP2 的 state_dict 前置钩子会把参数换回它自己的 sharded 参数，换进去的合并权重会悄悄丢掉。TP 下 state_dict 是每个 rank 的本地分片，adapter 的切法和底座一致，每个 rank 合并自己的分片。
   - 测试（`tests/unit_tests/cpu/models/common/test_lora.py`，main 原有 29 个加 6 个，35 passed）：可训练参数正好是 adapter；adapter 为零时合并结果等于底座；普通、堆叠、grouped 三种投影的合并公式；合并权重的前向和 LoRA 模块一致（fp64）；检查点包装器路径；2 rank gloo 的 TP 下每个 rank 的合并分片等于不切分合并的对应切片。
   - flake8、ufmt 干净。
 - 叠栈分支加了它的压缩提交 `992ae1657`，另加一个测试：合并把 adapter 折进 MX QAT 的主权重。栈上 LoRA、MX QAT、transforms 的 CPU 测试 85 passed（加测试后 MX QAT 13 passed）。栈已快进推到 `992ae1657`。
 - `lora_review2` 是已发布 PR 的头，没推，要用户的话。
 
-## 18 格矩阵（运行中）
+## LoRA PR 的最终提交（傍晚，矩阵抓出三个 bug 之后）
+
+上面一节写的 `7d20016a5` 是第一版。18 格矩阵在 LoRA PR 上抓出三个 bug，三个提交都改写过（都没推）：
+
+| 提交 | 内容 |
+|---|---|
+| `8393252ad` | lora: export the adapters alone or folded into the base weights（合并改成在本地分片上算；GPU 测试 `tests/unit_tests/gpu/models/common/test_lora.py`） |
+| `91212bd8b` | lora: adapters keep the base weight's placement outside TP |
+| `b61c686dc` | optim: a pipeline rank with nothing to train still steps（容器、LR scheduler、`clip_grad_norm_`；CPU 测试 2 个，GPU 测试 `tests/unit_tests/gpu/distributed/test_clip_grad_norm.py`） |
+
+测试：CPU 200 passed（test_lora、components/optim 整个目录、transforms、dist_moe、hi_mid_lo、distributed utils、invalid_loss；`test_lora_forward` 照旧除外），GPU 2 passed。三处新注释都是约束说明，保留。
+
+栈上对应两个新提交：`db3bdac93`（placement），`0fa53c2e3`（导出 + 空 rank），都已快进推到 fork。栈上 lora.py、optimizer.py、lr_scheduler.py、distributed/utils.py 和 PR 头逐字节相同。
+
+### main 上 LoRA 构建就失败
+
+main 的 `_adapter_sharding` 只认 `dense_param_placement(tp=S(0))` 和 `dense_param_placement(tp=S(1))`，别的底座直接断言失败。默认全目标的 LoRA（`lora_build_all.py`，meta 上构建）：main 上只有 llama3、muse_glimmer 能构建，deepseek_v3、deepseek_v4、gpt_oss、qwen3_5/6/8、kimi_k2_5、kimi_k3 全部失败；改完都能构建。qwen3 的失败是 main 自己的权重共享检查（lm_head），和这里无关。挡住的底座（`lora_base_placements.py`）有两类：
+
+- TP 不切的投影，TP 上是 R（不开 SP 时是 I）：router gate、MLA 的 `wkv_a` / `wq_a`、DSV4 的 compressor / indexer、K3 的 `attention_res_proj` / `ffn_res_proj` / `forget_a` / `routed_up` / `routed_down`；
+- 视觉塔的列 / 行并行线性层：CP 上是 I，不是 R，和 dense 的判等不成立。
+
+### bug 1：视觉塔 adapter 的 rank 维被 TP 切开
+
+第一版 placement 提交把“不是 dense S(0) / S(1) 的底座”一律给两个 adapter 都用底座的 placement。视觉塔的列并行底座落进这个分支，`lora_a` 的 rank 维被 TP 切成一半，TP 格子第一步就报 `mm: mat1 and mat2 shapes cannot be multiplied (192x4 and 8x256)`（tp4 是 192x2）。现在按底座 placement 里 TP 那一项分类：S(0) / S(1) 走列 / 行规则，R / I 两个 adapter 都用底座的 placement，其他情况报错；需要复制的那个 adapter 用底座的 placement，只把 TP 换成 R，所以 DP、CP 跟底座一致（dense 底座时就是原来的 `dense_param_placement(tp=R)`）。
+
+### bug 2：stacked w13 在 FSDP × TP 下导出失败
+
+训练 10 步正常，导出检查报 `Cannot unflatten tensor with _StridedShard placement`。出错的是 stacked 的 dense `w13`（layer 0 的 `feed_forward.w13`、每层的 `moe.shared_experts.w13`）：在 `('dp_shard', 'tp')` 上的 placement 是 `(_StridedShard(dim=1, sf=2), Shard(1))`，DTensor 的 matmul 先 flatten 再 unflatten，DTensor 做不了 unflatten。routed experts、视觉塔和其他模块都正常（探针 `kit3/merge_probe.py`）。现在在本地分片上算：B 和底座的输出行切法相同，A 只在 FSDP 切了它的 rank 维时 all-gather（张量很小），结果用底座的 placement 包回 DTensor，不 gather 任何底座权重。新的 4 卡 GPU 测试（llama3 debug，TP2 × FSDP2，和 full tensor 算的期望比）在旧代码上复现了这个错误，在新代码上通过。CPU 上那个 TP 测试只调 `_parallelize`，参数是本地张量，走不到 DTensor，所以之前没测出来。
+
+### bug 3：整个 rank 冻结时优化器、scheduler、梯度裁剪都挂
+
+第一版优化器提交只跳过冻结的 model part。只给 MLA 投影加 LoRA（arm `lora_mla`）时，K3 debug 的 8 段切分里 stage 0、3、5 只有 KDA 层：pp4 × vpp2 下 rank 0、1、3 各有一个冻结 stage 加一个可训练 stage，pp8 下 rank 0、3、5 整个冻结。实测（`run_frozen.sh`，同一个 seed）：
+
+| 树 | pp4 × vpp2 | pp8 |
+|---|---|---|
+| 没有优化器提交（`36dcfcd8c`） | `Optimizer pattern '.*' matched no parameters` | |
+| 第一版优化器提交（`7f3069a6a`） | 10 步，导出检查通过 | `optimizer got an empty parameter list` |
+| 补了容器和 scheduler | 10 步 | `No backend type associated with device type cpu` |
+| 再补 `clip_grad_norm_`（最终版） | 10 步 | 10 步，8 个 rank 都存了 checkpoint，导出检查通过 |
+
+pp8 和 pp4 × vpp2 第 1 步的 loss 和 grad norm 都是 8.10062 / 0.1309，冻结的 rank 在 PP 归约里贡献 0。`clip_grad_norm_` 那一处：没有梯度的 rank 上 `get_total_norm([])` 返回 CPU 上的 `tensor(0.)`，NCCL 的 all-reduce 不接受；main 的注释写着支持“没有梯度的 PP rank”，实际不通。现在在 `device_type` 上放一个 0。
+
+## 18 格矩阵
 
 kit `kit_lora_mm18_2026-10-12/`（`mm18_probe.py`、`run_mm18.sh`）。main 现在只能用 Python 配置，原来的命令行 `--parallelism.*` 和 `mx4ckpt` 都不能用了：每格的并行度从 `MM18_CELL` 读，recipe 在 tp = cp = 1 下构建（recipe 构建时会检查 DistMuon 对 TP、attention 对 CP），之后再设 tp、cp，CP 格子套 `ContextParallelTransform`（KV all-gather + head-tail 负载均衡，KDA 用 CP inner）。K3 debug 模型（main 的 17 层），cc12m-test，seq 256，每步 4096 token、每个 dp rank 每个 micro-batch 256 token，PP 8 个 micro-batch，AdamW，seed 42，deterministic，10 步。每组先单卡写 seed checkpoint，每格只加载模型并检查日志里的加载行。
 

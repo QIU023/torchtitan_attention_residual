@@ -1,0 +1,11 @@
+lora: adapters keep the base weight's placement outside TP
+
+_adapter_sharding compared the base weight's placement with dense_param_placement(tp=S(0)) and asserted that every
+other base was dense_param_placement(tp=S(1)). Two kinds of base failed that assert at build, so LoRATransform with its
+default targets could not build deepseek_v3, deepseek_v4, gpt_oss, qwen3_5, kimi_k2_5 or kimi_k3: bases that TP does
+not shard (R when tokens are TP-sharded, I otherwise), such as the MoE router gate and the MLA down projections, and the
+vision encoder's column and row parallel linears, which are I rather than R on CP.
+
+The adapters now follow the TP entry of the base placement: S(0) and S(1) keep the column and row rules, R and I give
+both adapters the base placement, and any other TP placement raises. The replicated adapter copies the base placement
+with TP set to R, so its DP and CP entries are the base's; for a dense base that is dense_param_placement(tp=R) as before.

@@ -1,0 +1,11 @@
+lora: export the adapters alone or folded into the base weights
+
+trainable_state_dict returns the parameters left trainable, keyed as in state_dict(): under LoRA, the adapters, which
+is what an adapter checkpoint or a trainer-to-rollout sync ships. merge_lora_state_dict returns state_dict() with each
+base weight replaced by W + (alpha / rank) * B @ A and the adapter keys removed, the form a state-dict adapter can
+convert like the unadapted model's.
+
+The merge runs in fp32 on each rank's local shards and casts back to the base dtype. B is sharded like the base's
+output rows, A is gathered only where FSDP cuts its rank dimension, and the result keeps the base's DTensor placements,
+so no base weight is gathered. DTensor ops on the sharded tensors fail on a stacked w13 under FSDP and TP, whose
+_StridedShard placement cannot be unflattened.
