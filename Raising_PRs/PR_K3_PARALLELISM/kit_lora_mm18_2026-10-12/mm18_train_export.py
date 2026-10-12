@@ -1,7 +1,7 @@
 """Entry point for the LoRA matrix cells, logbook kit only: torchtitan.train, then the LoRA export functions on every
 model part of the trained model, under the cell's parallelism. Each rank checks that merge_lora_state_dict returns the
 state dict's keys without the adapter keys, that trainable_state_dict is exactly the adapters, and that every merged
-weight equals base + (alpha / rank) * B @ A on the gathered tensors, then logs one EXPORT_CHECK line (ENTRYPOINT=this)."""
+weight equals base + (alpha / rank) * B @ A on the gathered tensors (grouped products in the merge's local expert batch), then logs one EXPORT_CHECK line (ENTRYPOINT=this)."""
 
 import logging
 import os
@@ -45,7 +45,11 @@ def _check(part: torch.nn.Module) -> tuple[int, float]:
             base = _full(state[key])
             lora_a, lora_b = _full(module.lora_a.weight).float(), _full(module.lora_b.weight).float()
             if isinstance(module, _LoRAGroupedLinearMixin):
-                delta = torch.bmm(lora_b.flatten(1, -2), lora_a)
+                # cuBLAS bmm results vary with the batch count on sm120, so the expectation uses the merge's local
+                # expert batch; a placement error still shows, a rounding difference between batch sizes does not.
+                local = module.lora_a.weight
+                n = local.to_local().shape[0] if isinstance(local, DTensor) else lora_a.shape[0]
+                delta = torch.cat([torch.bmm(lora_b[i:i + n].flatten(1, -2), lora_a[i:i + n]) for i in range(0, lora_a.shape[0], n)])
             else:
                 delta = torch.matmul(lora_b, lora_a)
             expected = (base.float() + module._lora_scaling * delta.view(base.shape)).to(base.dtype)

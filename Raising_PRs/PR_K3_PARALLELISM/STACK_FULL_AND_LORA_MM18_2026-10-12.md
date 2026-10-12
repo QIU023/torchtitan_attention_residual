@@ -87,4 +87,26 @@ kit `kit_lora_mm18_2026-10-12/`（`mm18_probe.py`、`run_mm18.sh`）。main 现�
 
 main 要求 MoE 模型 ep ≥ tp，所以凡是有 tp 的格子都带 ep；原来的 `fsdp2_tp2_pp2`、`fsdp2_tp2_cp2` 在 main 上就和带 ep2 的格子一样了，改成 ep4。18 格：dp1、fsdp2、pp2、tp2×ep2、ep2×fsdp2、cp2、pp4、tp4×ep4、cp4、pp8、ep8×fsdp8、ep4×fsdp2×tp2×pp2、ep2×fsdp2×tp2×pp2、fsdp2×pp2×cp2、ep2×fsdp2×pp2×cp2、ep4×fsdp2×tp2×cp2、ep2×tp2×pp2×cp2、ep2×fsdp2×tp2×cp2。三组在两棵树上都能构建（18 / 18）。
 
-组：main 上 base、lora；栈上 base、lora、lora_mxqat（Elfie 的策略选出 32 个 routed experts 投影做 MX QAT，LoRA 加在 284 个投影上）。第一版调度把单卡的 dp1 放到了两张卡上，main 的两组 dp1 要补跑。
+组：main 上 base、lora；栈上 base、lora、lora_mxqat（Elfie 的策略选出 32 个 routed experts 投影做 MX QAT，再套 LoRA；导出检查数到的 LoRA 模块和 lora 组一样是 290 个）。第一版调度把单卡的 dp1 放到了两张卡上，main 的 dp1 补跑了；cp4 在 seq 256 下不满足 seq % (cp × 128) == 0，改成 512 后补跑（cp4 读的数据和别的 dp1 格子不同，只和别的组的 cp4 比）。
+
+### 结果（10-12 晚，全部在 8 × 5060，main_pins）
+
+判定（`gate_mm18.py <组> <每个模型的 LoRA 模块数>`）：每格 rc 0、跑满 10 步、日志里有 seed 加载行；LoRA 组还要求每个 rank 都打出 `EXPORT_CHECK`，worst 为 0，合并的模块数 = 290 × 卡数 / pp。
+
+| 组 | 树 | 结果 |
+|---|---|---|
+| main base | `b663c1673` | 18 / 18（dp1、cp4 补跑） |
+| main lora | `b663c1673` | 构建就失败：`_adapter_sharding` 的断言（见上面“main 上 LoRA 构建就失败”） |
+| 栈 base | `5bdeb1d63` | 18 / 18；每格第 1 步 loss 和 main 同一格逐位相同（dp1 组 8.12572，dp2 组 8.11338，ep8×fsdp8 8.12882，cp4 8.13709） |
+| LoRA PR | `b61c686dc` | 18 / 18，导出检查 18 格全部 worst 0 |
+| LoRA PR 冻结 stage（`lora_mla`） | `b61c686dc` | pp4 × vpp2、pp8 都跑满 10 步，3 个冻结 part / 3 个整 rank 冻结，导出检查通过；第 1 步 8.10062 / 0.1309 两格相同 |
+| 栈 lora_mxqat | `0fa53c2e3` | 17 / 18 按逐位检查；ep8×fsdp8 的 1 bf16 ulp 已定位（下），按本地批次对齐的检查重跑 18 / 18 |
+| 栈 lora | `0fa53c2e3` | 运行中 |
+
+LoRA PR 组第 1 步：dp1 组（dp1、pp2、pp4、pp8）8.13623 逐位相同，TP 格子差 ≤ 2.3e-5，CP2 3.7e-6；dp2 组（fsdp2、ep2×fsdp2）8.18727，带 TP/PP/CP 的格子差 ≤ 4.2e-5；和 base 组 TP 格子的差同一量级（base tp4×ep4 是 2.1e-5）。LoRA 组的 seed 是 LoRA 模型自己初始化的，底座权重和 base 组不同，所以第 1 步和 base 组不比。
+
+ep8×fsdp8 在 lora_mxqat 组的那 1 个 ulp（`kit3` 的 `mm18_export_locate.py` 定位）：只有 `layers.12.moe.routed_experts.w2`（`LoRAMXQATGroupedLinear`，bf16，8 卡上每个 rank 1 个专家），差的元素上底座 0.00224 和 delta 抵消到 −2.4e-5，合并结果和期望差 1.19e-7 = 那个量级的 1 个 bf16 ulp（第一次跑是另一个元素，4.77e-7）。期望值改成按本地批次（每次 1 个专家）做 bmm 后差为 0：sm120 上 cuBLAS bmm 的结果随 batch 数变，检查在 full tensor 上一次算 8 个专家，合并在每个 rank 上算 1 个，fp32 末位不同，碰到 bf16 舍入边界翻一位。合并没有错。`mm18_train_export.py` 的分组期望现在按合并的本地专家数分批算（placement 错了照样会报），用它重跑这一格：8 个 rank worst 0，第 1 步 8.16249 和原来一样。
+
+### LoRA PR 推送
+
+用户（10-12）："强推 如果18/18全过"。18 / 18 和两个冻结格子都过之后，一条 `&&` 链：确认远端 `lora_review2` = `72bbcb639`，推备份 `backup/lora_review2_pre_20261012` = `72bbcb639`，再 `--force-with-lease` 推 `lora_review2` = `b61c686dc`。PR #4576 现在 3 个提交，9 个文件，+531 / −19。PR 的标题和 body 还是 09-10 的（QLoRA），body v2 在 `PR_BODY_LORA_v2_2026-10-12.md`，等用户贴。
