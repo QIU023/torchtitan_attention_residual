@@ -1,0 +1,34 @@
+From 6b598c61cbb76768d5cbe7dba52720104218c6ec Mon Sep 17 00:00:00 2001
+From: QIU023 <yiqiaoqiu@hotmail.com>
+Date: Mon, 12 Oct 2026 10:18:57 +0000
+Subject: [PATCH] kimi_k3: the attention residual sums its weighted sources
+
+The aggregation's weighted sum is a reduction over the sources instead of a
+batched matmul. With one source count per graph, inductor fuses it with the
+softmax instead of launching a [T, 1, N] x [T, N, D] bmm, and the region saves
+its stacked sources in bf16 rather than an fp32 copy for backward.
+
+The bmm's result depends on the token count on sm120 for some inputs, so the
+region was not batch-invariant there; the reduction is.
+---
+ torchtitan/models/kimi_k3/model.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/torchtitan/models/kimi_k3/model.py b/torchtitan/models/kimi_k3/model.py
+index 25fd9ce72..9b5564e15 100644
+--- a/torchtitan/models/kimi_k3/model.py
++++ b/torchtitan/models/kimi_k3/model.py
+@@ -222,8 +222,8 @@ class AttentionResidual(Function[torch.Tensor]):
+         keys_TND = values_float * torch.rsqrt(variance + norm.eps)
+         score_weight_D = norm.weight.float() * projection.weight.squeeze(0).float()
+         scores_TN = (keys_TND * score_weight_D).sum(dim=-1)
+-        probs_T1N = torch.softmax(scores_TN, dim=-1).unsqueeze(1)
+-        output_TD = torch.matmul(probs_T1N, values_float).squeeze(1)
++        probs_TN = torch.softmax(scores_TN, dim=-1)
++        output_TD = (probs_TN.unsqueeze(-1) * values_float).sum(dim=1)
+         return output_TD.to(values_TND.dtype)
+ 
+ 
+-- 
+2.43.0
+
