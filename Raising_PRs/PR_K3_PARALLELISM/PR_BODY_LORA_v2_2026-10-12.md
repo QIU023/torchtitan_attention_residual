@@ -2,7 +2,7 @@
 
 状态说明（不进 GitHub）：
 
-- 分支：本地 worktree `scratchpad/wt_lora` = `b61c686dc`（main `b663c1673` 上三个提交 `8393252ad`、`91212bd8b`、`b61c686dc`，没有 trailer）。PR 头 `lora_review2` 还是 09-10 的 `72bbcb639`，推之前要用户点头，先备份。
+- 分支：`lora_review2` = `b61c686dc`（main `b663c1673` 上三个提交 `8393252ad`、`91212bd8b`、`b61c686dc`，没有 trailer），10-12 按用户的话在 18 / 18 之后强推；备份 `backup/lora_review2_pre_20261012` = `72bbcb639`。
 - 范围变化：QLoRA（NF4、packed MXFP4 冻结底座）整个拿掉。MXFP4 用 Elfie 的 MX QAT（#4791），和 `LoRATransform` 能组合；NF4 不做。
 - 标题建议：`[LoRA] Export merged adapters, place adapters for every base sharding, step frozen pipeline ranks`（原标题里的 "[DO NOT review, draft ...]" 是否去掉由用户决定）。
 - GPU 结果按规则写 Pending (H100)。5060 上的 18 格矩阵、冻结 stage 格子和导出检查都在 `STACK_FULL_AND_LORA_MM18_2026-10-12.md`。
