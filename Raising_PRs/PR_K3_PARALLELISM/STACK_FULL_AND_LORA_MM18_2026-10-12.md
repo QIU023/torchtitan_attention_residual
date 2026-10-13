@@ -110,3 +110,8 @@ ep8×fsdp8 在 lora_mxqat 组的那 1 个 ulp（`kit3` 的 `mm18_export_locate.p
 ### LoRA PR 推送
 
 用户（10-12）："强推 如果18/18全过"。18 / 18 和两个冻结格子都过之后，一条 `&&` 链：确认远端 `lora_review2` = `72bbcb639`，推备份 `backup/lora_review2_pre_20261012` = `72bbcb639`，再 `--force-with-lease` 推 `lora_review2` = `b61c686dc`。PR #4576 现在 3 个提交，9 个文件，+531 / −19。PR 的标题和 body 还是 09-10 的（QLoRA），body v2 在 `PR_BODY_LORA_v2_2026-10-12.md`，等用户贴。
+
+### 10-13：pyrefly 和 #4656 的 PR 分支
+
+- 按 CI 的方式（pyrefly 0.45.1，整个仓库，只读）跑：`b61c686dc` 比 main 多 3 个错误，都在 `_merged_weight` 里（adapter 被当作 `Parameter`，`redistribute` / `placements` / `to_local` 报错），CI 的 lint 会挂。本地提交 `fb4079831`：底座是 DTensor 时断言两个 adapter 也是；pyrefly 回到 main 的 19 个错误，LoRA CPU 39 passed、GPU 合并测试 1 passed。没推，`lora_review2` 仍是 `b61c686dc`，推要用户的话。栈上同一行是 `ab65ad8b8`（已推）。只是类型断言，不改数值，矩阵不重跑。
+- 用户："先不同步，要等shuhuayu review"。#4656 的 PR 分支 `k3_ac_reuse_attention` 保持 `7dea4cbaf`（它和现在的 main 在 `model.py`、`sharding.py` 上冲突）；rebase 后的版本在 `attnres_review1` = `507a2f7d5`，#4963 的 PR 分支 `pp_review_optimize` 已经带着它。
