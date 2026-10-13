@@ -24,13 +24,12 @@ With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_
 - Export:
   - `trainable_state_dict` returns the trainable parameters keyed as in `state_dict()`; under LoRA, the adapters.
   - `merge_lora_state_dict` returns `state_dict()` with $W + \frac{\alpha}{r} B A$ in place of each adapted weight and no adapter keys.
-  - The merge runs in fp32 on local shards and keeps the base's DTensor placements, so no base weight is gathered.
-  - B shares the base's output sharding; A is gathered only where FSDP shards its rank dim.
-  - DTensor ops are avoided: a stacked `w13` under FSDP and TP carries a `_StridedShard` that DTensor cannot unflatten.
+  - The merge runs in fp32 on local shards and keeps the base's DTensor placements; only A is gathered, where FSDP shards its rank dim.
+  - DTensor ops cannot unflatten the `_StridedShard` of a stacked `w13` under FSDP and TP.
 - Adapter placement:
   - Main asserted every base is `dense_param_placement(tp=S(0))` or `S(1)`; TP unsharded bases (router gate, MLA `wkv_a`, `forget_a`) and vision linears (`I` on CP) fail it at build.
   - The TP entry now decides: `S(0)` and `S(1)` keep the column and row rules, `R` and `I` give both adapters the base placement, anything else raises.
-  - The replicated adapter is the base placement with TP set to `R`; for a dense base that is the old `dense_param_placement(tp=R)`.
+  - The replicated adapter is the base placement with TP set to `R`, unchanged for dense bases.
 - Frozen pipeline ranks:
   - A model part with nothing to train is skipped with a log line; a trainable part whose pattern matches nothing still raises.
   - A rank with nothing to train gets one empty param group, no scheduler state, and a zero grad norm on the accelerator; main's CPU `tensor(0.)` fails the NCCL all-reduce.
@@ -38,7 +37,7 @@ With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_
 ## Relation to other PRs
 
 - QLoRA for Kimi K3 is the MX QAT of #4791 with this LoRA applied after it; the NF4 and packed MXFP4 bases of this PR's first version are dropped.
-- #3189 and #2485 (PEFT export) were closed without merging; these two state dicts are what such a converter starts from.
+- #3189 and #2485 (PEFT export) closed unmerged; a converter can start from these two state dicts.
 
 ## Results
 
@@ -71,7 +70,7 @@ Step 1 matches its reference in every layout, identical without TP or CP and wit
 
 - [1] reference: dp1, fsdp2, ep8 x fsdp8 and cp4 (512 token sequences) each read a sample stream of their own
 - [2] `target_modules` = the MLA projections, so KDA only stages are frozen: pp4 x vpp2 pairs a frozen stage with a trainable one on three ranks, pp8 freezes three ranks; without the optimizer commit pp4 x vpp2 raises `matched no parameters`, and with only the part skip pp8 raises `optimizer got an empty parameter list`
-- each GPU group compiled on its own cache, so step 1 is the comparison and step 10 is shown only; the 32 sample set repeats within 10 steps
+- step 1 is the comparison; step 10 is shown only, since each GPU group compiled on its own cache and the 32 sample set repeats within 10 steps
 
 ## Test plan
 
