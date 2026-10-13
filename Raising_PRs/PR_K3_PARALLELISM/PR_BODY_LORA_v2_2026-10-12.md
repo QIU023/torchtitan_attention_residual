@@ -6,6 +6,7 @@
 - 栈分支上这四个提交压成一个 `b49021d5e`，源码改动和 PR 头逐字节相同，另外多一条只在栈上的 MX QAT 合并测试。
 - 范围变化：QLoRA（NF4、packed MXFP4 冻结底座）整个拿掉。QLoRA 用 Elfie 的 MX QAT（#4791）加本 PR 的 LoRA 组合；NF4 不做。
 - 标题建议：`[LoRA] Export merged adapters, place adapters for every base sharding, step frozen pipeline ranks`。原标题里的 "[DO NOT review, draft ...]" 是否去掉由用户决定。
+- 10-13 用户："body篇幅太长了。。。"。粘贴区压缩：Design 每条一行，Results 并成一张表（GPU 数、第 1 步 loss 和参考的差、第 10 步 loss、合并检查），去掉 grad norm 和第 5 步，附注 3 条。
 - 10-13 用户："5060这个LoRA 没有上游数值对比吧？body里面可以放5060的"，"为什么没有表格？乱写，参照4312"。Results 节按 4312 的格式重写：设定一行、kit 链接、复现命令、四张表（dp1 组、dp2 组、各自数据流、冻结 stage）和脚注，数字由脚本从 `b61c686dc` 的日志生成。以下是改表格之前的记录：粘贴区的 Test plan 加了 5060 上的 18 格（通过与否 + 每个 rank 的合并逐位检查，标明 8 x RTX 5060 Ti）和两个冻结 stage 格子，Relation 加了一句 MX QAT + LoRA 在叠栈分支上同样 18 格通过。这些都不和上游比数值。明细在 `STACK_FULL_AND_LORA_MM18_2026-10-12.md`。单测计数是 `fb4079831` 上实测的。
 - 10-13 改了粘贴区三处：Summary 不再说 "every ... vision language model"（muse_glimmer 是 VLM，在 main 上能构建），改成列出建不起来的模型；Relation 写明 QLoRA 是 #4791 的 MX QAT 加本 PR 的 LoRA；删掉 Pending (H100) 那一行。
 
@@ -13,95 +14,64 @@
 
 ## Summary
 
-With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_v4, gpt_oss, qwen3_5, kimi_k2_5 and kimi_k3 debug models, has no way to export a trained adapter, and fails on a pipeline rank with nothing to train; this PR fixes all three.
+With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_v4, gpt_oss, qwen3_5, kimi_k2_5 and kimi_k3 debug models, cannot export a trained adapter, and fails on a pipeline rank with nothing to train; this PR fixes all three.
 
-- `torchtitan/models/common/lora.py`: `trainable_state_dict` and `merge_lora_state_dict`; adapter shardings derived from the TP entry of the base placement.
-- `torchtitan/components/optim/optimizer.py`, `torchtitan/components/optim/lr_scheduler.py`, `torchtitan/distributed/utils.py`: a pipeline rank whose model parts are all frozen gets an empty optimizer and scheduler and still joins the grad norm all-reduce.
+- `torchtitan/models/common/lora.py`: `trainable_state_dict`, `merge_lora_state_dict`, and adapter shardings that follow the TP entry of the base placement.
+- `torchtitan/components/optim/optimizer.py`, `lr_scheduler.py`, `torchtitan/distributed/utils.py`: a rank whose model parts are all frozen gets an empty optimizer and scheduler and still joins the grad norm all-reduce.
 
 ## Design
 
 - Export:
-  - `trainable_state_dict(model)` returns the trainable parameters keyed as in `state_dict()`; under LoRA, the adapters.
-  - `merge_lora_state_dict(model)` returns `state_dict()` with each adapted weight replaced by $W + \frac{\alpha}{r} B A$ and the adapter keys removed, so a state dict adapter converts it like the unadapted model.
-  - The merge runs in fp32 on each rank's local shards and returns DTensors with the base's placements; no base weight is gathered.
-  - B is sharded like the base's output rows, so its local shard lines up with the base's; A is gathered only where FSDP shards its rank dim.
-  - DTensor ops on the sharded tensors fail on a stacked `w13` under FSDP and TP, whose `_StridedShard` placement cannot be unflattened.
+  - `trainable_state_dict` returns the trainable parameters keyed as in `state_dict()`; under LoRA, the adapters.
+  - `merge_lora_state_dict` returns `state_dict()` with $W + \frac{\alpha}{r} B A$ in place of each adapted weight and no adapter keys.
+  - The merge runs in fp32 on local shards and keeps the base's DTensor placements, so no base weight is gathered.
+  - B shares the base's output sharding; A is gathered only where FSDP shards its rank dim.
+  - DTensor ops are avoided: a stacked `w13` under FSDP and TP carries a `_StridedShard` that DTensor cannot unflatten.
 - Adapter placement:
-  - `_adapter_sharding` asserted that every base other than `dense_param_placement(tp=S(0))` is `dense_param_placement(tp=S(1))`.
-  - Two kinds of base failed that assert at build: bases that TP does not shard (router gate, MLA `wkv_a` and `wq_a`, Kimi K3 `forget_a`) and vision encoder linears, which are `I` rather than `R` on CP.
-  - The adapters now follow the TP entry of the base placement: `S(0)` and `S(1)` keep the column and row rules, `R` and `I` give both adapters the base placement, and any other placement raises.
-  - The replicated adapter is the base placement with TP set to `R`, so its DP and CP entries are the base's; for a dense base this is `dense_param_placement(tp=R)` as before.
+  - Main asserted every base is `dense_param_placement(tp=S(0))` or `S(1)`; TP unsharded bases (router gate, MLA `wkv_a`, `forget_a`) and vision linears (`I` on CP) fail it at build.
+  - The TP entry now decides: `S(0)` and `S(1)` keep the column and row rules, `R` and `I` give both adapters the base placement, anything else raises.
+  - The replicated adapter is the base placement with TP set to `R`; for a dense base that is the old `dense_param_placement(tp=R)`.
 - Frozen pipeline ranks:
-  - Targets that skip whole stages leave model parts with nothing to train; with MLA only targets, Kimi K3's KDA only stages are frozen, and a non interleaved schedule freezes whole ranks.
-  - The optimizer container skips a frozen part with a log line; a trainable part whose pattern matches nothing still raises.
-  - A rank with no trainable part gets an `Optimizer` with one empty param group and an LR scheduler container with no scheduler and no state.
-  - `clip_grad_norm_` gives such a rank a zero norm on the accelerator for the pipeline all-reduce; it was a CPU `tensor(0.)`, which NCCL rejects.
+  - A model part with nothing to train is skipped with a log line; a trainable part whose pattern matches nothing still raises.
+  - A rank with nothing to train gets one empty param group, no scheduler state, and a zero grad norm on the accelerator; main's CPU `tensor(0.)` fails the NCCL all-reduce.
 
 ## Relation to other PRs
 
-- The earlier scope of this PR (NF4 and packed MXFP4 frozen bases) is dropped. QLoRA for Kimi K3 is the MX QAT of #4791 with `LoRATransform` applied after it, which wraps the QAT linears and freezes their weights; on a branch that stacks both, that combination passes the same 18 layouts.
-- #3189 and #2485 (PEFT format export) were closed without merging; the two state dicts here are what such a converter starts from.
+- QLoRA for Kimi K3 is the MX QAT of #4791 with this LoRA applied after it; the NF4 and packed MXFP4 bases of this PR's first version are dropped.
+- #3189 and #2485 (PEFT export) were closed without merging; these two state dicts are what such a converter starts from.
 
 ## Results
 
-8 x RTX 5060 Ti, `kimi_k3_debugmodel` (17 layers, dim 256, a 2 layer vision tower) on the multimodal `cc12m-test` set, 256 token sequences (512 for cp4), 4096 tokens per step, 8 pipeline micro-batches, AdamW, seed 42, deterministic. `LoRATransform(rank=8, alpha=16.0)` with its default targets adapts all 290 supported projections; on main this model does not build with it. Every cell loads one seed checkpoint and trains 10 steps; `cc12m-test` is 32 samples and repeats within the run, so the tables stop at step 10. Each cell gives the raw value and, beneath it, the change against its reference. Measured at `b61c686dc` on main `b663c1673` (`fb4079831` after it adds a type assertion only).
+8 x RTX 5060 Ti, `kimi_k3_debugmodel` (17 layers, dim 256) on the multimodal `cc12m-test`, 4096 tokens per step, seed 42, deterministic. `LoRATransform(rank=8, alpha=16.0)` adapts all 290 supported projections. Every cell loads one seed checkpoint, trains 10 steps, then checks on every rank that `merge_lora_state_dict` equals $W + \frac{\alpha}{r} B A$ on the gathered tensors. Measured at `b61c686dc` (`fb4079831` adds a type assertion only). The cell configs, the merge check and the runners are in [this kit](https://github.com/QIU023/torchtitan_attention_residual/tree/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12), not in this PR.
 
-Step 1 is identical to the reference in every cell without TP or CP and within 0.005% with them, and the merge is exact on every rank of every cell.
+Step 1 matches its reference in every layout, identical without TP or CP and within 0.005% with them, and the merge is exact on every rank.
 
-None of the following is part of this PR: the cell configs [mm18_probe.py](https://github.com/QIU023/torchtitan_attention_residual/blob/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12/mm18_probe.py), the training entry point with the merge check [mm18_train_export.py](https://github.com/QIU023/torchtitan_attention_residual/blob/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12/mm18_train_export.py), and the runners [run_mm18.sh](https://github.com/QIU023/torchtitan_attention_residual/blob/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12/run_mm18.sh) and [run_frozen.sh](https://github.com/QIU023/torchtitan_attention_residual/blob/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12/run_frozen.sh).
+| cell | GPUs | loss, step 1 | step 10 | merge |
+| --- | ---: | ---: | ---: | --- |
+| dp1 [1] | 1 | `8.13623` | `7.09263` | exact |
+| pp2 | 2 | `8.13623`<br>identical | `7.09142` | exact |
+| pp4 | 4 | `8.13623`<br>identical | `7.09344` | exact |
+| pp8 | 8 | `8.13623`<br>identical | `7.09142` | exact |
+| tp2 x ep2 | 2 | `8.13642`<br>+0.0023% | `7.09488` | exact |
+| tp4 x ep4 | 4 | `8.13640`<br>+0.0021% | `7.09517` | exact |
+| cp2 | 2 | `8.13626`<br>+0.0004% | `7.09520` | exact |
+| ep2 x tp2 x pp2 x cp2 | 8 | `8.13628`<br>+0.0006% | `7.09160` | exact |
+| fsdp2 [1] | 2 | `8.18727` | `7.17045` | exact |
+| ep2 x fsdp2 | 2 | `8.18727`<br>identical | `7.17250` | exact |
+| ep4 x fsdp2 x tp2 x pp2 | 8 | `8.18761`<br>+0.0042% | `7.17034` | exact |
+| ep2 x fsdp2 x tp2 x pp2 | 8 | `8.18761`<br>+0.0042% | `7.17220` | exact |
+| fsdp2 x pp2 x cp2 | 8 | `8.18745`<br>+0.0022% | `7.17252` | exact |
+| ep2 x fsdp2 x pp2 x cp2 | 8 | `8.18745`<br>+0.0022% | `7.17073` | exact |
+| ep4 x fsdp2 x tp2 x cp2 | 8 | `8.18752`<br>+0.0031% | `7.17260` | exact |
+| ep2 x fsdp2 x tp2 x cp2 | 8 | `8.18752`<br>+0.0031% | `7.17260` | exact |
+| ep8 x fsdp8 [1] | 8 | `8.16220` | `7.07305` | exact |
+| cp4 [1] | 4 | `8.14816` | `7.34267` | exact |
+| pp4 x vpp2, MLA only [2] | 4 | `8.10062` | `7.97847` | exact |
+| pp8, MLA only [2] | 8 | `8.10062`<br>identical | `7.97848` | exact |
 
-```bash
-ENTRYPOINT=mm18_train_export bash run_mm18.sh lora $TREE $OUT   # the seed checkpoint, then the 18 cells
-ENTRYPOINT=mm18_train_export bash run_frozen.sh $TREE $OUT_MLA $OUT_MLA/seed "pp4_vpp2|pp=4,vpp=2|0,1,2,3" "pp8|pp=8|0,1,2,3,4,5,6,7"
-```
-
-Cells that read the single GPU sample stream.
-
-| cell | loss, step 1 | step 5 | step 10 | grad norm, step 1 | step 5 | step 10 | merge check |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| dp1 [1] | `8.13623` | `7.71449` | `7.09263` | `0.4277` | `0.5820` | `0.9062` | exact on 1 rank |
-| pp2 | `8.13623`<br>identical | `7.71372`<br>-0.01% | `7.09142`<br>-0.02% | `0.4277`<br>identical | `0.5859`<br>+0.67% | `0.9062`<br>identical | exact on 2 ranks |
-| pp4 | `8.13623`<br>identical | `7.71539`<br>+0.01% | `7.09344`<br>+0.01% | `0.4277`<br>identical | `0.5859`<br>+0.67% | `0.9062`<br>identical | exact on 4 ranks |
-| pp8 | `8.13623`<br>identical | `7.71372`<br>-0.01% | `7.09142`<br>-0.02% | `0.4297`<br>+0.47% | `0.5859`<br>+0.67% | `0.9062`<br>identical | exact on 8 ranks |
-| tp2 x ep2 | `8.13642`<br>+0.00% | `7.71442`<br>-0.00% | `7.09488`<br>+0.03% | `0.4297`<br>+0.47% | `0.5859`<br>+0.67% | `0.9023`<br>-0.43% | exact on 2 ranks |
-| tp4 x ep4 | `8.13640`<br>+0.00% | `7.71522`<br>+0.01% | `7.09517`<br>+0.04% | `0.4277`<br>identical | `0.5859`<br>+0.67% | `0.9023`<br>-0.43% | exact on 4 ranks |
-| cp2 | `8.13626`<br>+0.00% | `7.71342`<br>-0.01% | `7.09520`<br>+0.04% | `0.4277`<br>identical | `0.5820`<br>identical | `0.9023`<br>-0.43% | exact on 2 ranks |
-| ep2 x tp2 x pp2 x cp2 | `8.13628`<br>+0.00% | `7.71480`<br>+0.00% | `7.09160`<br>-0.01% | `0.4258`<br>-0.44% | `0.5859`<br>+0.67% | `0.9023`<br>-0.43% | exact on 8 ranks |
-
-Two data parallel ranks.
-
-| cell | loss, step 1 | step 5 | step 10 | grad norm, step 1 | step 5 | step 10 | merge check |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| fsdp2 [1] | `8.18727` | `7.76231` | `7.17045` | `0.4316` | `0.6406` | `0.8516` | exact on 2 ranks |
-| ep2 x fsdp2 | `8.18727`<br>identical | `7.76248`<br>+0.00% | `7.17250`<br>+0.03% | `0.4316`<br>identical | `0.6445`<br>+0.61% | `0.8516`<br>identical | exact on 2 ranks |
-| ep4 x fsdp2 x tp2 x pp2 | `8.18761`<br>+0.00% | `7.76153`<br>-0.01% | `7.17034`<br>-0.00% | `0.4297`<br>-0.44% | `0.6445`<br>+0.61% | `0.8516`<br>identical | exact on 8 ranks |
-| ep2 x fsdp2 x tp2 x pp2 | `8.18761`<br>+0.00% | `7.76142`<br>-0.01% | `7.17220`<br>+0.02% | `0.4297`<br>-0.44% | `0.6445`<br>+0.61% | `0.8516`<br>identical | exact on 8 ranks |
-| fsdp2 x pp2 x cp2 | `8.18745`<br>+0.00% | `7.76141`<br>-0.01% | `7.17252`<br>+0.03% | `0.4316`<br>identical | `0.6445`<br>+0.61% | `0.8516`<br>identical | exact on 8 ranks |
-| ep2 x fsdp2 x pp2 x cp2 | `8.18745`<br>+0.00% | `7.76129`<br>-0.01% | `7.17073`<br>+0.00% | `0.4297`<br>-0.44% | `0.6445`<br>+0.61% | `0.8516`<br>identical | exact on 8 ranks |
-| ep4 x fsdp2 x tp2 x cp2 | `8.18752`<br>+0.00% | `7.76255`<br>+0.00% | `7.17260`<br>+0.03% | `0.4297`<br>-0.44% | `0.6406`<br>identical | `0.8516`<br>identical | exact on 8 ranks |
-| ep2 x fsdp2 x tp2 x cp2 | `8.18752`<br>+0.00% | `7.76157`<br>-0.01% | `7.17260`<br>+0.03% | `0.4297`<br>-0.44% | `0.6406`<br>identical | `0.8516`<br>identical | exact on 8 ranks |
-
-Their own sample streams.
-
-| cell | loss, step 1 | step 5 | step 10 | grad norm, step 1 | step 5 | step 10 | merge check |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| ep8 x fsdp8 [2] | `8.16220` | `7.73987` | `7.07305` | `0.4609` | `0.5664` | `0.8906` | exact on 8 ranks |
-| cp4 [3] | `8.14816` | `7.80357` | `7.34267` | `0.4395` | `0.6523` | `0.8047` | exact on 4 ranks |
-
-Frozen pipeline ranks: LoRA on the MLA projections only.
-
-| cell | loss, step 1 | step 5 | step 10 | grad norm, step 1 | step 5 | step 10 | merge check |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| pp4 x vpp2 [4] | `8.10062` | `8.04503` | `7.97847` | `0.1309` | `0.2451` | `0.5039` | exact on 4 ranks |
-| pp8 [4] | `8.10062`<br>identical | `8.04471`<br>-0.00% | `7.97848`<br>+0.00% | `0.1309`<br>identical | `0.2451`<br>identical | `0.5039`<br>identical | exact on 8 ranks |
-
-- [1] reference: dp1 for the cells that read its sample stream, fsdp2 for the two data parallel ranks' stream
-- [2] eight data parallel ranks, a sample stream of its own
-- [3] 512 token sequences, since CP flex attention needs the sequence divisible by cp x 128; a sample stream of its own
-- [4] `target_modules` = the five MLA projections (25 adapted), so the stages that hold only KDA layers have nothing to train: pp4 x vpp2 puts a frozen stage next to a trainable one on ranks 0, 1 and 3, pp8 freezes ranks 0, 3 and 5 entirely. Without the optimizer commit, pp4 x vpp2 raises `Optimizer pattern '.*' matched no parameters`; with only the part skip, pp8 raises `optimizer got an empty parameter list`, and with the optimizer and scheduler handled but not the grad norm, `No backend type associated with device type cpu`
-- merge check: after step 10, on every rank, `merge_lora_state_dict` equals $W + \frac{\alpha}{r} B A$ computed on the gathered tensors, bit for bit, for every adapted projection, and `trainable_state_dict` is exactly the adapters
-- the grad norm is main's, taken in bf16, where one unit near 0.43 is 0.0020 (0.4277 against 0.4297); the pipeline and TP cells reduce it in another order
-- each GPU group (one, two, four and eight GPUs) compiled on its own cache, so step 1 is the comparison and the later steps are shown only
+- [1] reference: dp1, fsdp2, ep8 x fsdp8 and cp4 (512 token sequences) each read a sample stream of their own
+- [2] `target_modules` = the MLA projections, so KDA only stages are frozen: pp4 x vpp2 pairs a frozen stage with a trainable one on three ranks, pp8 freezes three ranks; without the optimizer commit pp4 x vpp2 raises `matched no parameters`, and with only the part skip pp8 raises `optimizer got an empty parameter list`
+- each GPU group compiled on its own cache, so step 1 is the comparison and step 10 is shown only; the 32 sample set repeats within 10 steps
 
 ## Test plan
 
@@ -113,7 +83,6 @@ pytest tests/unit_tests/gpu/models/common/test_lora.py                          
 pytest tests/unit_tests/gpu/distributed/test_clip_grad_norm.py                  # 1 passed, 2 GPUs
 ```
 
-- The GPU merge test (TP2 x FSDP2) fails on the previous merge with the `_StridedShard` error; the clip test fails on main with `No backend type associated with device type cpu`.
-- `pyrefly check` reports the same errors as main.
+The two GPU tests fail on the previous merge (`_StridedShard`) and on main (`No backend type associated with device type cpu`); `pyrefly check` reports the same errors as main.
 
 --- PASTE END ---
