@@ -6,7 +6,7 @@
 - 栈分支上这四个提交压成一个 `b49021d5e`，源码改动和 PR 头逐字节相同，另外多一条只在栈上的 MX QAT 合并测试。
 - 范围变化：QLoRA（NF4、packed MXFP4 冻结底座）整个拿掉。QLoRA 用 Elfie 的 MX QAT（#4791）加本 PR 的 LoRA 组合；NF4 不做。
 - 标题建议：`[LoRA] Export merged adapters, place adapters for every base sharding, step frozen pipeline ranks`。原标题里的 "[DO NOT review, draft ...]" 是否去掉由用户决定。
-- 粘贴区不放 GPU 矩阵（用户没要 H100）：5060 上的 18 格矩阵、冻结 stage 格子和导出检查都在 `STACK_FULL_AND_LORA_MM18_2026-10-12.md`。Test plan 只列 CI 会跑的单测，计数是 `fb4079831` 上实测的。
+- 10-13 用户："5060这个LoRA 没有上游数值对比吧？body里面可以放5060的"。粘贴区的 Test plan 加了 5060 上的 18 格（通过与否 + 每个 rank 的合并逐位检查，标明 8 x RTX 5060 Ti）和两个冻结 stage 格子，Relation 加了一句 MX QAT + LoRA 在叠栈分支上同样 18 格通过。这些都不和上游比数值。明细在 `STACK_FULL_AND_LORA_MM18_2026-10-12.md`。单测计数是 `fb4079831` 上实测的。
 - 10-13 改了粘贴区三处：Summary 不再说 "every ... vision language model"（muse_glimmer 是 VLM，在 main 上能构建），改成列出建不起来的模型；Relation 写明 QLoRA 是 #4791 的 MX QAT 加本 PR 的 LoRA；删掉 Pending (H100) 那一行。
 
 --- PASTE BEGIN ---
@@ -39,7 +39,7 @@ With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_
 
 ## Relation to other PRs
 
-- The earlier scope of this PR (NF4 and packed MXFP4 frozen bases) is dropped. QLoRA for Kimi K3 is the MX QAT of #4791 with `LoRATransform` applied after it, which wraps the QAT linears and freezes their weights.
+- The earlier scope of this PR (NF4 and packed MXFP4 frozen bases) is dropped. QLoRA for Kimi K3 is the MX QAT of #4791 with `LoRATransform` applied after it, which wraps the QAT linears and freezes their weights; on a branch that stacks both, that combination passes the same 18 layouts.
 - #3189 and #2485 (PEFT format export) were closed without merging; the two state dicts here are what such a converter starts from.
 
 ## Test plan
@@ -54,5 +54,9 @@ pytest tests/unit_tests/gpu/distributed/test_clip_grad_norm.py                  
 
 - The GPU merge test (TP2 x FSDP2) fails on the previous merge with the `_StridedShard` error; the clip test fails on main with `No backend type associated with device type cpu`.
 - `pyrefly check` reports the same errors as main.
+- Kimi K3 debug model with `LoRATransform(rank=8, alpha=16.0)` on all 290 supported projections, on 8 x RTX 5060 Ti: 18 / 18 parallelism layouts pass; on main the model does not build.
+  - Layouts: dp1, FSDP2, PP2, PP4, PP8, TP2 x EP2, TP4 x EP4, CP2, CP4, EP2 x FSDP2, EP8 x FSDP8, EP4 x FSDP2 x TP2 x PP2, EP2 x FSDP2 x TP2 x PP2, FSDP2 x PP2 x CP2, EP2 x FSDP2 x PP2 x CP2, EP4 x FSDP2 x TP2 x CP2, EP2 x TP2 x PP2 x CP2, EP2 x FSDP2 x TP2 x CP2.
+  - Each layout loads one seed checkpoint and trains 10 steps; then on every rank `merge_lora_state_dict` equals $W + \frac{\alpha}{r} B A$ computed on the gathered tensors, bit for bit, and `trainable_state_dict` is exactly the adapters.
+- Frozen pipeline ranks, with LoRA on the MLA projections only: PP4 x VPP2 (three ranks hold a frozen stage next to a trainable one) and PP8 (three ranks fully frozen) train 10 steps and pass the same merge check. Without the optimizer commit, PP4 x VPP2 raises `matched no parameters`; PP8 also needs the empty optimizer, scheduler and grad norm.
 
 --- PASTE END ---
