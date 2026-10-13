@@ -31,7 +31,8 @@
   - full256 缩小版 PP2 × EP4（seq 2048、mb 2 × 8、fused loss、balanced routing、recompute-matmuls、reshard-after-backward）：8/8 PASS（这次 recompute-matmuls 还是失效的旧策略）。
   - full256 缩小版 PP8：8/8 PASS。
   - 移植后的 recompute-matmuls 对 selective（full256 缩小版 PP2 × EP4，6 步）：峰值 1.09 GiB 对 1.44 GiB，低 24%，策略生效（移植前它和 selective 完全一样）。
-  - fused loss 修正后的 full256 两个形状、不开 fused loss 的同形状参照、memory32 冒烟：运行中。
+  - fused loss 修正后（10 步，全部 8/8 PASS）：PP2 × EP4 第 1 步每个 rank 的 loss 约 2.02（= 8.06 / 4 个 dp rank），grad norm 0.0889；同形状不开 fused loss（main 的 `CrossEntropyLoss`）每个 rank 2.025 到 2.029，grad norm 第 1 / 5 / 10 步 0.0889 / 0.0869 / 0.0845，和 fused loss 逐位相同（fused loss 的 loss 是 bf16，所以打印值只差 bf16 的取整）；PP8 第 1 步 loss 8.125、grad norm 0.139。修正前同一形状是 264192 和 11648。
+  - memory32 冒烟：运行中。
 - 2.8T 的 key 映射（`k3_full_key_coverage.py`，只用 CPU）：完整 Kimi-K3 在 meta 上 2,771 个 state key、2.780T 元素；官方索引 497,220 个 key 合成 249,924 个逻辑权重（247,296 个 packed），`to_hf` 正好产出这 249,924 个，缺 0 多 0；`from_hf` 回到全部 2,771 个 key；MX QAT 选中 184 个 Titan 参数（92 个 MoE 层各一个 `w13`、一个 `w2`），packed 权重全部被 QAT 覆盖，被选中的也全是 packed。
 - CPU 单测（全部，GPU 屏蔽）：栈 1671 + 80 passed，main 1562 + 80 passed；只在栈上失败的 0 个；两边都失败的 3 个是 main 在本机就挂的（flux 两个、embedding 一个）；10 个只在 main 上失败（parallelism_context、cp_attention all-gather）。收集错误的 6 个文件是源码 torchao 版本号 `unknown`，第二遍用 nightly torchao 跑 80 passed。
 - Elfie 的脚本单测（`scripts/validation/kimi_k3`）：移植后 15 passed。
