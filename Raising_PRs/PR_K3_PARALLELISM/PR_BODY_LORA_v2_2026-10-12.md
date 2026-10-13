@@ -6,6 +6,7 @@
 - 栈分支上这四个提交压成一个 `b49021d5e`，源码改动和 PR 头逐字节相同，另外多一条只在栈上的 MX QAT 合并测试。
 - 范围变化：QLoRA（NF4、packed MXFP4 冻结底座）整个拿掉。QLoRA 用 Elfie 的 MX QAT（#4791）加本 PR 的 LoRA 组合；NF4 不做。
 - 标题建议：`[LoRA] Export merged adapters, place adapters for every base sharding, step frozen pipeline ranks`。原标题里的 "[DO NOT review, draft ...]" 是否去掉由用户决定。
+- 10-13 用户："body修复这种confuse language"。粘贴区不再提没发布过的中间版本（"previous merge"、冻结格子在中间版本上的报错），Design、Relation、Results 里含糊的说法改成说清楚主语和条件。
 - 10-13 用户："body篇幅太长了。。。"。粘贴区压缩：Design 每条一行，Results 并成一张表（GPU 数、第 1 步 loss 和参考的差、第 10 步 loss、合并检查），去掉 grad norm 和第 5 步，附注 3 条。
 - 10-13 用户："5060这个LoRA 没有上游数值对比吧？body里面可以放5060的"，"为什么没有表格？乱写，参照4312"。Results 节按 4312 的格式重写：设定一行、kit 链接、复现命令、四张表（dp1 组、dp2 组、各自数据流、冻结 stage）和脚注，数字由脚本从 `b61c686dc` 的日志生成。以下是改表格之前的记录：粘贴区的 Test plan 加了 5060 上的 18 格（通过与否 + 每个 rank 的合并逐位检查，标明 8 x RTX 5060 Ti）和两个冻结 stage 格子，Relation 加了一句 MX QAT + LoRA 在叠栈分支上同样 18 格通过。这些都不和上游比数值。明细在 `STACK_FULL_AND_LORA_MM18_2026-10-12.md`。单测计数是 `fb4079831` 上实测的。
 - 10-13 改了粘贴区三处：Summary 不再说 "every ... vision language model"（muse_glimmer 是 VLM，在 main 上能构建），改成列出建不起来的模型；Relation 写明 QLoRA 是 #4791 的 MX QAT 加本 PR 的 LoRA；删掉 Pending (H100) 那一行。
@@ -25,23 +26,23 @@ With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_
   - `trainable_state_dict` returns the trainable parameters keyed as in `state_dict()`; under LoRA, the adapters.
   - `merge_lora_state_dict` returns `state_dict()` with $W + \frac{\alpha}{r} B A$ in place of each adapted weight and no adapter keys.
   - The merge runs in fp32 on local shards and keeps the base's DTensor placements; only A is gathered, where FSDP shards its rank dim.
-  - DTensor ops cannot unflatten the `_StridedShard` of a stacked `w13` under FSDP and TP.
+  - It works on local shards because DTensor ops cannot unflatten the `_StridedShard` placement of a stacked `w13` under FSDP and TP.
 - Adapter placement:
-  - Main asserted every base is `dense_param_placement(tp=S(0))` or `S(1)`; TP unsharded bases (router gate, MLA `wkv_a`, `forget_a`) and vision linears (`I` on CP) fail it at build.
+  - On main, `_adapter_sharding` asserts that every base is `dense_param_placement(tp=S(0))` or `dense_param_placement(tp=S(1))`; bases that TP does not shard (router gate, MLA `wkv_a`, `forget_a`) and vision linears (`I` on CP) fail that assert when the model is built.
   - The TP entry now decides: `S(0)` and `S(1)` keep the column and row rules, `R` and `I` give both adapters the base placement, anything else raises.
-  - The replicated adapter is the base placement with TP set to `R`, unchanged for dense bases.
+  - The replicated adapter takes the base placement with TP set to `R`; for a dense base this is the placement main already uses.
 - Frozen pipeline ranks:
   - A model part with nothing to train is skipped with a log line; a trainable part whose pattern matches nothing still raises.
-  - A rank with nothing to train gets one empty param group, no scheduler state, and a zero grad norm on the accelerator; main's CPU `tensor(0.)` fails the NCCL all-reduce.
+  - A rank with nothing to train gets one empty param group, no scheduler state, and a zero grad norm on the accelerator; on main that rank's norm is a CPU `tensor(0.)`, which the NCCL all-reduce rejects.
 
 ## Relation to other PRs
 
-- QLoRA for Kimi K3 is the MX QAT of #4791 with this LoRA applied after it; the NF4 and packed MXFP4 bases of this PR's first version are dropped.
+- This PR no longer adds the NF4 and packed MXFP4 bases of its first version; QLoRA for Kimi K3 is the MX QAT of #4791 with this PR's LoRA applied after it.
 - #3189 and #2485 (PEFT export) closed unmerged; a converter can start from these two state dicts.
 
 ## Results
 
-8 x RTX 5060 Ti, `kimi_k3_debugmodel` (17 layers, dim 256) on the multimodal `cc12m-test`, 4096 tokens per step, seed 42, deterministic. `LoRATransform(rank=8, alpha=16.0)` adapts all 290 supported projections. Every cell loads one seed checkpoint, trains 10 steps, then checks on every rank that `merge_lora_state_dict` equals $W + \frac{\alpha}{r} B A$ on the gathered tensors. Measured at `b61c686dc` (`fb4079831` adds a type assertion only). The cell configs, the merge check and the runners are in [this kit](https://github.com/QIU023/torchtitan_attention_residual/tree/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12), not in this PR.
+8 x RTX 5060 Ti, `kimi_k3_debugmodel` (17 layers, dim 256) on the multimodal `cc12m-test`, 4096 tokens per step, seed 42, deterministic. `LoRATransform(rank=8, alpha=16.0)` adapts all 290 supported projections. Every cell loads one seed checkpoint, trains 10 steps, then checks on every rank that `merge_lora_state_dict` equals $W + \frac{\alpha}{r} B A$ on the gathered tensors. Measured at `b61c686dc`; the last commit, `fb4079831`, only adds a type assertion. The cell configs, the merge check and the runners are in [this kit](https://github.com/QIU023/torchtitan_attention_residual/tree/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12), not in this PR.
 
 Step 1 matches its reference in every layout, identical without TP or CP and within 0.005% with them, and the merge is exact on every rank.
 
@@ -68,9 +69,9 @@ Step 1 matches its reference in every layout, identical without TP or CP and wit
 | pp4 x vpp2, MLA only [2] | 4 | `8.10062` | `7.97847` | exact |
 | pp8, MLA only [2] | 8 | `8.10062`<br>identical | `7.97848` | exact |
 
-- [1] reference: dp1, fsdp2, ep8 x fsdp8 and cp4 (512 token sequences) each read a sample stream of their own
-- [2] `target_modules` = the MLA projections, so KDA only stages are frozen: pp4 x vpp2 pairs a frozen stage with a trainable one on three ranks, pp8 freezes three ranks; without the optimizer commit pp4 x vpp2 raises `matched no parameters`, and with only the part skip pp8 raises `optimizer got an empty parameter list`
-- step 1 is the comparison; step 10 is shown only, since each GPU group compiled on its own cache and the 32 sample set repeats within 10 steps
+- [1] reference row: dp1, fsdp2, ep8 x fsdp8 and cp4 (512 token sequences) each read a different sample stream; the rows under a reference read the same samples as it
+- [2] `target_modules` = the MLA projections, so the stages that hold only KDA layers have nothing to train: pp4 x vpp2 puts a frozen stage next to a trainable one on three ranks, and pp8 leaves three ranks with nothing to train; both layouts rely on this PR's optimizer, scheduler and grad norm changes
+- step 10 is shown, not compared: each GPU group compiled on its own cache, and the 32 sample set repeats within 10 steps
 
 ## Test plan
 
@@ -82,6 +83,6 @@ pytest tests/unit_tests/gpu/models/common/test_lora.py                          
 pytest tests/unit_tests/gpu/distributed/test_clip_grad_norm.py                  # 1 passed, 2 GPUs
 ```
 
-The two GPU tests fail on the previous merge (`_StridedShard`) and on main (`No backend type associated with device type cpu`); `pyrefly check` reports the same errors as main.
+The GPU merge test covers a stacked `w13` under TP2 x FSDP2; the clip test raises `No backend type associated with device type cpu` on main. `pyrefly check` reports the same errors as main.
 
 --- PASTE END ---
