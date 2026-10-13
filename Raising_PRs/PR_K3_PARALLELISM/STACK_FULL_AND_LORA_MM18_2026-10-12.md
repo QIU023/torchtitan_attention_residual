@@ -122,3 +122,5 @@ ep8×fsdp8 在 lora_mxqat 组的那 1 个 ulp（`kit3` 的 `mm18_export_locate.p
 - 用户："记得squash到栈分支LoRA提交"。栈上 LoRA 的 6 个提交（`992ae1657`、`71c93aeea`、`5bdeb1d63`、`db3bdac93`、`0fa53c2e3`、`ab65ad8b8`）压成一个 `b49021d5e`，父提交 `98d3c658c`，树和 `ab65ad8b8` 完全相同，源码改动和 PR 头 `fb4079831` 逐字节相同。备份 `backup/k3_mxqat_stack_20261012_pre_lora_squash` = `ab65ad8b8`，`--force-with-lease` 推送。现在栈上每个 PR 正好一个提交。
 - body v2 改了三处（文件头说明里列了），等用户粘贴。
 - MX QAT 单独训练（arm `mxqat`，`kit3`）：只套 `MXQATTransform`，98 个 QAT 模块的 master 全部可训练（模型 465 / 465 个参数可训练；lora_mxqat 组里这 98 个是 0 / 98），其余设定和别的组一样。在 `b49021d5e` 上跑 18 格，结果见下。
+
+MX QAT 单独训练（`b49021d5e`，10-13 00:26 到 00:57 PDT）：18 / 18，每格 rc 0、10 步、seed 加载，日志里没有报错。第 1 步：dp1 组（dp1、pp2、pp4、pp8）8.12757 逐位相同，TP / CP 格子差 ≤ 6.8e-5（tp4×ep4 最大）；dp2 组 8.11612，带 TP / PP / CP 的格子差 ≤ 4.9e-5；ep8×fsdp8 8.13140；cp4 用 512 长度（8.13820）。第 10 步 dp1 3.58059，和 base 组（3.57193）同一量级，QAT 正常在训。栈上 base 组跑在 `5bdeb1d63`：之后的 LoRA / 优化器 / 梯度裁剪改动在 base 组里都走不到（没有冻结 part，没有空 rank），结果对 `b49021d5e` 一样成立。
