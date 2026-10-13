@@ -21,7 +21,7 @@ index 7e948c7a7..58dd85813 100644
                  _local(t.detach()) for t in _tensors(result) if t.is_floating_point()
              ]
 diff --git a/scripts/validation/kimi_k3/hybridep_stage_memory.py b/scripts/validation/kimi_k3/hybridep_stage_memory.py
-index e244d02c2..df565c43f 100644
+index e244d02c2..43c59b712 100644
 --- a/scripts/validation/kimi_k3/hybridep_stage_memory.py
 +++ b/scripts/validation/kimi_k3/hybridep_stage_memory.py
 @@ -26,7 +26,9 @@ import torch.distributed.checkpoint as dcp
@@ -79,6 +79,16 @@ index e244d02c2..df565c43f 100644
          )
          with engine.parallelism_context.activate_spmd(typechecking=False):
              inputs, _, kwargs = model.preprocess_inputs(
+@@ -186,7 +198,8 @@ def main():
+                         unsharded_bytes += unsharded.untyped_storage().nbytes()
+                     if p.unsharded_accumulated_grad is None:
+                         continue
+-                    grad = p.unsharded_accumulated_grad_data.detach().reshape(-1)
++                    grad = p.unsharded_accumulated_grad.detach()
++                    grad = (grad.to_local() if hasattr(grad, "to_local") else grad).reshape(-1)
+                     assert grad.dtype == torch.float32, grad.dtype
+                     grad_bytes += grad.numel() * grad.element_size()
+                     positive = False
 diff --git a/scripts/validation/kimi_k3/pipeline_memory.py b/scripts/validation/kimi_k3/pipeline_memory.py
 index f5d57a638..3a05d6eff 100644
 --- a/scripts/validation/kimi_k3/pipeline_memory.py
