@@ -1,7 +1,7 @@
 """The 18-cell multimodal parallelism matrix on main (Python-config era), logbook kit only.
 
 MM18_CELL: comma list of degrees, e.g. "dp=2,tp=2,ep=2,pp=2,cp=1" (missing keys are 1). Sequence parallelism is on
-under TP unless CP is on (the K3 vision splice under CP refuses SP). MM18_ARM: base | lora | lora_mla (MLA projections only) | lora_mxqat (LoRA over Elfie's MX QAT,
+under TP unless CP is on (the K3 vision splice under CP refuses SP). MM18_ARM: base | lora | lora_mla (MLA projections only) | mxqat (Elfie's MX QAT alone) | lora_mxqat (LoRA over Elfie's MX QAT,
 on the stack branch). MM18_SEED: the seed checkpoint folder of the arm. MM18_STEPS: steps (10).
 Kimi K3 debug model (main's 17 layers), multimodal cc12m-test, seq 256 (512 at CP4), 4096 tokens per step in
 one-sequence micro-batches per dp rank, 8 pipeline micro-batches, AdamW (DistMuon has no TP), seed 42, deterministic.
@@ -83,8 +83,8 @@ def _build(degrees: dict[str, int]):
 
         mla = ["attention.wq_a", "attention.wq_b", "attention.wkv_a", "attention.wkv_b", "attention.wo"]
         transforms.append(LoRATransform(rank=8, alpha=16.0, target_modules=mla))
-    elif arm == "lora_mxqat":
-        # Elfie's MX QAT (stack branch only): the recipe's MXFP4 policy picks the weights, then LoRA wraps them.
+    elif arm in ("mxqat", "lora_mxqat"):
+        # Elfie's MX QAT (stack branch only): the recipe's MXFP4 policy picks the weights; lora_mxqat then wraps them.
         from typing import cast
 
         from torchtitan.config.transform import LoRATransform, MXQATTransform
@@ -96,7 +96,8 @@ def _build(degrees: dict[str, int]):
         adapter = KimiK3StateDictAdapter(cast(KimiK3Model.Config, config.model), hf_assets_path=None)
         policy = MXFP4CheckpointPolicy.from_config(MXFP4_QUANTIZATION_CONFIG, adapter.hf_linear_weight_mapping())
         transforms.append(MXQATTransform.from_weight_fqns(config.model, adapter.qat_weight_fqns(policy)))
-        transforms.append(LoRATransform(rank=8, alpha=16.0))
+        if arm == "lora_mxqat":
+            transforms.append(LoRATransform(rank=8, alpha=16.0))
     if transforms:
         from torchtitan.config.transform import apply_transforms
 

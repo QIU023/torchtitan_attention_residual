@@ -87,7 +87,7 @@ kit `kit_lora_mm18_2026-10-12/`（`mm18_probe.py`、`run_mm18.sh`）。main 现�
 
 main 要求 MoE 模型 ep ≥ tp，所以凡是有 tp 的格子都带 ep；原来的 `fsdp2_tp2_pp2`、`fsdp2_tp2_cp2` 在 main 上就和带 ep2 的格子一样了，改成 ep4。18 格：dp1、fsdp2、pp2、tp2×ep2、ep2×fsdp2、cp2、pp4、tp4×ep4、cp4、pp8、ep8×fsdp8、ep4×fsdp2×tp2×pp2、ep2×fsdp2×tp2×pp2、fsdp2×pp2×cp2、ep2×fsdp2×pp2×cp2、ep4×fsdp2×tp2×cp2、ep2×tp2×pp2×cp2、ep2×fsdp2×tp2×cp2。三组在两棵树上都能构建（18 / 18）。
 
-组：main 上 base、lora；栈上 base、lora、lora_mxqat（Elfie 的策略选出 32 个 routed experts 投影做 MX QAT，再套 LoRA；导出检查数到的 LoRA 模块和 lora 组一样是 290 个）。第一版调度把单卡的 dp1 放到了两张卡上，main 的 dp1 补跑了；cp4 在 seq 256 下不满足 seq % (cp × 128) == 0，改成 512 后补跑（cp4 读的数据和别的 dp1 格子不同，只和别的组的 cp4 比）。
+组：main 上 base、lora；栈上 base、lora、lora_mxqat（Elfie 的 recipe 在随机初始化时用 `MXFP4_QUANTIZATION_CONFIG` 选权重，选中 98 个模块做 MX QAT：routed experts 的 `w13` / `w2` 32 个分组线性层，`routed_up` / `routed_down` 32 个，`attention_res_proj` 16 个，`ffn_res_proj` 17 个，`output_res_proj` 1 个；再套 LoRA，导出检查数到的 LoRA 模块和 lora 组一样是 290 个）。10-13 之前我在聊天里说成“32 个 routed experts 投影”，是错的。第一版调度把单卡的 dp1 放到了两张卡上，main 的 dp1 补跑了；cp4 在 seq 256 下不满足 seq % (cp × 128) == 0，改成 512 后补跑（cp4 读的数据和别的 dp1 格子不同，只和别的组的 cp4 比）。
 
 ### 结果（10-12 晚，全部在 8 × 5060，main_pins）
 
@@ -115,3 +115,10 @@ ep8×fsdp8 在 lora_mxqat 组的那 1 个 ulp（`kit3` 的 `mm18_export_locate.p
 
 - 按 CI 的方式（pyrefly 0.45.1，整个仓库，只读）跑：`b61c686dc` 比 main 多 3 个错误，都在 `_merged_weight` 里（adapter 被当作 `Parameter`，`redistribute` / `placements` / `to_local` 报错），CI 的 lint 会挂。本地提交 `fb4079831`：底座是 DTensor 时断言两个 adapter 也是；pyrefly 回到 main 的 19 个错误，LoRA CPU 39 passed、GPU 合并测试 1 passed。没推，`lora_review2` 仍是 `b61c686dc`，推要用户的话。栈上同一行是 `ab65ad8b8`（已推）。只是类型断言，不改数值，矩阵不重跑。
 - 用户："先不同步，要等shuhuayu review"。#4656 的 PR 分支 `k3_ac_reuse_attention` 保持 `7dea4cbaf`（它和现在的 main 在 `model.py`、`sharding.py` 上冲突）；rebase 后的版本在 `attnres_review1` = `507a2f7d5`，#4963 的 PR 分支 `pp_review_optimize` 已经带着它。
+
+### 10-13：PR 推送、栈分支压缩、MX QAT 单独训练
+
+- 用户同意后，`lora_review2` 从 `b61c686dc` 快进到 `fb4079831`（pyrefly 修正），没有强推。
+- 用户："记得squash到栈分支LoRA提交"。栈上 LoRA 的 6 个提交（`992ae1657`、`71c93aeea`、`5bdeb1d63`、`db3bdac93`、`0fa53c2e3`、`ab65ad8b8`）压成一个 `b49021d5e`，父提交 `98d3c658c`，树和 `ab65ad8b8` 完全相同，源码改动和 PR 头 `fb4079831` 逐字节相同。备份 `backup/k3_mxqat_stack_20261012_pre_lora_squash` = `ab65ad8b8`，`--force-with-lease` 推送。现在栈上每个 PR 正好一个提交。
+- body v2 改了三处（文件头说明里列了），等用户粘贴。
+- MX QAT 单独训练（arm `mxqat`，`kit3`）：只套 `MXQATTransform`，98 个 QAT 模块的 master 全部可训练（模型 465 / 465 个参数可训练；lora_mxqat 组里这 98 个是 0 / 98），其余设定和别的组一样。在 `b49021d5e` 上跑 18 格，结果见下。
