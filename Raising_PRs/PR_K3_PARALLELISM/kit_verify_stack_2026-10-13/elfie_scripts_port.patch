@@ -1,0 +1,347 @@
+diff --git a/scripts/validation/kimi_k3/finite_diagnostics.py b/scripts/validation/kimi_k3/finite_diagnostics.py
+index 7e948c7a7..58dd85813 100644
+--- a/scripts/validation/kimi_k3/finite_diagnostics.py
++++ b/scripts/validation/kimi_k3/finite_diagnostics.py
+@@ -11,6 +11,7 @@ from pathlib import Path
+ 
+ import torch
+ from torch.distributed.tensor import DTensor
++import torch_remat as remat
+ 
+ 
+ def _local(tensor):
+@@ -126,6 +127,9 @@ def install(models, output, rank, step=None):
+ 
+     def hook(name):
+         def check(module, inputs, result):
++            # A saved region's output is only a placeholder while torch_remat recomputes.
++            if remat.is_recomputing():
++                return
+             values = [
+                 _local(t.detach()) for t in _tensors(result) if t.is_floating_point()
+             ]
+diff --git a/scripts/validation/kimi_k3/pipeline_memory.py b/scripts/validation/kimi_k3/pipeline_memory.py
+index f5d57a638..3a05d6eff 100644
+--- a/scripts/validation/kimi_k3/pipeline_memory.py
++++ b/scripts/validation/kimi_k3/pipeline_memory.py
+@@ -9,25 +9,21 @@
+ Use existing SAC and public FSDP hooks. Keep FP32 gradient accumulation and
+ communication unchanged; trade extra dense recomputation/all-gathers for memory.
+ """
+-from dataclasses import dataclass
++from dataclasses import dataclass, field
+ 
+-import torch
+ from torch.distributed.fsdp import FSDPModule
+-from torchtitan.distributed.activation_checkpoint import SelectiveAC
++from torchtitan.distributed.activation_checkpoint import RegionAC
+ 
+ 
+-class RecomputeMatmulsSelectiveAC(SelectiveAC):
++class RecomputeMatmulsSelectiveAC(RegionAC):
++    """SelectiveAC's regions plus every dense linear recomputed; communication regions stay saved."""
++
+     @dataclass(kw_only=True, slots=True)
+-    class Config(SelectiveAC.Config):
+-        pass
+-
+-    def get_save_ops(self):
+-        return super().get_save_ops() - {
+-            torch.ops.aten.mm.default,
+-            torch.ops.aten.mm.dtype,
+-            torch.ops.aten.bmm.default,
+-            torch.ops.aten.linear.default,
+-        }
++    class Config(RegionAC.Config):
++        save_regions: list[str] = field(default_factory=lambda: ["*"])
++        recompute_regions: list[str] = field(
++            default_factory=lambda: ["*routed_experts.w13.*", "*.linear"]
++        )
+ 
+ 
+ def enable_backward_resharding(model_parts):
+diff --git a/scripts/validation/kimi_k3/test_pipeline_memory.py b/scripts/validation/kimi_k3/test_pipeline_memory.py
+index 2ec1096b1..0726d3ae7 100644
+--- a/scripts/validation/kimi_k3/test_pipeline_memory.py
++++ b/scripts/validation/kimi_k3/test_pipeline_memory.py
+@@ -5,12 +5,14 @@
+ # LICENSE file in the root directory of this source tree.
+ 
+ import unittest
++from types import SimpleNamespace
+ from unittest.mock import patch
+ 
+ import torch
+ 
+ from pipeline_memory import enable_backward_resharding, RecomputeMatmulsSelectiveAC
+ from torch import nn
++from torchtitan.models.base.module import Module
+ 
+ 
+ class FakeFSDP(nn.Module):
+@@ -60,9 +62,20 @@ class PipelineMemoryTests(unittest.TestCase):
+     def test_policy_builds_and_retains_communication(self):
+         policy = RecomputeMatmulsSelectiveAC.Config().build()
+         self.assertIsInstance(policy, RecomputeMatmulsSelectiveAC)
+-        ops = policy.get_save_ops()
+-        self.assertNotIn(torch.ops.aten.bmm.default, ops)
+-        self.assertIn(torch.ops._c10d_functional.all_to_all_single.default, ops)
++
++        def recomputed(qualified):
++            module = SimpleNamespace(
++                remat_region_name=lambda local: qualified,
++                _remat_save_patterns=policy.config.save_regions,
++                _remat_recompute_patterns=policy.config.recompute_regions,
++            )
++            return Module.remat_should_recompute(module, "")
++
++        self.assertTrue(recomputed("layers.16::attention.wq_b.linear"))
++        self.assertTrue(recomputed("layers.1::moe.routed_experts.w13.grouped_mm"))
++        self.assertFalse(recomputed("layers.1::moe.routed_experts.w2.grouped_mm"))
++        self.assertFalse(recomputed("layers.0::attention.wq_b.tp_gather"))
++        self.assertFalse(recomputed("layers.1::moe.token_dispatcher.dispatch"))
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/scripts/validation/kimi_k3/validate_distmuon.py b/scripts/validation/kimi_k3/validate_distmuon.py
+index 35928c441..a41f2a889 100644
+--- a/scripts/validation/kimi_k3/validate_distmuon.py
++++ b/scripts/validation/kimi_k3/validate_distmuon.py
+@@ -21,8 +21,12 @@ from step_watchdog import watch_step
+ from torch.distributed.tensor import DTensor
+ 
+ from torchtitan.components.data.types import TokenizedTrainingMicrobatch
+-from torchtitan.components.loss import CrossEntropyLoss, LinearCrossEntropyLoss
+-from torchtitan.components.optim import DistMuon, LRSchedulersContainer
++from torchtitan.components.loss import (
++    CrossEntropyLoss,
++    IGNORE_INDEX,
++    LinearCrossEntropyLoss,
++)
++from torchtitan.components.optim import DistMuon, LRSchedulersContainer, Optim
+ from torchtitan.config import DebugConfig, TrainingConfig
+ from torchtitan.config.parallelism import ParallelismConfig
+ from torchtitan.config.transform import (
+@@ -30,15 +34,18 @@ from torchtitan.config.transform import (
+     TokenDispatcherTransform,
+     transform_model_config_,
+ )
++from torchtitan.distributed import utils as dist_utils
+ from torchtitan.distributed.activation_checkpoint import SelectiveAC
+ from torchtitan.models.common.moe import (
+     QuantileBalancedTopKRouter,
++    RoundRobinTokenChoiceTopKRouter,
+     TokenChoiceTopKRouter,
+ )
+ from torchtitan.models.common.token_dispatcher import (
+     DeepEPTokenDispatcher,
+     HybridEPTokenDispatcher,
+ )
++from torchtitan.models.deepseek_v3.mtp import get_mtp_token_counts
+ from torchtitan.models.kimi_k3 import build_model_config
+ from torchtitan.models.kimi_k3.state_dict_adapter import KimiK3StateDictAdapter
+ from torchtitan.observability.profiler import Profiler
+@@ -86,10 +93,17 @@ def save_debug_state(engine, output, rank, phase):
+ 
+ 
+ def configs(args):
++    world = int(os.environ.get("WORLD_SIZE", "8"))
++    parallelism = ParallelismConfig(
++        data_parallel_shard_degree=world // args.pp,
++        expert_parallel_degree=args.ep,
++        pipeline_parallel_degree=args.pp,
++        num_pp_microbatches=args.microbatches,
++        enable_sequence_parallel=False,
++        fsdp_reshard_after_forward="always",
++    )
+     model = build_model_config(
+-        args.flavor,
+-        seq_len=args.seq_len,
+-        parallelism=ParallelismConfig(enable_sequence_parallel=False),
++        args.flavor, seq_len=args.seq_len, parallelism=parallelism
+     )
+     dispatcher = _DISPATCHERS[args.dispatcher]
+     if dispatcher is not None:
+@@ -106,21 +120,11 @@ def configs(args):
+                 f.name: getattr(router, f.name)
+                 for f in fields(TokenChoiceTopKRouter.Config)
+             }
+-            values["_debug_force_load_balance"] = True
+-            setattr(parent, attr, TokenChoiceTopKRouter.Config(**values))
++            setattr(parent, attr, RoundRobinTokenChoiceTopKRouter.Config(**values))
+     adapter = KimiK3StateDictAdapter(model, None)
+     policy = adapter.mxfp4_policy(args.checkpoint)
+     selected = adapter.qat_weight_fqns(policy)
+     model = MXQATTransform.from_weight_fqns(model, selected).transform(model)
+-    world = int(os.environ.get("WORLD_SIZE", "8"))
+-    parallelism = ParallelismConfig(
+-        data_parallel_shard_degree=world // args.pp,
+-        expert_parallel_degree=args.ep,
+-        pipeline_parallel_degree=args.pp,
+-        num_pp_microbatches=args.microbatches,
+-        enable_sequence_parallel=False,
+-        fsdp_reshard_after_forward="always",
+-    )
+     optimizer = _dist_muon_optimizer(
+         model, muon_lr=args.lr, adamw_lr=args.lr, parallelism=parallelism
+     )
+@@ -135,7 +139,6 @@ def configs(args):
+         max_context_length=args.seq_len,
+         steps=args.steps,
+         disable_cuda_graphs=True,
+-        max_norm=1.0,
+     )
+     from pipeline_memory import RecomputeMatmulsSelectiveAC
+ 
+@@ -146,7 +149,11 @@ def configs(args):
+     )
+     config = TrainingEngine.Config(
+         debug=DebugConfig(seed=42, deterministic=args.deterministic),
+-        optimizer=optimizer,
++        optim=Optim.Config(
++            optimizer=optimizer,
++            lr_scheduler=LRSchedulersContainer.Config(warmup_steps=0, decay_ratio=0.0),
++            max_norm=1.0,
++        ),
+         parallelism=parallelism,
+         training=training,
+         activation_checkpoint=(
+@@ -159,7 +166,6 @@ def configs(args):
+                 global_vocab_size=model.tok_embeddings.num_embeddings
+             )
+         ),
+-        lr_scheduler=LRSchedulersContainer.Config(warmup_steps=0, decay_ratio=0.0),
+         profiler=Profiler.Config(
+             enable_profiling=True,
+             profile_freq=2,
+@@ -169,7 +175,6 @@ def configs(args):
+             profiler_repeat=1,
+         ),
+     )
+-    model.update_from_config(config=config)
+     return model, config, selected
+ 
+ 
+@@ -222,7 +227,7 @@ def main():
+             ),
+             "parameters": sum(p.numel() for p in names.values()),
+             "optimizer_types": [
+-                type(c).__qualname__ for c in config.optimizer.optimizers
++                type(c).__qualname__ for c in config.optim.optimizer.optimizers
+             ],
+         }
+         print(json.dumps(report), flush=True)
+@@ -235,7 +240,7 @@ def main():
+     )
+     rank = dist.get_rank()
+     print(f"RANK {rank} ENGINE_INITIALIZE", flush=True)
+-    engine.initialize(compile_config=None, hf_assets_path="")
++    engine.initialize(hf_assets_path="")
+     if args.reshard_after_backward:
+         if args.pp <= 1:
+             raise ValueError("Pipeline backward resharding requires pp > 1")
+@@ -287,7 +292,7 @@ def main():
+         )
+     if args.diagnostic_state:
+         save_debug_state(engine, args.output, rank, "initial")
+-    muons = [o for o in engine.optimizers if isinstance(o, DistMuon)]
++    muons = [o for o in engine.optim.optimizers if isinstance(o, DistMuon)]
+     assert muons, "DistMuon not engaged"
+     muon_params = {id(p) for o in muons for g in o.param_groups for p in g["params"]}
+     candidates = {}
+@@ -317,6 +322,11 @@ def main():
+         "distmuon_instances": len(muons),
+         "settings": vars(args),
+     }
++    dp_rank = (
++        engine.parallelism_context.get_mesh("dp").get_local_rank()
++        if engine.parallelism_context.dp_enabled
++        else 0
++    )
+     engine.start_profiler()
+     try:
+         for step in range(args.steps):
+@@ -325,9 +335,7 @@ def main():
+                 print(f"RANK {rank} STEP {step + 1} START", flush=True)
+                 calls_before = counts["calls"]
+                 gen = torch.Generator().manual_seed(
+-                    20260928
+-                    + step * 1000
+-                    + engine.parallelism_context.get_mesh("dp").get_local_rank()
++                    20260928 + step * 1000 + dp_rank
+                 )
+                 group = []
+                 n = args.seq_len * args.microbatch_size
+@@ -338,27 +346,51 @@ def main():
+                         (n + 1,),
+                         generator=gen,
+                     )
++                    labels = tokens[1:]
++                    positions = torch.arange(args.seq_len, dtype=torch.int32).repeat(
++                        args.microbatch_size
++                    )
++                    padding_mask = torch.zeros(n, dtype=torch.bool)
++                    loss_counts, routing_counts = get_mtp_token_counts(
++                        target_mask=labels != IGNORE_INDEX,
++                        positions=positions,
++                        padding_mask=padding_mask,
++                        num_mtp_layers=0,
++                    )
+                     group.append(
+                         TokenizedTrainingMicrobatch(
+                             input=tokens[:-1],
+-                            labels=tokens[1:],
+-                            positions=torch.arange(
+-                                args.seq_len, dtype=torch.int32
+-                            ).repeat(args.microbatch_size),
+-                            padding_mask=torch.zeros(n, dtype=torch.bool),
+-                            num_valid_tokens=n,
++                            labels=labels,
++                            positions=positions,
++                            padding_mask=padding_mask,
++                            loss_token_counts=loss_counts[0],
++                            routing_token_counts=routing_counts,
+                         )
+                     )
+                 torch.cuda.synchronize()
+                 torch.cuda.reset_peak_memory_stats()
+                 start = time.perf_counter()
+-                valid = engine.prepare_step(
+-                    n * args.microbatches * (dist.get_world_size() // args.pp)
+-                )
+-                with torch.profiler.record_function("campaign_forward_backward"):
+-                    loss = engine.forward_backward_microbatch(
+-                        microbatch_group=group, global_valid_tokens=valid
++                # One group is one pipeline step; without PP each microbatch is its own group.
++                groups = [group] if args.pp > 1 else [[mb] for mb in group]
++                local_loss = sum(mb.loss_token_counts for mb in group)
++                local_routing = sum(mb.routing_token_counts for mb in group)
++                token_counts = torch.cat(
++                    (local_loss.reshape(-1), local_routing.reshape(-1))
++                ).to(engine.device)
++                if engine.parallelism_context.dp_enabled:
++                    token_counts = dist_utils.dist_sum_tensor(
++                        token_counts, engine.parallelism_context.get_mesh("dp")
+                     )
++                with torch.profiler.record_function("campaign_forward_backward"):
++                    loss = engine.forward_backward(
++                        microbatch_groups=groups,
++                        global_loss_token_counts=token_counts[:1].reshape(
++                            local_loss.shape
++                        ),
++                        global_routing_token_counts=token_counts[1:].reshape(
++                            local_routing.shape
++                        ),
++                    ).loss
+                 if step == 0:
+                     log_memory(rank, "first_forward_backward_complete")
+                     if args.release_cache_before_first_update:
+@@ -403,7 +435,7 @@ def main():
+                 if step == 0:
+                     log_memory(rank, "first_optimizer_start")
+                 with torch.profiler.record_function("campaign_optimizer"):
+-                    grad_norm = engine.optimizer_step()
++                    grad_norm = engine.optim_step()
+                 if step == 0:
+                     log_memory(rank, "first_optimizer_complete")
+                 assert math.isfinite(
