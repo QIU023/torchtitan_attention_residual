@@ -12,6 +12,8 @@
 - 10-13 用户："5060这个LoRA 没有上游数值对比吧？body里面可以放5060的"，"为什么没有表格？乱写，参照4312"。Results 节按 4312 的格式重写：设定一行、kit 链接、复现命令、四张表（dp1 组、dp2 组、各自数据流、冻结 stage）和脚注，数字由脚本从 `b61c686dc` 的日志生成。以下是改表格之前的记录：粘贴区的 Test plan 加了 5060 上的 18 格（通过与否 + 每个 rank 的合并逐位检查，标明 8 x RTX 5060 Ti）和两个冻结 stage 格子，Relation 加了一句 MX QAT + LoRA 在叠栈分支上同样 18 格通过。这些都不和上游比数值。明细在 `STACK_FULL_AND_LORA_MM18_2026-10-12.md`。单测计数是 `fb4079831` 上实测的。
 - 10-13 改了粘贴区三处：Summary 不再说 "every ... vision language model"（muse_glimmer 是 VLM，在 main 上能构建），改成列出建不起来的模型；Relation 写明 QLoRA 是 #4791 的 MX QAT 加本 PR 的 LoRA；删掉 Pending (H100) 那一行。
 
+- 10-14：用户从线上 body 删掉了 Relation 一节，并说"我不想看到relation to other PR章节，规则记录"。粘贴区同步删除；这一节不再出现在任何 body 里。PR 分支加了第五个提交 `676e443e0`（两个 GPU 测试的 `multi_gpu` 标记），Test plan 的命令不变。
+
 --- PASTE BEGIN ---
 
 ## Summary
@@ -35,11 +37,6 @@ With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_
 - Frozen pipeline ranks:
   - A model part with nothing to train is skipped with a log line; a trainable part whose pattern matches nothing still raises.
   - A rank with nothing to train gets one empty param group, no scheduler state, and a zero grad norm on the accelerator; on main that rank's norm is a CPU `tensor(0.)`, which the NCCL all-reduce rejects.
-
-## Relation to other PRs
-
-- This PR no longer adds the NF4 and packed MXFP4 bases of its first version; QLoRA for Kimi K3 is the MX QAT of #4791 with this PR's LoRA applied after it.
-- #3189 and #2485 (PEFT export) closed unmerged; a converter can start from these two state dicts.
 
 ## Results
 

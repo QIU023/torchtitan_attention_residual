@@ -104,13 +104,11 @@ The maintainers' own quantile-balancing PR (pytorch/torchtitan#4577) is the form
     <The mechanism, two or three sentences.>
     <One paragraph: where each piece lives and why it lives there.>
 
-    ## Relation to #N          (only when it replaces or overlaps another PR)
-
     ## Test plan
     - `pytest <file> -q` (`1 passed`)
     - Scoped pre-commit checks, including formatting, lint, and Pyrefly (`passed`)
 
-No changed-files block and no numbers table unless the claim is numerical (then the numerics rules in CLAUDE.md apply). The code side of the same standard (survey the module structure first, reuse titan's seams, no hooks or patches without a missing seam, one-line docstrings, comments only for invariants; #4577 has 18 comment and docstring lines per 398 code lines, #4412 had 111 per 381) is in CLAUDE.md, "#4577 is the reference for code and body".
+No `## Relation to ...` section (user, 2026-10-14). No changed-files block and no numbers table unless the claim is numerical (then the numerics rules in CLAUDE.md apply). The code side of the same standard (survey the module structure first, reuse titan's seams, no hooks or patches without a missing seam, one-line docstrings, comments only for invariants; #4577 has 18 comment and docstring lines per 398 code lines, #4412 had 111 per 381) is in CLAUDE.md, "#4577 is the reference for code and body".
 
 ## Applies to every kit in this folder
 
