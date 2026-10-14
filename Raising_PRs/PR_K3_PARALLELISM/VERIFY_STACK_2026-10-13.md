@@ -78,3 +78,21 @@
 - MoonEP 拿掉：`git rebase --onto 525fd3e47 92afeeeee`，栈 = `0d00a4f09`，先推备份 `backup/k3_mxqat_stack_20261012_pre_moonep_drop` = `b49021d5e`，再 force-with-lease 推。新旧 head 之差正好是 MoonEP 提交（patch-id 相同），树里没有 MoonEP、`shared_experts_stream`，`moe.py` 等和 main 相同；相关 CPU 测试 98 passed；mm、mm_muon 3 步，第 1、3 步和旧栈逐位相同。九个未提交的修复在 rebase 前存成 patch，rebase 后原样打回。
 - LoRA PR #4576：头 `fb4079831`（= `lora_review2`），草稿，标题 `[DO NOT review][Kimi K3][LoRA] ...`；线上 body 和 v2 文件相同，只少 `## Relation to other PRs` 一节；和 main `dbfba1da8`（比基底多 28 个提交）`git merge-tree` 无冲突；上游 CI 等维护者批准（`ciflow/rl` 机器人评论）。还差两个 GPU 测试的 `multi_gpu` 标记（`wt_lora` 未提交）。
 - 修复折进栈（用户"2件都确认"，auto mode 拦下 cherry-pick 后用户放行）：九个文件和 `mx_qat.py` 的 import 顺序折进适配提交（`70e7263cd`），其后六个提交 cherry-pick 无冲突，`multi_gpu` 标记折进 LoRA 提交（说明改为 PR-4576 在 `676e443e0` 的 5 个提交）。栈 = `7f8b1bf4d`，先推备份 `backup/k3_mxqat_stack_20261012_pre_fix_fold` = `0d00a4f09` 再 force-with-lease。核对：新树 = 旧 head + 验证过的九个文件 diff + import 顺序；LoRA PR 改过的文件和 `676e443e0` 逐字节相同；CPU 114 passed；mm、mm_muon 3 步第 1 步相同，mm 第 3 步在新冷缓存上是 6.60117，换到上一次运行缓存的副本上是 6.59915，和上一次 3 步逐位相同（冷缓存造成，不是代码）。
+
+## 10-14 在 `7f8b1bf4d` 上全部重跑（用户："全部重跑"）
+
+脚本 `r7f8b/driver_7f8b.sh`（scratchpad `verify_stack_1013/r7f8b`），太平洋时间 01:58 到 05:53。树 `7f8b1bf4d`，工作区干净。
+
+- 2.8T key 映射：通过，和 10-13 一样（缺 0 多 0，`from_hf` 回到 2,771 个 key，QAT 184 个和 packed 一一对应）。官方 config 在 `/tmp/k3cfg/config.json`，和 `phase13_k3like_48b_posttrain/official_k3/reference` 的索引放进 `r7f8b/k3_view`。
+- CPU 全部单测：1668 passed，3 failed（flux 两个、embedding 一个，main 也挂），6 个文件收集错误用 nightly torchao 补跑 80 passed；只在栈上失败 0 个，失败名单和 10-13 的栈完全相同。比 10-13 少 3 个通过是 MoonEP 的 CPU 测试随提交去掉了。
+- 18 格（`cells_mm18.txt`，K3 debug、cc12m-test、seed 42、deterministic、10 步）：
+  - base 18 / 18；第 1 步和 10-12 逐位相同（dp1 组 8.12572、dp2 组 8.11338、ep8 × fsdp8 8.12882、cp4 8.13709）。
+  - MX QAT 18 / 18；第 1 步和 10-13 逐位相同（8.12757、8.11612、8.13140、8.13820）。
+  - MX QAT + DistMuon 10 / 10（FSDP 布局），第 1 步和上一轮相同。
+  - LoRA 18 / 18，`gate_mm18.py`：每个 rank 都有导出检查，worst 0，模块数全对。
+  - QLoRA（MX QAT + LoRA）18 / 18，同上；ep8 × fsdp8 用按本地专家分批的期望值，直接 worst 0。
+- 冻结 stage（只给 MLA 投影加 LoRA）：pp4 × vpp2、pp8 都失败，stage 1 报 `RuntimeError: stage 1: backward produced no gradient for any input`（`kimi_k3/pipeline_parallel/stage.py`），其余 rank NCCL 超时。定位：同一 seed、同样两格，在去掉 #4963 的临时树（`7f8b1bf4d` 上反向打 `1cfa0b99e` 的 diff，`scratchpad/wt_stack_no4963`）上都通过（pp4 × vpp2 导出 25 个模块 worst 0，3 个冻结 part 按设计跳过）。原因：main 和 #4656 把收到的注意力残差块拼成一个总是要梯度的叶子，所以前面全冻结时也有梯度；#4963 改成每块单独、输入梯度单独收集后，冻结的 stage 0 后面那个 stage 只有不需要梯度的 hidden、没有消费存下的块，所有输入梯度为 None，检查报错。#4963 已经对"自己提交的块上游不可训练"有同样的豁免，这里缺同一个豁免：所有输入的 receive metadata 都不需要梯度时，按冻结上游处理，不报错。10-12 那两个冻结格子跑在 LoRA PR 的树上（main + LoRA），没有在栈上跑过；10-14 早先的表把它写成"`0fa53c2e3` 通过"是错的。
+- 存档续跑（`run_resume_all.sh`，五种布局，全部在副本缓存上）：r1b 对 r1c 五种都 10 / 10；续跑 fsdp2、fsdp2 × cp2、fsdp2 × pp2、fsdp2 × pp2 × vpp2 5 / 5 逐位相同，ep2 × fsdp2 第 6 步相同、第 7 步起不同（6.88123 对 6.88147）。上一轮不精确的是 vpp2、这轮是 ep2 × fsdp2，所以和 VPP 无关，10-14 早先"DistMuon 在 VPP 下续跑不精确、是 main 的问题"的说法作废。正在做重复性检查：同一存档再续跑两次（`run_resume_repeat.sh`）。
+- CI 格子（`b663c1673` 对 `7f8b1bf4d`，同一份预热缓存的副本，20 步）：mm、mm_muon 20 / 20 逐位相同；两个 CP 格子前 4 步相同、第 5 步起不同（动态 CP），栈第 20 步和前两轮相同（all-gather 5.53112、Ulysses 5.54415）；pp × vpp4 第 1 步相同、第 2 步起不同（DEP、#4656 编译区）；Elfie 的 MX QAT recipe 20 步；MXFP4 checkpoint 集成测试 1 passed。
+- Elfie 的入口：preflight、dp1（8.410406 / 5.59375）、full128 8 / 8、full256 PP2 × EP4 8 / 8（loss 约 2.02、grad norm 0.0889）、PP8 8 / 8（8.125 / 0.1387），和上一轮相同；memory32 冒烟 8 个 rank 都 PASS，梯度 fp32。
+- GPU 单测（CI 的两条线）：单卡线 179 passed、36 failed，8 卡线 41 passed、8 failed、2 skipped；两条线的失败名单都和 main 完全相同，只在栈上失败 0 个。
