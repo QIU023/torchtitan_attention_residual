@@ -71,3 +71,9 @@
 - `hybridep_stage_memory.py`（memory32）、`--dispatcher hybridep` / `deepep`：要 DeepEP hybrid-ep 和 NVSHMEM；MoonEP 要交换机 multicast。
 - RL 的 `rl_grpo_kimi_k3_debug_batch_invariant`：本机没有 vLLM。
 - 多节点、93 层真实模型、真实发布权重的加载（只查了索引和 key 映射）。
+
+## 10-14 收尾（用户："清理磁盘，MoonEP从栈上面拿掉，LoRA PR完全ready了吗？"）
+
+- 清理：本次和几次已结束实验（MoonEP 性能、CP 数值、DEP、#4656、LoRA 18 格等）的编译缓存、checkpoint 和运行目录按字面路径删除，删除前把日志、进度、JSON、脚本、patch 打包成 scratchpad 的 `run_logs_archive_20261014.tgz`（188M，3841 个文件）。磁盘可用从 22G 到 89G；worktree 和 kit 没动。
+- MoonEP 拿掉：`git rebase --onto 525fd3e47 92afeeeee`，栈 = `0d00a4f09`，先推备份 `backup/k3_mxqat_stack_20261012_pre_moonep_drop` = `b49021d5e`，再 force-with-lease 推。新旧 head 之差正好是 MoonEP 提交（patch-id 相同），树里没有 MoonEP、`shared_experts_stream`，`moe.py` 等和 main 相同；相关 CPU 测试 98 passed；mm、mm_muon 3 步，第 1、3 步和旧栈逐位相同。九个未提交的修复在 rebase 前存成 patch，rebase 后原样打回。
+- LoRA PR #4576：头 `fb4079831`（= `lora_review2`），草稿，标题 `[DO NOT review][Kimi K3][LoRA] ...`；线上 body 和 v2 文件相同，只少 `## Relation to other PRs` 一节；和 main `dbfba1da8`（比基底多 28 个提交）`git merge-tree` 无冲突；上游 CI 等维护者批准（`ciflow/rl` 机器人评论）。还差两个 GPU 测试的 `multi_gpu` 标记（`wt_lora` 未提交）。
