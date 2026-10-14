@@ -14,11 +14,17 @@
 
 - 10-14：用户从线上 body 删掉了 Relation 一节，并说"我不想看到relation to other PR章节，规则记录"。粘贴区同步删除；这一节不再出现在任何 body 里。PR 分支加了第五个提交 `676e443e0`（两个 GPU 测试的 `multi_gpu` 标记），Test plan 的命令不变。
 
+- 10-14 用户问"4576本身body和diff ready了吗"。复查：
+  - diff：5 个提交（`676e443e0`）；新增的注释和 docstring 都是一行，说的是约束或功能，没有设计叙述；`git merge-tree` 和 main `dbfba1da8` 无冲突；在临时合并树上 pyflakes 无未定义名字，PR 涉及的 CPU 测试 84 passed，两个 GPU 测试按 `-m multi_gpu` 选中并通过（13.7 s、6.3 s，本机用 shim 关掉 sm120 的 FA4 选择）；main 的 #5266 重写了 `clip_grad_norm_`，本 PR 的改动落在新代码上仍然生效，裁剪测试在 main 上仍报 `No backend type associated with device type cpu`。
+  - 在最新 main 上用默认目标建模型：deepseek_v3、deepseek_v4、gpt_oss、qwen3_5、kimi_k2_7、kimi_k3 报 AssertionError，合并后全部能建；llama3、muse_glimmer 两边都能建。
+  - body 有两处要改：模型名 `kimi_k2_5` 写错了，titan 里叫 `kimi_k2_7`；"Measured at" 一句只说了一个后续提交，现在有两个（类型断言和 `multi_gpu` 标记）。粘贴区已改，线上 body 要用户改这两处。
+  - 标题建议去掉 `[DO NOT review]` 和 `[Kimi K3]`（PR 不特定于 K3），并把 draft 转为 ready；CI 要维护者批准才会跑。
+
 --- PASTE BEGIN ---
 
 ## Summary
 
-With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_v4, gpt_oss, qwen3_5, kimi_k2_5 and kimi_k3 debug models, cannot export a trained adapter, and fails on a pipeline rank with nothing to train; this PR fixes all three.
+With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_v4, gpt_oss, qwen3_5, kimi_k2_7 and kimi_k3 debug models, cannot export a trained adapter, and fails on a pipeline rank with nothing to train; this PR fixes all three.
 
 - `torchtitan/models/common/lora.py`: `trainable_state_dict`, `merge_lora_state_dict`, and adapter shardings that follow the TP entry of the base placement.
 - `torchtitan/components/optim/optimizer.py`, `lr_scheduler.py`, `torchtitan/distributed/utils.py`: a rank whose model parts are all frozen gets an empty optimizer and scheduler and still joins the grad norm all-reduce.
@@ -40,7 +46,7 @@ With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_
 
 ## Results
 
-8 x RTX 5060 Ti, `kimi_k3_debugmodel` (17 layers, dim 256) on the multimodal `cc12m-test`, 4096 tokens per step, seed 42, deterministic. `LoRATransform(rank=8, alpha=16.0)` adapts all 290 supported projections. Every cell loads one seed checkpoint, trains 10 steps, then compares the output of `merge_lora_state_dict` on every rank with $W + \frac{\alpha}{r} B A$ computed from the gathered tensors. Measured at `b61c686dc`; the last commit, `fb4079831`, only adds a type assertion. The cell configs, the merge check and the runners are in [this kit](https://github.com/QIU023/torchtitan_attention_residual/tree/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12), not in this PR.
+8 x RTX 5060 Ti, `kimi_k3_debugmodel` (17 layers, dim 256) on the multimodal `cc12m-test`, 4096 tokens per step, seed 42, deterministic. `LoRATransform(rank=8, alpha=16.0)` adapts all 290 supported projections. Every cell loads one seed checkpoint, trains 10 steps, then compares the output of `merge_lora_state_dict` on every rank with $W + \frac{\alpha}{r} B A$ computed from the gathered tensors. Measured at `b61c686dc`; the two later commits only add a type assertion and the `multi_gpu` test markers. The cell configs, the merge check and the runners are in [this kit](https://github.com/QIU023/torchtitan_attention_residual/tree/673a0323/Raising_PRs/PR_K3_PARALLELISM/kit_lora_mm18_2026-10-12), not in this PR.
 
 Step 1 is identical to its reference in every layout without TP or CP and within 0.005% with TP or CP. On every rank of every layout, every merged weight is bitwise identical to $W + \frac{\alpha}{r} B A$ computed from the gathered tensors.
 
