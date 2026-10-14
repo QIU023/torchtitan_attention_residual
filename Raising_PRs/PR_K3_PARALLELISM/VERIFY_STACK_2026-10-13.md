@@ -98,3 +98,9 @@
 - GPU 单测（CI 的两条线）：单卡线 179 passed、36 failed，8 卡线 41 passed、8 failed、2 skipped；两条线的失败名单都和 main 完全相同，只在栈上失败 0 个。
 - 冻结 stage 的修复（用户："4963同步修改 那边是draft PR"）：#4963 的分支 `pp_review_optimize` 加一个提交 `62b32e5af`（PR head 同步）：收到的所有输入在 receive metadata 里都不需要梯度时，按上游冻结处理，不报错、不往回发梯度（和它对自己提交的块已有的豁免一样）；有输入需要梯度时照旧报错。新测试 `test_stage_after_a_frozen_prefix_sends_no_gradient`（`test_kimi_k3_pp_block_grads.py`，4 rank gloo，pp4 × vpp2 冻结 block 0，和单卡参考逐位相同）去掉修复时报原错，加上修复后通过；K3 CPU 21 passed；flake8、ufmt 通过；pyrefly 回到 main 的 2 个（`grad_TD.contiguous()` 加了非空判断）。同一修复折进栈上 #4963 的提交（`8e51a6e7f`），后面三个提交重放，栈 = `a89d39417`（备份 `backup/k3_mxqat_stack_20261012_pre_4963_fix` = `7f8b1bf4d`）；新旧之差正好是这处修复；两个冻结格子通过（导出 25 个模块 worst 0），pp × vpp4 在同一份缓存副本上 3 步和修复前逐位相同。
 - 续跑重复性：ep2 × fsdp2 从同一存档续跑三次（r2b、r2c、r2d）彼此逐位相同（第 7 步 6.88147），都和连续跑（6.88123）不同；vpp2 三次都和连续跑相同。续跑过程可重复，差别是加载后状态和连续跑状态之间确定的差，哪种布局显出来随树变化，和 VPP 无关。原因未定位。
+- 续跑差别定位完成（用户："继续"）：在 `a89d39417` 上，ep2 × fsdp2 的连续跑和从它第 5 步存档续跑的一对，在第 6 步优化器更新前后各导出每个 rank 的优化器状态、学习率、参数和梯度（`kit_more/resume_dump_probe.py`、`compare_dumps.py`，输出 `r7f8b/dump_probe`）：
+  - 默认编译：更新前 6528 项里只有视觉塔参数的梯度不同（1e-8 到 1e-10，这些参数归 AdamW），DistMuon 动量、学习率、全部参数逐位相同；更新后视觉塔 `attn.wq`、`attn.wk` 参数差到约 1e-4。vpp2 对照只有一个视觉塔梯度差 4.7e-10，更新后被舍入吸收。
+  - 关掉自动动态形状：局部编译区 `fullgraph=True` 超过重编上限报错，不可用。
+  - 从第一次编译就用动态形状（`torch._dynamo.config.assume_static_by_default = False`）：更新前后 0 处不同，续跑 5 / 5 逐位相同。
+  - 关掉 dynamo（`TORCHDYNAMO_DISABLE=1`）：同样 0 处不同，5 / 5。
+  - 结论：存档和加载精确；差别是 `torch.compile` 的自动动态形状：连续跑在见到第二种图片尺寸后改用动态 kernel，续跑的新进程第一步给视觉塔编静态 kernel，两者舍入不同。和 DistMuon、VPP、优化器无关；10-14 早先"DistMuon 在 VPP 下续跑不精确、是 main 的问题"作废（main 上 DistMuon / AdamW 一个精确一个不精确同样是舍入碰巧）。要逐位续跑需从第一次编译就用动态形状或关掉编译；对 2.8T 训练无影响。
