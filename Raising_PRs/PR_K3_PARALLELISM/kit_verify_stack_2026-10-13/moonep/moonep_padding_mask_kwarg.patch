@@ -1,0 +1,15 @@
+diff --git a/torchtitan/distributed/moonep/experts.py b/torchtitan/distributed/moonep/experts.py
+index b69c2151e..c9c1ffa66 100644
+--- a/torchtitan/distributed/moonep/experts.py
++++ b/torchtitan/distributed/moonep/experts.py
+@@ -58,7 +58,10 @@ class MoonEPRoutedExperts(RoutedExperts):
+         topk_scores_TK: torch.Tensor,
+         topk_expert_ids_TK: torch.Tensor,
+         num_local_tokens_per_expert_E: torch.Tensor,
++        *,
++        padding_mask_T: torch.Tensor | None = None,
+     ) -> torch.Tensor:
++        del padding_mask_T
+         routed_input_RD, _, metadata = self.token_dispatcher.dispatch(
+             x_TD,
+             topk_scores_TK,

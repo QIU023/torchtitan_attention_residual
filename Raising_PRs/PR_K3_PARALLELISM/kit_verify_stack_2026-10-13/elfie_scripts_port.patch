@@ -427,6 +427,48 @@ index 52843cd7a..1b0c916c9 100644
          actual_grads = torch.autograd.grad(actual, (x, head.weight, head.bias))
          torch.testing.assert_close(actual, expected)
          for result, reference in zip(actual_grads, expected_grads):
+diff --git a/tests/unit_tests/gpu/distributed/test_clip_grad_norm.py b/tests/unit_tests/gpu/distributed/test_clip_grad_norm.py
+index ee5aba1f7..8d3eeade7 100644
+--- a/tests/unit_tests/gpu/distributed/test_clip_grad_norm.py
++++ b/tests/unit_tests/gpu/distributed/test_clip_grad_norm.py
+@@ -4,6 +4,7 @@
+ # This source code is licensed under the BSD-style license found in the
+ # LICENSE file in the root directory of this source tree.
+ 
++import pytest
+ import torch
+ from torch.distributed.device_mesh import init_device_mesh
+ from torch.testing._internal.distributed._tensor.common_dtensor import (
+@@ -13,6 +14,8 @@ from torch.testing._internal.distributed._tensor.common_dtensor import (
+ 
+ from torchtitan.distributed.utils import clip_grad_norm_
+ 
++pytestmark = pytest.mark.multi_gpu
++
+ 
+ class TestClipGradNormPipelineRankWithoutGradients(DTensorTestBase):
+     @property
+diff --git a/tests/unit_tests/gpu/models/common/test_lora.py b/tests/unit_tests/gpu/models/common/test_lora.py
+index e3c34f806..964984fef 100644
+--- a/tests/unit_tests/gpu/models/common/test_lora.py
++++ b/tests/unit_tests/gpu/models/common/test_lora.py
+@@ -4,6 +4,7 @@
+ # This source code is licensed under the BSD-style license found in the
+ # LICENSE file in the root directory of this source tree.
+ 
++import pytest
+ import torch
+ from torch.distributed.tensor import DTensor
+ from torch.testing._internal.distributed._tensor.common_dtensor import (
+@@ -18,6 +19,8 @@ from torchtitan.distributed.parallelism_context import ParallelismContext
+ from torchtitan.models.common.lora import _LoRAMixin, merge_lora_state_dict
+ from torchtitan.models.llama3 import build_model_config
+ 
++pytestmark = pytest.mark.multi_gpu
++
+ 
+ class TestMergeLoRAStateDictFSDPTensorParallel(DTensorTestBase):
+     @property
 diff --git a/torchtitan/components/loss.py b/torchtitan/components/loss.py
 index 4fbd91d07..adc8c305d 100644
 --- a/torchtitan/components/loss.py

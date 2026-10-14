@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Fake scontrol for local runs: `show hostnames PREFIX[a-b]` and `show node -o PREFIX[a-b]`; NVLink block = index // FAKE_BLOCK."""
+import os, re, sys
+args = sys.argv[1:]
+m = re.fullmatch(r"(\w+?)\[(\d+)-(\d+)\]", args[-1])
+prefix, lo, hi = m.group(1), m.group(2), m.group(3)
+nodes = [f"{prefix}{i:0{len(lo)}d}" for i in range(int(lo), int(hi) + 1)]
+block = int(os.environ.get("FAKE_BLOCK", "18"))
+if args[:2] == ["show", "hostnames"]:
+    print("\n".join(nodes))
+elif args[:3] == ["show", "node", "-o"]:
+    for i, n in enumerate(nodes):
+        print(f"NodeName={n} Arch=aarch64 CoresPerSocket=72 CPUAlloc=0 AvailableFeatures=gb200,nvlblk{i // block} ActiveFeatures=gb200,nvlblk{i // block} Gres=gpu:4 State=IDLE")
