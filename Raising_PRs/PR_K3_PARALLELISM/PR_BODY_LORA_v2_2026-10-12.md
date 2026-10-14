@@ -18,13 +18,14 @@
   - diff：5 个提交（`676e443e0`）；新增的注释和 docstring 都是一行，说的是约束或功能，没有设计叙述；`git merge-tree` 和 main `dbfba1da8` 无冲突；在临时合并树上 pyflakes 无未定义名字，PR 涉及的 CPU 测试 84 passed，两个 GPU 测试按 `-m multi_gpu` 选中并通过（13.7 s、6.3 s，本机用 shim 关掉 sm120 的 FA4 选择）；main 的 #5266 重写了 `clip_grad_norm_`，本 PR 的改动落在新代码上仍然生效，裁剪测试在 main 上仍报 `No backend type associated with device type cpu`。
   - 在最新 main 上用默认目标建模型：deepseek_v3、deepseek_v4、gpt_oss、qwen3_5、kimi_k2_7、kimi_k3 报 AssertionError，合并后全部能建；llama3、muse_glimmer 两边都能建。
   - body 有两处要改：模型名 `kimi_k2_5` 写错了，titan 里叫 `kimi_k2_7`；"Measured at" 一句只说了一个后续提交，现在有两个（类型断言和 `multi_gpu` 标记）。粘贴区已改，线上 body 要用户改这两处。
-  - 标题建议去掉 `[DO NOT review]` 和 `[Kimi K3]`（PR 不特定于 K3），并把 draft 转为 ready；CI 要维护者批准才会跑。
+  - 标题保留 `[Kimi K3]`（用户 10-14："我们的test只有K3吧 不要扩大scope"）；`[DO NOT review]` 和 draft 状态由用户决定。CI 要维护者批准才会跑。
+  - 10-14 同时把 Summary 收窄到 Kimi K3：原来列的 deepseek_v3、deepseek_v4、gpt_oss、qwen3_5、kimi_k2_7 只做过"能否建起来"的检查，端到端证据（18 格、导出逐位、冻结 stage）只有 K3。单测里 CPU 和 GPU 的合并测试用 llama3 debugmodel，其余是通用的 Linear、优化器、调度器、grad norm 测试。
 
 --- PASTE BEGIN ---
 
 ## Summary
 
-With its default targets, LoRA on main fails to build the deepseek_v3, deepseek_v4, gpt_oss, qwen3_5, kimi_k2_7 and kimi_k3 debug models, cannot export a trained adapter, and fails on a pipeline rank with nothing to train; this PR fixes all three.
+With its default targets, LoRA on main fails to build the Kimi K3 debug model, cannot export a trained adapter, and fails on a pipeline rank with nothing to train; this PR fixes all three.
 
 - `torchtitan/models/common/lora.py`: `trainable_state_dict`, `merge_lora_state_dict`, and adapter shardings that follow the TP entry of the base placement.
 - `torchtitan/components/optim/optimizer.py`, `lr_scheduler.py`, `torchtitan/distributed/utils.py`: a rank whose model parts are all frozen gets an empty optimizer and scheduler and still joins the grad norm all-reduce.
