@@ -25,6 +25,10 @@
   4. EP 路径：任意一个 EP=2 的格子跑 10 步，确认能跑通、grad norm 是 fp32。
 - 粘贴区已检查：没有 we/our/us、破折号或非 ASCII 字符。
 
+- **10-14 重做：** 用户问"4135可以准备重新开一个了吧（去掉已经进入上游的helper）"。main 的 #5266（vision encoder 只做 dp_shard）把 `clip_grad_norm_` 改成按 mesh 分组、每组调一次 `get_total_norm`，`_clip_grad_norm_with_ep` 没了，旧分支 `9d60f8c6d`（三行）和 main 冲突。在 main `dbfba1da8` 上重做为一行，`grad_norm_fp32_dtype` = `e40c4de7b`（作者 QIU023，没有 trailer），旧头备份为 `backup/grad_norm_fp32_dtype_pre_20261014`。ufmt、flake8（固定版本 hook）通过。粘贴区的 bullet 改成一处调用。
+- **10-14 版本状态：** titan 最新 release 是 0.3.0（PyPI），绑 PyTorch 2.14（`release/0.3` 的 `docs/release.md`）；torch 最新稳定版 2.14.1；pytorch 10-05 切了 `release/2.15`，titan 的 `release/0.4` 还没切；`release/2.16` 不存在。`dtype` 只在 2.16 和 10-08 以后的 nightly 里。本机 venv 的 nightly 是 10-05 的，没有这个参数，所以本机不能跑这一行。
+- **合入时机：** titan main 跟 nightly，真正的门槛是 titan 切出 `release/0.4`（用 2.15 验证）；切完以后 main 就只对 2.16 负责，这时合入不会影响 0.4。
+
 标题：`[Pending torchtitan release bound to torch 2.16] clip_grad_norm_: accumulate the total norm in float32`
 
 --- PR body: PASTE BEGIN ---
@@ -33,7 +37,7 @@
 
 Follows the conclusion of #4135: the `dtype` argument for `torch.nn.utils.get_total_norm` went into PyTorch instead of a copy in titan, and pytorch/pytorch#194033 has merged (PyTorch 2.16, and nightlies from 2026-10-08).
 
-- `torchtitan/distributed/utils.py`: the three `get_total_norm` calls in `clip_grad_norm_` and `_clip_grad_norm_with_ep` pass `dtype=torch.float32`, so with bf16 gradients the total norm accumulates in float32 and no longer depends on the PP or EP split.
+- `torchtitan/distributed/utils.py`: the `get_total_norm` call in `clip_grad_norm_` passes `dtype=torch.float32`, so with bf16 gradients the per-mesh norms and their combination across meshes and pipeline stages run in float32, and the total no longer depends on how the parameters are split.
 
 PyTorch 2.15 does not have the argument, so this is pending the titan release that binds to torch 2.16.
 
