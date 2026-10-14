@@ -1,15 +1,15 @@
 diff --git a/scripts/validation/kimi_k3/finite_diagnostics.py b/scripts/validation/kimi_k3/finite_diagnostics.py
-index 7e948c7a7..58dd85813 100644
+index 7e948c7a7..15102e19d 100644
 --- a/scripts/validation/kimi_k3/finite_diagnostics.py
 +++ b/scripts/validation/kimi_k3/finite_diagnostics.py
-@@ -11,6 +11,7 @@ from pathlib import Path
+@@ -10,6 +10,7 @@ import math
+ from pathlib import Path
  
  import torch
- from torch.distributed.tensor import DTensor
 +import torch_remat as remat
+ from torch.distributed.tensor import DTensor
  
  
- def _local(tensor):
 @@ -126,6 +127,9 @@ def install(models, output, rank, step=None):
  
      def hook(name):
@@ -21,7 +21,7 @@ index 7e948c7a7..58dd85813 100644
                  _local(t.detach()) for t in _tensors(result) if t.is_floating_point()
              ]
 diff --git a/scripts/validation/kimi_k3/hybridep_stage_memory.py b/scripts/validation/kimi_k3/hybridep_stage_memory.py
-index e244d02c2..43c59b712 100644
+index e244d02c2..b2dc62917 100644
 --- a/scripts/validation/kimi_k3/hybridep_stage_memory.py
 +++ b/scripts/validation/kimi_k3/hybridep_stage_memory.py
 @@ -26,7 +26,9 @@ import torch.distributed.checkpoint as dcp
@@ -79,13 +79,15 @@ index e244d02c2..43c59b712 100644
          )
          with engine.parallelism_context.activate_spmd(typechecking=False):
              inputs, _, kwargs = model.preprocess_inputs(
-@@ -186,7 +198,8 @@ def main():
+@@ -186,7 +198,10 @@ def main():
                          unsharded_bytes += unsharded.untyped_storage().nbytes()
                      if p.unsharded_accumulated_grad is None:
                          continue
 -                    grad = p.unsharded_accumulated_grad_data.detach().reshape(-1)
 +                    grad = p.unsharded_accumulated_grad.detach()
-+                    grad = (grad.to_local() if hasattr(grad, "to_local") else grad).reshape(-1)
++                    grad = (
++                        grad.to_local() if hasattr(grad, "to_local") else grad
++                    ).reshape(-1)
                      assert grad.dtype == torch.float32, grad.dtype
                      grad_bytes += grad.numel() * grad.element_size()
                      positive = False
@@ -173,7 +175,7 @@ index 2ec1096b1..0726d3ae7 100644
  
  if __name__ == "__main__":
 diff --git a/scripts/validation/kimi_k3/validate_distmuon.py b/scripts/validation/kimi_k3/validate_distmuon.py
-index 35928c441..a41f2a889 100644
+index 35928c441..a549528ef 100644
 --- a/scripts/validation/kimi_k3/validate_distmuon.py
 +++ b/scripts/validation/kimi_k3/validate_distmuon.py
 @@ -21,8 +21,12 @@ from step_watchdog import watch_step
@@ -330,18 +332,20 @@ index 35928c441..a41f2a889 100644
      engine.start_profiler()
      try:
          for step in range(args.steps):
-@@ -325,9 +335,7 @@ def main():
+@@ -324,11 +334,7 @@ def main():
+                 diagnostic_step = step + 1
                  print(f"RANK {rank} STEP {step + 1} START", flush=True)
                  calls_before = counts["calls"]
-                 gen = torch.Generator().manual_seed(
+-                gen = torch.Generator().manual_seed(
 -                    20260928
 -                    + step * 1000
 -                    + engine.parallelism_context.get_mesh("dp").get_local_rank()
-+                    20260928 + step * 1000 + dp_rank
-                 )
+-                )
++                gen = torch.Generator().manual_seed(20260928 + step * 1000 + dp_rank)
                  group = []
                  n = args.seq_len * args.microbatch_size
-@@ -338,27 +346,51 @@ def main():
+                 for mb in range(args.microbatches):
+@@ -338,27 +344,51 @@ def main():
                          (n + 1,),
                          generator=gen,
                      )
@@ -405,7 +409,7 @@ index 35928c441..a41f2a889 100644
                  if step == 0:
                      log_memory(rank, "first_forward_backward_complete")
                      if args.release_cache_before_first_update:
-@@ -403,7 +435,7 @@ def main():
+@@ -403,7 +433,7 @@ def main():
                  if step == 0:
                      log_memory(rank, "first_optimizer_start")
                  with torch.profiler.record_function("campaign_optimizer"):

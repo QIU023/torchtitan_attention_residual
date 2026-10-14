@@ -18,7 +18,7 @@
 9. 她的 fused loss（`torchtitan/components/loss.py` 的 `LinearCrossEntropyLoss`，她的提交带来的）：main 的 loss 约定是 `__call__(pred, labels, global_loss_token_counts=None)`，引擎按关键字传；她的签名还是旧名 `global_valid_tokens`，新名字落进 `**kwargs`，loss 不除 token 数。开 `--fused-loss`（full256 模式）时，loss 和梯度放大到每个 rank 的 token 数倍：full256 缩小版第 1 步 loss 264192 = 32768 × 8.06，grad norm 11648，被 `max_norm=1.0` 裁剪压回去，训练不报错但梯度尺度错了。改成 `global_loss_token_counts`。她的测试原来按位置传 token 数，两种名字都过；改成按引擎的关键字传后，旧代码失败（1 failed），新代码 3 passed。CI recipe 和 18 格都不用这个 loss，不受影响。
 10. `hybridep_stage_memory.py`（memory32）有同样的差异：`config.optimizer`、`initialize(compile_config=...)`、`num_valid_tokens`，按第 1、2、5 条同样改。它写死 HybridEP、EP32、完整 Kimi-K3，本机原样跑不了；debug 模型、standard dispatcher、EP8 的冒烟副本见下。
 
-改动只在 `scratchpad/wt_mxqat_fix` 的工作区，没有提交。完整 diff 存在 kit 的 `elfie_scripts_port.patch`（随改动更新）。
+改动只在 `scratchpad/wt_mxqat_fix` 的工作区，没有提交。完整 diff 存在 kit 的 `elfie_scripts_port.patch`（随改动更新）。10-14 对三个移植过的脚本跑了 ufmt（只有 import 顺序和换行，她原来的提交是 ufmt 干净的，格式问题来自移植），她的脚本单测 15 passed；排在 GPU 队列最后再按最终状态把入口跑一遍（`g2h_elfie_final.sh`）。
 
 ## 结果（到目前为止）
 
@@ -33,6 +33,7 @@
   - 移植后的 recompute-matmuls 对 selective（full256 缩小版 PP2 × EP4，6 步）：峰值 1.09 GiB 对 1.44 GiB，低 24%，策略生效（移植前它和 selective 完全一样）。
   - fused loss 修正后（10 步，全部 8/8 PASS）：PP2 × EP4 第 1 步每个 rank 的 loss 约 2.02（= 8.06 / 4 个 dp rank），grad norm 0.0889；同形状不开 fused loss（main 的 `CrossEntropyLoss`）每个 rank 2.025 到 2.029，grad norm 第 1 / 5 / 10 步 0.0889 / 0.0869 / 0.0845，和 fused loss 逐位相同（fused loss 的 loss 是 bf16，所以打印值只差 bf16 的取整）；PP8 第 1 步 loss 8.125、grad norm 0.139。修正前同一形状是 264192 和 11648。
   - memory32（`hybridep_stage_memory.py`）冒烟副本（debug 模型、standard dispatcher、EP8、她的 fixture、11 层前缀）：移植后 8 次前向、10 次反向都跑完，最后的梯度检查读 `FSDPParam.unsharded_accumulated_grad_data`，本机 torch nightly 里已经没有（只有 `unsharded_accumulated_grad`，返回 unsharded 参数的 `.grad`）。换成后者（DTensor 取本地分片）后 PASS，梯度是 fp32，她检查的"fp32 累加梯度"成立。这一处是 FSDP2 内部接口随 torch 版本变的，同样改进她的脚本。
+  - 她的汇总脚本 `summarize_run.py`（`--warmup-steps 2`）读这三次的输出都通过它自己的断言：8 个 rank 全 PASS、10 步、各解析 1 份 Kineto trace；第 10 步最后一个 stage 的 loss 求和 full128 7.941、full256 PP2 × EP4 8.0（4 个末级 rank 各约 2.0）、PP8 8.0625，探针参数每步都有变化（最少 3033 个元素）。
 - CI 格子（`b49021d5e` 对 main，10-12 的协议：同一份预热缓存的副本，20 步）：`kimi_k3_mm` 20/20、`kimi_k3_mm_muon` 20/20 逐位相同；两个 CP 格子前 4 步相同、第 5 步起不同（dynamic CP 第一次切图），第 20 步和 10-12 那次一样（all-gather 5.53112、Ulysses 5.54415）；PP × VPP4 第 2 步起不同（DEP + #4656 编译区），第 20 步和 10-12 不同但 main 自己也变了（3.06905 到 3.06835，缓存重新冷编译），第 1 步相同；Elfie 的 MX QAT recipe 20 步，第 1 / 20 步和 10-12 相同；MXFP4 checkpoint 集成测试 1 passed。
 - 开类型检查的组合（CI 的 `kimi_k3_mm` / `kimi_k3_mm_muon` 再套变换，10 步）：
   - MX QAT（mm、mm_muon）：`SpmdTypeError: _MXFakeQuantize.apply: autograd Function is not registered for SPMD type checking`。torchao 的 fake quant Function 没有在 spmd_types 里注册，MX QAT 开不了类型检查。她的 2.8T 入口不开类型检查，不受影响；要进开类型检查的 CI 格子，需要她的 MX QAT 代码注册它。
