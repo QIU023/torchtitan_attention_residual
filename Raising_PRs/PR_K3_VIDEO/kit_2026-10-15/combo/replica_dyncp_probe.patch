@@ -1,0 +1,23 @@
+diff --git a/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py b/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py
+index a7d8cff64..78609c171 100644
+--- a/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py
++++ b/torchtitan/models/kimi_k3/pipeline_parallel/__init__.py
+@@ -30,6 +30,7 @@ from .layout import infer_block_layout_tables, layer_to_stage_from_split
+ from .stage import AttnResPipelineStage
+ from .vision_dep import build_vision_replica, install_vision_dep, pipeline_groups
+ from .vision_dep.stage import VisionDepPipelineStage
++from ..vision_cp import install_vision_cp
+ 
+ __all__ = ["pipeline_kimi_k3"]
+ 
+@@ -105,6 +106,10 @@ def pipeline_kimi_k3(model: BaseModel, *, attn_res_cache: bool = True, **kwargs)
+             dump_folder=kwargs["dump_folder"],
+             device=kwargs["device"],
+         )
++        with kwargs["parallelism_context"].activate_spmd():
++            install_vision_cp(
++                replica, model_config.vision_encoder, kwargs["parallelism_context"]
++            )
+     parallelism = kwargs["parallelism"]
+     split = parallelism.pipeline_parallel_module_fqns_per_model_part
+     if split is None:
