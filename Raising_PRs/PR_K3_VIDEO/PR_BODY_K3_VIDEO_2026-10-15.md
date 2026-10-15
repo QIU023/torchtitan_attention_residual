@@ -1,0 +1,36 @@
+# titan：K3 视频训练（按 4 帧分段、带时间戳、和图片共用一条流）（2026-10-15）
+
+## 状态（不粘贴）
+
+- **来由：** 用户 10-15："现在直接开 从最新的mainline开始"。
+- **分支：** fork `QIU023/torchtitan` 的 `k3_video` = `93aaf9fdf`，基于 upstream main `d51e4b3c6`（10-14 23:15 PDT），一个提交，作者 QIU023，没有 trailer。7 个文件 +239 / −4。新增的 docstring 只有三行一句话的说明，另有 4 个 `pyrefly: ignore`，照文件里原有写法。
+- **为什么不照 Qwen3.5 用 `pixel_values_videos`：** K3（和 K2.5）的 `image_token` 和 `video_token` 都是 `<|media_pad|>`。图片和视频如果分两条流，模型无法按占位 id 区分各个 run 属于哪条流。K2.7 在 titan 里因此只支持单一模态的 batch，并留了 TODO："when image_id == video_id, emit one document-ordered vision stream"。本 PR 就是按这个 TODO 做的：数据侧把视频段放进 `pixel_values`。
+- **格式出处：** K3 发布的 processor 没有视频分支，但 `preprocessor_config.json` 写了 `sample_fps 8.0`、`temporal_merge_kernel_size 4`、`timestamp_mode hh:mm:ss.fff`。K2.5 发布的 `kimi_k25_vision_processing.py` 的写法是每 4 帧一段，每段为 `"{ts}<|media_begin|>video<|media_content|><|media_pad|><|media_end|>"`，`ts` 取该段首帧的时间。
+  - titan 的图片块原本就只写 `vision_start + pads + vision_end`，没有官方的 `image WxH<|media_content|>`。视频段沿用同一写法，前面加时间戳，所以也没有 `video<|media_content|>`。两者要不要都改成官方写法，是另一个问题，留给用户决定。
+- **K3 报告：** §2.4 说 MoonViT-V2 对图片和视频共用参数，"attention is factorized into intra-frame spatial and inter-frame temporal passes"。但发布的代码在一段之内对 t×h×w 做整段注意力（cu_seqlens = t·h·w），titan 的实现也是这样。对拍以发布代码为准。
+- **本机验证（8 x RTX 5060 Ti，venv_1006；main 的固定依赖装在 `scratchpad/main_pins_1015`：spmd_types a1b86de、torch_remat 624f19c、torch_checkpointing dcbb3a5、attn-gym 0.0.17）：**
+  - 本机没有 FA4。K3 默认的 varlen 后端在 sm120 上要么缺 `flash_attn`，要么换成 torch flash 后不支持 MLA 的 v 维。所以全部用 flex 后端，和 CI 的 K3 多模态格子一样。图片 recipe 在本机同样受这个限制。
+  - 单测：
+    - `test_mm_dataset_preprocessing.py` 22 passed（新增 4 个）。
+    - `gpu/models/kimi_k3/test_kimi_k3.py` 6 passed（新增 1 个，单卡）。
+    - CPU 的 data、kimi_k3、qwen3_5 三组：219 passed、2 skipped，另有 3 个 failed。这 3 个是 Qwen3.5 MRoPE 测试的 CPU inductor 编译错误，在干净的 main 上第一次失败、第二次通过，是本机的问题。
+    - 新的模型测试最初写在 CPU 上，但本机 torch nightly 的 CPU flex 编译有 bug（`cur_qSplitSize8`），所以放到了 GPU。
+  - recipe 的 batch（`probe_loader.py`）：每段 t ≤ 4，5 帧的视频切成 4 帧 + 1 帧两段，每段的占位长度等于 (h/2)(w/2)，时间戳在段前，`pixel_values_videos` 为空。
+  - 和发布代码对拍（`parity_video.py`）：
+    - 用 `numerical_tests_kimi_k3.py` 的固定 revision 和缩小的 debug 配置，权重严格转换，bf16，两边喂同一份分段 patch。
+    - fla-core 0.5.2 和本机的 Triton 不兼容，所以把 fla 换成空模块，只比视觉路径（tower + projector + scatter）。decoder 和图片走的是同一条路。
+    - 结果见正文的表。
+  - 矩阵（`run_k3v.sh`，同一个 seed checkpoint，10 步）：见正文。
+- **待用户决定：**
+  - `kimi_k3_debugmodel_video` 这个 recipe 留不留？要不要配 CI 格子？项目规则是 recipe 只给 CI 实际跑的形状，加之前要问。Qwen3.5 有同样的视频 recipe，但也没有 CI 格子。
+  - 要不要把视频对拍做成 `numerical_tests_kimi_k3.py` 的 `--num_frames` 选项放进 PR，让 reviewer 能复现。
+  - 对拍的数值是在 5060 上量的。按规则，PR 里的数值要用 H100 量，否则标 Pending (H100)。
+- **怎么开：** `gh` 不在本机，PR 由用户在 https://github.com/pytorch/torchtitan/compare/main...QIU023:torchtitan:k3_video?expand=1 开。
+
+标题：`[Kimi K3] Train on video in timestamped chunks`
+
+--- PASTE BEGIN ---
+
+(filled after the matrix)
+
+--- PASTE END ---
