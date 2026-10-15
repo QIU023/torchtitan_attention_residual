@@ -29,6 +29,14 @@
       - ep8 × fsdp8 是 8.08933。
     - 第 10 步在 0.408 到 0.439 之间。混合那格第 10 步是 2.811，因为图片 caption 还没背下来。
     - 汇总脚本是 `kit_2026-10-15/summarize.py`。
+- **diff 审读（10-15，逐行读了 `git diff d51e4b3c6 93aaf9fdf`）：**
+  - 新增 4 个 def：
+    - `_process_chunked_video_text_sample`：和 `_process_video_text_sample` 并列，复用 `process_video`、`calculate_vision_tokens`、`insert_vision_placeholders`、`_tokenize_mm_text`，没有现成的分段版本。
+    - `format_video_timestamp`：titan 里没有时间戳函数（`git grep timestamp torchtitan` 只有日志和 graph_trainer 的脚本）。
+    - `kimi_k3_debugmodel_video`（recipe）和测试 helper。
+  - 没有 logbook 路径，没有实验数字进代码，docstring 各一行。
+  - recipe 里的 `fps=8.0` 是 K3 发布的预处理配置的采样率，titan 里没有可以引用的工具函数，正文的 Design 有说明。
+  - 正文里没有破折号，也没有 we、our、us。
 - **待用户决定：**
   - `kimi_k3_debugmodel_video` 这个 recipe 留不留？要不要配 CI 格子？项目规则是 recipe 只给 CI 实际跑的形状，加之前要问。Qwen3.5 有同样的视频 recipe，但也没有 CI 格子。
   - 要不要把视频对拍做成 `numerical_tests_kimi_k3.py` 的 `--num_frames` 选项放进 PR，让 reviewer 能复现。
@@ -41,20 +49,31 @@
 
 ## Summary
 
-Kimi K3 rejects video inputs on main; this PR trains it on video by turning each clip into timestamped chunks of up to four frames that join the image stream in document order, spelled the way the released Kimi K2.5 processor spells them.
+Kimi K3 rejects video inputs on main; this PR trains it on video by turning each clip into timestamped chunks of up to four frames that join the image stream in document order.
+
+- `torchtitan/components/data/multimodal/mm_datasets.py`: `_process_chunked_video_text_sample` turns sampled frames and a caption into chunk items in `pixel_values`, each placeholder run after its start time.
+- `torchtitan/components/data/multimodal/utils/video.py`: `format_video_timestamp` writes `hh:mm:ss.fff`.
+- `torchtitan/models/kimi_k3/model.py`: the `pixel_values_videos` refusal now points to chunks.
+- `torchtitan_recipes/tests/models/kimi_k3.py`: `kimi_k3_debugmodel_video` trains the debug model on `synthetic-video-text`; the synthetic video sample processor takes the text processor as a parameter.
 
 ## Design
 
-- K3 uses one placeholder (`<|media_pad|>`) for images and videos, so a separate video stream cannot be matched to its placeholder runs; `kimi_k2_7/model.py` notes the same and points to one document-ordered stream.
-- K3's vision encoder already pools each item over time and adds the temporal position embedding. A chunk is therefore one `pixel_values` item with up to `max_num_frames` frames and `(h/2)·(w/2)` placeholder tokens.
-- `_process_chunked_video_text_sample` works in four steps:
-  - it resizes the frames once;
-  - it splits them into chunks of `frames_per_chunk`;
-  - it writes each chunk's start time (`hh:mm:ss.fff` at the given `fps`) before the chunk's placeholder run;
-  - it refuses a tokenizer whose video placeholder differs from the image one, and a temporal patch size above 1.
-- Each chunk counts as one entry against `max_images_per_microbatch`.
-- `KimiK3Model` still rejects `pixel_values_videos`, now with a message that points to chunks.
-- `kimi_k3_debugmodel_video` trains the debug model on `synthetic-video-text`, with `frames_per_chunk = max_num_frames` and 8 fps (the sampling rate of the released K3 preprocessor).
+- Stream:
+  - K3 uses `<|media_pad|>` as the placeholder for both images and videos.
+  - A separate video stream cannot be matched to its placeholder runs; `kimi_k2_7/model.py` notes the same and points to one document-ordered stream.
+  - Chunks therefore go into `pixel_values`, in document order with the images.
+- Chunks:
+  - K3's vision encoder pools each item over time and adds the temporal position embedding.
+  - A chunk is one item of up to `max_num_frames` frames with `(h/2)·(w/2)` placeholder tokens.
+  - Each chunk counts as one entry against `max_images_per_microbatch`.
+- Spelling:
+  - Each chunk's placeholder run follows its start time as `hh:mm:ss.fff`, as the released Kimi K2.5 processor writes it.
+  - The released K3 preprocessor config sets the same 8 fps, four-frame merge and timestamp mode.
+  - The chunk block reuses the image block's start and end tokens.
+- Refusals:
+  - A tokenizer whose video placeholder differs from the image one.
+  - A temporal patch size above 1.
+  - `pixel_values_videos` in `KimiK3Model`.
 
 ## Test plan
 
@@ -66,9 +85,7 @@ MODULE=torchtitan_recipes.tests.models.kimi_k3 CONFIG=kimi_k3_debugmodel_video .
 
 ## Results
 
-Measured on RTX 5060 Ti.
-
-The first table compares vision features with the released modeling code. It uses the pinned revision and the reduced debug model of `numerical_tests_kimi_k3.py`, in bf16, with the same chunk patches on both sides:
+Vision features against the released modeling code (the pinned revision and reduced debug model of `numerical_tests_kimi_k3.py`, bf16, the same chunk patches on both sides; RTX 5060 Ti):
 
 | Clip | Chunk frames | cos | Max abs diff |
 |---|---|---|---|
@@ -79,11 +96,7 @@ The first table compares vision features with the released modeling code. It use
 
 3.1e-2 is one bf16 ulp at the feature scale, the same as for the single frame.
 
-The second table covers training with `kimi_k3_debugmodel_video`:
-- flex attention and AdamW, starting from one seed checkpoint;
-- 10 steps, because the set is 32 captions over 4 clips and is memorised by then.
-
-All 22 layouts finish. Step-1 loss by data split:
+Training, `kimi_k3_debugmodel_video` with flex attention and AdamW from one seed checkpoint (RTX 5060 Ti): all 22 layouts finish 10 steps; the set (32 captions over 4 clips) is memorised within them, so only step 1 is shown.
 
 | Data | Layouts | Step 1 |
 |---|---|---|
@@ -95,7 +108,5 @@ All 22 layouts finish. Step-1 loss by data split:
 | dp8 | ep8×fsdp8 | 8.08933 |
 | dp1, seq 512 | cp4 | 8.08564 |
 | dp2, cc12m-test and video mixed | ep2×fsdp2 | 8.08846 |
-
-Every video-only layout ends between 0.408 and 0.439 at step 10.
 
 --- PASTE END ---
