@@ -21,9 +21,40 @@ def _degrees(spec: str) -> dict[str, int]:
     return degrees
 
 
+def _k3_video_sample(sample, tokenizer, *, video_root, frames_per_chunk, **kwargs):
+    from torchtitan.components.data.multimodal.mm_datasets import _process_chunked_video_text_sample
+    from torchtitan.components.data.multimodal.utils.video import load_npy_video_frames
+
+    frames = load_npy_video_frames(video_root / sample["video_path"])
+    return _process_chunked_video_text_sample(
+        text=sample["text"], frames=frames, tokenizer=tokenizer, frames_per_chunk=frames_per_chunk, fps=8.0, **kwargs
+    )
+
+
+def kimi_k3_debugmodel_video(seq_len=None, *, parallelism=None, attn_backend="varlen"):
+    """The recipe dropped from the PR (user, 10-15): the debug model on synthetic-video-text in 4-frame chunks."""
+    from dataclasses import replace
+    from functools import partial
+
+    from torchtitan_recipes.tests.datasets import synthetic_multimodal
+    from torchtitan_recipes.tests.models.kimi_k3 import _kimi_k3_multimodal_dataloader, kimi_k3_debugmodel
+
+    kwargs = {} if seq_len is None else {"seq_len": seq_len}
+    config = kimi_k3_debugmodel(parallelism=parallelism, attn_backend=attn_backend, **kwargs)
+    dataset = synthetic_multimodal.SYNTHETIC_MM_DATASETS["synthetic-video-text"]
+    sample_processor = partial(
+        _k3_video_sample,
+        video_root=synthetic_multimodal._VIDEO_ROOT,
+        frames_per_chunk=config.model.vision_encoder.max_num_frames,
+    )
+    config.dataloader = _kimi_k3_multimodal_dataloader(
+        replace(dataset, processor=replace(dataset.processor, sample_processor=sample_processor))
+    )
+    return config
+
+
 def _build(degrees: dict[str, int]):
     from torchtitan_recipes.tests import _set_spmd_typechecking
-    from torchtitan_recipes.tests.models.kimi_k3 import kimi_k3_debugmodel_video
 
     cp, tp = degrees["cp"], degrees["tp"]
     parallelism = ParallelismConfig(

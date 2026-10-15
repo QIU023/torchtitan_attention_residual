@@ -2,7 +2,7 @@ import torch
 from torchtitan.components.tokenizer import MultiModalTokenizer
 from torchtitan.models.common.multimodal import get_vision_positions
 from torchtitan.models.kimi_k3 import KIMI_K3_SPECIAL_TOKENS
-from torchtitan_recipes.tests.models.kimi_k3 import kimi_k3_debugmodel_video
+from k3v_cells import kimi_k3_debugmodel_video
 
 config = kimi_k3_debugmodel_video()
 tokenizer = MultiModalTokenizer(

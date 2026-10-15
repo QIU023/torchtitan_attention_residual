@@ -3,7 +3,9 @@
 ## 状态（不粘贴）
 
 - **来由：** 用户 10-15："现在直接开 从最新的mainline开始"。
-- **分支：** fork `QIU023/torchtitan` 的 `k3_video` = `93aaf9fdf`，基于 upstream main `d51e4b3c6`（10-14 23:15 PDT），一个提交，作者 QIU023，没有 trailer。7 个文件 +239 / −4。新增的 docstring 只有三行一句话的说明，另有 4 个 `pyrefly: ignore`，照文件里原有写法。
+- **分支：** fork `QIU023/torchtitan` 的 `k3_video` = `33d1630c0`（10-15 按用户的 4 点修改后 amend，旧提交是 `93aaf9fdf`），基于 upstream main `d51e4b3c6`（10-14 23:15 PDT），一个提交，作者 QIU023，没有 trailer。6 个文件 +323 / −51。
+  - recipe 已拿掉，两个 recipe 文件和 main 相同；本地复跑用 kit 里 `k3v_cells.py` 自带的同名配置。
+  - 新增的 docstring 都是一行，另有 4 个 `pyrefly: ignore`，照文件里原有写法。
 - **为什么不照 Qwen3.5 用 `pixel_values_videos`：** K3（和 K2.5）的 `image_token` 和 `video_token` 都是 `<|media_pad|>`。图片和视频如果分两条流，模型无法按占位 id 区分各个 run 属于哪条流。K2.7 在 titan 里因此只支持单一模态的 batch，并留了 TODO："when image_id == video_id, emit one document-ordered vision stream"。本 PR 就是按这个 TODO 做的：数据侧把视频段放进 `pixel_values`。
 - **格式出处：** K3 发布的 processor 没有视频分支，但 `preprocessor_config.json` 写了 `sample_fps 8.0`、`temporal_merge_kernel_size 4`、`timestamp_mode hh:mm:ss.fff`。K2.5 发布的 `kimi_k25_vision_processing.py` 的写法是每 4 帧一段，每段为 `"{ts}<|media_begin|>video<|media_content|><|media_pad|><|media_end|>"`，`ts` 取该段首帧的时间。
   - titan 的图片块原本就只写 `vision_start + pads + vision_end`，没有官方的 `image WxH<|media_content|>`。视频段沿用同一写法，前面加时间戳，所以也没有 `video<|media_content|>`。两者要不要都改成官方写法，是另一个问题，留给用户决定。
@@ -37,7 +39,23 @@
   - 没有 logbook 路径，没有实验数字进代码，docstring 各一行。
   - recipe 里的 `fps=8.0` 是 K3 发布的预处理配置的采样率，titan 里没有可以引用的工具函数，正文的 Design 有说明。
   - 正文里没有破折号，也没有 we、our、us。
-- **待用户决定：**
+- **10-15 用户的决定：**
+  1. recipe 从 PR 拿掉。
+  2. 视频对拍做成 `numerical_tests_kimi_k3.py` 的选项放进 PR。
+  3. 数值标 Pending (H100)。
+  4. 问媒体块写法是什么意思，已解释，等用户定要不要另开 PR。
+- **脚本选项本机跑通（5060 Ti；titan 侧用 `kit/flexshim` 强制 flex，因为本机没有 FA4；参考侧用 fla 0.6.0（git 主线），因为钉的 0.5.2 在 Triton 3.9 上 import 失败）：**
+
+  | 输入 | tower cos / 最大差 | 路由一致 | logits KL | top-1 / top-5 |
+  |---|---|---|---|---|
+  | 图片 336 px（不加选项） | 0.999987 / 3.1e-2 | 5221/5248 | 4.8e-6 | 一致 / 100% |
+  | 8 帧 336 px（4+4） | 0.999992 / 3.1e-2 | 10210/10272 | 3.7e-6 | 一致 / 100% |
+  | 5 帧 336 px（4+1） | 0.999989 / 3.1e-2 | 10208/10272 | 6.9e-6 | 一致 / 100% |
+  | 8 帧 448 px（4+4） | 0.999982 / 3.1e-2 | 17349/17440 | 6.4e-6 | 一致 / 100% |
+
+  这些数字不进正文（Pending (H100)）。日志在 `scratchpad/k3v_run/parity2/`。
+- **改动后重跑：** data 的 CPU 测试 197 passed（偶尔有 1 个 `test_packed_vision` 的 CPU flex 编译错误，3 次中 1 次，代码 main 上就有），K3 GPU 测试 6 passed，脚本的 pyrefly 0 个错误（main 也是 0），flake8 只有 main 原有的 B043。
+- **原来待用户决定的事（已答）：**
   - `kimi_k3_debugmodel_video` 这个 recipe 留不留？要不要配 CI 格子？项目规则是 recipe 只给 CI 实际跑的形状，加之前要问。Qwen3.5 有同样的视频 recipe，但也没有 CI 格子。
   - 要不要把视频对拍做成 `numerical_tests_kimi_k3.py` 的 `--num_frames` 选项放进 PR，让 reviewer 能复现。
   - 对拍的数值是在 5060 上量的。按规则，PR 里的数值要用 H100 量，否则标 Pending (H100)。
@@ -54,7 +72,7 @@ Kimi K3 rejects video inputs on main; this PR trains it on video by turning each
 - `torchtitan/components/data/multimodal/mm_datasets.py`: `_process_chunked_video_text_sample` turns sampled frames and a caption into chunk items in `pixel_values`, each placeholder run after its start time.
 - `torchtitan/components/data/multimodal/utils/video.py`: `format_video_timestamp` writes `hh:mm:ss.fff`.
 - `torchtitan/models/kimi_k3/model.py`: the `pixel_values_videos` refusal now points to chunks.
-- `torchtitan_recipes/tests/models/kimi_k3.py`: `kimi_k3_debugmodel_video` trains the debug model on `synthetic-video-text`; the synthetic video sample processor takes the text processor as a parameter.
+- `scripts/checkpoint_conversion/numerical_tests_kimi_k3.py`: `--num_frames N` runs the parity test on an N-frame clip.
 
 ## Design
 
@@ -74,29 +92,27 @@ Kimi K3 rejects video inputs on main; this PR trains it on video by turning each
   - A tokenizer whose video placeholder differs from the image one.
   - A temporal patch size above 1.
   - `pixel_values_videos` in `KimiK3Model`.
+- Parity test:
+  - The released processor has no video branch, so both sides take the chunk patches built here.
+  - The HF prompt spells each chunk as the released Kimi K2.5 processor does.
+  - The comparison covers the vision features, the routing and the last-token logits, as for the image.
+- A dataset uses the processor through `VisionProcessor.Config(sample_processor=...)`; this PR adds no recipe.
 
 ## Test plan
 
 ```
 pytest tests/unit_tests/cpu/components/data/test_mm_dataset_preprocessing.py  # 22 passed, 4 new
 pytest tests/unit_tests/gpu/models/kimi_k3/test_kimi_k3.py                     # 6 passed, 1 new
-MODULE=torchtitan_recipes.tests.models.kimi_k3 CONFIG=kimi_k3_debugmodel_video ./run_train.sh
+python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3                 # image, unchanged
+python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 8  # two 4-frame chunks
+python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 5  # chunks of 4 and 1 frames
 ```
 
 ## Results
 
-Vision features against the released modeling code (the pinned revision and reduced debug model of `numerical_tests_kimi_k3.py`, bf16, the same chunk patches on both sides; RTX 5060 Ti):
+Parity with the released modeling code (vision feature cos and max diff, router agreement, last-token KL and top-1): Pending (H100).
 
-| Clip | Chunk frames | cos | Max abs diff |
-|---|---|---|---|
-| 1 frame, 224 px (image-like) | 1 | 0.999984 | 3.1e-2 |
-| 5 frames, 224 px | 4, 1 | 0.999988 | 3.1e-2 |
-| 8 frames, 224 px | 4, 4 | 0.999992 | 3.1e-2 |
-| 8 frames, 448 px | 4, 4 | 0.999982 | 3.1e-2 |
-
-3.1e-2 is one bf16 ulp at the feature scale, the same as for the single frame.
-
-Training, `kimi_k3_debugmodel_video` with flex attention and AdamW from one seed checkpoint (RTX 5060 Ti): all 22 layouts finish 10 steps; the set (32 captions over 4 clips) is memorised within them, so only step 1 is shown.
+Training with a local recipe that feeds `synthetic-video-text` through `_process_chunked_video_text_sample` (debug model, flex attention, AdamW, one seed checkpoint, RTX 5060 Ti): all 22 layouts finish 10 steps; the set (32 captions over 4 clips) is memorised within them, so only step 1 is shown.
 
 | Data | Layouts | Step 1 |
 |---|---|---|
