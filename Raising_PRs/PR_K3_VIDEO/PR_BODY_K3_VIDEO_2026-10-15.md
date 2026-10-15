@@ -20,7 +20,15 @@
     - 用 `numerical_tests_kimi_k3.py` 的固定 revision 和缩小的 debug 配置，权重严格转换，bf16，两边喂同一份分段 patch。
     - fla-core 0.5.2 和本机的 Triton 不兼容，所以把 fla 换成空模块，只比视觉路径（tower + projector + scatter）。decoder 和图片走的是同一条路。
     - 结果见正文的表。
-  - 矩阵（`run_k3v.sh`，同一个 seed checkpoint，10 步）：见正文。
+  - 矩阵（`run_k3v.sh`，同一个 seed checkpoint，flex，AdamW，10 步，10-14 23:47 到 10-15 00:29 PDT）：
+    - 22 格全部 rc 0，跑满 10 步，每个 rank 都加载了 seed：18 格多模态矩阵的形状，加类型检查的 ep2 × fsdp2 × tp2 和 cp2、pp2 × vpp2、图片加视频混合的 ep2 × fsdp2。
+    - 第 1 步按数据流分组：
+      - dp1 那组：dp1、pp2、pp2 × vpp2、pp4、pp8、tp4 × ep4 都是 8.09021；tp2 × ep2 是 8.09039；cp2 开不开类型检查都是 8.09048；ep2 × tp2 × pp2 × cp2 是 8.09016。
+      - cp4（seq 512，每步的样本不同）是 8.08564。
+      - dp2 那组：fsdp2 和 ep2 × fsdp2 是 8.09241；带 TP 和 PP 的格子是 8.09227；fsdp2 × pp2 × cp2 那两格是 8.09250；fsdp2 × tp2 × cp2 那两格是 8.09211。
+      - ep8 × fsdp8 是 8.08933。
+    - 第 10 步在 0.408 到 0.439 之间。混合那格第 10 步是 2.811，因为图片 caption 还没背下来。
+    - 汇总脚本是 `kit_2026-10-15/summarize.py`。
 - **待用户决定：**
   - `kimi_k3_debugmodel_video` 这个 recipe 留不留？要不要配 CI 格子？项目规则是 recipe 只给 CI 实际跑的形状，加之前要问。Qwen3.5 有同样的视频 recipe，但也没有 CI 格子。
   - 要不要把视频对拍做成 `numerical_tests_kimi_k3.py` 的 `--num_frames` 选项放进 PR，让 reviewer 能复现。
@@ -31,6 +39,63 @@
 
 --- PASTE BEGIN ---
 
-(filled after the matrix)
+## Summary
+
+Kimi K3 rejects video inputs on main; this PR trains it on video by turning each clip into timestamped chunks of up to four frames that join the image stream in document order, spelled the way the released Kimi K2.5 processor spells them.
+
+## Design
+
+- K3 uses one placeholder (`<|media_pad|>`) for images and videos, so a separate video stream cannot be matched to its placeholder runs; `kimi_k2_7/model.py` notes the same and points to one document-ordered stream.
+- K3's vision encoder already pools each item over time and adds the temporal position embedding. A chunk is therefore one `pixel_values` item with up to `max_num_frames` frames and `(h/2)·(w/2)` placeholder tokens.
+- `_process_chunked_video_text_sample` works in four steps:
+  - it resizes the frames once;
+  - it splits them into chunks of `frames_per_chunk`;
+  - it writes each chunk's start time (`hh:mm:ss.fff` at the given `fps`) before the chunk's placeholder run;
+  - it refuses a tokenizer whose video placeholder differs from the image one, and a temporal patch size above 1.
+- Each chunk counts as one entry against `max_images_per_microbatch`.
+- `KimiK3Model` still rejects `pixel_values_videos`, now with a message that points to chunks.
+- `kimi_k3_debugmodel_video` trains the debug model on `synthetic-video-text`, with `frames_per_chunk = max_num_frames` and 8 fps (the sampling rate of the released K3 preprocessor).
+
+## Test plan
+
+```
+pytest tests/unit_tests/cpu/components/data/test_mm_dataset_preprocessing.py  # 22 passed, 4 new
+pytest tests/unit_tests/gpu/models/kimi_k3/test_kimi_k3.py                     # 6 passed, 1 new
+MODULE=torchtitan_recipes.tests.models.kimi_k3 CONFIG=kimi_k3_debugmodel_video ./run_train.sh
+```
+
+## Results
+
+Measured on RTX 5060 Ti.
+
+The first table compares vision features with the released modeling code. It uses the pinned revision and the reduced debug model of `numerical_tests_kimi_k3.py`, in bf16, with the same chunk patches on both sides:
+
+| Clip | Chunk frames | cos | Max abs diff |
+|---|---|---|---|
+| 1 frame, 224 px (image-like) | 1 | 0.999984 | 3.1e-2 |
+| 5 frames, 224 px | 4, 1 | 0.999988 | 3.1e-2 |
+| 8 frames, 224 px | 4, 4 | 0.999992 | 3.1e-2 |
+| 8 frames, 448 px | 4, 4 | 0.999982 | 3.1e-2 |
+
+3.1e-2 is one bf16 ulp at the feature scale, the same as for the single frame.
+
+The second table covers training with `kimi_k3_debugmodel_video`:
+- flex attention and AdamW, starting from one seed checkpoint;
+- 10 steps, because the set is 32 captions over 4 clips and is memorised by then.
+
+All 22 layouts finish. Step-1 loss by data split:
+
+| Data | Layouts | Step 1 |
+|---|---|---|
+| dp1 | dp1, pp2, pp2×vpp2, pp4, pp8, tp4×ep4 | 8.09021 |
+| dp1 | tp2×ep2 / cp2, type-checked or not / ep2×tp2×pp2×cp2 | 8.09039 / 8.09048 / 8.09016 |
+| dp2 | fsdp2, ep2×fsdp2 | 8.09241 |
+| dp2 | ep4×fsdp2×tp2×pp2, ep2×fsdp2×tp2×pp2, ep2×fsdp2×tp2 (type-checked) | 8.09227 |
+| dp2 | fsdp2×pp2×cp2, ep2×fsdp2×pp2×cp2 / ep4×fsdp2×tp2×cp2, ep2×fsdp2×tp2×cp2 | 8.09250 / 8.09211 |
+| dp8 | ep8×fsdp8 | 8.08933 |
+| dp1, seq 512 | cp4 | 8.08564 |
+| dp2, cc12m-test and video mixed | ep2×fsdp2 | 8.08846 |
+
+Every video-only layout ends between 0.408 and 0.439 at step 10.
 
 --- PASTE END ---
