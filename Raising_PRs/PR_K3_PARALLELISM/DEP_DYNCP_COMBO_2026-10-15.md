@@ -40,7 +40,24 @@
 - 建子组是集合操作，每个 rank 都会走 `pipeline_kimi_k3`，次序一致。
 - 预测：补上后第 1 步和只开动态 CP 逐位相同。实测 8.07767 对 8.07767，成立。
 
-## 待用户决定
+## 折进栈（10-15，用户："把这一行折进栈上的 DEP 提交 8aed70043（照 10-14 的做法，先推备份分支再 force-push）"）
+
+- 备份：`backup/k3_mxqat_stack_20261012_pre_dep_dyncp_fix` = `a89d39417`，先推，推之前核对过远端 ref。
+- 重建：
+  - 在 `8aed70043` 上打补丁，ufmt 把 import 移到第一方块里。
+  - `--amend --no-edit` 得到 `d44bd7e25`。
+  - 再 cherry-pick 后面 5 个提交，没有冲突：`d34cc462f`（#4656）、`d2eb5a9c2`（#4963）、`6c861cd15`、`ed6c2ddd8`、`c7ca6fb1a`（LoRA）。
+- 核对：
+  - `git diff a89d39417 c7ca6fb1a` 只有这 5 行。
+  - 5 个 cherry-pick 的 patch-id 逐个和原提交相同。
+  - flake8 通过。
+  - DEP 的 CPU 测试 22 passed（63 subtests）。
+- 复核格（新树，同一个 seed，同一份缓存）：
+  - 只开 DEP：10 步和旧栈逐位相同，修法在不开动态 CP 时什么都不做。
+  - 两个都开：第 1 步 8.07767，和只开动态 CP 逐位相同；10 步和本地补丁那次逐位相同。
+- 推送：`--force-with-lease` 以 `a89d39417` 为前值，`k3_mxqat_stack_20261012` = `c7ca6fb1a`。
+
+## 待用户决定（已决定：折进 DEP 提交）
 
 - 是否把补丁折进栈上的 DEP 提交 `8aed70043`：照 10-14 的做法，先推备份分支，再 force-push。
 - 也可以单独加一个提交。
