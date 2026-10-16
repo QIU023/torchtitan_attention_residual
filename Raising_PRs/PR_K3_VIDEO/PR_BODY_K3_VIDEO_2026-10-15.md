@@ -2,6 +2,18 @@
 
 ## 状态（不粘贴）
 
+- **10-15 CPU 会话复查（用户："拉取 检查栈分支和视频pr分支"）：**
+  - 分支 `k3_video` = `33d1630c0`，一个提交，基于 `d51e4b3c6`；main 已到 `18f5a6082`（多 19 个提交），合并没有冲突。
+  - 逐行读了 diff，代码没有问题。
+    - `format_video_timestamp` 和 K2.5 发布的 `media_utils.timestamp_as_str` 写法一致（同样用 `int((t % 1) * 1000)` 截断毫秒），从 HF 上取原文件对照过。
+    - 时间戳的取值有一点不同：K2.5 用每段首帧在原视频里的帧号除以原视频 fps，本 PR 用 `index * frames_per_chunk / fps` 这个名义值。原视频 fps 不是采样 fps 的整数倍时，两者会差几毫秒。函数拿到的是已经采样好的帧，算不出原始帧号；docstring 可以写明 frames 是按 `fps` 采样的。可选。
+    - `_video_chunks` 里 `max_pixels=16777216`、`min_pixels=65536` 直接写成了数字，没有像其他常量那样起名。可选。
+  - body 有两点和规则或用户的决定对不上：
+    1. Results 的训练表是 RTX 5060 Ti 上测的，而用户的第 3 条决定是"数值标 Pending (H100)"。
+    2. 同一条数据流里第 1 步的 loss 不一致（dp1 那组：8.09021，对 tp2 × ep2 的 8.09039、cp2 的 8.09048、四轴那格的 8.09016），表里没有定位。按数值规则，这些要么定位（TP 和 CP 的规约顺序），要么不进表。
+    - 建议这一段改成一句 "all 22 layouts finish 10 steps"，或者整体标 Pending (H100)，由用户定。
+  - Design 里 "A dataset uses the processor ...; this PR adds no recipe." 一条用分号连着两件事，可以拆开。
+
 - **来由：** 用户 10-15："现在直接开 从最新的mainline开始"。
 - **分支：** fork `QIU023/torchtitan` 的 `k3_video` = `33d1630c0`（10-15 按用户的 4 点修改后 amend，旧提交是 `93aaf9fdf`），基于 upstream main `d51e4b3c6`（10-14 23:15 PDT），一个提交，作者 QIU023，没有 trailer。6 个文件 +323 / −51。
   - recipe 已拿掉，两个 recipe 文件和 main 相同；本地复跑用 kit 里 `k3v_cells.py` 自带的同名配置。
