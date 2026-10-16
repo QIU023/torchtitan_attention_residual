@@ -67,6 +67,17 @@
 
   这些数字不进正文（Pending (H100)）。日志在 `scratchpad/k3v_run/parity2/`。
 - **改动后重跑：** data 的 CPU 测试 197 passed（偶尔有 1 个 `test_packed_vision` 的 CPU flex 编译错误，3 次中 1 次，代码 main 上就有），K3 GPU 测试 6 passed，脚本的 pyrefly 0 个错误（main 也是 0），flake8 只有 main 原有的 B043。
+- **10-16 重新验证（`33d1630c0`，用户："本机能验证栈分支和视频pr分支的结果吗？视频pr body和diff重新审核"；栈的部分按用户的话取消："不需要再次验证栈"）：**
+  - GPU 单测 `test_kimi_k3.py` 6 passed。
+  - 对拍（本机 shim）：
+    - 图片 KL 7.6e-6，8 帧 6.0e-6，5 帧 1.0e-5，top-1 一致，top-5 100%。
+    - 和 10-15 的 4.8e-6、3.7e-6、6.9e-6 有起伏，是重新冷编译后 autotune 选到的 kernel 不同。正文本来就是 Pending (H100)，不受影响。
+  - 22 格矩阵（`verify_1016.sh`，在 10-15 那轮缓存和 seed 的副本上跑，recipe 用 kit 里的那份）：22/22 rc 0，每一格每一步的 loss 和 grad norm 都和 10-15 那轮相同（`compare_runs.py`，日志精度）。正文的表不用改。
+  - upstream main 比基底多 21 个提交（到 `95788b053`），都没碰本 PR 的文件和多模态、K3 相关代码，`merge-tree` 无冲突。
+  - 重审 diff 和正文，没发现错误。三条建议等用户定：
+    1. K3 侧检查每段帧数不超过 `max_num_frames`。现在超过时 tower 照常编码，不报错。
+    2. Design 的 Chunks 写成 "up to `frames_per_chunk` frames (K3 sets it to `max_num_frames`)"。
+    3. 正文明说视频段没有 K2.5 的 `video<|media_content|>` 头，和图片块一样。这和媒体块写法是否另开 PR 是同一件事。
 - **原来待用户决定的事（已答）：**
   - `kimi_k3_debugmodel_video` 这个 recipe 留不留？要不要配 CI 格子？项目规则是 recipe 只给 CI 实际跑的形状，加之前要问。Qwen3.5 有同样的视频 recipe，但也没有 CI 格子。
   - 要不要把视频对拍做成 `numerical_tests_kimi_k3.py` 的 `--num_frames` 选项放进 PR，让 reviewer 能复现。
