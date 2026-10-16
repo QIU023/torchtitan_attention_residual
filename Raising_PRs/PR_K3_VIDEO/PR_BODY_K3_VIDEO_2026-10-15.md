@@ -74,7 +74,7 @@
     - 和 10-15 的 4.8e-6、3.7e-6、6.9e-6 有起伏，是重新冷编译后 autotune 选到的 kernel 不同。正文本来就是 Pending (H100)，不受影响。
   - 22 格矩阵（`verify_1016.sh`，在 10-15 那轮缓存和 seed 的副本上跑，recipe 用 kit 里的那份）：22/22 rc 0，每一格每一步的 loss 和 grad norm 都和 10-15 那轮相同（`compare_runs.py`，日志精度）。正文的表不用改。
   - upstream main 比基底多 21 个提交（到 `95788b053`），都没碰本 PR 的文件和多模态、K3 相关代码，`merge-tree` 无冲突。
-  - 重审 diff 和正文，没发现错误。三条建议等用户定：
+  - 重审 diff 和正文，代码没发现错误。正文漏看了两点，10-15 CPU 会话的复查（上面那一节）指出了：训练表是 5060 上的数，和用户的 Pending (H100) 决定矛盾；同一份数据的各格之间第 1 步有差，没有定位。这两点成立，正文要改。三条建议等用户定：
     1. K3 侧检查每段帧数不超过 `max_num_frames`。现在超过时 tower 照常编码，不报错。
     2. Design 的 Chunks 写成 "up to `frames_per_chunk` frames (K3 sets it to `max_num_frames`)"。
     3. 正文明说视频段没有 K2.5 的 `video<|media_content|>` 头，和图片块一样。这和媒体块写法是否另开 PR 是同一件事。
