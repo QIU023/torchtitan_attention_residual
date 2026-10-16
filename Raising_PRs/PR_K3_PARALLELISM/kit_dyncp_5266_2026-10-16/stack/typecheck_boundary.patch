@@ -1,0 +1,33 @@
+diff --git a/torchtitan/models/kimi_k3/vision_cp/encoder.py b/torchtitan/models/kimi_k3/vision_cp/encoder.py
+index da6860502..f20bdb119 100644
+--- a/torchtitan/models/kimi_k3/vision_cp/encoder.py
++++ b/torchtitan/models/kimi_k3/vision_cp/encoder.py
+@@ -21,6 +21,7 @@ from torchtitan.models.base.module import Module
+ from torchtitan.models.base.sharding import ShardingConfig
+ from torchtitan.models.common.rope import ComplexRoPE
+ from torchtitan.models.common.vision_encoder import compiled_create_block_mask
++from torchtitan.models.common.vision_encoder_sharding import multimodal_input_sharding
+ from torchtitan.models.kimi_k2_7.vision_encoder import (
+     _tpool_patch_merger,
+     MoonViTEncoder,
+@@ -135,6 +136,20 @@ class MoonViTCPEncoder(MoonViTEncoder):
+                     module._sharding_config = _sharding_replicated_over_cp(
+                         module._sharding_config
+                     )
++            pixels = multimodal_input_sharding()["pixel_values"]
++            config = self._sharding_config
++            assert config is not None
++            self._sharding_config = replace(
++                config,
++                in_src_shardings={
++                    **(config.in_src_shardings or {}),
++                    "pixel_values": pixels,
++                },
++                in_dst_shardings={
++                    **(config.in_dst_shardings or {}),
++                    "pixel_values": _replicated_over_cp(pixels),
++                },
++            )
+         super()._parallelize(parallelism_context)
+ 
+     def set_cp_subgroups(self, subgroups: dict[int, dist.ProcessGroup]) -> None:
