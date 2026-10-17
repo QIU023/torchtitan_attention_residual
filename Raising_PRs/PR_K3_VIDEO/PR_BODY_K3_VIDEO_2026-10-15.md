@@ -1,6 +1,7 @@
 # titan：K3 视频训练（按 4 帧分段、带时间戳、和图片共用一条流）（2026-10-15）
 
 
+- **10-17 表（用户："直接把表格写进去，里面可以留空"）：** 训练表 22 行全部填上，来自 `k3_video` 的 `659c72b74`（之后的 `7cadb6fcc` 只改测试和脚本说明），矩阵 `scratchpad/k3v_run/matrix_1017`，main pins 1016，22/22 rc 0、10 步、seed 都加载了。cp2 和 cp4 因为 kit 用了 CP 注意力类的旧名字第一次没起来，改名后用各自的流缓存重跑。对拍表留空，等 H100。GPU 测试 7 passed。
 - **10-17（用户："改"）：** `k3_video` = `75b934a8f`，两个提交，已 rebase 到 upstream main `8a3f5bcaa`。旧 head `33d1630c0` 备份在 `backup/k3_video_pre_20261017`。
   - 新提交 `75b934a8f`：`KimiK3VisionEncoder.compute_position_embeddings` 遇到帧数超过 `max_num_frames` 的 item 就报错（只读 host 上已有的 grids，不多一次同步）；分块函数的 docstring 写明 `fps` 和 `frames_per_chunk`；对拍脚本给 max_pixels 和 min_pixels 起了常量名，文件说明写清 `max_num_frames` 是 encoder 能接受的最长 item。
   - 正文：用分号连着两件事的条目都拆开了；Design 写清 `frames_per_chunk` 和 `max_num_frames` 的关系，Refusals 加了一条；5060 训练表改成一句覆盖说明（数值规则：数只放 H100，5060 只说跑没跑通）。
@@ -171,28 +172,28 @@ Training on `synthetic-video-text` through `_process_chunked_video_text_sample`,
 |---|---|---|---|
 | dp1 | 8.17278 / 3.4375 | 1.53622 / 5.7188 | 0.52857 / 1.3984 |
 | pp2 | 8.17278 / 3.4375 | 1.53539 / 5.7188 | 0.53782 / 1.4219 |
-| pp2×vpp2 |  |  |  |
+| pp2×vpp2 | 8.17278 / 3.4219 | 1.53881 / 5.7812 | 0.52991 / 1.3984 |
 | pp4 | 8.17278 / 3.4375 | 1.53501 / 5.6875 | 0.52832 / 1.3984 |
 | pp8 | 8.17278 / 3.4219 | 1.53679 / 5.7500 | 0.53094 / 1.3828 |
 | tp2×ep2 | 8.17287 / 3.4062 | 1.53710 / 5.6875 | 0.53408 / 1.4219 |
 | tp4×ep4 | 8.17221 / 3.4062 | 1.54265 / 5.6250 | 0.53281 / 1.4141 |
-| cp2 |  |  |  |
-| cp2, type-checked |  |  |  |
-| ep2×tp2×pp2×cp2 |  |  |  |
-| cp4, seq 512 |  |  |  |
+| cp2 | 8.17251 / 3.4219 | 1.53580 / 5.6875 | 0.53141 / 1.4062 |
+| cp2, type-checked | 8.17202 / 3.4219 | 1.53743 / 5.6875 | 0.53631 / 1.3828 |
+| ep2×tp2×pp2×cp2 | 8.17241 / 3.4219 | 1.53799 / 5.6875 | 0.53546 / 1.4141 |
+| cp4, seq 512 | 8.16916 / 3.3906 | 1.55873 / 5.7812 | 0.57097 / 1.5000 |
 | fsdp2 | 8.16997 / 3.3906 | 1.51793 / 5.6562 | 0.53946 / 1.4141 |
 | ep2×fsdp2 | 8.16997 / 3.4062 | 1.51872 / 5.5938 | 0.55638 / 1.4531 |
-| ep2×fsdp2×tp2, type-checked |  |  |  |
+| ep2×fsdp2×tp2, type-checked | 8.17031 / 3.4062 | 1.51447 / 5.6250 | 0.55106 / 1.4766 |
 | ep4×fsdp2×tp2×pp2 | 8.17032 / 3.3906 | 1.51841 / 5.6250 | 0.55667 / 1.4609 |
 | ep2×fsdp2×tp2×pp2 | 8.17032 / 3.3906 | 1.51513 / 5.6250 | 0.55234 / 1.4453 |
 | fsdp2×pp2×cp2 | 8.16992 / 3.3906 | 1.51577 / 5.5938 | 0.54904 / 1.4531 |
 | ep2×fsdp2×pp2×cp2 | 8.16992 / 3.3906 | 1.51700 / 5.5938 | 0.55339 / 1.4688 |
 | ep4×fsdp2×tp2×cp2 | 8.16974 / 3.4062 | 1.51503 / 5.5938 | 0.54493 / 1.4531 |
-| ep2×fsdp2×tp2×cp2 |  |  |  |
+| ep2×fsdp2×tp2×cp2 | 8.16975 / 3.4062 | 1.51823 / 5.5625 | 0.54519 / 1.4453 |
 | ep8×fsdp8 | 8.16789 / 3.4062 | 1.53114 / 5.6875 | 0.52807 / 1.3438 |
-| ep2×fsdp2, cc12m-test images mixed in |  |  |  |
+| ep2×fsdp2, cc12m-test images mixed in | 8.12476 / 2.0938 | 3.19830 / 5.0625 | 2.64516 / 2.7344 |
 
-- Rows from dp1 and from dp2 read different samples.
-- The set holds 32 captions over 4 clips, so the model memorises it within 10 steps.
+- The dp1 rows, the dp2 rows, the seq 512 row and the mixed row each read different samples.
+- The video set holds 32 captions over 4 clips, so the model memorises it within 10 steps.
 
 --- PASTE END ---
