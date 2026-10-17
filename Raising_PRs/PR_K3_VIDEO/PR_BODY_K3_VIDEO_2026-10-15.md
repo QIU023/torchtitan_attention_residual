@@ -5,7 +5,7 @@
   - 新提交 `75b934a8f`：`KimiK3VisionEncoder.compute_position_embeddings` 遇到帧数超过 `max_num_frames` 的 item 就报错（只读 host 上已有的 grids，不多一次同步）；分块函数的 docstring 写明 `fps` 和 `frames_per_chunk`；对拍脚本给 max_pixels 和 min_pixels 起了常量名，文件说明写清 `max_num_frames` 是 encoder 能接受的最长 item。
   - 正文：用分号连着两件事的条目都拆开了；Design 写清 `frames_per_chunk` 和 `max_num_frames` 的关系，Refusals 加了一条；5060 训练表改成一句覆盖说明（数值规则：数只放 H100，5060 只说跑没跑通）。
   - 测试（rebase 后）：CPU 22 passed，GPU `test_kimi_k3.py` 6 passed（视频用例里加了帧数检查）。
-  - 媒体外层包装还没有加，等用户定。事实：
+  - 10-17 用户定了："不改图片路径，只改视频"。提交 `659c72b74` 加了 `chunk_header`（kit 的 recipe 传 `video<|media_content|>`）；22 格要在这个提交上重跑后放进正文（用户："视频PR是新change，不存在数值问题，直接把5060的22种布局放进去"）。当时的事实：
     - 发布的 K3 processor（本机 `/workspace/k3qat_mm_hf/kimi_k3_vision_processing.py`）把图片写成 `<|media_begin|>image WxH<|media_content|><|media_pad|><|media_end|>`，没有视频分支；视频的 `video<|media_content|>` 来自 K2.5 的 processor，本 PR 的对拍脚本 HF 那侧已经这么写。
     - titan 的图片和视频块都只写 `<|media_begin|><|media_pad|>…<|media_end|>`。
     - 测试用 tokenizer（`tests/assets/tokenizer`）和本机那份发布布局的 tokenizer 都没有 `<|media_content|>` 这个特殊 token，会按普通文本切开。
@@ -128,7 +128,8 @@ Kimi K3 rejects video inputs on main. This PR trains it on video by turning each
 - Spelling:
   - Each chunk's placeholder run follows its start time as `hh:mm:ss.fff`, as the released Kimi K2.5 processor writes it.
   - The released K3 preprocessor config sets the same 8 fps, four-frame merge and timestamp mode.
-  - The chunk block reuses the image block's start and end tokens.
+  - The chunk block reuses the image block's start and end tokens, and `chunk_header` follows the start token: `video<|media_content|>` in the released Kimi K2.5 processor.
+  - Images keep their current spelling.
 - Refusals:
   - A tokenizer whose video placeholder differs from the image one.
   - A temporal patch size above 1.

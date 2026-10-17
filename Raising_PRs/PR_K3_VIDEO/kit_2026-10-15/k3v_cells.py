@@ -27,7 +27,7 @@ def _k3_video_sample(sample, tokenizer, *, video_root, frames_per_chunk, **kwarg
 
     frames = load_npy_video_frames(video_root / sample["video_path"])
     return _process_chunked_video_text_sample(
-        text=sample["text"], frames=frames, tokenizer=tokenizer, frames_per_chunk=frames_per_chunk, fps=8.0, **kwargs
+        text=sample["text"], frames=frames, tokenizer=tokenizer, frames_per_chunk=frames_per_chunk, fps=8.0, chunk_header="video<|media_content|>", **kwargs
     )
 
 
