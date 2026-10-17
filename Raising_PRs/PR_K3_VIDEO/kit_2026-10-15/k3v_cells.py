@@ -103,7 +103,7 @@ def _build(degrees: dict[str, int]):
         from torchtitan.config.transform import apply_transforms, ContextParallelTransform
         from torchtitan.distributed.context_parallel import HeadTailCPLoadBalancer
         from torchtitan.models.common.attention import FlexInnerAttention
-        from torchtitan.models.common.attention.cp_attention import KVAllGatherCPFlexInnerAttention
+        from torchtitan.models.common.attention.cp_attention import AllGatherKVFlexInnerAttention
         from torchtitan.models.common.attention.cp_kda import ContextParallelInnerKDA
         from torchtitan.models.common.attention.kda import InnerKDA
 
@@ -113,7 +113,7 @@ def _build(degrees: dict[str, int]):
             [
                 ContextParallelTransform(
                     inner_attention_map={
-                        FlexInnerAttention: KVAllGatherCPFlexInnerAttention,
+                        FlexInnerAttention: AllGatherKVFlexInnerAttention,
                         InnerKDA: ContextParallelInnerKDA,
                     }
                 )

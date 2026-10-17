@@ -105,7 +105,7 @@
 
 Kimi K3 rejects video inputs on main. This PR trains it on video by turning each clip into timestamped chunks of up to four frames that join the image stream in document order.
 
-- `torchtitan/components/data/multimodal/mm_datasets.py`: `_process_chunked_video_text_sample` turns sampled frames and a caption into chunk items in `pixel_values`, each placeholder run after its start time.
+- `torchtitan/components/data/multimodal/mm_datasets.py`: `_process_chunked_video_text_sample` turns sampled frames and a caption into chunk items in `pixel_values`, each block after its start time and opened by `chunk_header`.
 - `torchtitan/components/data/multimodal/utils/video.py`: `format_video_timestamp` writes `hh:mm:ss.fff`.
 - `torchtitan/models/kimi_k3/model.py`: the `pixel_values_videos` refusal now points to chunks.
 - `torchtitan/models/kimi_k3/vision_encoder.py`: the encoder refuses an item longer than `max_num_frames` frames.
@@ -128,7 +128,9 @@ Kimi K3 rejects video inputs on main. This PR trains it on video by turning each
 - Spelling:
   - Each chunk's placeholder run follows its start time as `hh:mm:ss.fff`, as the released Kimi K2.5 processor writes it.
   - The released K3 preprocessor config sets the same 8 fps, four-frame merge and timestamp mode.
-  - The chunk block reuses the image block's start and end tokens, and `chunk_header` follows the start token: `video<|media_content|>` in the released Kimi K2.5 processor.
+  - The chunk block reuses the image block's start and end tokens.
+  - `chunk_header` follows the start token.
+  - The released Kimi K2.5 processor writes `video<|media_content|>` there.
   - Images keep their current spelling.
 - Refusals:
   - A tokenizer whose video placeholder differs from the image one.
@@ -147,7 +149,7 @@ Kimi K3 rejects video inputs on main. This PR trains it on video by turning each
 
 ```
 pytest tests/unit_tests/cpu/components/data/test_mm_dataset_preprocessing.py  # 22 passed, 4 new
-pytest tests/unit_tests/gpu/models/kimi_k3/test_kimi_k3.py                     # 6 passed, 1 new
+pytest tests/unit_tests/gpu/models/kimi_k3/test_kimi_k3.py                     # 7 passed, 2 new
 python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3                 # image, unchanged
 python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 8  # two 4-frame chunks
 python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 5  # chunks of 4 and 1 frames
@@ -155,8 +157,42 @@ python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 5  
 
 ## Results
 
-Parity with the released modeling code (vision feature cos and max diff, router agreement, last-token KL and top-1): Pending (H100).
+Parity with the released modeling code, debug checkpoint, bf16:
 
-Training with a local recipe that feeds `synthetic-video-text` through `_process_chunked_video_text_sample` (debug model, RTX 5060 Ti): all 22 layouts finish 10 steps, from dp1 to ep8×fsdp8 and including pp, tp, cp, type-checked cells and a mix with cc12m-test images.
+| Input | Vision features cos / max diff | Router agreement | Last-token KL | Top-1 |
+|---|---|---|---|---|
+| image |  |  |  |  |
+| 8 frames, two 4-frame chunks |  |  |  |  |
+| 5 frames, chunks of 4 and 1 |  |  |  |  |
+
+Training on `synthetic-video-text` through `_process_chunked_video_text_sample`, debug model, AdamW, one seed checkpoint, 8x RTX 5060 Ti, loss / grad norm:
+
+| Layout | Step 1 | Step 5 | Step 10 |
+|---|---|---|---|
+| dp1 | 8.17278 / 3.4375 | 1.53622 / 5.7188 | 0.52857 / 1.3984 |
+| pp2 | 8.17278 / 3.4375 | 1.53539 / 5.7188 | 0.53782 / 1.4219 |
+| pp2×vpp2 |  |  |  |
+| pp4 | 8.17278 / 3.4375 | 1.53501 / 5.6875 | 0.52832 / 1.3984 |
+| pp8 | 8.17278 / 3.4219 | 1.53679 / 5.7500 | 0.53094 / 1.3828 |
+| tp2×ep2 | 8.17287 / 3.4062 | 1.53710 / 5.6875 | 0.53408 / 1.4219 |
+| tp4×ep4 | 8.17221 / 3.4062 | 1.54265 / 5.6250 | 0.53281 / 1.4141 |
+| cp2 |  |  |  |
+| cp2, type-checked |  |  |  |
+| ep2×tp2×pp2×cp2 |  |  |  |
+| cp4, seq 512 |  |  |  |
+| fsdp2 | 8.16997 / 3.3906 | 1.51793 / 5.6562 | 0.53946 / 1.4141 |
+| ep2×fsdp2 | 8.16997 / 3.4062 | 1.51872 / 5.5938 | 0.55638 / 1.4531 |
+| ep2×fsdp2×tp2, type-checked |  |  |  |
+| ep4×fsdp2×tp2×pp2 | 8.17032 / 3.3906 | 1.51841 / 5.6250 | 0.55667 / 1.4609 |
+| ep2×fsdp2×tp2×pp2 | 8.17032 / 3.3906 | 1.51513 / 5.6250 | 0.55234 / 1.4453 |
+| fsdp2×pp2×cp2 | 8.16992 / 3.3906 | 1.51577 / 5.5938 | 0.54904 / 1.4531 |
+| ep2×fsdp2×pp2×cp2 | 8.16992 / 3.3906 | 1.51700 / 5.5938 | 0.55339 / 1.4688 |
+| ep4×fsdp2×tp2×cp2 | 8.16974 / 3.4062 | 1.51503 / 5.5938 | 0.54493 / 1.4531 |
+| ep2×fsdp2×tp2×cp2 |  |  |  |
+| ep8×fsdp8 | 8.16789 / 3.4062 | 1.53114 / 5.6875 | 0.52807 / 1.3438 |
+| ep2×fsdp2, cc12m-test images mixed in |  |  |  |
+
+- Rows from dp1 and from dp2 read different samples.
+- The set holds 32 captions over 4 clips, so the model memorises it within 10 steps.
 
 --- PASTE END ---
