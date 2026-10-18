@@ -1,6 +1,7 @@
 # titan：K3 视频训练（按 4 帧分段、带时间戳、和图片共用一条流）（2026-10-15）
 
 
+- **10-18：** 用户："不需要这个表，从body里面删了"，对拍表已从 Results 删掉；Test plan 里的对拍命令和 Design 的 Parity test 保留。
 - **10-17 表（用户："直接把表格写进去，里面可以留空"）：** 训练表 22 行全部填上，来自 `k3_video` 的 `659c72b74`（之后的 `7cadb6fcc` 只改测试和脚本说明），矩阵 `scratchpad/k3v_run/matrix_1017`，main pins 1016，22/22 rc 0、10 步、seed 都加载了。cp2 和 cp4 因为 kit 用了 CP 注意力类的旧名字第一次没起来，改名后用各自的流缓存重跑。对拍表留空，等 H100。GPU 测试 7 passed。
 - **10-17（用户："改"）：** `k3_video` = `75b934a8f`，两个提交，已 rebase 到 upstream main `8a3f5bcaa`。旧 head `33d1630c0` 备份在 `backup/k3_video_pre_20261017`。
   - 新提交 `75b934a8f`：`KimiK3VisionEncoder.compute_position_embeddings` 遇到帧数超过 `max_num_frames` 的 item 就报错（只读 host 上已有的 grids，不多一次同步）；分块函数的 docstring 写明 `fps` 和 `frames_per_chunk`；对拍脚本给 max_pixels 和 min_pixels 起了常量名，文件说明写清 `max_num_frames` 是 encoder 能接受的最长 item。
@@ -157,14 +158,6 @@ python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 5  
 ```
 
 ## Results
-
-Parity with the released modeling code, debug checkpoint, bf16:
-
-| Input | Vision features cos / max diff | Router agreement | Last-token KL | Top-1 |
-|---|---|---|---|---|
-| image |  |  |  |  |
-| 8 frames, two 4-frame chunks |  |  |  |  |
-| 5 frames, chunks of 4 and 1 |  |  |  |  |
 
 Training on `synthetic-video-text` through `_process_chunked_video_text_sample`, debug model, AdamW, one seed checkpoint, 8x RTX 5060 Ti, loss / grad norm:
 
