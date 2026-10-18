@@ -1,6 +1,16 @@
 # titan：K3 视频训练（按 4 帧分段、带时间戳、和图片共用一条流）（2026-10-15）
 
 
+- **10-18 goal（用户："改 并且设置为goal，更新结果到body"）：** `k3_video` = `e117882e6`，在 `7cadb6fcc` 上加了一个提交。
+  - 问题：原来的时间戳假设帧严格按 `1/fps` 等间隔采样（段号 × 4 / 8），K2.5 用的是被采帧在原视频里的真实时间（帧号 / 原 fps，帧号由 `linspace(...).round()` 采出），两者会差开：30 fps、300 帧的视频，最后一段 K2.5 写 `00:00:09.599`，旧代码写 `00:00:09.500`。
+  - 改法：`utils/video.py` 新增 `sample_frame_indices` 和 `load_video_frames`（照 K2.5 采样，返回每帧时间），`load_video` 和它们共用解码循环、保留自己的采样；`_process_chunked_video_text_sample` 用 `frame_times` 代替 `fps`；`format_video_timestamp` 照 K2.5 走 `datetime`（288/30 s 是 `00:00:09.599`，1.9999999 s 是 `00:00:02.999`）。
+  - 对照 K2.5 自己的代码（kit `kit_2026-10-15/k25check/`，K3 的 `preprocessor_config.json`）：
+    - 2888 组（帧数、fps）上，采样帧号和整段 prompt 文本 0 处不同；
+    - 五段编码视频（15/24/25/29.97/60 fps，横竖屏，最大 3840×2160）：帧号、prompt、grid 都相同，`load_video_frames` 拿到的就是这些帧；
+    - 像素：不缩放的两段完全相同；要缩放的三段最大差 2/255，差的比例 0.03% 到 0.11%；
+    - 这个差来自 torchvision uint8 bicubic 和 PIL bicubic，main 的图片路径同样有：3000×5000 的图缩小后，对 K3 发布的图片 processor 有 0.12% 的值差 1 到 2 级，4000×2380 的图则完全相同。本 PR 不碰缩放。
+  - 测试：CPU `test_mm_dataset_preprocessing.py` 28 passed（新增 10）；`tests/unit_tests/cpu/components/data` 整目录第一次有 1 个 `test_packed_vision` 的 flex 用例失败，单跑和整目录再跑两次都通过，main 上整目录也通过；GPU `test_kimi_k3.py` 7 passed。
+  - 22 格在 `e117882e6` 上重跑（`scratchpad/k3v_run/matrix_1018`，缓存和 seed 链接到 1017 那轮）：22/22 rc 0、10 步、seed 都加载；和 `659c72b74` 那轮每一格每一步都相同（合成数据的帧时间就是 `i/8`，token 不变）。正文的表重新生成，数不变。
 - **10-18：** 用户："不需要这个表，从body里面删了"，对拍表已从 Results 删掉；Test plan 里的对拍命令和 Design 的 Parity test 保留。
 - **10-17 表（用户："直接把表格写进去，里面可以留空"）：** 训练表 22 行全部填上，来自 `k3_video` 的 `659c72b74`（之后的 `7cadb6fcc` 只改测试和脚本说明），矩阵 `scratchpad/k3v_run/matrix_1017`，main pins 1016，22/22 rc 0、10 步、seed 都加载了。cp2 和 cp4 因为 kit 用了 CP 注意力类的旧名字第一次没起来，改名后用各自的流缓存重跑。对拍表留空，等 H100。GPU 测试 7 passed。
 - **10-17（用户："改"）：** `k3_video` = `75b934a8f`，两个提交，已 rebase 到 upstream main `8a3f5bcaa`。旧 head `33d1630c0` 备份在 `backup/k3_video_pre_20261017`。
@@ -107,8 +117,8 @@
 
 Kimi K3 rejects video inputs on main. This PR trains it on video by turning each clip into timestamped chunks of up to four frames that join the image stream in document order.
 
-- `torchtitan/components/data/multimodal/mm_datasets.py`: `_process_chunked_video_text_sample` turns sampled frames and a caption into chunk items in `pixel_values`, each block after its start time and opened by `chunk_header`.
-- `torchtitan/components/data/multimodal/utils/video.py`: `format_video_timestamp` writes `hh:mm:ss.fff`.
+- `torchtitan/components/data/multimodal/mm_datasets.py`: `_process_chunked_video_text_sample` turns sampled frames, their times and a caption into chunk items in `pixel_values`, each block after its first frame's time and opened by `chunk_header`.
+- `torchtitan/components/data/multimodal/utils/video.py`: `sample_frame_indices` and `load_video_frames` sample a video as the released Kimi K2.5 processor does and return each frame's time, and `format_video_timestamp` writes it as `hh:mm:ss.fff`.
 - `torchtitan/models/kimi_k3/model.py`: the `pixel_values_videos` refusal now points to chunks.
 - `torchtitan/models/kimi_k3/vision_encoder.py`: the encoder refuses an item longer than `max_num_frames` frames.
 - `scripts/checkpoint_conversion/numerical_tests_kimi_k3.py`: `--num_frames N` runs the parity test on an N-frame clip.
@@ -127,9 +137,14 @@ Kimi K3 rejects video inputs on main. This PR trains it on video by turning each
   - The last chunk may be shorter.
   - Each chunk has `(h/2)·(w/2)` placeholder tokens.
   - Each chunk counts as one entry against `max_images_per_microbatch`.
-- Spelling:
-  - Each chunk's placeholder run follows its start time as `hh:mm:ss.fff`, as the released Kimi K2.5 processor writes it.
+- Sampling:
+  - The released Kimi K2.5 processor keeps `max(round(N · sample_fps / video_fps), 1)` of a video's N frames, at `linspace(0, N - 1).round()`, with `sample_fps` capped at the video's own.
   - The released K3 preprocessor config sets the same 8 fps, four-frame merge and timestamp mode.
+  - `sample_frame_indices` and `load_video_frames` sample the same frames and return each frame's time, its index over the video fps.
+  - `load_video` shares their decode loop and keeps its own sampling.
+- Spelling:
+  - Each chunk's placeholder run follows its first frame's time as `hh:mm:ss.fff`, as the released Kimi K2.5 processor writes it.
+  - `format_video_timestamp` spells the time through `datetime` as the processor does, so 288/30 s reads `00:00:09.599`.
   - The chunk block reuses the image block's start and end tokens.
   - `chunk_header` follows the start token.
   - The released Kimi K2.5 processor writes `video<|media_content|>` there.
@@ -137,6 +152,7 @@ Kimi K3 rejects video inputs on main. This PR trains it on video by turning each
 - Refusals:
   - A tokenizer whose video placeholder differs from the image one.
   - A temporal patch size above 1.
+  - Frame times that do not match the frames one to one.
   - `pixel_values_videos` in `KimiK3Model`.
   - An item longer than `max_num_frames` frames, in `KimiK3VisionEncoder`.
 - Parity test:
@@ -150,12 +166,19 @@ Kimi K3 rejects video inputs on main. This PR trains it on video by turning each
 ## Test plan
 
 ```
-pytest tests/unit_tests/cpu/components/data/test_mm_dataset_preprocessing.py  # 22 passed, 4 new
+pytest tests/unit_tests/cpu/components/data/test_mm_dataset_preprocessing.py  # 28 passed, 10 new
 pytest tests/unit_tests/gpu/models/kimi_k3/test_kimi_k3.py                     # 7 passed, 2 new
 python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3                 # image, unchanged
 python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 8  # two 4-frame chunks
 python -m scripts.checkpoint_conversion.numerical_tests_kimi_k3 --num_frames 5  # chunks of 4 and 1 frames
 ```
+
+Checked locally against the released Kimi K2.5 processor code, run with the K3 preprocessor config:
+
+- Frame ids and chunk prompts are identical in 2888 (frame count, fps) cases.
+- On five encoded videos (15 to 60 fps, landscape and portrait, up to 3840×2160), frame ids, prompts and grids are identical, and `load_video_frames` returns the frames at those ids.
+- Chunk pixels are identical when a frame needs no resizing.
+- With resizing they are at most 2 of 255 levels apart on up to 0.11% of values: torchvision's uint8 bicubic against PIL's, as titan's image path already is on main.
 
 ## Results
 
