@@ -1,6 +1,21 @@
-# PR 4380 body v3（10-09 rebase 后：PR 分支 `k3_cp_mm` = `cpmm_review1` = `097068e0f`，在 main `01b1b69e3` 上，九个提交），2026-10-06
+# PR 4380 body v3（10-18 rebase 后：PR 分支 `k3_cp_mm` = `cpmm_review1` = `a2a97b88a`，在 main `e61df55b6` 上，11 个提交），2026-10-06
 
 ## 状态（不粘贴）
+
+- **10-18 rebase 并推送（用户："那暂时不变，4380直接推PR分支，告诉我body文件"）：**
+  - 11 个提交从 `95788b053` 搬到 main `e61df55b6`（多出 15 个提交，其中 #5445 改名并挪动了 attention 模块），没有冲突。
+    - 9 个提交的 patch-id 不变。另外两个（第 1 个和 vision_cp 包那个）只是上下文行变了，增删行逐行相同；整体 diff 的增删行也逐行相同。
+    - PR 用到的 import 在新 main 上都还在。
+  - 本机检查：
+    - 改动的 11 个 .py 文件 py_compile 通过；
+    - CPU 规划测试 7 passed；
+    - gloo 4 rank 的切图路径和 `6317c5538` 存的输出相比，368/368 逐位相同（harness 补了 main 的 `build_model_config(parallelism=)`）。
+    - GPU 测试没有重跑。
+  - 推送：先把旧 head `f4010b98c` 备份到 `backup/k3_cp_mm_pre_20261018`，再用 force-with-lease 把 `cpmm_review1` 和 `k3_cp_mm` 都推到 `a2a97b88a`。
+  - 粘贴区：不依赖 SHA，Results 是 Pending (H100)，rebase 不用改。顺手更正两处 10-16 加了 #5266 修复之后不准的地方：
+    - Summary 加一条 `models/common/multimodal.py` 的 hook；
+    - Placement 的 "three places" 改成 "four places"，加上 `_encoder_is_cp_invariant`。
+  - 代码按用户的话暂时不动（方案 A 的 diff 不收窄）。
 
 - **10-17（用户："同步，4380 pending H100"）：**
   - `k3_cp_mm` 已从 `cpmm_review1` 同步到 `f4010b98c`（rebase 到 main `95788b053`，加上 #5266 的修复）。旧 head `097068e0f` 备份在 `backup/k3_cp_mm_pre_20261017`。
@@ -94,6 +109,7 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
 - `vision_cp/encoder.py`: `MoonViTCPEncoder`, the base of Kimi K3's encoder.
 - `MoonViTCPEncoder.Config.dynamic_cp_min_patches` turns dynamic CP on: `None`, the default, keeps main's path, and the two h100 CP cells set 256.
 - `vision_cp/__init__.py`: `install_vision_cp` builds the sub-CP groups from `KimiK3Model.parallelize`.
+- `models/common/multimodal.py`: `MultimodalModel._encoder_is_cp_invariant`, true by default, picks each encoder's FSDP mesh.
 
 ## Design
 
@@ -120,7 +136,7 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
   - Building is collective, so every rank builds them and reads the switch from the model config, which pipeline stages without the tower also hold.
 - Placement:
   - The classes extend only `VisionAttention` and `MoonViTEncoder`, so other MoonViT models can reuse them.
-  - Kimi K3 changes in three places: its encoder's base class, its flavors' vision attention and `parallelize`.
+  - Kimi K3 changes in four places: its encoder's base class, its flavors' vision attention, `parallelize` and `_encoder_is_cp_invariant`.
 - Gradients under CP:
   - Since #5266 a vision encoder is CP-invariant: FSDP shards it over dp_shard only, and its output boundary all-reduces the gradient over CP.
   - Split images give CP ranks different patches, so with dynamic CP on the tower declares CP as R instead of I and converts `pixel_values` from I to R at its boundary.
