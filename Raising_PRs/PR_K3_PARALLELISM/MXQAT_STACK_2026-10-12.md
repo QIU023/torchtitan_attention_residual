@@ -1,5 +1,7 @@
 # Elfie 的 MX-QAT 分支 + 我们的 PR 叠栈（2026-10-12）
 
+> **10-19：** 当前栈头是 `2eff57f99`，不是下面的 `92afeeeee`。逐提交和各 PR 现在的 head 对照、各次验证在当前栈头上还算不算数，见 `STACK_REASSESS_2026-10-19.md`。
+
 用户要求：从 `elfiegg/torchtitan` 的 `work/kimi-k3-mx-qat-distmuon` 拷一个分支，先 rebase 到 main，再把 #4380、#4381、#4751、#4656、#4963 各压成一个提交叠上去，推送。
 
 ## 当前状态
