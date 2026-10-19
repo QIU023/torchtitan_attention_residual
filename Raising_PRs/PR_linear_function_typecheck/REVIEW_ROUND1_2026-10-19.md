@@ -18,7 +18,7 @@
   - llama3 debugmodel + main 的 LoRA recipe（rank 8，`wqkv`、`wo`），TP2 + SP，开类型检查，3 步：分支 rc 0（8.02929 / 8.05165 / 7.99786）；`linear/linear.py` 换回 main：rc 1，同一个 `SpmdTypeError`。probe 在 `scratchpad/probe_5390/`（关掉 sm120 的 FA4 选择，只为本机能跑）。
   - pyrefly 0.45.1（固定版本 hook 的版本，PYTHONPATH 指向固定的 spmd_types）：分支和 `efdde5eda` 的干净导出都是 4 个错误，集合相同。不设 PYTHONPATH 时分支会多 3 个 `No attribute rules in module spmd_types`，那是 venv 里 spmd_types 太旧，不是分支的问题。
   - flake8（venv_bfx9）、ufmt 通过；diff 没有新增注释或 docstring。
-- **推送：** 还没推。`linear_function_typecheck` 是已发布 PR 的分支，rebase 后要 force push，等用户点头：
+- **推送：** 用户 10-19 点头（"同意 执行 先把备份推上去，再用 lease 锁住线上的 586c1fd07 做 force push"），已执行，rc 0。fork 上 `backup/linear_function_typecheck_pre_20261019` = `89fc6f9a7`（父提交就是旧 head `586c1fd07`），`linear_function_typecheck` = `c35491f4c`。GitHub 随后显示 head `c35491f4c`，base `efdde5eda`，mergeable，状态 `unstable`（CI 未跑完或待批准）。执行的命令：
   `git push origin backup/linear_function_typecheck_pre_20261019 && git push --force-with-lease=linear_function_typecheck:586c1fd071c2f813c71b15a6f02750b57d2bc7ed origin linear_function_typecheck`
 - **推后：** 回复贴在 anijain2305 的 review 下面；body 换成下面第二个粘贴区（路径、测试说明和计数变了，其余不变）。
 
