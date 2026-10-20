@@ -2,6 +2,13 @@
 
 ## 状态（不粘贴）
 
+- **10-20 Results 填上（用户："同意，推进，最后告诉我是否需要两个都去H100重跑"）：**
+  - 数据是 10-19 H100（115.124.123.239 -p 50752，已释放）上测的，树就是线上的 PR head `a2a97b88a` 和它的 base `e61df55b6`；记录和 kit 在 `H100_RERUN_4380_4381_2026-10-19.md`、`kit_h100_2026-10-19/`。
+  - "开但不切"那一行的偏离已经定位：梯度逐位相同，差在 `clip_grad_norm_` 按 mesh 分组（main 两组、开动态 CP 一组），bf16 的总 norm 第 2 步差一个单位；关裁剪 20 步全同（5060 对照）。说明里那句 "checked on 2 RTX 5060 Ti" 是这个对照。
+  - 旧版 Results 里 10-08 的端到端说明（打包后快 11% 到 23%、单张 256 到约 9000 patch 慢约 5%、1008 px 那组）这次没有在新树上重测，删掉了。
+  - main 之后又合了 #4760（K3 的 MLA CP 通信）和 #5424，PR 和今天的 main `1d581795c` 能干净合并；表上的数是写明的那两棵树。
+  - 粘贴区已检查：没有 we/our/us，没有破折号。
+
 - **10-18 rebase 并推送（用户："那暂时不变，4380直接推PR分支，告诉我body文件"）：**
   - 11 个提交从 `95788b053` 搬到 main `e61df55b6`（多出 15 个提交，其中 #5445 改名并挪动了 attention 模块），没有冲突。
     - 9 个提交的 patch-id 不变。另外两个（第 1 个和 vision_cp 包那个）只是上下文行变了，增删行逐行相同；整体 diff 的增删行也逐行相同。
@@ -145,7 +152,40 @@ Adds dynamic context parallelism for the Kimi K3 vision tower (report sec 5.2.3)
 
 ## Results
 
-Pending (H100).
+Kimi K3 debug model on 2x H100 (torch 2.15.0.dev20260906+cu126), main `e61df55b6` and this PR at `a2a97b88a`, CP=2, dp 1, SPMD typechecking on, the recipe's DistMuon and AdamW, seed 42, deterministic, every run from one seed checkpoint, one compile cache warmed by 10 steps of each configuration, 100 steps. cc12m-test holds 32 samples and each step takes one, so the columns stop at step 20, before any sample repeats. Cells are loss / grad norm.
+
+| Configuration | Step 1 | Step 10 | Step 20 |
+|---|---|---|---|
+| main, all-gather or Ulysses | 8.08521 / 2.5312 | 5.70341 / 10.2500 | 4.52277 / 9.6250 |
+| main, all-gather, second run | 8.08521 / 2.5312 | 5.70341 / 10.2500 | 4.52277 / 9.6250 |
+| this PR, dynamic CP off | 8.08521 / 2.5312 | 5.70341 / 10.2500 | 4.52277 / 9.6250 |
+| this PR, dynamic CP on, no image reaches the threshold | 8.08521 / 2.5312 | 5.70511 / 10.2500 | 4.55556 / 9.6250 |
+| this PR, threshold 256, all-gather or Ulysses | 8.08521 / 2.5312 | 5.70407 / 10.2500 | 4.51259 / 9.5625 |
+| this PR, threshold 128 | 8.08508 / 2.5312 | 5.70124 / 10.3125 | 4.55492 / 9.6250 |
+
+- All-gather and Ulysses are identical for 100 steps, on main and on this PR.
+- Main's second run and this PR with dynamic CP off are identical to main for 100 steps.
+- With dynamic CP on and no image split, the step-1 gradients match main's bitwise (465 of 465 tensors).
+- That run parts from main at step 3 through gradient clipping: `clip_grad_norm_` takes one norm per gradient mesh, and the tower now shares the text's dp_shard x cp mesh, so the bf16 total norm differs by one unit at step 2 (4.5625 against 4.5938).
+- With clipping off, the two runs are identical for 20 steps (checked on 2 RTX 5060 Ti).
+- Threshold 256 first splits at step 5, the first 256-patch image.
+- Threshold 128 splits step 1's 192-patch image, which moves step 1 by 1.3e-4.
+- With the whole-image vision bank swapped in, that run matches main's step-1 gradients bitwise and the no-split run for 100 steps.
+
+Vision tower alone (Kimi K3's: 27 layers, dim 1024, random bf16 weights), forward and backward over one micro-batch's images on H100, with main's default selective activation remat unless noted. Main encodes every image on every CP rank, so it measures the same at CP 1, 2 and 4. This PR's columns run with dynamic CP on at 256. Cells are peak memory per GPU / time.
+
+| Images (patches) | main | this PR, CP=2 | this PR, CP=4 |
+|---|---|---|---|
+| one 2016 px image (20736) | 14.5 GiB / 0.78 s | 7.9 GiB / 0.44 s | 4.6 GiB / 0.27 s |
+| one 4032 px image (82944) | 55.2 GiB / 10.9 s | 28.5 GiB / 5.6 s | 15.3 GiB / 2.9 s |
+| one 4032 px image, no activation remat | out of memory | 47.8 GiB / 5.5 s | 31.4 GiB / 2.8 s |
+| one 4032 px image, full activation remat | 9.4 GiB / 13.8 s | 5.8 GiB / 7.0 s | 3.9 GiB / 3.6 s |
+| four 2016 px images (82944) | 55.2 GiB / 3.1 s | 28.6 GiB / 1.6 s | 15.3 GiB / 0.80 s |
+| 16 frames of 448 px in 4-frame items (16384) | 11.6 GiB / 0.22 s | 6.3 GiB / 0.14 s | 3.6 GiB / 0.13 s |
+
+- Figures include 1.7 to 2.1 GiB of weights, gradients and inputs.
+- Flex attention compiles without max-autotune on both sides.
+- Several images or video items stay whole on one-rank sub-groups.
 
 ## Test plan
 
@@ -155,6 +195,5 @@ Pending (H100).
   - two data-parallel groups splitting different numbers of images under FSDP;
   - through `KimiK3Model.parallelize` at CP=2, split against CP-invariant tower gradients within 1e-5 (1.0 without the gradient change).
 - The h100 cells `kimi_k3_mm_allgather_kv_cp` and `kimi_k3_mm_ulysses_cp` run with SPMD typechecking, turn dynamic CP on at 256 and split their first 256-patch image at step 5.
-- End-to-end numerics on H100: pending.
 
 --- PASTE END ---

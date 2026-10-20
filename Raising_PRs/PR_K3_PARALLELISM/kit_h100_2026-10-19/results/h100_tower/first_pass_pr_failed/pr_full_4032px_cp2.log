@@ -1,0 +1,78 @@
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+W1019 06:53:02.258000 55171 torch/distributed/run.py:982] 
+W1019 06:53:02.258000 55171 torch/distributed/run.py:982] *****************************************
+W1019 06:53:02.258000 55171 torch/distributed/run.py:982] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1019 06:53:02.258000 55171 torch/distributed/run.py:982] *****************************************
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+flex_no_autotune: FlexInnerAttention compiled without max_autotune
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/workspace/kit_cpmm/tower_bench.py", line 171, in <module>
+[rank0]:     main()
+[rank0]:   File "/workspace/kit_cpmm/tower_bench.py", line 73, in main
+[rank0]:     plan = plan_dynamic_cp(
+[rank0]:            ^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/plan.py", line 95, in plan_dynamic_cp
+[rank0]:     for i in classify(counts, cp_size, min_patches=min_patches)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/plan.py", line 67, in classify
+[rank0]:     return [i for i, c in enumerate(counts) if c >= min_patches]
+[rank0]:                                                ^^^^^^^^^^^^^^^^
+[rank0]: TypeError: '>=' not supported between instances of 'int' and 'NoneType'
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/workspace/kit_cpmm/tower_bench.py", line 171, in <module>
+[rank1]:     main()
+[rank1]:   File "/workspace/kit_cpmm/tower_bench.py", line 73, in main
+[rank1]:     plan = plan_dynamic_cp(
+[rank1]:            ^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/plan.py", line 95, in plan_dynamic_cp
+[rank1]:     for i in classify(counts, cp_size, min_patches=min_patches)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/workspace/tt_cpmm/torchtitan/models/kimi_k3/vision_cp/plan.py", line 67, in classify
+[rank1]:     return [i for i, c in enumerate(counts) if c >= min_patches]
+[rank1]:                                                ^^^^^^^^^^^^^^^^
+[rank1]: TypeError: '>=' not supported between instances of 'int' and 'NoneType'
+[rank1]:[W1019 06:53:10.426046441 ProcessGroupNCCL.cpp:164] [TC][rank=0][name=8dfe76f920711352e74bcbecaf3db1eb12601a67] ProcessGroupNCCL 8dfe76f920711352e74bcbecaf3db1eb12601a67 was not finalized before destruction. This may indicate a resource leak. Please call finalize() explicitly.
+[rank0]:[W1019 06:53:10.503465829 ProcessGroupNCCL.cpp:164] [TC][rank=0][name=e61b37d2ae7c7826dd16f26a0c4be966b21ba7cd] ProcessGroupNCCL e61b37d2ae7c7826dd16f26a0c4be966b21ba7cd was not finalized before destruction. This may indicate a resource leak. Please call finalize() explicitly.
+W1019 06:53:12.372000 55171 torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 55239 closing signal SIGTERM
+E1019 06:53:12.488000 55171 torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 0 (pid: 55238) of binary: /workspace/venv_cu126/bin/python
+Traceback (most recent call last):
+  File "/workspace/venv_cu126/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 384, in wrapper
+    result = f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/run.py", line 1138, in main
+    run(args)
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/run.py", line 1129, in run
+    elastic_launch(
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 197, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/workspace/venv_cu126/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 386, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/workspace/kit_cpmm/tower_bench.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-10-19_06:53:12
+  host      : 150840ed6236
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 55239) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-19_06:53:12
+  host      : 150840ed6236
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 55238) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

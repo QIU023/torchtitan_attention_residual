@@ -1,0 +1,313 @@
++ mkdir -p /dev/shm/tmp /dev/shm/uvcache
++ export TMPDIR=/dev/shm/tmp UV_CACHE_DIR=/dev/shm/uvcache CUDA_HOME=/usr/local/cuda-12.6 PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TORCH_CUDA_ARCH_LIST=9.0 MAX_JOBS=176
++ TMPDIR=/dev/shm/tmp
++ UV_CACHE_DIR=/dev/shm/uvcache
++ CUDA_HOME=/usr/local/cuda-12.6
++ PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++ TORCH_CUDA_ARCH_LIST=9.0
++ MAX_JOBS=176
++ B=/dev/shm/build
++ . /workspace/venv_src/bin/activate
+++ '[' -z '' ']'
+++ '[' -n x ']'
+++ SCRIPT_PATH=/workspace/venv_src/bin/activate
+++ '[' /workspace/venv_src/bin/activate = /workspace/kit_setup/build_torch_resume.sh ']'
+++ deactivate nondestructive
+++ unset -f pydoc
+++ '[' -z '' ']'
+++ '[' -z '' ']'
+++ hash -r
+++ '[' -z '' ']'
+++ unset VIRTUAL_ENV
+++ unset VIRTUAL_ENV_PROMPT
+++ '[' '!' nondestructive = nondestructive ']'
+++ VIRTUAL_ENV=/workspace/venv_src
+++ '[' linux-gnu = cygwin ']'
+++ '[' linux-gnu = msys ']'
+++ export VIRTUAL_ENV
+++ '[' -z '' ']'
+++ unset SCRIPT_PATH
+++ _OLD_VIRTUAL_PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/workspace/venv_src/bin:/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export PATH
+++ '[' x '!=' x ']'
++++ basename /workspace/venv_src
+++ VIRTUAL_ENV_PROMPT=venv_src
+++ export VIRTUAL_ENV_PROMPT
+++ '[' -z '' ']'
+++ '[' -z '' ']'
+++ _OLD_VIRTUAL_PS1=
+++ PS1='(venv_src) '
+++ export PS1
+++ alias pydoc
+++ true
+++ hash -r
++ export LD_LIBRARY_PATH=/workspace/nccl_sys/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
++ LD_LIBRARY_PATH=/workspace/nccl_sys/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
++ cd /workspace
++ python -c 'import torch; print('\''built torch'\'', torch.__version__, torch.version.git_version, torch.version.cuda, torch.cuda.is_available())'
+built torch 2.15.0a0+git7bf52b3 7bf52b3a9782d3440a17eb3f00983795f3b12af0 12.6 True
++ cd /dev/shm/build
++ '[' -d vision ']'
++ cd vision
+++ git log --before=2026-10-06 --format=%H -1
++ VC=7a7520f83957fe6a0f934fe7035f07b5ef32e8f9
++ git checkout -q 7a7520f83957fe6a0f934fe7035f07b5ef32e8f9
++ echo 'vision 7a7520f83957fe6a0f934fe7035f07b5ef32e8f9'
+vision 7a7520f83957fe6a0f934fe7035f07b5ef32e8f9
++ mkdir -p /workspace/vision_build
++ ln -sfn /workspace/vision_build build
++ FORCE_CUDA=1
++ python setup.py bdist_wheel
++ uv pip install --no-deps dist/torchvision-0.30.0a0+7a7520f-cp312-cp312-linux_x86_64.whl
+Using Python 3.12.3 environment at: /workspace/venv_src
+Resolved 1 package in 1ms
+Prepared 1 package in 23ms
+Installed 1 package in 20ms
+ + torchvision==0.30.0a0+7a7520f (from file:///dev/shm/build/vision/dist/torchvision-0.30.0a0+7a7520f-cp312-cp312-linux_x86_64.whl)
++ UV_HTTP_TIMEOUT=900
++ uv pip install -r /workspace/kit_setup/freeze_rest.txt 'cuda-bindings>=12.9,<13' 'cuda-python>=12.9,<13'
+Using Python 3.12.3 environment at: /workspace/venv_src
+Resolved 133 packages in 1.21s
+   Updating https://github.com/meta-pytorch/remat.git (d302699b1c58f83fa2c7b03bc2593967e9530335)
+Downloading pandas (10.3MiB)
+Downloading tiktoken (1.1MiB)
+Downloading grpcio (6.8MiB)
+Downloading openai-harmony (2.8MiB)
+Downloading array-record (4.8MiB)
+Downloading transformers (11.7MiB)
+Downloading tensorboard (5.3MiB)
+Downloading av (34.1MiB)
+Downloading pygments (1.2MiB)
+Downloading pillow (6.6MiB)
+Downloading aiohttp (1.7MiB)
+Downloading pydantic-core (2.0MiB)
+Downloading pyrefly (10.1MiB)
+Downloading setuptools (1.2MiB)
+Downloading apache-tvm-ffi (3.1MiB)
+Downloading openai (2.0MiB)
+Downloading mooncake-transfer-engine (93.4MiB)
+Downloading cuda-bindings (7.3MiB)
+Downloading tensorboard-data-server (6.3MiB)
+Downloading hf-xet (4.3MiB)
+Downloading numpy (15.9MiB)
+Downloading pyarrow (47.8MiB)
+Downloading libcst (2.2MiB)
+Downloading wandb (24.9MiB)
+Downloading tokenizers (3.2MiB)
+    Updated https://github.com/meta-pytorch/remat.git (d302699b1c58f83fa2c7b03bc2593967e9530335)
+   Building torch-remat @ git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335
+ Downloaded tiktoken
+ Downloaded setuptools
+ Downloaded pygments
+ Downloaded aiohttp
+ Downloaded pydantic-core
+ Downloaded openai
+ Downloaded libcst
+      Built torch-remat @ git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335
+ Downloaded openai-harmony
+ Downloaded apache-tvm-ffi
+ Downloaded tokenizers
+ Downloaded hf-xet
+ Downloaded array-record
+ Downloaded tensorboard
+ Downloaded tensorboard-data-server
+ Downloaded pillow
+ Downloaded grpcio
+ Downloaded cuda-bindings
+ Downloaded pyrefly
+ Downloaded pandas
+ Downloaded transformers
+ Downloaded numpy
+ Downloaded wandb
+ Downloaded av
+ Downloaded pyarrow
+ Downloaded mooncake-transfer-engine
+Prepared 118 packages in 10.90s
+Uninstalled 9 packages in 159ms
+Installed 118 packages in 551ms
+ + absl-py==2.5.0
+ + aiohappyeyeballs==2.7.1
+ + aiohttp==3.14.3
+ + aiosignal==1.4.0
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.15.1
+ + apache-tvm-ffi==0.1.14.post1
+ + array-record==0.8.3
+ + attn-gym==0.0.16
+ + attrs==26.1.0
+ + av==18.1.0
+ + black==22.12.0
+ + cairocffi==1.7.1
+ + cairosvg==2.9.1
+ - certifi==2026.10.18
+ + certifi==2026.7.22
+ + cffi==2.1.1
+ - charset-normalizer==3.5.2
+ + charset-normalizer==3.5.1
+ - click==8.3.3
+ + click==8.5.0
+ + cloudpickle==3.1.2
+ + cssselect2==0.10.1
+ + cuda-bindings==12.9.10
+ + cuda-pathfinder==1.8.3
+ + cuda-python==12.9.10
+ + datasets==4.7.0
+ + defusedxml==0.7.1
+ + dill==0.4.0
+ + docstring-parser==0.18.0
+ + einops==0.8.2
+ + etils==1.14.0
+ - filelock==4.2.4
+ + filelock==4.0.1
+ + frozenlist==1.8.0
+ - fsspec==2026.9.0
+ + fsspec==2026.2.0
+ + googleapis-common-protos==1.75.4
+ + grain==0.2.18
+ + grpcio==1.84.0
+ + h11==0.16.0
+ + hf-xet==1.6.0
+ + httpcore==1.0.9
+ + httpcore2==2.13.1
+ + httpx==0.28.1
+ + httpx2==2.13.1
+ + huggingface-hub==1.33.0
+ + iniconfig==2.3.0
+ + jiter==0.17.0
+ + libcst==1.9.0
+ + markdown==3.11
+ + markdown-it-py==4.2.0
+ - markupsafe==3.0.4
+ + markupsafe==3.0.2
+ + mdurl==0.1.2
+ + mooncake-transfer-engine==0.3.13.post1
+ + moreorless==0.6.0
+ + msgpack==1.2.3
+ + multidict==6.9.1
+ + multiprocess==0.70.18
+ + mypy-extensions==1.1.0
+ - numpy==2.5.4
+ + numpy==2.5.3
+ + openai==3.20.0
+ + openai-harmony==0.0.8
+ + opentelemetry-api==1.45.0
+ + opentelemetry-exporter-http-transport==0.66b0
+ + opentelemetry-exporter-otlp-common==0.66b0
+ + opentelemetry-exporter-otlp-proto-common==1.45.0
+ + opentelemetry-exporter-otlp-proto-http==1.45.0
+ + opentelemetry-proto==1.45.0
+ + opentelemetry-sdk==1.45.0
+ + opentelemetry-semantic-conventions==0.66b0
+ + pandas==3.0.6
+ + pillow==12.3.0
+ + platformdirs==4.12.1
+ + pluggy==1.6.0
+ + portpicker==1.6.0
+ + prime-pydantic-config==0.4.3
+ + propcache==0.5.4
+ + protobuf==6.33.6
+ + pyarrow==25.0.1
+ + pycparser==3.0
+ + pydantic==2.13.5
+ + pydantic-core==2.46.5
+ + pyflakes==4.0.0
+ + pygments==2.21.0
+ + pyrefly==0.45.1
+ + pytest==9.1.1
+ + pytest-subtests==0.15.0
+ + python-dateutil==2.9.0.post0
+ + regex==2026.9.29
+ + renderers==0.1.11
+ + rich==15.0.0
+ + safetensors==0.8.0
+ - setuptools==81.0.0
+ + setuptools==78.1.0
+ + shellingham==1.5.4
+ + sniffio==1.3.1
+ + spmd-types==0.2.5
+ + stdlibs==2026.9.3
+ + tensorboard==2.21.0
+ + tensorboard-data-server==0.7.2
+ + tiktoken==0.14.0
+ + tinycss2==1.5.1
+ + tokenizers==0.23.2
+ + toml==0.10.2
+ + tomlkit==0.15.1
+ + torch-remat==0.2.0 (from git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335)
+ + tqdm==4.70.1
+ + trailrunner==1.4.0
+ + transformers==5.17.0
+ + truststore==0.10.4
+ + typeguard==4.6.0
+ + typer==0.27.3
+ + typing-inspection==0.4.4
+ + tyro==1.0.16
+ + ufmt==2.3.0
+ + usort==1.0.5
+ + wandb==0.30.0
+ + webencodings==0.6.1
+ + werkzeug==3.1.9
+ + xxhash==4.0.1
+ + yarl==1.25.1
+ - zipp==4.1.1
+ + zipp==4.1.0
++ uv pip install 'attn-gym[linear]==0.0.17' 'spmd_types @ git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd' 'torch_remat @ git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b' 'torch_checkpointing @ git+https://github.com/meta-pytorch/torch_checkpointing.git@dcbb3a59cfad1cbeb95994f0d6cb1802c1d91825'
+Using Python 3.12.3 environment at: /workspace/venv_src
+Resolved 26 packages in 789ms
+   Updating https://github.com/meta-pytorch/remat.git (624f19cbdb70720bd05988d6485a1225f46c074b)
+   Updating https://github.com/meta-pytorch/spmd_types.git (fce1acb1e9bbce66f398893ff7836346f4cf03cd)
+   Updating https://github.com/meta-pytorch/torch_checkpointing.git (dcbb3a59cfad1cbeb95994f0d6cb1802c1d91825)
+Downloading nvidia-cutlass-dsl-libs-core (1.6MiB)
+Downloading nvidia-cutlass-dsl-libs-cu12 (87.4MiB)
+Downloading nvidia-cutlass-dsl-libs-cu13 (87.7MiB)
+Downloading nvidia-cutlass-dsl-libs-base (2.9MiB)
+ Downloaded nvidia-cutlass-dsl-libs-core
+ Downloaded nvidia-cutlass-dsl-libs-base
+    Updated https://github.com/meta-pytorch/remat.git (624f19cbdb70720bd05988d6485a1225f46c074b)
+   Building torch-remat @ git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b
+    Updated https://github.com/meta-pytorch/spmd_types.git (fce1acb1e9bbce66f398893ff7836346f4cf03cd)
+   Building spmd-types @ git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd
+      Built torch-remat @ git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b
+      Built spmd-types @ git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd
+    Updated https://github.com/meta-pytorch/torch_checkpointing.git (dcbb3a59cfad1cbeb95994f0d6cb1802c1d91825)
+   Building torch-checkpointing @ git+https://github.com/meta-pytorch/torch_checkpointing.git@dcbb3a59cfad1cbeb95994f0d6cb1802c1d91825
+      Built torch-checkpointing @ git+https://github.com/meta-pytorch/torch_checkpointing.git@dcbb3a59cfad1cbeb95994f0d6cb1802c1d91825
+ Downloaded nvidia-cutlass-dsl-libs-cu13
+ Downloaded nvidia-cutlass-dsl-libs-cu12
+Prepared 9 packages in 6.03s
+Uninstalled 3 packages in 28ms
+Installed 9 packages in 163ms
+ - attn-gym==0.0.16
+ + attn-gym==0.0.17
+ + nvidia-cutlass-dsl==4.8.1
+ + nvidia-cutlass-dsl-libs-base==4.8.1
+ + nvidia-cutlass-dsl-libs-core==4.8.1
+ + nvidia-cutlass-dsl-libs-cu12==4.8.1
+ + nvidia-cutlass-dsl-libs-cu13==4.8.1
+ - spmd-types==0.2.5
+ + spmd-types==0.2.0 (from git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd)
+ + torch-checkpointing==0.1.0 (from git+https://github.com/meta-pytorch/torch_checkpointing.git@dcbb3a59cfad1cbeb95994f0d6cb1802c1d91825)
+ - torch-remat==0.2.0 (from git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335)
+ + torch-remat==0.2.0 (from git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b)
+++ python -
++ TV=3.9.0+gitaad2a60d
++ cd /workspace
++ echo 'triton pin 3.9.0+gitaad2a60d'
+triton pin 3.9.0+gitaad2a60d
++ uv pip install --index-url https://download.pytorch.org/whl/nightly/ pytorch-triton==3.9.0+gitaad2a60d
+Using Python 3.12.3 environment at: venv_src
+error: No solution found when resolving dependencies
+  cause: Because there is no version of pytorch-triton==3.9.0+gitaad2a60d and you require pytorch-triton==3.9.0+gitaad2a60d, we can conclude that your requirements are unsatisfiable.
++ echo TRITON_PIN_FAILED
+TRITON_PIN_FAILED
++ python -
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'triton'
++ '[' 1 -eq 0 ']'
++ fail smoke
++ echo 'BUILD_FAILED smoke'
+BUILD_FAILED smoke
++ exit 1

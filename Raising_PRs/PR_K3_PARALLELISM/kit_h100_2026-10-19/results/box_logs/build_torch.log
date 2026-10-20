@@ -1,0 +1,129 @@
++ mkdir -p /dev/shm/tmp /dev/shm/uvcache
++ export TMPDIR=/dev/shm/tmp UV_CACHE_DIR=/dev/shm/uvcache CUDA_HOME=/usr/local/cuda-12.6 PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TORCH_CUDA_ARCH_LIST=9.0 MAX_JOBS=176
++ TMPDIR=/dev/shm/tmp
++ UV_CACHE_DIR=/dev/shm/uvcache
++ CUDA_HOME=/usr/local/cuda-12.6
++ PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++ TORCH_CUDA_ARCH_LIST=9.0
++ MAX_JOBS=176
++ B=/dev/shm/build
++ . /workspace/venv_src/bin/activate
+++ '[' -z '' ']'
+++ '[' -n x ']'
+++ SCRIPT_PATH=/workspace/venv_src/bin/activate
+++ '[' /workspace/venv_src/bin/activate = /workspace/kit_setup/build_torch_resume.sh ']'
+++ deactivate nondestructive
+++ unset -f pydoc
+++ '[' -z '' ']'
+++ '[' -z '' ']'
+++ hash -r
+++ '[' -z '' ']'
+++ unset VIRTUAL_ENV
+++ unset VIRTUAL_ENV_PROMPT
+++ '[' '!' nondestructive = nondestructive ']'
+++ VIRTUAL_ENV=/workspace/venv_src
+++ '[' linux-gnu = cygwin ']'
+++ '[' linux-gnu = msys ']'
+++ export VIRTUAL_ENV
+++ '[' -z '' ']'
+++ unset SCRIPT_PATH
+++ _OLD_VIRTUAL_PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/workspace/venv_src/bin:/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export PATH
+++ '[' x '!=' x ']'
++++ basename /workspace/venv_src
+++ VIRTUAL_ENV_PROMPT=venv_src
+++ export VIRTUAL_ENV_PROMPT
+++ '[' -z '' ']'
+++ '[' -z '' ']'
+++ _OLD_VIRTUAL_PS1=
+++ PS1='(venv_src) '
+++ export PS1
+++ alias pydoc
+++ true
+++ hash -r
++ export LD_LIBRARY_PATH=/workspace/nccl_sys/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
++ LD_LIBRARY_PATH=/workspace/nccl_sys/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
++ cd /workspace
++ python -c 'import torch; print('\''built torch'\'', torch.__version__, torch.version.git_version, torch.version.cuda, torch.cuda.is_available())'
+built torch 2.15.0a0+git7bf52b3 7bf52b3a9782d3440a17eb3f00983795f3b12af0 12.6 True
++ cd /dev/shm/build
++ '[' -d vision ']'
++ cd vision
+++ git log --before=2026-10-06 --format=%H -1
++ VC=7a7520f83957fe6a0f934fe7035f07b5ef32e8f9
++ git checkout -q 7a7520f83957fe6a0f934fe7035f07b5ef32e8f9
++ echo 'vision 7a7520f83957fe6a0f934fe7035f07b5ef32e8f9'
+vision 7a7520f83957fe6a0f934fe7035f07b5ef32e8f9
++ mkdir -p /workspace/vision_build
++ ln -sfn /workspace/vision_build build
++ FORCE_CUDA=1
++ python setup.py bdist_wheel
++ uv pip install --no-deps dist/torchvision-0.30.0a0+7a7520f-cp312-cp312-linux_x86_64.whl
+Using Python 3.12.3 environment at: /workspace/venv_src
+Resolved 1 package in 2ms
+Prepared 1 package in 27ms
+Uninstalled 1 package in 15ms
+Installed 1 package in 20ms
+ ~ torchvision==0.30.0a0+7a7520f (from file:///dev/shm/build/vision/dist/torchvision-0.30.0a0+7a7520f-cp312-cp312-linux_x86_64.whl)
++ UV_HTTP_TIMEOUT=900
++ uv pip install -r /workspace/kit_setup/freeze_rest.txt 'cuda-bindings>=12.9,<13' 'cuda-python>=12.9,<13'
+Using Python 3.12.3 environment at: /workspace/venv_src
+Resolved 133 packages in 3.48s
+   Updating https://github.com/meta-pytorch/remat.git (d302699b1c58f83fa2c7b03bc2593967e9530335)
+    Updated https://github.com/meta-pytorch/remat.git (d302699b1c58f83fa2c7b03bc2593967e9530335)
+   Building torch-remat @ git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335
+      Built torch-remat @ git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335
+Prepared 3 packages in 1.67s
+Uninstalled 3 packages in 34ms
+Installed 3 packages in 29ms
+ - attn-gym==0.0.17
+ + attn-gym==0.0.16
+ - spmd-types==0.2.0 (from git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd)
+ + spmd-types==0.2.5
+ - torch-remat==0.2.0 (from git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b)
+ + torch-remat==0.2.0 (from git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335)
++ uv pip install 'attn-gym[linear]==0.0.17' 'spmd_types @ git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd' 'torch_remat @ git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b' 'torch_checkpointing @ git+https://github.com/meta-pytorch/torch_checkpointing.git@dcbb3a59cfad1cbeb95994f0d6cb1802c1d91825'
+Using Python 3.12.3 environment at: /workspace/venv_src
+Resolved 26 packages in 475ms
+   Updating https://github.com/meta-pytorch/remat.git (624f19cbdb70720bd05988d6485a1225f46c074b)
+   Updating https://github.com/meta-pytorch/spmd_types.git (fce1acb1e9bbce66f398893ff7836346f4cf03cd)
+    Updated https://github.com/meta-pytorch/remat.git (624f19cbdb70720bd05988d6485a1225f46c074b)
+   Building torch-remat @ git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b
+      Built torch-remat @ git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b
+    Updated https://github.com/meta-pytorch/spmd_types.git (fce1acb1e9bbce66f398893ff7836346f4cf03cd)
+   Building spmd-types @ git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd
+      Built spmd-types @ git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd
+Prepared 3 packages in 2.65s
+Uninstalled 3 packages in 26ms
+Installed 3 packages in 54ms
+ - attn-gym==0.0.16
+ + attn-gym==0.0.17
+ - spmd-types==0.2.5
+ + spmd-types==0.2.0 (from git+https://github.com/meta-pytorch/spmd_types.git@fce1acb1e9bbce66f398893ff7836346f4cf03cd)
+ - torch-remat==0.2.0 (from git+https://github.com/meta-pytorch/remat.git@d302699b1c58f83fa2c7b03bc2593967e9530335)
+ + torch-remat==0.2.0 (from git+https://github.com/meta-pytorch/remat.git@624f19cbdb70720bd05988d6485a1225f46c074b)
+++ python -
++ TV=3.9.0+gitaad2a60d
++ cd /workspace
++ echo 'triton pin 3.9.0+gitaad2a60d'
+triton pin 3.9.0+gitaad2a60d
++ uv pip install --index-url https://download.pytorch.org/whl/nightly/ triton==3.9.0+gitaad2a60d
+Using Python 3.12.3 environment at: venv_src
+Resolved 1 package in 2.01s
+Downloading triton (272.5MiB)
+ Downloaded triton
+Prepared 1 package in 11.69s
+Installed 1 package in 654ms
+ + triton==3.9.0+gitaad2a60d
++ python -
+venv_src 2.15.0a0+git7bf52b3 7bf52b3a97 cuda 12.6 tv 0.30.0a0+7a7520f triton 3.9.0
+has _make_forward_chunk_state True
+matmul 25.524370193481445
++ '[' 0 -eq 0 ']'
++ df -h /workspace /dev/shm
++ tail -2
+overlay          32G   19G   14G  60% /
+shm             566G  4.1G  562G   1% /dev/shm
++ echo BUILD_OK
+BUILD_OK

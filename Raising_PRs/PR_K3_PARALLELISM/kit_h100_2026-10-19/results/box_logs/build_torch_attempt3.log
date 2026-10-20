@@ -1,0 +1,126 @@
++ mkdir -p /dev/shm/tmp /dev/shm/uvcache
++ export TMPDIR=/dev/shm/tmp UV_CACHE_DIR=/dev/shm/uvcache CUDA_HOME=/usr/local/cuda-12.6 PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TORCH_CUDA_ARCH_LIST=9.0 MAX_JOBS=176
++ TMPDIR=/dev/shm/tmp
++ UV_CACHE_DIR=/dev/shm/uvcache
++ CUDA_HOME=/usr/local/cuda-12.6
++ PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++ TORCH_CUDA_ARCH_LIST=9.0
++ MAX_JOBS=176
++ B=/dev/shm/build
++ mkdir -p /dev/shm/build
++ cd /dev/shm/build
++ '[' -d pt ']'
++ cd pt
+++ git log '--format=%H %s'
+++ grep '2026-10-05 nightly'
+++ head -1
+++ cut '-d ' -f1
++ C=7bf52b3a9782d3440a17eb3f00983795f3b12af0
++ echo 'commit 7bf52b3a9782d3440a17eb3f00983795f3b12af0'
+commit 7bf52b3a9782d3440a17eb3f00983795f3b12af0
++ '[' -n 7bf52b3a9782d3440a17eb3f00983795f3b12af0 ']'
++ git checkout -q 7bf52b3a9782d3440a17eb3f00983795f3b12af0
++ git log -1 '--format=%H %s'
+7bf52b3a9782d3440a17eb3f00983795f3b12af0 2026-10-05 nightly release (fc695b3ea18cb62d839658fd919217227a919855)
++ git submodule sync -q
++ git submodule update -q --init --recursive --depth 1 --jobs 32
++ '[' -d build ']'
++ '[' '!' -L build ']'
++ mkdir -p /workspace/pt_build
++ ln -sfn /workspace/pt_build build
++ ls -la build
+lrwxrwxrwx 1 root root 19 Oct 19 06:15 build -> /workspace/pt_build
++ uv venv /workspace/venv_src --python 3.12
+Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+Creating virtual environment at: /workspace/venv_src
+error: Failed to create virtual environment
+  cause: A virtual environment already exists at: /workspace/venv_src
+
+hint: Use the `--clear` flag or set `UV_VENV_CLEAR=1` to replace the existing virtual environment
++ . /workspace/venv_src/bin/activate
+++ '[' -z '' ']'
+++ '[' -n x ']'
+++ SCRIPT_PATH=/workspace/venv_src/bin/activate
+++ '[' /workspace/venv_src/bin/activate = /workspace/kit_setup/build_torch.sh ']'
+++ deactivate nondestructive
+++ unset -f pydoc
+++ '[' -z '' ']'
+++ '[' -z '' ']'
+++ hash -r
+++ '[' -z '' ']'
+++ unset VIRTUAL_ENV
+++ unset VIRTUAL_ENV_PROMPT
+++ '[' '!' nondestructive = nondestructive ']'
+++ VIRTUAL_ENV=/workspace/venv_src
+++ '[' linux-gnu = cygwin ']'
+++ '[' linux-gnu = msys ']'
+++ export VIRTUAL_ENV
+++ '[' -z '' ']'
+++ unset SCRIPT_PATH
+++ _OLD_VIRTUAL_PATH=/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/workspace/venv_src/bin:/usr/local/cuda-12.6/bin:/opt/instance-tools/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export PATH
+++ '[' x '!=' x ']'
++++ basename /workspace/venv_src
+++ VIRTUAL_ENV_PROMPT=venv_src
+++ export VIRTUAL_ENV_PROMPT
+++ '[' -z '' ']'
+++ '[' -z '' ']'
+++ _OLD_VIRTUAL_PS1=
+++ PS1='(venv_src) '
+++ export PS1
+++ alias pydoc
+++ true
+++ hash -r
++ uv pip install -r requirements.txt build ninja cmake
+Using Python 3.12.3 environment at: /workspace/venv_src
+Checked 28 packages in 38ms
++ export USE_CUDA=1 USE_ROCM=0 USE_XPU=0 BUILD_TEST=0 USE_CUSPARSELT=0 USE_CUDSS=0 USE_NVSHMEM=0 USE_MPI=0 USE_KINETO=1 CMAKE_BUILD_TYPE=Release USE_SYSTEM_NCCL=1 NCCL_ROOT=/workspace/nccl_sys NCCL_INCLUDE_DIR=/workspace/nccl_sys/include NCCL_LIB_DIR=/workspace/nccl_sys/lib RERUN_CMAKE=1
++ USE_CUDA=1
++ USE_ROCM=0
++ USE_XPU=0
++ BUILD_TEST=0
++ USE_CUSPARSELT=0
++ USE_CUDSS=0
++ USE_NVSHMEM=0
++ USE_MPI=0
++ USE_KINETO=1
++ CMAKE_BUILD_TYPE=Release
++ USE_SYSTEM_NCCL=1
++ NCCL_ROOT=/workspace/nccl_sys
++ NCCL_INCLUDE_DIR=/workspace/nccl_sys/include
++ NCCL_LIB_DIR=/workspace/nccl_sys/lib
++ RERUN_CMAKE=1
++ export LD_LIBRARY_PATH=/workspace/nccl_sys/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
++ LD_LIBRARY_PATH=/workspace/nccl_sys/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
++ python -m build --wheel --no-isolation
++ ls -la dist/
+total 250080
+drwxrwxr-x  2 root root        60 Oct 19 06:27 .
+drwxrwxr-x 28 root root      1620 Oct 19 06:15 ..
+-rw-rw-r--  1 root root 256081853 Oct 19 06:27 torch-2.15.0a0+git7bf52b3-cp312-cp312-linux_x86_64.whl
++ uv pip install dist/torch-2.15.0a0+git7bf52b3-cp312-cp312-linux_x86_64.whl
+Using Python 3.12.3 environment at: /workspace/venv_src
+Resolved 10 packages in 109ms
+Prepared 1 package in 810ms
+Installed 1 package in 1.68s
+ + torch==2.15.0a0+git7bf52b3 (from file:///dev/shm/build/pt/dist/torch-2.15.0a0+git7bf52b3-cp312-cp312-linux_x86_64.whl)
++ python -c 'import torch; print('\''built torch'\'', torch.__version__, torch.version.git_version, torch.version.cuda, torch.cuda.is_available())'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/dev/shm/build/pt/torch/__init__.py", line 1429, in <module>
+    raise ImportError(
+ImportError: Failed to load PyTorch C extensions:
+    It appears that PyTorch has loaded the `torch/_C` folder
+    of the PyTorch repository rather than the C extensions which
+    are expected in the `torch._C` namespace. This can occur when
+    using the `install` workflow. e.g.
+        $ python -m pip install --no-build-isolation -v . && python -c "import torch"
+
+    This error can generally be solved using the `develop` workflow
+        $ python -m pip install --no-build-isolation -v -e . && python -c "import torch"  # This should succeed
+    or by running Python from a different directory.
++ fail torch-import
++ echo 'BUILD_FAILED torch-import'
+BUILD_FAILED torch-import
++ exit 1

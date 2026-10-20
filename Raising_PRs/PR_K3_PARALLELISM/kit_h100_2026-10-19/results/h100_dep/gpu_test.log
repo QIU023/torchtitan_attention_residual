@@ -1,0 +1,37 @@
+..                                                                       [100%]
+==================================== PASSES ====================================
+_ TestKimiK3VisionDepNccl.test_encodes_and_backwards_in_idle_slots_under_nccl __
+----------------------------- Captured stderr call -----------------------------
+I1019 07:51:50.802000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 0 with pid 71877
+I1019 07:51:50.804000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 1 with pid 71878
+I1019 07:51:50.846000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 2 with pid 71879
+I1019 07:51:50.847000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 3 with pid 71880
+[rank1]:W1019 07:51:57.600000 71878 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank0]:W1019 07:51:57.603000 71877 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank2]:W1019 07:51:57.609000 71879 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank3]:W1019 07:51:57.612000 71880 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+------------------------------ Captured log call -------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 0 with pid 71877
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 1 with pid 71878
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 2 with pid 71879
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 3 with pid 71880
+DEBUG    torch.__trace:utils.py:2473
+_ TestKimiK3VisionDepNccl.test_encodes_before_and_backwards_after_the_schedule_under_nccl _
+----------------------------- Captured stderr call -----------------------------
+I1019 07:52:03.693000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 0 with pid 72208
+I1019 07:52:03.694000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 1 with pid 72209
+I1019 07:52:03.694000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 2 with pid 72210
+I1019 07:52:03.695000 71807 torch/testing/_internal/common_distributed.py:1038] Started process 3 with pid 72211
+[rank1]:W1019 07:52:10.080000 72209 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank0]:W1019 07:52:10.089000 72208 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank3]:W1019 07:52:10.095000 72211 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+[rank2]:W1019 07:52:10.097000 72210 torch/_logging/_internal.py:1407] Pipeline parallelism is using an eager NCCL communicator. Consider creating its process group with backend="nccl-lazy" so peer communicators are initialized lazily and traffic to different peers can overlap.
+------------------------------ Captured log call -------------------------------
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 0 with pid 72208
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 1 with pid 72209
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 2 with pid 72210
+INFO     torch.testing._internal.common_distributed:common_distributed.py:1038 Started process 3 with pid 72211
+=========================== short test summary info ============================
+PASSED tests/unit_tests/gpu/test_kimi_k3_vision_dep.py::TestKimiK3VisionDepNccl::test_encodes_and_backwards_in_idle_slots_under_nccl
+PASSED tests/unit_tests/gpu/test_kimi_k3_vision_dep.py::TestKimiK3VisionDepNccl::test_encodes_before_and_backwards_after_the_schedule_under_nccl
+2 passed in 31.13s

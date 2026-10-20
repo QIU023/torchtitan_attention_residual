@@ -1,0 +1,20 @@
+--- a/torchtitan/models/kimi_k3/pipeline_parallel/vision_dep/runtime.py
++++ b/torchtitan/models/kimi_k3/pipeline_parallel/vision_dep/runtime.py
+@@ -216,7 +216,7 @@
+             return self._replica(pixel_values.to(self._dtype), grid_thw=grid_thw)
+ 
+     def _encode(self, mb: int) -> None:
+-        with torch.no_grad():
++        with torch.profiler.record_function(f"DEP:E{mb}"), torch.no_grad():
+             features = self._tower_forward(mb)
+         if features.shape != (self._tokens[mb], self._hidden_dim):
+             raise RuntimeError(
+@@ -230,7 +230,7 @@
+         if work is not None:
+             work.wait()
+         grad = self._gradients.pop(mb)
+-        with torch.enable_grad():
++        with torch.profiler.record_function(f"DEP:B{mb}"), torch.enable_grad():
+             torch.autograd.backward(self._tower_forward(mb), grad)
+         assert self._accum is not None
+         offset = 0

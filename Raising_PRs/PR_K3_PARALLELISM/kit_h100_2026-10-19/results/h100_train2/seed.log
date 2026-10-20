@@ -1,0 +1,45 @@
++ NGPU=1
++ export LOG_RANK=0
++ LOG_RANK=0
++ MODULE=cpmm_probe
++ CONFIG=seed
++ ENTRYPOINT=torchtitan.train
++ COMM_BACKEND=
++ TORCHFT_LIGHTHOUSE=http://localhost:29510
++ [[ -n '' ]]
++ '[' '' = fake ']'
++ PYTORCH_ALLOC_CONF=expandable_segments:True
++ TORCHFT_LIGHTHOUSE=http://localhost:29510
++ torchrun --nproc_per_node=1 --rdzv_backend c10d --rdzv_endpoint=localhost:0 --local-ranks-filter 0 --role rank --tee 3 -m torchtitan.train --module cpmm_probe --config seed --output-dir /workspace/h100_train2/seed_run
+mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+[rank0]:mpp_shim: MixedPrecisionPolicy takes param_dtype_override_fn=None
+[rank0]:WARNING:absl:Failed to load jax profiler: No module named 'jax'
+[rank0]:[titan] 2026-10-19 06:01:26,004 - __main__ - INFO - torchtitan version: 0.0.0+unknown (0.0.0 means __version__ is not defined correctly).
+[rank0]:[titan] 2026-10-19 06:01:26,197 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[rank0]:[titan] 2026-10-19 06:01:26,199 - torchtitan.observability.structured_logger.jsonl_handler - INFO - Structured logging -> JSONL: /workspace/h100_train2/seed_run/structured_logs/training.global_rank_0.20261019-060126-QBBGU9.jsonl
+[rank0]:[titan] 2026-10-19 06:01:26,475 - torchtitan.distributed.utils - WARNING - TORCH_NCCL_ASYNC_ERROR_HANDLING=1 will be overridden to 3.
+[rank0]:[titan] 2026-10-19 06:01:26,827 - torchtitan.tools.garbage_collector - INFO - [GC] Initial GC collection took 0.00 seconds
+[rank0]:[titan] 2026-10-19 06:01:26,829 - torchtitan.observability.metrics - INFO - CUDA capacity: NVIDIA H100 80GB HBM3 with 79.21GiB memory
+[rank0]:[titan] 2026-10-19 06:01:26,841 - torchtitan.config.configurable - WARNING - Config field value of type InterpolationMode may not be JSON serializable
+[rank0]:[titan] 2026-10-19 06:01:26,863 - torchtitan.tools.utils - WARNING - Error running lspci: [Errno 2] No such file or directory: 'lspci', fallback to use device_name
+[rank0]:[titan] 2026-10-19 06:01:26,864 - torchtitan.components.tokenizer - INFO - Loading tokenizer from tokenizer.json
+[rank0]:[titan] 2026-10-19 06:01:26,910 - torchtitan.distributed.parallelism_context - INFO - Building device mesh with parallelism: pp=1, dp_replicate=1, dp_shard=1, cp=1, tp=1, ep=1
+[rank0]:[titan] 2026-10-19 06:01:26,915 - torchtitan.distributed.parallelism_context - INFO - Successfully created meshes with active axes: []
+[rank0]:[titan] 2026-10-19 06:01:27,021 - torchtitan.models.base.state_dict_adapter - WARNING - model.safetensors.index.json not found at hf_assets_path: ./tests/assets/tokenizer/model.safetensors.index.json.                     Defaulting to saving a single safetensors file if checkpoint is saved in HF format
+[rank0]:[titan] 2026-10-19 06:01:27,025 - torchtitan.models.common.flops - INFO - Total parameter count: 26,882,800, active parameters: 18,342,128
+[rank0]:[titan] 2026-10-19 06:01:38,271 - torchtitan.training_engine - INFO - Model KimiK3Model.Config size: 26,882,800 total parameters
+[rank0]:[titan] 2026-10-19 06:01:38,276 - torchtitan.components.optim.optimizer - INFO - Optimizer AdamW (model_part=0): 465 params [.*] {'lr': 0.0008, 'betas': (0.9, 0.95), 'eps': 1e-08, 'weight_decay': 0.1, 'foreach': None, 'fused': True}
+[rank0]:[titan] 2026-10-19 06:01:38,277 - torchtitan.components.optim.lr_scheduler - WARNING - Warmup steps (2) exceed total steps (1). Adjusting warmup steps to 1.
+[rank0]:[titan] 2026-10-19 06:01:38,277 - torchtitan.components.optim.lr_scheduler - WARNING - Warmup (1) + decay (1) steps exceed total steps (1). Adjusting decay steps to 0.
+[rank0]:[titan] 2026-10-19 06:01:38,278 - torchtitan.components.checkpointer.base - WARNING - initial_load_model_only=True has no effect without an initial_load_path.
+[rank0]:[titan] 2026-10-19 06:01:38,281 - torchtitan.components.checkpointer.dcp - INFO - Checkpointing active. Checkpoints will be loaded from and saved to /workspace/h100_train2/seed
+[rank0]:[titan] 2026-10-19 06:01:38,281 - torchtitan.trainer - INFO - Peak FLOPS used for computing MFU: 9.890e+14
+[rank0]:[titan] 2026-10-19 06:01:38,281 - torchtitan.trainer - INFO - CUDA memory usage for model: 0.00GiB(0.00%)
+[rank0]:[titan] 2026-10-19 06:01:38,281 - torchtitan.trainer - INFO - Trainer is initialized with 2048 tokens per DP rank, 2048 tokens per train step, gradient accumulation steps 1, maximum context length 2048, total steps 1 (warmup 2)
+[rank0]:[titan] 2026-10-19 06:01:38,281 - torchtitan.components.checkpointer.dcp - INFO - Saving the checkpointer.
+[rank0]:[titan] 2026-10-19 06:01:40,464 - torchtitan.components.checkpointer.dcp - INFO - Saving a model only checkpoint in torch.float32 at last step, step 0.
+[rank0]:[titan] 2026-10-19 06:01:40,683 - torchtitan.tools.garbage_collector - INFO - [GC] GC collection invoked by checkpointer. took 0.01 seconds
+[rank0]:[titan] 2026-10-19 06:01:40,684 - torchtitan.components.checkpointer.dcp - INFO - Last step checkpoint completed in 2.40s
+[rank0]:[titan] 2026-10-19 06:01:40,685 - __main__ - INFO - Created seed checkpoint
+[rank0]:[titan] 2026-10-19 06:01:40,685 - torchtitan.components.checkpointer.base - INFO - Destroying the purge thread.
+[rank0]:[titan] 2026-10-19 06:01:40,838 - __main__ - INFO - Process group destroyed
