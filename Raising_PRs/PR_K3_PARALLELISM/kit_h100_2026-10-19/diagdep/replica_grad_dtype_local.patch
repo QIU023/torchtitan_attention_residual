@@ -1,0 +1,13 @@
+--- torchtitan/models/kimi_k3/pipeline_parallel/vision_dep/__init__.py	2026-10-19 05:19:50.000000000 +0000
++++ ../new_gd/torchtitan/models/kimi_k3/pipeline_parallel/vision_dep/__init__.py	2026-10-20 07:26:19.916670923 +0000
+@@ -51,8 +51,10 @@
+         replica.init_states()
+     with torch.no_grad():
+         dtype = TORCH_DTYPE_MAP[training.mixed_precision_param]
++        grad_dtype = TORCH_DTYPE_MAP[training.mixed_precision_reduce]
+         for param in replica.parameters():
+             param.data = param.data.to(dtype)
++            param.grad_dtype = grad_dtype
+     return replica.train()
+ 
+ 

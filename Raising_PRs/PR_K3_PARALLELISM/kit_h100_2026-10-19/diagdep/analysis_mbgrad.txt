@@ -1,0 +1,12 @@
+new: torch 2.15.0.dev20261005+cu130; replica gradients for micro-batches [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15]; stage-0 backward order [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+   fp32 -> DEP on: 22/22
+   fp32 -> DEP off: 7/22
+   bf16 in order -> DEP off: 0/22
+   bf16 in order -> DEP on: 0/22
+   this DEP on == earlier DEP on: 22/22
+old: torch 2.15.0.dev20260928+cu130; replica gradients for micro-batches [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15]; stage-0 backward order [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+   fp32 -> DEP on: 22/22
+   fp32 -> DEP off: 22/22
+   bf16 in order -> DEP off: 0/22
+   bf16 in order -> DEP on: 0/22
+   this DEP on == earlier DEP on: 22/22

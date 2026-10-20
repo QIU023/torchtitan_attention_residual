@@ -2,6 +2,11 @@
 
 ## 状态（不粘贴）
 
+- **10-20（10-19 H100 重跑和 5060 诊断，记录在 `H100_RERUN_4380_4381_2026-10-19.md`）：** 粘贴区没有改，Results 仍是 10-04 在旧 main 上测的，现在不能再当成 PR head（`7529daeea`，main `efdde5eda`）的结果。
+  - 数值：新 main 上 DEP 开和关只有第 1 步相同。原因已定位，是 main 的 #5250：FSDP 管的 tower 的矩阵权重梯度以 fp32 产出，DEP 的副本是 bf16。给副本参数设 `grad_dtype`（只在 scratchpad 的导出树里试过，没进分支）后，第 2 步相同、第 3 步起分开（剩下的是 fp32 加法顺序）。要不要加这个改动由用户定。
+  - 覆盖率：放法和 10-04 相同；10-19 那台 H100 上被 trace 的一步多了 30 多秒空闲，开 profiler 的格子里有 5160 次 C++ 异常，覆盖率降到 48% 到 52%。未定位，要下一台 H100。
+  - "Relation to earlier revisions of this PR" 那一节按 10-14 的规则还要删，等 Results 一起改。
+
 - **10-09（用户："加，直接推PR分支和review分支，maintainer现在还没时间review"）：** PR 分支 `k3_pp_mm` = `dep_review1` = `4e2ec143b`，比 `6cda7daca` 多两个只改测试的提交：`095acaaad`（运行时测试直接用 `VisionDepPipelineStage`，不再配 AttnRes 路由）和 `4e2ec143b`（覆盖率公式的两个测试）。两次都是快进，旧 head 备份在 `backup/k3_pp_mm_pre_20261009` 和 `..._20261009b`。粘贴区改了：覆盖率表下加一句闭式和上限（推导和 720 点核对见 `DEP_VISION_DEP_PACKAGE_2026-10-09_FORMULA.md`）；Test plan 的 CPU 通过数 20 → 22；GPU 那条换成这次在当前测试代码上的结果（5060 的 GPU 0-3，问过 SATS-OPRD；以前的 "4 H100s" 是 09-30 旧测试代码的结果）。
 - **10-05 PR 分支同步（用户："推"）：** `k3_pp_mm` 从 `8518f473f` 快进到 `6cda7daca`（= `dep_review1`，CPU 会话把 DEP stage 和 AttnRes stage 解耦），普通推送。#4381 现在 8 个提交、11 个文件、+2202 / −11，和 main 的冲突仍是 `kimi_k3/model.py` 那一处。核对：stage 类的每个方法解析到的源码不变（只有类 docstring 不同），CPU 36 passed，NCCL 单测在 4 × H100 上 2 passed，B200 的 8 卡格子新旧 10 步逐位相同。粘贴区不用改。
 - **10-04 DEP stage 和 AttnRes 解耦（用户："ViT DEP机制本身并不是需要K3独有的……VisionDepPipelineStage 为什么要继承 AttnResPipelineStage ？？"，随后"直接改，但是你能保证数值完全不变吗？"）：** `dep_review1` 快进到 `6cda7daca`，PR 分支 `k3_pp_mm` 仍是 `8518f473f`。
