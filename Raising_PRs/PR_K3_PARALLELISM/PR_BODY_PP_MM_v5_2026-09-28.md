@@ -2,6 +2,14 @@
 
 ## 状态（不粘贴）
 
+- **10-20 下午（用户："加grad dtype，只推dep review1，暂时没有h100，把除了h100之外其他所有dep rebase 后需要做的事情都做了"）：**
+  - 新提交 `caa8726fa` "kimi_k3: the DEP tower copies accumulate gradients in the reduce dtype"，单独一个，叠在 `7529daeea` 上：`build_vision_replica` 给副本参数设 `grad_dtype = mixed_precision_reduce`（加一行注释）；CPU 测试补了 `mixed_precision_reduce` 字段，新增 `test_the_tower_copy_accumulates_gradients_in_the_reduce_dtype`，测试类 `TestVisionReplicaSeed` 改名 `TestVisionReplica` 并把共用的构建抽成 `_model_and_context`。
+  - 只推了 `dep_review1`（快进 `7529daeea..caa8726fa`）；PR 分支 `k3_pp_mm` 仍是 `7529daeea`，等用户点头。
+  - 本机检查：rebase 时那组 CPU 测试 90 passed（63 subtests，比 89 多新测试 1 个）；合进今天的 main `1d581795c` 之后同一组也是 90 passed；NCCL GPU 测试 2 passed（4 卡，29.7 s）；pre-commit 的 flake8（带 bugbear 等插件）、ufmt、pyflakes 干净，合并后的树上 PR 的 11 个文件 pyflakes 和 flake8 也干净；pyrefly 和 `efdde5eda` 一样是 4 个错误；seeded B200 格子（8 卡）DEP 开第 1、2 步和 DEP 关逐位相同（`7529daeea` 是第 2 步就不同），第 3 步起分开（fp32 加法顺序）。
+  - 粘贴区：Summary 的 B200 路径改成 `tests/integration_tests/b200.py`；Design 加一条副本 `grad_dtype`，覆盖上界的公式从 Results 挪到 Design 的 Fit 下；Results 改成 Pending (H100)；按 10-14 的规则删了 Relation 一节；Test plan 更新为 23 passed、GPU 2 passed、B200 格子一句。粘贴区没有 we/our/us、破折号；唯一的非 ASCII 是原有的公式符号。正文 758 词（不算表格）。
+  - B200 的 golden 只给非 PP 的 `kimi_k3_mm_muon`，DEP 打开的 PP 格子没有 golden，不用重生成。
+  - 等 H100 的：数值表（DEP 关两次、K2.5、bubble，100 步，`caa8726fa`）和覆盖率表（先查 10-19 那台上被 trace 的一步为什么多出 30 多秒空闲、5160 次 C++ 异常是什么）。
+
 - **10-20（10-19 H100 重跑和 5060 诊断，记录在 `H100_RERUN_4380_4381_2026-10-19.md`）：** 粘贴区没有改，Results 仍是 10-04 在旧 main 上测的，现在不能再当成 PR head（`7529daeea`，main `efdde5eda`）的结果。
   - 数值：新 main 上 DEP 开和关只有第 1 步相同。原因已定位，是 main 的 #5250：FSDP 管的 tower 的矩阵权重梯度以 fp32 产出，DEP 的副本是 bf16。给副本参数设 `grad_dtype`（只在 scratchpad 的导出树里试过，没进分支）后，第 2 步相同、第 3 步起分开（剩下的是 fp32 加法顺序）。要不要加这个改动由用户定。
   - 覆盖率：放法和 10-04 相同；10-19 那台 H100 上被 trace 的一步多了 30 多秒空闲，开 profiler 的格子里有 5160 次 C++ 异常，覆盖率降到 48% 到 52%。未定位，要下一台 H100。
@@ -116,7 +124,7 @@ Implements the decoupled encoder process (DEP) of Kimi K2.5 for the Kimi K3 pipe
 
 - `kimi_k3/pipeline_parallel/vision_dep/`: `VisionDepPlan` (`plan.py`), `VisionDep` (`runtime.py`), `VisionDepPipelineStage` (`stage.py`), `VisionDepSchedule` (`schedule.py`), wired into `pipeline_kimi_k3` by `__init__.py`.
 - `kimi_k3/model.py`: a `vision_dep` config (`enabled` turns DEP on, `bubble` schedules the ViT computation into pipeline bubbles, `bubble_cost_ratio` is the cost the scheduler assumes for it) and a `vision_embeds` argument on `forward`.
-- `torchtitan_recipes/tests/suites/b200.py`: the existing pp2 x vpp4 B200 recipe enables `vision_dep`.
+- `tests/integration_tests/b200.py`: the existing pp2 x vpp4 B200 recipe enables `vision_dep`.
 
 ## Illustration Figure
 
@@ -133,6 +141,7 @@ The green part of ViT forward and backward shown from the Kimi K3 tech report an
   - The ViT forward runs under `no_grad` on one rank, and its features go to stage 0 as `vision_embeds`.
   - The gradient at the features goes back to one rank, which recomputes the ViT forward and runs the ViT backward.
   - The copies' gradients are summed in fp32 and reduced into the ViT's gradients at the end of the step.
+  - The copies' parameters take the reduce dtype as `grad_dtype`, as the FSDP-wrapped ViT does, so their Linear weight gradients come out at the same precision.
 - Placement:
   - `bubble=False` (the K2.5 form): every ViT forward runs before the pipeline schedule and every ViT backward after it, balanced by patch count.
   - `bubble=True` (the K3 form): the ViT forwards of the schedule's first pipeline-degree micro-batches run before it and the ViT backwards of its last pipeline-degree micro-batches after it, balanced by patch count.
@@ -143,6 +152,7 @@ The green part of ViT forward and backward shown from the Kimi K3 tech report an
   - A slot lasts as long as its longest action (forward 1, backward 2), `bubble_cost_ratio` is one ViT forward in units of one text-stage forward, and a ViT backward costs three ViT forwards (the recompute and the backward).
   - Neither report gives a cost model; these numbers are the plan's own estimates.
   - Every rank derives the same plan from `pipeline_order`.
+  - With every micro-batch carrying an equal image, the plan covers min(M − p, Σ⌊i/r⌋) forwards and min(M − p, Σ⌊(2i − 1)/(3r)⌋) backwards of M, summed over ranks i = 1..p − 1, so coverage is at most 1 − p/M (50% for Figure 11).
 - Transfers:
   - Features and gradients use a process group per pipeline group.
   - Both ends of a transfer post it at the same slot boundary, so no posted send or receive waits on its own rank's later work.
@@ -161,34 +171,12 @@ With pp 3 x vpp 4 and 6 micro-batches the plan is the layout of Figure 11 in the
 
 ## Results
 
-4 H100s, pp4 x vpp4, Interleaved1F1B with 16 micro-batches, full activation checkpointing; the Kimi K3 debug model widened to dim 6144 with its 2-layer debug ViT, at most one image per sample.
-
-ViT computation covered by pipeline bubbles: the share of the ViT forward and backward kernel time that runs inside pipeline bubbles, one traced step (the ViT work wrapped in profiler ranges locally for the measurement):
-
-| seq | image side | ViT forward / text stage forward | covered, `bubble=False` (K2.5 form) | covered, `bubble=True` (K3 form) |
-|---:|---:|---:|---:|---:|
-| 2048 | 224 px | 0.046 | 1% | 71% |
-| 2048 | 1008 px | 0.136 | 6% | 71% |
-| 1536 | 1008 px | 0.169 | 0% | 69% |
-
-With every micro-batch carrying an equal image, the plan covers min(M − p, Σ⌊i/r⌋) forwards and min(M − p, Σ⌊(2i − 1)/(3r)⌋) backwards of M, summed over ranks i = 1..p − 1, so coverage is at most 1 − p/M: 50% for Figure 11 and 75% for this table's pp4 × 16 micro-batches, of which 13 carry an image here.
-
-Loss / grad norm, seq 2048 with 224 px images, deterministic, one warm compile cache, automatic dynamic shapes off (the ViT and the text share the compiled flex attention):
-
-| cell | step 1 | step 10 | step 50 | step 100 |
-|---|---:|---:|---:|---:|
-| DEP off | 8.15085 / 34.0000 | 7.50268 / 27.6250 | 2.57208 / 9.8750 | 2.05389 / 4.9375 |
-
-DEP off again, DEP with `bubble=False` and DEP with `bubble=True` are identical to DEP off on all 100 steps.
-
-## Relation to earlier revisions of this PR
-
-Earlier revisions gave the ViT its own pipeline stage on the first rank; this revision replaces that.
+Pending (H100).
 
 ## Test plan
 
-- `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (22 passed), including the coverage bound above on interleaved orders.
+- `pytest tests/unit_tests/cpu/test_kimi_k3_vision_dep_plan.py tests/unit_tests/cpu/test_kimi_k3_vision_dep.py -q` (23 passed), including the coverage bound above on interleaved orders.
 - `pytest tests/unit_tests/gpu/test_kimi_k3_vision_dep.py -q` (2 passed on 4 RTX 5060 Ti).
-- The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` with DEP on: 10 steps on 8 RTX 5060 Ti (no B200 at hand).
+- The B200 cell `kimi_k3_fsdp2_tp2_ep2_pp2_vpp4` with DEP on: 10 steps on 8 RTX 5060 Ti (no B200 at hand), from one seed checkpoint; steps 1 and 2 match DEP off bitwise.
 
 --- PASTE END ---
